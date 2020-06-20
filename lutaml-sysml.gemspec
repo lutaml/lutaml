@@ -2,7 +2,7 @@ require_relative 'lib/lutaml/sysml/version'
 
 Gem::Specification.new do |spec|
   spec.name          = "lutaml-sysml"
-  spec.version       = Lutaml::Uml::VERSION
+  spec.version       = Lutaml::Sysml::VERSION
   spec.authors       = ["Ribose Inc."]
   spec.email         = ["open.source@ribose.com'"]
 
@@ -24,7 +24,7 @@ Gem::Specification.new do |spec|
 
   spec.add_runtime_dependency "thor", "~> 1.0"
   spec.add_runtime_dependency "activesupport", "~> 5.0"
-  spec.add_runtime_dependency "lutaml-uml"
+  # spec.add_runtime_dependency "lutaml-uml"
   spec.add_development_dependency "nokogiri", "~> 1.10"
 
   spec.add_development_dependency "bundler", "~> 2.0"
