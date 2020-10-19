@@ -1,5 +1,5 @@
 require "lutaml/version"
-require "lutaml/document_wrapper"
+require "lutaml/lutaml_path/document_wrapper"
 
 module Lutaml
   class Error < StandardError; end
