@@ -22,7 +22,6 @@ Gem::Specification.new do |spec|
 
   spec.bindir        = "exe"
   spec.require_paths = ["lib"]
-  spec.executables   = %w[lutaml-express]
 
   spec.add_runtime_dependency "expressir", "~> 0.2.0"
 
