@@ -1,5 +1,3 @@
-require "jmespath"
-
 module Lutaml
   module LutamlPath
     class DocumentWrapper
@@ -9,11 +7,8 @@ module Lutaml
         @serialized_document = serialize_document(document)
       end
 
-      # Method for traversing document` structure
-      # example for lutaml: wrapper.find('//#main-doc/main-class/nested-class')
-      # Need to return descendant of Lutaml::LutamlPath::EntryWrapper
-      def find(path)
-        JMESPath.search(path, serialized_document)
+      def to_liquid
+        serialized_document
       end
 
       protected
