@@ -16,8 +16,7 @@ RSpec.describe Lutaml::Express::Parsers::Exp do
       end
 
       it "correctly reads schema attributes" do
-        expect(parse.shecmas.first).to(eq('test'))
-        expect(parse.shecmas.first).to(eq('test'))
+        expect(parse.schemas.first.id).to(eq('annotated_3d_model_data_quality_criteria_schema'))
         expect(parse.schemas.first.entities.map(&:id))
           .to(eq(["a3m_data_quality_criteria_representation",
                   "a3m_data_quality_criterion",
