@@ -1,5 +1,0 @@
-example_id                                                   | status | run_time        |
------------------------------------------------------------- | ------ | --------------- |
-./spec/express/lutaml_path/document_wrapper_spec.rb[1:1:1:1] | passed | 0.33996 seconds |
-./spec/express/lutaml_path/document_wrapper_spec.rb[1:1:1:2] | passed | 0.28436 seconds |
-./spec/express/parsers/exp_spec.rb[1:1:1:1]                  | passed | 0.42405 seconds |

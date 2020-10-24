@@ -25,12 +25,13 @@ RSpec.describe Lutaml::Express::LutamlPath::DocumentWrapper do
       end
 
       it "serializes repository attributes" do
-        expect(serialized_document.keys).to(eq([schema]))
-        expect(serialized_document[schema]).to(include(*entities_names))
+        expect(serialized_document.keys).to(eq(['schemas', schema]))
+        expect(serialized_document['schemas'].map {|n| n['id'] }).to(eq([schema]))
       end
 
       it "correctly finds elements by jmespath expression" do
-        expect(lutaml_path.find("#{schema}.#{entities_names.first}.id")).to(eq('a3m_data_quality_criteria_representation'))
+        expect(serialized_document['schemas'].first['entities']
+                .map {|n| n['id'] }).to(eq(entities_names))
       end
     end
   end
