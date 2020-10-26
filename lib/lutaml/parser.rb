@@ -10,7 +10,7 @@ module Lutaml
         Lutaml::Express::LutamlPath::DocumentWrapper
           .new(Lutaml::Express::Parsers::Exp.parse(file))
       else
-        raise ArgumentError, 'Unsupported file format'
+        raise ArgumentError, "Unsupported file format"
       end
     end
   end

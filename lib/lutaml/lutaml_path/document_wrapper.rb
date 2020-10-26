@@ -28,11 +28,11 @@ module Lutaml
       def serialize_to_hash(object)
         object.instance_variables.each_with_object({}) do |var, res|
           variable = object.instance_variable_get(var)
-          if variable.is_a?(Array)
-            res[var.to_s.gsub("@", '')] = variable.map { |n| serialize_to_hash(n) }
-          else
-            res[var.to_s.gsub("@", '')] = variable
-          end
+          res[var.to_s.gsub("@", "")] = if variable.is_a?(Array)
+                                          variable.map { |n| serialize_to_hash(n) }
+                                        else
+                                          variable
+                                        end
         end
       end
     end
