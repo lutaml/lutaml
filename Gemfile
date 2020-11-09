@@ -6,7 +6,5 @@ source "https://rubygems.org"
 gemspec
 
 gem "rake", "~> 12.0"
-gem "lutaml",
-  git: "git@github.com:lutaml/lutaml.git",
-  branch: "feature/objects-lookup-dsl"
+gem "lutaml", "~> 0.3.0"
 gem "jmespath", "~> 1.4"
