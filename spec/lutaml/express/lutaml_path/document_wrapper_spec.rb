@@ -13,7 +13,7 @@ RSpec.describe Lutaml::Express::LutamlPath::DocumentWrapper do
       let(:repository) do
         Lutaml::Express::Parsers::Exp.parse(File.new(fixtures_path("test.exp")))
       end
-      let(:schema) { 'annotated_3d_model_data_quality_criteria_schema' }
+      let(:schema) { "annotated_3d_model_data_quality_criteria_schema" }
       let(:entities_names) do
         %w[
           a3m_data_quality_criteria_representation
@@ -21,17 +21,18 @@ RSpec.describe Lutaml::Express::LutamlPath::DocumentWrapper do
           a3m_data_quality_criterion_specific_applied_value
           a3m_data_quality_target_accuracy_association
           a3m_detailed_report_request
-          a3m_summary_report_request_with_representative_value]
+          a3m_summary_report_request_with_representative_value
+        ]
       end
 
       it "serializes repository attributes" do
-        expect(serialized_document.keys).to(eq(['schemas', schema]))
-        expect(serialized_document['schemas'].map {|n| n['id'] }).to(eq([schema]))
+        expect(serialized_document.keys).to(eq(["schemas", schema]))
+        expect(serialized_document["schemas"].map { |n| n["id"] }).to(eq([schema]))
       end
 
       it "correctly finds elements by jmespath expression" do
-        expect(serialized_document['schemas'].first['entities']
-                .map {|n| n['id'] }).to(eq(entities_names))
+        expect(serialized_document["schemas"].first["entities"]
+                .map { |n| n["id"] }).to(eq(entities_names))
       end
     end
   end
