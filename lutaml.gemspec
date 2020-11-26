@@ -25,9 +25,7 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   spec.add_runtime_dependency "thor", "~> 1.0"
-  # spec.add_runtime_dependency "activesupport", "~> 5.0"
   spec.add_runtime_dependency "lutaml-uml", "~> 0.2.5"
-  # spec.add_runtime_dependency "lutaml-sysml"
   spec.add_runtime_dependency "lutaml-express", "~> 0.1.3"
   spec.add_development_dependency "jmespath", "~> 1.4"
   spec.add_development_dependency "nokogiri", "~> 1.10"
