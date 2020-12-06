@@ -47,7 +47,7 @@ RSpec.describe Lutaml::Express::LutamlPath::DocumentWrapper do
           .to(eq(formatted_entity_2))
       end
 
-      it "correctly finds elements by jmespath expression" do
+      it "correctly finds elements by structure" do
         expect(serialized_document["schemas"].first["entities"]
                 .map { |n| n["id"] }).to(eq(entities_names))
       end

@@ -1,0 +1,72 @@
+[1mUsage:[0m lutaml [options] PATHS
+
+[1mOverview:[0m Generate output from Supplied language files if supported
+
+[1mOptions:[0m
+
+    -f, --formatter VALUE            The output formatter (Default: 'graphviz')
+    -t, --type VALUE                 The output format type
+    -o, --output VALUE               The output path
+    -i, --input-format VALUE         The input format
+    -h, --help                       Prints this help
+
+[1mPaths:[0m
+
+    LUTAML can accept multiple paths for parsing for easier batch processing.
+
+    The location of the output by default is standard output.
+
+    The output can be directed to a path with [1m[3m--output[0m[0m, which can be a file or a directory.
+    If the output path is a directory, then the filename will be the same as the input filename,
+      with it's file extension substituted with the [1m[3m--type[0m[0m.
+
+    [4mExamples[0m
+
+        `lutaml project.lutaml`
+
+            Produces DOT notation, sent to standard output
+
+        `lutaml -o . project.lutaml`
+
+            Produces DOT notation, written to [3m./project.dot[0m
+
+        `lutaml -o ./diagram.dot project.lutaml`
+
+            Produces DOT notation, written to [3m./diagram.dot[0m
+
+        `lutaml -o ./diagram.png project.lutaml`
+
+            Produces PNG image, written to [3m./diagram.png[0m
+
+        `lutaml -t png -o . project.lutaml`
+
+            Produces PNG image, written to [3m./project.png[0m
+
+        `lutaml -t png -o . project.lutaml core_ext.lutaml`
+
+            Produces PNG images, written to [3m./project.png[0m and [3m./core_ext.png[0m
+
+[1mInputs:[0m
+
+    [4mLutaml[0m
+
+      Lutaml dsl syntax files, supports diagram generation(image or dot files) with Graphviz
+
+[1mFormatters:[0m
+
+    [4mGraphviz[0m
+
+      Generates DOT notation and can use the DOT notation to generate any format Graphviz can produce.
+
+      The output format is based on [1m[3m--type[0m[0m, which by default is "dot".
+      If [1m[3m--type[0m[0m is not given and [1m[3m--output[0m[0m is, the file extension of the [1m[3m--output[0m[0m path will be used.
+
+      Valid types/extensions are: dot, xdot, ps, pdf, svg, svgz, fig, png, gif, jpg, jpeg, json, imap, cmapx
+
+      [1mOptions:[0m
+
+          -g, --graph VALUE                The graph attributes
+          -e, --edge VALUE                 The edge attributes
+          -n, --node VALUE                 The node attributes
+          -a, --all VALUE                  Set attributes for graph, edge, and node
+

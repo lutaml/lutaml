@@ -30,13 +30,31 @@ $ gem install lutaml
 
 === Usage
 
-In order to parse files supported by lutaml extensions, use Lutaml::Parser.parse method(currently only .exp are supported):
+== From ruby
+
+In order to parse files supported by lutaml extensions, use Lutaml::Parser.parse method.
 
 [source,ruby]
 ----
 # example.exp is an EXPRESS repository file
 Lutaml::Parser.parse(File.new("example.exp")) # will produce Lutaml::LutamlPath::DocumentWrapper object with serialized express repository
 ----
+
+== With cli tool
+
+There is a cli tool available for parsing lutaml/exp files(also yaml datastruct files are supported).
+
+[source,bash]
+----
+# Will generate `test.dot` file in the current directory
+$: lutaml -o . test.lutaml
+
+# Will generate `test.png` file in the `assets` directory
+$: lutaml -o assets -t png test.lutaml
+----
+
+For additional info refer to `lutaml --help output`
+
 
 == Development
 
