@@ -30,6 +30,8 @@ jobs:
         uses: actions/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
+      - name: Install Grpahviz macOS
+        run: brew install graphviz
       - name: Update gems
         run: |
           sudo gem install bundler --force
