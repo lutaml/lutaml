@@ -41,7 +41,7 @@ RSpec.describe Lutaml::CommandLine do
             .to(change do
               output.rewind
               output.read
-            end.to(result_dot_string))
+            end.to(match('digraph G {')))
         end
       end
 

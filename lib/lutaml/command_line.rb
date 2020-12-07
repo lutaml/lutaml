@@ -70,7 +70,6 @@ module Lutaml
 
     def run(original_args)
       args = original_args.dup
-      puts(args.inspect)
       @option_parser.parse!(args) rescue nil
       @paths = args
       @formatter.type = @type
