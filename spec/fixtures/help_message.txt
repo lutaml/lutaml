@@ -9,6 +9,10 @@
     -o, --output VALUE               The output path
     -i, --input-format VALUE         The input format
     -h, --help                       Prints this help
+    -g, --graph VALUE
+    -e, --edge VALUE
+    -n, --node VALUE
+    -a, --all VALUE
 
 [1mPaths:[0m
 

@@ -70,14 +70,8 @@ module Lutaml
 
     def run(original_args)
       args = original_args.dup
-      begin
-        @option_parser.parse!(args)
-      rescue StandardError
-        nil
-      end
-      setup_parser_formatter_options
-      @option_parser.parse!
-
+      puts(args.inspect)
+      @option_parser.parse!(args) rescue nil
       @paths = args
       @formatter.type = @type
 
@@ -167,35 +161,29 @@ module Lutaml
         print_help
         exit
       end
-    end
-
-    def setup_parser_formatter_options
-      case @formatter.name
-      when :graphviz
-        @option_parser.on("-g", "--graph VALUE") do |value|
-          Parsers::Attribute.parse(value).each do |key, attr_value|
-            @formatter.graph[key] = attr_value
-          end
+      @option_parser.on("-g", "--graph VALUE") do |value|
+        Parsers::Attribute.parse(value).each do |key, attr_value|
+          @formatter.graph[key] = attr_value
         end
+      end
 
-        @option_parser.on("-e", "--edge VALUE") do |value|
-          Parsers::Attribute.parse(value).each do |key, attr_value|
-            @formatter.edge[key] = attr_value
-          end
+      @option_parser.on("-e", "--edge VALUE") do |value|
+        Parsers::Attribute.parse(value).each do |key, attr_value|
+          @formatter.edge[key] = attr_value
         end
+      end
 
-        @option_parser.on("-n", "--node VALUE") do |value|
-          Parsers::Attribute.parse(value).each do |key, attr_value|
-            @formatter.node[key] = attr_value
-          end
+      @option_parser.on("-n", "--node VALUE") do |value|
+        Parsers::Attribute.parse(value).each do |key, attr_value|
+          @formatter.node[key] = attr_value
         end
+      end
 
-        @option_parser.on("-a", "--all VALUE") do |value|
-          Parsers::Attribute.parse(value).each do |key, attr_value|
-            @formatter.graph[key] = attr_value
-            @formatter.edge[key] = attr_value
-            @formatter.node[key] = attr_value
-          end
+      @option_parser.on("-a", "--all VALUE") do |value|
+        Parsers::Attribute.parse(value).each do |key, attr_value|
+          @formatter.graph[key] = attr_value
+          @formatter.edge[key] = attr_value
+          @formatter.node[key] = attr_value
         end
       end
     end
