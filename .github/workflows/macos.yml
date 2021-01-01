@@ -25,7 +25,7 @@ jobs:
       - uses: actions/checkout@master
       - name: Install libxml2
         run: |
-          sudo brew install libxml2
+          brew install libxml2
       - name: Use Ruby
         uses: actions/setup-ruby@v1
         with:
