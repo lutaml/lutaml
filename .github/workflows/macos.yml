@@ -23,9 +23,9 @@ jobs:
             experimental: true
     steps:
       - uses: actions/checkout@master
-      - name: Install libxml2
+      - name: Install build tools
         run: |
-          brew install libxml2
+          brew install automake libtool
       - name: Use Ruby
         uses: actions/setup-ruby@v1
         with:
