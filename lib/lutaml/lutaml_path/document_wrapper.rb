@@ -26,6 +26,8 @@ module Lutaml
       end
 
       def serialize_to_hash(object)
+        return object if [String, Integer, Float].include?(object.class)
+
         object.instance_variables.each_with_object({}) do |var, res|
           variable = object.instance_variable_get(var)
           res[var.to_s.gsub("@", "")] = if variable.is_a?(Array)

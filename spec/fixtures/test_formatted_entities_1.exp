@@ -1,0 +1,5 @@
+ENTITY a3m_data_quality_criteria_representation
+  SUBTYPE OF (data_quality_criteria_representation);
+  WHERE
+    WR1 : SIZEOF(QUERY(q <* SELF\representation.items | 'ANNOTATED_3D_MODEL_DATA_QUALITY_CRITERIA_SCHEMA.' + 'A3M_DATA_QUALITY_CRITERION' IN TYPEOF(q))) > 0;
+END_ENTITY;

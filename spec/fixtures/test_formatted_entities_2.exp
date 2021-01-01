@@ -1,0 +1,9 @@
+ENTITY a3m_data_quality_criterion
+  ABSTRACT SUPERTYPE
+  SUBTYPE OF (data_quality_criterion, data_quality_measurement_requirement);
+  assessment_specification : shape_data_quality_assessment_specification_select;
+  measured_data_type : a3m_data_quality_measured_data_type_name;
+  inspected_elements_types : LIST [1:?] OF a3m_data_quality_inspected_element_type_name;
+  accuracy_types : LIST [0:?] OF a3m_data_quality_accuracy_type_name;
+  location_of_extreme_value_types : LIST [0:?] OF a3m_data_quality_type_name_for_location_of_extreme_value;
+END_ENTITY;
