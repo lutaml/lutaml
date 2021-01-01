@@ -34,16 +34,16 @@ RSpec.describe Lutaml::Express::LutamlPath::DocumentWrapper do
         expect(serialized_document["schemas"]
                 .map { |n| n["id"] })
           .to(eq([schema]))
-        expect(serialized_document["schemas"].first['remarks'])
+        expect(serialized_document["schemas"].first["remarks"])
           .to(eq([schema_remark.strip]))
       end
 
       it "merges source code into all schemas and their entities" do
-        expect(serialized_document["schemas"].first['sourcecode'])
+        expect(serialized_document["schemas"].first["sourcecode"])
           .to(eq(formatted_repository))
-        expect(serialized_document["schemas"].first['entities'].first['sourcecode'])
+        expect(serialized_document["schemas"].first["entities"].first["sourcecode"])
           .to(eq(formatted_entity_1))
-        expect(serialized_document["schemas"].first['entities'][1]['sourcecode'])
+        expect(serialized_document["schemas"].first["entities"][1]["sourcecode"])
           .to(eq(formatted_entity_2))
       end
 
