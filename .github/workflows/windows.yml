@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ruby: [ '2.6', '2.5', '2.4' ]
+        ruby: [ '2.6', '2.5' ]
         experimental: [false]
         # Does not supported yet:
         # Ruby (< 2.7.dev, >= 2.3), which is required by gem 'nokogiri (~> 1.10)', is not
