@@ -7,7 +7,7 @@ RSpec.describe Lutaml::Parser do
     context "when exp file supplied" do
       let(:input) { File.new(fixtures_path("test.exp")) }
 
-      it "calls Lutaml::Express::Parsers::Exp" do
+      xit "calls Lutaml::Express::Parsers::Exp" do
         allow(Lutaml::Express::Parsers::Exp).to receive(:parse)
         allow(Lutaml::Express::LutamlPath::DocumentWrapper).to receive(:new)
         parse
