@@ -29,6 +29,8 @@ jobs:
         uses: actions/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
+      - name: Install Grpahviz Ubuntu
+        run: sudo apt-get install graphviz
       - name: Update gems
         run: |
           gem install bundler

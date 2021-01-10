@@ -31,7 +31,9 @@ module Lutaml
         object.instance_variables.each_with_object({}) do |var, res|
           variable = object.instance_variable_get(var)
           res[var.to_s.gsub("@", "")] = if variable.is_a?(Array)
-                                          variable.map { |n| serialize_to_hash(n) }
+                                          variable.map do |n|
+                                            serialize_to_hash(n)
+                                          end
                                         else
                                           variable
                                         end

@@ -30,6 +30,13 @@ jobs:
         uses: actions/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
+      - name: Install graphviz
+        uses: nick-invision/retry@v1
+        with:
+          polling_interval_seconds: 5
+          timeout_minutes: 5
+          max_attempts: 3
+          command: choco install --no-progress graphviz --version 2.38.0.20190211
       - name: Update gems
         shell: pwsh
         run: |
