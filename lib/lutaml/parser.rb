@@ -29,8 +29,8 @@ module Lutaml
 
     def parse_into_document
       case parse_type
-      # when "exp"
-      #   Lutaml::Express::Parsers::Exp.parse(file)
+      when "exp"
+        Lutaml::Express::Parsers::Exp.parse(file)
       when "lutaml"
         Lutaml::Uml::Parsers::Dsl.parse(file)
       when "yml"
