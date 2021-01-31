@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-__END__
+
 RSpec.describe Lutaml::Express::LutamlPath::DocumentWrapper do
   describe ".parse" do
     subject(:lutaml_path) { described_class.new(repository) }

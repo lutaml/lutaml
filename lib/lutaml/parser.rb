@@ -1,7 +1,7 @@
-# require "lutaml/express"
+require "lutaml/express"
 require "lutaml/uml"
 require "lutaml/uml/lutaml_path/document_wrapper"
-# require "lutaml/express/lutaml_path/document_wrapper"
+require "lutaml/express/lutaml_path/document_wrapper"
 
 module Lutaml
   class Parser
