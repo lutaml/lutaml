@@ -26,7 +26,7 @@ module Lutaml
       end
 
       def serialize_to_hash(object)
-        return object if [String, Integer, Float].include?(object.class)
+        return object if [String, Integer, Float, FalseClass, TrueClass, Symbol, NilClass].include?(object.class)
 
         object.instance_variables.each_with_object({}) do |var, res|
           variable = object.instance_variable_get(var)
@@ -35,10 +35,10 @@ module Lutaml
                                             serialize_to_hash(n)
                                           end
                                         else
-                                          if variable.is_a?(Expressir::Model::Types::Select) || variable.is_a?(Expressir::Model::Types::Enumeration)
-                                            serialize_to_hash(variable)
-                                          else
+                                          if [String, Integer, Float, FalseClass, TrueClass, Symbol, NilClass].include?(variable.class) || var == :@parent
                                             variable
+                                          else
+                                            serialize_to_hash(variable)
                                           end
                                         end
         end
