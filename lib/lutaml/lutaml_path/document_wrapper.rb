@@ -22,7 +22,7 @@ module Lutaml
           return attr_value.map(&method(:serialize_to_hash))
         end
 
-        attr_value
+        serialize_to_hash(attr_value)
       end
 
       def serialize_to_hash(object)
