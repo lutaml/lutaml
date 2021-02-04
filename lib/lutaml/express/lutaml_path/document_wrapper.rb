@@ -18,6 +18,7 @@ module Lutaml
           subtype_constraints
           types
           version
+          head_source
         ].freeze
         SOURCE_CODE_ATTRIBUTE_NAME = "sourcecode".freeze
 
