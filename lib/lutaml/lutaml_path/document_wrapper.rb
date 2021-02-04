@@ -35,7 +35,11 @@ module Lutaml
                                             serialize_to_hash(n)
                                           end
                                         else
-                                          variable
+                                          if variable.is_a?(Expressir::Model::Types::Select)
+                                            serialize_to_hash(variable)
+                                          else
+                                            variable
+                                          end
                                         end
         end
       end
