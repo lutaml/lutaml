@@ -19,6 +19,7 @@ module Lutaml
           types
           version
           head_source
+          type
         ].freeze
         SOURCE_CODE_ATTRIBUTE_NAME = "sourcecode".freeze
 
