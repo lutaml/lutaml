@@ -1,7 +1,7 @@
-# require "lutaml/express"
+require "lutaml/express"
 require "lutaml/uml"
 require "lutaml/uml/lutaml_path/document_wrapper"
-# require "lutaml/express/lutaml_path/document_wrapper"
+require "lutaml/express/lutaml_path/document_wrapper"
 
 module Lutaml
   class Parser
@@ -29,8 +29,8 @@ module Lutaml
 
     def parse_into_document
       case parse_type
-      # when "exp"
-      #   Lutaml::Express::Parsers::Exp.parse(file)
+      when "exp"
+        Lutaml::Express::Parsers::Exp.parse(file)
       when "lutaml"
         Lutaml::Uml::Parsers::Dsl.parse(file)
       when "yml"

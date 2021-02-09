@@ -5,20 +5,6 @@ module Lutaml
   module Express
     module LutamlPath
       class DocumentWrapper < ::Lutaml::LutamlPath::DocumentWrapper
-        SCHEMA_ATTRIBUTES = %w[
-          id
-          constants
-          declarations
-          entities
-          functions
-          interfaces
-          procedures
-          remarks
-          rules
-          subtype_constraints
-          types
-          version
-        ].freeze
         SOURCE_CODE_ATTRIBUTE_NAME = "sourcecode".freeze
 
         protected
@@ -26,20 +12,27 @@ module Lutaml
         def serialize_document(repository)
           repository.schemas.each_with_object({}) do |schema, res|
             res["schemas"] ||= []
-            serialized_schema = SCHEMA_ATTRIBUTES
-              .each_with_object({}) do |name, nested_res|
-              attr_value = schema.send(name)
-              nested_res[name] = serialize_value(attr_value)
-              if name == "entities"
-                nested_res[name] = merge_source_code_attr(nested_res[name],
-                                                          attr_value)
+            res[schema.id] = serialize_value(schema).merge(SOURCE_CODE_ATTRIBUTE_NAME => entity_source_code(schema))
+            res["schemas"].push(res[schema.id])
+          end
+        end
+
+        def serialize_value(object)
+          object.instance_variables.each_with_object({}) do |var, res|
+            variable = object.instance_variable_get(var)
+            if variable.respond_to?(:to_hash)
+              res[var.to_s.gsub("@", "")] = variable.to_hash.merge(SOURCE_CODE_ATTRIBUTE_NAME => entity_source_code(variable))
+            elsif variable.is_a?(Array)
+              res[var.to_s.gsub("@", "")] = variable.map do |entity|
+                if entity.respond_to?(:to_hash)
+                  entity.to_hash.merge(SOURCE_CODE_ATTRIBUTE_NAME => entity_source_code(entity))
+                else
+                  entity
+                end
               end
+            else
+              res[var.to_s.gsub("@", "")] = variable
             end
-            res[schema.id] = serialized_schema
-            serialized_schema = serialized_schema
-              .merge(SOURCE_CODE_ATTRIBUTE_NAME =>
-                                          entity_source_code(schema))
-            res["schemas"].push(serialized_schema)
           end
         end
 
