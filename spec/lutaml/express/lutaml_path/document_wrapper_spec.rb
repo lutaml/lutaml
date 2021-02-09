@@ -36,11 +36,11 @@ RSpec.describe Lutaml::Express::LutamlPath::DocumentWrapper do
       end
 
       it "merges source code into all schemas and their entities" do
-        expect(serialized_document["schemas"].first["sourcecode"].length)
+        expect(serialized_document["schemas"].first["source"].length)
           .to(be_positive)
-        expect(serialized_document["schemas"].first["entities"].first["sourcecode"].length)
+        expect(serialized_document["schemas"].first["entities"].first["source"].length)
           .to(be_positive)
-        expect(serialized_document["schemas"].first["entities"][1]["sourcecode"].length)
+        expect(serialized_document["schemas"].first["entities"][1]["source"].length)
           .to(be_positive)
       end
 
