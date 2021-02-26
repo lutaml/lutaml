@@ -27,25 +27,24 @@ RSpec.describe Lutaml::Express::LutamlPath::DocumentWrapper do
       end
 
       it "serializes repository attributes" do
-        expect(serialized_document.keys).to(eq(["schemas", schema]))
-        expect(serialized_document["schemas"]
+        expect(serialized_document
                 .map { |n| n["id"] })
           .to(eq([schema]))
-        expect(serialized_document["schemas"].first["remarks"])
+        expect(serialized_document.first["remarks"])
           .to(eq([schema_remark.strip]))
       end
 
       it "merges source code into all schemas and their entities" do
-        expect(serialized_document["schemas"].first["source"].length)
+        expect(serialized_document.first["source"].length)
           .to(be_positive)
-        expect(serialized_document["schemas"].first["entities"].first["source"].length)
+        expect(serialized_document.first["entities"].first["source"].length)
           .to(be_positive)
-        expect(serialized_document["schemas"].first["entities"][1]["source"].length)
+        expect(serialized_document.first["entities"][1]["source"].length)
           .to(be_positive)
       end
 
       it "correctly finds elements by structure" do
-        expect(serialized_document["schemas"].first["entities"]
+        expect(serialized_document.first["entities"]
                 .map { |n| n["id"] }).to(eq(entities_names))
       end
     end
