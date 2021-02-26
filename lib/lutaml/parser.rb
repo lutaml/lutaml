@@ -5,36 +5,40 @@ require "lutaml/express/lutaml_path/document_wrapper"
 
 module Lutaml
   class Parser
-    attr_reader :parse_type, :file
+    attr_reader :parse_type, :file_list
 
     class << self
-      def parse(file, input_type = nil)
-        new(file, input_type).parse
+      def parse(file_list, input_type = nil)
+        file_list = file_list.is_a?(Array) ? file_list : [file_list]
+        new(Array(file_list), input_type).parse
       end
 
-      def parse_into_document(file, input_type = nil)
-        new(file, input_type).parse_into_document
+      def parse_into_document(file_list, input_type = nil)
+        file_list = file_list.is_a?(Array) ? file_list : [file_list]
+        new(Array(file_list), input_type).parse_into_document
       end
     end
 
-    def initialize(file, input_type)
-      @parse_type = input_type ? input_type : File.extname(file.path)[1..-1]
-      @file = file
+    def initialize(file_list, input_type)
+      @parse_type = input_type ? input_type : File.extname(file_list.first.path)[1..-1]
+      @file_list = file_list
     end
 
     def parse
-      document = parse_into_document
-      document_wrapper(document)
+      documents = parse_into_document
+      return [document_wrapper(documents)] if parse_type == "exp"
+
+      documents.map { |doc| document_wrapper(doc) }
     end
 
     def parse_into_document
       case parse_type
       when "exp"
-        Lutaml::Express::Parsers::Exp.parse(file)
+        Expressir::ExpressExp::Parser.from_files(file_list.map(&:path))
       when "lutaml"
-        Lutaml::Uml::Parsers::Dsl.parse(file)
+        file_list.map { |file| Lutaml::Uml::Parsers::Dsl.parse(file) }
       when "yml"
-        Lutaml::Uml::Parsers::Yaml.parse(file.path)
+        file_list.map { |file| Lutaml::Uml::Parsers::Yaml.parse(file.path) }
       else
         raise ArgumentError, "Unsupported file format"
       end

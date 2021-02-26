@@ -88,6 +88,7 @@ module Lutaml
 
         document = Lutaml::Parser
           .parse_into_document(File.new(input_path), @input_format)
+          .first
         result = @formatter.format(document)
 
         if @output_path
