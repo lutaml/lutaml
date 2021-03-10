@@ -1,3 +1,5 @@
+image:https://img.shields.io/gem/v/lutaml-express.svg["Gem Version", link="https://rubygems.org/gems/lutaml-express"]
+// image:https://codeclimate.com/github/lutaml/lutaml-express/badges/gpa.svg["Code Climate", link="https://codeclimate.com/github/lutaml/lutaml-express"]
 image:https://github.com/lutaml/lutaml-express/workflows/rake/badge.svg["Build Status", link="https://github.com/lutaml/lutaml-express/actions?workflow=rake"]
 
 = lutaml-express
