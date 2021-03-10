@@ -1,3 +1,5 @@
+image:https://github.com/lutaml/lutaml-express/workflows/rake/badge.svg["Build Status", link="https://github.com/lutaml/lutaml-express/actions?workflow=rake"]
+
 = lutaml-express
 
 == Functionality
