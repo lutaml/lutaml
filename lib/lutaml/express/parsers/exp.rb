@@ -13,7 +13,7 @@ module Lutaml
         #
         # @return [Expressir::Model::Repository]
         def self.parse(io, options = {})
-          Expressir::ExpressExp::Parser.from_exp(io.path)
+          Expressir::ExpressExp::Parser.from_file(io.path)
         end
       end
     end
