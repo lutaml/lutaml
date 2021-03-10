@@ -1,0 +1,43 @@
+name: release
+
+on:
+  workflow_dispatch:
+    inputs:
+      next_version:
+        description: |
+          Next release version. Possible values: x.y.z, major, minor, patch or pre|rc|etc
+        required: true
+        default: 'patch'
+  push:
+    tags: [ v* ]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+
+      - run: gem install gem-release
+
+      - if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          gem bump --version ${{ github.event.inputs.next_version }} --tag --push
+
+      - name: publish to rubygems.org
+        env:
+          RUBYGEMS_API_KEY: ${{ secrets.LUTAML_CI_RUBYGEMS_API_KEY }}
+        run: |
+          gem install gem-release
+          cat > ~/.gem/credentials << EOF
+          ---
+          :rubygems_api_key: ${RUBYGEMS_API_KEY}
+          EOF
+          chmod 0600 ~/.gem/credentials
+          gem release
