@@ -1,9 +1,10 @@
 module Lutaml
   module LutamlPath
     class DocumentWrapper
-      attr_reader :serialized_document
+      attr_reader :serialized_document, :original_document
 
       def initialize(document)
+        @original_document = document
         @serialized_document = serialize_document(document)
       end
 

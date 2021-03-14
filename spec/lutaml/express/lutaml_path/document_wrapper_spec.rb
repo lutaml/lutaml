@@ -11,7 +11,7 @@ RSpec.describe Lutaml::Express::LutamlPath::DocumentWrapper do
 
     context "when simple diagram without attributes" do
       let(:repository) do
-        Lutaml::Express::Parsers::Exp.parse(File.new(fixtures_path("test.exp")))
+        Expressir::ExpressExp::Parser.from_files([File.new(fixtures_path("test.exp"))])
       end
       let(:schema) { "annotated_3d_model_data_quality_criteria_schema" }
       let(:schema_remark) { File.read(fixtures_path("schema_remark.txt")) }

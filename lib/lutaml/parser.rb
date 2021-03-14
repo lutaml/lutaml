@@ -2,9 +2,12 @@ require "lutaml/express"
 require "lutaml/uml"
 require "lutaml/uml/lutaml_path/document_wrapper"
 require "lutaml/express/lutaml_path/document_wrapper"
+require "expressir/express_exp/cache"
 
 module Lutaml
   class Parser
+    EXPRESS_CACHE_PARSE_TYPE = "exp.cache".freeze
+
     attr_reader :parse_type, :file_list
 
     class << self
@@ -26,7 +29,7 @@ module Lutaml
 
     def parse
       documents = parse_into_document
-      return [document_wrapper(documents)] if parse_type == "exp"
+      return [document_wrapper(documents)] if ["exp", EXPRESS_CACHE_PARSE_TYPE].include?(parse_type)
 
       documents.map { |doc| document_wrapper(doc) }
     end
@@ -35,6 +38,8 @@ module Lutaml
       case parse_type
       when "exp"
         Expressir::ExpressExp::Parser.from_files(file_list.map(&:path))
+      when EXPRESS_CACHE_PARSE_TYPE
+        Expressir::ExpressExp::Cache.from_file(file_list.first.path)
       when "lutaml"
         file_list.map { |file| Lutaml::Uml::Parsers::Dsl.parse(file) }
       when "yml"
@@ -47,7 +52,7 @@ module Lutaml
     private
 
     def document_wrapper(document)
-      if parse_type == "exp"
+      if ["exp", EXPRESS_CACHE_PARSE_TYPE].include?(parse_type)
         return Lutaml::Express::LutamlPath::DocumentWrapper.new(document)
       end
 
