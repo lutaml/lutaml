@@ -37,7 +37,9 @@ In order to parse files supported by lutaml extensions, use Lutaml::Parser.parse
 [source,ruby]
 ----
 # example.exp is an EXPRESS repository file
-Lutaml::Parser.parse(File.new("example.exp")) # will produce Lutaml::LutamlPath::DocumentWrapper object with serialized express repository
+Lutaml::Parser.parse([File.new("example.exp")]) # will produce Lutaml::LutamlPath::DocumentWrapper object with serialized express repository
+# example.yaml is an EXPRESS cache file
+Lutaml::Parser.parse([File.new("example.yaml")], ::Lutaml::Parser::EXPRESS_CACHE_PARSE_TYPE)
 ----
 
 == With cli tool
