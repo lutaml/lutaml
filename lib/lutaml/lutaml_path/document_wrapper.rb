@@ -27,7 +27,7 @@ module Lutaml
       end
 
       def serialize_to_hash(object)
-        return object if [String, Integer, Float, FalseClass, TrueClass, Symbol, NilClass].include?(object.class)
+        return object if [String, Integer, Float, FalseClass, TrueClass, Symbol, NilClass, Hash].include?(object.class)
 
         object.instance_variables.each_with_object({}) do |var, res|
           variable = object.instance_variable_get(var)
@@ -36,7 +36,7 @@ module Lutaml
                                             serialize_to_hash(n)
                                           end
                                         else
-                                          if [String, Integer, Float, FalseClass, TrueClass, Symbol, NilClass].include?(variable.class) || var == :@parent
+                                          if [String, Integer, Float, FalseClass, TrueClass, Symbol, NilClass, Hash].include?(variable.class) || var == :@parent
                                             variable
                                           else
                                             serialize_to_hash(variable)
