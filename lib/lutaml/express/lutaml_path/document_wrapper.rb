@@ -9,7 +9,7 @@ module Lutaml
 
         def serialize_document(repository)
           repository
-            .to_hash(formatter: Formatter)['schemas']
+            .to_hash(formatter: Formatter)
         end
       end
     end

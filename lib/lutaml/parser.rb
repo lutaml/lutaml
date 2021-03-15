@@ -29,7 +29,7 @@ module Lutaml
 
     def parse
       documents = parse_into_document
-      return [document_wrapper(documents)] if ["exp", EXPRESS_CACHE_PARSE_TYPE].include?(parse_type)
+      return document_wrapper(documents) if ["exp", EXPRESS_CACHE_PARSE_TYPE].include?(parse_type)
 
       documents.map { |doc| document_wrapper(doc) }
     end
