@@ -18,6 +18,17 @@ RSpec.describe Lutaml::Parser do
       end
     end
 
+    context 'when xmi file supplied' do
+      let(:input) { File.new(fixtures_path("ea-xmi-2.4.2.xmi")) }
+
+      it "calls Lutaml::Uml::Parsers::Dsl" do
+        allow(Lutaml::XMI::Parsers::XML).to receive(:parse)
+        allow(Lutaml::Uml::LutamlPath::DocumentWrapper).to receive(:new)
+        parse
+        expect(Lutaml::XMI::Parsers::XML).to have_received(:parse)
+      end
+    end
+
     context "when lutaml file supplied" do
       let(:input) { File.new(fixtures_path("test.lutaml")) }
 
