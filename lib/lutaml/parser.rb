@@ -1,5 +1,6 @@
 require "lutaml/express"
 require "lutaml/uml"
+require "lutaml/xmi"
 require "lutaml/uml/lutaml_path/document_wrapper"
 require "lutaml/express/lutaml_path/document_wrapper"
 require "expressir/express_exp/cache"
@@ -40,6 +41,8 @@ module Lutaml
         Expressir::ExpressExp::Parser.from_files(file_list.map(&:path))
       when EXPRESS_CACHE_PARSE_TYPE
         Expressir::ExpressExp::Cache.from_file(file_list.first.path)
+      when 'xmi'
+        file_list.map { |file| Lutaml::XMI::Parsers::XML.parse(file) }
       when "lutaml"
         file_list.map { |file| Lutaml::Uml::Parsers::Dsl.parse(file) }
       when "yml"
