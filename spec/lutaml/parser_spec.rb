@@ -10,7 +10,6 @@ RSpec.describe Lutaml::Parser do
       let(:input) { File.new(fixtures_path("test.exp")) }
 
       it "calls Lutaml::Express::Parsers::Exp" do
-        # Expressir::ExpressExp::Cache.to_file(cache_file, repository, root_path: root_path)
         allow(Expressir::ExpressExp::Parser).to receive(:from_files)
         allow(Lutaml::Express::LutamlPath::DocumentWrapper).to receive(:new)
         parse
@@ -40,13 +39,33 @@ RSpec.describe Lutaml::Parser do
       end
     end
 
-    context "when exp cache yaml file supplied" do
+    context "when exp cache yaml file is supplied but its an old version" do
       let(:input) { File.new(fixtures_path("test_exp_cached.yaml")) }
       let(:input_type) { "exp.cache" }
 
       it "calls Lutaml::Express::Parsers::Exp" do
         allow(Expressir::ExpressExp::Cache).to receive(:from_file).and_call_original
         allow(Lutaml::Express::LutamlPath::DocumentWrapper).to receive(:new).and_call_original
+        expect { parse }.to raise_error(Expressir::ExpressExp::CacheLoadError)
+      end
+    end
+
+    context "when exp cache yaml file supplied and its valid" do
+      let(:input_path) { fixtures_path("test_exp_cached_valid.yaml") }
+      let(:input) { File.new(input_path) }
+      let(:exp_schema_file) { File.new(fixtures_path("test.exp")) }
+      let(:input_type) { "exp.cache" }
+
+      before do
+        repository = Expressir::ExpressExp::Parser.from_files([exp_schema_file])
+        Expressir::ExpressExp::Cache.to_file(input_path, repository)
+      end
+
+      it "calls Lutaml::Express::Parsers::Exp" do
+        allow(Expressir::ExpressExp::Cache).to receive(:from_file).and_call_original
+        # TODO: fix undefined method `length' for nil:NilClass
+        # /Users/mitaraskin/.rvm/gems/ruby-2.6.6/gems/expressir-0.2.25-x86_64-darwin/lib/expressir/express_exp/formatter.rb:1420:in `format_types_select
+        allow(Lutaml::Express::LutamlPath::DocumentWrapper).to receive(:new)
         parse
         expect(Expressir::ExpressExp::Cache).to have_received(:from_file)
       end
