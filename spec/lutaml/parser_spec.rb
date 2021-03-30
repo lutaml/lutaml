@@ -63,9 +63,7 @@ RSpec.describe Lutaml::Parser do
 
       it "calls Lutaml::Express::Parsers::Exp" do
         allow(Expressir::ExpressExp::Cache).to receive(:from_file).and_call_original
-        # TODO: fix undefined method `length' for nil:NilClass
-        # /Users/mitaraskin/.rvm/gems/ruby-2.6.6/gems/expressir-0.2.25-x86_64-darwin/lib/expressir/express_exp/formatter.rb:1420:in `format_types_select
-        allow(Lutaml::Express::LutamlPath::DocumentWrapper).to receive(:new)
+        allow(Lutaml::Express::LutamlPath::DocumentWrapper).to receive(:new).and_call_original
         parse
         expect(Expressir::ExpressExp::Cache).to have_received(:from_file)
       end
