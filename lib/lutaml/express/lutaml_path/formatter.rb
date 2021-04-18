@@ -1,13 +1,13 @@
-require "expressir/express_exp/formatter"
-require "expressir/express_exp/schema_head_formatter"
-require "expressir/express_exp/hyperlink_formatter"
+require "expressir/express/formatter"
+require "expressir/express/schema_head_formatter"
+require "expressir/express/hyperlink_formatter"
 
 module Lutaml
   module Express
     module LutamlPath
-      class Formatter < Expressir::ExpressExp::Formatter
-        include Expressir::ExpressExp::SchemaHeadFormatter
-        include Expressir::ExpressExp::HyperlinkFormatter
+      class Formatter < Expressir::Express::Formatter
+        include Expressir::Express::SchemaHeadFormatter
+        include Expressir::Express::HyperlinkFormatter
       end
     end
   end
