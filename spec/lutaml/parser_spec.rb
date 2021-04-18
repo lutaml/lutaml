@@ -10,10 +10,10 @@ RSpec.describe Lutaml::Parser do
       let(:input) { File.new(fixtures_path("test.exp")) }
 
       it "calls Lutaml::Express::Parsers::Exp" do
-        allow(Expressir::ExpressExp::Parser).to receive(:from_files)
+        allow(Expressir::Express::Parser).to receive(:from_files)
         allow(Lutaml::Express::LutamlPath::DocumentWrapper).to receive(:new)
         parse
-        expect(Expressir::ExpressExp::Parser).to have_received(:from_files)
+        expect(Expressir::Express::Parser).to have_received(:from_files)
       end
     end
 
@@ -44,9 +44,9 @@ RSpec.describe Lutaml::Parser do
       let(:input_type) { "exp.cache" }
 
       it "calls Lutaml::Express::Parsers::Exp" do
-        allow(Expressir::ExpressExp::Cache).to receive(:from_file).and_call_original
+        allow(Expressir::Express::Cache).to receive(:from_file).and_call_original
         allow(Lutaml::Express::LutamlPath::DocumentWrapper).to receive(:new).and_call_original
-        expect { parse }.to raise_error(Expressir::ExpressExp::CacheLoadError)
+        expect { parse }.to raise_error(Expressir::Error)
       end
     end
 
@@ -57,15 +57,15 @@ RSpec.describe Lutaml::Parser do
       let(:input_type) { "exp.cache" }
 
       before do
-        repository = Expressir::ExpressExp::Parser.from_files([exp_schema_file])
-        Expressir::ExpressExp::Cache.to_file(input_path, repository)
+        repository = Expressir::Express::Parser.from_files([exp_schema_file])
+        Expressir::Express::Cache.to_file(input_path, repository)
       end
 
       it "calls Lutaml::Express::Parsers::Exp" do
-        allow(Expressir::ExpressExp::Cache).to receive(:from_file).and_call_original
+        allow(Expressir::Express::Cache).to receive(:from_file).and_call_original
         allow(Lutaml::Express::LutamlPath::DocumentWrapper).to receive(:new).and_call_original
         parse
-        expect(Expressir::ExpressExp::Cache).to have_received(:from_file)
+        expect(Expressir::Express::Cache).to have_received(:from_file)
       end
     end
   end
