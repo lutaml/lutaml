@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require 'expressir'
-require 'expressir/express_exp/parser'
+require 'expressir/express/parser'
 
 module Lutaml
   module Express
@@ -13,7 +13,7 @@ module Lutaml
         #
         # @return [Expressir::Model::Repository]
         def self.parse(io, options = {})
-          Expressir::ExpressExp::Parser.from_file(io.path)
+          Expressir::Express::Parser.from_file(io.path)
         end
       end
     end
