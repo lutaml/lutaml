@@ -179,7 +179,7 @@ module Lutaml
                                     "onormal"
                                   end
         # swap labels and arrows if `dir` eq to `back`
-        if attributes["dir"] == "back"
+        if attributes["dir"] == "back" && attributes["arrowtail"] != "vee"
           attributes["arrowhead"], attributes["arrowtail"] =
             [attributes["arrowtail"], attributes["arrowhead"]]
           attributes["headlabel"], attributes["taillabel"] =
