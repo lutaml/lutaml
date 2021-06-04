@@ -97,7 +97,7 @@ module Lutaml
           result += " : #{keyword}#{node.type}"
         end
         if node.cardinality
-          result += "[#{node.cardinality[:min]}..#{node.cardinality[:max]}]"
+          result += "[#{node.cardinality['min']}..#{node.cardinality['max']}]"
         end
         result = escape_html_chars(result)
         result = "<U>#{result}</U>" if node.static
@@ -288,6 +288,7 @@ module Lutaml
         associations = associations
           .lines.map { |line| "  #{line}" }.join.chomp
 
+          require 'byebug'; byebug
         <<~HEREDOC
           digraph G {
             graph [#{@graph}]
