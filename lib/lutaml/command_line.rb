@@ -70,7 +70,7 @@ module Lutaml
 
     def run(original_args)
       args = original_args.dup
-      if args.length == 0 || args.first.strip == 'help'
+      if args.length.zero? || args.first.strip == "help"
         print_help
         exit
       end
