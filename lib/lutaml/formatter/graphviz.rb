@@ -288,7 +288,6 @@ module Lutaml
         associations = associations
           .lines.map { |line| "  #{line}" }.join.chomp
 
-          require 'byebug'; byebug
         <<~HEREDOC
           digraph G {
             graph [#{@graph}]
