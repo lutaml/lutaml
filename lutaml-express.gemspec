@@ -23,7 +23,7 @@ Gem::Specification.new do |spec|
   spec.bindir        = "exe"
   spec.require_paths = ["lib"]
 
-  spec.add_runtime_dependency "expressir", "~> 1.0.0"
+  spec.add_runtime_dependency "expressir", "~> 1.2"
 
   spec.add_development_dependency "byebug"
   spec.add_development_dependency "nokogiri", "~> 1.10"
