@@ -35,6 +35,7 @@ jobs:
           RUBYGEMS_API_KEY: ${{ secrets.LUTAML_CI_RUBYGEMS_API_KEY }}
         run: |
           gem install gem-release
+          mkdir -p  ~/.gem
           cat > ~/.gem/credentials << EOF
           ---
           :rubygems_api_key: ${RUBYGEMS_API_KEY}
