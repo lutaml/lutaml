@@ -39,21 +39,21 @@ RSpec.describe Lutaml::Parser do
       end
     end
 
-    context "when exp cache yaml file is supplied but its an old version" do
+    context "when exp cache yaml file is supplied but it has an old version" do
       let(:input_path) { fixtures_path("test_exp_cached_old_version.yaml") }
       let(:input) { File.new(input_path) }
       let(:exp_schema_file) { File.new(fixtures_path("test.exp")) }
       let(:input_type) { "exp.cache" }
 
       before do
-        repository = Expressir::Express::Parser.from_files([exp_schema_file])
+        repository = Expressir::Express::Parser.from_file(fixtures_path("test.exp"))
         Expressir::Express::Cache.to_file(input_path, repository, test_overwrite_version: "0.2.21")
       end
 
-      it "calls Lutaml::Express::Parsers::Exp" do
-        allow(Expressir::Express::Cache).to receive(:from_file).and_call_original
-        allow(Lutaml::Express::LutamlPath::DocumentWrapper).to receive(:new).and_call_original
-        expect { parse }.to raise_error(Expressir::Error)
+      it "raises Expressir::Error" do
+        expect do
+          Expressir::Express::Cache.from_file(input_path)
+        end.to raise_error(Expressir::Error)
       end
     end
 
@@ -64,7 +64,7 @@ RSpec.describe Lutaml::Parser do
       let(:input_type) { "exp.cache" }
 
       before do
-        repository = Expressir::Express::Parser.from_files([exp_schema_file])
+        repository = Expressir::Express::Parser.from_file(fixtures_path("test.exp"))
         Expressir::Express::Cache.to_file(input_path, repository)
       end
 
