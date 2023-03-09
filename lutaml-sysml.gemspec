@@ -22,8 +22,11 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
   spec.executables   = %w[lutaml-sysml]
 
+  spec.required_ruby_version = '>= 2.7.0'
+
   spec.add_runtime_dependency "thor", "~> 1.0"
   # spec.add_runtime_dependency "lutaml-uml"
+  spec.add_development_dependency "lutaml-uml"
   spec.add_development_dependency "nokogiri", "~> 1.10"
 
   spec.add_development_dependency "bundler", "~> 2.0"
