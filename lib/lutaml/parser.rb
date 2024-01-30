@@ -1,6 +1,7 @@
 require "lutaml/express"
 require "lutaml/uml"
 require "lutaml/xmi"
+require "lutaml/xml"
 require "lutaml/uml/lutaml_path/document_wrapper"
 require "lutaml/express/lutaml_path/document_wrapper"
 require "expressir/express/cache"
@@ -44,6 +45,8 @@ module Lutaml
         Expressir::Express::Cache.from_file(file_list.first.path)
       when "xmi"
         file_list.map { |file| Lutaml::XMI::Parsers::XML.parse(file) }
+      when "xml"
+        file_list.map { |file| Lutaml::Xml::Parsers::Xml.parse(file) }
       when "lutaml"
         file_list.map { |file| Lutaml::Uml::Parsers::Dsl.parse(file) }
       when "yml"
@@ -58,6 +61,10 @@ module Lutaml
     def document_wrapper(document)
       if ["exp", EXPRESS_CACHE_PARSE_TYPE].include?(parse_type)
         return Lutaml::Express::LutamlPath::DocumentWrapper.new(document)
+      end
+
+      if parse_type == "xml"
+        return Lutaml::Xml::LutamlPath::DocumentWrapper.new(document)
       end
 
       Lutaml::Uml::LutamlPath::DocumentWrapper.new(document)
