@@ -1,0 +1,11 @@
+<Person age="50">
+  <FirstName>John</FirstName>
+  <LastName>Doe</LastName>
+  <Hobby>Singing</Hobby>
+  <Hobby>Dancing</Hobby>
+  <Address>
+    Oxford Street
+    <City>London</City>
+    <ZIP>E1 6AN</ZIP>
+  </Address>
+</Person>
