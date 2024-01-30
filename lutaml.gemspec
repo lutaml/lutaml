@@ -32,6 +32,7 @@ Gem::Specification.new do |spec|
   spec.add_runtime_dependency "lutaml-express"
   spec.add_runtime_dependency "lutaml-uml"
   spec.add_runtime_dependency "lutaml-xmi"
+  spec.add_runtime_dependency "shale"
   spec.add_runtime_dependency "thor", "~> 1.0"
   spec.add_runtime_dependency "nokogiri", "~> 1.10"
 
