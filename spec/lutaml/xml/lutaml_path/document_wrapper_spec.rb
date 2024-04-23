@@ -19,7 +19,7 @@ RSpec.describe Lutaml::Xml::LutamlPath::DocumentWrapper do
 
       let(:root_name) { "Person" }
 
-      subject(:serialized_document) { lutaml_path.serialized_document }
+      let(:serialized_document) { lutaml_path.serialized_document }
 
       let(:expected_serialized_hash) do
         {
