@@ -2,23 +2,22 @@
 
 require "spec_helper"
 
-require_relative "../test_classes/person"
-require_relative "../test_classes/address"
-
 RSpec.describe Lutaml::Xml::LutamlPath::DocumentWrapper do
   describe ".parse" do
-    before(:all) do
-      Lutaml::Xml::Parsers::Xml.set_document(Person)
-    end
-
-    subject(:lutaml_path) { described_class.new(parsed_xml) }
+    subject(:lutaml_path) { described_class.new(Lutaml::Xml::Parsers::Xml.parse(xml_file_path)) }
 
     context "#serialize_document" do
-      let(:xml_file) { fixtures_path("test.xml") }
+      let(:xml_file_path) { fixtures_path("test.xml") }
 
-      let(:parsed_xml) do
-        Lutaml::Xml::Parsers::Xml.parse(xml_file)
+      before(:each) do
+        Lutaml::Xml::Parsers::Xml.load_schema(schema, root_name)
       end
+
+      let(:schema) do
+        File.read(fixtures_path("schema.xml"))
+      end
+
+      let(:root_name) { "Person" }
 
       subject(:serialized_document) { lutaml_path.serialized_document }
 
@@ -27,7 +26,7 @@ RSpec.describe Lutaml::Xml::LutamlPath::DocumentWrapper do
           "Address" => {
             "City" => "London",
             "ZIP" => "E1 6AN",
-            "street" => ["Oxford Street", "", ""]
+            "content" => ["Oxford Street"]
           },
           "FirstName" => "John",
           "LastName" => "Doe",
