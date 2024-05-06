@@ -1,74 +1,105 @@
-= Lutaml
+= LutaML: Ruby library for accessing data models
 
-== Functionality
+== Purpose
 
-Entry point for lutaml extensions.
+LutaML aims to be a universal data model accessor that allows parsing
+data models in multiple languages, including:
 
-=== Installation
+* EXPRESS (https://www.expresslang.org[EXPRESS Language Foundation], ISO 10303-11)
+* XMI (from OMG)
+* UML in LutaML format
 
-With bundler:
+
+== Install
+
+With bundler, in `Gemfile`:
 
 [source,ruby]
 ----
-# Gemfile
 gem "lutaml"
 ----
 
-Then in console:
-
-[source,console]
-----
-$ bundle
-----
-
-With RubyGems:
+Directly:
 
 [source,console]
 ----
 $ gem install lutaml
 ----
 
-=== Usage
+== Usage
 
-== From ruby
+=== Parsing
 
-In order to parse files supported by lutaml extensions, use Lutaml::Parser.parse method.
+The `Lutaml::Parser.parse` method provides a single point of entry for parsing
+data model files.
+
+The return object is always a `Lutaml::LutamlPath::DocumentWrapper` object,
+where `#original_document` returns the native parsed models.
 
 [source,ruby]
 ----
-# example.exp is an EXPRESS repository file
-Lutaml::Parser.parse([File.new("example.exp")]) # will produce Lutaml::LutamlPath::DocumentWrapper object with serialized express repository
-# example.yaml is an EXPRESS cache file
-Lutaml::Parser.parse([File.new("example.yaml")], ::Lutaml::Parser::EXPRESS_CACHE_PARSE_TYPE)
+# example.exp is an EXPRESS schema file
+wrapper = Lutaml::Parser.parse([File.new("example.exp")])
+# => returns a Lutaml::LutamlPath::DocumentWrapper object
+wrapper.original_document
+# => returns the original Expressir::Repository object
 ----
 
-== With cli tool
+[source,ruby]
+----
+# example.exp.yaml is an EXPRESS cache file created with Expressir
+wrapper = Lutaml::Parser.parse([File.new("example.exp.yaml")], ::Lutaml::Parser::EXPRESS_CACHE_PARSE_TYPE)
+# => returns the DocumentWrapper but with the repository loaded from the Expressir cache file
+----
 
-There is a cli tool available for parsing lutaml/exp files(also yaml datastruct files are supported).
+
+=== Selecting EXPRESS schemas
+
+LutaML supports the `ModelElement#to_hash(..., select_proc:)` functionality
+of Expressir, allowing Expressir to only call `to_hash` on schemas that
+fit a dynamic criteria.
+
+The criteria is set via a Ruby `Proc` object, as follows.
+
+[source,ruby]
+----
+# Sets the filter
+filtered_schemas = ["action_schema", "date_time_schema"]
+
+# Sets the Proc
+wrapper.select_proc = Proc.new do |value|
+  if value.is_a?(Expressir::Model::Declarations::Schema)
+    filtered_schemas.include?(value.id)
+  else
+    true
+  end
+end
+
+serialized = wrapper.to_liquid
+# => returns the filtered to_hash method
+----
+
+
+=== CLI
+
+There is a command-line interface available for parsing supported data model files.
+
+* EXPRESS `*.exp`
+* LutaML UML `*.lutaml`
+* LutaML YAML datastruct files
 
 [source,bash]
 ----
 # Will generate `test.dot` file in the current directory
-$: lutaml -o . test.lutaml
+$ lutaml -o . test.lutaml
 
 # Will generate `test.png` file in the `assets` directory
-$: lutaml -o assets -t png test.lutaml
+$ lutaml -o assets -t png test.lutaml
 ----
 
-For additional info refer to `lutaml --help output`
+For additional info refer to `lutaml --help output`.
 
 
-== Development
+== Copyright and license
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
-
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
-
-## Contributing
-
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/lutaml. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/[USERNAME]/lutaml/blob/master/CODE_OF_CONDUCT.md).
-
-
-== Code of Conduct
-
-Everyone interacting in the Lutaml::Uml project's codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/[USERNAME]/lutaml/blob/master/CODE_OF_CONDUCT.md).
+Copyright Ribose. BSD-3 License.
