@@ -5,11 +5,10 @@ module Lutaml
 
       def initialize(document)
         @original_document = document
-        @serialized_document = serialize_document(document)
       end
 
       def to_liquid
-        serialized_document
+        @serialized_document ||= serialize_document(@original_document)
       end
 
       protected
