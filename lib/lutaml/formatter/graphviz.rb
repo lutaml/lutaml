@@ -17,11 +17,11 @@ module Lutaml
       end
 
       ACCESS_SYMBOLS = {
-        "public"    => "+",
+        "public" => "+",
         "protected" => "#",
-        "private"   => "-",
+        "private" => "-",
       }.freeze
-      DEFAULT_CLASS_FONT = "Helvetica".freeze
+      DEFAULT_CLASS_FONT = "Helvetica"
 
       VALID_TYPES = %i[
         dot
@@ -65,9 +65,7 @@ module Lutaml
         @type = :dot
       end
 
-      attr_reader :graph
-      attr_reader :edge
-      attr_reader :node
+      attr_reader :graph, :edge, :node
 
       def type=(value)
         super
@@ -147,13 +145,13 @@ module Lutaml
         if node.owner_end_attribute_name
           attributes["headlabel"] = format_label(
             node.owner_end_attribute_name,
-            node.owner_end_cardinality
+            node.owner_end_cardinality,
           )
         end
         if node.member_end_attribute_name
           attributes["taillabel"] = format_label(
             node.member_end_attribute_name,
-            node.member_end_cardinality
+            node.member_end_cardinality,
           )
         end
 
