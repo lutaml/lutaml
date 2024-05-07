@@ -6,7 +6,7 @@ RSpec.describe Lutaml::Express::LutamlPath::DocumentWrapper do
   describe ".parse" do
     subject(:lutaml_path) { described_class.new(repository) }
     subject(:serialized_document) do
-      lutaml_path.serialized_document
+      lutaml_path.to_liquid
     end
 
     context "when simple diagram without attributes" do
