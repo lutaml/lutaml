@@ -21,7 +21,7 @@ module Lutaml
       new(attributes, out_object).run(args)
     end
 
-    def initialize(attributes = {}, out_object = STDOUT)
+    def initialize(attributes = {}, out_object = $stdout)
       @formatter = ::Lutaml::Formatter::Graphviz.new
       @verbose = false
       @option_parser = OptionParser.new
@@ -70,11 +70,15 @@ module Lutaml
 
     def run(original_args)
       args = original_args.dup
-      if args.length.zero? || args.first.strip == "help"
+      if args.empty? || args.first.strip == "help"
         print_help
         exit
       end
-      @option_parser.parse!(args) rescue nil
+      begin
+        @option_parser.parse!(args)
+      rescue StandardError
+        nil
+      end
       @paths = args
       @formatter.type = @type
 

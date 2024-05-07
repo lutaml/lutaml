@@ -13,7 +13,7 @@ module Lutaml
           repository.to_hash(
             formatter: Formatter,
             include_empty: true,
-            select_proc: select_proc
+            select_proc: select_proc,
           )
         end
       end

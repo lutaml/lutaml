@@ -12,11 +12,13 @@ $:.unshift File.expand_path("../../lib", bin_file)
 # Fixes https://github.com/rubygems/rubygems/issues/1420
 require "rubygems/specification"
 
-class Gem::Specification
-  def this; self; end
+module Gem
+  class Specification
+    def this; self; end
+  end
 end
 
 require "lutaml"
 require "lutaml/command_line"
 
-Lutaml::CommandLine.run(ARGV.dup, STDOUT)
+Lutaml::CommandLine.run(ARGV.dup, $stdout)

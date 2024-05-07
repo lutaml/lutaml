@@ -24,13 +24,14 @@ module Lutaml
     end
 
     def initialize(file_list, input_type)
-      @parse_type = input_type ? input_type : File.extname(file_list.first.path)[1..-1]
+      @parse_type = input_type || File.extname(file_list.first.path)[1..-1]
       @file_list = file_list
     end
 
     def parse
       documents = parse_into_document
-      return document_wrapper(documents) if ["exp", EXPRESS_CACHE_PARSE_TYPE].include?(parse_type)
+      return document_wrapper(documents) if ["exp",
+                                             EXPRESS_CACHE_PARSE_TYPE].include?(parse_type)
 
       documents.map { |doc| document_wrapper(doc) }
     end
@@ -41,7 +42,7 @@ module Lutaml
         Expressir::Express::Parser.from_files(file_list.map(&:path))
       when EXPRESS_CACHE_PARSE_TYPE
         Expressir::Express::Cache.from_file(file_list.first.path)
-      when 'xmi'
+      when "xmi"
         file_list.map { |file| Lutaml::XMI::Parsers::XML.parse(file) }
       when "lutaml"
         file_list.map { |file| Lutaml::Uml::Parsers::Dsl.parse(file) }

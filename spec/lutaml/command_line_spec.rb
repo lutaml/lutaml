@@ -16,11 +16,11 @@ RSpec.describe Lutaml::CommandLine do
       it "returns help message" do
         expect do
           # rubocop:disable Lint/RescueException
-          begin
-            run
-          rescue Exception => e
-            expect(e).to(be_instance_of(SystemExit))
-          end
+
+          run
+        rescue Exception => e
+          expect(e).to(be_instance_of(SystemExit))
+
           # rubocop:enable Lint/RescueException
         end.to(change do
           output.rewind
@@ -41,7 +41,7 @@ RSpec.describe Lutaml::CommandLine do
             .to(change do
               output.rewind
               output.read
-            end.to(match('digraph G {')))
+            end.to(match("digraph G {")))
         end
       end
 

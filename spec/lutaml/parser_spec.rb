@@ -17,7 +17,7 @@ RSpec.describe Lutaml::Parser do
       end
     end
 
-    context 'when xmi file supplied' do
+    context "when xmi file supplied" do
       let(:input) { File.new(fixtures_path("ea-xmi-2.4.2.xmi")) }
 
       it "calls Lutaml::Uml::Parsers::Dsl" do
@@ -48,7 +48,8 @@ RSpec.describe Lutaml::Parser do
 
       before do
         repository = Expressir::Express::Parser.from_file(exp_schema_path)
-        Expressir::Express::Cache.to_file(input_path, repository, test_overwrite_version: "0.2.21")
+        Expressir::Express::Cache.to_file(input_path, repository,
+                                          test_overwrite_version: "0.2.21")
       end
 
       it "raises Expressir::Error" do
