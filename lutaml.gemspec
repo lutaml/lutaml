@@ -29,6 +29,7 @@ Gem::Specification.new do |spec|
 
   spec.required_ruby_version = '>= 2.7.0'
 
+  spec.add_runtime_dependency "expressir", "~> 1.3"
   spec.add_runtime_dependency "lutaml-express"
   spec.add_runtime_dependency "lutaml-uml"
   spec.add_runtime_dependency "lutaml-xmi"
