@@ -8,6 +8,10 @@ module Lutaml
       end
 
       def to_liquid
+        serialized_document
+      end
+
+      def serialized_document
         @serialized_document ||= serialize_document(@original_document)
       end
 
