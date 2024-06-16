@@ -1,0 +1,6 @@
+= <%= gem_name %>
+
+This repository has been merged into LutaML. See:
+
+* https://github.com/lutaml/lutaml/
+* https://github.com/lutaml/lutaml/tree/main/lib/<%= gem_name.tr("-", "/") %>
