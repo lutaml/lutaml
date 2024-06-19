@@ -7,7 +7,7 @@ RSpec.describe Lutaml::Parser do
     let(:input_type) { nil }
 
     context "when exp file supplied" do
-      let(:input) { File.new(fixtures_path("test.exp")) }
+      let(:input) { File.new(fixtures_path("test-generic.exp")) }
 
       it "calls Lutaml::Express::Parsers::Exp" do
         allow(Expressir::Express::Parser).to receive(:from_files)
@@ -18,7 +18,7 @@ RSpec.describe Lutaml::Parser do
     end
 
     context "when xmi file supplied" do
-      let(:input) { File.new(fixtures_path("ea-xmi-2.4.2.xmi")) }
+      let(:input) { File.new(fixtures_path("ea-xmi-2.4.2-generic.xmi")) }
 
       it "calls Lutaml::Uml::Parsers::Dsl" do
         allow(Lutaml::XMI::Parsers::XML).to receive(:parse)
@@ -40,9 +40,9 @@ RSpec.describe Lutaml::Parser do
     end
 
     context "when exp cache yaml file is supplied but it has an old version" do
-      let(:input_path) { fixtures_path("test_exp_cached_old_version.yaml") }
+      let(:input_path) { fixtures_path("test-generic.exp_cached_old_version.yaml") }
       let(:input) { File.new(input_path) }
-      let(:exp_schema_path) { fixtures_path("test.exp") }
+      let(:exp_schema_path) { fixtures_path("test-generic.exp") }
       let(:exp_schema_file) { File.new(exp_schema_path) }
       let(:input_type) { "exp.cache" }
 
@@ -60,9 +60,9 @@ RSpec.describe Lutaml::Parser do
     end
 
     context "when exp cache yaml file supplied and its valid" do
-      let(:input_path) { fixtures_path("test_exp_cached_valid.yaml") }
+      let(:input_path) { fixtures_path("test-generic.exp_cached_valid.yaml") }
       let(:input) { File.new(input_path) }
-      let(:exp_schema_path) { fixtures_path("test.exp") }
+      let(:exp_schema_path) { fixtures_path("test-generic.exp") }
       let(:exp_schema_file) { File.new(exp_schema_path) }
       let(:input_type) { "exp.cache" }
 
