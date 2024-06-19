@@ -203,7 +203,6 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
         expect(val).to eq("RequirementType is a generic category,&#xA;which is agnostic as to obligation.&#xA;Requirement, Recommendation, Permission&#xA;set a specific obligation, although this&#xA;can be overridden.".gsub(/&#xA;/, "\n"))
       end
 
-
       it ".select_all_packaged_elements" do
         all_elements = []
         new_parser.send(:select_all_packaged_elements, all_elements, @xmi_root_model.model, nil)

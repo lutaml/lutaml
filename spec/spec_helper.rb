@@ -6,6 +6,7 @@ require "lutaml/express"
 require "lutaml/sysml"
 require "lutaml/uml"
 require "lutaml/xmi"
+require "lutaml/xml"
 require "byebug"
 
 RSpec.configure do |config|
