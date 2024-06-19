@@ -1,12 +1,13 @@
+
 /.bundle/
-/.yardoc
-/_yardoc/
 /coverage/
 /doc/
-/pkg/
-/spec/reports/
-/tmp/
 Gemfile.lock
-
+/ISO_DIS_10303-59
+/pkg/
 # rspec failure tracking
 .rspec_status
+/spec/reports/
+/tmp/
+/.yardoc
+/_yardoc/

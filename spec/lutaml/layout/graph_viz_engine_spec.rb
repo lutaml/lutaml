@@ -13,7 +13,7 @@ RSpec.describe Lutaml::Layout::GraphVizEngine do
 
     context "when png output type" do
       let(:type) { "png" }
-      let(:png_header) { "\x89PNG" }
+      let(:png_header) { "\x89PNG".b }
 
       it "renders input as png binary string" do
         expect(render[0..3]).to(eq(png_header))

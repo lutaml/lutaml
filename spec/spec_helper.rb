@@ -1,5 +1,12 @@
+# frozen_string_literal: true
+
 require "bundler/setup"
 require "lutaml"
+require "lutaml/express"
+require "lutaml/sysml"
+require "lutaml/uml"
+require "lutaml/xmi"
+require "byebug"
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure
@@ -21,4 +28,8 @@ def assets_path(path)
   assets_folder = File.expand_path("./assets", __dir__)
   FileUtils.mkdir_p(assets_folder)
   File.join(assets_folder, path)
+end
+
+def by_name(entries, name)
+  entries.detect { |n| n.name == name }
 end
