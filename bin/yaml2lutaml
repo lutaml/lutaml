@@ -1,0 +1,144 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+#
+# Script to convert datamodel yaml files into LutaML syntax
+# Usage: bin/yaml2lutaml /path/to/datamodel/view/file.yml
+
+require "yaml"
+
+view_yaml = YAML.safe_load(File.read(ARGV[0]))
+models_path = File.expand_path("../../models", ARGV[0])
+
+def sync_puts(line, level = 0)
+  $stdout.puts("#{''.rjust(level)}#{line}")
+  $stdout.flush
+end
+
+encountered_relations = Hash.new { |h, key| h[key] = [] }
+# relations:
+# - target: AttributeProfile
+#   relationship:
+#     source:
+#       type: aggregation
+#       attribute:
+#         addressClassProfile:
+#     target:
+#       type: direct
+#       attribute:
+#         attributeProfile:
+#           cardinality:
+#             min: 0
+#             max: '*'
+def process_association(owner, values, encountered_relations)
+  target_name = values["target"]
+  return if encountered_relations[owner].include?(target_name)
+
+  encountered_relations[owner].push(target_name)
+  sync_puts("association {", 2)
+
+  relationship_block = values["relationship"] || {}
+
+  if relationship_block["source"] && relationship_block["source"]["type"]
+    source = relationship_block["source"]
+    sync_puts("owner_type #{source['type']}", 4)
+    if source["attribute"]
+      source_attribute_name = source["attribute"].keys.first
+      owner += "##{source_attribute_name}"
+      if source["attribute"][source_attribute_name] && source["attribute"][source_attribute_name]["cardinality"]
+        cardinality = source["attribute"][source_attribute_name]["cardinality"]
+        owner += " [#{cardinality['min']}..#{cardinality['max']}]"
+      end
+    end
+  end
+  sync_puts("owner #{owner}", 4)
+
+  member = target_name
+  if relationship_block["target"]
+    target = relationship_block["target"]
+    type = target["type"] || "direct"
+    sync_puts("member_type #{type}", 4)
+    if target["attribute"]
+      target_attribute_name = target["attribute"].keys.first
+      member += "##{target_attribute_name}"
+      if target["attribute"][target_attribute_name] && target["attribute"][target_attribute_name]["cardinality"]
+        cardinality = target["attribute"][target_attribute_name]["cardinality"]
+        member += " [#{cardinality['min']}..#{cardinality['max']}]"
+      end
+    end
+  else
+    sync_puts("member_type direct", 4)
+  end
+  sync_puts("member #{member}", 4)
+
+  sync_puts("}", 2)
+end
+sync_puts("diagram #{File.basename(ARGV[0], 'yml')[0..-2]} {")
+sync_puts("title '#{view_yaml['title']}'", 2)
+sync_puts("caption '#{view_yaml['caption']}'", 2)
+
+# Class associations notations
+view_yaml["relations"]&.each do |values|
+  process_association(values["source"], values, encountered_relations)
+end
+
+view_yaml["imports"].keys.each do |entry|
+  import = YAML.safe_load(File.read(File.join(models_path, "#{entry}.yml")))
+  import_name = import["name"] || File.basename(entry)
+  # Class notation
+  sync_puts("#{import['modelType']} #{import_name} {", 2)
+  if import["definition"]
+    definition = <<~TEXT
+      definition {
+        #{import['definition']}
+      }
+    TEXT
+    sync_puts(definition, 4)
+  end
+  import["values"]&.each_pair do |key, values|
+    result_string = key
+    if values["definition"]
+      result_string += <<~TEXT
+        {
+          definition {
+          #{values['definition']}
+          }
+        }
+      TEXT
+    end
+    sync_puts(result_string, 4)
+  end
+  import["attributes"]&.each_pair do |key, values|
+    definition = values["definition"]
+    cardinality = if values["cardinality"]
+                    cardinality_val = values["cardinality"]
+                    "[#{cardinality_val['min']}..#{cardinality_val['max']}]"
+                  else
+                    ""
+                  end
+    result_string = "+#{key}"
+    if values["type"]
+      result_string += ": #{values['type']}"
+    end
+    if cardinality
+      result_string += " #{cardinality}"
+    end
+    if definition
+      result_string += <<~TEXT
+        {
+          definition
+          #{definition}
+          end definition
+        }
+      TEXT
+    end
+    sync_puts(result_string, 4)
+  end
+  sync_puts("}", 2)
+
+  # Associations notations
+  import["relations"]&.each do |values|
+    process_association(import_name, values, encountered_relations)
+  end
+end
+sync_puts("}")

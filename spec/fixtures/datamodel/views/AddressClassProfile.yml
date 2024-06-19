@@ -1,0 +1,12 @@
+name: AddressClassProfile
+imports:
+  AddressProfile:
+  AddressClassProfile:
+  AddressClassProfile:
+  AddressComponentProfile:
+  AttributeProfile:
+  ProfileCompliantAddress:
+  InterchangeAddressClassProfile:
+fidelity:
+  hideMembers: true
+  hideOtherClasses: true

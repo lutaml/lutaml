@@ -1,0 +1,372 @@
+= LutaML syntax
+
+== `diagram` syntax
+
+`diagram` is a root element for each diagram.
+
+[source,java]
+----
+diagram MyView {
+  title "My diagram"
+  caption "My custom caption"
+  fontname "Helvetica"
+}
+----
+
+where:
+
+* `fontname` - optional, configuration option to use supplied font name
+* `title` - optional, set custom title for diagram
+* `caption` - optional, set custom caption for diagram
+
+== DataTypes
+
+Lutaml supports 3 types of data_types: `data_type`, `primitive` and `enum`.
+
+Example of data types declaration:
+
+[source,java]
+----
+diagram MyView {
+  enum MyEnum {}
+
+  enum AddressClassProfile {
+    +addressClassProfile: CharacterString
+  }
+
+  data_type "Banking Information" {
+    "art code"
+    "CCT Number"
+  }
+
+  primitive Integer
+
+  enum Profile {
+    imlicistAttributeProfile: CharacterString
+    +attributeProfile: CharacterString
+    -privateAttributeProfile: CharacterString
+    ~friendlyAttributeProfile: CharacterString
+    #protectedAttributeProfile: CharacterString
+  }
+}
+----
+
+== Associations
+
+=== Explicit declaration
+
+Syntax:
+
+[source,java]
+----
+association name {
+  owned_type association|composition|aggregation|generalization|uses
+  member_type association|composition|aggregation|generalization|uses
+  owned association_name[#attribute_name] [{property_string}][cardinality]
+  member association_name[#attribute_name] [{property_string}][cardinality]
+}
+----
+
+where:
+
+* `owned_type` - optional, use to define a bidirectional association (`association`|`composition`|`aggregation`|`generalization`|`uses`)
+* `member_type` - association type (`association`|`composition`|`aggregation`|`generalization`|`uses`)
+* `owned|member` - end of association, use `\#attribute_name` to set a role name
+* `property_string` - property string for attibutes associations
+* `cardinality` - examples: '1..*', '*'
+
+Example:
+
+[source,java]
+----
+class Association {
+  +association:
+}
+class Type {
+  +endType:
+}
+
+association AssociatingTypeAndAssociation {
+  type uses
+  from Association#+association {subsets relationship}[*]
+  to Type#+/endType {readOnly, subsets relatedElement} [1..*]
+}
+----
+
+=== Undirected associations
+
+The simplest way to define relationship between two classes is to use `generalize` keyword:
+
+[source,java]
+----
+class Pet {}
+class Cat {
+  generalize Pet
+}
+----
+
+=== Attribute relationship
+
+Derived attribute `relatedElement` can have 1 to many `Element` associated with it through `union`
+
+[source,java]
+----
+class Relationship {
+   +/relatedElement: Element[1..*] {union}
+}
+class Element {}
+----
+
+== Class' multiline "definition" property
+
+=== Definition
+
+Full syntax:
+
+[source,java]
+----
+definition {
+  inner text
+}
+----
+
+
+== Attributes/entries
+
+=== Definition
+
+Full syntax:
+
+[source,java]
+----
+[visibility][/][attribute] name [:type][multiplicity][=initial value][{attribute body}]
+----
+
+where:
+
+* `visibility` can be equal to
+** `-`: private
+** `+`: public
+** `#`: protected
+** `~`: friendly
+
+* `attribute` - attrbute keyword
+* `/` - symbolizes a derived attribute.
+* `multiplicity` -  Multiplicity is in square brackets (e.g. [1..*]).
+* `initial value` - Default value specifies the initial value of the attribute.
+* `{attribute body}` - Body of attribute, additional properties for attribute
+
+
+One can use explicit or implicit syntax for attribute definition
+
+explicit syntax:
+
+[source,java]
+----
+class A {
+  attribute my_attribute
+}
+
+enum A {
+  entry my_val2
+}
+----
+
+implicit syntax:
+
+[source,java]
+----
+class A {
+  my_attribute
+}
+
+enum A {
+  my_val2
+}
+----
+
+[[attribute-visibility]]
+=== Attribute visibility
+
+Syntax for defining visibility: `[+|-|#|~] [attribute] attribute_name`.
+
+LutaML uses these modificators to define attribute (entry) visbility:
+
+`+`:: public
+`-`:: private
+`#`:: protected
+`~`:: package
+
+example:
+
+[source,java]
+----
+class Figure {
+  // Public attribute `radius`
+  + radius
+  // private attribute `filled`
+  - filled
+  // protected attribute `length`
+  # length
+}
+----
+
+=== Additional attribute' properties
+
+example:
+
+[source,java]
+----
+class Figure {
+  + radius {
+    definition {
+      Radius of the Figure
+    }
+  }
+}
+----
+
+== Methods
+
+Syntax for defining methods:
+
+[source,java]
+----
+[visbility] method-name (parameter-list): return type {property-modifier}
+----
+
+where:
+
+* `visibility` can be equal to
+** `-`: private
+** `+`: public
+** `#`: protected
+** `~`: friendly
+
+* `parameter-list`: parameter list
+
+* `property-modifier`: can be equal to
+** `redefines`
+** `query`
+** `ordered` (defaults to `unordered`)
+** `unique`(defaults to `nonunique`)
+
+Syntax for a `parameter-list`:
+
+[source,java]
+----
+[direction] name:type [multiplicity] [=default] [{property string}]
+----
+
+where:
+
+* `direction` can be equal to
+** `in`
+** `out`
+** `inout`
+** `return`
+
+== import files
+
+Use `include` special word:
+
+[source,java]
+----
+include path/to/file
+----
+
+== Package syntax
+
+Namespaces
+
+A named element is an element that can have a name and a defined visibility (public, private, protected, package):
+
+[source,java]
+----
++ => public
+- => private
+# => protected
+~ => package
+----
+
+The name of the element and its visibility are optional.
+
+[source,java]
+----
+package Customers {
+  class Insurance {}
+  - class PrivateInsurance {}
+  # class ProtectedInsurance {}
+}
+----
+
+== Code comments
+
+Use `//` notation for LutaML comments skipped by parser, example:
+
+[source,java]
+----
+// TODO: implement
+abstract class Pet {}
+----
+
+== Comment objects diagram
+
+Use `\**`(one line comment) or `*| |*`(multiline comment) to create comment object for diagram entry.
+
+If this syntax is used inside a `class`/`enum`/`association` block, it will be created for owner of this block.
+
+[source,java]
+----
+** I am a document comment
+
+*|
+  This is a
+  multiply
+  lines document comment.
+*|
+
+class A
+enum B {
+  ** one line enum comment
+  foo
+  *|
+    This is a
+    multiply
+    lines class comment.
+  *|
+  bar
+}
+----
+
+== Syntax comments
+
+Use `//` to create syntax comment, chars after `//` will be ignored during processing.
+
+[source,java]
+----
+// TODO: attributes
+class A
+enum B {
+  // Write docs
+  foo
+  bar
+}
+----
+
+== Value specification
+
+A value specification indicates one or several values in a model. Examples for value specifications include simple, mathematical expressions, such as `4+2`, and expressions with values from the object model, `Integer::MAX_INT-1`
+
+[source,java]
+----
+class {Class name, if any} {as ref name, optional} {
+  {attribute name} = {attribute value}
+  {attribute name}:{attribute class} = {attribute value}
+}
+
+instance :{Class name, if any} {as ref name, optional} {
+  {attribute name} = {attribute value}
+  {attribute name}:{attribute class} = {attribute value}
+}
+----

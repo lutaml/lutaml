@@ -1,0 +1,59 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+#
+# Script to convert plantuml files into LutaML syntax
+# Usage: bin/plantuml2lutaml /path/to/plantuml.wsd
+
+file_path = ARGV[0]
+FILE_NAME = File.basename(file_path, ".wsd")
+wsd_file = File.new(ARGV[0])
+
+def sync_puts(line, level = 0)
+  $stdout.puts("#{''.rjust(level)}#{line}")
+  $stdout.flush
+end
+
+SKIPPED_LINES_REGEXP = /^(@startuml|'\*{7}|note|@enduml|\!|'\/)/
+COMMENT_START = /\/'/
+COMMENT_END = /'\//
+ASSOCIATION_MAPPINGS = {
+  /-\|>/ => ",inheritance",
+  /<\|-/ => "inheritance,",
+  /->/ => ",direct",
+  /<-/ => "direct,",
+}.freeze
+
+in_comment_block = false
+
+def transform_line(line)
+  line = line.gsub(/^\s*'/, '** ').gsub(/\|[\sa-zA-Z]+$/, '')
+  return sync_puts(line, 2) if ASSOCIATION_MAPPINGS.keys.none? { |key| line =~ key }
+
+  owner_type, member_type = ASSOCIATION_MAPPINGS.detect { |(key, _value)| line =~ key }.last.split(",")
+  blocks = line.split(" ")
+  owner = blocks.first
+  member = blocks.last
+  sync_puts("association {", 2)
+  sync_puts("owner #{owner}", 4)
+  sync_puts("member #{member}", 4)
+  sync_puts("owner_type #{owner_type}", 4) if !owner_type.to_s.empty?
+  sync_puts("member_type #{member_type}", 4) if !member_type.to_s.empty?
+  sync_puts("}", 2)
+end
+
+sync_puts("diagram #{FILE_NAME} {")
+wsd_file.readlines.each do |line|
+  if line.match?(COMMENT_START)
+    in_comment_block = true
+  end
+
+  if line.match?(COMMENT_END)
+    in_comment_block = false
+  end
+
+  next if in_comment_block || line =~ SKIPPED_LINES_REGEXP
+
+  transform_line(line)
+end
+sync_puts("}")
