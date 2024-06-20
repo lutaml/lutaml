@@ -203,6 +203,7 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
         expect(val).to eq("RequirementType is a generic category,&#xA;which is agnostic as to obligation.&#xA;Requirement, Recommendation, Permission&#xA;set a specific obligation, although this&#xA;can be overridden.".gsub(/&#xA;/, "\n"))
       end
 
+
       it ".select_all_packaged_elements" do
         all_elements = []
         new_parser.send(:select_all_packaged_elements, all_elements, @xmi_root_model.model, nil)
@@ -229,6 +230,179 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
           expect(e.is_a?(Xmi::Uml::PackagedElement) || e.is_a?(Xmi::Uml::PackagedElement2013)).to be(true)
         end
       end
+
+      it ".serialize_model_enums" do
+        val = new_parser.send(:serialize_model_enums, @xmi_root_model.model.packaged_element.first)
+
+        expect(val).to eq(
+          [{
+            xmi_id: "EAID_E497ABDA_05EF_416a_A461_03535864970D",
+            name: "ObligationType",
+            values: [
+              {
+                type: "uml:EnumerationLiteral",
+                id: "EAID_3FCE2856_4A9B_49e4_AD7B_9D72A7C6E78F"
+              },
+              {
+                type: "uml:EnumerationLiteral",
+                id: "EAID_0AB8A01C_021A_4a96_B56D_D01B2F819EA5"
+              },
+              {
+                type: "uml:EnumerationLiteral",
+                id: "EAID_547E848A_0513_4565_8B45_495BC23F9B3D"
+              }
+            ],
+            definition: nil,
+            stereotype: "enumeration"
+          }]
+        )
+      end
+
+      it ".serialize_model_classes" do
+        val = new_parser.send(:serialize_model_classes, @xmi_root_model.model.packaged_element.first, @xmi_root_model.model)
+        expect(val.count).to eq(8)
+        expect(val.first[:xmi_id]).to eq("EAID_D832D6D8_0518_43f7_9166_7A4E3E8605AA")
+        expect(val.first[:name]).to eq("BibliographicItem")
+      end
+
+      it ".serialize_model_data_types" do
+        val = new_parser.send(:serialize_model_data_types, @xmi_root_model.model)
+        expect(val).to eq([])
+      end
+
+      it ".serialize_model_diagrams" do
+        val = new_parser.send(:serialize_model_diagrams, "EAPK_C799E047_A10F_4203_9E22_9C47183CED98")
+        expect(val.count).to eq(1)
+        expect(val).to eq(
+          [{
+            xmi_id: "EAID_FB7118FD_7DE4_4dac_8E43_1F55CD195957",
+            name: "Starter Class Diagram",
+            definition: "aada\n"
+          }]
+        )
+      end
+
+      it ".serialize_model_associations without association" do
+        val = new_parser.send(:serialize_model_associations, "EAPK_C799E047_A10F_4203_9E22_9C47183CED98")
+        expect(val).to eq(nil)
+      end
+
+      it ".serialize_model_associations with associations" do
+        val = new_parser.send(:serialize_model_associations, "EAID_D832D6D8_0518_43f7_9166_7A4E3E8605AA")
+
+        expect(val).to eq(
+          [{
+            xmi_id: "EAID_2CA98919_831B_4182_BBC2_C2EAF17FEF60",
+            member_end: "RequirementType",
+            member_end_type: "aggregation",
+            member_end_cardinality: {"min"=>nil, "max"=>nil},
+            member_end_attribute_name: "RequirementType",
+            member_end_xmi_id: "EAID_C1155D80_E68B_46d5_ADE5_F5639486163D",
+            owner_end: "BibliographicItem",
+            owner_end_xmi_id: "EAID_D832D6D8_0518_43f7_9166_7A4E3E8605AA",
+            definition: nil}
+          ])
+      end
+
+      it ".fetch_connector" do
+        val = new_parser.send(:fetch_connector, "EAID_2CA98919_831B_4182_BBC2_C2EAF17FEF60")
+        expect(val).to be_instance_of(Xmi::Sparx::SparxConnector)
+        expect(val.idref).to eq("EAID_2CA98919_831B_4182_BBC2_C2EAF17FEF60")
+      end
+
+      it ".fetch_definition_node_value" do
+        val = new_parser.send(:fetch_definition_node_value, "EAID_2CA98919_831B_4182_BBC2_C2EAF17FEF60", "source")
+        expect(val).to eq(nil)
+      end
+
+      it ".serialize_class_operations" do
+        val = new_parser.send(:serialize_class_operations, @xmi_root_model.model.packaged_element.first)
+        expect(val).to eq([])
+      end
+
+      it ".serialize_class_constraints" do
+        val = new_parser.send(:serialize_class_constraints, "EAID_2CA98919_831B_4182_BBC2_C2EAF17FEF60")
+        expect(val).to eq([])
+      end
+
+      it ".serialize_owned_type" do
+        link = @xmi_root_model.extension.elements.element[1].links.association.first
+        val = new_parser.send(:serialize_owned_type, "EAID_D832D6D8_0518_43f7_9166_7A4E3E8605AA", link, "start")
+        expect(val).to eq("RequirementType")
+      end
+
+      it ".serialize_member_end" do
+        link = @xmi_root_model.extension.elements.element[1].links.association.first
+        val = new_parser.send(:serialize_member_end, "EAID_D832D6D8_0518_43f7_9166_7A4E3E8605AA", link)
+        expect(val).to eq([
+          "RequirementType",
+          "EAID_C1155D80_E68B_46d5_ADE5_F5639486163D"
+        ])
+      end
+
+      it ".serialize_member_type" do
+        link = @xmi_root_model.extension.elements.element[1].links.association.first
+        val = new_parser.send(:serialize_member_type, "EAID_D832D6D8_0518_43f7_9166_7A4E3E8605AA", link, "start")
+        expect(val).to eq([
+          "RequirementType",
+          "aggregation",
+          {"max"=>nil, "min"=>nil},
+          "RequirementType",
+          "EAID_C1155D80_E68B_46d5_ADE5_F5639486163D"
+        ])
+      end
+
+      it ".fetch_assoc_connector" do
+        link = @xmi_root_model.extension.elements.element[1].links.association.first
+        val = new_parser.send(:fetch_assoc_connector, link.id, "target")
+        expect(val).to eq([{"max"=>nil, "min"=>nil}, "BibliographicItem"])
+      end
+
+      it ".generalization_association if link.start == owner_xmi_id" do
+        link_element = @xmi_root_model.extension.elements.element.select do |e|
+          !e.links.nil? && !e.links.generalization.empty? 
+        end.first
+        link = link_element.links.generalization.first
+        val = new_parser.send(:generalization_association, "EAID_82354CDC_EACB_402f_8C2B_FD627B7416E7", link)
+        expect(val).to eq([
+          "RequirementType",
+          "inheritance",
+          {"max"=>nil, "min"=>nil},
+          nil,
+          "EAID_C1155D80_E68B_46d5_ADE5_F5639486163D"
+        ])
+      end
+
+      it ".generalization_association if link.start != owner_xmi_id" do
+        link_element = @xmi_root_model.extension.elements.element.select do |e|
+          !e.links.nil? && !e.links.generalization.empty? 
+        end.first
+        link = link_element.links.generalization.first
+        val = new_parser.send(:generalization_association, "EAID_C1155D80_E68B_46d5_ADE5_F5639486163D", link)
+        expect(val).to eq([
+          "Permission",
+          "generalization",
+          nil,
+          nil,
+          "EAID_82354CDC_EACB_402f_8C2B_FD627B7416E7"
+        ])
+      end
+
+      it ".cardinality_min_max_value with min 0" do
+        val = new_parser.send(:cardinality_min_max_value, 0, 5)
+        expect(val).to eq({"max"=>5, "min"=>"C"})
+      end
+
+      it ".cardinality_min_max_value with min 1" do
+        val = new_parser.send(:cardinality_min_max_value, 1, 5)
+        expect(val).to eq({"max"=>5, "min"=>"M"})
+      end
+
+      it ".fetch_owned_attribute_node" do
+        val = new_parser.send(:fetch_owned_attribute_node, "EAJava_String_")
+        expect(val).to eq([nil, nil])
+      end
+
     end
   end
 end
