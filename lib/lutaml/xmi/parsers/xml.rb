@@ -457,7 +457,7 @@ module Lutaml
         def cardinality_value(value, is_min = false)
           return unless value
 
-          is_min ? LOWER_VALUE_MAPPINGS[value] : value
+          is_min ? LOWER_VALUE_MAPPINGS[value.to_s] : value
         end
 
         # @node [Shale::Mapper]
