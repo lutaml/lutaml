@@ -291,9 +291,8 @@ module Lutaml
 
         # @param owner_xmi_id [String]
         # @param link [Shale::Mapper]
-        # @param link_member_name [String]
         # @return [Array<String, String>]
-        def serialize_member_end(owner_xmi_id, link, link_member_name)
+        def serialize_member_end(owner_xmi_id, link)
           case link.name
           when "NoteLink"
             return
@@ -321,7 +320,7 @@ module Lutaml
         # @return [Array<String, String, Hash, String, String>]
         def serialize_member_type(owner_xmi_id, link, link_member_name)
           member_end, xmi_id = serialize_member_end(
-            owner_xmi_id, link, link_member_name)
+            owner_xmi_id, link)
 
           if link.name == "Association"
             connector_type = link_member_name == "start" ? "source" : "target"
