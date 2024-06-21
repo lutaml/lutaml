@@ -21,8 +21,8 @@ module Lutaml
         # @return [Lutaml::Uml::Document]
         def self.parse(xml, _options = {})
           sparx_root = Xmi::Sparx::SparxRoot
-          xmi_doc = Nokogiri::XML(File.open(xml).read)
-          namespace = xmi_doc.at_xpath('//xmi:XMI').namespaces
+          xmi_doc = Nokogiri::XML(File.read(xml))
+          namespace = xmi_doc.at_xpath("//xmi:XMI").namespaces
           if namespace["xmlns:uml"].split("/").last == "20131001"
             sparx_root = Xmi::Sparx::SparxRoot2013
           end
@@ -49,7 +49,7 @@ module Lutaml
           model = xmi_model.model
           {
             name: model.name,
-            packages: serialize_model_packages(model)
+            packages: serialize_model_packages(model),
           }
         end
 
@@ -67,7 +67,7 @@ module Lutaml
               diagrams: serialize_model_diagrams(package.id),
               packages: serialize_model_packages(package),
               definition: doc_node_attribute_value(package.id, "documentation"),
-              stereotype: doc_node_attribute_value(package.id, "stereotype")
+              stereotype: doc_node_attribute_value(package.id, "stereotype"),
             }
           end
         end
@@ -91,7 +91,7 @@ module Lutaml
               constraints: serialize_class_constraints(klass.id),
               is_abstract: doc_node_attribute_value(klass.id, "isAbstract"),
               definition: doc_node_attribute_value(klass.id, "documentation"),
-              stereotype: doc_node_attribute_value(klass.id, "stereotype")
+              stereotype: doc_node_attribute_value(klass.id, "stereotype"),
             }
           end
         end
@@ -100,12 +100,12 @@ module Lutaml
         # @return [Array<Hash>]
         # @note xpath ./packagedElement[@xmi:type="uml:Enumeration"]
         def serialize_model_enums(package)
-          package.packaged_element
-            .select { |e| e.type?("uml:Enumeration") }.map do |enum|
-              # xpath .//ownedLiteral[@xmi:type="uml:EnumerationLiteral"]
-              owned_literals = enum.owned_literal.map do |owned_literal|
-                owned_literal.to_hash.transform_keys(&:to_sym)
-              end
+          package.packaged_element.select { |e| e.type?("uml:Enumeration") }
+            .map do |enum|
+            # xpath .//ownedLiteral[@xmi:type="uml:EnumerationLiteral"]
+            owned_literals = enum.owned_literal.map do |owned_literal|
+              owned_literal.to_hash.transform_keys(&:to_sym)
+            end
 
             {
               xmi_id: enum.id,
@@ -123,7 +123,7 @@ module Lutaml
         def serialize_model_data_types(model)
           all_data_type_elements = []
           select_all_packaged_elements(all_data_type_elements, model,
-            "uml:DataType")
+                                       "uml:DataType")
           all_data_type_elements.map do |klass|
             {
               xmi_id: klass.id,
@@ -151,7 +151,7 @@ module Lutaml
             {
               xmi_id: diagram.id,
               name: diagram.properties.name,
-              definition: diagram.properties.documentation
+              definition: diagram.properties.documentation,
             }
           end
         end
@@ -167,22 +167,20 @@ module Lutaml
             matched_element.links.association.empty?
 
           matched_element.links.association.map do |assoc|
-            link_member_name = assoc.start == xmi_id ? "end" : "start"
-            linke_owner_name = link_member_name == "start" ? "end" : "start"
+            link_member = assoc.start == xmi_id ? "end" : "start"
+            linke_owner_name = link_member == "start" ? "end" : "start"
 
             member_end, member_end_type, member_end_cardinality,
               member_end_attribute_name, member_end_xmi_id =
-              serialize_member_type(xmi_id, assoc, link_member_name)
+              serialize_member_type(xmi_id, assoc, link_member)
 
             owner_end = serialize_owned_type(xmi_id, assoc, linke_owner_name)
 
-            if member_end && ((member_end_type != 'aggregation') ||
-              (member_end_type == 'aggregation' && member_end_attribute_name))
+            if member_end && ((member_end_type != "aggregation") ||
+              (member_end_type == "aggregation" && member_end_attribute_name))
 
-              doc_node_name = (link_member_name == "start" ?
-                "source" : "target")
-              definition = fetch_definition_node_value(assoc.id,
-                doc_node_name)
+              doc_node_name = (link_member == "start" ? "source" : "target")
+              definition = fetch_definition_node_value(assoc.id, doc_node_name)
 
               {
                 xmi_id: assoc.id,
@@ -193,7 +191,7 @@ module Lutaml
                 member_end_xmi_id: member_end_xmi_id,
                 owner_end: owner_end,
                 owner_end_xmi_id: xmi_id,
-                definition: definition
+                definition: definition,
               }
             end
           end
@@ -246,7 +244,7 @@ module Lutaml
           if connector_node
             # In ea-xmi-2.5.1, constraints are moved to source/target under
             # connectors
-            constraints = [:source, :target].map do |st|
+            constraints = %i[source target].map do |st|
               connector_node.send(st).constraints.constraint
             end.flatten
 
@@ -274,8 +272,7 @@ module Lutaml
           end
 
           xmi_id = link.send(linke_owner_name.to_sym)
-          owner_end = lookup_entity_name(xmi_id) ||
-            connector_source_name(xmi_id)
+          lookup_entity_name(xmi_id) || connector_source_name(xmi_id)
 
           # not necessary
           # if link.name == "Association"
@@ -286,7 +283,7 @@ module Lutaml
           #     fetch_owned_attribute_node(xmi_id)
           # end
           # [owner_end, owned_cardinality, owned_attribute_name]
-          owner_end
+          # owner_end
         end
 
         # @param owner_xmi_id [String]
@@ -319,8 +316,7 @@ module Lutaml
         # @param link_member_name [String]
         # @return [Array<String, String, Hash, String, String>]
         def serialize_member_type(owner_xmi_id, link, link_member_name)
-          member_end, xmi_id = serialize_member_end(
-            owner_xmi_id, link)
+          member_end, xmi_id = serialize_member_end(owner_xmi_id, link)
 
           if link.name == "Association"
             connector_type = link_member_name == "start" ? "source" : "target"
@@ -332,7 +328,7 @@ module Lutaml
           end
 
           [member_end, "aggregation", member_end_cardinality,
-            member_end_attribute_name, xmi_id]
+           member_end_attribute_name, xmi_id]
         end
 
         # @param link_id [String]
@@ -344,9 +340,9 @@ module Lutaml
 
           if assoc_connector
             assoc_connector_type = assoc_connector.type
-            if assoc_connector_type && assoc_connector_type.multiplicity
-              cardinality = assoc_connector_type.multiplicity.split('..')
-              cardinality.unshift('1') if cardinality.length == 1
+            if assoc_connector_type&.multiplicity
+              cardinality = assoc_connector_type.multiplicity.split("..")
+              cardinality.unshift("1") if cardinality.length == 1
               min, max = cardinality
             end
             assoc_connector_role = assoc_connector.role
@@ -391,15 +387,14 @@ module Lutaml
         def fetch_owned_attribute_node(xmi_id)
           all_elements = all_packaged_elements
 
-          owned_attributes = all_elements.map { |e| e.owned_attribute }.flatten
+          owned_attributes = all_elements.map(&:owned_attribute).flatten
           oa = owned_attributes.select do |a|
             !!a.association && a.uml_type && a.uml_type.idref == xmi_id
           end.first
 
           if oa
             cardinality = cardinality_min_max_value(
-              oa.lower_value&.value,
-              oa.upper_value&.value
+              oa.lower_value&.value, oa.upper_value&.value
             )
             oa_name = oa.name
           end
@@ -422,22 +417,23 @@ module Lutaml
         def serialize_class_attributes(klass)
           klass.owned_attribute.select { |attr| attr.type?("uml:Property") }
             .map do |oa|
-              uml_type = oa.uml_type
-              uml_type_idref = uml_type.idref if uml_type
+            uml_type = oa.uml_type
+            uml_type_idref = uml_type.idref if uml_type
 
-              if oa.association.nil?
-                {
-                  id: oa.id,
-                  name: oa.name,
-                  type: lookup_entity_name(uml_type_idref) || uml_type_idref,
-                  xmi_id: uml_type_idref,
-                  is_derived: oa.is_derived,
-                  cardinality: cardinality_min_max_value(
-                    oa.lower_value&.value,
-                    oa.upper_value&.value),
-                  definition: lookup_attribute_documentation(oa.id),
-                }
-              end
+            if oa.association.nil?
+              {
+                id: oa.id,
+                name: oa.name,
+                type: lookup_entity_name(uml_type_idref) || uml_type_idref,
+                xmi_id: uml_type_idref,
+                is_derived: oa.is_derived,
+                cardinality: cardinality_min_max_value(
+                  oa.lower_value&.value,
+                  oa.upper_value&.value,
+                ),
+                definition: lookup_attribute_documentation(oa.id),
+              }
+            end
           end.compact
         end
 
@@ -447,7 +443,7 @@ module Lutaml
         def cardinality_min_max_value(min, max)
           {
             "min" => cardinality_value(min, true),
-            "max" => cardinality_value(max, false)
+            "max" => cardinality_value(max, false),
           }
         end
 
@@ -529,12 +525,11 @@ module Lutaml
         # @return [Array<Xmi::Uml::PackagedElement>]
         def all_packaged_elements
           all_elements = []
-          [
-            @xmi_root_model.model.packaged_element +
+          packaged_element_roots = @xmi_root_model.model.packaged_element +
             @xmi_root_model.extension.primitive_types.packaged_element +
-            @xmi_root_model.extension.profiles.profile
-              .map {|p| p.packaged_element }
-          ].flatten.each do |e|
+            @xmi_root_model.extension.profiles.profile.map(&:packaged_element)
+
+          packaged_element_roots.flatten.each do |e|
             select_all_packaged_elements(all_elements, e, nil)
           end
 
@@ -595,7 +590,7 @@ module Lutaml
               result[node.id] = node.name
             end
 
-            attrs.each_pair do |k, v|
+            attrs.each_pair do |k, _v|
               map_id_name(result, node.send(k))
             end
           end

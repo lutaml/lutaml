@@ -112,7 +112,7 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
       let(:first_package) { parse.packages.first }
 
       it "parses xml file into Lutaml::Uml::Node::Document object" do
-        expect(parse).to(be_instance_of(::Lutaml::Uml::Document))
+        expect(parse).to(be_instance_of(Lutaml::Uml::Document))
       end
 
       it "correctly parses model name" do
@@ -402,7 +402,6 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
         val = new_parser.send(:fetch_owned_attribute_node, "EAJava_String_")
         expect(val).to eq([nil, nil])
       end
-
     end
   end
 end
