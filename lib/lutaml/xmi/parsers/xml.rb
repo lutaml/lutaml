@@ -78,9 +78,10 @@ module Lutaml
         # @note xpath ./packagedElement[@xmi:type="uml:Class" or
         #                               @xmi:type="uml:AssociationClass"]
         def serialize_model_classes(package, model)
-          package.packaged_element.select { |e|
-            e.type?("uml:Class") || e.type?("uml:AssociationClass")
-          }.map do |klass|
+          package.packaged_element.select do |e|
+            e.type?("uml:Class") || e.type?("uml:AssociationClass") ||
+              e.type?("uml:Interface")
+          end.map do |klass|
             {
               xmi_id: klass.id,
               name: klass.name,
