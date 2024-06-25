@@ -164,7 +164,8 @@ module Lutaml
           matched_element = @xmi_root_model.extension.elements.element
             .find { |e| e.idref == xmi_id }
 
-          return if !matched_element.links ||
+          return if !matched_element ||
+            !matched_element.links ||
             matched_element.links.association.empty?
 
           matched_element.links.association.map do |assoc|
