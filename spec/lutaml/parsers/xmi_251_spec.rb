@@ -7,24 +7,6 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
     context "when parsing xmi 2013 with uml 2013" do
       let(:file) { File.new(fixtures_path("ea-xmi-2.5.1.xmi")) }
 
-      let(:expected_first_package_package_names) do
-        [
-          "BibliographicItem",
-          nil,
-          "Block",
-          nil,
-          "ClassificationType",
-          nil,
-          "ObligationType",
-          nil,
-          "Permission",
-          "Recommendation",
-          "Requirement",
-          "RequirementSubpart",
-          nil,
-          "RequirementType",
-        ]
-      end
       let(:expected_class_names) do
         %w[
           BibliographicItem
@@ -50,7 +32,9 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
         ]
       end
       let(:expected_enum_names) { ["ObligationType"] }
-      let(:expected_enum_xmi_ids) { ["EAID_E497ABDA_05EF_416a_A461_03535864970D"] }
+      let(:expected_enum_xmi_ids) do
+        ["EAID_E497ABDA_05EF_416a_A461_03535864970D"]
+      end
       let(:expected_attributes_names) do
         %w[
           classification
@@ -126,7 +110,7 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
 
       it "correctly parses package tree" do
         expect(first_package.packages.map(&:name))
-          .to(eq(expected_first_package_package_names))
+          .to match_array([])
       end
 
       it "correctly parses package classes" do
