@@ -57,7 +57,9 @@ module Lutaml
         # @return [Array<Hash>]
         # @note xpath ./packagedElement[@xmi:type="uml:Package"]
         def serialize_model_packages(model)
-          model.packaged_element.map do |package|
+          model.packaged_element.select do |e|
+            e.type?("uml:Package")
+          end.map do |package|
             {
               xmi_id: package.id,
               name: package.name,
