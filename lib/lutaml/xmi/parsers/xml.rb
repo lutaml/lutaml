@@ -62,7 +62,7 @@ module Lutaml
           end.map do |package|
             {
               xmi_id: package.id,
-              name: package.name,
+              name: get_package_name(package),
               classes: serialize_model_classes(package, model),
               enums: serialize_model_enums(package),
               data_types: serialize_model_data_types(package),
@@ -72,6 +72,18 @@ module Lutaml
               stereotype: doc_node_attribute_value(package.id, "stereotype"),
             }
           end
+        end
+
+        def get_package_name(package)
+          return package.name unless package.name.nil?
+
+          connector = fetch_connector(package.id)
+          if connector.target&.model && connector.target.model&.name
+            return "#{connector.target.model.name} " \
+                   "(#{package.type.split(':').last})"
+          end
+
+          "unnamed"
         end
 
         # @param package [Shale::Mapper]
