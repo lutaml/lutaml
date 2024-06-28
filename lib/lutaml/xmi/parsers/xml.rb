@@ -484,13 +484,29 @@ module Lutaml
         end
 
         # @param xmi_id [String]
+        # @return [Shale::Mapper]
+        # @note xpath %(//attribute[@xmi:idref="#{xmi_id}"])
+        def fetch_attribute_node(xmi_id)
+          attribute_node = nil
+          @xmi_root_model.extension.elements.element.each do |e|
+            if e.attributes&.attribute
+              e.attributes.attribute.each do |a|
+                attribute_node = a if a.idref == xmi_id
+              end
+            end
+          end
+          attribute_node
+        end
+
+        # @param xmi_id [String]
         # @return [String]
         # @note xpath %(//attribute[@xmi:idref="#{xmi_id}"]/documentation)
         def lookup_attribute_documentation(xmi_id)
-          doc_node = fetch_element(xmi_id)
-          return unless doc_node
+          attribute_node = fetch_attribute_node(xmi_id)
 
-          doc_node.documentation
+          return unless attribute_node&.documentation
+
+          attribute_node&.documentation&.value
         end
 
         # @param xmi_id [String]
