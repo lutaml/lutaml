@@ -117,17 +117,32 @@ module Lutaml
         def serialize_model_enums(package)
           package.packaged_element.select { |e| e.type?("uml:Enumeration") }
             .map do |enum|
-            # xpath .//ownedLiteral[@xmi:type="uml:EnumerationLiteral"]
-            owned_literals = enum.owned_literal.map do |owned_literal|
-              owned_literal.to_hash.transform_keys(&:to_sym)
-            end
-
             {
               xmi_id: enum.id,
               name: enum.name,
-              values: owned_literals,
+              values: serialize_enum_owned_literal(enum),
               definition: doc_node_attribute_value(enum.id, "documentation"),
               stereotype: doc_node_attribute_value(enum.id, "stereotype"),
+            }
+          end
+        end
+
+        # @param model [Shale::Mapper]
+        # @return [Hash]
+        # @note xpath .//ownedLiteral[@xmi:type="uml:EnumerationLiteral"]
+        def serialize_enum_owned_literal(enum)
+          owned_literals = enum.owned_literal.select do |owned_literal|
+            owned_literal.type? "uml:EnumerationLiteral"
+          end
+
+          owned_literals.map do |owned_literal|
+            # xpath .//type
+            uml_type_id = owned_literal&.uml_type&.idref
+
+            {
+              name: owned_literal.name,
+              type: lookup_entity_name(uml_type_id) || uml_type_id,
+              definition: lookup_attribute_documentation(owned_literal.id),
             }
           end
         end
