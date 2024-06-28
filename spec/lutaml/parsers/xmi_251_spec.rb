@@ -222,23 +222,26 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
           [{
             xmi_id: "EAID_E497ABDA_05EF_416a_A461_03535864970D",
             name: "ObligationType",
+            stereotype: "enumeration",
+            definition: nil,
             values: [
               {
-                type: "uml:EnumerationLiteral",
-                id: "EAID_3FCE2856_4A9B_49e4_AD7B_9D72A7C6E78F"
+                definition: nil,
+                name: "requirement",
+                type: "extension_Bibliography",
               },
               {
-                type: "uml:EnumerationLiteral",
-                id: "EAID_0AB8A01C_021A_4a96_B56D_D01B2F819EA5"
+                definition: nil,
+                name: "recommendation",
+                type: "extension_Bibliography",
               },
               {
-                type: "uml:EnumerationLiteral",
-                id: "EAID_547E848A_0513_4565_8B45_495BC23F9B3D"
-              }
+                definition: nil,
+                name: "premission",
+                type: "extension_Bibliography",
+              },
             ],
-            definition: nil,
-            stereotype: "enumeration"
-          }]
+          }],
         )
       end
 
