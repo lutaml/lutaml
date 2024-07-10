@@ -36,7 +36,7 @@ Gem::Specification.new do |spec|
   spec.add_runtime_dependency "parslet", "~> 2.0.0"
   spec.add_runtime_dependency "ruby-graphviz", "~> 1.2"
   spec.add_runtime_dependency "thor", "~> 1.0"
-  spec.add_runtime_dependency "xmi", ">= 0.3.0"
+  spec.add_runtime_dependency "xmi", ">= 0.3.6"
 
   spec.add_development_dependency "byebug"
   spec.add_development_dependency "equivalent-xml", "~> 0.6.0"
