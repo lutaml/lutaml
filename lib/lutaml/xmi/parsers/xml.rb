@@ -100,6 +100,7 @@ module Lutaml
               xmi_id: klass.id,
               name: klass.name,
               package: model,
+              type: klass.type.split(":").last,
               attributes: serialize_class_attributes(klass),
               associations: serialize_model_associations(klass.id),
               operations: serialize_class_operations(klass),
