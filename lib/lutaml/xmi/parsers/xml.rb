@@ -556,7 +556,7 @@ module Lutaml
             node.send(source_or_target.to_sym).nil? ||
             node.send(source_or_target.to_sym).model.nil?
 
-            node.send(source_or_target.to_sym).model.name
+          node.send(source_or_target.to_sym).model.name
         end
 
         # @param xmi_id [String]
