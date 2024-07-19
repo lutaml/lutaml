@@ -337,10 +337,17 @@ module Lutaml
             source_or_target = :target
           end
 
-          member_end = lookup_entity_name(xmi_id) ||
-            connector_name_by_source_or_target(xmi_id, source_or_target)
-
+          member_end = member_end_name(xmi_id, source_or_target)
           [member_end, xmi_id]
+        end
+
+        # @param xmi_id [String]
+        # @param source_or_target [Symbol]
+        # @return [String]
+        def member_end_name(xmi_id, source_or_target)
+          connector_labels(xmi_id, source_or_target) ||
+            lookup_entity_name(xmi_id) ||
+            connector_name_by_source_or_target(xmi_id, source_or_target)
         end
 
         # @param owner_xmi_id [String]
@@ -402,8 +409,7 @@ module Lutaml
             source_or_target = :target
           end
 
-          member_end = lookup_entity_name(xmi_id) ||
-            connector_name_by_source_or_target(xmi_id, source_or_target)
+          member_end = member_end_name(xmi_id, source_or_target)
 
           member_end_cardinality, _member_end_attribute_name =
             fetch_owned_attribute_node(xmi_id)
@@ -535,15 +541,32 @@ module Lutaml
         # @param xmi_id [String]
         # @param source_or_target [String]
         # @return [String]
-        def connector_name_by_source_or_target(xmi_id, source_or_target)
-          node = @xmi_root_model.extension.connectors.connector.select do |con|
+        def connector_node_by_id(xmi_id, source_or_target)
+          @xmi_root_model.extension.connectors.connector.find do |con|
             con.send(source_or_target.to_sym).idref == xmi_id
           end
-          return if node.empty? ||
-            node.first.send(source_or_target.to_sym).nil? ||
-            node.first.send(source_or_target.to_sym).model.nil?
+        end
 
-          node.first.send(source_or_target.to_sym).model.name
+        # @param xmi_id [String]
+        # @param source_or_target [String]
+        # @return [String]
+        def connector_name_by_source_or_target(xmi_id, source_or_target)
+          node = connector_node_by_id(xmi_id, source_or_target)
+          return if node.nil? ||
+            node.send(source_or_target.to_sym).nil? ||
+            node.send(source_or_target.to_sym).model.nil?
+
+            node.send(source_or_target.to_sym).model.name
+        end
+
+        # @param xmi_id [String]
+        # @param source_or_target [String]
+        # @return [String]
+        def connector_labels(xmi_id, source_or_target)
+          node = connector_node_by_id(xmi_id, source_or_target)
+          return if node.nil?
+
+          node.labels&.rt || node.labels&.lt
         end
 
         # @param xmi_id [String]
