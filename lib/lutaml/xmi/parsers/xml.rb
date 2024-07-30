@@ -337,17 +337,26 @@ module Lutaml
             source_or_target = :target
           end
 
-          member_end = member_end_name(xmi_id, source_or_target)
+          member_end = member_end_name(xmi_id, source_or_target, link.name)
           [member_end, xmi_id]
         end
 
         # @param xmi_id [String]
         # @param source_or_target [Symbol]
         # @return [String]
-        def member_end_name(xmi_id, source_or_target)
-          connector_labels(xmi_id, source_or_target) ||
-            lookup_entity_name(xmi_id) ||
-            connector_name_by_source_or_target(xmi_id, source_or_target)
+        def member_end_name(xmi_id, source_or_target, link_name)
+          connector_label = connector_labels(xmi_id, source_or_target)
+          entity_name = lookup_entity_name(xmi_id)
+          connector_name = connector_name_by_source_or_target(
+            xmi_id, source_or_target
+          )
+
+          case link_name
+          when "Aggregation"
+            connector_label || entity_name || connector_name
+          else
+            entity_name || connector_name
+          end
         end
 
         # @param owner_xmi_id [String]
@@ -409,7 +418,7 @@ module Lutaml
             source_or_target = :target
           end
 
-          member_end = member_end_name(xmi_id, source_or_target)
+          member_end = member_end_name(xmi_id, source_or_target, link.name)
 
           member_end_cardinality, _member_end_attribute_name =
             fetch_owned_attribute_node(xmi_id)
