@@ -58,7 +58,7 @@
 			<packagedElement xmi:type="uml:Enumeration" xmi:id="EAID_E497ABDA_05EF_416a_A461_03535864970D" name="ObligationType">
 				<ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="EAID_3FCE2856_4A9B_49e4_AD7B_9D72A7C6E78F" name="requirement"/>
 				<ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="EAID_0AB8A01C_021A_4a96_B56D_D01B2F819EA5" name="recommendation"/>
-				<ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="EAID_547E848A_0513_4565_8B45_495BC23F9B3D" name="premission"/>
+				<ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="EAID_547E848A_0513_4565_8B45_495BC23F9B3D" name="permission"/>
 				<ownedAttribute xmi:type="uml:Property" xmi:id="EAID_srcF02422_4D59_4c2c_A71B_1726C7732A6D" association="EAID_8CF02422_4D59_4c2c_A71B_1726C7732A6D">
 					<type xmi:idref="EAID_C1155D80_E68B_46d5_ADE5_F5639486163D"/>
 				</ownedAttribute>
@@ -463,7 +463,7 @@
 						<tags/>
 						<xrefs value="$XREFPROP=$XID={3062C843-7B79-4394-BBE7-49A0AD307ADD}$XID;$NAM=Stereotypes$NAM;$TYP=attribute property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=enum;@ENDSTEREO;$DES;$CLT={0AB8A01C-021A-4a96-B56D-D01B2F819EA5}$CLT;$SUP=&lt;none&gt;$SUP;$ENDXREF;"/>
 					</attribute>
-					<attribute xmi:idref="EAID_547E848A_0513_4565_8B45_495BC23F9B3D" name="premission" scope="Public">
+					<attribute xmi:idref="EAID_547E848A_0513_4565_8B45_495BC23F9B3D" name="permission" scope="Public">
 						<initial/>
 						<documentation/>
 						<model ea_localid="5" ea_guid="{547E848A-0513-4565-8B45-495BC23F9B3D}"/>

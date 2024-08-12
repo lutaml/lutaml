@@ -262,7 +262,7 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
               },
               {
                 definition: nil,
-                name: "premission",
+                name: "permission",
                 type: nil,
               },
             ],
