@@ -20,15 +20,8 @@ module Lutaml
         # @param options [Hash] options for parsing
         # @return [Lutaml::Uml::Document]
         def self.parse(xml, _options = {})
-          sparx_root = Xmi::Sparx::SparxRoot
-          xmi_doc = Nokogiri::XML(File.read(xml))
-          namespace = xmi_doc.at_xpath("//xmi:XMI").namespaces
-          if namespace["xmlns:uml"].split("/").last == "20131001"
-            sparx_root = Xmi::Sparx::SparxRoot2013
-          end
-
           xml_content = File.read(xml)
-          xmi_model = sparx_root.from_xml(xml_content)
+          xmi_model = Xmi::Sparx::SparxRoot.parse_xml(xml_content)
           new.parse(xmi_model)
         end
 
@@ -630,8 +623,7 @@ module Lutaml
         def select_all_packaged_elements(all_elements, model, type)
           select_all_items(all_elements, model, type, :packaged_element)
           all_elements.delete_if do |e|
-            !e.is_a?(Xmi::Uml::PackagedElement) &&
-              !e.is_a?(Xmi::Uml::PackagedElement2013)
+            !e.is_a?(Xmi::Uml::PackagedElement)
           end
         end
 

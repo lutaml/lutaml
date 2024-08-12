@@ -161,7 +161,7 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
 
       before do
         xml_content = File.read(file)
-        @xmi_root_model = Xmi::Sparx::SparxRoot2013.from_xml(xml_content)
+        @xmi_root_model = Xmi::Sparx::SparxRoot.parse_xml(xml_content)
         new_parser.send(:parse, @xmi_root_model)
       end
 
@@ -213,10 +213,7 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
         )
         expect(all_elements.count).to eq(15)
         all_elements.each do |e|
-          expect(
-            e.is_a?(Xmi::Uml::PackagedElement) ||
-            e.is_a?(Xmi::Uml::PackagedElement2013),
-          ).to be(true)
+          expect(e.is_a?(Xmi::Uml::PackagedElement)).to be(true)
         end
       end
 
@@ -228,10 +225,7 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
         )
         expect(all_elements.count).to eq(5)
         all_elements.each do |e|
-          expect(
-            e.is_a?(Xmi::Uml::PackagedElement) ||
-            e.is_a?(Xmi::Uml::PackagedElement2013),
-          ).to be(true)
+          expect(e.is_a?(Xmi::Uml::PackagedElement)).to be(true)
           expect(e.type).to eq("uml:Association")
         end
       end
@@ -240,10 +234,7 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
         all_elements = new_parser.send(:all_packaged_elements)
         expect(all_elements.count).to eq(37)
         all_elements.each do |e|
-          expect(
-            e.is_a?(Xmi::Uml::PackagedElement) ||
-            e.is_a?(Xmi::Uml::PackagedElement2013),
-          ).to be(true)
+          expect(e.is_a?(Xmi::Uml::PackagedElement)).to be(true)
         end
       end
 
@@ -262,17 +253,17 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
               {
                 definition: nil,
                 name: "requirement",
-                type: "extension_Bibliography",
+                type: nil,
               },
               {
                 definition: nil,
                 name: "recommendation",
-                type: "extension_Bibliography",
+                type: nil,
               },
               {
                 definition: nil,
                 name: "premission",
-                type: "extension_Bibliography",
+                type: nil,
               },
             ],
           }],
