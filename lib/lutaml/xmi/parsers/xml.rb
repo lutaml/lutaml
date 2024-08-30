@@ -374,9 +374,9 @@ module Lutaml
         # @return [Shale::Mapper]
         # @note xpath %(//connector[@xmi:idref="#{link_id}"])
         def fetch_connector(link_id)
-          @xmi_root_model.extension.connectors.connector.select do |con|
+          @xmi_root_model.extension.connectors.connector.find do |con|
             con.idref == link_id
-          end.first
+          end
         end
 
         # @param link_id [String]
@@ -576,9 +576,9 @@ module Lutaml
           all_elements = all_packaged_elements
 
           owned_attributes = all_elements.map(&:owned_attribute).flatten
-          oa = owned_attributes.select do |a|
+          oa = owned_attributes.find do |a|
             !!a.association && a.uml_type && a.uml_type.idref == xmi_id
-          end.first
+          end
 
           if oa
             cardinality = cardinality_min_max_value(
@@ -594,9 +594,9 @@ module Lutaml
         # @return [Shale::Mapper]
         # @note xpath %(//element[@xmi:idref="#{klass['xmi:id']}"])
         def fetch_element(klass_id)
-          @xmi_root_model.extension.elements.element.select do |e|
+          @xmi_root_model.extension.elements.element.find do |e|
             e.idref == klass_id
-          end.first
+          end
         end
 
         # @param klass [Shale::Mapper]
