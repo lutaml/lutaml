@@ -16,13 +16,37 @@ module Lutaml
         }.freeze
         attr_reader :xmi_cache, :xmi_root_model
 
-        # @param xml [String] path to xml
-        # @param options [Hash] options for parsing
-        # @return [Lutaml::Uml::Document]
-        def self.parse(xml, _options = {})
-          xml_content = File.read(xml)
-          xmi_model = Xmi::Sparx::SparxRoot.parse_xml(xml_content)
-          new.parse(xmi_model)
+        class << self
+          # @param xml [String] path to xml
+          # @param options [Hash] options for parsing
+          # @return [Lutaml::Uml::Document]
+          def parse(xml, _options = {})
+            xmi_model = get_xmi_model(xml)
+            new.parse(xmi_model)
+          end
+
+          # @param xml [String] path to xml
+          # @return [Hash]
+          def serialize_xmi(xml)
+            xmi_model = get_xmi_model(xml)
+            new.serialize_xmi(xmi_model)
+          end
+
+          # @param xml [String] path to xml
+          # @param name [String]
+          # @return [Hash]
+          def serialize_generalization_by_name(xml, name)
+            xmi_model = get_xmi_model(xml)
+            new.serialize_generalization_by_name(xmi_model, name)
+          end
+
+          private
+
+          # @param xml [String]
+          # @return [Shale::Mapper]
+          def get_xmi_model(xml)
+            Xmi::Sparx::SparxRoot.parse_xml(File.read(xml))
+          end
         end
 
         # @param xmi_model [Shale::Mapper]
@@ -30,7 +54,27 @@ module Lutaml
         def parse(xmi_model)
           @xmi_cache = {}
           @xmi_root_model = xmi_model
-          ::Lutaml::Uml::Document.new(serialize_to_hash(xmi_model))
+          serialized_hash = serialize_xmi(xmi_model)
+
+          ::Lutaml::Uml::Document.new(serialized_hash)
+        end
+
+        # @param xmi_model [Shale::Mapper]
+        # return [Hash]
+        def serialize_xmi(xmi_model)
+          @xmi_cache = {}
+          @xmi_root_model = xmi_model
+          serialize_to_hash(xmi_model)
+        end
+
+        # @param xmi_model [Shale::Mapper]
+        # @param name [String]
+        # @return [Hash]
+        def serialize_generalization_by_name(xmi_model, name)
+          @xmi_cache = {}
+          @xmi_root_model = xmi_model
+          klass = find_klass_packaged_element_by_name(name)
+          serialize_generalization(klass)
         end
 
         private
@@ -102,6 +146,110 @@ module Lutaml
               definition: doc_node_attribute_value(klass.id, "documentation"),
               stereotype: doc_node_attribute_value(klass.id, "stereotype"),
             }
+          end
+        end
+
+        # @param klass [Shale::Mapper]
+        # # @return [Hash]
+        def serialize_generalization(klass)
+          general_hash, next_general_node_id = get_top_level_general_hash(klass)
+          return general_hash unless next_general_node_id
+
+          general_hash[:general] = serialize_generalization_attributes(
+            next_general_node_id,
+          )
+
+          general_hash
+        end
+
+        # @param klass [Shale::Mapper]
+        # @return [Array<Hash>]
+        def get_top_level_general_hash(klass) # rubocop:disable Metrics/AbcSize
+          general_hash, next_general_node_id = get_general_hash(klass.id)
+          general_hash[:name] = klass.name
+          general_hash[:type] = klass.type
+          general_hash[:definition] = lookup_attribute_documentation(klass.id)
+          general_hash[:stereotype] = doc_node_attribute_value(
+            klass.id, "stereotype"
+          )
+
+          [general_hash, next_general_node_id]
+        end
+
+        # @param xmi_id [String]
+        # @param model [Shale::Mapper]
+        # @return [Array<Hash>]
+        # @note get generalization node and its owned attributes
+        def serialize_generalization_attributes(general_id)
+          general_hash, next_general_node_id = get_general_hash(general_id)
+
+          if next_general_node_id
+            general_hash[:general] = serialize_generalization_attributes(
+              next_general_node_id,
+            )
+          end
+
+          general_hash
+        end
+
+        # @param xmi_id [String]
+        # @return [Shale::Mapper]
+        def get_general_node(xmi_id)
+          find_packaged_element_by_id(xmi_id)
+        end
+
+        # @param general_node [Shale::Mapper]
+        # # @return [Hash]
+        def get_general_attributes(general_node)
+          serialize_class_attributes(general_node, with_assoc: true)
+        end
+
+        # @param general_node [Shale::Mapper]
+        # @return [String]
+        def get_next_general_node_id(general_node)
+          general_node.generalization.first&.general
+        end
+
+        # @param general_id [String]
+        # @return [Array<Hash>]
+        def get_general_hash(general_id)
+          general_node = get_general_node(general_id)
+          general_node_attrs = get_general_attributes(general_node)
+          general_upper_klass = find_upper_level_packaged_element(general_id)
+          next_general_node_id = get_next_general_node_id(general_node)
+
+          [
+            {
+              general_id: general_id,
+              general_name: general_node.name,
+              general_attributes: general_node_attrs,
+              general_upper_klass: general_upper_klass,
+              general: {},
+            },
+            next_general_node_id,
+          ]
+        end
+
+        # @param id [String]
+        # @return [Shale::Mapper]
+        def find_packaged_element_by_id(id)
+          all_packaged_elements.find { |e| e.id == id }
+        end
+
+        # @param id [String]
+        # @return [Shale::Mapper]
+        def find_upper_level_packaged_element(klass_id)
+          upper_klass = all_packaged_elements.find do |e|
+            e.packaged_element.find { |pe| pe.id == klass_id }
+          end
+          upper_klass&.name
+        end
+
+        # @param name [String]
+        # @return [Shale::Mapper]
+        def find_klass_packaged_element_by_name(name)
+          all_packaged_elements.find do |e|
+            e.type?("uml:Class") && e.name == name
           end
         end
 
@@ -452,29 +600,42 @@ module Lutaml
         end
 
         # @param klass [Shale::Mapper]
+        # @param with_assoc [Boolean]
         # @return [Array<Hash>]
         # @note xpath .//ownedAttribute[@xmi:type="uml:Property"]
-        def serialize_class_attributes(klass)
+        def serialize_class_attributes(klass, with_assoc: false)
           klass.owned_attribute.select { |attr| attr.type?("uml:Property") }
             .map do |oa|
-            uml_type = oa.uml_type
-            uml_type_idref = uml_type.idref if uml_type
+            if with_assoc || oa.association.nil?
+              attrs = build_class_attributes(oa)
 
-            if oa.association.nil?
-              {
-                id: oa.id,
-                name: oa.name,
-                type: lookup_entity_name(uml_type_idref) || uml_type_idref,
-                xmi_id: uml_type_idref,
-                is_derived: oa.is_derived,
-                cardinality: cardinality_min_max_value(
-                  oa.lower_value&.value,
-                  oa.upper_value&.value,
-                ),
-                definition: lookup_attribute_documentation(oa.id),
-              }
+              if with_assoc
+                attrs[:association] = oa.association
+              end
+
+              attrs
             end
           end.compact
+        end
+
+        # @param klass_id [String]
+        # @return [Array<Hash>]
+        def build_class_attributes(owned_attr) # rubocop:disable Metrics/MethodLength
+          uml_type = owned_attr.uml_type
+          uml_type_idref = uml_type.idref if uml_type
+
+          {
+            id: owned_attr.id,
+            name: owned_attr.name,
+            type: lookup_entity_name(uml_type_idref) || uml_type_idref,
+            xmi_id: uml_type_idref,
+            is_derived: owned_attr.is_derived,
+            cardinality: cardinality_min_max_value(
+              owned_attr.lower_value&.value,
+              owned_attr.upper_value&.value,
+            ),
+            definition: lookup_attribute_documentation(owned_attr.id),
+          }
         end
 
         # @param min [String]
