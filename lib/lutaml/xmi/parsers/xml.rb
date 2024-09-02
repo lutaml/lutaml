@@ -611,11 +611,21 @@ module Lutaml
 
               if with_assoc
                 attrs[:association] = oa.association
+                attrs[:type_ns] = get_ns_by_type(attrs[:type]) if oa.association
               end
 
               attrs
             end
           end.compact
+        end
+
+        # @param type [String]
+        # @return [String]
+        def get_ns_by_type(type)
+          return unless type
+
+          p = find_klass_packaged_element_by_name(type)
+          find_upper_level_packaged_element(p.id)
         end
 
         # @param klass_id [String]
