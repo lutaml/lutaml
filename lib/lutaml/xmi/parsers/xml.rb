@@ -173,7 +173,19 @@ module Lutaml
             klass.id, "stereotype"
           )
 
+          update_inherited_attributes(general_hash)
+          update_gen_attributes(general_hash)
+
           [general_hash, next_general_node_id]
+        end
+
+        def update_gen_attributes(general_hash)
+          general_hash[:gen_attributes] = serialize_gen_attributes
+        end
+
+        def update_inherited_attributes(general_hash)
+          general_hash[:gml_attributes] = serialize_gml_attributes
+          general_hash[:core_attributes] = serialize_core_attributes
         end
 
         # @param xmi_id [String]
@@ -250,6 +262,14 @@ module Lutaml
         def find_klass_packaged_element_by_name(name)
           all_packaged_elements.find do |e|
             e.type?("uml:Class") && e.name == name
+          end
+        end
+
+        # @param name [String]
+        # @return [Shale::Mapper]
+        def find_packaged_element_by_name(name)
+          all_packaged_elements.find do |e|
+            e.name == name
           end
         end
 
@@ -617,6 +637,44 @@ module Lutaml
               attrs
             end
           end.compact
+        end
+
+        # @return [Array<Hash>]
+        def serialize_gml_attributes
+          element = find_packaged_element_by_name("_Feature")
+          attrs = serialize_class_attributes(element, with_assoc: true)
+          attrs.each { |attr| attr[:upper_klass] = "gml" }
+        end
+
+        # @return [Array<Hash>]
+        def serialize_core_attributes
+          element = find_packaged_element_by_name("_CityObject")
+          attrs = serialize_class_attributes(element, with_assoc: false)
+          attrs.each { |attr| attr[:upper_klass] = "core" }
+        end
+
+        # @return [Array<Hash>]
+        def select_gen_attributes
+          element = find_packaged_element_by_name("gen")
+          gen_attr_element = find_packaged_element_by_name("_genericAttribute")
+
+          element.packaged_element.select do |e|
+            e.type?("uml:Class") &&
+              e.generalization&.first&.general == gen_attr_element.id
+          end
+        end
+
+        # @return [Array<Hash>]
+        def serialize_gen_attributes
+          klasses = select_gen_attributes
+
+          klasses.map do |klass|
+            attr = serialize_class_attributes(klass, with_assoc: false)
+            attr.first[:name] = klass.name
+            attr.first[:type] = "gen:#{klass.name}"
+            attr.first[:upper_klass] = "gen"
+            attr
+          end.flatten!
         end
 
         # @param type [String]
