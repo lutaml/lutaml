@@ -173,8 +173,8 @@ module Lutaml
             klass.id, "stereotype"
           )
 
-          update_inherited_attributes(general_hash)
-          update_gen_attributes(general_hash)
+          # update_inherited_attributes(general_hash)
+          # update_gen_attributes(general_hash)
 
           [general_hash, next_general_node_id]
         end
