@@ -629,14 +629,20 @@ module Lutaml
             if with_assoc || oa.association.nil?
               attrs = build_class_attributes(oa)
 
-              if with_assoc
+              if with_assoc && oa.association
                 attrs[:association] = oa.association
-                attrs[:type_ns] = get_ns_by_type(attrs[:type]) if oa.association
+                attrs[:definition] = loopup_assoc_def(oa.association)
+                attrs[:type_ns] = get_ns_by_type(attrs[:type])
               end
 
               attrs
             end
           end.compact
+        end
+
+        def loopup_assoc_def(association)
+          connector = fetch_connector(association)
+          connector&.documentation&.value
         end
 
         # @return [Array<Hash>]
