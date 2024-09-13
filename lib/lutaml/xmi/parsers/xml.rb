@@ -180,8 +180,10 @@ module Lutaml
         end
 
         def lookup_general_documentation(klass_id)
-          lookup_attribute_documentation(klass_id) ||
-            lookup_element_prop_documentation(klass_id)
+          # lookup_attribute_documentation(klass_id) ||
+          #   lookup_element_prop_documentation(klass_id)
+
+          lookup_element_prop_documentation(klass_id)
         end
 
         def update_gen_attributes(general_hash)
