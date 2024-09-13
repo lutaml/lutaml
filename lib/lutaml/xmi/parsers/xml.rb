@@ -168,7 +168,7 @@ module Lutaml
           general_hash, next_general_node_id = get_general_hash(klass.id)
           general_hash[:name] = klass.name
           general_hash[:type] = klass.type
-          general_hash[:definition] = lookup_attribute_documentation(klass.id)
+          general_hash[:definition] = lookup_general_documentation(klass.id)
           general_hash[:stereotype] = doc_node_attribute_value(
             klass.id, "stereotype"
           )
@@ -177,6 +177,11 @@ module Lutaml
           # update_gen_attributes(general_hash)
 
           [general_hash, next_general_node_id]
+        end
+
+        def lookup_general_documentation(klass_id)
+          lookup_attribute_documentation(klass_id) ||
+            lookup_element_prop_documentation(klass_id)
         end
 
         def update_gen_attributes(general_hash)
@@ -767,6 +772,18 @@ module Lutaml
           return unless attribute_node&.documentation
 
           attribute_node&.documentation&.value
+        end
+
+        # @param xmi_id [String]
+        # @return [String]
+        def lookup_element_prop_documentation(xmi_id)
+          element_node = @xmi_root_model.extension.elements.element.find do |e|
+            e.idref == xmi_id
+          end
+
+          return unless element_node&.properties
+
+          element_node&.properties&.documentation
         end
 
         # @param xmi_id [String]
