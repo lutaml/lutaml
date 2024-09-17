@@ -33,6 +33,13 @@ module Lutaml
           end
 
           # @param xml [String] path to xml
+          # @return [Liquid::Drop]
+          def serialize_xmi_to_liquid(xml)
+            xmi_model = get_xmi_model(xml)
+            new.serialize_xmi_to_liquid(xmi_model)
+          end
+
+          # @param xml [String] path to xml
           # @param name [String]
           # @return [Hash]
           def serialize_generalization_by_name(xml, name)
@@ -65,6 +72,16 @@ module Lutaml
           @xmi_cache = {}
           @xmi_root_model = xmi_model
           serialize_to_hash(xmi_model)
+        end
+
+        # @param xmi_model [Shale::Mapper]
+        # return [Liquid::Drop]
+        def serialize_xmi_to_liquid(xmi_model)
+          @xmi_cache = {}
+          @xmi_root_model = xmi_model
+          serialized_hash = serialize_xmi(xmi_model)
+
+          ::Lutaml::XMI::RootDrop.new(serialized_hash)
         end
 
         # @param xmi_model [Shale::Mapper]
