@@ -271,6 +271,8 @@ module Lutaml
         # @return [Array<Hash>]
         def get_general_hash(general_id)
           general_node = get_general_node(general_id)
+          return [] unless general_node
+
           general_node_attrs = get_general_attributes(general_node)
           general_upper_klass = find_upper_level_packaged_element(general_id)
           next_general_node_id = get_next_general_node_id(general_node)
@@ -734,6 +736,8 @@ module Lutaml
           return unless type
 
           p = find_klass_packaged_element_by_name(type)
+          return unless p
+
           find_upper_level_packaged_element(p.id)
         end
 
