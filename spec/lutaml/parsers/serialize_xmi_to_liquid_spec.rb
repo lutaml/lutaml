@@ -153,5 +153,42 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
           .to(eq(["aada\n"]))
       end
     end
+
+    context "when parsing xmi with generalization" do
+      let(:file) { File.new(fixtures_path("plateau_all_packages_export.xmi")) }
+
+      it "should output attributes correctly" do
+        test_package = output.packages.first.packages[2].packages[9]
+        gen_obj = test_package.classes[3].generalization
+        expect(test_package.name).to eq("bldg")
+        expect(gen_obj.name).to eq("Building")
+        expect(gen_obj.general.attributes.first[:name]).to eq("class")
+        expect(gen_obj.general.attributes.first[:id]).to eq(
+          "EAID_FDC435D4_544B_4122_BEA1_7C0B55136938",
+        )
+        expect(gen_obj.general.attributes.first[:type]).to eq("gml::CodeType")
+        expect(gen_obj.general.attributes.first[:xmi_id]).to eq(
+          "EAJava_gml__CodeType",
+        )
+        expect(gen_obj.general.attributes.first[:is_derived]).to eq(nil)
+        expect(gen_obj.general.attributes.first[:association]).to eq(nil)
+        expect(gen_obj.general.attributes.first[:definition]).to eq(
+          "建築物の形態による区分。コードリスト(&lt;&lt;Building_class.xml&gt;&gt;)より選択する。",
+        )
+        expect(gen_obj.general.attributes[20][:association]).to eq(
+          "EAID_C17BA5C1_47DE_4551_92A3_1DE7D9AB3901",
+        )
+        expect(gen_obj.inherited_props[0].name).to eq("description")
+        expect(gen_obj.inherited_props[0].type).to eq("gml::StringOrRefType")
+        expect(gen_obj.inherited_props[0].type_ns).to eq(nil)
+        expect(gen_obj.inherited_props[0].upper_klass).to eq("gml")
+        expect(gen_obj.inherited_props[0].gen_name).to eq("_Feature")
+        expect(gen_obj.inherited_props[0].name_ns).to eq("gml")
+        expect(gen_obj.inherited_props[0].association).to eq(nil)
+        expect(gen_obj.inherited_assoc_props[0].association).to eq(
+          "EAID_98F26EAF_7E3C_48b2_AAE7_4769CF1AAFD6",
+        )
+      end
+    end
   end
 end
