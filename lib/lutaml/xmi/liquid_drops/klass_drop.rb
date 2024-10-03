@@ -47,6 +47,12 @@ module Lutaml
         end
       end
 
+      def generalization
+        return {} if @model[:generalization].nil?
+
+        ::Lutaml::XMI::GeneralizationDrop.new(@model[:generalization])
+      end
+
       def is_abstract
         @model[:is_abstract]
       end

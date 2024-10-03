@@ -26,10 +26,11 @@ module Lutaml
           end
 
           # @param xml [String] path to xml
+          # @param with_gen [Boolean]
           # @return [Hash]
-          def serialize_xmi(xml)
+          def serialize_xmi(xml, with_gen: false)
             xmi_model = get_xmi_model(xml)
-            new.serialize_xmi(xmi_model)
+            new.serialize_xmi(xmi_model, with_gen: with_gen)
           end
 
           # @param xml [String] path to xml
@@ -57,10 +58,15 @@ module Lutaml
         end
 
         # @param xmi_model [Shale::Mapper]
-        # @return [Lutaml::Uml::Document]
-        def parse(xmi_model)
+        def set_xmi_model(xmi_model)
           @xmi_cache = {}
           @xmi_root_model = xmi_model
+        end
+
+        # @param xmi_model [Shale::Mapper]
+        # @return [Lutaml::Uml::Document]
+        def parse(xmi_model)
+          set_xmi_model(xmi_model)
           serialized_hash = serialize_xmi(xmi_model)
 
           ::Lutaml::Uml::Document.new(serialized_hash)
@@ -68,18 +74,16 @@ module Lutaml
 
         # @param xmi_model [Shale::Mapper]
         # return [Hash]
-        def serialize_xmi(xmi_model)
-          @xmi_cache = {}
-          @xmi_root_model = xmi_model
-          serialize_to_hash(xmi_model)
+        def serialize_xmi(xmi_model, with_gen: false)
+          set_xmi_model(xmi_model)
+          serialize_to_hash(xmi_model, with_gen: with_gen)
         end
 
         # @param xmi_model [Shale::Mapper]
         # return [Liquid::Drop]
         def serialize_xmi_to_liquid(xmi_model)
-          @xmi_cache = {}
-          @xmi_root_model = xmi_model
-          serialized_hash = serialize_xmi(xmi_model)
+          set_xmi_model(xmi_model)
+          serialized_hash = serialize_xmi(xmi_model, with_gen: true)
 
           ::Lutaml::XMI::RootDrop.new(serialized_hash)
         end
@@ -88,10 +92,11 @@ module Lutaml
         # @param name [String]
         # @return [Hash]
         def serialize_generalization_by_name(xmi_model, name)
-          @xmi_cache = {}
-          @xmi_root_model = xmi_model
+          set_xmi_model(xmi_model)
           klass = find_klass_packaged_element_by_name(name)
-          serialize_generalization(klass)
+          serialized_hash = serialize_generalization(klass)
+
+          ::Lutaml::XMI::GeneralizationDrop.new(serialized_hash)
         end
 
         private
@@ -99,29 +104,30 @@ module Lutaml
         # @param xmi_model [Shale::Mapper]
         # @return [Hash]
         # @note xpath: //uml:Model[@xmi:type="uml:Model"]
-        def serialize_to_hash(xmi_model)
+        def serialize_to_hash(xmi_model, with_gen: false)
           model = xmi_model.model
           {
             name: model.name,
-            packages: serialize_model_packages(model),
+            packages: serialize_model_packages(model, with_gen: with_gen),
           }
         end
 
         # @param model [Shale::Mapper]
         # @return [Array<Hash>]
         # @note xpath ./packagedElement[@xmi:type="uml:Package"]
-        def serialize_model_packages(model)
+        def serialize_model_packages(model, with_gen: false)
           model.packaged_element.select do |e|
             e.type?("uml:Package")
           end.map do |package|
             {
               xmi_id: package.id,
               name: get_package_name(package),
-              classes: serialize_model_classes(package, model),
+              classes: serialize_model_classes(package, model,
+                                               with_gen: with_gen),
               enums: serialize_model_enums(package),
               data_types: serialize_model_data_types(package),
               diagrams: serialize_model_diagrams(package.id),
-              packages: serialize_model_packages(package),
+              packages: serialize_model_packages(package, with_gen: with_gen),
               definition: doc_node_attribute_value(package.id, "documentation"),
               stereotype: doc_node_attribute_value(package.id, "stereotype"),
             }
@@ -145,25 +151,38 @@ module Lutaml
         # @return [Array<Hash>]
         # @note xpath ./packagedElement[@xmi:type="uml:Class" or
         #                               @xmi:type="uml:AssociationClass"]
-        def serialize_model_classes(package, model)
+        def serialize_model_classes(package, model, with_gen: false)
           package.packaged_element.select do |e|
             e.type?("uml:Class") || e.type?("uml:AssociationClass") ||
               e.type?("uml:Interface")
           end.map do |klass|
-            {
-              xmi_id: klass.id,
-              name: klass.name,
-              package: model,
-              type: klass.type.split(":").last,
-              attributes: serialize_class_attributes(klass),
-              associations: serialize_model_associations(klass.id),
-              operations: serialize_class_operations(klass),
-              constraints: serialize_class_constraints(klass.id),
-              is_abstract: doc_node_attribute_value(klass.id, "isAbstract"),
-              definition: doc_node_attribute_value(klass.id, "documentation"),
-              stereotype: doc_node_attribute_value(klass.id, "stereotype"),
-            }
+            build_klass_hash(klass, model, with_gen: with_gen)
           end
+        end
+
+        # @param klass [Shale::Mapper]
+        # @param model [Shale::Mapper]
+        # @return [Hash]
+        def build_klass_hash(klass, model, with_gen: false) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+          klass_hash = {
+            xmi_id: klass.id,
+            name: klass.name,
+            package: model,
+            type: klass.type.split(":").last,
+            attributes: serialize_class_attributes(klass),
+            associations: serialize_model_associations(klass.id),
+            operations: serialize_class_operations(klass),
+            constraints: serialize_class_constraints(klass.id),
+            is_abstract: doc_node_attribute_value(klass.id, "isAbstract"),
+            definition: doc_node_attribute_value(klass.id, "documentation"),
+            stereotype: doc_node_attribute_value(klass.id, "stereotype"),
+          }
+
+          if with_gen && klass.type?("uml:Class")
+            klass_hash[:generalization] = serialize_generalization(klass)
+          end
+
+          klass_hash
         end
 
         # @param klass [Shale::Mapper]
@@ -237,10 +256,9 @@ module Lutaml
         # @param general_node [Shale::Mapper]
         # # @return [Hash]
         def get_general_attributes(general_node)
-          attrs = serialize_class_attributes(general_node, with_assoc: true)
+          serialize_class_attributes(general_node, with_assoc: true)
           # turn on sorting if necessary
           # attrs.sort_by { |i| i[:name] }
-          attrs
         end
 
         # @param general_node [Shale::Mapper]
