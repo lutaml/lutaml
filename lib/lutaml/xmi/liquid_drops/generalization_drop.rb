@@ -27,7 +27,7 @@ module Lutaml
       end
 
       def has_general?
-        !@gen[:general].empty?
+        !!@gen[:general]
       end
 
       def attributes
