@@ -93,10 +93,11 @@ module Lutaml
         # @return [Hash]
         def serialize_generalization_by_name(xmi_model, name)
           set_xmi_model(xmi_model)
+          model = xmi_model.model
           klass = find_klass_packaged_element_by_name(name)
-          serialized_hash = serialize_generalization(klass)
+          serialized_hash = build_klass_hash(klass, model, with_gen: true)
 
-          ::Lutaml::XMI::GeneralizationDrop.new(serialized_hash)
+          ::Lutaml::XMI::KlassDrop.new(serialized_hash)
         end
 
         private
