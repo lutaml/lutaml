@@ -255,11 +255,10 @@ module Lutaml
         end
 
         # @param general_node [Shale::Mapper]
-        # # @return [Hash]
+        # @return [Hash]
         def get_general_attributes(general_node)
-          serialize_class_attributes(general_node, with_assoc: true)
-          # turn on sorting if necessary
-          # attrs.sort_by { |i| i[:name] }
+          attrs = serialize_class_attributes(general_node, with_assoc: true)
+          attrs.sort_by { |i| i[:name].to_s }
         end
 
         # @param general_node [Shale::Mapper]
