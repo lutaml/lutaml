@@ -1,11 +1,11 @@
 require "spec_helper"
 
 RSpec.describe Lutaml::XMI::Parsers::XML do
-  xdescribe '.parse' do
+  xdescribe ".parse" do
     subject(:parse) { described_class.parse(file) }
 
-    context 'when simple xmi schema' do
-      let(:file) { File.new(fixtures_path('ea-xmi-2.4.2.xmi')) }
+    context "when simple xmi schema" do
+      let(:file) { File.new(fixtures_path("ea-xmi-2.4.2.xmi")) }
       let(:expected_class_names) do
         %w[
           BibliographicItem
@@ -33,7 +33,9 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
         ]
       end
       let(:expected_enum_names) { ["ObligationType"] }
-      let(:expected_enum_xmi_ids) { ["EAID_E497ABDA_05EF_416a_A461_03535864970D"] }
+      let(:expected_enum_xmi_ids) do
+        ["EAID_E497ABDA_05EF_416a_A461_03535864970D"]
+      end
       let(:expected_attributes_names) do
         %w[
           classification
@@ -98,15 +100,17 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
       let(:first_nested_package) { parse.packages.first.packages.first }
 
       it "parses xml file into Lutaml::Uml::Node::Document object" do
-        expect(parse).to(be_instance_of(::Lutaml::Uml::Document))
+        expect(parse).to(be_instance_of(Lutaml::Uml::Document))
       end
 
       it "correctly parses package tree" do
-        expect(parse.packages.map(&:name)).to(eq(['ISO 19170-1 Edition 1']))
+        expect(parse.packages.map(&:name)).to(eq(["ISO 19170-1 Edition 1"]))
         expect(first_package.packages.map(&:name))
-          .to(eq(["requirement type class diagram", "Common Spatio-temporal Classes"]))
+          .to(eq(["requirement type class diagram",
+                  "Common Spatio-temporal Classes"]))
         expect(first_package.packages.last.packages.map(&:name))
-          .to(eq(["Temporal and Zonal Geometry", "Temporal and Zonal RS using Identifiers"]))
+          .to(eq(["Temporal and Zonal Geometry",
+                  "Temporal and Zonal RS using Identifiers"]))
       end
 
       it "correctly parses package classes" do
@@ -120,25 +124,36 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
       end
 
       it "correctly parses entities and attributes for class" do
-        klass = first_nested_package.classes.find { |entity| entity.name == 'RequirementType' }
+        klass = first_nested_package.classes.find do |entity|
+          entity.name == "RequirementType"
+        end
         expect(klass.attributes.map(&:name)).to(eq(expected_attributes_names))
         expect(klass.attributes.map(&:type)).to(eq(expected_attributes_types))
       end
 
       it "correctly parses associations for class" do
-        klass = first_nested_package.classes.find { |entity| entity.name == 'TemporalGeometricPrimitive' }
+        klass = first_nested_package.classes.find do |entity|
+          entity.name == "TemporalGeometricPrimitive"
+        end
         expect(klass.associations.map(&:member_end).compact).to(eq(expected_association_names))
 
-        inheritance = klass.associations.find { |entity| entity.member_end == 'TemporalGeometry' }
-        expect(inheritance.member_end_type).to eq('inheritance')
-        expect(inheritance.member_end_cardinality).to eq({"min"=>"C", "max"=>"*"})
+        inheritance = klass.associations.find do |entity|
+          entity.member_end == "TemporalGeometry"
+        end
+        expect(inheritance.member_end_type).to eq("inheritance")
+        expect(inheritance.member_end_cardinality).to eq({ min: "C",
+                                                           max: "*" })
       end
 
       it "correctly parses diagrams for package" do
         root_package = parse.packages.first
         expect(root_package.diagrams.length).to(eq(2))
-        expect(root_package.diagrams.map(&:name)).to(eq(['Fig: DGGS Package Diagram', 'Fig: Context for Temporal Geometry and Topology']))
-        expect(root_package.diagrams.map(&:definition)).to(eq(['this is a documentation', '']))
+        expect(root_package.diagrams.map(&:name)).to(eq([
+                                                          "Fig: DGGS Package Diagram", "Fig: Context for Temporal Geometry and Topology"
+                                                        ]))
+        expect(root_package.diagrams.map(&:definition)).to(eq([
+                                                                "this is a documentation", ""
+                                                              ]))
       end
     end
   end

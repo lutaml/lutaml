@@ -10,10 +10,6 @@ module Lutaml
     module Parsers
       # Class for parsing .xmi schema files into ::Lutaml::Uml::Document
       class XML
-        LOWER_VALUE_MAPPINGS = {
-          "0" => "C",
-          "1" => "M",
-        }.freeze
         attr_reader :xmi_cache, :xmi_root_model
 
         class << self
@@ -766,18 +762,9 @@ module Lutaml
         # @return [Hash]
         def cardinality_min_max_value(min, max)
           {
-            "min" => cardinality_value(min, true),
-            "max" => cardinality_value(max, false),
+            min: min,
+            max: max,
           }
-        end
-
-        # @param value [String]
-        # @param is_min [Boolean]
-        # @return [String]
-        def cardinality_value(value, is_min = false)
-          return unless value
-
-          is_min ? LOWER_VALUE_MAPPINGS[value.to_s] : value
         end
 
         # @node [Shale::Mapper]

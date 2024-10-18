@@ -3,11 +3,6 @@
 module Lutaml
   module XMI
     class GeneralizationAttributeDrop < Liquid::Drop
-      LOWER_VALUE_MAPPINGS = {
-        "C" => "0",
-        "M" => "1",
-      }.freeze
-
       def initialize(attr, upper_klass, gen_name) # rubocop:disable Lint/MissingSuper
         @attr = attr
         @upper_klass = upper_klass
@@ -35,18 +30,7 @@ module Lutaml
       end
 
       def cardinality
-        min = @attr[:cardinality]["min"]
-        min = min.nil? ? nil : LOWER_VALUE_MAPPINGS[min]
-
-        "#{min}..#{@attr[:cardinality]['max']}"
-      end
-
-      def min_cardinality
-        @attr[:cardinality]["min"]
-      end
-
-      def max_cardinality
-        @attr[:cardinality]["max"]
+        ::Lutaml::XMI::CardinalityDrop.new(@attr[:cardinality])
       end
 
       def definition

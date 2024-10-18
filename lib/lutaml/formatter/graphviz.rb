@@ -189,7 +189,7 @@ module Lutaml
       def format_label(name, cardinality = {})
         res = "+#{name}"
         if cardinality.nil? ||
-            (cardinality["min"].nil? || cardinality["max"].nil?)
+            (cardinality[:min].nil? || cardinality[:max].nil?)
           return res
         end
 

@@ -321,7 +321,7 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
             xmi_id: "EAID_2CA98919_831B_4182_BBC2_C2EAF17FEF60",
             member_end: "RequirementType",
             member_end_type: "aggregation",
-            member_end_cardinality: { "min" => nil, "max" => nil },
+            member_end_cardinality: { min: nil, max: nil },
             member_end_attribute_name: "RequirementType",
             member_end_xmi_id: "EAID_C1155D80_E68B_46d5_ADE5_F5639486163D",
             owner_end: "BibliographicItem",
@@ -397,7 +397,7 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
         expect(val).to eq([
                             "RequirementType",
                             "aggregation",
-                            { "max" => nil, "min" => nil },
+                            { max: nil, min: nil },
                             "RequirementType",
                             "EAID_C1155D80_E68B_46d5_ADE5_F5639486163D",
                           ])
@@ -407,7 +407,7 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
         link = @xmi_root_model.extension.elements.element[1].links
           .association.first
         val = new_parser.send(:fetch_assoc_connector, link.id, "target")
-        expect(val).to eq([{ "max" => nil, "min" => nil }, "BibliographicItem"])
+        expect(val).to eq([{ max: nil, min: nil }, "BibliographicItem"])
       end
 
       it ".generalization_association if link.start == owner_xmi_id" do
@@ -422,7 +422,7 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
         expect(val).to eq([
                             "RequirementType",
                             "inheritance",
-                            { "max" => nil, "min" => nil },
+                            { max: nil, min: nil },
                             nil,
                             "EAID_C1155D80_E68B_46d5_ADE5_F5639486163D",
                           ])
@@ -448,12 +448,12 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
 
       it ".cardinality_min_max_value with min 0" do
         val = new_parser.send(:cardinality_min_max_value, 0, 5)
-        expect(val).to eq({ "max" => 5, "min" => "C" })
+        expect(val).to eq({ max: 5, min: 0 })
       end
 
       it ".cardinality_min_max_value with min 1" do
         val = new_parser.send(:cardinality_min_max_value, 1, 5)
-        expect(val).to eq({ "max" => 5, "min" => "M" })
+        expect(val).to eq({ max: 5, min: 1 })
       end
 
       it ".fetch_owned_attribute_node" do
