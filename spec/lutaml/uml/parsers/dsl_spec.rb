@@ -138,8 +138,8 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
           expect(association.member_end).to(eq("AttributeProfile"))
           expect(association.member_end_attribute_name)
             .to(eq("attributeProfile"))
-          expect(association.member_end_cardinality).to(eq(min: "0",
-                                                           max: "*"))
+          expect(association.member_end_cardinality).to(eq("min" => "0",
+                                                           "max" => "*"))
         end
       end
 
