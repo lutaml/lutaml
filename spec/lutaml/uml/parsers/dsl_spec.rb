@@ -73,19 +73,19 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
                 .attributes.length).to eq(13)
         expect(by_name(classes, "AttributeProfile")
                 .attributes.map(&:name))
-              .to(eq(["imlicistAttributeProfile",
-                "attributeProfile",
-                "attributeProfile1",
-                "privateAttributeProfile",
-                "friendlyAttributeProfile",
-                "friendlyAttributeProfile1",
-                "protectedAttributeProfile",
-                "type/text",
-                "slashType",
-                "application/docbook+xml",
-                "application/tei+xml",
-                "text/x-asciidoc",
-                "application/x-isodoc+xml"]))
+          .to(eq(["imlicistAttributeProfile",
+                  "attributeProfile",
+                  "attributeProfile1",
+                  "privateAttributeProfile",
+                  "friendlyAttributeProfile",
+                  "friendlyAttributeProfile1",
+                  "protectedAttributeProfile",
+                  "type/text",
+                  "slashType",
+                  "application/docbook+xml",
+                  "application/tei+xml",
+                  "text/x-asciidoc",
+                  "application/x-isodoc+xml"]))
       end
 
       it "creates the correct attributes with the correct visibility" do
@@ -138,7 +138,8 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
           expect(association.member_end).to(eq("AttributeProfile"))
           expect(association.member_end_attribute_name)
             .to(eq("attributeProfile"))
-          expect(association.member_end_cardinality).to(eq("min" => "0", "max" => "*"))
+          expect(association.member_end_cardinality).to(eq(min: "0",
+                                                           max: "*"))
         end
       end
 
@@ -338,7 +339,7 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
       it "returns error object and prints line number" do
         expect { described_class.parse(content, {}) }
           .to(raise_error(Lutaml::Uml::Parsers::ParsingError,
-              /but got ":" at line 25 char 32/))
+                          /but got ":" at line 25 char 32/))
       end
     end
   end
