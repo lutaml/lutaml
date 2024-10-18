@@ -8,11 +8,11 @@ module Lutaml
       end
 
       def min
-        @model["min"]
+        @model[:min]
       end
 
       def max
-        @model["max"]
+        @model[:max]
       end
     end
   end

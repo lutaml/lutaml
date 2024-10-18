@@ -148,13 +148,13 @@ module Lutaml
           if node.owner_end_attribute_name
             attributes["headlabel"] = format_label(
               node.owner_end_attribute_name,
-              node.owner_end_cardinality
+              node.owner_end_cardinality,
             )
           end
           if node.member_end_attribute_name
             attributes["taillabel"] = format_label(
               node.member_end_attribute_name,
-              node.member_end_cardinality
+              node.member_end_cardinality,
             )
           end
 
@@ -192,7 +192,7 @@ module Lutaml
         def format_label(name, cardinality = {})
           res = "+#{name}"
           if cardinality.nil? ||
-              (cardinality["min"].nil? || cardinality["max"].nil?)
+              (cardinality[:min].nil? || cardinality[:max].nil?)
             return res
           end
 
