@@ -3,8 +3,9 @@
 module Lutaml
   module XMI
     class RootDrop < Liquid::Drop
-      def initialize(model) # rubocop:disable Lint/MissingSuper
+      def initialize(model, guidance = nil) # rubocop:disable Lint/MissingSuper
         @model = model
+        @guidance = guidance
         @children_packages ||= packages.map do |pkg|
           [pkg, pkg.packages, pkg.packages.map(&:children_packages)]
         end.flatten.uniq
@@ -16,7 +17,7 @@ module Lutaml
 
       def packages
         @model[:packages].map do |package|
-          ::Lutaml::XMI::PackageDrop.new(package)
+          ::Lutaml::XMI::PackageDrop.new(package, @guidance)
         end
       end
 

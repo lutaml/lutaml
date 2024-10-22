@@ -31,17 +31,17 @@ module Lutaml
 
           # @param xml [String] path to xml
           # @return [Liquid::Drop]
-          def serialize_xmi_to_liquid(xml)
+          def serialize_xmi_to_liquid(xml, guidance = nil)
             xmi_model = get_xmi_model(xml)
-            new.serialize_xmi_to_liquid(xmi_model)
+            new.serialize_xmi_to_liquid(xmi_model, guidance)
           end
 
           # @param xml [String] path to xml
           # @param name [String]
           # @return [Hash]
-          def serialize_generalization_by_name(xml, name)
+          def serialize_generalization_by_name(xml, name, guidance = nil)
             xmi_model = get_xmi_model(xml)
-            new.serialize_generalization_by_name(xmi_model, name)
+            new.serialize_generalization_by_name(xmi_model, name, guidance)
           end
 
           private
@@ -77,23 +77,32 @@ module Lutaml
 
         # @param xmi_model [Shale::Mapper]
         # return [Liquid::Drop]
-        def serialize_xmi_to_liquid(xmi_model)
+        def serialize_xmi_to_liquid(xmi_model, guidance_yaml = nil)
           set_xmi_model(xmi_model)
           serialized_hash = serialize_xmi(xmi_model, with_gen: true)
+          guidance = get_guidance(guidance_yaml)
+          ::Lutaml::XMI::RootDrop.new(serialized_hash, guidance)
+        end
 
-          ::Lutaml::XMI::RootDrop.new(serialized_hash)
+        # @param yaml [String]
+        # @return [Hash]
+        def get_guidance(yaml)
+          return unless yaml
+
+          YAML.safe_load(File.read(yaml, encoding: "UTF-8"))
         end
 
         # @param xmi_model [Shale::Mapper]
         # @param name [String]
         # @return [Hash]
-        def serialize_generalization_by_name(xmi_model, name)
+        def serialize_generalization_by_name(xmi_model, name,
+                                             guidance_yaml = nil)
           set_xmi_model(xmi_model)
           model = xmi_model.model
           klass = find_klass_packaged_element_by_name(name)
           serialized_hash = build_klass_hash(klass, model, with_gen: true)
-
-          ::Lutaml::XMI::KlassDrop.new(serialized_hash)
+          guidance = get_guidance(guidance_yaml)
+          ::Lutaml::XMI::KlassDrop.new(serialized_hash, guidance)
         end
 
         private
