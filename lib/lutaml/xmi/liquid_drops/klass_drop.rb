@@ -3,8 +3,17 @@
 module Lutaml
   module XMI
     class KlassDrop < Liquid::Drop
-      def initialize(model) # rubocop:disable Lint/MissingSuper
+      def initialize(model, guidance = nil) # rubocop:disable Lint/MissingSuper
         @model = model
+        @guidance = guidance
+
+        if guidance && guidance["classes"].map do |c|
+          c["name"]
+        end.include?(@model[:name])
+          @klass_guidance = guidance["classes"].find do |klass|
+            klass["name"] == @model[:name]
+          end
+        end
       end
 
       def xmi_id
@@ -16,7 +25,7 @@ module Lutaml
       end
 
       def package
-        ::Lutaml::XMI::PackageDrop.new(@model[:package])
+        ::Lutaml::XMI::PackageDrop.new(@model[:package], @guidance)
       end
 
       def type
@@ -50,7 +59,8 @@ module Lutaml
       def generalization
         return {} if @model[:generalization].nil?
 
-        ::Lutaml::XMI::GeneralizationDrop.new(@model[:generalization])
+        ::Lutaml::XMI::GeneralizationDrop.new(@model[:generalization],
+                                              @klass_guidance)
       end
 
       def is_abstract

@@ -1,0 +1,58 @@
+---
+classes:
+  - name: Building
+    attributes:
+      - name: gml:boundedBy
+        used: false
+        guidance: |
+          この属性は使用されていません。
+      - name: core:relativeToTerrain
+        used: false
+        guidance: |
+          この属性は使用されていません。
+      - name: core:relativeToWater
+        used: false
+        guidance: |
+          この属性は使用されていません。
+      - name: bldg:function
+        used: false
+        guidance: |
+          この属性は使用されていません。
+      - name: bldg:storeyHeightsAboveGround
+        used: false
+        guidance: |
+          この属性は使用されていません。
+      - name: bldg:storeyHeightsBelowGround
+        used: false
+        guidance: |
+          この属性は使用されていません。
+      - name: bldg:lod2MultiSurface
+        used: false
+        guidance: |
+          この関連役割は使用されていません。
+      - name: bldg:lod3MultiSurface
+        used: false
+        guidance: |
+          この関連役割は使用されていません。
+  - name: BuildingPart
+    attributes:
+      - name: gml:boundedBy
+        used: false
+        guidance: |
+          この属性は使用されていません。
+      - name: core:relativeToTerrain
+        used: false
+        guidance: |
+          この属性は使用されていません。
+      - name: core:relativeToWater
+        used: false
+        guidance: |
+          この属性は使用されていません。
+      - name: bldg:function
+        used: false
+        guidance: |
+          この関連役割は使用されていません。
+      - name: bldg:storeyHeightsAboveGround
+        used: false
+        guidance: |
+          この関連役割は使用されていません。

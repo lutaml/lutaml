@@ -3,11 +3,12 @@
 module Lutaml
   module XMI
     class GeneralizationDrop < Liquid::Drop
-      def initialize(gen) # rubocop:disable Lint/MissingSuper
+      def initialize(gen, guidance = nil) # rubocop:disable Lint/MissingSuper
         @gen = gen
         @looped_general_item = false
         @inherited_props = []
         @inherited_assoc_props = []
+        @guidance = guidance
       end
 
       def id
@@ -23,7 +24,7 @@ module Lutaml
       end
 
       def general
-        GeneralizationDrop.new(@gen[:general]) if @gen[:general]
+        GeneralizationDrop.new(@gen[:general], @guidance) if @gen[:general]
       end
 
       def has_general?
@@ -54,7 +55,7 @@ module Lutaml
         attributes.select do |attr|
           attr[:association].nil?
         end.map do |attr|
-          GeneralizationAttributeDrop.new(attr, upper_klass, name)
+          GeneralizationAttributeDrop.new(attr, upper_klass, name, @guidance)
         end
       end
 
@@ -63,7 +64,7 @@ module Lutaml
         attributes.select do |attr|
           attr[:association]
         end.map do |attr|
-          GeneralizationAttributeDrop.new(attr, upper_klass, name)
+          GeneralizationAttributeDrop.new(attr, upper_klass, name, @guidance)
         end
       end
 
@@ -89,7 +90,7 @@ module Lutaml
           # reverse the order to show super class first
           general_item.attributes.reverse_each do |attr|
             attr_drop = GeneralizationAttributeDrop.new(attr, gen_upper_klass,
-                                                        gen_name)
+                                                        gen_name, @guidance)
             if attr[:association]
               @inherited_assoc_props << attr_drop
             else

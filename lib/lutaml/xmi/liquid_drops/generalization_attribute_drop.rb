@@ -3,10 +3,11 @@
 module Lutaml
   module XMI
     class GeneralizationAttributeDrop < Liquid::Drop
-      def initialize(attr, upper_klass, gen_name) # rubocop:disable Lint/MissingSuper
+      def initialize(attr, upper_klass, gen_name, guidance = nil) # rubocop:disable Lint/MissingSuper
         @attr = attr
         @upper_klass = upper_klass
         @gen_name = gen_name
+        @guidance = guidance
       end
 
       def id
@@ -67,6 +68,25 @@ module Lutaml
 
         name_ns = upper_klass if name_ns.nil?
         name_ns
+      end
+
+      def used?
+        if @guidance
+          col_name = "#{name_ns}:#{name}"
+          attr = @guidance["attributes"].find { |a| a["name"] == col_name }
+          return attr["used"] if attr
+        end
+
+        true
+      end
+
+      def guidance
+        if @guidance
+          col_name = "#{name_ns}:#{name}"
+          attr = @guidance["attributes"].find { |a| a["name"] == col_name }
+
+          attr["guidance"] if attr
+        end
       end
     end
   end
