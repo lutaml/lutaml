@@ -163,32 +163,32 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
         expect(test_package.name).to eq("bldg")
         expect(gen_obj.name).to eq("Building")
 
-        expect(gen_obj.general.attributes[15][:name]).to eq("class")
-        expect(gen_obj.general.attributes[15][:id]).to eq(
+        expect(gen_obj.general.attributes[0][:name]).to eq("class")
+        expect(gen_obj.general.attributes[0][:id]).to eq(
           "EAID_FDC435D4_544B_4122_BEA1_7C0B55136938",
         )
-        expect(gen_obj.general.attributes[15][:type]).to eq("gml::CodeType")
-        expect(gen_obj.general.attributes[15][:xmi_id]).to eq(
+        expect(gen_obj.general.attributes[0][:type]).to eq("gml::CodeType")
+        expect(gen_obj.general.attributes[0][:xmi_id]).to eq(
           "EAJava_gml__CodeType",
         )
-        expect(gen_obj.general.attributes[15][:is_derived]).to eq(nil)
-        expect(gen_obj.general.attributes[15][:association]).to eq(nil)
-        expect(gen_obj.general.attributes[15][:definition]).to eq(
+        expect(gen_obj.general.attributes[0][:is_derived]).to eq(nil)
+        expect(gen_obj.general.attributes[0][:association]).to eq(nil)
+        expect(gen_obj.general.attributes[0][:definition]).to eq(
           "建築物の形態による区分。コードリスト(&lt;&lt;Building_class.xml&gt;&gt;)より選択する。",
         )
         expect(gen_obj.general.attributes[28][:association]).to eq(
-          "EAID_C17BA5C1_47DE_4551_92A3_1DE7D9AB3901",
+          "EAID_99ADD620_BC08_4adc_80A1_A8EB2A1B2E2F",
         )
 
-        expect(gen_obj.inherited_props[1].name).to eq("description")
-        expect(gen_obj.inherited_props[1].type).to eq("gml::StringOrRefType")
-        expect(gen_obj.inherited_props[1].type_ns).to eq(nil)
-        expect(gen_obj.inherited_props[1].upper_klass).to eq("gml")
-        expect(gen_obj.inherited_props[1].gen_name).to eq("_Feature")
-        expect(gen_obj.inherited_props[1].name_ns).to eq("gml")
-        expect(gen_obj.inherited_props[1].association).to eq(nil)
+        expect(gen_obj.inherited_props[0].name).to eq("description")
+        expect(gen_obj.inherited_props[0].type).to eq("gml::StringOrRefType")
+        expect(gen_obj.inherited_props[0].type_ns).to eq(nil)
+        expect(gen_obj.inherited_props[0].upper_klass).to eq("gml")
+        expect(gen_obj.inherited_props[0].gen_name).to eq("_Feature")
+        expect(gen_obj.inherited_props[0].name_ns).to eq("gml")
+        expect(gen_obj.inherited_props[0].association).to eq(nil)
 
-        expect(gen_obj.inherited_assoc_props[1].association).to eq(
+        expect(gen_obj.inherited_assoc_props[0].association).to eq(
           "EAID_98F26EAF_7E3C_48b2_AAE7_4769CF1AAFD6",
         )
       end
@@ -208,38 +208,38 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
         expect(test_package.name).to eq("bldg")
         expect(gen_obj.name).to eq("Building")
 
-        expect(gen_obj.general.attributes[15][:name]).to eq("class")
-        expect(gen_obj.general.attributes[15][:id]).to eq(
+        expect(gen_obj.general.attributes[0][:name]).to eq("class")
+        expect(gen_obj.general.attributes[0][:id]).to eq(
           "EAID_FDC435D4_544B_4122_BEA1_7C0B55136938",
         )
-        expect(gen_obj.general.attributes[15][:type]).to eq("gml::CodeType")
-        expect(gen_obj.general.attributes[15][:xmi_id]).to eq(
+        expect(gen_obj.general.attributes[0][:type]).to eq("gml::CodeType")
+        expect(gen_obj.general.attributes[0][:xmi_id]).to eq(
           "EAJava_gml__CodeType",
         )
-        expect(gen_obj.general.attributes[15][:is_derived]).to eq(nil)
-        expect(gen_obj.general.attributes[15][:association]).to eq(nil)
-        expect(gen_obj.general.attributes[15][:definition]).to eq(
+        expect(gen_obj.general.attributes[0][:is_derived]).to eq(nil)
+        expect(gen_obj.general.attributes[0][:association]).to eq(nil)
+        expect(gen_obj.general.attributes[0][:definition]).to eq(
           "建築物の形態による区分。コードリスト(&lt;&lt;Building_class.xml&gt;&gt;)より選択する。",
         )
         expect(gen_obj.general.attributes[28][:association]).to eq(
-          "EAID_C17BA5C1_47DE_4551_92A3_1DE7D9AB3901",
+          "EAID_99ADD620_BC08_4adc_80A1_A8EB2A1B2E2F",
         )
 
-        expect(gen_obj.inherited_props[0].name).to eq("boundedBy")
-        expect(gen_obj.inherited_props[0].used?).to eq(false)
-        expect(gen_obj.inherited_props[0].guidance).to eq("この属性は使用されていません。\n")
+        expect(gen_obj.inherited_props[2].name).to eq("boundedBy")
+        expect(gen_obj.inherited_props[2].used?).to eq(false)
+        expect(gen_obj.inherited_props[2].guidance).to eq("この属性は使用されていません。\n")
 
-        expect(gen_obj.inherited_props[1].name).to eq("description")
-        expect(gen_obj.inherited_props[1].type).to eq("gml::StringOrRefType")
-        expect(gen_obj.inherited_props[1].type_ns).to eq(nil)
-        expect(gen_obj.inherited_props[1].upper_klass).to eq("gml")
-        expect(gen_obj.inherited_props[1].gen_name).to eq("_Feature")
-        expect(gen_obj.inherited_props[1].name_ns).to eq("gml")
-        expect(gen_obj.inherited_props[1].association).to eq(nil)
-        expect(gen_obj.inherited_props[1].used?).to eq(true)
-        expect(gen_obj.inherited_props[1].guidance).to eq(nil)
+        expect(gen_obj.inherited_props[0].name).to eq("description")
+        expect(gen_obj.inherited_props[0].type).to eq("gml::StringOrRefType")
+        expect(gen_obj.inherited_props[0].type_ns).to eq(nil)
+        expect(gen_obj.inherited_props[0].upper_klass).to eq("gml")
+        expect(gen_obj.inherited_props[0].gen_name).to eq("_Feature")
+        expect(gen_obj.inherited_props[0].name_ns).to eq("gml")
+        expect(gen_obj.inherited_props[0].association).to eq(nil)
+        expect(gen_obj.inherited_props[0].used?).to eq(true)
+        expect(gen_obj.inherited_props[0].guidance).to eq(nil)
 
-        expect(gen_obj.inherited_assoc_props[1].association).to eq(
+        expect(gen_obj.inherited_assoc_props[0].association).to eq(
           "EAID_98F26EAF_7E3C_48b2_AAE7_4769CF1AAFD6",
         )
       end
