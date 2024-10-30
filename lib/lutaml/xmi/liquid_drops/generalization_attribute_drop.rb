@@ -3,7 +3,7 @@
 module Lutaml
   module XMI
     class GeneralizationAttributeDrop < Liquid::Drop
-      def initialize(attr, upper_klass, gen_name, guidance = nil) # rubocop:disable Lint/MissingSuper
+      def initialize(attr, upper_klass, gen_name, guidance = nil) # rubocop:disable Lint/MissingSuper,Metrics/ParameterLists,Layout/LineLength
         @attr = attr
         @upper_klass = upper_klass
         @gen_name = gen_name
@@ -26,7 +26,7 @@ module Lutaml
         @attr[:xmi_id]
       end
 
-      def is_derived
+      def is_derived # rubocop:disable Naming/PredicateName
         @attr[:is_derived]
       end
 
@@ -59,15 +59,7 @@ module Lutaml
       end
 
       def name_ns
-        name_ns = case @attr[:type_ns]
-                  when "core", "gml"
-                    upper_klass
-                  else
-                    @attr[:type_ns]
-                  end
-
-        name_ns = upper_klass if name_ns.nil?
-        name_ns
+        @attr[:name_ns]
       end
 
       def used?

@@ -244,5 +244,60 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
         )
       end
     end
+
+    context "when parsing xmi with generalization and sorted props" do
+      let(:file) { File.new(fixtures_path("plateau_all_packages_export.xmi")) }
+
+      it "should output attributes correctly" do
+        test_package = output.packages.first.packages[1].packages[0]
+          .packages[1].classes[144]
+        gen_obj = test_package.generalization
+        expect(test_package.name).to eq("TrafficFacility")
+
+        expect(
+          gen_obj.inherited_assoc_props.map do |p|
+            "#{p.name_ns}:#{p.name}[#{p.gen_name}]"
+          end,
+        ).to eq(
+          [
+            "core:core::外部参照[_CityObject]",
+            "gen:_genericAttribute[_CityObject]",
+            "urf:lod0MultiCurve[_UrbanFunction]",
+            "urf:lod0MultiSurface[_UrbanFunction]",
+            "urf:lod1MultiSurface[_UrbanFunction]",
+            "urf:lod0MultiPoint[_UrbanFunction]",
+            "uro:dataQualityAttribute[_UrbanFunction]",
+            "hitokuka:table[_UrbanFunction]",
+            "hitokuka:attributes[_UrbanFunction]",
+            "uro:keyValuePairAttribute[_UrbanFunction]",
+            "urf:urbanParkAttribute[Zone]",
+            "urf:boundary[Zone]",
+            "urf:threeDimensionalExtent[UrbanFacility]",
+          ],
+        )
+
+        expect(
+          gen_obj.sorted_inherited_assoc_props.map do |p|
+            "#{p.name_ns}:#{p.name}[#{p.gen_name}]"
+          end,
+        ).to eq(
+          [
+            "core:core::外部参照[_CityObject]",
+            "gen:_genericAttribute[_CityObject]",
+            "hitokuka:attributes[_UrbanFunction]",
+            "hitokuka:table[_UrbanFunction]",
+            "urf:lod0MultiCurve[_UrbanFunction]",
+            "urf:lod0MultiPoint[_UrbanFunction]",
+            "urf:lod0MultiSurface[_UrbanFunction]",
+            "urf:lod1MultiSurface[_UrbanFunction]",
+            "uro:dataQualityAttribute[_UrbanFunction]",
+            "uro:keyValuePairAttribute[_UrbanFunction]",
+            "urf:boundary[Zone]",
+            "urf:urbanParkAttribute[Zone]",
+            "urf:threeDimensionalExtent[UrbanFacility]",
+          ],
+        )
+      end
+    end
   end
 end
