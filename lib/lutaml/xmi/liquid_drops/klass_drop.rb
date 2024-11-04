@@ -63,6 +63,10 @@ module Lutaml
                                               @klass_guidance)
       end
 
+      def has_guidance?
+        !!@klass_guidance
+      end
+
       def is_abstract
         @model[:is_abstract]
       end
