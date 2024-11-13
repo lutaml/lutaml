@@ -38,6 +38,7 @@ module Lutaml
 
           # @param xml [String] path to xml
           # @param name [String]
+          # @param guidance [String]
           # @return [Hash]
           def serialize_generalization_by_name(xml, name, guidance = nil)
             xmi_model = get_xmi_model(xml)
@@ -94,12 +95,13 @@ module Lutaml
 
         # @param xmi_model [Shale::Mapper]
         # @param name [String]
+        # @param guidance_yaml [String]
         # @return [Hash]
         def serialize_generalization_by_name(xmi_model, name,
                                              guidance_yaml = nil)
           set_xmi_model(xmi_model)
           model = xmi_model.model
-          klass = find_klass_packaged_element_by_name(name)
+          klass = find_klass_packaged_element(name)
           serialized_hash = build_klass_hash(klass, model, with_gen: true)
           guidance = get_guidance(guidance_yaml)
           ::Lutaml::XMI::KlassDrop.new(serialized_hash, guidance)
@@ -119,12 +121,15 @@ module Lutaml
         end
 
         # @param model [Shale::Mapper]
+        # @param with_gen: [Boolean]
         # @return [Array<Hash>]
         # @note xpath ./packagedElement[@xmi:type="uml:Package"]
-        def serialize_model_packages(model, with_gen: false)
-          model.packaged_element.select do |e|
+        def serialize_model_packages(model, with_gen: false) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+          packages = model.packaged_element.select do |e|
             e.type?("uml:Package")
-          end.map do |package|
+          end
+
+          packages.map do |package|
             {
               xmi_id: package.id,
               name: get_package_name(package),
@@ -140,7 +145,9 @@ module Lutaml
           end
         end
 
-        def get_package_name(package)
+        # @param package [Shale::Mapper]
+        # @return [String]
+        def get_package_name(package) # rubocop:disable Metrics/AbcSize
           return package.name unless package.name.nil?
 
           connector = fetch_connector(package.id)
@@ -154,20 +161,27 @@ module Lutaml
 
         # @param package [Shale::Mapper]
         # @param model [Shale::Mapper]
+        # @param with_gen: [Boolean]
         # @return [Array<Hash>]
         # @note xpath ./packagedElement[@xmi:type="uml:Class" or
         #                               @xmi:type="uml:AssociationClass"]
-        def serialize_model_classes(package, model, with_gen: false)
-          package.packaged_element.select do |e|
+        def serialize_model_classes(package, model, with_gen: false) # rubocop:disable Metrics/MethodLength
+          klasses = package.packaged_element.select do |e|
             e.type?("uml:Class") || e.type?("uml:AssociationClass") ||
               e.type?("uml:Interface")
-          end.map do |klass|
-            build_klass_hash(klass, model, with_gen: with_gen)
+          end
+
+          klasses.map do |klass|
+            build_klass_hash(
+              klass, model,
+              with_gen: with_gen
+            )
           end
         end
 
         # @param klass [Shale::Mapper]
         # @param model [Shale::Mapper]
+        # @param with_gen: [Boolean]
         # @return [Hash]
         def build_klass_hash(klass, model, with_gen: false) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           klass_hash = {
@@ -306,6 +320,65 @@ module Lutaml
             e.packaged_element.find { |pe| pe.id == klass_id }
           end
           upper_klass&.name
+        end
+
+        # @param path [String]
+        # @return [Shale::Mapper]
+        def find_klass_packaged_element(path)
+          lutaml_path = Lutaml::Path.parse(path)
+          if lutaml_path.segments.count == 1
+            return find_klass_packaged_element_by_name(path)
+          end
+
+          find_klass_packaged_element_by_path(lutaml_path)
+        end
+
+        # @param path [Lutaml::Path::ElementPath]
+        # @return [Shale::Mapper]
+        def find_klass_packaged_element_by_path(path)
+          if path.absolute?
+            iterate_packaged_element(
+              @xmi_root_model.model, path.segments.map(&:name)
+            )
+          else
+            iterate_relative_packaged_element(path.segments.map(&:name))
+          end
+        end
+
+        # @param name_array [Array<String>]
+        # @return [Shale::Mapper]
+        def iterate_relative_packaged_element(name_array)
+          # match the first element in the name_array
+          matched_elements = all_packaged_elements.select do |e|
+            e.type?("uml:Package") && e.name == name_array[0]
+          end
+
+          # match the rest elements in the name_array
+          result = matched_elements.map do |e|
+            iterate_packaged_element(e, name_array, type: "uml:Class")
+          end
+
+          result.compact.first
+        end
+
+        # @param model [Shale::Mapper]
+        # @param name_array [Array<String>]
+        # @param index: [Integer]
+        # @param type: [String]
+        # @return [Shale::Mapper]
+        def iterate_packaged_element(model, name_array,
+          index: 1, type: "uml:Package")
+          return model if index == name_array.count
+
+          model = model.packaged_element.find do |p|
+            p.name == name_array[index] && p.type?(type)
+          end
+
+          return nil if model.nil?
+
+          index += 1
+          type = index == name_array.count - 1 ? "uml:Class" : "uml:Package"
+          iterate_packaged_element(model, name_array, index: index, type: type)
         end
 
         # @param name [String]
