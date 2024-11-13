@@ -29,15 +29,16 @@ Gem::Specification.new do |spec|
 
   spec.required_ruby_version = ">= 2.7.0"
 
-  spec.add_runtime_dependency "liquid"
-  spec.add_runtime_dependency "expressir", "~> 1.3"
-  spec.add_runtime_dependency "hashie", "~> 4.1.0"
-  spec.add_runtime_dependency "htmlentities"
-  spec.add_runtime_dependency "nokogiri", "~> 1.10"
-  spec.add_runtime_dependency "parslet", "~> 2.0.0"
-  spec.add_runtime_dependency "ruby-graphviz", "~> 1.2"
-  spec.add_runtime_dependency "thor", "~> 1.0"
-  spec.add_runtime_dependency "xmi", "~> 0.3.10"
+  spec.add_dependency "expressir", "~> 1.3"
+  spec.add_dependency "hashie", "~> 4.1.0"
+  spec.add_dependency "htmlentities"
+  spec.add_dependency "liquid"
+  spec.add_dependency "lutaml-path"
+  spec.add_dependency "nokogiri", "~> 1.10"
+  spec.add_dependency "parslet", "~> 2.0.0"
+  spec.add_dependency "ruby-graphviz", "~> 1.2"
+  spec.add_dependency "thor", "~> 1.0"
+  spec.add_dependency "xmi", "~> 0.3.10"
 
   spec.add_development_dependency "byebug"
   spec.add_development_dependency "equivalent-xml", "~> 0.6.0"
@@ -46,4 +47,5 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rspec", "~> 3.11"
   spec.add_development_dependency "rubocop", "~> 1.58"
   spec.add_development_dependency "rubocop-performance", "~> 1.19"
+  spec.metadata["rubygems_mfa_required"] = "true"
 end
