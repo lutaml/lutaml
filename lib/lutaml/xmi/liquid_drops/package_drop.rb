@@ -6,6 +6,7 @@ module Lutaml
       def initialize(model, guidance = nil) # rubocop:disable Lint/MissingSuper
         @model = model
         @guidance = guidance
+
         @children_packages ||= packages.map do |pkg|
           [pkg, pkg.packages, pkg.packages.map(&:children_packages)]
         end.flatten.uniq
@@ -17,6 +18,10 @@ module Lutaml
 
       def name
         @model[:name]
+      end
+
+      def absolute_path
+        @model[:absolute_path]
       end
 
       def klasses

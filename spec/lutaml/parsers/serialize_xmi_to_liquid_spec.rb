@@ -204,9 +204,17 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
 
       it "should output attributes correctly" do
         test_package = output.packages.first.packages[2].packages[9]
+        test_klass = test_package.classes[3]
         gen_obj = test_package.classes[3].generalization
         expect(test_package.name).to eq("bldg")
         expect(gen_obj.name).to eq("Building")
+        expect(test_package.absolute_path).to eq(
+          "::EA_Model::Conceptual Models::CityGML2.0::bldg",
+        )
+        expect(test_klass.name).to eq("Building")
+        expect(test_klass.absolute_path).to eq(
+          "::EA_Model::Conceptual Models::CityGML2.0::bldg::Building",
+        )
 
         expect(gen_obj.general.attributes[0][:name]).to eq("class")
         expect(gen_obj.general.attributes[0][:id]).to eq(
