@@ -7,11 +7,9 @@ module Lutaml
         @model = model
         @guidance = guidance
 
-        if guidance && guidance["classes"].map do |c|
-          c["name"]
-        end.include?(@model[:name])
+        if guidance
           @klass_guidance = guidance["classes"].find do |klass|
-            klass["name"] == @model[:name]
+            klass["name"] == name || klass["name"] == absolute_path
           end
         end
       end
@@ -22,6 +20,10 @@ module Lutaml
 
       def name
         @model[:name]
+      end
+
+      def absolute_path
+        "#{@model[:absolute_path]}::#{name}"
       end
 
       def package

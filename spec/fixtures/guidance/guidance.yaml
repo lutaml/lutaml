@@ -1,6 +1,6 @@
 ---
 classes:
-  - name: Building
+  - name: "::EA_Model::Conceptual Models::CityGML2.0::bldg::Building"
     attributes:
       - name: gml:boundedBy
         used: false

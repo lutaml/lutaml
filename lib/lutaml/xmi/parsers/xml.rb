@@ -70,17 +70,28 @@ module Lutaml
         end
 
         # @param xmi_model [Shale::Mapper]
+        # @param with_gen: [Boolean]
+        # @param with_absolute_path: [Boolean]
         # return [Hash]
-        def serialize_xmi(xmi_model, with_gen: false)
+        def serialize_xmi(xmi_model, with_gen: false, with_absolute_path: false)
           set_xmi_model(xmi_model)
-          serialize_to_hash(xmi_model, with_gen: with_gen)
+          serialize_to_hash(
+            xmi_model,
+            with_gen: with_gen,
+            with_absolute_path: with_absolute_path,
+          )
         end
 
         # @param xmi_model [Shale::Mapper]
+        # @param guidance_yaml [String]
         # return [Liquid::Drop]
         def serialize_xmi_to_liquid(xmi_model, guidance_yaml = nil)
           set_xmi_model(xmi_model)
-          serialized_hash = serialize_xmi(xmi_model, with_gen: true)
+          serialized_hash = serialize_xmi(
+            xmi_model,
+            with_gen: true,
+            with_absolute_path: true,
+          )
           guidance = get_guidance(guidance_yaml)
           ::Lutaml::XMI::RootDrop.new(serialized_hash, guidance)
         end
@@ -110,38 +121,67 @@ module Lutaml
         private
 
         # @param xmi_model [Shale::Mapper]
+        # @param with_gen: [Boolean]
+        # @param with_absolute_path: [Boolean]
         # @return [Hash]
         # @note xpath: //uml:Model[@xmi:type="uml:Model"]
-        def serialize_to_hash(xmi_model, with_gen: false)
+        def serialize_to_hash(xmi_model,
+          with_gen: false, with_absolute_path: false)
           model = xmi_model.model
           {
             name: model.name,
-            packages: serialize_model_packages(model, with_gen: with_gen),
+            packages: serialize_model_packages(
+              model,
+              with_gen: with_gen,
+              with_absolute_path: with_absolute_path,
+            ),
           }
         end
 
         # @param model [Shale::Mapper]
         # @param with_gen: [Boolean]
+        # @param with_absolute_path: [Boolean]
+        # @param absolute_path: [String]
         # @return [Array<Hash>]
         # @note xpath ./packagedElement[@xmi:type="uml:Package"]
-        def serialize_model_packages(model, with_gen: false) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+        def serialize_model_packages(model, # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+          with_gen: false, with_absolute_path: false, absolute_path: "")
           packages = model.packaged_element.select do |e|
             e.type?("uml:Package")
           end
 
+          if with_absolute_path
+            absolute_path = "#{absolute_path}::#{model.name}"
+          end
+
           packages.map do |package|
-            {
+            h = {
               xmi_id: package.id,
               name: get_package_name(package),
-              classes: serialize_model_classes(package, model,
-                                               with_gen: with_gen),
+              classes: serialize_model_classes(
+                package, model,
+                with_gen: with_gen,
+                with_absolute_path: with_absolute_path,
+                absolute_path: "#{absolute_path}::#{package.name}"
+              ),
               enums: serialize_model_enums(package),
               data_types: serialize_model_data_types(package),
               diagrams: serialize_model_diagrams(package.id),
-              packages: serialize_model_packages(package, with_gen: with_gen),
+              packages: serialize_model_packages(
+                package,
+                with_gen: with_gen,
+                with_absolute_path: with_absolute_path,
+                absolute_path: absolute_path,
+              ),
               definition: doc_node_attribute_value(package.id, "documentation"),
               stereotype: doc_node_attribute_value(package.id, "stereotype"),
             }
+
+            if with_absolute_path
+              h[:absolute_path] = "#{absolute_path}::#{package.name}"
+            end
+
+            h
           end
         end
 
@@ -162,28 +202,36 @@ module Lutaml
         # @param package [Shale::Mapper]
         # @param model [Shale::Mapper]
         # @param with_gen: [Boolean]
+        # @param with_absolute_path: [Boolean]
         # @return [Array<Hash>]
         # @note xpath ./packagedElement[@xmi:type="uml:Class" or
         #                               @xmi:type="uml:AssociationClass"]
-        def serialize_model_classes(package, model, with_gen: false) # rubocop:disable Metrics/MethodLength
+        def serialize_model_classes(package, model, # rubocop:disable Metrics/MethodLength
+          with_gen: false, with_absolute_path: false, absolute_path: "")
           klasses = package.packaged_element.select do |e|
             e.type?("uml:Class") || e.type?("uml:AssociationClass") ||
               e.type?("uml:Interface")
           end
 
           klasses.map do |klass|
-            build_klass_hash(
+            h = build_klass_hash(
               klass, model,
               with_gen: with_gen
             )
+
+            h[:absolute_path] = absolute_path if with_absolute_path
+
+            h
           end
         end
 
         # @param klass [Shale::Mapper]
         # @param model [Shale::Mapper]
         # @param with_gen: [Boolean]
+        # @param with_absolute_path: [Boolean]
         # @return [Hash]
-        def build_klass_hash(klass, model, with_gen: false) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+        def build_klass_hash(klass, model, # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+          with_gen: false, with_absolute_path: false, absolute_path: "")
           klass_hash = {
             xmi_id: klass.id,
             name: klass.name,
@@ -197,6 +245,8 @@ module Lutaml
             definition: doc_node_attribute_value(klass.id, "documentation"),
             stereotype: doc_node_attribute_value(klass.id, "stereotype"),
           }
+
+          klass_hash[:absolute_path] = absolute_path if with_absolute_path
 
           if with_gen && klass.type?("uml:Class")
             klass_hash[:generalization] = serialize_generalization(klass)
