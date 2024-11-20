@@ -29,7 +29,7 @@ Gem::Specification.new do |spec|
 
   spec.required_ruby_version = ">= 2.7.0"
 
-  spec.add_dependency "expressir"
+  spec.add_dependency "expressir", "~> 2.1.0"
   spec.add_dependency "hashie", "~> 4.1.0"
   spec.add_dependency "htmlentities"
   spec.add_dependency "liquid"
