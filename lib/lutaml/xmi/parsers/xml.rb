@@ -806,7 +806,7 @@ module Lutaml
               if with_assoc && oa.association
                 attrs[:association] = oa.association
                 attrs[:definition] = loopup_assoc_def(oa.association)
-                attrs[:type_ns] = get_ns_by_type(attrs[:type])
+                attrs[:type_ns] = get_ns_by_xmi_id(attrs[:xmi_id])
               end
 
               attrs
@@ -863,6 +863,17 @@ module Lutaml
           return unless type
 
           p = find_klass_packaged_element_by_name(type)
+          return unless p
+
+          find_upper_level_packaged_element(p.id)
+        end
+
+        # @param xmi_id [String]
+        # @return [String]
+        def get_ns_by_xmi_id(xmi_id)
+          return unless xmi_id
+
+          p = find_packaged_element_by_id(xmi_id)
           return unless p
 
           find_upper_level_packaged_element(p.id)
