@@ -97,7 +97,7 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
       end
       let(:first_package) { output.packages.first }
 
-      it "parses xml file into Lutaml::Uml::Node::Document object" do
+      it "parses xml file into Lutaml::XMI::RootDrop object" do
         expect(output).to(be_instance_of(Lutaml::XMI::RootDrop))
       end
 
