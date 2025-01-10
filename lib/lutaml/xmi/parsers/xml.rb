@@ -154,7 +154,7 @@ module Lutaml
             absolute_path = "#{absolute_path}::#{model.name}"
           end
 
-          packages.map do |package|
+          packages.map do |package| # rubocop:disable Metrics/BlockLength
             h = {
               xmi_id: package.id,
               name: get_package_name(package),
@@ -166,7 +166,10 @@ module Lutaml
               ),
               enums: serialize_model_enums(package),
               data_types: serialize_model_data_types(package),
-              diagrams: serialize_model_diagrams(package.id),
+              diagrams: serialize_model_diagrams(
+                package.id,
+                with_package: with_gen,
+              ),
               packages: serialize_model_packages(
                 package,
                 with_gen: with_gen,
@@ -508,17 +511,25 @@ module Lutaml
         # @param node_id [String]
         # @return [Array<Hash>]
         # @note xpath %(//diagrams/diagram/model[@package="#{node['xmi:id']}"])
-        def serialize_model_diagrams(node_id)
+        def serialize_model_diagrams(node_id, with_package: false) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           diagrams = @xmi_root_model.extension.diagrams.diagram.select do |d|
             d.model.package == node_id
           end
 
           diagrams.map do |diagram|
-            {
+            h = {
               xmi_id: diagram.id,
               name: diagram.properties.name,
               definition: diagram.properties.documentation,
             }
+
+            if with_package
+              package_id = diagram.model.package
+              h[:package_id] = package_id
+              h[:package_name] = find_packaged_element_by_id(package_id)&.name
+            end
+
+            h
           end
         end
 
