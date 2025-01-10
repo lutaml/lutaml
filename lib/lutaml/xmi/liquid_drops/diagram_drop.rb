@@ -18,6 +18,14 @@ module Lutaml
       def definition
         @model[:definition]
       end
+
+      def package_id
+        @model[:package_id]
+      end
+
+      def package_name
+        @model[:package_name]
+      end
     end
   end
 end
