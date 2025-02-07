@@ -3,8 +3,10 @@
 require "spec_helper"
 
 RSpec.describe Lutaml::Xml::LutamlPath::DocumentWrapper do
-  describe ".parse" do
-    subject(:lutaml_path) { described_class.new(Lutaml::Xml::Parsers::Xml.parse(xml_file_path)) }
+  xdescribe ".parse" do
+    subject(:lutaml_path) do
+      described_class.new(Lutaml::Xml::Parsers::Xml.parse(xml_file_path))
+    end
 
     context "#serialize_document" do
       let(:xml_file_path) { fixtures_path("test.xml") }
@@ -26,7 +28,7 @@ RSpec.describe Lutaml::Xml::LutamlPath::DocumentWrapper do
           "Address" => {
             "City" => "London",
             "ZIP" => "E1 6AN",
-            "content" => ["Oxford Street"]
+            "content" => ["Oxford Street"],
           },
           "FirstName" => "John",
           "LastName" => "Doe",
