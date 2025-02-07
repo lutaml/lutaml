@@ -19,7 +19,8 @@ module Lutaml
             if mapping == "content"
               attribute_name = object.class.xml_mapping.content.attribute.to_s
               hash[attribute_name] ||= []
-              hash[attribute_name] << content.strip unless content.strip && content.strip.empty?
+              hash[attribute_name] << content.strip unless content.strip &&
+                content.strip.empty?
             elsif content.is_a?(String)
               if object.class.attributes[mapping.attribute].collection?
                 hash[mapping.name] ||= []

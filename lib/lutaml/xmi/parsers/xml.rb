@@ -928,7 +928,9 @@ module Lutaml
           doc_node = fetch_element(node_id)
           return unless doc_node
 
-          doc_node.properties&.send(Lutaml::Model::Utils.snake_case(attr_name).to_sym)
+          doc_node.properties&.send(
+            Lutaml::Model::Utils.snake_case(attr_name).to_sym,
+          )
         end
 
         # @param xmi_id [String]
