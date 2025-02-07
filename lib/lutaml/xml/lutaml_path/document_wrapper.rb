@@ -10,6 +10,7 @@ module Lutaml
           serialize_to_hash(document)
         end
 
+        # TODO: to be removed
         def serialize_to_hash(object)
           hash = {}
           attribute_name = nil
@@ -18,7 +19,7 @@ module Lutaml
             if mapping == "content"
               attribute_name = object.class.xml_mapping.content.attribute.to_s
               hash[attribute_name] ||= []
-              hash[attribute_name] << content.strip unless content.strip&.empty?
+              hash[attribute_name] << content.strip unless content.strip && content.strip.empty?
             elsif content.is_a?(String)
               if object.class.attributes[mapping.attribute].collection?
                 hash[mapping.name] ||= []
@@ -26,13 +27,11 @@ module Lutaml
               else
                 hash[mapping.name] = content.strip
               end
+            elsif object.class.attributes[mapping.attribute].collection?
+              hash[mapping.name] ||= []
+              hash[mapping.name] << serialize_to_hash(content)
             else
-              if object.class.attributes[mapping.attribute].collection?
-                hash[mapping.name] ||= []
-                hash[mapping.name] << serialize_to_hash(content)
-              else
-                hash[mapping.name] = serialize_to_hash(content)
-              end
+              hash[mapping.name] = serialize_to_hash(content)
             end
           end
 

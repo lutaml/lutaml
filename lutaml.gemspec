@@ -33,11 +33,12 @@ Gem::Specification.new do |spec|
   spec.add_dependency "hashie", "~> 4.1.0"
   spec.add_dependency "htmlentities"
   spec.add_dependency "liquid"
+  spec.add_dependency "lutaml-model"
   spec.add_dependency "lutaml-path"
+  spec.add_dependency "lutaml-xsd"
   spec.add_dependency "nokogiri", "~> 1.10"
   spec.add_dependency "parslet", "~> 2.0.0"
   spec.add_dependency "ruby-graphviz", "~> 1.2"
-  spec.add_dependency "shale"
   spec.add_dependency "thor", "~> 1.0"
   spec.add_dependency "xmi", "~> 0.3.12"
 

@@ -48,19 +48,19 @@ module Lutaml
           private
 
           # @param xml [String]
-          # @return [Shale::Mapper]
+          # @return [Lutaml::Model::Serializable]
           def get_xmi_model(xml)
             Xmi::Sparx::SparxRoot.parse_xml(File.read(xml))
           end
         end
 
-        # @param xmi_model [Shale::Mapper]
+        # @param xmi_model [Lutaml::Model::Serializable]
         def set_xmi_model(xmi_model)
           @xmi_cache = {}
           @xmi_root_model = xmi_model
         end
 
-        # @param xmi_model [Shale::Mapper]
+        # @param xmi_model [Lutaml::Model::Serializable]
         # @return [Lutaml::Uml::Document]
         def parse(xmi_model)
           set_xmi_model(xmi_model)
@@ -69,7 +69,7 @@ module Lutaml
           ::Lutaml::Uml::Document.new(serialized_hash)
         end
 
-        # @param xmi_model [Shale::Mapper]
+        # @param xmi_model [Lutaml::Model::Serializable]
         # @param with_gen: [Boolean]
         # @param with_absolute_path: [Boolean]
         # return [Hash]
@@ -82,7 +82,7 @@ module Lutaml
           )
         end
 
-        # @param xmi_model [Shale::Mapper]
+        # @param xmi_model [Lutaml::Model::Serializable]
         # @param guidance_yaml [String]
         # return [Liquid::Drop]
         def serialize_xmi_to_liquid(xmi_model, guidance_yaml = nil)
@@ -104,7 +104,7 @@ module Lutaml
           YAML.safe_load(File.read(yaml, encoding: "UTF-8"))
         end
 
-        # @param xmi_model [Shale::Mapper]
+        # @param xmi_model [Lutaml::Model::Serializable]
         # @param name [String]
         # @param guidance_yaml [String]
         # @return [Hash]
@@ -120,7 +120,7 @@ module Lutaml
 
         private
 
-        # @param xmi_model [Shale::Mapper]
+        # @param xmi_model [Lutaml::Model::Serializable]
         # @param with_gen: [Boolean]
         # @param with_absolute_path: [Boolean]
         # @return [Hash]
@@ -138,7 +138,7 @@ module Lutaml
           }
         end
 
-        # @param model [Shale::Mapper]
+        # @param model [Lutaml::Model::Serializable]
         # @param with_gen: [Boolean]
         # @param with_absolute_path: [Boolean]
         # @param absolute_path: [String]
@@ -188,7 +188,7 @@ module Lutaml
           end
         end
 
-        # @param package [Shale::Mapper]
+        # @param package [Lutaml::Model::Serializable]
         # @return [String]
         def get_package_name(package) # rubocop:disable Metrics/AbcSize
           return package.name unless package.name.nil?
@@ -202,8 +202,8 @@ module Lutaml
           "unnamed"
         end
 
-        # @param package [Shale::Mapper]
-        # @param model [Shale::Mapper]
+        # @param package [Lutaml::Model::Serializable]
+        # @param model [Lutaml::Model::Serializable]
         # @param with_gen: [Boolean]
         # @param with_absolute_path: [Boolean]
         # @return [Array<Hash>]
@@ -228,8 +228,8 @@ module Lutaml
           end
         end
 
-        # @param klass [Shale::Mapper]
-        # @param model [Shale::Mapper]
+        # @param klass [Lutaml::Model::Serializable]
+        # @param model [Lutaml::Model::Serializable]
         # @param with_gen: [Boolean]
         # @param with_absolute_path: [Boolean]
         # @return [Hash]
@@ -258,7 +258,7 @@ module Lutaml
           klass_hash
         end
 
-        # @param klass [Shale::Mapper]
+        # @param klass [Lutaml::Model::Serializable]
         # # @return [Hash]
         def serialize_generalization(klass)
           general_hash, next_general_node_id = get_top_level_general_hash(klass)
@@ -271,7 +271,7 @@ module Lutaml
           general_hash
         end
 
-        # @param klass [Shale::Mapper]
+        # @param klass [Lutaml::Model::Serializable]
         # @return [Array<Hash>]
         def get_top_level_general_hash(klass) # rubocop:disable Metrics/AbcSize
           general_hash, next_general_node_id = get_general_hash(klass.id)
@@ -305,7 +305,7 @@ module Lutaml
         end
 
         # @param xmi_id [String]
-        # @param model [Shale::Mapper]
+        # @param model [Lutaml::Model::Serializable]
         # @return [Array<Hash>]
         # @note get generalization node and its owned attributes
         def serialize_generalization_attributes(general_id)
@@ -321,18 +321,18 @@ module Lutaml
         end
 
         # @param xmi_id [String]
-        # @return [Shale::Mapper]
+        # @return [Lutaml::Model::Serializable]
         def get_general_node(xmi_id)
           find_packaged_element_by_id(xmi_id)
         end
 
-        # @param general_node [Shale::Mapper]
+        # @param general_node [Lutaml::Model::Serializable]
         # @return [Hash]
         def get_general_attributes(general_node)
           serialize_class_attributes(general_node, with_assoc: true)
         end
 
-        # @param general_node [Shale::Mapper]
+        # @param general_node [Lutaml::Model::Serializable]
         # @return [String]
         def get_next_general_node_id(general_node)
           general_node.generalization.first&.general
@@ -361,13 +361,13 @@ module Lutaml
         end
 
         # @param id [String]
-        # @return [Shale::Mapper]
+        # @return [Lutaml::Model::Serializable]
         def find_packaged_element_by_id(id)
           all_packaged_elements.find { |e| e.id == id }
         end
 
         # @param id [String]
-        # @return [Shale::Mapper]
+        # @return [Lutaml::Model::Serializable]
         def find_upper_level_packaged_element(klass_id)
           upper_klass = all_packaged_elements.find do |e|
             e.packaged_element.find { |pe| pe.id == klass_id }
@@ -376,7 +376,7 @@ module Lutaml
         end
 
         # @param path [String]
-        # @return [Shale::Mapper]
+        # @return [Lutaml::Model::Serializable]
         def find_klass_packaged_element(path)
           lutaml_path = Lutaml::Path.parse(path)
           if lutaml_path.segments.count == 1
@@ -387,7 +387,7 @@ module Lutaml
         end
 
         # @param path [Lutaml::Path::ElementPath]
-        # @return [Shale::Mapper]
+        # @return [Lutaml::Model::Serializable]
         def find_klass_packaged_element_by_path(path)
           if path.absolute?
             iterate_packaged_element(
@@ -399,7 +399,7 @@ module Lutaml
         end
 
         # @param name_array [Array<String>]
-        # @return [Shale::Mapper]
+        # @return [Lutaml::Model::Serializable]
         def iterate_relative_packaged_element(name_array)
           # match the first element in the name_array
           matched_elements = all_packaged_elements.select do |e|
@@ -414,11 +414,11 @@ module Lutaml
           result.compact.first
         end
 
-        # @param model [Shale::Mapper]
+        # @param model [Lutaml::Model::Serializable]
         # @param name_array [Array<String>]
         # @param index: [Integer]
         # @param type: [String]
-        # @return [Shale::Mapper]
+        # @return [Lutaml::Model::Serializable]
         def iterate_packaged_element(model, name_array,
           index: 1, type: "uml:Package")
           return model if index == name_array.count
@@ -435,7 +435,7 @@ module Lutaml
         end
 
         # @param name [String]
-        # @return [Shale::Mapper]
+        # @return [Lutaml::Model::Serializable]
         def find_klass_packaged_element_by_name(name)
           all_packaged_elements.find do |e|
             e.type?("uml:Class") && e.name == name
@@ -443,14 +443,14 @@ module Lutaml
         end
 
         # @param name [String]
-        # @return [Shale::Mapper]
+        # @return [Lutaml::Model::Serializable]
         def find_packaged_element_by_name(name)
           all_packaged_elements.find do |e|
             e.name == name
           end
         end
 
-        # @param package [Shale::Mapper]
+        # @param package [Lutaml::Model::Serializable]
         # @return [Array<Hash>]
         # @note xpath ./packagedElement[@xmi:type="uml:Enumeration"]
         def serialize_model_enums(package)
@@ -466,7 +466,7 @@ module Lutaml
           end
         end
 
-        # @param model [Shale::Mapper]
+        # @param model [Lutaml::Model::Serializable]
         # @return [Hash]
         # @note xpath .//ownedLiteral[@xmi:type="uml:EnumerationLiteral"]
         def serialize_enum_owned_literal(enum)
@@ -486,7 +486,7 @@ module Lutaml
           end
         end
 
-        # @param model [Shale::Mapper]
+        # @param model [Lutaml::Model::Serializable]
         # @return [Array<Hash>]
         # @note xpath ./packagedElement[@xmi:type="uml:DataType"]
         def serialize_model_data_types(model)
@@ -576,7 +576,7 @@ module Lutaml
         end
 
         # @param link_id [String]
-        # @return [Shale::Mapper]
+        # @return [Lutaml::Model::Serializable]
         # @note xpath %(//connector[@xmi:idref="#{link_id}"])
         def fetch_connector(link_id)
           @xmi_root_model.extension.connectors.connector.find do |con|
@@ -594,7 +594,7 @@ module Lutaml
           connector_node.send(node_name.to_sym).documentation
         end
 
-        # @param klass [Shale::Mapper]
+        # @param klass [Lutaml::Model::Serializable]
         # @return [Array<Hash>]
         # @note xpath .//ownedOperation
         def serialize_class_operations(klass)
@@ -638,7 +638,7 @@ module Lutaml
         end
 
         # @param owner_xmi_id [String]
-        # @param link [Shale::Mapper]
+        # @param link [Lutaml::Model::Serializable]
         # @param link_member_name [String]
         # @return [String]
         def serialize_owned_type(owner_xmi_id, link, linke_owner_name)
@@ -665,7 +665,7 @@ module Lutaml
         end
 
         # @param owner_xmi_id [String]
-        # @param link [Shale::Mapper]
+        # @param link [Lutaml::Model::Serializable]
         # @return [Array<String, String>]
         def serialize_member_end(owner_xmi_id, link)
           case link.name
@@ -706,7 +706,7 @@ module Lutaml
         end
 
         # @param owner_xmi_id [String]
-        # @param link [Shale::Mapper]
+        # @param link [Lutaml::Model::Serializable]
         # @param link_member_name [String]
         # @return [Array<String, String, Hash, String, String>]
         def serialize_member_type(owner_xmi_id, link, link_member_name)
@@ -750,7 +750,7 @@ module Lutaml
         end
 
         # @param owner_xmi_id [String]
-        # @param link [Shale::Mapper]
+        # @param link [Lutaml::Model::Serializable]
         # @return [Array<String, String, Hash, String, String>]
         # @note match return value of serialize_member_type
         def generalization_association(owner_xmi_id, link)
@@ -796,7 +796,7 @@ module Lutaml
         end
 
         # @param klass_id [String]
-        # @return [Shale::Mapper]
+        # @return [Lutaml::Model::Serializable]
         # @note xpath %(//element[@xmi:idref="#{klass['xmi:id']}"])
         def fetch_element(klass_id)
           @xmi_root_model.extension.elements.element.find do |e|
@@ -804,7 +804,7 @@ module Lutaml
           end
         end
 
-        # @param klass [Shale::Mapper]
+        # @param klass [Lutaml::Model::Serializable]
         # @param with_assoc [Boolean]
         # @return [Array<Hash>]
         # @note xpath .//ownedAttribute[@xmi:type="uml:Property"]
@@ -920,7 +920,7 @@ module Lutaml
           }
         end
 
-        # @node [Shale::Mapper]
+        # @node [Lutaml::Model::Serializable]
         # @attr_name [String]
         # @return [String]
         # @note xpath %(//element[@xmi:idref="#{xmi_id}"]/properties)
@@ -928,11 +928,11 @@ module Lutaml
           doc_node = fetch_element(node_id)
           return unless doc_node
 
-          doc_node.properties&.send(Shale::Utils.snake_case(attr_name).to_sym)
+          doc_node.properties&.send(Lutaml::Model::Utils.snake_case(attr_name).to_sym)
         end
 
         # @param xmi_id [String]
-        # @return [Shale::Mapper]
+        # @return [Lutaml::Model::Serializable]
         # @note xpath %(//attribute[@xmi:idref="#{xmi_id}"])
         def fetch_attribute_node(xmi_id)
           attribute_node = nil
@@ -1045,15 +1045,15 @@ module Lutaml
           all_elements
         end
 
-        # @param items [Array<Shale::Mapper>]
-        # @param model [Shale::Mapper]
+        # @param items [Array<Lutaml::Model::Serializable>]
+        # @param model [Lutaml::Model::Serializable]
         # @param type [String] nil for any
         def select_all_items(items, model, type, method)
           iterate_tree(items, model, type, method.to_sym)
         end
 
-        # @param all_elements [Array<Shale::Mapper>]
-        # @param model [Shale::Mapper]
+        # @param all_elements [Array<Lutaml::Model::Serializable>]
+        # @param model [Lutaml::Model::Serializable]
         # @param type [String] nil for any
         # @note xpath ./packagedElement[@xmi:type="#{type}"]
         def select_all_packaged_elements(all_elements, model, type)
@@ -1063,8 +1063,8 @@ module Lutaml
           end
         end
 
-        # @param result [Array<Shale::Mapper>]
-        # @param node [Shale::Mapper]
+        # @param result [Array<Lutaml::Model::Serializable>]
+        # @param node [Lutaml::Model::Serializable]
         # @param type [String] nil for any
         # @param children_method [String] method to determine children exist
         def iterate_tree(result, node, type, children_method)
@@ -1081,7 +1081,7 @@ module Lutaml
         end
 
         # @param result [Hash]
-        # @param node [Shale::Mapper]
+        # @param node [Lutaml::Model::Serializable]
         # @note set id as key and name as value into result
         #       if id and name are found
         def map_id_name(result, node)
