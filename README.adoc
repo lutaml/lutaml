@@ -31,52 +31,53 @@ $ gem install lutaml
 === Parsing
 
 The `Lutaml::Parser.parse` method provides a single point of entry for parsing
-data model files.
+data model files, such as:
 
-The return object is always a `Lutaml::LutamlPath::DocumentWrapper` object,
-where `#original_document` returns the native parsed models.
+* EXPRESS files with `.exp` extension
+* YAML Compressed EXPRESS CACHE files
+* XMI files with `.xmi` extension
+* XML files with `.xml` extension
+* LutaML files with `.lutaml` extension
+* LutaML YAML files with `.yml` extension
+
+Depending on the input file type, `Lutaml::Parser.parse` returns:
+
+* `Expressir::Express::Model::Repository` for EXPRESS files
+* `Expressir::Express::Cache` for EXPRESS CACHE files
+* `Lutaml::Uml::Document` for XMI files
+* `Lutaml::Uml::Document` for XML files
+* `Lutaml::Uml::Document` for LutaML files
+* `Lutaml::Uml::Document` for LutaML YAML files
+
+Examples to use the `Lutaml::Parser.parse`:
 
 [source,ruby]
 ----
+require "lutaml"
+
 # example.exp is an EXPRESS schema file
-wrapper = Lutaml::Parser.parse([File.new("example.exp")])
-# => returns a Lutaml::LutamlPath::DocumentWrapper object
-wrapper.original_document
-# => returns the original Expressir::Repository object
-----
+model = Lutaml::Parser.parse([File.new("example.exp")])
+# => returns Expressir::Express::Model::Repository model
 
-[source,ruby]
-----
 # example.exp.yaml is an EXPRESS cache file created with Expressir
-wrapper = Lutaml::Parser.parse([File.new("example.exp.yaml")], ::Lutaml::Parser::EXPRESS_CACHE_PARSE_TYPE)
-# => returns the DocumentWrapper but with the repository loaded from the Expressir cache file
-----
+model = Lutaml::Parser.parse([File.new("example.exp.yaml")], ::Lutaml::Parser::EXPRESS_CACHE_PARSE_TYPE)
+# => returns Expressir::Express::Cache model
 
+# example.xmi is an XMI file
+model = Lutaml::Parser.parse([File.new("example.xmi")])
+# => returns Lutaml::Uml::Document model
 
-=== Selecting EXPRESS schemas
+# example.xml is an XML file
+model = Lutaml::Parser.parse([File.new("example.xml")])
+# => returns Lutaml::Uml::Document model
 
-LutaML supports the `ModelElement#to_hash(..., select_proc:)` functionality
-of Expressir, allowing Expressir to only call `to_hash` on schemas that
-fit a dynamic criteria.
+# example.lutaml is an LutaML file
+model = Lutaml::Parser.parse([File.new("example.lutaml")])
+# => returns Lutaml::Uml::Document model
 
-The criteria is set via a Ruby `Proc` object, as follows.
-
-[source,ruby]
-----
-# Sets the filter
-filtered_schemas = ["action_schema", "date_time_schema"]
-
-# Sets the Proc
-wrapper.select_proc = Proc.new do |value|
-  if value.is_a?(Expressir::Model::Declarations::Schema)
-    filtered_schemas.include?(value.id)
-  else
-    true
-  end
-end
-
-serialized = wrapper.to_liquid
-# => returns the filtered to_hash method
+# example.yaml is an LutaML YAML file
+model = Lutaml::Parser.parse([File.new("example.yaml")])
+# => returns Lutaml::Uml::Document model
 ----
 
 

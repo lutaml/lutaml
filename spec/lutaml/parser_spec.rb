@@ -9,9 +9,8 @@ RSpec.describe Lutaml::Parser do
     context "when exp file supplied" do
       let(:input) { File.new(fixtures_path("test-generic.exp")) }
 
-      it "calls Lutaml::Express::Parsers::Exp" do
+      it "calls Lutaml::Express::Parsers" do
         allow(Expressir::Express::Parser).to receive(:from_files)
-        allow(Lutaml::Express::LutamlPath::DocumentWrapper).to receive(:new)
         parse
         expect(Expressir::Express::Parser).to have_received(:from_files)
       end
@@ -20,9 +19,8 @@ RSpec.describe Lutaml::Parser do
     context "when xmi file supplied" do
       let(:input) { File.new(fixtures_path("ea-xmi-2.4.2-generic.xmi")) }
 
-      it "calls Lutaml::Uml::Parsers::Dsl" do
+      it "calls Lutaml::XMI::Parsers::XML" do
         allow(Lutaml::XMI::Parsers::XML).to receive(:parse)
-        allow(Lutaml::Uml::LutamlPath::DocumentWrapper).to receive(:new)
         parse
         expect(Lutaml::XMI::Parsers::XML).to have_received(:parse)
       end
@@ -33,14 +31,15 @@ RSpec.describe Lutaml::Parser do
 
       it "calls Lutaml::Uml::Parsers::Dsl" do
         allow(Lutaml::Uml::Parsers::Dsl).to receive(:parse)
-        allow(Lutaml::Uml::LutamlPath::DocumentWrapper).to receive(:new)
         parse
         expect(Lutaml::Uml::Parsers::Dsl).to have_received(:parse)
       end
     end
 
     context "when exp cache yaml file is supplied but it has an old version" do
-      let(:input_path) { fixtures_path("test-generic.exp_cached_old_version.yaml") }
+      let(:input_path) do
+        fixtures_path("test-generic.exp_cached_old_version.yaml")
+      end
       let(:input) { File.new(input_path) }
       let(:exp_schema_path) { fixtures_path("test-generic.exp") }
       let(:exp_schema_file) { File.new(exp_schema_path) }
@@ -71,9 +70,8 @@ RSpec.describe Lutaml::Parser do
         Expressir::Express::Cache.to_file(input_path, repository)
       end
 
-      it "calls Lutaml::Express::Parsers::Exp" do
+      it "calls Lutaml::Express::Cache" do
         allow(Expressir::Express::Cache).to receive(:from_file).and_call_original
-        allow(Lutaml::Express::LutamlPath::DocumentWrapper).to receive(:new).and_call_original
         parse
         expect(Expressir::Express::Cache).to have_received(:from_file)
       end
