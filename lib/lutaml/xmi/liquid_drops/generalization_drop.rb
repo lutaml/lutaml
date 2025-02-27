@@ -3,6 +3,8 @@
 module Lutaml
   module XMI
     class GeneralizationDrop < Liquid::Drop
+      include Parsers::XMIBase
+
       def initialize(gen, guidance = nil) # rubocop:disable Lint/MissingSuper
         @gen = gen
         @looped_general_item = false
@@ -31,7 +33,7 @@ module Lutaml
         !!@gen[:general]
       end
 
-      def attributes
+      def attributes # rubocop:disable Metrics/MethodLength
         attrs = @gen[:general_attributes]
         attrs.each do |i|
           name_ns = case i[:type_ns]

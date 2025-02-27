@@ -3,21 +3,31 @@
 module Lutaml
   module XMI
     class RootDrop < Liquid::Drop
-      def initialize(model, guidance = nil) # rubocop:disable Lint/MissingSuper
+      def initialize(model, guidance = nil, options = {}) # rubocop:disable Lint/MissingSuper,Metrics/AbcSize,Metrics/MethodLength,Metrics/CyclomaticComplexity
         @model = model
         @guidance = guidance
+        @options = options
+        @xmi_root_model = options[:xmi_root_model]
+        @xmi_cache = options[:xmi_cache]
+
+        @options[:absolute_path] = "::#{model.name}"
+
+        @packages = model&.packaged_element&.select do |e|
+          e.type?("uml:Package")
+        end
+
         @children_packages ||= packages.map do |pkg|
           [pkg, pkg.packages, pkg.packages.map(&:children_packages)]
         end.flatten.uniq
       end
 
       def name
-        @model[:name]
+        @model.name
       end
 
       def packages
-        @model[:packages].map do |package|
-          ::Lutaml::XMI::PackageDrop.new(package, @guidance)
+        @packages.map do |package|
+          ::Lutaml::XMI::PackageDrop.new(package, @guidance, @options)
         end
       end
 

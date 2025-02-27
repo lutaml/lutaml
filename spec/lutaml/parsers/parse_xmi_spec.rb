@@ -411,9 +411,9 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
       end
 
       it ".generalization_association if link.start == owner_xmi_id" do
-        link_element = @xmi_root_model.extension.elements.element.select do |e|
+        link_element = @xmi_root_model.extension.elements.element.find do |e|
           !e.links.nil? && !e.links.generalization.empty?
-        end.first
+        end
         link = link_element.links.generalization.first
         val = new_parser.send(
           :generalization_association,
