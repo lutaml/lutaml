@@ -3,6 +3,8 @@
 module Lutaml
   module XMI
     class GeneralizationAttributeDrop < Liquid::Drop
+      include Parsers::XMIBase
+
       def initialize(attr, upper_klass, gen_name, guidance = nil) # rubocop:disable Lint/MissingSuper,Metrics/ParameterLists,Layout/LineLength
         @attr = attr
         @upper_klass = upper_klass
