@@ -10,7 +10,9 @@ module Lutaml
 
       def initialize(attributes)
         update_attributes(attributes)
-        @children_packages ||= packages.map { |pkg| [pkg, pkg.packages, pkg.packages.map(&:children_packages)] }.flatten.uniq
+        @children_packages ||= packages.map do |pkg|
+          [pkg, pkg.packages, pkg.packages.map(&:children_packages)]
+        end.flatten.uniq
       end
 
       def classes=(value)

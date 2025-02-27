@@ -18,11 +18,9 @@ module Lutaml
 
         def parse(io, options = {})
           tree = Transform.new.apply(super)
-          tree = tree[:assignments].each_with_object({}) do |assignment, memo|
+          tree[:assignments].each_with_object({}) do |assignment, memo|
             memo[assignment[:name].to_s] = assignment[:value]
           end
-
-          tree
         end
 
         rule(:spaces) { match("\s").repeat(1) }

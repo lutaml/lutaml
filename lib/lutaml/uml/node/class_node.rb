@@ -13,13 +13,11 @@ module Lutaml
       class ClassNode < Base
         include HasName
 
-        attr_reader :modifier
+        attr_reader :modifier, :members
 
         def modifier=(value)
           @modifier = value.to_s # TODO: Validate?
         end
-
-        attr_reader :members
 
         def members=(value)
           @members = value.to_a.map do |member|
@@ -37,19 +35,19 @@ module Lutaml
         end
 
         def fields
-          @members.select { |member| member.class == Field }
+          @members.select { |member| member.instance_of?(Field) }
         end
 
         def methods
-          @members.select { |member| member.class == Method }
+          @members.select { |member| member.instance_of?(Method) }
         end
 
         def relationships
-          @members.select { |member| member.class == Relationship }
+          @members.select { |member| member.instance_of?(Relationship) }
         end
 
         def class_relationships
-          @members.select { |member| member.class == ClassRelationship }
+          @members.select { |member| member.instance_of?(ClassRelationship) }
         end
       end
     end

@@ -18,7 +18,7 @@ module Lutaml
                  end)
         property :associations,
                  from: :relations,
-                 coerce: Array[::Lutaml::Uml::Serializers::Association]
+                 coerce: [::Lutaml::Uml::Serializers::Association]
         property :name
         # property :type, from: :modelType
         # property :relations,

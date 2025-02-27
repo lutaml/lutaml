@@ -10,6 +10,7 @@ module Lutaml
   module Uml
     module Parsers
       class ParsingError < StandardError; end
+
       # Class for parsing LutaML dsl into Lutaml::Uml::Document
       class Dsl < Parslet::Parser
         # @param [String] io - LutaML string representation
@@ -92,9 +93,9 @@ module Lutaml
               str(")")).maybe
         end
         rule(:cardinality_body_definition) do
-          match['0-9\*'].as('min') >>
+          match['0-9\*'].as("min") >>
             str("..").maybe >>
-            match['0-9\*'].as('max').maybe
+            match['0-9\*'].as("max").maybe
         end
         rule(:cardinality) do
           str("[") >>
@@ -210,11 +211,11 @@ module Lutaml
             spaces? >>
               str("[") >>
               cardinality_body_definition
-              .as("#{association_end_type}_end_cardinality") >>
+                .as("#{association_end_type}_end_cardinality") >>
               str("]")
           end
           rule("#{association_end_type}_cardinality?") do
-            send("#{association_end_type}_cardinality").maybe
+            send(:"#{association_end_type}_cardinality").maybe
           end
           rule("#{association_end_type}_attribute_name") do
             str("#") >>
@@ -222,17 +223,17 @@ module Lutaml
               name.as("#{association_end_type}_end_attribute_name")
           end
           rule("#{association_end_type}_attribute_name?") do
-            send("#{association_end_type}_attribute_name").maybe
+            send(:"#{association_end_type}_attribute_name").maybe
           end
           rule("#{association_end_type}_definition") do
-            send("kw_#{association_end_type}") >>
+            send(:"kw_#{association_end_type}") >>
               spaces >>
               name.as("#{association_end_type}_end") >>
-              send("#{association_end_type}_attribute_name?") >>
-              send("#{association_end_type}_cardinality?")
+              send(:"#{association_end_type}_attribute_name?") >>
+              send(:"#{association_end_type}_cardinality?")
           end
           rule("#{association_end_type}_type") do
-            send("kw_#{association_end_type}_type") >>
+            send(:"kw_#{association_end_type}_type") >>
               spaces >>
               name.as("#{association_end_type}_end_type")
           end
@@ -303,7 +304,7 @@ module Lutaml
             whitespace? >>
             str("{") >>
             ((str("\\") >> any) | (str("}").absent? >> any)).repeat.maybe.as(:definition) >>
-            str('}')
+            str("}")
         end
 
         # -- Enum

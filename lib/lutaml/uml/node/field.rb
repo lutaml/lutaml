@@ -17,13 +17,11 @@ module Lutaml
           super
         end
 
-        attr_reader :static
+        attr_reader :static, :access
 
         def static=(value)
           @static = !!value
         end
-
-        attr_reader :access
 
         def access=(value)
           @access = value.to_s # TODO: Validate?

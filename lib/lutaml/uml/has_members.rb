@@ -11,17 +11,18 @@ module Lutaml
           .each do |(type, group)|
             attribute_value = group.map(&:values).flatten
             if attribute_value.length == 1 && !attribute_value.first.is_a?(Hash)
-              next public_send("#{associtaion_type(type)}=", attribute_value.first)
+              next public_send(:"#{associtaion_type(type)}=",
+                               attribute_value.first)
             end
 
-            public_send("#{associtaion_type(type)}=", attribute_value)
+            public_send(:"#{associtaion_type(type)}=", attribute_value)
           end
       end
 
       private
 
       def associtaion_type(type)
-        return type if respond_to?("#{type}=")
+        return type if respond_to?(:"#{type}=")
 
         raise(UnknownMemberTypeError, "Unknown member type: #{type}")
       end

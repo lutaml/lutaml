@@ -1,6 +1,6 @@
 require "lutaml/sysml/version"
 require "lutaml/uml"
-require 'nokogiri'
+require "nokogiri"
 
 module Lutaml
   module Sysml

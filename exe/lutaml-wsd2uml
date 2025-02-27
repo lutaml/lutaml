@@ -14,9 +14,9 @@ def sync_puts(line, level = 0)
   $stdout.flush
 end
 
-SKIPPED_LINES_REGEXP = /^(@startuml|'\*{7}|note|@enduml|\!|'\/)/
-COMMENT_START = /\/'/
-COMMENT_END = /'\//
+SKIPPED_LINES_REGEXP = /^(@startuml|'\*{7}|note|@enduml|!|'\/)/.freeze
+COMMENT_START = /\/'/.freeze
+COMMENT_END = /'\//.freeze
 ASSOCIATION_MAPPINGS = {
   /-\|>/ => ",inheritance",
   /<\|-/ => "inheritance,",
@@ -27,11 +27,15 @@ ASSOCIATION_MAPPINGS = {
 in_comment_block = false
 
 def transform_line(line)
-  line = line.gsub(/^\s*'/, '** ').gsub(/\|[\sa-zA-Z]+$/, '').gsub(/\r/, '')
-  return sync_puts(line, 2) if ASSOCIATION_MAPPINGS.keys.none? { |key| line =~ key }
+  line = line.gsub(/^\s*'/, "** ").gsub(/\|[\sa-zA-Z]+$/, "").delete("\r")
+  return sync_puts(line, 2) if ASSOCIATION_MAPPINGS.keys.none? do |key|
+    line =~ key
+  end
 
-  owner_type, member_type = ASSOCIATION_MAPPINGS.detect { |(key, _value)| line =~ key }.last.split(",")
-  blocks = line.split(" ")
+  owner_type, member_type = ASSOCIATION_MAPPINGS.detect do |(key, _value)|
+    line =~ key
+  end.last.split(",")
+  blocks = line.split
   owner = blocks.first
   member = blocks.last
   sync_puts("association {", 2)
