@@ -70,7 +70,7 @@ module Lutaml
 
       def data_types
         @all_data_type_elements.map do |data_type|
-          ::Lutaml::XMI::DataTypeDrop.new(data_type)
+          ::Lutaml::XMI::DataTypeDrop.new(data_type, @options)
         end
       end
 
