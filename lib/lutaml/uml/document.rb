@@ -26,6 +26,7 @@ module Lutaml
       def initialize(attributes = {})
         update_attributes(attributes)
       end
+
       # rubocop:enable Rails/ActiveRecordAliases
       def classes=(value)
         @classes = value.to_a.map { |attributes| Class.new(attributes) }
@@ -44,7 +45,9 @@ module Lutaml
       end
 
       def primitives=(value)
-        @primitives = value.to_a.map { |attributes| PrimitiveType.new(attributes) }
+        @primitives = value.to_a.map do |attributes|
+          PrimitiveType.new(attributes)
+        end
       end
 
       def associations=(value)

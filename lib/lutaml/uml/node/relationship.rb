@@ -11,13 +11,11 @@ module Lutaml
         include HasName
         include HasType
 
-        attr_reader :from
+        attr_reader :from, :to
 
         def from=(value)
           @from = value.to_s
         end
-
-        attr_reader :to
 
         def to=(value)
           @to = value.to_s

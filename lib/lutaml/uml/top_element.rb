@@ -33,10 +33,10 @@ module Lutaml
         next_namespace = namespace
 
         while !next_namespace.nil?
-          the_name = if !next_namespace.name.nil?
-                       next_namespace.name + "::" + the_name
+          the_name = if next_namespace.name.nil?
+                       "::#{the_name}"
                      else
-                       "::" + the_name
+                       "#{next_namespace.name}::#{the_name}"
                      end
           next_namespace = next_namespace.namespace
         end
@@ -46,12 +46,12 @@ module Lutaml
 
       def definition=(value)
         @definition = value
-                        .to_s
-                        .gsub(/\\}/, '}')
-                        .gsub(/\\{/, '{')
-                        .split("\n")
-                        .map(&:strip)
-                        .join("\n")
+          .to_s
+          .gsub(/\\}/, "}")
+          .gsub(/\\{/, "{")
+          .split("\n")
+          .map(&:strip)
+          .join("\n")
       end
     end
   end

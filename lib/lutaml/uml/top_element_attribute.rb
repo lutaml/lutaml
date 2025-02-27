@@ -27,12 +27,12 @@ module Lutaml
 
       def definition=(value)
         @definition = value
-                        .to_s
-                        .gsub(/\\}/, '}')
-                        .gsub(/\\{/, '{')
-                        .split("\n")
-                        .map(&:strip)
-                        .join("\n")
+          .to_s
+          .gsub(/\\}/, "}")
+          .gsub(/\\{/, "{")
+          .split("\n")
+          .map(&:strip)
+          .join("\n")
       end
     end
   end

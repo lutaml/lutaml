@@ -14,10 +14,10 @@ module Lutaml
         def self.load_schema(schema, root_schema)
           result = Lutaml::Model::Schema.from_xml(schema)
 
-          result.values.each do |klass|
+          result.each_value do |klass|
             klass = klass.gsub(/^require.*?\n/, "")
 
-            eval(klass, TOPLEVEL_BINDING)
+            eval(klass, TOPLEVEL_BINDING) # rubocop:disable Security/Eval
           end
 
           @@root_schema = root_schema

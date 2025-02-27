@@ -18,11 +18,11 @@ module Lutaml
         end
 
         ACCESS_SYMBOLS = {
-          "public"    => "+",
+          "public" => "+",
           "protected" => "#",
-          "private"   => "-",
+          "private" => "-",
         }.freeze
-        DEFAULT_CLASS_FONT = "Helvetica".freeze
+        DEFAULT_CLASS_FONT = "Helvetica"
 
         VALID_TYPES = %i[
           dot
@@ -66,9 +66,7 @@ module Lutaml
           @type = :dot
         end
 
-        attr_reader :graph
-        attr_reader :edge
-        attr_reader :node
+        attr_reader :graph, :edge, :node
 
         def type=(value)
           super
@@ -84,10 +82,10 @@ module Lutaml
 
         def escape_html_chars(text)
           text
-            .gsub(/</, "&#60;")
-            .gsub(/>/, "&#62;")
-            .gsub(/\[/, "&#91;")
-            .gsub(/\]/, "&#93;")
+            .gsub("<", "&#60;")
+            .gsub(">", "&#62;")
+            .gsub("[", "&#91;")
+            .gsub("]", "&#93;")
         end
 
         def format_field(node)
@@ -200,7 +198,7 @@ module Lutaml
         end
 
         def format_member_rows(members, hide_members)
-          unless !hide_members && members && members.length.positive?
+          unless !hide_members && members&.length&.positive?
             return <<~HEREDOC.chomp
               <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
                 <TR><TD ALIGN="LEFT"></TD></TR>
@@ -213,10 +211,10 @@ module Lutaml
           end
           field_table = <<~HEREDOC.chomp
             <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
-              #{field_rows.map { |row| ' ' * 10 + row }.join("\n")}
+              #{field_rows.map { |row| (' ' * 10) + row }.join("\n")}
             </TABLE>
           HEREDOC
-          field_table << "\n" << " " * 6
+          field_table << "\n" << (" " * 6)
           field_table
         end
 

@@ -10,13 +10,11 @@ module Lutaml
       class Method < Field
         include HasName
 
-        attr_reader :abstract
+        attr_reader :abstract, :arguments
 
         def abstract=(value)
           @abstract = !!value
         end
-
-        attr_reader :arguments
 
         def arguments=(value)
           @arguments = value.to_a.map do |attributes|

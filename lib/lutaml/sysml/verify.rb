@@ -1,6 +1,6 @@
-module Lutaml::SysMl
-
-class Verify < Trace
-end
-
+module Lutaml
+  module SysMl
+    class Verify < Trace
+    end
+  end
 end

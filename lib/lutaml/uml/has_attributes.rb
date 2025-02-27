@@ -5,8 +5,8 @@ module Lutaml
     module HasAttributes
       def update_attributes(attributes = {})
         attributes.to_h.each do |name, value|
-          value = value.respond_to?(:str) ? value.str : value
-          public_send("#{name}=", value)
+          value = value.str if value.respond_to?(:str)
+          public_send(:"#{name}=", value)
         end
       end
     end

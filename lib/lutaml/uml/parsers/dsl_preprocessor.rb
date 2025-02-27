@@ -43,12 +43,13 @@ module Lutaml
           return line if include_path_match.nil? || line =~ /^\s\*\*/
 
           path_to_file = include_path_match[1].strip
-          path_to_file = if path_to_file.match?(/^\//)
-                           path_to_file
-                         else
-                           File.join(include_root, path_to_file)
-                         end
-          File.read(path_to_file).split("\n").map { |line| process_comment_line(line) }
+          unless path_to_file.match?(/^\//)
+            path_to_file = File.join(include_root,
+                                     path_to_file)
+          end
+          File.read(path_to_file).split("\n").map do |line|
+            process_comment_line(line)
+          end
         rescue Errno::ENOENT
           puts("No such file or directory @ rb_sysopen - #{path_to_file}, \
             include file paths need to be supplied relative to the main document")

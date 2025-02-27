@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require 'expressir'
-require 'expressir/express/parser'
+require "expressir"
+require "expressir/express/parser"
 
 module Lutaml
   module Express
@@ -12,7 +12,7 @@ module Lutaml
         #        [Hash] options - options for parsing
         #
         # @return [Expressir::Model::Repository]
-        def self.parse(io, options = {})
+        def self.parse(io, _options = {})
           Expressir::Express::Parser.from_file(io.path)
         end
       end

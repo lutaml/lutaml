@@ -1,7 +1,7 @@
-module Lutaml::SysMl
-
-class Satisfy < Trace
-	attr_accessor :base_realization
-end
-
+module Lutaml
+  module SysMl
+    class Satisfy < Trace
+      attr_accessor :base_realization
+    end
+  end
 end

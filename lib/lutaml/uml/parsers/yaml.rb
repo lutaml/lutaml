@@ -33,8 +33,8 @@ module Lutaml
           yaml_content["imports"].map do |(klass_name, _)|
             klass_attrs = YAML.safe_load(
               File.read(
-                File.join(models_path, "#{klass_name}.yml")
-              )
+                File.join(models_path, "#{klass_name}.yml"),
+              ),
             )
             klass_attrs["name"] = klass_name if klass_attrs["name"].nil?
             Lutaml::Uml::Serializers::Class.new(klass_attrs)
