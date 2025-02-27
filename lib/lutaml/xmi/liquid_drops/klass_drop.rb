@@ -133,7 +133,9 @@ module Lutaml
           generalization = serialize_generalization(@model)
           return {} if generalization.nil?
 
-          ::Lutaml::XMI::GeneralizationDrop.new(generalization, @klass_guidance)
+          ::Lutaml::XMI::GeneralizationDrop.new(
+            generalization, @klass_guidance, @options
+          )
         end
       end
 

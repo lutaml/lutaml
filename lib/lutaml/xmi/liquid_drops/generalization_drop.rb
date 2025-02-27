@@ -5,12 +5,15 @@ module Lutaml
     class GeneralizationDrop < Liquid::Drop
       include Parsers::XMIBase
 
-      def initialize(gen, guidance = nil) # rubocop:disable Lint/MissingSuper
+      def initialize(gen, guidance = nil, options = {}) # rubocop:disable Lint/MissingSuper
         @gen = gen
         @looped_general_item = false
         @inherited_props = []
         @inherited_assoc_props = []
         @guidance = guidance
+        @options = options
+        @xmi_root_model = options[:xmi_root_model]
+        @xmi_cache = options[:xmi_cache]
       end
 
       def id
@@ -26,7 +29,9 @@ module Lutaml
       end
 
       def general
-        GeneralizationDrop.new(@gen[:general], @guidance) if @gen[:general]
+        if @gen[:general]
+          GeneralizationDrop.new(@gen[:general], @guidance, @options)
+        end
       end
 
       def has_general?
