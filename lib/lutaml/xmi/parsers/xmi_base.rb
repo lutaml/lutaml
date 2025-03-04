@@ -27,6 +27,7 @@ module Lutaml
         def set_xmi_model(xmi_model)
           @xmi_cache = {}
           @xmi_root_model = xmi_model
+          map_id_name(@xmi_cache, @xmi_root_model)
         end
 
         # @param yaml [String]
