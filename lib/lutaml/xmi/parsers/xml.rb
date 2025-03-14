@@ -47,15 +47,26 @@ module Lutaml
           # @param guidance [String]
           # @return [Hash]
           def serialize_generalization_by_name(xml, name, guidance = nil)
+            # Load from cache or file
             xml_cache_key = (Digest::SHA256.file xml).hexdigest
-            xmi_model = @xmi_root_model_cache_static[xml_cache_key]
+            xmi_model = deep_clone(@xmi_root_model_cache_static[xml_cache_key])
+            xmi_model_to_cache = nil
+            if xmi_model == nil
+              xmi_model = get_xmi_model(xml)
+              xmi_model_to_cache = deep_clone(xmi_model)
+            end
             xmi_cache = @xmi_cache_static[xml_cache_key]
 
-            xmi_model = get_xmi_model(xml) if xmi_model.nil?
-            t = new
-            t.serialize_generalization_by_name(xmi_model, name, guidance, xmi_cache)
-            @xmi_cache_static[xml_cache_key] = t.xmi_cache if guidance == nil
-            @xmi_root_model_cache_static[xml_cache_key] = xmi_model if guidance == nil
+            instance = new
+            instance.serialize_generalization_by_name(xmi_model, name, guidance, xmi_cache)
+
+            # Put to cache
+            @xmi_cache_static[xml_cache_key] = instance.xmi_cache if guidance == nil
+            @xmi_root_model_cache_static[xml_cache_key] = xmi_model_to_cache if xmi_model_to_cache
+          end
+
+          def deep_clone(obj)
+            Marshal.load(Marshal.dump(obj)) if obj != nil
           end
         end
 
