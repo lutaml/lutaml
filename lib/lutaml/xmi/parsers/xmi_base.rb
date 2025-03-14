@@ -24,10 +24,10 @@ module Lutaml
         end
 
         # @param xmi_model [Lutaml::Model::Serializable]
-        def set_xmi_model(xmi_model)
-          @xmi_cache = {}
+        def set_xmi_model(xmi_model, xmi_cache = nil)
+          @xmi_cache = xmi_cache ? xmi_cache : {}
           @xmi_root_model = xmi_model
-          map_id_name(@xmi_cache, @xmi_root_model)
+          map_id_name(@xmi_cache, @xmi_root_model) if xmi_cache.empty?
         end
 
         # @param yaml [String]
