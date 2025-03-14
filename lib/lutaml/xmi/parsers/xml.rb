@@ -12,6 +12,7 @@ module Lutaml
       # Class for parsing .xmi schema files into ::Lutaml::Uml::Document
       class XML
         @xmi_cache_static = {}
+        @xmi_root_model_cache_static = {}
 
         attr_reader :xmi_cache, :xmi_root_model
 
@@ -46,11 +47,13 @@ module Lutaml
           # @param guidance [String]
           # @return [Hash]
           def serialize_generalization_by_name(xml, name, guidance = nil)
-            xmi_model = get_xmi_model(xml)
+            xmi_model = @xmi_root_model_cache_static[xml]
+            xmi_model = get_xmi_model(xml) if xmi_model.nil?
             xmi_cache = @xmi_cache_static[xml]
             t = new
             t.serialize_generalization_by_name(xmi_model, name, guidance, xmi_cache)
             @xmi_cache_static[xml] = t.xmi_cache if guidance == nil
+            @xmi_root_model_cache_static[xml] = xmi_model if guidance == nil
           end
         end
 
