@@ -4,6 +4,7 @@ require "lutaml/uml/has_attributes"
 require "lutaml/uml/document"
 require "lutaml/xmi"
 require "xmi"
+require 'digest'
 
 module Lutaml
   module XMI
