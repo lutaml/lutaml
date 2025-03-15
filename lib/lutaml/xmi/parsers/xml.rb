@@ -58,11 +58,13 @@ module Lutaml
             xmi_cache = @xmi_cache_static[xml_cache_key]
 
             instance = new
-            instance.serialize_generalization_by_name(xmi_model, name, guidance, xmi_cache)
+            ret_val = instance.serialize_generalization_by_name(xmi_model, name, guidance, xmi_cache)
 
             # Put to cache
             @xmi_cache_static[xml_cache_key] = instance.xmi_cache if guidance == nil
             @xmi_root_model_cache_static[xml_cache_key] = xmi_model_to_cache if xmi_model_to_cache
+
+            ret_val
           end
 
           def deep_clone(obj)
