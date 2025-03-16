@@ -14,7 +14,7 @@ module Lutaml
         @xmi_cache_static = {}
         @xmi_root_model_cache_static = {}
 
-        attr_reader :xmi_cache, :xmi_root_model
+        attr_reader :xmi_cache, :xmi_root_model, :all_packaged_elements_cache
 
         include XMIBase
 
@@ -47,6 +47,8 @@ module Lutaml
           # @param guidance [String]
           # @return [Hash]
           def serialize_generalization_by_name(xml, name, guidance = nil)
+            # puts "#{xml}, #{name}, #{guidance}"
+
             # Load from cache or file
             xml_cache_key = (Digest::SHA256.file xml).hexdigest
             xmi_model = deep_clone(@xmi_root_model_cache_static[xml_cache_key])
@@ -68,6 +70,7 @@ module Lutaml
           end
 
           def deep_clone(obj)
+            obj if true # Disabled for now
             Marshal.load(Marshal.dump(obj)) if obj != nil
           end
         end

@@ -956,6 +956,8 @@ module Lutaml
 
         # @return [Array<Xmi::Uml::PackagedElement>]
         def all_packaged_elements
+          return @all_packaged_elements_cache if @all_packaged_elements_cache
+
           all_elements = []
           packaged_element_roots = @xmi_root_model.model.packaged_element +
             @xmi_root_model.extension.primitive_types.packaged_element +
@@ -965,6 +967,7 @@ module Lutaml
             select_all_packaged_elements(all_elements, e, nil)
           end
 
+          @all_packaged_elements_cache = all_elements
           all_elements
         end
 
