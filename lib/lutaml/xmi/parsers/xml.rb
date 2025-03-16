@@ -70,7 +70,7 @@ module Lutaml
           end
 
           def deep_clone(obj)
-            # TODO: we need this if xmi_model is being nodified in serialize_generalization_by_name
+            # TODO: we need this if xmi_model is being modified in serialize_generalization_by_name
             #Marshal.load(Marshal.dump(obj)) if obj != nil
             obj
           end
