@@ -858,15 +858,20 @@ module Lutaml
         # @return [Lutaml::Model::Serializable]
         # @note xpath %(//attribute[@xmi:idref="#{xmi_id}"])
         def fetch_attribute_node(xmi_id)
-          attribute_node = nil
+          @attribute_cache ||= build_attribute_cache
+          @attribute_cache[xmi_id]
+        end
+
+        def build_attribute_cache
+          cache = {}
           @xmi_root_model.extension.elements.element.each do |e|
-            if e.attributes&.attribute
-              e.attributes.attribute.each do |a|
-                attribute_node = a if a.idref == xmi_id
-              end
+            next unless e.attributes&.attribute
+
+            e.attributes.attribute.each do |a|
+              cache[a.idref] = a  # Store in hash for quick lookup
             end
           end
-          attribute_node
+          cache
         end
 
         # @param xmi_id [String]
