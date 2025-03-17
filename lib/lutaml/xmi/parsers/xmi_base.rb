@@ -281,19 +281,34 @@ module Lutaml
           ]
         end
 
+        # Build a cache for packaged elements by ID
+        def build_packaged_element_cache
+          @packaged_element_cache = all_packaged_elements.to_h { |e| [e.id, e] }
+        end
+
         # @param id [String]
         # @return [Lutaml::Model::Serializable]
         def find_packaged_element_by_id(id)
-          all_packaged_elements.find { |e| e.id == id }
+          build_packaged_element_cache unless @packaged_element_cache
+          @packaged_element_cache[id]
         end
 
         # @param id [String]
         # @return [Lutaml::Model::Serializable]
         def find_upper_level_packaged_element(klass_id)
-          upper_klass = all_packaged_elements.find do |e|
-            e.packaged_element.find { |pe| pe.id == klass_id }
+          build_upper_level_cache unless @upper_level_cache
+          @upper_level_cache[klass_id]
+        end
+
+        # Build cache once for all packaged elements
+        def build_upper_level_cache
+          @upper_level_cache = {}
+
+          all_packaged_elements.each do |e|
+            e.packaged_element.each do |pe|
+              @upper_level_cache[pe.id] = e.name
+            end
           end
-          upper_klass&.name
         end
 
         # @param path [String]
