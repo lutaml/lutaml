@@ -326,7 +326,7 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
             member_end_xmi_id: "EAID_C1155D80_E68B_46d5_ADE5_F5639486163D",
             owner_end: "BibliographicItem",
             owner_end_xmi_id: "EAID_D832D6D8_0518_43f7_9166_7A4E3E8605AA",
-            definition: nil,
+            definition: "",
           }],
         )
       end
@@ -345,7 +345,7 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
           :fetch_definition_node_value,
           "EAID_2CA98919_831B_4182_BBC2_C2EAF17FEF60", "source"
         )
-        expect(val).to eq(nil)
+        expect(val).to eq("")
       end
 
       it ".serialize_class_operations" do
