@@ -54,7 +54,7 @@ RSpec.describe Lutaml::Parser do
       it "raises Expressir::Error" do
         expect do
           Expressir::Express::Cache.from_file(input_path)
-        end.to raise_error(Expressir::Error)
+        end.to raise_error(Expressir::Express::Error::CacheVersionMismatchError)
       end
     end
 
