@@ -101,7 +101,7 @@ module Lutaml
         # @param xmi_model [Lutaml::Model::Serializable]
         # @param guidance_yaml [String]
         # return [Liquid::Drop]
-        def serialize_xmi_to_liquid(xmi_model, guidance_yaml = nil)
+        def serialize_xmi_to_liquid(xmi_model, guidance = nil)
           set_xmi_model(xmi_model)
           model = xmi_model.model
           options = {
@@ -110,7 +110,6 @@ module Lutaml
             with_gen: true,
             with_absolute_path: true,
           }
-          guidance = get_guidance(guidance_yaml)
           ::Lutaml::XMI::RootDrop.new(model, guidance, options)
         end
 
@@ -119,10 +118,9 @@ module Lutaml
         # @param guidance_yaml [String]
         # @return [Hash]
         def serialize_generalization_by_name(xmi_model, name, # rubocop:disable Metrics/MethodLength
-                                             guidance_yaml = nil, xmi_cache = nil)
+                                             guidance = nil, xmi_cache = nil)
           set_xmi_model(xmi_model, xmi_cache)
           klass = find_klass_packaged_element(name)
-          guidance = get_guidance(guidance_yaml)
           options = {
             xmi_root_model: @xmi_root_model,
             xmi_cache: @xmi_cache,
