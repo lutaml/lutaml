@@ -31,14 +31,6 @@ module Lutaml
           map_id_name(@xmi_cache, @xmi_root_model) if @xmi_cache.empty?
         end
 
-        # @param yaml [String]
-        # @return [Hash]
-        def get_guidance(yaml)
-          return unless yaml
-
-          YAML.safe_load(File.read(yaml, encoding: "UTF-8"))
-        end
-
         private
 
         # @param xmi_model [Lutaml::Model::Serializable]

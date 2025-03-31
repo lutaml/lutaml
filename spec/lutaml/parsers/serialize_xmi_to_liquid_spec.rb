@@ -196,10 +196,10 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
 
     context "when parsing xmi with generalization and guidance yaml" do
       let(:file) { File.new(fixtures_path("plateau_all_packages_export.xmi")) }
-      let(:guidance_yaml) { File.new(fixtures_path("guidance/guidance.yaml")) }
+      let(:guidance) { YAML.load_file(fixtures_path("guidance/guidance.yaml")) }
 
       subject(:output) do
-        described_class.serialize_xmi_to_liquid(file, guidance_yaml)
+        described_class.serialize_xmi_to_liquid(file, guidance)
       end
 
       it "should output attributes correctly" do
