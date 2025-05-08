@@ -11,10 +11,11 @@ module Lutaml
     module Parsers
       # Class for parsing .xmi schema files into ::Lutaml::Uml::Document
       class XML
-        @xmi_cache_static = {}
+        @id_name_mapping_static = {}
         @xmi_root_model_cache_static = {}
 
-        attr_reader :xmi_cache, :xmi_root_model, :all_packaged_elements_cache
+        attr_reader :id_name_mapping, :xmi_root_model,
+                    :all_packaged_elements_cache
 
         include XMIBase
 
@@ -42,37 +43,29 @@ module Lutaml
             new.serialize_xmi_to_liquid(xmi_model, guidance)
           end
 
-          # @param xml [String] path to xml
+          # @param xmi_path [String] path to xml
           # @param name [String]
           # @param guidance [String]
           # @return [Hash]
-          def serialize_generalization_by_name(xml, name, guidance = nil)
-            # puts "#{xml}, #{name}, #{guidance}"
-
+          def serialize_generalization_by_name( # rubocop:disable Metrics/MethodLength
+            xmi_path, name, guidance = nil
+          )
             # Load from cache or file
-            xml_cache_key = (Digest::SHA256.file xml).hexdigest
-            xmi_model = deep_clone(@xmi_root_model_cache_static[xml_cache_key])
-            xmi_model_to_cache = nil
-            if xmi_model == nil
-              xmi_model = get_xmi_model(xml)
-              xmi_model_to_cache = deep_clone(xmi_model)
-            end
-            xmi_cache = @xmi_cache_static[xml_cache_key]
+            xml_cache_key = (Digest::SHA256.file xmi_path).hexdigest
+            xmi_model = @xmi_root_model_cache_static[xml_cache_key] ||
+              get_xmi_model(xmi_path)
+            id_name_mapping = @id_name_mapping_static[xml_cache_key]
 
             instance = new
-            ret_val = instance.serialize_generalization_by_name(xmi_model, name, guidance, xmi_cache)
+            ret_val = instance.serialize_generalization_by_name(
+              xmi_model, name, guidance, id_name_mapping
+            )
 
-            # Put to cache
-            @xmi_cache_static[xml_cache_key] = instance.xmi_cache if guidance == nil
-            @xmi_root_model_cache_static[xml_cache_key] = xmi_model_to_cache if xmi_model_to_cache
+            # Put xmi_model and id_name_mapping to cache
+            @id_name_mapping_static[xml_cache_key] ||= instance.id_name_mapping
+            @xmi_root_model_cache_static[xml_cache_key] ||= xmi_model
 
             ret_val
-          end
-
-          def deep_clone(obj)
-            # TODO: we need this if xmi_model is being modified in serialize_generalization_by_name
-            #Marshal.load(Marshal.dump(obj)) if obj != nil
-            obj
           end
         end
 
@@ -106,7 +99,7 @@ module Lutaml
           model = xmi_model.model
           options = {
             xmi_root_model: @xmi_root_model,
-            xmi_cache: @xmi_cache,
+            id_name_mapping: @id_name_mapping,
             with_gen: true,
             with_absolute_path: true,
           }
@@ -116,14 +109,16 @@ module Lutaml
         # @param xmi_model [Lutaml::Model::Serializable]
         # @param name [String]
         # @param guidance_yaml [String]
+        # @param id_name_mapping [Hash]
         # @return [Hash]
-        def serialize_generalization_by_name(xmi_model, name, # rubocop:disable Metrics/MethodLength
-                                             guidance = nil, xmi_cache = nil)
-          set_xmi_model(xmi_model, xmi_cache)
+        def serialize_generalization_by_name( # rubocop:disable Metrics/MethodLength
+          xmi_model, name, guidance = nil, id_name_mapping = nil
+        )
+          set_xmi_model(xmi_model, id_name_mapping)
           klass = find_klass_packaged_element(name)
           options = {
             xmi_root_model: @xmi_root_model,
-            xmi_cache: @xmi_cache,
+            id_name_mapping: @id_name_mapping,
             with_gen: true,
             with_absolute_path: true,
           }

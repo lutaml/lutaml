@@ -2,10 +2,11 @@ require "spec_helper"
 
 RSpec.describe Lutaml::XMI::Parsers::XML do
   describe ".serialize_generalization_by_name" do
+    let(:file) { File.new(fixtures_path("plateau_all_packages_export.xmi")) }
+
     subject(:output) do
       described_class.serialize_generalization_by_name(file, path)
     end
-    let(:file) { File.new(fixtures_path("plateau_all_packages_export.xmi")) }
 
     context "when parsing xmi" do
       context "with klass name only" do

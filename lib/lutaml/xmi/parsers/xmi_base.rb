@@ -25,10 +25,15 @@ module Lutaml
         end
 
         # @param xmi_model [Lutaml::Model::Serializable]
-        def set_xmi_model(xmi_model, xmi_cache = nil)
-          @xmi_cache = xmi_cache ? xmi_cache : {}
-          @xmi_root_model = xmi_model
-          map_id_name(@xmi_cache, @xmi_root_model) if @xmi_cache.empty?
+        # @param id_name_mapping [Hash]
+        # @return [Hash]
+        def set_xmi_model(xmi_model, id_name_mapping = nil)
+          @id_name_mapping ||= id_name_mapping || {}
+          @xmi_root_model ||= xmi_model
+
+          if @id_name_mapping.empty?
+            map_id_name(@id_name_mapping, @xmi_root_model)
+          end
         end
 
         private
@@ -907,8 +912,8 @@ module Lutaml
         # @param xmi_id [String]
         # @return [String]
         def lookup_entity_name(xmi_id)
-          model_node_name_by_xmi_id(xmi_id) if @xmi_cache.empty?
-          @xmi_cache[xmi_id]
+          model_node_name_by_xmi_id(xmi_id) if @id_name_mapping.empty?
+          @id_name_mapping[xmi_id]
         end
 
         # @param xmi_id [String]
@@ -962,8 +967,8 @@ module Lutaml
         def model_node_name_by_xmi_id(xmi_id)
           id_name_mapping = Hash.new
           map_id_name(id_name_mapping, @xmi_root_model)
-          @xmi_cache = id_name_mapping
-          @xmi_cache[xmi_id]
+          @id_name_mapping = id_name_mapping
+          @id_name_mapping[xmi_id]
         end
 
         # @return [Array<Xmi::Uml::PackagedElement>]
