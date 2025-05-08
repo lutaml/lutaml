@@ -9,7 +9,7 @@ module Lutaml
         @model = model
         @options = options
         @xmi_root_model = options[:xmi_root_model]
-        @xmi_cache = options[:xmi_cache]
+        @id_name_mapping = options[:id_name_mapping]
 
         uml_type = @model.uml_type
         @uml_type_idref = uml_type.idref if uml_type

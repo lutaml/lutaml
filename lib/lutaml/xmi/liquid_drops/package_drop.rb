@@ -11,7 +11,7 @@ module Lutaml
 
         @options = options
         @xmi_root_model = options[:xmi_root_model]
-        @xmi_cache = options[:xmi_cache]
+        @id_name_mapping = options[:id_name_mapping]
 
         @packages = model.packaged_element.select do |e|
           e.type?("uml:Package")
