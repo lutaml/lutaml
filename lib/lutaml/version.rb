@@ -1,3 +1,3 @@
 module Lutaml
-  VERSION = "0.9.33".freeze
+  VERSION = "0.9.34".freeze
 end
