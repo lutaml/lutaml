@@ -40,7 +40,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "parslet", "~> 2.0.0"
   spec.add_dependency "ruby-graphviz", "~> 1.2"
   spec.add_dependency "thor", "~> 1.0"
-  spec.add_dependency "xmi", "~> 0.3.12"
+  spec.add_dependency "xmi", "~> 0.3.20"
 
   spec.add_development_dependency "byebug"
   spec.add_development_dependency "equivalent-xml", "~> 0.6.0"

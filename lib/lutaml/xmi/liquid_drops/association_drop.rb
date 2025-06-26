@@ -14,7 +14,8 @@ module Lutaml
         member_end_xmi_id:,
         owner_end:,
         owner_end_xmi_id:,
-        definition:
+        definition:,
+        options:
       )
         @xmi_id = xmi_id
         @member_end = member_end
@@ -25,6 +26,9 @@ module Lutaml
         @owner_end = owner_end
         @owner_end_xmi_id = owner_end_xmi_id
         @definition = definition
+        @options = options
+        @xmi_root_model = options[:xmi_root_model]
+        @id_name_mapping = options[:id_name_mapping]
       end
 
       def xmi_id
@@ -61,6 +65,11 @@ module Lutaml
 
       def definition
         @definition
+      end
+
+      def connector
+        connector = fetch_connector(@xmi_id)
+        ::Lutaml::XMI::ConnectorDrop.new(connector)
       end
     end
   end
