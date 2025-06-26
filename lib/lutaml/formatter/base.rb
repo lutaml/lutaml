@@ -7,7 +7,7 @@ module Lutaml
   module Formatter
     class Base
       class << self
-        def inherited(subclass)
+        def inherited(subclass) # rubocop:disable Lint/MissingSuper
           Formatter.all << subclass
         end
 
@@ -38,9 +38,9 @@ module Lutaml
         @type = value.to_s.strip.downcase.to_sym
       end
 
-      def format(node)
+      def format(node) # rubocop:disable Metrics/CyclomaticComplexity
         case node
-        when ::Lutaml::Uml::Node::Field  then format_field(node)
+        when ::Lutaml::Uml::Node::Field then format_field(node)
         when ::Lutaml::Uml::Node::Method then format_method(node)
         when ::Lutaml::Uml::Node::Relationship then format_relationship(node)
         when ::Lutaml::Uml::Node::ClassRelationship

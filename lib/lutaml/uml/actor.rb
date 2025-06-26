@@ -7,7 +7,7 @@
 module Lutaml
   module Uml
     class Actor < Classifier
-      def initialize
+      def initialize # rubocop:disable Lint/MissingSuper
         @name = nil
         @xmi_id = nil
         @stereotype = []

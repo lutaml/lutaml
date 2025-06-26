@@ -74,7 +74,8 @@ module Lutaml
         rule(:spaces) { match("\s").repeat(1) }
         rule(:spaces?) { spaces.maybe }
         rule(:whitespace) do
-          (match("\s") | match("	") | match("\r?\n") | match("\r") | str(";")).repeat(1)
+          (match("\s") | match("	") | match("\r?\n") | match("\r") | str(";"))
+            .repeat(1)
         end
         rule(:whitespace?) { whitespace.maybe }
         rule(:name) { match["a-zA-Z0-9 _-"].repeat(1) }
@@ -83,7 +84,8 @@ module Lutaml
           spaces? >> str("**") >> (newline.absent? >> any).repeat.as(:comments)
         end
         rule(:comment_multiline_definition) do
-          spaces? >> str("*|") >> (str("|*").absent? >> any).repeat.as(:comments) >> whitespace? >> str("|*")
+          spaces? >> str("*|") >> (str("|*").absent? >> any)
+            .repeat.as(:comments) >> whitespace? >> str("|*")
         end
         rule(:class_name_chars) { match('(?:[a-zA-Z0-9 _-]|\:|\.)').repeat(1) }
         rule(:class_name) do
@@ -206,7 +208,7 @@ module Lutaml
 
         rule(:association_keyword) { kw_association >> spaces }
 
-        %w[owner member].each do |association_end_type|
+        %w[owner member].each do |association_end_type| # rubocop:disable Metrics/BlockLength
           rule("#{association_end_type}_cardinality") do
             spaces? >>
               str("[") >>
@@ -303,7 +305,8 @@ module Lutaml
             str("definition") >>
             whitespace? >>
             str("{") >>
-            ((str("\\") >> any) | (str("}").absent? >> any)).repeat.maybe.as(:definition) >>
+            ((str("\\") >> any) | (str("}").absent? >> any))
+              .repeat.maybe.as(:definition) >>
             str("}")
         end
 

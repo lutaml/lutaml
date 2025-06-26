@@ -28,7 +28,7 @@ module Lutaml
         @attr[:xmi_id]
       end
 
-      def is_derived # rubocop:disable Naming/PredicateName
+      def is_derived # rubocop:disable Naming/PredicateName,Naming/PredicatePrefix
         @attr[:is_derived]
       end
 

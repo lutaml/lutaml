@@ -41,7 +41,7 @@ module Lutaml
           cmapx
         ].freeze
 
-        def initialize(attributes = {})
+        def initialize(attributes = {}) # rubocop:disable Metrics/MethodLength
           super
 
           @graph = Attributes.new
@@ -88,7 +88,7 @@ module Lutaml
             .gsub("]", "&#93;")
         end
 
-        def format_field(node)
+        def format_field(node) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           symbol = ACCESS_SYMBOLS[node.visibility]
           result = "#{symbol}#{node.name}"
           if node.type
@@ -104,7 +104,7 @@ module Lutaml
           result
         end
 
-        def format_method(node)
+        def format_method(node) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength
           symbol = ACCESS_SYMBOLS[node.access]
           result = "#{symbol} #{node.name}"
           if node.arguments
@@ -130,7 +130,7 @@ module Lutaml
           %{#{graph_parent_name} -> #{graph_node_name}#{graph_attributes}}
         end
 
-        def generate_graph_relationship_attributes(node)
+        def generate_graph_relationship_attributes(node) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           attributes = Attributes.new
           if %w[dependency realizes].include?(node.member_end_type)
             attributes["style"] = "dashed"
@@ -197,7 +197,7 @@ module Lutaml
           "#{res} #{cardinality['min']}..#{cardinality['max']}"
         end
 
-        def format_member_rows(members, hide_members)
+        def format_member_rows(members, hide_members) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity
           unless !hide_members && members&.length&.positive?
             return <<~HEREDOC.chomp
               <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
@@ -218,7 +218,7 @@ module Lutaml
           field_table
         end
 
-        def format_class(node, hide_members)
+        def format_class(node, hide_members) # rubocop:disable Metrics/AbcSize
           name = ["<B>#{node.name}</B>"]
           name.unshift("«#{node.keyword}»") if node.keyword
           name_html = <<~HEREDOC
@@ -246,7 +246,7 @@ module Lutaml
           HEREDOC
         end
 
-        def format_document(node)
+        def format_document(node) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           @fontname = node.fontname || DEFAULT_CLASS_FONT
           @node["fontname"] = "#{@fontname}-bold"
 
@@ -270,8 +270,8 @@ module Lutaml
           associations = node.classes.map(&:associations).compact.flatten +
             node.associations
           if node.groups
-            associations = sort_by_document_groupping(node.groups,
-                                                      associations)
+            associations = sort_by_document_grouping(node.groups,
+                                                     associations)
           end
           classes_names = node.classes.map(&:name)
           associations = associations.map do |assoc_node|
@@ -302,7 +302,7 @@ module Lutaml
 
         protected
 
-        def sort_by_document_groupping(groups, associations)
+        def sort_by_document_grouping(groups, associations) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           result = []
           groups.each do |batch|
             batch.each do |group_name|

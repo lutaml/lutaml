@@ -8,7 +8,7 @@ module Lutaml
     class ConnectorEnd < TopElement
       attr_accessor :role, :part_with_port, :connector
 
-      def initialize
+      def initialize # rubocop:disable Lint/MissingSuper
         @role = nil
       end
     end

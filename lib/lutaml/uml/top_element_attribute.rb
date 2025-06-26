@@ -6,12 +6,12 @@ module Lutaml
       include HasAttributes
       include HasMembers
 
+      attr_reader :definition
       attr_accessor :name,
                     :visibility,
                     :type,
                     :id,
                     :xmi_id,
-                    :definition,
                     :contain,
                     :static,
                     :cardinality,

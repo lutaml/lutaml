@@ -1,7 +1,7 @@
 module Lutaml
   module SysMl
     class ConstraintBlock < Block
-      def initialize
+      def initialize # rubocop:disable Lint/MissingSuper
         @xmi_id = nil
         @nested_classifier = []
         @stereotype = []

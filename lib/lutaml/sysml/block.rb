@@ -3,7 +3,7 @@ module Lutaml
     class Block < Lutaml::Uml::Class
       attr_accessor :base_class
 
-      def initialize
+      def initialize # rubocop:disable Lint/MissingSuper
         @xmi_id = nil
         @nested_classifier = []
         @stereotype = []

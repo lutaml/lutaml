@@ -26,7 +26,7 @@ ASSOCIATION_MAPPINGS = {
 
 in_comment_block = false
 
-def transform_line(line)
+def transform_line(line) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
   line = line.gsub(/^\s*'/, "** ").gsub(/\|[\sa-zA-Z]+$/, "").delete("\r")
   return sync_puts(line, 2) if ASSOCIATION_MAPPINGS.keys.none? do |key|
     line =~ key

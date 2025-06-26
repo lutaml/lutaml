@@ -8,7 +8,7 @@ module Lutaml
     class Connector < TopElement
       attr_accessor :kind, :connector_end
 
-      def initialize
+      def initialize # rubocop:disable Lint/MissingSuper
         @name = nil
         @xmi_id = nil
         @xmi_uuid = nil

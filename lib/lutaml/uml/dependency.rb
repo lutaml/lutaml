@@ -8,7 +8,7 @@ module Lutaml
     class Dependency < TopElement
       attr_accessor :client, :supplier
 
-      def initialize
+      def initialize # rubocop:disable Lint/MissingSuper
         @name = nil
         @xmi_id = nil
         @xmi_uuid = nil

@@ -4,7 +4,7 @@ require "lutaml/uml/has_attributes"
 require "lutaml/uml/document"
 require "lutaml/xmi"
 require "xmi"
-require 'digest'
+require "digest"
 
 module Lutaml
   module XMI
@@ -112,7 +112,7 @@ module Lutaml
           return package.name unless package.name.nil?
 
           connector = fetch_connector(package.id)
-          if connector.target&.model && connector.target.model&.name
+          if connector.target&.model&.name
             return "#{connector.target.model.name} " \
                    "(#{package.type.split(':').last})"
           end
@@ -312,7 +312,7 @@ module Lutaml
         # @return [Lutaml::Model::Serializable]
         def find_klass_packaged_element(path)
           lutaml_path = Lutaml::Path.parse(path)
-          if lutaml_path.segments.count == 1
+          if lutaml_path.segments.one?
             return find_klass_packaged_element_by_name(path)
           end
 
@@ -895,7 +895,7 @@ module Lutaml
             next unless e.attributes&.attribute
 
             e.attributes.attribute.each do |a|
-              cache[a.idref] = a  # Store in hash for quick lookup
+              cache[a.idref] = a # Store in hash for quick lookup
             end
           end
           cache

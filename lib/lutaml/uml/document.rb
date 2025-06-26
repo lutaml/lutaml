@@ -20,7 +20,6 @@ module Lutaml
                     :fidelity,
                     :fontname,
                     :comments
-      attr_reader :packages
 
       # rubocop:disable Rails/ActiveRecordAliases
       def initialize(attributes = {})

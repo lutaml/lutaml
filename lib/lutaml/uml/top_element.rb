@@ -5,8 +5,8 @@ module Lutaml
     class TopElement
       include HasAttributes
 
+      attr_reader :definition
       attr_accessor :name,
-                    :definition,
                     :xmi_id,
                     :xmi_uuid,
                     :namespace,
@@ -24,7 +24,7 @@ module Lutaml
       end
       # rubocop:enable Rails/ActiveRecordAliases
 
-      def full_name
+      def full_name # rubocop:disable Metrics/MethodLength
         if name == nil
           return nil
         end

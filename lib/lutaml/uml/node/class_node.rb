@@ -19,7 +19,7 @@ module Lutaml
           @modifier = value.to_s # TODO: Validate?
         end
 
-        def members=(value)
+        def members=(value) # rubocop:disable Metrics/MethodLength
           @members = value.to_a.map do |member|
             type       = member.to_a[0][0] # TODO: This is dumb
             attributes = member.to_a[0][1]

@@ -68,7 +68,7 @@ module Lutaml
       raise(NotSupportedInputFormat, value) if @input_format.nil?
     end
 
-    def run(original_args)
+    def run(original_args) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
       args = original_args.dup
       if args.empty? || args.first.strip == "help"
         print_help
@@ -143,7 +143,7 @@ module Lutaml
       "\e[0m"
     end
 
-    def setup_parser_options
+    def setup_parser_options # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
       @option_parser.banner = ""
       format_desc = "The output formatter (Default: '#{@formatter.name}')"
       @option_parser
@@ -196,7 +196,7 @@ module Lutaml
       end
     end
 
-    def print_help
+    def print_help # rubocop:disable Metrics/AbcSize
       @out_object.puts <<~HELP
         #{text_bold('Usage:')} lutaml [options] PATHS
 
