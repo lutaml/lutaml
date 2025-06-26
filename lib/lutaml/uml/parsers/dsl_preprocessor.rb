@@ -38,7 +38,7 @@ module Lutaml
           line.gsub(%r{//.*}, "")
         end
 
-        def process_include_line(include_root, line)
+        def process_include_line(include_root, line) # rubocop:disable Metrics/MethodLength
           include_path_match = line.match(/^\s*include\s+(.+)/)
           return line if include_path_match.nil? || line =~ /^\s\*\*/
 
@@ -51,8 +51,11 @@ module Lutaml
             process_comment_line(line)
           end
         rescue Errno::ENOENT
-          puts("No such file or directory @ rb_sysopen - #{path_to_file}, \
-            include file paths need to be supplied relative to the main document")
+          puts(
+            "No such file or directory @ rb_sysopen - #{path_to_file}, " \
+            "include file paths need to be supplied relative to the main " \
+            "document",
+          )
         end
       end
     end

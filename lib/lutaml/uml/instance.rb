@@ -5,7 +5,7 @@ module Lutaml
     class Instance < TopElement
       attr_accessor :classifier, :slot
 
-      def initialize
+      def initialize # rubocop:disable Lint/MissingSuper
         @name = nil
         @xmi_id = nil
         @xmi_uuid = nil

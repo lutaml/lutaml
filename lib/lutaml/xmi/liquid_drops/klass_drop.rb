@@ -144,7 +144,7 @@ module Lutaml
         !!@klass_guidance
       end
 
-      def is_abstract # rubocop:disable Naming/PredicateName
+      def is_abstract # rubocop:disable Naming/PredicateName,Naming/PredicatePrefix
         doc_node_attribute_value(@model.id, "isAbstract")
       end
 

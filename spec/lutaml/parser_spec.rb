@@ -71,7 +71,8 @@ RSpec.describe Lutaml::Parser do
       end
 
       it "calls Lutaml::Express::Cache" do
-        allow(Expressir::Express::Cache).to receive(:from_file).and_call_original
+        allow(Expressir::Express::Cache)
+          .to receive(:from_file).and_call_original
         parse
         expect(Expressir::Express::Cache).to have_received(:from_file)
       end

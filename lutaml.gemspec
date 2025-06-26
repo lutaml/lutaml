@@ -27,7 +27,7 @@ Gem::Specification.new do |spec|
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
-  spec.required_ruby_version = ">= 2.7.0"
+  spec.required_ruby_version = ">= 2.7.0" # rubocop:disable Gemspec/RequiredRubyVersion
 
   spec.add_dependency "expressir", "~> 2.1.0"
   spec.add_dependency "hashie", "~> 4.1.0"
@@ -41,13 +41,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency "ruby-graphviz", "~> 1.2"
   spec.add_dependency "thor", "~> 1.0"
   spec.add_dependency "xmi", "~> 0.3.20"
-
-  spec.add_development_dependency "byebug"
-  spec.add_development_dependency "equivalent-xml", "~> 0.6.0"
-  spec.add_development_dependency "pry", "~> 0.12.2"
-  spec.add_development_dependency "rake", "~> 13.0"
-  spec.add_development_dependency "rspec", "~> 3.11"
-  spec.add_development_dependency "rubocop", "~> 1.58"
-  spec.add_development_dependency "rubocop-performance", "~> 1.19"
   spec.metadata["rubygems_mfa_required"] = "true"
 end

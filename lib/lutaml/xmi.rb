@@ -1,4 +1,3 @@
-require "lutaml/xmi/version"
 require "lutaml/xmi/parsers/xml"
 require "liquid"
 require "lutaml/path"

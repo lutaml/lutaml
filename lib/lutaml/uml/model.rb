@@ -5,7 +5,7 @@ module Lutaml
     class Model < Package
       attr_accessor :viewpoint
 
-      def initialize
+      def initialize # rubocop:disable Lint/MissingSuper
         @contents = []
       end
     end

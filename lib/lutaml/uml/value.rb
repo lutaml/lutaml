@@ -6,8 +6,8 @@ module Lutaml
       include HasAttributes
       include HasMembers
 
-      attr_accessor :definition,
-                    :name,
+      attr_reader :definition
+      attr_accessor :name,
                     :id,
                     :type
 

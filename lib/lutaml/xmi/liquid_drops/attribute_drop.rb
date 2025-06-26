@@ -31,7 +31,7 @@ module Lutaml
         @uml_type_idref
       end
 
-      def is_derived # rubocop:disable Naming/PredicateName
+      def is_derived # rubocop:disable Naming/PredicateName,Naming/PredicatePrefix
         @model.is_derived
       end
 

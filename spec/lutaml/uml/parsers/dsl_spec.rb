@@ -36,7 +36,8 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
         expect(parse).to be_instance_of(Lutaml::Uml::Document)
         expect(parse.title).to eq("my diagram, another symbols: text.")
         expect(parse.caption)
-          .to(eq("Block elements of StandardDocument, adapted from BasicDocument. Another - symbol"))
+          .to(eq("Block elements of StandardDocument, adapted from " \
+                 "BasicDocument. Another - symbol"))
         expect(parse.fontname).to eq("Arial")
       end
 
@@ -258,7 +259,8 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
 
       it "create comments for document and classes" do
         expect(parse.comments).to(eq(["My comment",
-                                      "this is multiline\n    comment with {} special\n    chars/\n\n    +-|/"]))
+                                      "this is multiline\n    comment with " \
+                                      "{} special\n    chars/\n\n    +-|/"]))
         expect(parse.classes.last.comments)
           .to(eq(["this is attribute comment",
                   "this is another comment line\n    with multiply lines"]))
@@ -275,7 +277,8 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
         "this is multiline with `ascidoc`\ncomments\nand list\n{foo} {name}"
       end
       let(:attribute_definition) do
-        "this is attribute definition\nwith multiply lines\n{foo} {name}\nend definition"
+        "this is attribute definition\nwith multiply lines" \
+          "\n{foo} {name}\nend definition"
       end
 
       it "create comments for document and classes" do

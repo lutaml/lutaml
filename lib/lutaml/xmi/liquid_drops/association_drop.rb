@@ -5,7 +5,7 @@ module Lutaml
     class AssociationDrop < Liquid::Drop
       include Parsers::XMIBase
 
-      def initialize( # rubocop:disable Lint/MissingSuper,Metrics/ParameterLists
+      def initialize( # rubocop:disable Lint/MissingSuper,Metrics/ParameterLists,Metrics/MethodLength
         xmi_id:,
         member_end:,
         member_end_type:,

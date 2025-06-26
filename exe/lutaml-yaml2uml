@@ -30,7 +30,7 @@ encountered_relations = Hash.new { |h, key| h[key] = [] }
 #           cardinality:
 #             min: 0
 #             max: '*'
-def process_association(owner, values, encountered_relations)
+def process_association(owner, values, encountered_relations) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
   target_name = values["target"]
   return if encountered_relations[owner].include?(target_name)
 
@@ -45,7 +45,8 @@ def process_association(owner, values, encountered_relations)
     if source["attribute"]
       source_attribute_name = source["attribute"].keys.first
       owner += "##{source_attribute_name}"
-      if source["attribute"][source_attribute_name] && source["attribute"][source_attribute_name]["cardinality"]
+      if source["attribute"][source_attribute_name] &&
+          source["attribute"][source_attribute_name]["cardinality"]
         cardinality = source["attribute"][source_attribute_name]["cardinality"]
         owner += " [#{cardinality['min']}..#{cardinality['max']}]"
       end
@@ -61,7 +62,8 @@ def process_association(owner, values, encountered_relations)
     if target["attribute"]
       target_attribute_name = target["attribute"].keys.first
       member += "##{target_attribute_name}"
-      if target["attribute"][target_attribute_name] && target["attribute"][target_attribute_name]["cardinality"]
+      if target["attribute"][target_attribute_name] &&
+          target["attribute"][target_attribute_name]["cardinality"]
         cardinality = target["attribute"][target_attribute_name]["cardinality"]
         member += " [#{cardinality['min']}..#{cardinality['max']}]"
       end
@@ -82,7 +84,7 @@ view_yaml["relations"]&.each do |values|
   process_association(values["source"], values, encountered_relations)
 end
 
-view_yaml["imports"].each_key do |entry|
+view_yaml["imports"].each_key do |entry| # rubocop:disable Metrics/BlockLength
   import = YAML.safe_load(File.read(File.join(models_path, "#{entry}.yml")))
   import_name = import["name"] || File.basename(entry)
   # Class notation

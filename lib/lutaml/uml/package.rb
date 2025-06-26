@@ -6,9 +6,9 @@ module Lutaml
       include HasAttributes
 
       attr_accessor :imports, :contents
-      attr_reader :classes, :enums, :data_types, :children_packages
+      attr_reader :data_types, :children_packages
 
-      def initialize(attributes)
+      def initialize(attributes) # rubocop:disable Lint/MissingSuper
         update_attributes(attributes)
         @children_packages ||= packages.map do |pkg|
           [pkg, pkg.packages, pkg.packages.map(&:children_packages)]
