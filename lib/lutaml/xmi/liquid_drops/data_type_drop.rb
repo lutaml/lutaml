@@ -77,6 +77,7 @@ module Lutaml
               owner_end: owner_end,
               owner_end_xmi_id: xmi_id,
               definition: definition,
+              options: @options,
             )
           end
         end.compact

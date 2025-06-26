@@ -524,7 +524,13 @@ module Lutaml
         #   %(//connector[@xmi:idref="#{link_id}"]/#{node_name}/documentation)
         def fetch_definition_node_value(link_id, node_name)
           connector_node = fetch_connector(link_id)
-          connector_node.send(node_name.to_sym).documentation
+          documentation = connector_node.send(node_name.to_sym).documentation
+
+          if documentation.is_a?(Xmi::Sparx::SparxElementDocumentation)
+            documentation&.value
+          else
+            documentation
+          end
         end
 
         # @param klass [Lutaml::Model::Serializable]
@@ -642,7 +648,7 @@ module Lutaml
         # @param link [Lutaml::Model::Serializable]
         # @param link_member_name [String]
         # @return [Array<String, String, Hash, String, String>]
-        def serialize_member_type(owner_xmi_id, link, link_member_name)
+        def serialize_member_type(owner_xmi_id, link, link_member_name) # rubocop:disable Metrics/MethodLength
           member_end, xmi_id = serialize_member_end(owner_xmi_id, link)
 
           if link.name == "Association"
@@ -654,16 +660,26 @@ module Lutaml
               fetch_owned_attribute_node(xmi_id)
           end
 
+          if fetch_connector_name(link.id)
+            member_end = fetch_connector_name(link.id)
+          end
+
           [member_end, "aggregation", member_end_cardinality,
            member_end_attribute_name, xmi_id]
+        end
+
+        def fetch_connector_name(link_id)
+          connector = fetch_connector(link_id)
+          connector&.name
         end
 
         # @param link_id [String]
         # @param connector_type [String]
         # @return [Array<Hash, String>]
         # @note xpath %(//connector[@xmi:idref="#{link_id}"]/#{connector_type})
-        def fetch_assoc_connector(link_id, connector_type) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
-          assoc_connector = fetch_connector(link_id).send(connector_type.to_sym)
+        def fetch_assoc_connector(link_id, connector_type) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
+          connector = fetch_connector(link_id)
+          assoc_connector = connector.send(connector_type.to_sym)
 
           if assoc_connector
             assoc_connector_type = assoc_connector.type
@@ -672,9 +688,8 @@ module Lutaml
               cardinality.unshift("1") if cardinality.length == 1
               min, max = cardinality
             end
+
             assoc_connector_role = assoc_connector.role
-            # Does role has name attribute? Or get name from model?
-            # attribute_name = assoc_connector_role.name if assoc_connector_role
             attribute_name = assoc_connector.model.name if assoc_connector_role
             cardinality = cardinality_min_max_value(min, max)
           end
@@ -928,8 +943,10 @@ module Lutaml
         # @param xmi_id [String]
         # @param source_or_target [String]
         # @return [String]
-        def connector_name_by_source_or_target(xmi_id, source_or_target)
+        def connector_name_by_source_or_target(xmi_id, source_or_target) # rubocop:disable Metrics/AbcSize
           node = connector_node_by_id(xmi_id, source_or_target)
+          return node.name if node&.name
+
           return if node.nil? ||
             node.send(source_or_target.to_sym).nil? ||
             node.send(source_or_target.to_sym).model.nil?
