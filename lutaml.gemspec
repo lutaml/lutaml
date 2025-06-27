@@ -41,5 +41,6 @@ Gem::Specification.new do |spec|
   spec.add_dependency "ruby-graphviz", "~> 1.2"
   spec.add_dependency "thor", "~> 1.0"
   spec.add_dependency "xmi", "~> 0.3.20"
+
   spec.metadata["rubygems_mfa_required"] = "true"
 end

@@ -56,27 +56,27 @@ module Lutaml
       end
 
       def classes
-        @classes || []
+        @classes ||= []
       end
 
       def enums
-        @enums || []
+        @enums ||= []
       end
 
       def data_types
-        @data_types || []
+        @data_types ||= []
       end
 
       def packages
-        @packages || []
+        @packages ||= []
       end
 
       def primitives
-        @primitives || []
+        @primitives ||= []
       end
 
       def associations
-        @associations || []
+        @associations ||= []
       end
     end
   end
