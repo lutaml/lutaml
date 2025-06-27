@@ -2,6 +2,7 @@
 
 require "lutaml/uml/version"
 require "lutaml/uml/parsers/dsl"
+require "lutaml/uml/parsers/lml"
 require "lutaml/uml/parsers/yaml"
 require "lutaml/uml/parsers/attribute"
 require "lutaml/uml/formatter"
