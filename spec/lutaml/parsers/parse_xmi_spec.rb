@@ -383,6 +383,7 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
         )
         expect(val).to eq([
                             "RequirementType",
+                            "aggregation",
                             "EAID_C1155D80_E68B_46d5_ADE5_F5639486163D",
                           ])
       end
@@ -419,13 +420,12 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
           :generalization_association,
           "EAID_82354CDC_EACB_402f_8C2B_FD627B7416E7", link
         )
-        expect(val).to eq([
-                            "RequirementType",
-                            "inheritance",
-                            { max: nil, min: nil },
-                            nil,
-                            "EAID_C1155D80_E68B_46d5_ADE5_F5639486163D",
-                          ])
+        expect(val).to eq(
+          [
+            "RequirementType", "inheritance",
+            "EAID_C1155D80_E68B_46d5_ADE5_F5639486163D"
+          ],
+        )
       end
 
       it ".generalization_association if link.start != owner_xmi_id" do
@@ -440,8 +440,6 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
         expect(val).to eq([
                             "Permission",
                             "generalization",
-                            nil,
-                            nil,
                             "EAID_82354CDC_EACB_402f_8C2B_FD627B7416E7",
                           ])
       end
