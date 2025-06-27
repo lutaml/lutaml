@@ -152,6 +152,25 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
         expect(root_package.diagrams.map(&:definition))
           .to(eq(["aada\n"]))
       end
+
+      it "correctly parses connector for class" do
+        root_package = output.packages.first
+        test_class = root_package.classes.first
+        expect(test_class.associations.count).to eq(1)
+        expect(test_class.associations.first.connector.idref)
+          .to eq("EAID_2CA98919_831B_4182_BBC2_C2EAF17FEF60")
+        expect(test_class.associations.first.connector.ea_type)
+          .to eq("Association")
+        expect(
+          test_class.associations.first.connector.direction,
+        ).to eq("Destination -> Source")
+        expect(
+          test_class.associations.first.connector.source.idref,
+        ).to eq("EAID_C1155D80_E68B_46d5_ADE5_F5639486163D")
+        expect(
+          test_class.associations.first.connector.target.idref,
+        ).to eq("EAID_D832D6D8_0518_43f7_9166_7A4E3E8605AA")
+      end
     end
 
     context "when parsing xmi with generalization" do

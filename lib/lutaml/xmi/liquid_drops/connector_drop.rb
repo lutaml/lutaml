@@ -28,6 +28,14 @@ module Lutaml
         @model&.documentation&.value
       end
 
+      def ea_type
+        @model&.properties&.ea_type
+      end
+
+      def direction
+        @model&.properties&.direction
+      end
+
       def source
         ::Lutaml::XMI::SourceTargetDrop.new(@model.source)
       end
