@@ -585,7 +585,9 @@ module Lutaml
           when "NoteLink"
             return
           when "Generalization"
-            return generalization_association(owner_xmi_id, link)
+            owner_end, _owner_end_type, _owner_xmi_id =
+              generalization_association(owner_xmi_id, link)
+            return owner_end
           end
 
           xmi_id = link.send(linke_owner_name.to_sym)
@@ -623,7 +625,7 @@ module Lutaml
           end
 
           member_end = member_end_name(xmi_id, source_or_target, link.name)
-          [member_end, xmi_id]
+          [member_end, "aggregation", xmi_id]
         end
 
         # @param xmi_id [String]
@@ -648,8 +650,9 @@ module Lutaml
         # @param link [Lutaml::Model::Serializable]
         # @param link_member_name [String]
         # @return [Array<String, String, Hash, String, String>]
-        def serialize_member_type(owner_xmi_id, link, link_member_name) # rubocop:disable Metrics/MethodLength
-          member_end, xmi_id = serialize_member_end(owner_xmi_id, link)
+        def serialize_member_type(owner_xmi_id, link, link_member_name) # rubocop:disable Metrics/MethodLength,Metrics/AbcSize
+          member_end, member_end_type, xmi_id =
+            serialize_member_end(owner_xmi_id, link)
 
           if link.name == "Association"
             connector_type = link_member_name == "start" ? "source" : "target"
@@ -664,7 +667,7 @@ module Lutaml
             member_end = fetch_connector_name(link.id)
           end
 
-          [member_end, "aggregation", member_end_cardinality,
+          [member_end, member_end_type, member_end_cardinality,
            member_end_attribute_name, xmi_id]
         end
 
@@ -714,10 +717,10 @@ module Lutaml
 
           member_end = member_end_name(xmi_id, source_or_target, link.name)
 
-          member_end_cardinality, _member_end_attribute_name =
-            fetch_owned_attribute_node(xmi_id)
-
-          [member_end, member_end_type, member_end_cardinality, nil, xmi_id]
+          # member_end_cardinality, _member_end_attribute_name =
+          #   fetch_owned_attribute_node(xmi_id)
+          # [member_end, member_end_type, member_end_cardinality, nil, xmi_id]
+          [member_end, member_end_type, xmi_id]
         end
 
         # Multiple items if search type is idref.  Should search association?
