@@ -43,6 +43,11 @@ module Lutaml
       def target
         ::Lutaml::XMI::SourceTargetDrop.new(@model.target)
       end
+
+      def recognized?
+        !!@id_name_mapping[@model.source.idref] &&
+          !!@id_name_mapping[@model.target.idref]
+      end
     end
   end
 end

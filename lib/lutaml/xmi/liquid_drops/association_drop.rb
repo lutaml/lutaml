@@ -69,7 +69,7 @@ module Lutaml
 
       def connector
         connector = fetch_connector(@xmi_id)
-        ::Lutaml::XMI::ConnectorDrop.new(connector)
+        ::Lutaml::XMI::ConnectorDrop.new(connector, @options)
       end
     end
   end
