@@ -60,7 +60,7 @@ module Lutaml
           classes: sequence(:classes),
         ) do
           Lutaml::Lml::Nodes::Model.new(
-            # requires: requires, TODO: Handle requires
+            requires: requires,
             name: name.to_s,
             class_definitions: classes,
           )

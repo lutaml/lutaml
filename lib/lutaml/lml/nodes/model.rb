@@ -8,9 +8,10 @@ module Lutaml
       class Model
         attr_accessor :name, :class_definitions
 
-        def initialize(name:, class_definitions: [])
+        def initialize(name:, class_definitions: [], requires: [])
           @name = name
           @class_definitions = class_definitions
+          @requires = requires
         end
       end
     end
