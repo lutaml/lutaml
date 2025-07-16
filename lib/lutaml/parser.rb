@@ -42,7 +42,7 @@ module Lutaml
         Lutaml::Xsd.parse(
           # multiple files are not expected and handled for XSD only.
           file_list.first.read,
-          # string keys are expcted only (e.g., "location")
+          # string keys are expected only (e.g., "location")
           location: @options["location"],
         )
       else
