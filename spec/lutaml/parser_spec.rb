@@ -77,5 +77,17 @@ RSpec.describe Lutaml::Parser do
         expect(Expressir::Express::Cache).to have_received(:from_file)
       end
     end
+
+    context "when xsd file supplied and its valid" do
+      let(:input_path) { fixtures_path("schema.xsd") }
+      let(:input) { [File.new(input_path)] }
+      let(:input_type) { "xsd" }
+
+      it "calls Lutaml::Xsd" do
+        allow(Lutaml::Xsd).to receive(:parse).once.and_call_original
+        parse
+        expect(Lutaml::Xsd).to have_received(:parse)
+      end
+    end
   end
 end
