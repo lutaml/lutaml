@@ -13,7 +13,7 @@ module Lutaml
     class << self
       def parse(file_list, input_type = nil, options: {})
         file_list = [file_list] unless file_list.is_a?(Array)
-        new(Array(file_list), input_type, options).parse_into_document
+        new(Array(file_list), input_type, options.transform_keys(&:to_s)).parse_into_document
       end
       alias_method :parse_into_document, :parse
     end
