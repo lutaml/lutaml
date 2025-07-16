@@ -1,0 +1,18 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="qualified">
+  <xs:element name="Person" type="Person"/>
+  <xs:complexType name="Address" mixed="true">
+    <xs:sequence>
+      <xs:element name="City" type="xs:string" minOccurs="0"/>
+      <xs:element name="ZIP" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="Person">
+    <xs:sequence>
+      <xs:element name="FirstName" type="xs:string" minOccurs="0"/>
+      <xs:element name="LastName" type="xs:string" minOccurs="0"/>
+      <xs:element name="Hobby" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="Address" type="Address" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute name="age" type="xs:integer"/>
+  </xs:complexType>
+</xs:schema>
