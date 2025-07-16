@@ -78,7 +78,7 @@ RSpec.describe Lutaml::Parser do
       end
     end
 
-    context "when xsd file supplied and its valid" do
+    context "when xsd file supplied and it's valid" do
       let(:input_path) { fixtures_path("schema.xsd") }
       let(:input) { [File.new(input_path)] }
       let(:input_type) { "xsd" }
