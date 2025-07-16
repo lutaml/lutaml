@@ -40,7 +40,9 @@ module Lutaml
         file_list.map { |file| Lutaml::Uml::Parsers::Yaml.parse(file.path) }
       when "xsd"
         Lutaml::Xsd.parse(
+          # multiple files are not expected and handled for XSD only.
           file_list.first.read,
+          # string keys are expcted only (e.g., "location")
           location: @options["location"],
         )
       else
