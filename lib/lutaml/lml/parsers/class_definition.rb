@@ -65,7 +65,7 @@ module Lutaml
         rule(:list_item) { instance | value }
         rule(:list) do
           str("[") >> eol? >>
-            (list_item >> spaces? >> (str(",") >> eol? >> list_item).repeat).as(:list) >> eol? >>
+            (list_item >> spaces? >> str(",").maybe >> eol?).repeat.as(:list) >> eol? >>
             str("]")
         end
 
@@ -82,7 +82,8 @@ module Lutaml
         # === Attribute ===
         rule(:attribute_value) { list | key_value_map | value }
         rule(:attribute) do
-          identifier.as(:key) >> spaces? >> str("=").maybe >> spaces? >> attribute_value.as(:value)
+          (spaces? >> str("#") >> match("[^\n]+").repeat.as(:comment)) |
+            (identifier.as(:key) >> spaces? >> str("=").maybe >> spaces? >> attribute_value.as(:value))
         end
         rule(:attributes) do
           (
@@ -100,9 +101,9 @@ module Lutaml
             str("instance") >> spaces >>
             namespaced_identifier.as(:instance_type) >> spaces? >>
             str("{") >> eol? >>
-            attributes >>
+            ((spaces? >> instance) | attributes) >>
             str("}")
-          ).as(:instance)
+          ).as(:instance) >> eol?
         end
 
         # === Attribute definitions ===

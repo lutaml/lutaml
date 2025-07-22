@@ -27,8 +27,11 @@ module Lutaml
           # Parslet::ErrorReporter::Deepest allows more
           # detailed display of error
           reporter = Parslet::ErrorReporter::Deepest.new
-          ::Lutaml::Uml::Document
-            .new(DslTransform.new.apply(super(data, reporter: reporter)))
+
+          parsed = super(data, reporter: reporter)
+          require "pry"
+          binding.pry
+          ::Lutaml::Uml::Document.new(DslTransform.new.apply(parsed))
         rescue Parslet::ParseFailed => e
           raise(ParsingError,
                 "#{e.message}\ncause: #{e.parse_failure_cause.ascii_tree}")
@@ -41,6 +44,7 @@ module Lutaml
           association
           attribute
           bidirectional
+          caption
           class
           composition
           data_type
@@ -51,10 +55,12 @@ module Lutaml
           fontname
           generalizes
           include
+          instance
           interface
           member
           member_type
           method
+          models
           owner
           owner_type
           primitive
@@ -62,13 +68,13 @@ module Lutaml
           protected
           public
           realizes
+          require
           static
           title
-          caption
         ].freeze
 
         KEYWORDS.each do |keyword|
-          rule("kw_#{keyword}") { str(keyword) }
+          rule("kw_#{keyword}") { whitespace? >> str(keyword) }
         end
 
         rule(:spaces) { match("\s").repeat(1) }
@@ -407,8 +413,14 @@ module Lutaml
             whitespace?
         end
         rule(:diagram_definitions) { diagram_definition >> whitespace? }
-        rule(:diagram) { whitespace? >> diagram_definition }
+        rule(:diagram) { models | diagram_definition }
         # -- Root
+
+        rule(:models) do
+          kw_models >> name.as(:name) >> str("{") >>
+            class_definition >> whitespace? >>
+            str("}") >> whitespace?
+        end
 
         root(:diagram)
       end

@@ -16,9 +16,28 @@ module Lutaml
         rule(start: simple(:x), end: simple(:y)) { x.to_s..y.to_s }
         rule(range: simple(:x)) { x }
         rule(variable: simple(:x)) { x.to_s }
+        rule(require: simple(:x)) { x.to_s }
         rule(reference: sequence(:x)) { x.join(".") }
+        rule(list: sequence(:x)) { x }
+        rule(instance: simple(:instance)) { instance }
+
+        rule(comment: simple(:x)) do
+          Lutaml::Lml::Nodes::Comment.new(text: x.to_s)
+        end
+
+        rule(requires: sequence(:requires), instance: simple(:instance)) do
+          instance.requires = requires
+          instance
+        end
 
         rule(key: simple(:name), value: simple(:value)) do
+          Lutaml::Lml::Nodes::Property.new(
+            name: name.to_s,
+            value: value,
+          )
+        end
+
+        rule(key: simple(:name), value: sequence(:value)) do
           Lutaml::Lml::Nodes::Property.new(
             name: name.to_s,
             value: value,
@@ -63,6 +82,16 @@ module Lutaml
             requires: requires,
             name: name.to_s,
             class_definitions: classes,
+          )
+        end
+
+        rule(
+          instance_type: simple(:instance_type),
+          attributes: sequence(:attributes),
+        ) do
+          Lutaml::Lml::Nodes::Instance.new(
+            type: instance_type.to_s,
+            attributes: attributes,
           )
         end
       end
