@@ -25,6 +25,15 @@ module Lutaml
       end
       # rubocop:enable Rails/ActiveRecordAliases
 
+      def extended_attributes=(value)
+        @extended_attributes ||= []
+        @extended_attributes << value.to_s
+      end
+
+      def extended_attributes
+        @extended_attributes ||= []
+      end
+
       def definition=(value)
         @definition = value
           .to_s

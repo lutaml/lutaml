@@ -29,8 +29,6 @@ module Lutaml
           reporter = Parslet::ErrorReporter::Deepest.new
 
           parsed = super(data, reporter: reporter)
-          require "pry"
-          binding.pry
           ::Lutaml::Uml::Document.new(DslTransform.new.apply(parsed))
         rescue Parslet::ParseFailed => e
           raise(ParsingError,
@@ -157,6 +155,26 @@ module Lutaml
             .as(:attributes)
         end
 
+        rule(:keyword_attribute_definition_body) do
+          str("{") >>
+            whitespace? >>
+            (str("type") >> spaces? >> match["[^\s\n\r]"].repeat(1).as(:type)) >>
+            whitespace? >>
+            (str("cardinality") >> spaces? >> cardinality_body_definition.as(:cardinality)) >>
+            whitespace? >>
+            str("}")
+        end
+
+        rule(:keyword_attribute_definition) do
+          (
+            str("attribute") >>
+            spaces? >>
+            attribute_name >>
+            spaces? >>
+            keyword_attribute_definition_body
+          ).as(:attributes)
+        end
+
         rule(:title_keyword) { kw_title >> spaces }
         rule(:title_text) do
           match['"\''].maybe >>
@@ -281,7 +299,8 @@ module Lutaml
         rule(:class_keyword) { kw_class >> spaces }
         rule(:class_inner_definitions) do
           definition_body |
-            attribute_definition |
+            keyword_attribute_definition |
+            (str("attribute").absent? >> attribute_definition) |
             comment_definition |
             comment_multiline_definition
         end
@@ -296,10 +315,14 @@ module Lutaml
             str("}")
         end
         rule(:class_body?) { class_body.maybe }
+
+        rule(:parent_class) { spaces? >> str("<") >> spaces? >> class_name_chars.as(:parent_class) }
+
         rule(:class_definition) do
           class_modifier >>
             class_keyword >>
             class_name.as(:name) >>
+            parent_class.maybe >>
             spaces? >>
             attribute_keyword? >>
             class_body?
@@ -413,14 +436,15 @@ module Lutaml
             whitespace?
         end
         rule(:diagram_definitions) { diagram_definition >> whitespace? }
-        rule(:diagram) { models | diagram_definition }
-        # -- Root
 
         rule(:models) do
           kw_models >> name.as(:name) >> str("{") >>
             class_definition >> whitespace? >>
             str("}") >> whitespace?
         end
+
+        # -- Root
+        rule(:diagram) { models | diagram_definitions }
 
         root(:diagram)
       end
