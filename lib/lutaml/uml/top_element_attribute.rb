@@ -16,22 +16,24 @@ module Lutaml
                     :static,
                     :cardinality,
                     :keyword,
-                    :is_derived
+                    :is_derived,
+                    :properties
 
       # rubocop:disable Rails/ActiveRecordAliases
       def initialize(attributes = {})
         @visibility = "public"
+        @properties = {}
         update_attributes(attributes)
       end
       # rubocop:enable Rails/ActiveRecordAliases
 
-      def extended_attributes=(value)
-        @extended_attributes ||= []
-        @extended_attributes << value.to_s
-      end
+      def properties=(values)
+        values.each do |value|
+          property, property_value = value.values_at(:name, :value)
+          next public_send(:"#{property}=", property_value) if respond_to?("#{property}=")
 
-      def extended_attributes
-        @extended_attributes ||= []
+          properties[property] = property_value
+        end
       end
 
       def definition=(value)

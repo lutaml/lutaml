@@ -123,6 +123,8 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
 
       it "creates the correct number of associations" do
         expect(parse.associations.length).to eq(3)
+        expect(parse.classes[1].attributes[1].properties)
+          .to(include("description" => "The name of the AttributeProfile."))
       end
 
       context "when bidirectional asscoiation syntax " do
