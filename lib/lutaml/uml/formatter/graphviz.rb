@@ -96,7 +96,8 @@ module Lutaml
             result += " : #{keyword}#{node.type}"
           end
           if node.cardinality
-            result += "[#{node.cardinality[:min]}..#{node.cardinality[:max]}]"
+            result += "[#{node.cardinality.min}.." \
+                      "#{node.cardinality.max}]"
           end
           result = escape_html_chars(result)
           result = "<U>#{result}</U>" if node.static
@@ -190,11 +191,11 @@ module Lutaml
         def format_label(name, cardinality = {})
           res = "+#{name}"
           if cardinality.nil? ||
-              (cardinality[:min].nil? || cardinality[:max].nil?)
+              (cardinality.min.nil? || cardinality.max.nil?)
             return res
           end
 
-          "#{res} #{cardinality['min']}..#{cardinality['max']}"
+          "#{res} #{cardinality.min}..#{cardinality.max}"
         end
 
         def format_member_rows(members, hide_members) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity

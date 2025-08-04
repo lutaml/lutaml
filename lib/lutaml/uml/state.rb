@@ -6,7 +6,15 @@
 module Lutaml
   module Uml
     class State < Vertex
-      attr_accessor :exit, :entry, :do_activity
+      attribute :exit, :string
+      attribute :entry, :string
+      attribute :do_activity, :string
+
+      yaml do
+        map "exit", to: :exit
+        map "entry", to: :entry
+        map "do_activity", to: :do_activity
+      end
     end
   end
 end

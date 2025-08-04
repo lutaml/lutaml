@@ -6,7 +6,11 @@
 module Lutaml
   module Uml
     class Trigger < TopElement
-      attr_accessor :event
+      attribute :event, :string
+
+      yaml do
+        map "event", to: :event
+      end
     end
   end
 end
