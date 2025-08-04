@@ -2,7 +2,6 @@ name: AddressClassProfile
 imports:
   AddressProfile:
   AddressClassProfile:
-  AddressClassProfile:
   AddressComponentProfile:
   AttributeProfile:
   ProfileCompliantAddress:

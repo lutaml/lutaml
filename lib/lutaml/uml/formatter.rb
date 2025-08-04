@@ -17,5 +17,3 @@ module Lutaml
     end
   end
 end
-
-require "lutaml/uml/formatter/graphviz"

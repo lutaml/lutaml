@@ -3,14 +3,12 @@
 module Lutaml
   module Uml
     class Instance < TopElement
-      attr_accessor :classifier, :slot
+      attribute :classifier, :string
+      attribute :slot, :string, collection: true, default: -> { [] }
 
-      def initialize # rubocop:disable Lint/MissingSuper
-        @name = nil
-        @xmi_id = nil
-        @xmi_uuid = nil
-        @classifier = nil
-        @slot = []
+      yaml do
+        map "classifier", to: :classifier
+        map "slot", to: :slot
       end
     end
   end

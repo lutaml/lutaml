@@ -6,15 +6,12 @@
 module Lutaml
   module Uml
     class Dependency < TopElement
-      attr_accessor :client, :supplier
+      attribute :client, :string, collection: true, default: -> { [] }
+      attribute :supplier, :string, collection: true, default: -> { [] }
 
-      def initialize # rubocop:disable Lint/MissingSuper
-        @name = nil
-        @xmi_id = nil
-        @xmi_uuid = nil
-        @client = []
-        @supplier = []
-        @namespace = nil
+      yaml do
+        map "client", to: :client
+        map "supplier", to: :supplier
       end
     end
   end

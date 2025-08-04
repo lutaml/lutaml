@@ -6,7 +6,17 @@
 module Lutaml
   module Uml
     class Transition < TopElement
-      attr_accessor :source, :target, :guard, :effect
+      attribute :source, :string
+      attribute :target, :string
+      attribute :guard, :string
+      attribute :effect, :string
+
+      yaml do
+        map "source", to: :source
+        map "target", to: :target
+        map "guard", to: :guard
+        map "effect", to: :effect
+      end
     end
   end
 end

@@ -6,7 +6,11 @@
 module Lutaml
   module Uml
     class Constraint < TopElement
-      attr_accessor :body
+      attribute :body, :string
+
+      yaml do
+        map "body", to: :body
+      end
     end
   end
 end

@@ -1,54 +1,33 @@
 # frozen_string_literal: true
 
+require "lutaml/uml/class"
+require "lutaml/uml/enum"
+require "lutaml/uml/data_type"
+require "lutaml/uml/diagram"
+
 module Lutaml
   module Uml
     class Package < TopElement
-      include HasAttributes
+      attribute :contents, :string, collection: true, default: -> { [] }
+      attribute :classes, Class, collection: true, default: -> { [] }
+      attribute :enums, Enum, collection: true, default: -> { [] }
+      attribute :data_types, DataType, collection: true, default: -> { [] }
+      attribute :packages, Package, collection: true, default: -> { [] }
+      attribute :diagrams, Diagram, collection: true, default: -> { [] }
 
-      attr_accessor :imports, :contents
-      attr_reader :data_types, :children_packages
+      yaml do
+        map "contents", to: :contents
+        map "classes", to: :classes
+        map "enums", to: :enums
+        map "data_types", to: :data_types
+        map "packages", to: :packages
+        map "diagrams", to: :diagrams
+      end
 
-      def initialize(attributes) # rubocop:disable Lint/MissingSuper
-        update_attributes(attributes)
-        @children_packages ||= packages.map do |pkg|
+      def children_packages
+        packages.map do |pkg|
           [pkg, pkg.packages, pkg.packages.map(&:children_packages)]
         end.flatten.uniq
-      end
-
-      def classes=(value)
-        @classes = value.to_a.map { |attributes| Class.new(attributes) }
-      end
-
-      def enums=(value)
-        @enums = value.to_a.map { |attributes| Enum.new(attributes) }
-      end
-
-      def data_types=(value)
-        @data_types = value.to_a.map { |attributes| DataType.new(attributes) }
-      end
-
-      def packages=(value)
-        @packages = value.to_a.map { |attributes| Package.new(attributes) }
-      end
-
-      def diagrams=(value)
-        @diagrams = value.to_a.map { |attributes| Diagram.new(attributes) }
-      end
-
-      def classes
-        @classes || []
-      end
-
-      def enums
-        @enums || []
-      end
-
-      def packages
-        @packages || []
-      end
-
-      def diagrams
-        @diagrams || []
       end
     end
   end

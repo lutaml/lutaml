@@ -1,9 +1,7 @@
 # frozen_string_literal: true
 
 require "yaml"
-require "lutaml/uml/class"
-require "lutaml/uml/document"
-require "lutaml/uml/serializers/yaml_view"
+require "lutaml/uml"
 
 module Lutaml
   module Uml

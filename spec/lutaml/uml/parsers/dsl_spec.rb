@@ -67,7 +67,7 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
       it "creates the correct classes and sets the \
           correct number of attributes" do
         classes = parse.classes
-        expect(by_name(classes, "Component").attributes).to be_nil
+        expect(by_name(classes, "Component").attributes).to be_empty
         expect(by_name(classes, "AddressClassProfile")
                 .attributes.length).to eq(1)
         expect(by_name(classes, "AttributeProfile")
@@ -139,8 +139,8 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
           expect(association.member_end).to(eq("AttributeProfile"))
           expect(association.member_end_attribute_name)
             .to(eq("attributeProfile"))
-          expect(association.member_end_cardinality).to(eq("min" => "0",
-                                                           "max" => "*"))
+          expect(association.member_end_cardinality.min).to(eq("0"))
+          expect(association.member_end_cardinality.max).to(eq("*"))
         end
       end
 
@@ -186,7 +186,7 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
 
       it "Generates the correct nodes for enums" do
         enums = parse.enums
-        expect(by_name(enums, "MyEnum").attributes).to be_nil
+        expect(by_name(enums, "MyEnum").attributes).to be_empty
         expect(by_name(enums, "AddressClassProfile")
                 .attributes.length).to eq(1)
         expect(by_name(enums, "Profile")
