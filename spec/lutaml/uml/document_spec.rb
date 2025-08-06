@@ -2,15 +2,15 @@
 
 require "spec_helper"
 
-RSpec.describe Lutaml::Uml::Parsers::Yaml do
-  describe ".parse" do
-    subject(:parse) { described_class.parse(yaml_path) }
+RSpec.describe Lutaml::Uml::Document do
+  describe ".from_yaml" do
+    subject(:test_model) { described_class.from_yaml(yaml_content) }
 
-    let(:yaml_path) do
-      fixtures_path("uml/document.yml")
+    let(:yaml_content) do
+      File.read(fixtures_path("uml/document.yml"))
     end
 
-    let(:output) { parse.to_yaml }
+    let(:output) { test_model.to_yaml }
 
     let(:expected_output) do
       <<~YAML
@@ -69,10 +69,6 @@ RSpec.describe Lutaml::Uml::Parsers::Yaml do
               contents:
               - This is a deep nested package content.
       YAML
-    end
-
-    it "creates Lutaml::Uml::Document object" do
-      expect(parse).to be_instance_of(Lutaml::Uml::Document)
     end
 
     it "contains nested groups" do
