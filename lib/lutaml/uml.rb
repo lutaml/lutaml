@@ -30,15 +30,13 @@ require "lutaml/uml/state"
 require "lutaml/uml/final_state"
 require "lutaml/uml/property"
 require "lutaml/uml/port"
+require "lutaml/uml/document"
 
 require "lutaml/uml/parsers/dsl"
 require "lutaml/uml/parsers/yaml"
 require "lutaml/uml/parsers/attribute"
 require "lutaml/uml/formatter"
 require "lutaml/uml/formatter/graphviz"
-
-require "lutaml/uml/document"
-require "lutaml/uml/serializers/yaml_view"
 
 Dir.glob(File.expand_path("./uml/**/*.rb", __dir__)).sort.each do |file|
   require file
