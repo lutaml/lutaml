@@ -7,7 +7,7 @@ module Lutaml
       attribute :title, :string
       attribute :caption, :string
       attribute :groups, Group, collection: true
-      attribute :fidelity, :hash
+      attribute :fidelity, Fidelity
       attribute :fontname, :string
       attribute :comments, :string, collection: true
 
