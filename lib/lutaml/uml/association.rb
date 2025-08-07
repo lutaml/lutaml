@@ -14,7 +14,7 @@ module Lutaml
       attribute :member_end_cardinality, Cardinality
       attribute :member_end_type, :string
       attribute :static, :string
-      attribute :action, :string
+      attribute :action, Action
 
       yaml do
         map "owner_end", to: :owner_end

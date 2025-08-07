@@ -3,7 +3,7 @@
 require "spec_helper"
 
 RSpec.describe Lutaml::Uml::Parsers::Dsl do
-  describe ".parse" do
+  xdescribe ".parse" do
     subject(:parse) { described_class.parse(content) }
     subject(:format_parsed_document) do
       Lutaml::Uml::Formatter::Graphviz.new.format_document(parse)

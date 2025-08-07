@@ -143,7 +143,17 @@ module Lutaml
                               else
                                 "direct"
                               end
-          attributes["label"] = node.action if node.action
+
+          if node&.action&.verb
+            attributes["label"] = node.action.verb
+          end
+          case node&.action&.direction
+          when "target"
+            attributes["label"] = "#{attributes['label']} \u25b6"
+          when "source"
+            attributes["label"] = "\u25c0 #{attributes['label']}"
+          end
+
           if node.owner_end_attribute_name
             attributes["headlabel"] = format_label(
               node.owner_end_attribute_name,
@@ -179,7 +189,7 @@ module Lutaml
                                       "onormal"
                                     end
           # swap labels and arrows if `dir` eq to `back`
-          if attributes["dir"] == "back"
+          if attributes["dir"] == "back" && attributes["arrowtail"] != "vee"
             attributes["arrowhead"], attributes["arrowtail"] =
               [attributes["arrowtail"], attributes["arrowhead"]]
             attributes["headlabel"], attributes["taillabel"] =
@@ -252,8 +262,8 @@ module Lutaml
           @node["fontname"] = "#{@fontname}-bold"
 
           if node.fidelity
-            hide_members = node.fidelity["hideMembers"]
-            hide_other_classes = node.fidelity["hideOtherClasses"]
+            hide_members = node.fidelity.hideMembers
+            hide_other_classes = node.fidelity.hideOtherClasses
           end
           classes = (node.classes +
                       node.enums +
@@ -305,8 +315,8 @@ module Lutaml
 
         def sort_by_document_grouping(groups, associations) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           result = []
-          groups.each do |batch|
-            batch.each do |group_name|
+          groups.each do |group|
+            group.values.each do |group_name| # rubocop:disable Style/HashEachMethods
               associations
                 .select { |assc| assc.owner_end == group_name }
                 .each do |association|
