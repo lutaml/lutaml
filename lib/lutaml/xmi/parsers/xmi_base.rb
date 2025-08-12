@@ -371,7 +371,11 @@ module Lutaml
         # @return [Lutaml::Model::Serializable]
         def find_klass_packaged_element_by_name(name)
           all_packaged_elements.find do |e|
-            e.type?("uml:Class") && e.name == name
+            e.name == name &&
+              (
+                e.type?("uml:Class") ||
+                e.type?("uml:AssociationClass")
+              )
           end
         end
 
