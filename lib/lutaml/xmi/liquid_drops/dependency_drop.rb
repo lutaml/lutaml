@@ -2,7 +2,7 @@
 
 module Lutaml
   module XMI
-    class SourceTargetDrop < Liquid::Drop
+    class DependencyDrop < Liquid::Drop
       include Parsers::XMIBase
 
       def initialize(model, options = {}) # rubocop:disable Lint/MissingSuper
@@ -12,32 +12,25 @@ module Lutaml
         @id_name_mapping = options[:id_name_mapping]
       end
 
-      def idref
-        @model.idref
+      def id
+        @model.id
       end
 
       def name
-        @model&.role&.name
+        @model.name
       end
 
-      def type
-        @model&.model&.name
+      def ea_type
+        @model&.properties&.ea_type
       end
 
       def documentation
         @model&.documentation&.value
       end
 
-      def multiplicity
-        @model&.type&.multiplicity
-      end
-
-      def aggregation
-        @model&.type&.aggregation
-      end
-
-      def stereotype
-        doc_node_attribute_value(@model.idref, "stereotype")
+      def connector
+        connector = fetch_connector(@model.id)
+        ::Lutaml::XMI::ConnectorDrop.new(connector, @options)
       end
     end
   end
