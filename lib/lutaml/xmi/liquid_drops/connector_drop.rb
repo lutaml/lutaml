@@ -37,11 +37,11 @@ module Lutaml
       end
 
       def source
-        ::Lutaml::XMI::SourceTargetDrop.new(@model.source)
+        ::Lutaml::XMI::SourceTargetDrop.new(@model.source, @options)
       end
 
       def target
-        ::Lutaml::XMI::SourceTargetDrop.new(@model.target)
+        ::Lutaml::XMI::SourceTargetDrop.new(@model.target, @options)
       end
 
       def recognized?

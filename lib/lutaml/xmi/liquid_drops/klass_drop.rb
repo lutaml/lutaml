@@ -24,6 +24,8 @@ module Lutaml
           @matched_element = @xmi_root_model&.extension&.elements&.element&.find do |e| # rubocop:disable Layout/LineLength,Style/SafeNavigationChainLength
             e.idref == @model.id
           end
+
+          @dependencies = select_dependencies_by_supplier(@model.id)
         end
 
         if guidance
@@ -66,6 +68,18 @@ module Lutaml
           if @options[:with_assoc] || owned_attr.association.nil?
             ::Lutaml::XMI::AttributeDrop.new(owned_attr, @options)
           end
+        end.compact
+      end
+
+      def owned_attributes
+        @owned_attributes.map do |owned_attr|
+          ::Lutaml::XMI::AttributeDrop.new(owned_attr, @options)
+        end.compact
+      end
+
+      def dependencies
+        @dependencies.map do |dependency|
+          ::Lutaml::XMI::DependencyDrop.new(dependency, @options)
         end.compact
       end
 
