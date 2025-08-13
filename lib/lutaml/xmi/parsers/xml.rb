@@ -67,6 +67,30 @@ module Lutaml
 
             ret_val
           end
+
+          # @param xmi_path [String] path to xml
+          # @param name [String]
+          # @return [Hash]
+          def serialize_enumeration_by_name( # rubocop:disable Metrics/MethodLength
+            xmi_path, name
+          )
+            # Load from cache or file
+            xml_cache_key = (Digest::SHA256.file xmi_path).hexdigest
+            xmi_model = @xmi_root_model_cache_static[xml_cache_key] ||
+              get_xmi_model(xmi_path)
+            id_name_mapping = @id_name_mapping_static[xml_cache_key]
+
+            instance = new
+            enum = instance.serialize_enumeration_by_name(
+              xmi_model, name, id_name_mapping
+            )
+
+            # Put xmi_model and id_name_mapping to cache
+            @id_name_mapping_static[xml_cache_key] ||= instance.id_name_mapping
+            @xmi_root_model_cache_static[xml_cache_key] ||= xmi_model
+
+            enum
+          end
         end
 
         # @param xmi_model [Lutaml::Model::Serializable]
@@ -127,6 +151,24 @@ module Lutaml
             guidance,
             options,
           )
+        end
+
+        # @param xmi_model [Lutaml::Model::Serializable]
+        # @param name [String]
+        # @param id_name_mapping [Hash]
+        # @return [Hash]
+        def serialize_enumeration_by_name( # rubocop:disable Metrics/MethodLength
+          xmi_model, name, id_name_mapping = nil
+        )
+          set_xmi_model(xmi_model, id_name_mapping)
+          enum = find_enum_packaged_element_by_name(name)
+          options = {
+            xmi_root_model: @xmi_root_model,
+            id_name_mapping: @id_name_mapping,
+            with_gen: true,
+            with_absolute_path: true,
+          }
+          ::Lutaml::XMI::EnumDrop.new(enum, options)
         end
       end
     end
