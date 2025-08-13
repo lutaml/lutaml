@@ -98,16 +98,15 @@ module Lutaml
       end
 
       def associations # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity,Metrics/MethodLength
-        return if !@matched_element ||
-          !@matched_element.links ||
-          (
-            @matched_element.links.association.empty? &&
-            @matched_element.links.generalization.empty?
-          )
+        return if !@matched_element || !@matched_element.links
 
-        links = @matched_element.links.association +
-          @matched_element.links.generalization
-        links.map do |assoc|
+        links = []
+        @matched_element.links.each do |link|
+          links << link.association if link.association.any?
+          links << link.generalization if link.generalization.any?
+        end
+
+        links.flatten.compact.map do |assoc|
           link_member = assoc.start == xmi_id ? "end" : "start"
           link_owner_name = link_member == "start" ? "end" : "start"
 
