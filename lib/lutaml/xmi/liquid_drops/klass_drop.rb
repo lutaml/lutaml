@@ -172,6 +172,12 @@ module Lutaml
         end
       end
 
+      def upper_packaged_element
+        if @options[:with_gen]
+          find_upper_level_packaged_element(@model.id)
+        end
+      end
+
       def has_guidance?
         !!@klass_guidance
       end
