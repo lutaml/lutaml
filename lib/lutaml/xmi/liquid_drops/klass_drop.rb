@@ -26,6 +26,12 @@ module Lutaml
           end
 
           @dependencies = select_dependencies_by_supplier(@model.id)
+
+          @inheritance_ids = @matched_element&.links&.map do |link|
+            link.generalization.select do |gen|
+              gen.end == @model.id
+            end.map(&:id)
+          end&.flatten&.compact || []
         end
 
         if guidance
@@ -80,6 +86,14 @@ module Lutaml
       def dependencies
         @dependencies.map do |dependency|
           ::Lutaml::XMI::DependencyDrop.new(dependency, @options)
+        end.compact
+      end
+
+      def inheritances
+        @inheritance_ids.map do |inheritance_id|
+          # ::Lutaml::XMI::InheritanceDrop.new(dependency, @options)
+          connector = fetch_connector(inheritance_id)
+          ::Lutaml::XMI::ConnectorDrop.new(connector, @options)
         end.compact
       end
 
