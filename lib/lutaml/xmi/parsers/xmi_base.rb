@@ -379,6 +379,14 @@ module Lutaml
           end
         end
 
+        # @param name [String]
+        # @return [Lutaml::Model::Serializable]
+        def find_enum_packaged_element_by_name(name)
+          all_packaged_elements.find do |e|
+            e.name == name && e.type?("uml:Enumeration")
+          end
+        end
+
         # @param supplier_id [String]
         # @return [Lutaml::Model::Serializable]
         def select_dependencies_by_supplier(supplier_id)
