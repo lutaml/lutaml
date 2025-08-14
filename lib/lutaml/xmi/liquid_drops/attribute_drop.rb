@@ -69,7 +69,7 @@ module Lutaml
       end
 
       def stereotype
-        doc_node_attribute_value(@model.id, "stereotype")
+        doc_node_attribute_value(@uml_type_idref, "stereotype")
       end
     end
   end
