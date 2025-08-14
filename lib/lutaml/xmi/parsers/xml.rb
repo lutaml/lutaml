@@ -146,6 +146,7 @@ module Lutaml
             with_gen: true,
             with_absolute_path: true,
           }
+          puts "Error: Class not found for name: #{name}!" if klass.nil?
           ::Lutaml::XMI::KlassDrop.new(
             klass,
             guidance,
@@ -168,6 +169,7 @@ module Lutaml
             with_gen: true,
             with_absolute_path: true,
           }
+          puts "Error: Enumeration not found for name: #{name}!" if enum.nil?
           ::Lutaml::XMI::EnumDrop.new(enum, options)
         end
       end
