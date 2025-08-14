@@ -178,6 +178,10 @@ module Lutaml
         end
       end
 
+      def subtype_of
+        find_subtype_of(@model.id)
+      end
+
       def has_guidance?
         !!@klass_guidance
       end

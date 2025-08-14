@@ -44,6 +44,10 @@ module Lutaml
           find_upper_level_packaged_element(@model.id)
         end
       end
+
+      def subtype_of
+        find_subtype_of(@model.id)
+      end
     end
   end
 end

@@ -297,6 +297,23 @@ module Lutaml
           @upper_level_cache[klass_id]
         end
 
+        def find_subtype_of(id) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+          @pkg_elements_owned_attributes ||= all_packaged_elements.map do |e|
+            {
+              name: e.name,
+              idrefs: e&.owned_attribute&.map do |oa|
+                        oa&.uml_type&.idref
+                      end || [],
+            }
+          end
+
+          result = @pkg_elements_owned_attributes.find do |e|
+            e[:idrefs].include?(id)
+          end
+
+          result[:name] if result
+        end
+
         # Build cache once for all packaged elements
         def build_upper_level_cache
           @upper_level_cache = {}
