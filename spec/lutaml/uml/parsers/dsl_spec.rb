@@ -3,7 +3,7 @@
 require "spec_helper"
 
 RSpec.describe Lutaml::Uml::Parsers::Dsl do
-  xdescribe ".parse" do
+  describe ".parse" do
     subject(:parse) { described_class.parse(content) }
     subject(:format_parsed_document) do
       Lutaml::Formatter::Graphviz.new.format_document(parse)
@@ -67,7 +67,7 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
       it "creates the correct classes and sets the \
           correct number of attributes" do
         classes = parse.classes
-        expect(by_name(classes, "Component").attributes).to be_empty
+        expect(by_name(classes, "Component").attributes).to be_nil
         expect(by_name(classes, "AddressClassProfile")
                 .attributes.length).to eq(1)
         expect(by_name(classes, "AttributeProfile")
