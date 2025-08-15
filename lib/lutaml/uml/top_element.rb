@@ -11,7 +11,7 @@ module Lutaml
       attribute :stereotype, :string, collection: true, default: -> { [] }
       attribute :href, :string
       attribute :visibility, :string, default: "public"
-      attribute :comments, :string
+      attribute :comments, :string, collection: true
 
       attribute :definition, :string
       attribute :full_name, :string
