@@ -27,8 +27,9 @@ module Lutaml
           # Parslet::ErrorReporter::Deepest allows more
           # detailed display of error
           reporter = Parslet::ErrorReporter::Deepest.new
-          ::Lutaml::Uml::Document
-            .new(DslTransform.new.apply(super(data, reporter: reporter)))
+
+          parsed = super(data, reporter: reporter)
+          ::Lutaml::Uml::Document.new(DslTransform.new.apply(parsed))
         rescue Parslet::ParseFailed => e
           raise(ParsingError,
                 "#{e.message}\ncause: #{e.parse_failure_cause.ascii_tree}")
@@ -38,9 +39,9 @@ module Lutaml
           abstract
           aggregation
           association
-          association
           attribute
           bidirectional
+          caption
           class
           composition
           data_type
@@ -51,10 +52,12 @@ module Lutaml
           fontname
           generalizes
           include
+          instance
           interface
           member
           member_type
           method
+          models
           owner
           owner_type
           primitive
@@ -62,16 +65,18 @@ module Lutaml
           protected
           public
           realizes
+          require
           static
           title
-          caption
         ].freeze
 
         KEYWORDS.each do |keyword|
-          rule("kw_#{keyword}") { str(keyword) }
+          rule("kw_#{keyword}") { whitespace? >> str(keyword) }
         end
 
+        rule(:quotes) { match['"\''] }
         rule(:spaces) { match("\s").repeat(1) }
+        rule(:quotes?) { quotes.maybe }
         rule(:spaces?) { spaces.maybe }
         rule(:whitespace) do
           (match("\s") | match("	") | match("\r?\n") | match("\r") | str(";"))
@@ -125,13 +130,13 @@ module Lutaml
         end
         rule(:attribute_keyword?) { attribute_keyword.maybe }
         rule(:attribute_type) do
-          (str(":") >>
+          (str(":").maybe >>
             spaces? >>
             attribute_keyword? >>
             spaces? >>
-            match['"\''].maybe >>
+            quotes? >>
             match['a-zA-Z0-9_\- \/\+'].repeat(1).as(:type) >>
-            match['"\''].maybe >>
+            quotes? >>
             spaces?
           )
         end
@@ -139,38 +144,97 @@ module Lutaml
           attribute_type.maybe
         end
 
-        rule(:attribute_name) { match['a-zA-Z0-9_\- \/\+'].repeat(1).as(:name) }
+        rule(:attribute_name) { match['a-zA-Z0-9_\-\/\+'].repeat(1).as(:name) }
+        rule(:attribute_definition_name) do
+          (quotes >> match['a-zA-Z0-9_\- \/\+'].repeat(1).as(:name) >> quotes) |
+            attribute_name
+        end
+
         rule(:attribute_definition) do
           (visibility?.as(:visibility) >>
-            match['"\''].maybe >>
-            attribute_name >>
-            match['"\''].maybe >>
+            spaces? >>
+            attribute_definition_name >>
+            spaces? >>
             attribute_type? >>
             cardinality? >>
             class_body?)
             .as(:attributes)
         end
 
+        rule(:keyword_type_argument) do
+          (
+            str("type").as(:name) >>
+            spaces? >>
+            match["[^\s\n\r]"].repeat(1).as(:value) >>
+            whitespace?
+          )
+        end
+
+        rule(:keyword_cardinality_argument) do
+          (
+            str("cardinality").as(:name) >>
+            spaces? >>
+            cardinality_body_definition.as(:value) >>
+            whitespace?
+          )
+        end
+
+        rule(:keyword_any_argument) do
+          (
+            spaces? >>
+            match("[^\s\n\r]").repeat(1).as(:name) >>
+            spaces >>
+            match("[^\n]").repeat(1).as(:value) >>
+            whitespace?
+          )
+        end
+
+        rule(:keyword_attribute_options) do
+          (
+            keyword_type_argument |
+            keyword_cardinality_argument |
+            keyword_any_argument
+          ).repeat
+        end
+
+        rule(:keyword_attribute_body) do
+          str("{") >>
+            whitespace? >>
+            keyword_attribute_options.as(:properties) >>
+            whitespace? >>
+            str("}")
+        end
+
+        rule(:keyword_attribute_definition) do
+          (
+            str("attribute") >>
+            spaces >>
+            attribute_name >>
+            spaces? >>
+            keyword_attribute_body
+          ).as(:attributes)
+        end
+
         rule(:title_keyword) { kw_title >> spaces }
         rule(:title_text) do
-          match['"\''].maybe >>
+          quotes? >>
             match['a-zA-Z0-9_\- ,.:;'].repeat(1).as(:title) >>
-            match['"\''].maybe
+            quotes?
         end
         rule(:title_definition) { title_keyword >> title_text }
         rule(:caption_keyword) { kw_caption >> spaces }
         rule(:caption_text) do
-          match['"\''].maybe >>
+          quotes? >>
             match['a-zA-Z0-9_\- ,.:;'].repeat(1).as(:caption) >>
-            match['"\''].maybe
+            quotes?
         end
         rule(:caption_definition) { caption_keyword >> caption_text }
 
         rule(:fontname_keyword) { kw_fontname >> spaces }
         rule(:fontname_text) do
-          match['"\''].maybe >>
+          quotes? >>
             match['a-zA-Z0-9_\- '].repeat(1).as(:fontname) >>
-            match['"\''].maybe
+            quotes?
         end
         rule(:fontname_definition) { fontname_keyword >> fontname_text }
 
@@ -275,7 +339,8 @@ module Lutaml
         rule(:class_keyword) { kw_class >> spaces }
         rule(:class_inner_definitions) do
           definition_body |
-            attribute_definition |
+            ((str("attribute") >> spaces).absent? >> attribute_definition) |
+            keyword_attribute_definition |
             comment_definition |
             comment_multiline_definition
         end
@@ -290,10 +355,16 @@ module Lutaml
             str("}")
         end
         rule(:class_body?) { class_body.maybe }
+
+        rule(:parent_class) do
+          spaces? >> str("<") >> spaces? >> class_name_chars.as(:parent_class)
+        end
+
         rule(:class_definition) do
           class_modifier >>
             class_keyword >>
             class_name.as(:name) >>
+            parent_class.maybe >>
             spaces? >>
             attribute_keyword? >>
             class_body?
@@ -331,9 +402,9 @@ module Lutaml
         rule(:enum_body?) { enum_body.maybe }
         rule(:enum_definition) do
           enum_keyword >>
-            match['"\''].maybe >>
+            quotes? >>
             class_name.as(:name) >>
-            match['"\''].maybe >>
+            quotes? >>
             attribute_keyword? >>
             enum_body?
         end
@@ -359,9 +430,9 @@ module Lutaml
         rule(:data_type_body?) { data_type_body.maybe }
         rule(:data_type_definition) do
           data_type_keyword >>
-            match['"\''].maybe >>
+            quotes? >>
             class_name.as(:name) >>
-            match['"\''].maybe >>
+            quotes? >>
             attribute_keyword? >>
             data_type_body?
         end
@@ -370,9 +441,9 @@ module Lutaml
         rule(:primitive_keyword) { kw_primitive >> spaces }
         rule(:primitive_definition) do
           primitive_keyword >>
-            match['"\''].maybe >>
+            quotes? >>
             class_name.as(:name) >>
-            match['"\''].maybe
+            quotes?
         end
 
         # -- Diagram
@@ -407,8 +478,15 @@ module Lutaml
             whitespace?
         end
         rule(:diagram_definitions) { diagram_definition >> whitespace? }
-        rule(:diagram) { whitespace? >> diagram_definition }
+
+        rule(:models) do
+          kw_models >> name.as(:name) >> str("{") >>
+            class_definition >> whitespace? >>
+            str("}") >> whitespace?
+        end
+
         # -- Root
+        rule(:diagram) { models | diagram_definitions }
 
         root(:diagram)
       end
