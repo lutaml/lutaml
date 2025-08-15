@@ -1,11 +1,13 @@
 # frozen_string_literal: true
 
-require "lutaml/uml/top_element"
-
 module Lutaml
   module Uml
     class Classifier < TopElement
-      attr_accessor :generalization
+      attribute :generalization, :string, collection: true, default: -> { [] }
+
+      yaml do
+        map "generalization", to: :generalization
+      end
     end
   end
 end

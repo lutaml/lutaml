@@ -40,27 +40,27 @@ module Lutaml
 
       def format(node) # rubocop:disable Metrics/CyclomaticComplexity
         case node
-        when ::Lutaml::Uml::Node::Field then format_field(node)
+        when ::Lutaml::Uml::Node::Field  then format_field(node)
         when ::Lutaml::Uml::Node::Method then format_method(node)
         when ::Lutaml::Uml::Node::Relationship then format_relationship(node)
         when ::Lutaml::Uml::Node::ClassRelationship
           format_class_relationship(node)
         when ::Lutaml::Uml::Node::ClassNode then format_class(node)
-        when Lutaml::Uml::Document then format_document(node)
+        when ::Lutaml::Uml::Document then format_document(node)
         end
       end
 
-      def format_field(_node); raise NotImplementedError; end
+      def format_field(_node);              raise NotImplementedError; end
 
-      def format_method(_node); raise NotImplementedError; end
+      def format_method(_node);             raise NotImplementedError; end
 
-      def format_relationship(_node); raise NotImplementedError; end
+      def format_relationship(_node);       raise NotImplementedError; end
 
       def format_class_relationship(_node); raise NotImplementedError; end
 
-      def format_class(_node); raise NotImplementedError; end
+      def format_class(_node);              raise NotImplementedError; end
 
-      def format_document(_node); raise NotImplementedError; end
+      def format_document(_node);           raise NotImplementedError; end
     end
   end
 end

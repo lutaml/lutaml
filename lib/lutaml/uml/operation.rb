@@ -2,29 +2,13 @@
 
 module Lutaml
   module Uml
-    class Operation
-      include HasAttributes
-      include HasMembers
+    class Operation < TopElement
+      attribute :return_type, :string
+      attribute :parameter_type, :string
 
-      attr_reader :definition
-      attr_accessor :name,
-                    :return_type,
-                    :parameter_type
-
-      # rubocop:disable Rails/ActiveRecordAliases
-      def initialize(attributes = {})
-        update_attributes(attributes)
-      end
-      # rubocop:enable Rails/ActiveRecordAliases
-
-      def definition=(value)
-        @definition = value
-          .to_s
-          .gsub(/\\}/, "}")
-          .gsub(/\\{/, "{")
-          .split("\n")
-          .map(&:strip)
-          .join("\n")
+      yaml do
+        map "return_type", to: :return_type
+        map "parameter_type", to: :parameter_type
       end
     end
   end

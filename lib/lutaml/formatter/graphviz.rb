@@ -95,7 +95,8 @@ module Lutaml
           result += " : #{keyword}#{node.type}"
         end
         if node.cardinality
-          result += "[#{node.cardinality['min']}..#{node.cardinality['max']}]"
+          result += "[#{node.cardinality.min}.." \
+                    "#{node.cardinality.max}]"
         end
         result = escape_html_chars(result)
         result = "<U>#{result}</U>" if node.static
@@ -141,7 +142,17 @@ module Lutaml
                             else
                               "direct"
                             end
-        attributes["label"] = node.action if node.action
+
+        if node&.action&.verb
+          attributes["label"] = node.action.verb
+        end
+        case node&.action&.direction
+        when "target"
+          attributes["label"] = "#{attributes['label']} \u25b6"
+        when "source"
+          attributes["label"] = "\u25c0 #{attributes['label']}"
+        end
+
         if node.owner_end_attribute_name
           attributes["headlabel"] = format_label(
             node.owner_end_attribute_name,
@@ -189,11 +200,11 @@ module Lutaml
       def format_label(name, cardinality = {})
         res = "+#{name}"
         if cardinality.nil? ||
-            (cardinality[:min].nil? || cardinality[:max].nil?)
+            (cardinality.min.nil? || cardinality.max.nil?)
           return res
         end
 
-        "#{res} #{cardinality['min']}..#{cardinality['max']}"
+        "#{res} #{cardinality.min}..#{cardinality.max}"
       end
 
       def format_member_rows(members, hide_members) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity
@@ -250,8 +261,8 @@ module Lutaml
         @node["fontname"] = "#{@fontname}-bold"
 
         if node.fidelity
-          hide_members = node.fidelity["hideMembers"]
-          hide_other_classes = node.fidelity["hideOtherClasses"]
+          hide_members = node.fidelity.hideMembers
+          hide_other_classes = node.fidelity.hideOtherClasses
         end
         classes = (node.classes +
                     node.enums +
@@ -303,8 +314,8 @@ module Lutaml
 
       def sort_by_document_grouping(groups, associations) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
         result = []
-        groups.each do |batch|
-          batch.each do |group_name|
+        groups.each do |group|
+          group.values.each do |group_name| # rubocop:disable Style/HashEachMethods
             associations
               .select { |assc| assc.owner_end == group_name }
               .each do |association|

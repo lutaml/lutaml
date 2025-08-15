@@ -148,7 +148,7 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
         expect(root_package.diagrams.map(&:name))
           .to(eq(["Starter Class Diagram"]))
         expect(root_package.diagrams.map(&:definition))
-          .to(eq(["aada"]))
+          .to(eq(["aada\n"]))
       end
     end
   end

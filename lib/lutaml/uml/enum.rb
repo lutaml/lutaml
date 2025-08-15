@@ -1,44 +1,21 @@
 # frozen_string_literal: true
 
-require "lutaml/uml/has_members"
-require "lutaml/uml/classifier"
-require "lutaml/uml/association"
-require "lutaml/uml/top_element_attribute"
-require "lutaml/uml/value"
-
 module Lutaml
   module Uml
     class Enum < Classifier
-      include HasMembers
+      attribute :attributes, TopElementAttribute, collection: true,
+                                                  default: -> { [] }
+      attribute :modifier, :string
+      attribute :keyword, :string, default: "enumeration"
+      attribute :values, Value, collection: true, default: -> { [] }
+      attribute :methods, :string, collection: true, default: -> { [] }
 
-      attr_reader :attributes,
-                  :members,
-                  :modifier,
-                  :definition,
-                  :keyword,
-                  :values
-
-      def initialize(attributes = {})
-        super
-        @keyword = "enumeration"
-      end
-
-      # TODO: delete?
-      def attributes=(value)
-        @attributes = value.to_a.map do |attr|
-          TopElementAttribute.new(attr)
-        end
-      end
-
-      def values=(value)
-        @values = value.to_a.map do |attr|
-          Value.new(attr)
-        end
-      end
-
-      # TODO: reserved name, change
-      def methods
-        []
+      yaml do
+        map "attributes", to: :attributes
+        map "modifier", to: :modifier
+        map "keyword", to: :keyword
+        map "values", to: :values
+        map "methods", to: :methods
       end
     end
   end

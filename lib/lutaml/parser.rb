@@ -35,7 +35,7 @@ module Lutaml
         file_list.map { |file| Lutaml::Xml::Parsers::Xml.parse(file) }
       when "lutaml"
         file_list.map { |file| Lutaml::Uml::Parsers::Dsl.parse(file) }
-      when "yml"
+      when "yml", "yaml"
         file_list.map { |file| Lutaml::Uml::Parsers::Yaml.parse(file.path) }
       else
         raise ArgumentError, "Unsupported file format"
