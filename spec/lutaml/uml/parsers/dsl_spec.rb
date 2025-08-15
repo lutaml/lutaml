@@ -6,7 +6,7 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
   xdescribe ".parse" do
     subject(:parse) { described_class.parse(content) }
     subject(:format_parsed_document) do
-      Lutaml::Uml::Formatter::Graphviz.new.format_document(parse)
+      Lutaml::Formatter::Graphviz.new.format_document(parse)
     end
 
     shared_examples "the correct graphviz formatting" do

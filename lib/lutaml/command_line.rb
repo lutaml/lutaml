@@ -1,6 +1,6 @@
 require "optparse"
 require "pathname"
-require "lutaml/uml/formatter"
+require "lutaml/formatter"
 require "lutaml/uml/has_attributes"
 require "lutaml/uml/parsers/attribute"
 require "lutaml/uml/parsers/dsl"
@@ -22,7 +22,7 @@ module Lutaml
     end
 
     def initialize(attributes = {}, out_object = $stdout)
-      @formatter = ::Lutaml::Uml::Formatter::Graphviz.new
+      @formatter = ::Lutaml::Formatter::Graphviz.new
       @verbose = false
       @option_parser = OptionParser.new
       @out_object = out_object
@@ -52,7 +52,7 @@ module Lutaml
 
     def formatter=(value)
       value = value.to_s.strip.downcase.to_sym
-      value = Lutaml::Uml::Formatter.find_by(name: value)
+      value = Lutaml::Formatter.find_by(name: value)
       raise Error, "Formatter not found: #{value}" if value.nil?
 
       @formatter = value
@@ -255,7 +255,7 @@ module Lutaml
               The output format is based on #{text_bold_italic('--type')}, which by default is "dot".
               If #{text_bold_italic('--type')} is not given and #{text_bold_italic('--output')} is, the file extension of the #{text_bold_italic('--output')} path will be used.
 
-              Valid types/extensions are: #{Lutaml::Uml::Formatter::Graphviz::VALID_TYPES.join(', ')}
+              Valid types/extensions are: #{Lutaml::Formatter::Graphviz::VALID_TYPES.join(', ')}
 
               #{text_bold('Options:')}
 
