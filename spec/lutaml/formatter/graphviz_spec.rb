@@ -2,7 +2,7 @@
 
 require "spec_helper"
 
-RSpec.describe Lutaml::Uml::Formatter::Graphviz do
+RSpec.describe Lutaml::Formatter::Graphviz do
   describe ".format_document" do
     subject(:format_document) do
       described_class.new.format_document(input_document)
