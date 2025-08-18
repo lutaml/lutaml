@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "lutaml/uml/class"
+require "lutaml/uml/instance"
 require "lutaml/uml/data_type"
 require "lutaml/uml/enum"
 require "lutaml/uml/diagram"
@@ -23,12 +24,21 @@ module Lutaml
 
       # rubocop:disable Rails/ActiveRecordAliases
       def initialize(attributes = {})
+      puts attributes
         update_attributes(attributes)
       end
 
       # rubocop:enable Rails/ActiveRecordAliases
+      def requires=(value)
+        @requires = value.to_a.map { |attributes| attributes }
+      end
+
       def classes=(value)
         @classes = value.to_a.map { |attributes| Class.new(attributes) }
+      end
+
+      def instance=(value)
+        @instance = Instance.new(value)
       end
 
       def data_types=(value)
@@ -55,8 +65,16 @@ module Lutaml
         end
       end
 
+      def requires
+        @requires ||= []
+      end
+
       def classes
         @classes ||= []
+      end
+
+      def instance
+        @instance ||= []
       end
 
       def enums
