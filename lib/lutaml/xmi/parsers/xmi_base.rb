@@ -413,6 +413,15 @@ module Lutaml
           end
         end
 
+        # @param supplier_id [String]
+        # @return [Lutaml::Model::Serializable]
+        def select_dependencies_by_client(client_id)
+          all_packaged_elements.select do |e|
+            e.client == client_id &&
+              e.type?("uml:Dependency")
+          end
+        end
+
         # @param name [String]
         # @return [Lutaml::Model::Serializable]
         def find_packaged_element_by_name(name)
