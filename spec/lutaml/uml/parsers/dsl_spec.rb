@@ -4,6 +4,16 @@ require "spec_helper"
 
 RSpec.describe Lutaml::Uml::Parsers::Dsl do
   describe ".parse" do
+    context "when parsing LML files" do
+      it "does not raise errors for LML fixture files" do
+        expect {
+          Lutaml::Uml::Parsers::Dsl.parse(File.open("spec/fixtures/lml/data_s102_check.lml"))
+          Lutaml::Uml::Parsers::Dsl.parse(File.open("spec/fixtures/lml/data_s158_metadata.lml"))
+          Lutaml::Uml::Parsers::Dsl.parse(File.open("spec/fixtures/lml/iho_data_models.lml"))
+          Lutaml::Uml::Parsers::Dsl.parse(File.open("spec/fixtures/lml/iho_s102_check.lml"))
+        }.to_not raise_error
+      end
+    end
     subject(:parse) { described_class.parse(content) }
     subject(:format_parsed_document) do
       Lutaml::Uml::Formatter::Graphviz.new.format_document(parse)
