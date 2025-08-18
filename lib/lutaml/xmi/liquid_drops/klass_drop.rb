@@ -25,7 +25,8 @@ module Lutaml
             e.idref == @model.id
           end
 
-          @dependencies = select_dependencies_by_supplier(@model.id)
+          @clients_dependencies = select_dependencies_by_supplier(@model.id)
+          @suppliers_dependencies = select_dependencies_by_client(@model.id)
 
           @inheritance_ids = @matched_element&.links&.map do |link|
             link.generalization.select do |gen|
@@ -83,8 +84,14 @@ module Lutaml
         end.compact
       end
 
-      def dependencies
-        @dependencies.map do |dependency|
+      def suppliers_dependencies
+        @suppliers_dependencies.map do |dependency|
+          ::Lutaml::XMI::DependencyDrop.new(dependency, @options)
+        end.compact
+      end
+
+      def clients_dependencies
+        @clients_dependencies.map do |dependency|
           ::Lutaml::XMI::DependencyDrop.new(dependency, @options)
         end.compact
       end
