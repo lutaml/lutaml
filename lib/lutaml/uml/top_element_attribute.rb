@@ -65,10 +65,17 @@ module Lutaml
         elsif value.is_a?(Hash) && value.key?(:boolean)
           @type = "Boolean"
           value[:boolean] == "true"
+        elsif value.is_a?(Hash) && value.key?(:number)
+          @type = "Number"
+          value[:number].to_i
         else
           @type = value.class.to_s
           value
         end
+      end
+
+      def extended=(attribute)
+        @extended = attribute
       end
     end
   end

@@ -43,7 +43,9 @@ module Lutaml
           bidirectional
           caption
           class
+          collection
           composition
+          condition
           data_type
           dependency
           diagram
@@ -52,7 +54,9 @@ module Lutaml
           fontname
           generalizes
           include
+          includes
           instance
+          instances
           interface
           member
           member_type
@@ -68,6 +72,12 @@ module Lutaml
           require
           static
           title
+          validation
+          import
+          export
+          format
+          extends
+          template
         ].freeze
 
         KEYWORDS.each do |keyword|
@@ -161,7 +171,7 @@ module Lutaml
 
         # === Key-value pairs ===
         rule(:key_value_pair) do
-          variable.as(:key) >> spaces >> value.as(:value)
+          variable.as(:key) >> spaces >> str("=").maybe >> spaces? >> value.as(:value)
         end
         rule(:key_value_map) do
           str("{") >> whitespace? >>
@@ -178,7 +188,7 @@ module Lutaml
         rule(:attribute_value) { list | key_value_map | value | match("[^\n]").repeat(1) }
         rule(:attribute) do
           comment_definition |
-          variable.as(:key) >> spaces? >> str("=").maybe >> spaces? >> attribute_value.as(:value)
+          variable.as(:key) >> spaces? >> str("+").as(:add).maybe >> str("=").maybe >> spaces? >> attribute_value.as(:value)
         end
         rule(:attributes) do
           (
@@ -461,6 +471,10 @@ module Lutaml
 
         # === Instance block ===
         rule(:instance) do
+          keyword_instance | class_instance
+        end
+
+        rule(:keyword_instance) do
           (
             kw_instance >> spaces >>
             namespaced_identifier.as(:instance_type) >> spaces? >>
@@ -575,8 +589,102 @@ module Lutaml
             str("}") >> whitespace?
         end
 
+        # === Collection block inside instances ===
+        rule(:collections) do
+          collection.repeat.as(:collections)
+        end
+
+        rule(:collection) do
+          kw_collection >> spaces >> quoted_string.as(:name) >> spaces? >>
+            str("{") >> whitespace? >>
+            includes.maybe >> whitespace? >>
+            validation.maybe >> whitespace? >>
+            str("}") >> whitespace?
+        end
+
+        # === Includes block ===
+        rule(:includes) do
+          kw_includes >> spaces? >> list.as(:includes)
+        end
+
+        # === Validation block ===
+        rule(:validation) do
+          kw_validation >> spaces? >> str("{") >> whitespace? >>
+            condition.repeat.as(:validations) >>
+            str("}")
+        end
+
+        rule(:condition) do
+          kw_condition >> spaces >> quoted_string.as(:condition) >> whitespace?
+        end
+
+        # === Import block ===
+        rule(:import) do
+          kw_import >> spaces? >> str("{") >> whitespace? >>
+            import_definition.repeat.as(:imports) >>
+          str("}") >> whitespace?
+        end
+
+        rule(:import_definition) do
+          match("[^\s\n\r]").repeat(1).as(:format_type) >> spaces? >> quoted_string.as(:file) >> whitespace? >>
+            str("{") >> whitespace? >>
+            attributes >> whitespace? >>
+            str("}") >> whitespace?
+        end
+
+        # === Instances block with collections, import, export ===
+        rule(:instances) do
+          kw_instances >> whitespace? >>
+            str("{") >> whitespace? >>
+            instances_body.maybe >>
+            str("}") >> whitespace?
+        end
+
+        rule(:instances_body) do
+          (instances_member >> whitespace?).repeat.as(:instances)
+        end
+
+        rule(:instances_member) do
+          import | collection.as(:collection) | export | instance
+        end
+
+        rule(:class_instance) do
+          (variable.as(:instance_type) >> whitespace? >> quoted_string.as(:name) >> whitespace? >>
+            (kw_extends >> whitespace? >> quoted_string.as(:parent) >> whitespace?).maybe >>
+             str("{") >> whitespace? >>
+            lml_instance_body.maybe >>
+            str("}")).as(:instance) >> whitespace?
+        end
+
+        rule(:lml_instance_body) do
+          (lml_instance_members >> whitespace?)
+        end
+
+        rule(:instance_template) do
+          kw_template >> whitespace? >> str("{") >> whitespace? >>
+            attributes >> whitespace? >>
+            str("}") >> whitespace?
+        end
+
+        rule(:lml_instance_members) do
+          instance_template.as(:template) | attributes
+        end
+
+        # === Export block ===
+        rule(:export) do
+          kw_export >> whitespace? >> str("{") >> whitespace? >>
+            (export_format >> whitespace?).repeat(1).as(:exports) >>
+            str("}") >> whitespace?
+        end
+
+        rule(:export_format) do
+          kw_format >> spaces >> variable.as(:format_type) >> whitespace? >> str("{") >> whitespace? >>
+            attributes >>
+            str("}") >> whitespace?
+        end
+
         # -- Root
-        rule(:diagram) { require_block? >> (models | diagram_definitions | instance) }
+        rule(:diagram) { require_block? >> (models | diagram_definitions | instances | instance) }
 
         root(:diagram)
       end

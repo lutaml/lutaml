@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'pry'
 require "spec_helper"
 
 RSpec.describe Lutaml::Uml::Parsers::Dsl do
@@ -115,6 +116,60 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
       attr2 = klass.attributes.find { |a| a.name == "classification" }
       expect(attr2.type).to eq("Classification")
       expect(attr2.cardinality).to eq("1").or eq({"min"=>"1"})
+    end
+
+    context "when parsing mixed_lml/instances.lml" do
+      let(:doc) { parse_lml("spec/fixtures/mixed_lml/instances.lml") }
+
+      it "parses the document and instance collection" do
+        expect(doc).to be_a(Lutaml::Uml::Document)
+        expect(doc.instances).to be_a(Lutaml::Uml::InstanceCollection)
+      end
+
+      it "maps collections correctly" do
+        collections = doc.instances.collections
+        expect(collections).to be_a(Lutaml::Uml::Collection)
+        expect(collections.name).to eq("test_suite_1")
+        expect(collections.includes).to eq(["laptop_123", "desktop_1", "desktop_2"])
+        expect(collections.validations).to eq(["count >= 3", "all? { |i| i.components.count > 0 }"])
+      end
+
+      it "maps imports correctly" do
+        imports = doc.instances.imports
+        expect(imports.size).to eq(2)
+        xml_import = imports.find { |imp| imp.format_type == "xml" }
+        expect(xml_import.file).to eq("test_data/products.xml")
+        expect(xml_import.attributes.map(&:name)).to include("map_to", "where")
+        expect(xml_import.attributes.find { |a| a.name == "map_to" }.value).to eq("Product")
+        expect(xml_import.attributes.find { |a| a.name == "where" }.value).to eq("/product")
+        csv_import = imports.find { |imp| imp.format_type == "csv" }
+        expect(csv_import.file).to eq("test_data/components.csv")
+        expect(csv_import.attributes.map(&:name)).to include("map_to", "columns")
+      end
+
+      it "maps exports correctly" do
+        exports = doc.instances.exports
+        expect(exports.size).to eq(2)
+        xml_export = exports.find { |exp| exp.format_type == "xml" }
+        expect(xml_export.attributes.map(&:name)).to include("file", "indent", "encoding")
+        expect(xml_export.attributes.find { |a| a.name == "file" }.value).to eq("output/products.xml")
+        expect(xml_export.attributes.find { |a| a.name == "indent" }.value).to eq(true)
+        expect(xml_export.attributes.find { |a| a.name == "encoding" }.value).to eq("UTF-8")
+        step_export = exports.find { |exp| exp.format_type == "step" }
+        expect(step_export.attributes.map(&:name)).to include("file", "reference_format")
+        expect(step_export.attributes.find { |a| a.name == "file" }.value).to eq("output/products.stp")
+        expect(step_export.attributes.find { |a| a.name == "reference_format" }.value).to eq("#%{id}")
+      end
+
+      it "maps product inheritance and template correctly" do
+        products = doc.instances.instances.filter { |i| i.type == "Product" }
+        base_computer = products.first
+        expect(base_computer).not_to be_nil
+        components_attr = base_computer.template.find { |a| a.name == "components" }
+        expect(components_attr.value).to be_a(Array)
+        expect(components_attr.value.first.type).to eq("Component")
+        expect(products.last.parent).to eq("base_computer")
+      end
     end
   end
 

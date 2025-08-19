@@ -1,7 +1,11 @@
 # frozen_string_literal: true
 
 require "lutaml/uml/class"
+require "lutaml/uml/collection"
 require "lutaml/uml/instance"
+require "lutaml/uml/instance_collection"
+require "lutaml/uml/instances_import"
+require "lutaml/uml/instances_export"
 require "lutaml/uml/data_type"
 require "lutaml/uml/enum"
 require "lutaml/uml/diagram"
@@ -20,7 +24,8 @@ module Lutaml
                     :groups,
                     :fidelity,
                     :fontname,
-                    :comments
+                    :comments,
+                    :instances
 
       # rubocop:disable Rails/ActiveRecordAliases
       def initialize(attributes = {})
@@ -38,6 +43,10 @@ module Lutaml
 
       def instance=(value)
         @instance = Instance.new(value)
+      end
+
+      def instances=(value)
+        @instances = InstanceCollection.new(value)
       end
 
       def data_types=(value)
