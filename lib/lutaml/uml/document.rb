@@ -24,13 +24,12 @@ module Lutaml
 
       # rubocop:disable Rails/ActiveRecordAliases
       def initialize(attributes = {})
-      puts attributes
         update_attributes(attributes)
       end
 
       # rubocop:enable Rails/ActiveRecordAliases
       def requires=(value)
-        @requires = value.to_a.map { |attributes| attributes }
+        @requires = value.to_a.map { |attributes| attributes.dig(:require, :string) }
       end
 
       def classes=(value)

@@ -29,9 +29,6 @@ module Lutaml
           reporter = Parslet::ErrorReporter::Deepest.new
 
           parsed = super(data, reporter: reporter)
-
-          # TODO: Need to implement transformer for lml files
-          parsed.delete(:requires)
           ::Lutaml::Uml::Document.new(DslTransform.new.apply(parsed))
         rescue Parslet::ParseFailed => e
           raise(ParsingError,
