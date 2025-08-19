@@ -2,7 +2,6 @@ require "lutaml/express"
 require "lutaml/uml"
 require "lutaml/xmi"
 require "lutaml/xml"
-require "lutaml/lml"
 require "expressir/express/cache"
 
 module Lutaml
