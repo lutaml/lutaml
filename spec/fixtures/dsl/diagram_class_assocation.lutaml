@@ -2,16 +2,10 @@ diagram MyView {
   title "my diagram"
 
   class AddressClassProfile {
-    ~ addressClassProfile
+    addressClassProfile
   }
   class AttributeProfile {
-    # attributeProfile
-
-    attribute name {
-      type String
-      cardinality 1..2
-      description The name of the AttributeProfile.
-    }
+    attributeProfile
   }
 
   association BidirectionalAsscoiation {

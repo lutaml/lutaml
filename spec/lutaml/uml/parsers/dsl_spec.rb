@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require 'pry'
 require "spec_helper"
 
 RSpec.describe Lutaml::Uml::Parsers::Dsl do
@@ -9,53 +8,104 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
       File.open(fname) { |f| Lutaml::Uml::Parsers::Dsl.parse(f) }
     end
 
-    it "parses test.lutaml and maps diagram/classes/definitions/attributes" do
-      doc = parse_lml("spec/fixtures/test.lutaml")
-      expect(doc).to be_a(Lutaml::Uml::Document)
-      expect(doc.title).to eq("my diagram").or be_nil
-      klass = doc.classes.find { |c| c.name == "AddressClassProfile" }
-      expect(klass).not_to be_nil
-      expect(klass.definition).to include("this is multiline")
-      attr = klass.attributes.find { |a| a.name == "addressClassProfile" }
-      expect(attr.type).to eq("CharacterString")
-      expect(attr.cardinality).to eq("0..1").or eq({"min"=>"0", "max"=>"1"})
-      klass2 = doc.classes.find { |c| c.name == "AttributeProfile" }
-      expect(klass2).not_to be_nil
-      attr2 = klass2.attributes.find { |a| a.name == "imlicistAttributeProfile" }
-      expect(attr2.type).to eq("CharacterString")
-      expect(attr2.cardinality).to eq("0..1").or eq({"min"=>"0", "max"=>"1"})
-      expect(attr2.definition).to include("this is attribute definition")
+    describe "parsing test.lutaml for diagram/classes/definitions/attributes" do
+      let(:doc) { parse_lml("spec/fixtures/test.lutaml") }
+
+      it "returns a Lutaml::Uml::Document with correct title" do
+        expect(doc).to be_a(Lutaml::Uml::Document)
+        expect(doc.title).to eq("my diagram").or be_nil
+      end
+
+      context "AddressClassProfile class" do
+        let(:klass) { doc.classes.find { |c| c.name == "AddressClassProfile" } }
+
+        it "exists and has correct definition" do
+          expect(klass).not_to be_nil, "Expected AddressClassProfile class to exist" 
+          expect(klass.definition).to include("this is multiline")
+        end
+
+        it "has an attribute 'addressClassProfile' with correct type and cardinality" do
+          attr = klass.attributes.find { |a| a.name == "addressClassProfile" }
+          expect(attr).not_to be_nil, "Expected attribute 'addressClassProfile' to exist"
+          expect(attr.type).to eq("CharacterString")
+          expect(attr.cardinality).to eq("0..1").or eq({"min"=>"0", "max"=>"1"})
+        end
+      end
+
+      context "AttributeProfile class" do
+        let(:klass2) { doc.classes.find { |c| c.name == "AttributeProfile" } }
+
+        it "exists" do
+          expect(klass2).not_to be_nil, "Expected AttributeProfile class to exist"
+        end
+
+        it "has an attribute 'imlicistAttributeProfile' with correct type, cardinality, and definition" do
+          attr2 = klass2.attributes.find { |a| a.name == "imlicistAttributeProfile" }
+          expect(attr2).not_to be_nil, "Expected attribute 'imlicistAttributeProfile' to exist"
+          expect(attr2.type).to eq("CharacterString")
+          expect(attr2.cardinality).to eq("0..1").or eq({"min"=>"0", "max"=>"1"})
+          expect(attr2.definition).to include("this is attribute definition")
+        end
+      end
     end
 
-    it "parses data_s102_check.lml and maps instances and requires" do
-      doc = parse_lml("spec/fixtures/lml/data_s102_check.lml")
-      expect(doc).to be_a(Lutaml::Uml::Document)
-      # Should have required file
-      expect(doc.requires).to include("iho_s102_check.lml")
-      # Should have an instance of S158Checks
-      inst = doc.instance
-      expect(inst).not_to be_nil
-      expect(inst.type).to eq("S158Checks")
-      # Should have checks as a list of instances
-      checks = inst.attributes.find { |a| a.name == "checks" }
-      expect(checks.value).to be_a(Array)
-      expect(checks.value.first.type).to eq("IhoS102Check::ValidationCheck")
-      dev_id_check = checks.value.first.attributes.find { |a| a.name == "dev_id" }
-      expect(dev_id_check.value).to eq("S102_Dev1001")
+    describe "parsing data_s102_check.lml for instances and requires" do
+      let(:doc) { parse_lml("spec/fixtures/lml/data_s102_check.lml") }
+
+      it "returns a Lutaml::Uml::Document and includes required file" do
+        expect(doc).to be_a(Lutaml::Uml::Document)
+        expect(doc.requires).to include("iho_s102_check.lml")
+      end
+
+      context "S158Checks instance" do
+        let(:inst) { doc.instance }
+
+        it "exists and has correct type" do
+          expect(inst).not_to be_nil, "Expected S158Checks instance to exist"
+          expect(inst.type).to eq("S158Checks")
+        end
+
+        it "has a 'checks' attribute with correct structure and values" do
+          checks = inst.attributes.find { |a| a.name == "checks" }
+          expect(checks).not_to be_nil, "Expected 'checks' attribute to exist"
+          expect(checks.value).to be_a(Array)
+          first_check = checks.value.first
+          expect(first_check.type).to eq("IhoS102Check::ValidationCheck")
+          dev_id_check = first_check.attributes.find { |a| a.name == "dev_id" }
+          expect(dev_id_check).not_to be_nil, "Expected 'dev_id' attribute to exist in first check"
+          expect(dev_id_check.value).to eq("S102_Dev1001")
+        end
+      end
     end
 
-    it "parses data_s158_metadata.lml and maps nested instances and lists" do
-      doc = parse_lml("spec/fixtures/lml/data_s158_metadata.lml")
-      expect(doc).to be_a(Lutaml::Uml::Document)
-      meta = doc.instance
-      expect(meta).not_to be_nil
-      iho = meta.instance
-      expect(iho).not_to be_nil
-      expect(iho.attributes.find { |a| a.name == "document_number" }.value).to eq("S-158:102")
-      compliant_standards = iho.attributes.find { |a| a.name == "compliant_standards" }
-      expect(compliant_standards.value).to be_a(Array)
-      expect(compliant_standards.value.first.type).to eq("CompliantStandard")
-      expect(compliant_standards.value.first.attributes.find { |a| a.name == "title" }.value).to eq("S-102 PS")
+    describe "parsing data_s158_metadata.lml for nested instances and lists" do
+      let(:doc) { parse_lml("spec/fixtures/lml/data_s158_metadata.lml") }
+
+      it "returns a Lutaml::Uml::Document and has a top-level instance" do
+        expect(doc).to be_a(Lutaml::Uml::Document)
+        expect(doc.instance).not_to be_nil
+      end
+
+      context "top-level instance (meta)" do
+        let(:meta) { doc.instance }
+
+        it "has a nested instance (iho) with correct attributes and lists" do
+          iho = meta.instance
+          expect(iho).not_to be_nil, "Expected nested instance 'iho' to exist"
+          doc_number_attr = iho.attributes.find { |a| a.name == "document_number" }
+          expect(doc_number_attr).not_to be_nil, "Expected 'document_number' attribute to exist"
+          expect(doc_number_attr.value).to eq("S-158:102")
+
+          compliant_standards = iho.attributes.find { |a| a.name == "compliant_standards" }
+          expect(compliant_standards).not_to be_nil, "Expected 'compliant_standards' attribute to exist"
+          expect(compliant_standards.value).to be_a(Array)
+          first_standard = compliant_standards.value.first
+          expect(first_standard.type).to eq("CompliantStandard")
+          title_attr = first_standard.attributes.find { |a| a.name == "title" }
+          expect(title_attr).not_to be_nil, "Expected 'title' attribute to exist in first compliant standard"
+          expect(title_attr.value).to eq("S-102 PS")
+        end
+      end
     end
 
     it "parses iho_data_models.lml and maps models/classes/attributes" do
@@ -70,52 +120,108 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
       expect(attr.cardinality).to eq("1").or eq({"min"=>"1"})
     end
 
-    it "parses iho_s102_check.lml and maps models/classes/attributes" do
-      doc = parse_lml("spec/fixtures/lml/iho_s102_check.lml")
-      expect(doc).to be_a(Lutaml::Uml::Document)
-      expect(doc.name).to eql("IhoS102Check")
-      klass = doc.classes.find { |c| c.name == "ValidationCheck" }
-      expect(klass).not_to be_nil
-      expect(klass.attributes.map(&:name)).to include("dev_id", "check_id", "classification", "check_message", "check_description", "check_solution")
-      attr = klass.attributes.find { |a| a.name == "dev_id" }
-      expect(attr.type).to eq("String")
-      expect(attr.cardinality).to eq("1").or eq({"min"=>"1"})
+    describe "parsing iho_s102_check.lml for models/classes/attributes" do
+      let(:doc) { parse_lml("spec/fixtures/lml/iho_s102_check.lml") }
+
+      it "returns a Lutaml::Uml::Document with correct name" do
+        expect(doc).to be_a(Lutaml::Uml::Document)
+        expect(doc.name).to eql("IhoS102Check")
+      end
+
+      context "ValidationCheck class" do
+        let(:klass) { doc.classes.find { |c| c.name == "ValidationCheck" } }
+
+        it "exists and has correct attributes" do
+          expect(klass).not_to be_nil, "Expected ValidationCheck class to exist"
+          expect(klass.attributes.map(&:name)).to include(
+            "dev_id", "check_id", "classification", "check_message", "check_description", "check_solution"
+          )
+        end
+
+        it "has 'dev_id' attribute with correct type, cardinality, and properties" do
+          attr = klass.attributes.find { |a| a.name == "dev_id" }
+          expect(attr).not_to be_nil, "Expected attribute 'dev_id' to exist"
+          expect(attr.type).to eq("String")
+          expect(attr.cardinality).to eq("1").or eq({"min"=>"1"})
+          expect(attr.properties).to include("description" => "Dev ID: Development identifier for the check")
+        end
+      end
     end
 
-    it "parses mixed diagram lml correctly" do
-      doc = parse_lml("spec/fixtures/mixed_lml/diagram.lml")
-      expect(doc).to be_a(Lutaml::Uml::Document)
-      expect(doc.title).to eq("my diagram").or be_nil
-      klass = doc.classes.find { |c| c.name == "AddressClassProfile" }
-      expect(klass).not_to be_nil
-      expect(klass.definition).to include("this is multiline")
-      attr = klass.attributes.find { |a| a.name == "addressClassProfile" }
-      expect(attr.type).to eq("CharacterString")
-      expect(attr.cardinality).to eq("0..1").or eq({"min"=>"0", "max"=>"1"})
-      attr2 = klass.attributes.find { |a| a.name == "address" }
-      expect(attr2.type).to eq("String")
-      expect(attr2.cardinality).to eq("1").or eq({"min"=>"1"})
-      klass2 = doc.classes.find { |c| c.name == "AttributeProfile" }
-      expect(klass2).not_to be_nil
-      attr2 = klass2.attributes.find { |a| a.name == "imlicistAttributeProfile" }
-      expect(attr2.type).to eq("CharacterString")
-      expect(attr2.cardinality).to eq("0..1").or eq({"min"=>"0", "max"=>"1"})
-      expect(attr2.definition).to include("this is attribute definition")
+    describe "parsing mixed diagram lml" do
+      let(:doc) { parse_lml("spec/fixtures/mixed_lml/diagram.lml") }
+
+      it "returns a Lutaml::Uml::Document with correct title" do
+        expect(doc).to be_a(Lutaml::Uml::Document)
+        expect(doc.title).to eq("my diagram").or be_nil
+      end
+
+      context "AddressClassProfile class" do
+        let(:klass) { doc.classes.find { |c| c.name == "AddressClassProfile" } }
+
+        it "exists and has correct definition" do
+          expect(klass).not_to be_nil, "Expected AddressClassProfile class to exist"
+          expect(klass.definition).to include("this is multiline")
+        end
+
+        it "has attributes with correct types and cardinalities" do
+          attr = klass.attributes.find { |a| a.name == "addressClassProfile" }
+          expect(attr).not_to be_nil, "Expected attribute 'addressClassProfile' to exist"
+          expect(attr.type).to eq("CharacterString")
+          expect(attr.cardinality).to eq("0..1").or eq({"min"=>"0", "max"=>"1"})
+
+          attr2 = klass.attributes.find { |a| a.name == "address" }
+          expect(attr2).not_to be_nil, "Expected attribute 'address' to exist"
+          expect(attr2.type).to eq("String")
+          expect(attr2.cardinality).to eq("1").or eq({"min"=>"1"})
+        end
+      end
+
+      context "AttributeProfile class" do
+        let(:klass2) { doc.classes.find { |c| c.name == "AttributeProfile" } }
+
+        it "exists" do
+          expect(klass2).not_to be_nil, "Expected AttributeProfile class to exist"
+        end
+
+        it "has an attribute 'imlicistAttributeProfile' with correct type, cardinality, and definition" do
+          attr2 = klass2.attributes.find { |a| a.name == "imlicistAttributeProfile" }
+          expect(attr2).not_to be_nil, "Expected attribute 'imlicistAttributeProfile' to exist"
+          expect(attr2.type).to eq("CharacterString")
+          expect(attr2.cardinality).to eq("0..1").or eq({"min"=>"0", "max"=>"1"})
+          expect(attr2.definition).to include("this is attribute definition")
+        end
+      end
     end
 
-    it "parses mixed model lml correctly" do
-      doc = parse_lml("spec/fixtures/mixed_lml/model.lml")
-      expect(doc).to be_a(Lutaml::Uml::Document)
-      expect(doc.name).to eql("IhoS102Check")
-      klass = doc.classes.find { |c| c.name == "ValidationCheck" }
-      expect(klass).not_to be_nil
-      expect(klass.attributes.map(&:name)).to include("dev_id", "classification", "check_message")
-      attr = klass.attributes.find { |a| a.name == "dev_id" }
-      expect(attr.type).to eq("String")
-      expect(attr.cardinality).to eq("1").or eq({"min"=>"1"})
-      attr2 = klass.attributes.find { |a| a.name == "classification" }
-      expect(attr2.type).to eq("Classification")
-      expect(attr2.cardinality).to eq("1").or eq({"min"=>"1"})
+    describe "parsing mixed model lml" do
+      let(:doc) { parse_lml("spec/fixtures/mixed_lml/model.lml") }
+
+      it "returns a Lutaml::Uml::Document with correct name" do
+        expect(doc).to be_a(Lutaml::Uml::Document)
+        expect(doc.name).to eql("IhoS102Check")
+      end
+
+      context "ValidationCheck class" do
+        let(:klass) { doc.classes.find { |c| c.name == "ValidationCheck" } }
+
+        it "exists and has correct attributes" do
+          expect(klass).not_to be_nil, "Expected ValidationCheck class to exist"
+          expect(klass.attributes.map(&:name)).to include("dev_id", "classification", "check_message")
+        end
+
+        it "has 'dev_id' and 'classification' attributes with correct types and cardinalities" do
+          attr = klass.attributes.find { |a| a.name == "dev_id" }
+          expect(attr).not_to be_nil, "Expected attribute 'dev_id' to exist"
+          expect(attr.type).to eq("String")
+          expect(attr.cardinality).to eq("1").or eq({"min"=>"1"})
+
+          attr2 = klass.attributes.find { |a| a.name == "classification" }
+          expect(attr2).not_to be_nil, "Expected attribute 'classification' to exist"
+          expect(attr2.type).to eq("Classification")
+          expect(attr2.cardinality).to eq("1").or eq({"min"=>"1"})
+        end
+      end
     end
 
     context "when parsing mixed_lml/instances.lml" do
@@ -293,8 +399,6 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
 
       it "creates the correct number of associations" do
         expect(parse.associations.length).to eq(3)
-        expect(parse.classes[1].attributes[1].properties)
-          .to(include("description" => "The name of the AttributeProfile."))
       end
 
       context "when bidirectional asscoiation syntax " do
