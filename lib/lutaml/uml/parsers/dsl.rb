@@ -585,8 +585,12 @@ module Lutaml
         rule(:models) do
           kw_models >> whitespace? >>
             variable.as(:name) >> whitespace? >> str("{") >>
-            class_definition.repeat.as(:classes) >> whitespace? >>
+            model_body.repeat.as(:members) >>
             str("}") >> whitespace?
+        end
+
+        rule(:model_body) do
+          (class_definition.as(:classes) | enum_definition.as(:enums)) >> whitespace?
         end
 
         # === Collection block inside instances ===

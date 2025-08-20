@@ -33,7 +33,7 @@ module Lutaml
         file_list.map { |file| Lutaml::XMI::Parsers::XML.parse(file) }
       when "xml"
         file_list.map { |file| Lutaml::Xml::Parsers::Xml.parse(file) }
-      when "lutaml"
+      when "lutaml", "lml"
         file_list.map { |file| Lutaml::Uml::Parsers::Dsl.parse(file) }
       when "yml"
         file_list.map { |file| Lutaml::Uml::Parsers::Yaml.parse(file.path) }

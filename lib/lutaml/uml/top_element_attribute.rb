@@ -77,6 +77,12 @@ module Lutaml
       def extended=(attribute)
         @extended = attribute
       end
+
+      def attributes=(values)
+        @attributes = (values.is_a?(Array) ? values : [values]).map do |attr|
+          self.class.new(attr)
+        end
+      end
     end
   end
 end
