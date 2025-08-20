@@ -46,7 +46,7 @@ module Lutaml
       end
 
       def subtype_of
-        find_subtype_of(@model.id)
+        find_subtype_of_from_owned_attribute_type(@model.id)
       end
     end
   end
