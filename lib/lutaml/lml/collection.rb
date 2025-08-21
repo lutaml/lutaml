@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Lutaml
-  module Uml
+  module Lml
     class Collection
       attr_accessor :name, :includes, :validations
 

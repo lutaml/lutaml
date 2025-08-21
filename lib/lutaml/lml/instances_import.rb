@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Lutaml
-  module Uml
+  module Lml
     class InstancesImport
       attr_accessor :format_type, :file, :attributes
 

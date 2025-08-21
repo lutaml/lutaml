@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Lutaml
-  module Uml
+  module Lml
     class InstanceCollection
       attr_accessor :instances, :imports, :exports, :collections
 

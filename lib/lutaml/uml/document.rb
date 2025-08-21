@@ -1,11 +1,6 @@
 # frozen_string_literal: true
 
 require "lutaml/uml/class"
-require "lutaml/uml/collection"
-require "lutaml/uml/instance"
-require "lutaml/uml/instance_collection"
-require "lutaml/uml/instances_import"
-require "lutaml/uml/instances_export"
 require "lutaml/uml/data_type"
 require "lutaml/uml/enum"
 require "lutaml/uml/diagram"
@@ -24,8 +19,7 @@ module Lutaml
                     :groups,
                     :fidelity,
                     :fontname,
-                    :comments,
-                    :instances
+                    :comments
 
       # rubocop:disable Rails/ActiveRecordAliases
       def initialize(attributes = {})
@@ -33,20 +27,8 @@ module Lutaml
       end
 
       # rubocop:enable Rails/ActiveRecordAliases
-      def requires=(value)
-        @requires = value.to_a.map { |attributes| attributes.dig(:require, :string) }
-      end
-
       def classes=(value)
         @classes = value.to_a.map { |attributes| Class.new(attributes) }
-      end
-
-      def instance=(value)
-        @instance = Instance.new(value)
-      end
-
-      def instances=(value)
-        @instances = InstanceCollection.new(value)
       end
 
       def data_types=(value)
@@ -73,36 +55,28 @@ module Lutaml
         end
       end
 
-      def requires
-        @requires ||= []
-      end
-
       def classes
-        @classes ||= []
-      end
-
-      def instance
-        @instance ||= []
+        @classes || []
       end
 
       def enums
-        @enums ||= []
+        @enums || []
       end
 
       def data_types
-        @data_types ||= []
+        @data_types || []
       end
 
       def packages
-        @packages ||= []
+        @packages || []
       end
 
       def primitives
-        @primitives ||= []
+        @primitives || []
       end
 
       def associations
-        @associations ||= []
+        @associations || []
       end
     end
   end
