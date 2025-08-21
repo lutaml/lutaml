@@ -2,32 +2,43 @@
 
 module Lutaml
   module Uml
-    class TopElementAttribute
-      include HasAttributes
-      include HasMembers
+    class TopElementAttribute < Lutaml::Model::Serializable
+      attribute :name, :string
+      attribute :visibility, :string, default: "public"
+      attribute :type, :string
+      attribute :id, :string
+      attribute :xmi_id, :string
+      attribute :contain, :string
+      attribute :static, :string
+      attribute :cardinality, Cardinality
+      attribute :keyword, :string
+      attribute :is_derived, :boolean, default: false
 
-      attr_reader :definition
-      attr_accessor :name,
-                    :visibility,
-                    :type,
-                    :id,
-                    :xmi_id,
-                    :contain,
-                    :static,
-                    :cardinality,
-                    :keyword,
-                    :is_derived
+      attribute :definition, :string
 
-      # rubocop:disable Rails/ActiveRecordAliases
-      def initialize(attributes = {})
-        @visibility = "public"
-        update_attributes(attributes)
+      yaml do
+        map "name", to: :name
+        map "visibility", to: :visibility
+        map "type", to: :type
+        map "id", to: :id
+        map "xmi_id", to: :xmi_id
+        map "contain", to: :contain
+        map "static", to: :static
+        map "cardinality", to: :cardinality
+        map "keyword", to: :keyword
+        map "is_derived", to: :is_derived
+
+        map "definition", to: :definition, with: {
+          to: :definition_to_yaml, from: :definition_from_yaml
+        }
       end
-      # rubocop:enable Rails/ActiveRecordAliases
 
-      def definition=(value)
-        @definition = value
-          .to_s
+      def definition_to_yaml(model, doc)
+        doc["definition"] = model.definition if model.definition
+      end
+
+      def definition_from_yaml(model, value)
+        model.definition = value.to_s
           .gsub(/\\}/, "}")
           .gsub(/\\{/, "{")
           .split("\n")

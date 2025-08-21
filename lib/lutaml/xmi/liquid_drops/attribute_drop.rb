@@ -55,10 +55,21 @@ module Lutaml
         end
       end
 
+      def association_connector
+        connector = fetch_connector(@model.association)
+        if connector
+          ::Lutaml::XMI::ConnectorDrop.new(connector, @options)
+        end
+      end
+
       def type_ns
         if @options[:with_assoc] && @model.association
           get_ns_by_xmi_id(xmi_id)
         end
+      end
+
+      def stereotype
+        doc_node_attribute_value(@uml_type_idref, "stereotype")
       end
     end
   end

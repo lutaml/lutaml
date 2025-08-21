@@ -2,24 +2,28 @@
 
 module Lutaml
   module Uml
-    class Value
-      include HasAttributes
-      include HasMembers
+    class Value < Lutaml::Model::Serializable
+      attribute :definition, :string
+      attribute :name, :string
+      attribute :id, :string
+      attribute :type, :string
 
-      attr_reader :definition
-      attr_accessor :name,
-                    :id,
-                    :type
+      yaml do
+        map "name", to: :name
+        map "id", to: :id
+        map "type", to: :type
 
-      # rubocop:disable Rails/ActiveRecordAliases
-      def initialize(attributes = {})
-        update_attributes(attributes)
+        map "definition", to: :definition, with: {
+          to: :definition_to_yaml, from: :definition_from_yaml
+        }
       end
-      # rubocop:enable Rails/ActiveRecordAliases
 
-      def definition=(value)
-        @definition = value
-          .to_s
+      def definition_to_yaml(model, doc)
+        doc["definition"] = model.definition if model.definition
+      end
+
+      def definition_from_yaml(model, value)
+        model.definition = value.to_s
           .gsub(/\\}/, "}")
           .gsub(/\\{/, "{")
           .split("\n")

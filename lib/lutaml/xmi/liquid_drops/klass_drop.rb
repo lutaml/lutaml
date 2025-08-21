@@ -24,6 +24,15 @@ module Lutaml
           @matched_element = @xmi_root_model&.extension&.elements&.element&.find do |e| # rubocop:disable Layout/LineLength,Style/SafeNavigationChainLength
             e.idref == @model.id
           end
+
+          @clients_dependencies = select_dependencies_by_supplier(@model.id)
+          @suppliers_dependencies = select_dependencies_by_client(@model.id)
+
+          @inheritance_ids = @matched_element&.links&.map do |link|
+            link.generalization.select do |gen|
+              gen.end == @model.id
+            end.map(&:id)
+          end&.flatten&.compact || []
         end
 
         if guidance
@@ -69,17 +78,42 @@ module Lutaml
         end.compact
       end
 
-      def associations # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity,Metrics/MethodLength
-        return if !@matched_element ||
-          !@matched_element.links ||
-          (
-            @matched_element.links.association.empty? &&
-            @matched_element.links.generalization.empty?
-          )
+      def owned_attributes
+        @owned_attributes.map do |owned_attr|
+          ::Lutaml::XMI::AttributeDrop.new(owned_attr, @options)
+        end.compact
+      end
 
-        links = @matched_element.links.association +
-          @matched_element.links.generalization
-        links.map do |assoc|
+      def suppliers_dependencies
+        @suppliers_dependencies.map do |dependency|
+          ::Lutaml::XMI::DependencyDrop.new(dependency, @options)
+        end.compact
+      end
+
+      def clients_dependencies
+        @clients_dependencies.map do |dependency|
+          ::Lutaml::XMI::DependencyDrop.new(dependency, @options)
+        end.compact
+      end
+
+      def inheritances
+        @inheritance_ids.map do |inheritance_id|
+          # ::Lutaml::XMI::InheritanceDrop.new(dependency, @options)
+          connector = fetch_connector(inheritance_id)
+          ::Lutaml::XMI::ConnectorDrop.new(connector, @options)
+        end.compact
+      end
+
+      def associations # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity,Metrics/MethodLength
+        return if !@matched_element || !@matched_element.links
+
+        links = []
+        @matched_element.links.each do |link|
+          links << link.association if link.association.any?
+          links << link.generalization if link.generalization.any?
+        end
+
+        links.flatten.compact.map do |assoc|
           link_member = assoc.start == xmi_id ? "end" : "start"
           link_owner_name = link_member == "start" ? "end" : "start"
 
@@ -143,6 +177,17 @@ module Lutaml
             generalization, @klass_guidance, @options
           )
         end
+      end
+
+      def upper_packaged_element
+        if @options[:with_gen]
+          find_upper_level_packaged_element(@model.id)
+        end
+      end
+
+      def subtype_of
+        find_subtype_of_from_generalization(@model.id) ||
+          find_subtype_of_from_owned_attribute_type(@model.id)
       end
 
       def has_guidance?

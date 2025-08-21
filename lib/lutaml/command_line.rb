@@ -52,7 +52,7 @@ module Lutaml
 
     def formatter=(value)
       value = value.to_s.strip.downcase.to_sym
-      value = Lutaml::Uml::Formatter.find_by(name: value)
+      value = Lutaml::Formatter.find_by(name: value)
       raise Error, "Formatter not found: #{value}" if value.nil?
 
       @formatter = value

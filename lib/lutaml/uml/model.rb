@@ -3,10 +3,10 @@
 module Lutaml
   module Uml
     class Model < Package
-      attr_accessor :viewpoint
+      attribute :viewpoint, :string
 
-      def initialize # rubocop:disable Lint/MissingSuper
-        @contents = []
+      yaml do
+        map "viewpoint", to: :viewpoint
       end
     end
   end

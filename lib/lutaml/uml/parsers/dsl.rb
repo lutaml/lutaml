@@ -5,6 +5,7 @@ require "parslet/convenience"
 require "lutaml/uml/parsers/dsl_preprocessor"
 require "lutaml/uml/parsers/dsl_transform"
 require "lutaml/uml/node/document"
+require "lutaml/converter/dsl_to_uml"
 
 module Lutaml
   module Uml
@@ -13,6 +14,8 @@ module Lutaml
 
       # Class for parsing LutaML dsl into Lutaml::Uml::Document
       class Dsl < Parslet::Parser
+        include Lutaml::Converter::DslToUml
+
         # @param [String] io - LutaML string representation
         #        [Hash] options - options for parsing
         #
@@ -27,9 +30,8 @@ module Lutaml
           # Parslet::ErrorReporter::Deepest allows more
           # detailed display of error
           reporter = Parslet::ErrorReporter::Deepest.new
-
-          parsed = super(data, reporter: reporter)
-          ::Lutaml::Uml::Document.new(DslTransform.new.apply(parsed))
+          hash = DslTransform.new.apply(super(data, reporter: reporter))
+          create_uml_document(hash)
         rescue Parslet::ParseFailed => e
           raise(ParsingError,
                 "#{e.message}\ncause: #{e.parse_failure_cause.ascii_tree}")

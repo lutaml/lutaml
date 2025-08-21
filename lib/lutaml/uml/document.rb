@@ -1,82 +1,55 @@
 # frozen_string_literal: true
 
-require "lutaml/uml/class"
-require "lutaml/uml/data_type"
-require "lutaml/uml/enum"
-require "lutaml/uml/diagram"
-require "lutaml/uml/package"
-require "lutaml/uml/primitive_type"
-
 module Lutaml
   module Uml
-    class Document
-      include HasAttributes
-      include HasMembers
+    class Document < Lutaml::Model::Serializable
+      attribute :name, :string
+      attribute :title, :string
+      attribute :caption, :string
+      attribute :groups, Group, collection: true
+      attribute :fidelity, Fidelity
+      attribute :fontname, :string
+      attribute :comments, :string, collection: true
 
-      attr_accessor :name,
-                    :title,
-                    :caption,
-                    :groups,
-                    :fidelity,
-                    :fontname,
-                    :comments
+      attribute :classes, Class, collection: true, default: -> { [] }
+      attribute :data_types, DataType, collection: true, default: -> { [] }
+      attribute :enums, Enum, collection: true, default: -> { [] }
+      attribute :packages, Package, collection: true, default: -> { [] }
+      attribute :primitives, PrimitiveType, collection: true, default: -> { [] }
+      attribute :associations, Association, collection: true, default: -> { [] }
 
-      # rubocop:disable Rails/ActiveRecordAliases
-      def initialize(attributes = {})
-        update_attributes(attributes)
+      yaml do
+        map "name", to: :name
+        map "title", to: :title
+        map "caption", to: :caption
+        map "groups", to: :groups
+        map "fidelity", to: :fidelity
+        map "fontname", to: :fontname
+        map "comments", to: :comments
+
+        map "classes", to: :classes
+        map "data_types", to: :data_types
+        map "enums", to: :enums
+        map "packages", to: :packages
+        map "primitives", to: :primitives
+
+        map "associations", to: :associations, with: {
+          to: :associations_to_yaml, from: :associations_from_yaml
+        }
       end
 
-      # rubocop:enable Rails/ActiveRecordAliases
-      def classes=(value)
-        @classes = value.to_a.map { |attributes| Class.new(attributes) }
+      def associations_to_yaml(model, doc)
+        associations = model.associations.map(&:to_hash)
+        doc["associations"] = associations unless associations.empty?
       end
 
-      def data_types=(value)
-        @data_types = value.to_a.map { |attributes| DataType.new(attributes) }
-      end
-
-      def enums=(value)
-        @enums = value.to_a.map { |attributes| Enum.new(attributes) }
-      end
-
-      def packages=(value)
-        @packages = value.to_a.map { |attributes| Package.new(attributes) }
-      end
-
-      def primitives=(value)
-        @primitives = value.to_a.map do |attributes|
-          PrimitiveType.new(attributes)
+      def associations_from_yaml(model, values)
+        associations = values.map do |value|
+          value["owner_end"] = model.name if value["owner_end"].nil?
+          Association.from_yaml(value.to_yaml)
         end
-      end
 
-      def associations=(value)
-        @associations = value.to_a.map do |attributes|
-          Association.new(attributes)
-        end
-      end
-
-      def classes
-        @classes || []
-      end
-
-      def enums
-        @enums || []
-      end
-
-      def data_types
-        @data_types || []
-      end
-
-      def packages
-        @packages || []
-      end
-
-      def primitives
-        @primitives || []
-      end
-
-      def associations
-        @associations || []
+        model.associations = associations
       end
     end
   end

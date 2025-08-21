@@ -6,7 +6,7 @@ module Lutaml
   module Uml
     module Node
       class Base
-        include HasAttributes
+        include ::Lutaml::Uml::HasAttributes
 
         # rubocop:disable Rails/ActiveRecordAliases
         def initialize(attributes = {})

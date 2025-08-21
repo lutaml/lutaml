@@ -3,41 +3,32 @@
 module Lutaml
   module Uml
     class Association < TopElement
-      include HasMembers
+      attribute :owner_end, :string
+      attribute :owner_end_attribute_name, :string
+      attribute :owner_end_cardinality, Cardinality
+      attribute :owner_end_type, :string
+      attribute :owner_end_xmi_id, :string
+      attribute :member_end, :string
+      attribute :member_end_attribute_name, :string
+      attribute :member_end_xmi_id, :string
+      attribute :member_end_cardinality, Cardinality
+      attribute :member_end_type, :string
+      attribute :static, :string
+      attribute :action, Action
 
-      attr_accessor :owner_end,
-                    :owner_end_attribute_name,
-                    :owner_end_cardinality,
-                    :owner_end_type,
-                    :owner_end_xmi_id,
-                    :member_end,
-                    :member_end_attribute_name,
-                    :member_end_xmi_id,
-                    :member_end_cardinality,
-                    :member_end_type,
-                    :static,
-                    :action
-
-      # TODO: move to Parslet::Transform
-      def members=(value) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
-        value.group_by { |member| member.keys.first }
-          .each do |(type, group)|
-            if %w[owner_end member_end].include?(type) # rubocop:disable Performance/CollectionLiteralInLoop
-              group.each do |member|
-                member.each_pair do |key, member_value|
-                  public_send(:"#{association_type(key)}=", member_value)
-                end
-              end
-              next
-            end
-            attribute_value = group.map(&:values).flatten
-            if attribute_value.length == 1 && !attribute_value.first.is_a?(Hash)
-              next public_send(:"#{association_type(type)}=",
-                               attribute_value.first)
-            end
-
-            public_send(:"#{association_type(type)}=", attribute_value)
-          end
+      yaml do
+        map "owner_end", to: :owner_end
+        map "owner_end_attribute_name", to: :owner_end_attribute_name
+        map "owner_end_cardinality", to: :owner_end_cardinality
+        map "owner_end_type", to: :owner_end_type
+        map "owner_end_xmi_id", to: :owner_end_xmi_id
+        map "member_end", to: :member_end
+        map "member_end_attribute_name", to: :member_end_attribute_name
+        map "member_end_xmi_id", to: :member_end_xmi_id
+        map "member_end_cardinality", to: :member_end_cardinality
+        map "member_end_type", to: :member_end_type
+        map "static", to: :static
+        map "action", to: :action
       end
     end
   end

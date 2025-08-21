@@ -148,7 +148,7 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
         expect(root_package.diagrams.map(&:name))
           .to(eq(["Starter Class Diagram"]))
         expect(root_package.diagrams.map(&:definition))
-          .to(eq(["aada"]))
+          .to(eq(["aada\n"]))
       end
     end
   end
@@ -365,21 +365,33 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
       end
 
       it ".serialize_owned_type" do
-        link = @xmi_root_model.extension.elements.element[1].links
-          .association.first
+        assoc_element = nil
+        @xmi_root_model.extension.elements.element.each do |e|
+          e.links&.each do |link|
+            if assoc_element.nil? && link.association.any?
+              assoc_element = link.association.first
+            end
+          end
+        end
         val = new_parser.send(
           :serialize_owned_type,
-          "EAID_D832D6D8_0518_43f7_9166_7A4E3E8605AA", link, "start"
+          "EAID_D832D6D8_0518_43f7_9166_7A4E3E8605AA", assoc_element, "start"
         )
         expect(val).to eq("RequirementType")
       end
 
       it ".serialize_member_end" do
-        link = @xmi_root_model.extension.elements.element[1].links
-          .association.first
+        assoc_element = nil
+        @xmi_root_model.extension.elements.element.each do |e|
+          e.links&.each do |link|
+            if assoc_element.nil? && link.association.any?
+              assoc_element = link.association.first
+            end
+          end
+        end
         val = new_parser.send(
           :serialize_member_end,
-          "EAID_D832D6D8_0518_43f7_9166_7A4E3E8605AA", link
+          "EAID_D832D6D8_0518_43f7_9166_7A4E3E8605AA", assoc_element
         )
         expect(val).to eq([
                             "RequirementType",
@@ -389,11 +401,17 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
       end
 
       it ".serialize_member_type" do
-        link = @xmi_root_model.extension.elements.element[1].links
-          .association.first
+        assoc_element = nil
+        @xmi_root_model.extension.elements.element.each do |e|
+          e.links&.each do |link|
+            if assoc_element.nil? && link.association.any?
+              assoc_element = link.association.first
+            end
+          end
+        end
         val = new_parser.send(
           :serialize_member_type,
-          "EAID_D832D6D8_0518_43f7_9166_7A4E3E8605AA", link, "start"
+          "EAID_D832D6D8_0518_43f7_9166_7A4E3E8605AA", assoc_element, "start"
         )
         expect(val).to eq([
                             "RequirementType",
@@ -405,20 +423,33 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
       end
 
       it ".fetch_assoc_connector" do
-        link = @xmi_root_model.extension.elements.element[1].links
-          .association.first
-        val = new_parser.send(:fetch_assoc_connector, link.id, "target")
+        assoc_element = nil
+        @xmi_root_model.extension.elements.element.each do |e|
+          e.links&.each do |link|
+            if assoc_element.nil? && link.association.any?
+              assoc_element = link.association.first
+            end
+          end
+        end
+
+        val = new_parser.send(:fetch_assoc_connector, assoc_element.id,
+                              "target")
         expect(val).to eq([{ max: nil, min: nil }, "BibliographicItem"])
       end
 
       it ".generalization_association if link.start == owner_xmi_id" do
-        link_element = @xmi_root_model.extension.elements.element.find do |e|
-          !e.links.nil? && !e.links.generalization.empty?
+        gen_element = nil
+        @xmi_root_model.extension.elements.element.each do |e|
+          e.links&.each do |link|
+            if gen_element.nil? && link.generalization.any?
+              gen_element = link.generalization.first
+            end
+          end
         end
-        link = link_element.links.generalization.first
+
         val = new_parser.send(
           :generalization_association,
-          "EAID_82354CDC_EACB_402f_8C2B_FD627B7416E7", link
+          "EAID_82354CDC_EACB_402f_8C2B_FD627B7416E7", gen_element
         )
         expect(val).to eq(
           [
@@ -429,13 +460,18 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
       end
 
       it ".generalization_association if link.start != owner_xmi_id" do
-        link_element = @xmi_root_model.extension.elements.element.find do |e|
-          !e.links.nil? && !e.links.generalization.empty?
+        gen_element = nil
+        @xmi_root_model.extension.elements.element.each do |e|
+          e.links&.each do |link|
+            if gen_element.nil? && link.generalization.any?
+              gen_element = link.generalization.first
+            end
+          end
         end
-        link = link_element.links.generalization.first
+
         val = new_parser.send(
           :generalization_association,
-          "EAID_C1155D80_E68B_46d5_ADE5_F5639486163D", link
+          "EAID_C1155D80_E68B_46d5_ADE5_F5639486163D", gen_element
         )
         expect(val).to eq([
                             "Permission",

@@ -3,7 +3,6 @@
 ##
 ## Behaviour metamodel
 ##
-
 module Lutaml
   module Uml
     class StateMachine < Behavior

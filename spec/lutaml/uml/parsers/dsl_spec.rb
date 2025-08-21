@@ -282,7 +282,7 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
   describe ".parse" do
     subject(:parse) { described_class.parse(content) }
     subject(:format_parsed_document) do
-      Lutaml::Uml::Formatter::Graphviz.new.format_document(parse)
+      Lutaml::Formatter::Graphviz.new.format_document(parse)
     end
 
     shared_examples "the correct graphviz formatting" do
@@ -415,8 +415,8 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
           expect(association.member_end).to(eq("AttributeProfile"))
           expect(association.member_end_attribute_name)
             .to(eq("attributeProfile"))
-          expect(association.member_end_cardinality).to(eq("min" => "0",
-                                                           "max" => "*"))
+          expect(association.member_end_cardinality.min).to(eq("0"))
+          expect(association.member_end_cardinality.max).to(eq("*"))
         end
       end
 
@@ -462,7 +462,7 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
 
       it "Generates the correct nodes for enums" do
         enums = parse.enums
-        expect(by_name(enums, "MyEnum").attributes).to be_nil
+        expect(by_name(enums, "MyEnum").attributes).to be_empty
         expect(by_name(enums, "AddressClassProfile")
                 .attributes.length).to eq(1)
         expect(by_name(enums, "Profile")

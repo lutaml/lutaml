@@ -3,24 +3,22 @@
 module Lutaml
   module Uml
     class Property < TopElement
-      attr_accessor :type, # rubocop:disable Naming/MethodName
-                    :aggregation,
-                    :association,
-                    :is_derived,
-                    :lowerValue,
-                    :upperValue
+      attribute :type, :string
+      attribute :aggregation, :string
+      attribute :association, :string
+      attribute :is_derived, :boolean, default: false
+      attribute :visibility, :string, default: "public"
+      attribute :lowerValue, :string, default: "1"
+      attribute :upperValue, :string, default: "1"
 
-      def initialize # rubocop:disable Lint/MissingSuper
-        @name = nil
-        @xmi_id = nil
-        @xmi_uuid = nil
-        @aggregation = nil
-        @association = nil
-        @namespace = nil
-        @is_derived = false
-        @visibility = "public"
-        @lowerValue = "1" # rubocop:disable Naming/VariableName
-        @upperValue = "1" # rubocop:disable Naming/VariableName
+      yaml do
+        map "type", to: :type
+        map "aggregation", to: :aggregation
+        map "association", to: :association
+        map "is_derived", to: :is_derived
+        map "visibility", to: :visibility
+        map "lowerValue", to: :lowerValue
+        map "upperValue", to: :upperValue
       end
     end
   end

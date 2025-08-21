@@ -6,15 +6,12 @@
 module Lutaml
   module Uml
     class Connector < TopElement
-      attr_accessor :kind, :connector_end
+      attribute :kind, :string
+      attribute :connector_end, :string, collection: true, default: -> { [] }
 
-      def initialize # rubocop:disable Lint/MissingSuper
-        @name = nil
-        @xmi_id = nil
-        @xmi_uuid = nil
-        @connector_end = []
-        @namespace = nil
-        @kind = nil
+      yaml do
+        map "kind", to: :kind
+        map "connector_end", to: :connector_end
       end
     end
   end

@@ -37,6 +37,17 @@ module Lutaml
       def stereotype
         doc_node_attribute_value(@model.id, "stereotype")
       end
+
+      # @return name of the upper packaged element
+      def upper_packaged_element
+        if @options[:with_gen]
+          find_upper_level_packaged_element(@model.id)
+        end
+      end
+
+      def subtype_of
+        find_subtype_of_from_owned_attribute_type(@model.id)
+      end
     end
   end
 end

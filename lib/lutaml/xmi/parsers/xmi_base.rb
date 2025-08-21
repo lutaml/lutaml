@@ -297,6 +297,41 @@ module Lutaml
           @upper_level_cache[klass_id]
         end
 
+        def find_subtype_of_from_owned_attribute_type(id) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+          @pkg_elements_owned_attributes ||= all_packaged_elements.map do |e|
+            {
+              name: e.name,
+              idrefs: e&.owned_attribute&.map do |oa|
+                        oa&.uml_type&.idref
+                      end || [],
+            }
+          end
+          result = @pkg_elements_owned_attributes.find do |e|
+            e[:idrefs].include?(id)
+          end
+
+          result[:name] if result
+        end
+
+        def find_subtype_of_from_generalization(id) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+          matched_element = @xmi_root_model.extension.elements.element
+            .find { |e| e.idref == id }
+
+          return if !matched_element || !matched_element.links
+
+          matched_generalization = nil
+          matched_element.links.each do |link|
+            matched_generalization = link&.generalization&.find do |g|
+              g.start == id
+            end
+            break if matched_generalization
+          end
+
+          return if matched_generalization&.end.nil?
+
+          lookup_entity_name(matched_generalization.end)
+        end
+
         # Build cache once for all packaged elements
         def build_upper_level_cache
           @upper_level_cache = {}
@@ -371,7 +406,37 @@ module Lutaml
         # @return [Lutaml::Model::Serializable]
         def find_klass_packaged_element_by_name(name)
           all_packaged_elements.find do |e|
-            e.type?("uml:Class") && e.name == name
+            e.name == name &&
+              (
+                e.type?("uml:Class") ||
+                e.type?("uml:AssociationClass")
+              )
+          end
+        end
+
+        # @param name [String]
+        # @return [Lutaml::Model::Serializable]
+        def find_enum_packaged_element_by_name(name)
+          all_packaged_elements.find do |e|
+            e.name == name && e.type?("uml:Enumeration")
+          end
+        end
+
+        # @param supplier_id [String]
+        # @return [Lutaml::Model::Serializable]
+        def select_dependencies_by_supplier(supplier_id)
+          all_packaged_elements.select do |e|
+            e.supplier == supplier_id &&
+              e.type?("uml:Dependency")
+          end
+        end
+
+        # @param supplier_id [String]
+        # @return [Lutaml::Model::Serializable]
+        def select_dependencies_by_client(client_id)
+          all_packaged_elements.select do |e|
+            e.client == client_id &&
+              e.type?("uml:Dependency")
           end
         end
 
@@ -473,11 +538,14 @@ module Lutaml
           matched_element = @xmi_root_model.extension.elements.element
             .find { |e| e.idref == xmi_id }
 
-          return if !matched_element ||
-            !matched_element.links ||
-            matched_element.links.association.empty?
+          return if !matched_element || !matched_element.links
 
-          matched_element.links.association.map do |assoc|
+          links = []
+          matched_element.links.each do |link|
+            links << link.association if link.association.any?
+          end
+
+          links.flatten.compact.map do |assoc|
             link_member = assoc.start == xmi_id ? "end" : "start"
             linke_owner_name = link_member == "start" ? "end" : "start"
 

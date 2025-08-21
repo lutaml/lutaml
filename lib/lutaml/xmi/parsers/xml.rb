@@ -1,16 +1,18 @@
 require "nokogiri"
 require "htmlentities"
-require "lutaml/uml/has_attributes"
-require "lutaml/uml/document"
 require "lutaml/xmi"
 require "xmi"
 require "lutaml/xmi/parsers/xmi_base"
+require "lutaml/uml"
+require "lutaml/converter/xmi_hash_to_uml"
 
 module Lutaml
   module XMI
     module Parsers
       # Class for parsing .xmi schema files into ::Lutaml::Uml::Document
       class XML
+        include Lutaml::Converter::XmiHashToUml
+
         @id_name_mapping_static = {}
         @xmi_root_model_cache_static = {}
 
@@ -67,6 +69,30 @@ module Lutaml
 
             ret_val
           end
+
+          # @param xmi_path [String] path to xml
+          # @param name [String]
+          # @return [Hash]
+          def serialize_enumeration_by_name( # rubocop:disable Metrics/MethodLength
+            xmi_path, name
+          )
+            # Load from cache or file
+            xml_cache_key = (Digest::SHA256.file xmi_path).hexdigest
+            xmi_model = @xmi_root_model_cache_static[xml_cache_key] ||
+              get_xmi_model(xmi_path)
+            id_name_mapping = @id_name_mapping_static[xml_cache_key]
+
+            instance = new
+            enum = instance.serialize_enumeration_by_name(
+              xmi_model, name, id_name_mapping
+            )
+
+            # Put xmi_model and id_name_mapping to cache
+            @id_name_mapping_static[xml_cache_key] ||= instance.id_name_mapping
+            @xmi_root_model_cache_static[xml_cache_key] ||= xmi_model
+
+            enum
+          end
         end
 
         # @param xmi_model [Lutaml::Model::Serializable]
@@ -74,8 +100,7 @@ module Lutaml
         def parse(xmi_model)
           set_xmi_model(xmi_model)
           serialized_hash = serialize_xmi(xmi_model)
-
-          ::Lutaml::Uml::Document.new(serialized_hash)
+          create_uml_document(serialized_hash)
         end
 
         # @param xmi_model [Lutaml::Model::Serializable]
@@ -122,11 +147,31 @@ module Lutaml
             with_gen: true,
             with_absolute_path: true,
           }
+          puts "Error: Class not found for name: #{name}!" if klass.nil?
           ::Lutaml::XMI::KlassDrop.new(
             klass,
             guidance,
             options,
           )
+        end
+
+        # @param xmi_model [Lutaml::Model::Serializable]
+        # @param name [String]
+        # @param id_name_mapping [Hash]
+        # @return [Hash]
+        def serialize_enumeration_by_name( # rubocop:disable Metrics/MethodLength
+          xmi_model, name, id_name_mapping = nil
+        )
+          set_xmi_model(xmi_model, id_name_mapping)
+          enum = find_enum_packaged_element_by_name(name)
+          options = {
+            xmi_root_model: @xmi_root_model,
+            id_name_mapping: @id_name_mapping,
+            with_gen: true,
+            with_absolute_path: true,
+          }
+          puts "Error: Enumeration not found for name: #{name}!" if enum.nil?
+          ::Lutaml::XMI::EnumDrop.new(enum, options)
         end
       end
     end
