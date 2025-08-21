@@ -31,10 +31,14 @@ module Lutaml
           # detailed display of error
           reporter = Parslet::ErrorReporter::Deepest.new
           hash = DslTransform.new.apply(super(data, reporter: reporter))
-          create_uml_document(hash)
+          create_document(hash)
         rescue Parslet::ParseFailed => e
           raise(ParsingError,
                 "#{e.message}\ncause: #{e.parse_failure_cause.ascii_tree}")
+        end
+
+        def create_document(hash)
+          create_uml_document(hash)
         end
 
         KEYWORDS = %w[
@@ -679,7 +683,7 @@ module Lutaml
         # === Export block ===
         rule(:export) do
           kw_export >> whitespace? >> str("{") >> whitespace? >>
-            (export_format >> whitespace?).repeat(1).as(:exports) >>
+            (export_format >> whitespace?).repeat.as(:exports) >>
             str("}") >> whitespace?
         end
 
