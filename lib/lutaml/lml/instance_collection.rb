@@ -1,25 +1,17 @@
 # frozen_string_literal: true
 
+require 'lutaml/lml/instance'
+require 'lutaml/lml/instances_import'
+require 'lutaml/lml/instances_export'
+require 'lutaml/lml/collection'
+
 module Lutaml
   module Lml
-    class InstanceCollection
-      attr_accessor :instances, :imports, :exports, :collections
-
-      def initialize(attributes)
-        @instances = []
-
-        attributes.each do |attribute|
-          if attribute.key?(:collection)
-            @collections = Collection.new(attribute[:collection])
-          elsif attribute.key?(:instance)
-            @instances << Instance.new(attribute[:instance])
-          elsif attribute.key?(:imports)
-            @imports = attribute[:imports].map { |import| InstancesImport.new(import) }
-          elsif attribute.key?(:exports)
-            @exports = attribute[:exports].map { |export| InstancesExport.new(export) }
-          end
-        end
-      end
+    class InstanceCollection < Lutaml::Model::Serializable
+      attribute :instances, Instance, collection: true, default: []
+      attribute :imports, InstancesImport, collection: true, default: []
+      attribute :exports, InstancesExport, collection: true, default: []
+      attribute :collections, Collection, default: []
     end
   end
 end

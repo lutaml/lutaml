@@ -1,14 +1,17 @@
 # frozen_string_literal: true
 
+require 'lutaml/lml/top_element_attribute'
+
 module Lutaml
   module Lml
-    class InstancesExport
-      attr_accessor :format_type, :attributes
+    class InstancesExport < Lutaml::Model::Serializable
+      attribute :format_type, :string
+      attribute :attributes, TopElementAttribute
 
-      def initialize(data = {})
-        @format_type = data[:format_type]
-        @attributes = process_attributes(data[:attributes])
-      end
+      # def initialize(data = {})
+      #   @format_type = data[:format_type]
+      #   @attributes = process_attributes(data[:attributes])
+      # end
 
       private
 
