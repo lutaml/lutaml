@@ -7,9 +7,9 @@ module Lutaml
     # Class for parsing LutaML lml into Lutaml::Lml::Document
     class Parser < Uml::Parsers::Dsl
       def create_document(hash)
-        process_instances(hash)
+        process_data(hash)
 
-        create_lml_document(normalize_attributes(hash))
+        create_lml_document(hash)
       end
 
       def create_lml_document(hash)
@@ -119,7 +119,7 @@ module Lutaml
           if model.respond_to?("#{key}=")
             if model.class.attributes[key.to_sym].options[:collection]
               values = model.send(key.to_sym).to_a
-              values << value
+              value.is_a?(Array) ? values.concat(value) : values << value
               model.send("#{key}=", values)
             else
               model.send("#{key}=", value)
@@ -249,38 +249,157 @@ module Lutaml
         hash
       end
 
-      def process_instances(hash)
-        if hash.key?(:instances)
-          complete_hash = {}
-          hash[:instances].each do |value|
-            next unless value.is_a?(Hash)
-
-            if value.key?(:instance)
-              complete_hash[:instances] ||= []
-              complete_hash[:instances] << value[:instance]
-            end
-
-            complete_hash.merge!(value)
-          end
-          hash[:instances] = complete_hash
-        end
-      end
-
-      def normalize_attributes(obj)
+      def process_data(obj)
         case obj
         when Array
-          obj.map { |item| normalize_attributes(item) }
+          obj = obj.map { |item| process_data(item) }
         when Hash
-          obj.transform_values do |v|
-            if obj.keys.include?(:attributes) && v.is_a?(Array) && v.all? { |e| e.is_a?(Hash) && e.keys.size == 1 }
-              # Merge array of single-key hashes into one hash
-              v.reduce({}, :merge)
+          obj.each do |key, value|
+            case key
+            when :requires
+              obj[key] = process_requires(value)
+            when :instances
+              obj[key] = process_instances(value)
+            when :instance
+              obj[key] = process_instance(value)
+            when :attributes
+              obj[key] = process_attributes(value)
             else
-              normalize_attributes(v)
+              obj[key] = process_data(value)
             end
           end
         else
           obj
+        end
+      end
+
+      def process_requires(obj)
+        obj.map { |req| process_value(req).last }
+      end
+
+      def process_instances(obj)
+        return [] unless obj.is_a?(Array)
+
+        obj = obj.each_with_object({}) do |instance, acc|
+          acc[:instances] ||= []
+          if instance.key?(:instance)
+            acc[:instances] << process_instance(instance[:instance])
+          elsif instance.key?(:collections)
+            acc[:collections] = process_collections(instance[:collections])
+          elsif instance.key?(:imports)
+            acc[:imports] = process_imports(instance[:imports])
+          elsif instance.key?(:exports)
+            acc[:exports] = process_exports(instance[:exports])
+          end
+        end
+      end
+
+      def process_instance(hash)
+        hash = hash.each_with_object({}) do |(key, value), result|
+          case key
+          when :instance_type
+            result[:type] = process_value(value).last
+          when :instance
+            result[:instance] = process_instance(value)
+          when :attributes
+            result[:attributes] = process_attributes(value)
+          when :template
+            result[:template] = process_attributes(value[:attributes])
+          else
+            result[key] = process_value(value).last
+          end
+        end
+
+        Instance.new(hash)
+      end
+
+      def process_attributes(obj)
+        case obj
+        when Array
+          if obj.all? { |e| e.is_a?(Hash) && e.keys.size == 1 }
+            hash = {}
+            obj = obj.each do |item|
+              hash[:properties] ||= []
+              if item.key?(:properties)
+                hash[:properties] << process_attributes(item[:properties])
+              else
+                hash.merge!(process_attributes(item))
+              end
+            end
+            hash
+          else
+            obj.map { |item| process_attributes(item) }
+          end
+        when Hash
+          obj[:name] = obj.delete(:key) if obj.key?(:key)
+          obj[:name], obj[:value] = ["Comment", process_value(obj.delete(:comments)).last] if obj.key?(:comments)
+          obj[:type], obj[:value] = process_value(obj[:value]) if obj.key?(:value)
+          obj[:extended] = !!obj.delete(:add) if obj.key?(:add)
+
+          obj[:attributes] = process_attributes(obj[:attributes]) if obj.key?(:attributes)
+          obj[:properties] = process_attributes(obj[:properties]) if obj.key?(:properties)
+
+          obj
+        end
+      end
+
+      def process_collections(obj)
+        obj.each_with_object({}) do |(key, value), result|
+          result[key] = process_value(value).last
+        end
+      end
+
+      def process_imports(obj)
+        obj.map do |export|
+          export.each_with_object({}) do |(key, value), result|
+            if key == :attributes
+              result[key] = process_attributes(value)
+            else
+              result[key] = process_value(value).last
+            end
+          end
+        end
+      end
+
+      def process_exports(obj)
+        obj.map do |export|
+          export.each_with_object({}) do |(key, value), result|
+            if key == :attributes
+              result[key] = process_attributes(value)
+            else
+              result[key] = process_value(value).last
+            end
+          end
+        end
+      end
+
+      def process_value(value)
+        return [] if value.nil?
+
+        if value.is_a?(Hash) && value.key?(:instance)
+          ["Instance", process_instance(value[:instance])]
+        elsif value.is_a?(Hash) && value.key?(:list)
+          ["Array", value[:list].map { |item| process_value(item).last }]
+        elsif value.is_a?(Hash) && value.key?(:string)
+          ["String", value[:string]]
+        elsif value.is_a?(Hash) && value.key?(:boolean)
+          ["Boolean", value[:boolean] == "true"]
+        elsif value.is_a?(Hash) && value.key?(:key_value_map)
+          hv = value[:key_value_map].each_with_object({}) do |kv, h|
+            key, value = kv.values_at(:key, :value)
+            h[key.to_sym] = process_value(value).last
+          end
+          ["Hash", hv]
+        elsif value.is_a?(Hash) && value.key?(:number)
+          ["Number", value[:number].to_i]
+        elsif value.is_a?(Hash) && value.key?(:condition)
+          process_value(value[:condition])
+        elsif value.is_a?(Hash) && value.key?(:require)
+          process_value(value[:require])
+        elsif value.is_a?(Array)
+          ["Array", value.map { |item| process_value(item).last }]
+        else
+          [value.class.to_s, value]
         end
       end
     end
