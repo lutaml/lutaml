@@ -10,6 +10,7 @@ module Lutaml
       attribute :properties, TopElementAttribute, collection: true, default: []
       attribute :value, Lutaml::Lml::AttributeValue
       attribute :attributes, TopElementAttribute, collection: true, default: []
+      attribute :extended, :boolean
 
       def initialize(attributes = {})
         return if attributes.nil?
