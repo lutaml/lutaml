@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require 'pry'
 
 RSpec.describe Lutaml::Lml::Parser do
   describe "LML and LUTAML file parsing and mapping" do
