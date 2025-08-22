@@ -251,18 +251,18 @@ module Lutaml
 
         rule(:keyword_type_argument) do
           (
-            str("type").as(:name) >>
+            str("type") >>
             spaces? >>
-            match["[^\s\n\r]"].repeat(1).as(:value) >>
+            match["[^\s\n\r]"].repeat(1).as(:type) >>
             whitespace?
           )
         end
 
         rule(:keyword_cardinality_argument) do
           (
-            str("cardinality").as(:name) >>
+            str("cardinality") >>
             spaces? >>
-            cardinality_body_definition.as(:value) >>
+            cardinality_body_definition.as(:cardinality) >>
             whitespace?
           )
         end
@@ -283,14 +283,14 @@ module Lutaml
           (
             keyword_type_argument |
             keyword_cardinality_argument |
-            keyword_any_argument
+            keyword_any_argument.as(:properties)
           ).repeat
         end
 
         rule(:keyword_attribute_body) do
           str("{") >>
             whitespace? >>
-            keyword_attribute_options.as(:properties) >>
+            keyword_attribute_options >>
             whitespace? >>
             str("}")
         end
@@ -599,11 +599,6 @@ module Lutaml
           (class_definition.as(:classes) | enum_definition.as(:enums)) >> whitespace?
         end
 
-        # === Collection block inside instances ===
-        rule(:collections) do
-          collection.repeat.as(:collections)
-        end
-
         rule(:collection) do
           kw_collection >> spaces >> quoted_string.as(:name) >> spaces? >>
             str("{") >> whitespace? >>
@@ -655,7 +650,7 @@ module Lutaml
         end
 
         rule(:instances_member) do
-          import | collection.as(:collection) | export | instance
+          import | collection.as(:collections) | export | instance
         end
 
         rule(:class_instance) do

@@ -9,7 +9,7 @@ module Lutaml
       def create_document(hash)
         process_instances(hash)
 
-        create_lml_document(hash)
+        create_lml_document(normalize_attributes(hash))
       end
 
       def create_lml_document(hash)
@@ -263,6 +263,24 @@ module Lutaml
             complete_hash.merge!(value)
           end
           hash[:instances] = complete_hash
+        end
+      end
+
+      def normalize_attributes(obj)
+        case obj
+        when Array
+          obj.map { |item| normalize_attributes(item) }
+        when Hash
+          obj.transform_values do |v|
+            if obj.keys.include?(:attributes) && v.is_a?(Array) && v.all? { |e| e.is_a?(Hash) && e.keys.size == 1 }
+              # Merge array of single-key hashes into one hash
+              v.reduce({}, :merge)
+            else
+              normalize_attributes(v)
+            end
+          end
+        else
+          obj
         end
       end
     end

@@ -2,36 +2,22 @@
 
 require "lutaml/uml/class"
 require_relative "attribute_value"
+require "lutaml/lml/cardinality"
 
 module Lutaml
   module Lml
     class TopElementAttribute < Uml::TopElementAttribute
-      attribute :properties, TopElementAttribute
+      attribute :properties, TopElementAttribute, collection: true, default: []
       attribute :value, Lutaml::Lml::AttributeValue
       attribute :attributes, TopElementAttribute, collection: true, default: []
 
       def initialize(attributes = {})
         return if attributes.nil?
 
-        @properties = {}
-        @attributes = {}
         attributes[:name] = attributes[:key] if attributes&.key?(:key)
         attributes[:type], attributes[:value] = process_value(attributes[:value])
-        process_properties(attributes)
 
         super(attributes)
-      end
-
-      def process_properties(attributes)
-        values = attributes[:properties]
-        values&.each do |value|
-          property, property_value = value.values_at(:name, :value)
-          property_value = property_value[:string] if property_value.is_a?(Hash) && property_value.key?(:string)
-
-          next (attributes[property] = property_value) if self.class.attributes[property]
-
-          @properties[property] = property_value
-        end
       end
 
       def process_value(value)

@@ -12,11 +12,13 @@ module Lutaml
       attribute :parent, :string
 
       def initialize(attributes = {})
-        @parent = attributes.dig(:parent, :string)
-        @type = attributes[:instance_type]
-        @template = process_template_attributes(attributes.dig(:template, :attributes))
-        @instance = self.class.new(attributes[:instance]) if attributes[:instance]
-        @attributes = process_instance_attributes(attributes[:attributes])
+        attributes[:parent] = attributes.dig(:parent, :string)
+        attributes[:type] = attributes[:instance_type]
+        attributes[:template] = process_template_attributes(attributes.dig(:template, :attributes))
+        attributes[:instance] = self.class.new(attributes[:instance]) if attributes[:instance]
+        attributes[:attributes] = process_instance_attributes(attributes[:attributes])
+
+        super(attributes)
       end
 
       private
