@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "pry"
 require "lutaml/uml/class"
 require_relative "attribute_value"
 require "lutaml/lml/cardinality"
