@@ -5,7 +5,7 @@ gemspec
 
 gem "byebug"
 gem "equivalent-xml", "~> 0.6.0"
-gem "pry", "~> 0.12.2"
+gem "pry", "~> 0.13.1"
 gem "rake", "~> 13.0"
 gem "rspec", "~> 3.11"
 gem "rubocop", "~> 1.58"

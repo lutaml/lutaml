@@ -31,21 +31,27 @@ module Lutaml
           # detailed display of error
           reporter = Parslet::ErrorReporter::Deepest.new
           hash = DslTransform.new.apply(super(data, reporter: reporter))
-          create_uml_document(hash)
+          create_document(hash)
         rescue Parslet::ParseFailed => e
           raise(ParsingError,
                 "#{e.message}\ncause: #{e.parse_failure_cause.ascii_tree}")
+        end
+
+        def create_document(hash)
+          create_uml_document(hash)
         end
 
         KEYWORDS = %w[
           abstract
           aggregation
           association
-          association
           attribute
           bidirectional
+          caption
           class
+          collection
           composition
+          condition
           data_type
           dependency
           diagram
@@ -54,10 +60,14 @@ module Lutaml
           fontname
           generalizes
           include
+          includes
+          instance
+          instances
           interface
           member
           member_type
           method
+          models
           owner
           owner_type
           primitive
@@ -65,26 +75,65 @@ module Lutaml
           protected
           public
           realizes
+          require
           static
           title
-          caption
+          validation
+          import
+          export
+          format
+          extends
+          template
         ].freeze
 
         KEYWORDS.each do |keyword|
-          rule("kw_#{keyword}") { str(keyword) }
+          rule("kw_#{keyword}") { whitespace? >> str(keyword) }
         end
 
-        rule(:spaces) { match("\s").repeat(1) }
+        # === Require statements ===
+        rule(:require_stmt) do
+          kw_require >> spaces >> quoted_string.as(:require) >> whitespace?
+        end
+
+        rule(:require_block) do
+          (require_stmt >> whitespace?).repeat.as(:requires)
+        end
+
+        rule(:require_block?) do
+          require_block.maybe
+        end
+
+        rule(:quotes) { match['"\''] }
+        rule(:quotes?) { quotes.maybe }
+        rule(:space) { match("\s") }
+        rule(:spaces) { space.repeat(1) }
         rule(:spaces?) { spaces.maybe }
         rule(:whitespace) do
-          (match("\s") | match("	") | match("\r?\n") | match("\r") | str(";"))
+          (space | match("	") | match("\r?\n") | match("\r") | str(";"))
             .repeat(1)
         end
         rule(:whitespace?) { whitespace.maybe }
-        rule(:name) { match["a-zA-Z0-9 _-"].repeat(1) }
-        rule(:newline) { str("\n") >> str("\r").maybe }
+        rule(:newline) { match('[\r\n]') }
+
+        rule(:quoted_string) do
+          str('"') >> (str('"').absent? >> any).repeat.as(:string) >> str('"')
+        end
+        rule(:boolean) { (str("true") | str("false")).as(:boolean) }
+        rule(:number) { match("[0-9]").repeat(1).as(:number) }
+        rule(:variable) { (quoted_string | match("[a-zA-Z0-9_]").repeat(1)) }
+        rule(:reference) do
+          str("reference:(") >>
+            (variable >> (str(".") >> variable).repeat).as(:reference) >>
+            str(")")
+        end
+        rule(:range) do
+          (variable.as(:start) >> str("..") >> variable.as(:end)).as(:range)
+        end
+        rule(:namespaced_identifier) do
+          variable >> (str("::") >> variable).repeat
+        end
         rule(:comment_definition) do
-          spaces? >> str("**") >> (newline.absent? >> any).repeat.as(:comments)
+          spaces? >> (str("**") | str("#")) >> (newline.absent? >> any).repeat.as(:comments)
         end
         rule(:comment_multiline_definition) do
           spaces? >> str("*|") >> (str("|*").absent? >> any)
@@ -98,9 +147,9 @@ module Lutaml
               str(")")).maybe
         end
         rule(:cardinality_body_definition) do
-          match['0-9\*'].as("min") >>
+          match['0-9a-z\*'].as("min") >>
             str("..").maybe >>
-            match['0-9\*'].as("max").maybe
+            match['0-9a-z\*'].as("max").maybe
         end
         rule(:cardinality) do
           str("[") >>
@@ -109,11 +158,52 @@ module Lutaml
         end
         rule(:cardinality?) { cardinality.maybe }
 
+        # === Values ===
+        rule(:value) do
+          boolean |
+            reference |
+            range |
+            number |
+            quoted_string
+        end
+
+        # === Lists ===
+        rule(:list_item) { instance | value }
+        rule(:list) do
+          str("[") >> whitespace? >>
+            (list_item >> spaces? >> str(",").maybe >> whitespace?).repeat.as(:list) >> whitespace? >>
+            str("]")
+        end
+
+        # === Key-value pairs ===
+        rule(:key_value_pair) do
+          variable.as(:key) >> spaces >> str("=").maybe >> spaces? >> value.as(:value)
+        end
+        rule(:key_value_map) do
+          str("{") >> whitespace? >>
+            (key_value_pair >> whitespace).repeat.as(:key_value_map) >>
+            str("}")
+        end
+
         # -- attribute/Method
         rule(:kw_visibility_modifier) do
           str("+") | str("-") | str("#") | str("~")
         end
 
+        # === Attribute ===
+        rule(:attribute_value) { list | key_value_map | value | match("[^\n]").repeat(1) }
+        rule(:attribute) do
+          comment_definition |
+          variable.as(:key) >> spaces? >> str("+").as(:add).maybe >> str("=").maybe >> spaces? >> attribute_value.as(:value)
+        end
+        rule(:attributes) do
+          (
+            attribute_line | whitespace
+          ).repeat.as(:attributes)
+        end
+        rule(:attribute_line) do
+          spaces? >> attribute >> (str(",").maybe >> whitespace).maybe
+        end
         rule(:member_static) { (kw_static.as(:static) >> spaces).maybe }
         rule(:visibility) do
           kw_visibility_modifier.as(:visibility_modifier)
@@ -128,13 +218,13 @@ module Lutaml
         end
         rule(:attribute_keyword?) { attribute_keyword.maybe }
         rule(:attribute_type) do
-          (str(":") >>
+          (str(":").maybe >>
             spaces? >>
             attribute_keyword? >>
             spaces? >>
-            match['"\''].maybe >>
+            quotes? >>
             match['a-zA-Z0-9_\- \/\+'].repeat(1).as(:type) >>
-            match['"\''].maybe >>
+            quotes? >>
             spaces?
           )
         end
@@ -142,38 +232,99 @@ module Lutaml
           attribute_type.maybe
         end
 
-        rule(:attribute_name) { match['a-zA-Z0-9_\- \/\+'].repeat(1).as(:name) }
+        rule(:attribute_name) { match['a-zA-Z0-9_\-\/\+'].repeat(1).as(:name) }
+        rule(:attribute_definition_name) do
+          (quotes >> match['a-zA-Z0-9_\- \/\+'].repeat(1).as(:name) >> quotes) |
+            attribute_name
+        end
+
         rule(:attribute_definition) do
           (visibility?.as(:visibility) >>
-            match['"\''].maybe >>
-            attribute_name >>
-            match['"\''].maybe >>
+            spaces? >>
+            attribute_definition_name >>
+            spaces? >>
             attribute_type? >>
             cardinality? >>
             class_body?)
             .as(:attributes)
         end
 
+        rule(:keyword_type_argument) do
+          (
+            str("type") >>
+            spaces? >>
+            match["[^\s\n\r]"].repeat(1).as(:type) >>
+            whitespace?
+          )
+        end
+
+        rule(:keyword_cardinality_argument) do
+          (
+            str("cardinality") >>
+            spaces? >>
+            cardinality_body_definition.as(:cardinality) >>
+            whitespace?
+          )
+        end
+
+        rule(:keyword_any_argument) do
+          (
+            spaces? >>
+            match("[^\s\n\r]").repeat(1).as(:name) >>
+            spaces >>
+            str("=").maybe >>
+            spaces? >>
+            attribute_value.as(:value) >>
+            whitespace?
+          )
+        end
+
+        rule(:keyword_attribute_options) do
+          (
+            keyword_type_argument |
+            keyword_cardinality_argument |
+            keyword_any_argument.as(:properties)
+          ).repeat
+        end
+
+        rule(:keyword_attribute_body) do
+          str("{") >>
+            whitespace? >>
+            keyword_attribute_options >>
+            whitespace? >>
+            str("}")
+        end
+
+        rule(:keyword_attribute_definition) do
+          (
+            str("attribute") >>
+            spaces >>
+            attribute_name >>
+            spaces? >>
+            keyword_attribute_body
+          ).as(:attributes)
+        end
+
         rule(:title_keyword) { kw_title >> spaces }
         rule(:title_text) do
-          match['"\''].maybe >>
+          quotes? >>
             match['a-zA-Z0-9_\- ,.:;'].repeat(1).as(:title) >>
-            match['"\''].maybe
+            quotes?
         end
         rule(:title_definition) { title_keyword >> title_text }
         rule(:caption_keyword) { kw_caption >> spaces }
         rule(:caption_text) do
-          match['"\''].maybe >>
+          quotes? >>
             match['a-zA-Z0-9_\- ,.:;'].repeat(1).as(:caption) >>
-            match['"\''].maybe
+            quotes?
         end
         rule(:caption_definition) { caption_keyword >> caption_text }
 
         rule(:fontname_keyword) { kw_fontname >> spaces }
         rule(:fontname_text) do
-          match['"\''].maybe >>
+          quotes? >>
             match['a-zA-Z0-9_\- '].repeat(1).as(:fontname) >>
-            match['"\''].maybe
+            quotes?
         end
         rule(:fontname_definition) { fontname_keyword >> fontname_text }
 
@@ -225,7 +376,9 @@ module Lutaml
           rule("#{association_end_type}_attribute_name") do
             str("#") >>
               visibility? >>
-              name.as("#{association_end_type}_end_attribute_name")
+              spaces? >>
+              variable.as("#{association_end_type}_end_attribute_name") >>
+              spaces?
           end
           rule("#{association_end_type}_attribute_name?") do
             send(:"#{association_end_type}_attribute_name").maybe
@@ -233,14 +386,14 @@ module Lutaml
           rule("#{association_end_type}_definition") do
             send(:"kw_#{association_end_type}") >>
               spaces >>
-              name.as("#{association_end_type}_end") >>
+              variable.as("#{association_end_type}_end") >>
               send(:"#{association_end_type}_attribute_name?") >>
               send(:"#{association_end_type}_cardinality?")
           end
           rule("#{association_end_type}_type") do
             send(:"kw_#{association_end_type}_type") >>
               spaces >>
-              name.as("#{association_end_type}_end_type")
+              variable.as("#{association_end_type}_end_type")
           end
         end
 
@@ -264,7 +417,9 @@ module Lutaml
         end
         rule(:association_definition) do
           association_keyword >>
-            name.as(:name).maybe >>
+            spaces? >>
+            variable.as(:name).maybe >>
+            spaces? >>
             association_body
         end
 
@@ -278,7 +433,8 @@ module Lutaml
         rule(:class_keyword) { kw_class >> spaces }
         rule(:class_inner_definitions) do
           definition_body |
-            attribute_definition |
+            ((str("attribute") >> spaces).absent? >> attribute_definition) |
+            keyword_attribute_definition |
             comment_definition |
             comment_multiline_definition
         end
@@ -293,10 +449,16 @@ module Lutaml
             str("}")
         end
         rule(:class_body?) { class_body.maybe }
+
+        rule(:parent_class) do
+          spaces? >> str("<") >> spaces? >> class_name_chars.as(:parent_class)
+        end
+
         rule(:class_definition) do
           class_modifier >>
             class_keyword >>
             class_name.as(:name) >>
+            parent_class.maybe >>
             spaces? >>
             attribute_keyword? >>
             class_body?
@@ -311,6 +473,21 @@ module Lutaml
             ((str("\\") >> any) | (str("}").absent? >> any))
               .repeat.maybe.as(:definition) >>
             str("}")
+        end
+
+        # === Instance block ===
+        rule(:instance) do
+          keyword_instance | class_instance
+        end
+
+        rule(:keyword_instance) do
+          (
+            kw_instance >> spaces >>
+            namespaced_identifier.as(:instance_type) >> spaces? >>
+            str("{") >> whitespace? >>
+            ((spaces? >> instance) | attributes) >>
+            str("}")
+          ).as(:instance) >> whitespace?
         end
 
         # -- Enum
@@ -334,9 +511,9 @@ module Lutaml
         rule(:enum_body?) { enum_body.maybe }
         rule(:enum_definition) do
           enum_keyword >>
-            match['"\''].maybe >>
+            quotes? >>
             class_name.as(:name) >>
-            match['"\''].maybe >>
+            quotes? >>
             attribute_keyword? >>
             enum_body?
         end
@@ -362,9 +539,9 @@ module Lutaml
         rule(:data_type_body?) { data_type_body.maybe }
         rule(:data_type_definition) do
           data_type_keyword >>
-            match['"\''].maybe >>
+            quotes? >>
             class_name.as(:name) >>
-            match['"\''].maybe >>
+            quotes? >>
             attribute_keyword? >>
             data_type_body?
         end
@@ -373,9 +550,9 @@ module Lutaml
         rule(:primitive_keyword) { kw_primitive >> spaces }
         rule(:primitive_definition) do
           primitive_keyword >>
-            match['"\''].maybe >>
+            quotes? >>
             class_name.as(:name) >>
-            match['"\''].maybe
+            quotes?
         end
 
         # -- Diagram
@@ -410,8 +587,109 @@ module Lutaml
             whitespace?
         end
         rule(:diagram_definitions) { diagram_definition >> whitespace? }
-        rule(:diagram) { whitespace? >> diagram_definition }
+
+        rule(:models) do
+          kw_models >> whitespace? >>
+            variable.as(:name) >> whitespace? >> str("{") >>
+            model_body.repeat.as(:members) >>
+            str("}") >> whitespace?
+        end
+
+        rule(:model_body) do
+          (class_definition.as(:classes) | enum_definition.as(:enums)) >> whitespace?
+        end
+
+        rule(:collection) do
+          kw_collection >> spaces >> quoted_string.as(:name) >> spaces? >>
+            str("{") >> whitespace? >>
+            includes.maybe >> whitespace? >>
+            validation.maybe >> whitespace? >>
+            str("}") >> whitespace?
+        end
+
+        # === Includes block ===
+        rule(:includes) do
+          kw_includes >> spaces? >> list.as(:includes)
+        end
+
+        # === Validation block ===
+        rule(:validation) do
+          kw_validation >> spaces? >> str("{") >> whitespace? >>
+            condition.repeat.as(:validations) >>
+            str("}")
+        end
+
+        rule(:condition) do
+          kw_condition >> spaces >> quoted_string.as(:condition) >> whitespace?
+        end
+
+        # === Import block ===
+        rule(:import) do
+          kw_import >> spaces? >> str("{") >> whitespace? >>
+            import_definition.repeat.as(:imports) >>
+          str("}") >> whitespace?
+        end
+
+        rule(:import_definition) do
+          match("[^\s\n\r]").repeat(1).as(:format_type) >> spaces? >> quoted_string.as(:file) >> whitespace? >>
+            str("{") >> whitespace? >>
+            attributes >> whitespace? >>
+            str("}") >> whitespace?
+        end
+
+        # === Instances block with collections, import, export ===
+        rule(:instances) do
+          kw_instances >> whitespace? >>
+            str("{") >> whitespace? >>
+            instances_body.maybe >>
+            str("}") >> whitespace?
+        end
+
+        rule(:instances_body) do
+          (instances_member >> whitespace?).repeat.as(:instances)
+        end
+
+        rule(:instances_member) do
+          import | collection.as(:collections) | export | instance
+        end
+
+        rule(:class_instance) do
+          (variable.as(:instance_type) >> whitespace? >> quoted_string.as(:name) >> whitespace? >>
+            (kw_extends >> whitespace? >> quoted_string.as(:parent) >> whitespace?).maybe >>
+             str("{") >> whitespace? >>
+            lml_instance_body.maybe >>
+            str("}")).as(:instance) >> whitespace?
+        end
+
+        rule(:lml_instance_body) do
+          (lml_instance_members >> whitespace?)
+        end
+
+        rule(:instance_template) do
+          kw_template >> whitespace? >> str("{") >> whitespace? >>
+            attributes >> whitespace? >>
+            str("}") >> whitespace?
+        end
+
+        rule(:lml_instance_members) do
+          instance_template.as(:template) | attributes
+        end
+
+        # === Export block ===
+        rule(:export) do
+          kw_export >> whitespace? >> str("{") >> whitespace? >>
+            (export_format >> whitespace?).repeat.as(:exports) >>
+            str("}") >> whitespace?
+        end
+
+        rule(:export_format) do
+          kw_format >> spaces >> variable.as(:format_type) >> whitespace? >> str("{") >> whitespace? >>
+            attributes >>
+            str("}") >> whitespace?
+        end
+
         # -- Root
+        rule(:diagram) { require_block? >> (models | diagram_definitions | instances | instance) }
 
         root(:diagram)
       end
