@@ -70,8 +70,8 @@ RSpec.describe Lutaml::Lml::Parser do
         it "has a 'checks' attribute with correct structure and values" do
           checks = inst.attributes.find { |a| a.name == "checks" }
           expect(checks).not_to be_nil, "Expected 'checks' attribute to exist"
-          expect(checks.value).to be_a(Array)
-          first_check = checks.value.first
+          expect(checks.instances).to be_a(Array)
+          first_check = checks.instances.first
           expect(first_check.type).to eq("IhoS102Check::ValidationCheck")
           dev_id_check = first_check.attributes.find { |a| a.name == "dev_id" }
           expect(dev_id_check).not_to be_nil, "Expected 'dev_id' attribute to exist in first check"
@@ -100,8 +100,8 @@ RSpec.describe Lutaml::Lml::Parser do
 
           compliant_standards = iho.attributes.find { |a| a.name == "compliant_standards" }
           expect(compliant_standards).not_to be_nil, "Expected 'compliant_standards' attribute to exist"
-          expect(compliant_standards.value).to be_a(Array)
-          first_standard = compliant_standards.value.first
+          expect(compliant_standards.instances).to be_a(Array)
+          first_standard = compliant_standards.instances.first
           expect(first_standard.type).to eq("CompliantStandard")
           title_attr = first_standard.attributes.find { |a| a.name == "title" }
           expect(title_attr).not_to be_nil, "Expected 'title' attribute to exist in first compliant standard"
@@ -275,8 +275,8 @@ RSpec.describe Lutaml::Lml::Parser do
         base_computer = products.first
         expect(base_computer).not_to be_nil
         components_attr = base_computer.template.find { |a| a.name == "components" }
-        expect(components_attr.value).to be_a(Array)
-        expect(components_attr.value.first.type).to eq("Component")
+        expect(components_attr.instances).to be_a(Array)
+        expect(components_attr.instances.first.type).to eq("Component")
         expect(products.last.parent).to eq("base_computer")
       end
     end
