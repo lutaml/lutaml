@@ -1,0 +1,33 @@
+= Lutaml::XMI
+
+Lutaml::XMI provides functionality to parse and manipulate
+Enterprise Architecture XMI files.
+
+== Usages
+
+The parser `Lutaml::XMI::Parsers::XML` is used to parse XMI files into
+`Lutaml::Uml::Document` model.
+
+=== Examples
+
+.Parsing XMI file
+[example]
+====
+
+When using the `Lutaml::XMI::Parsers::XML` parser, you can parse an XMI
+file as follows:
+
+[source,ruby]
+----
+require "lutaml"
+
+Lutaml::XMI::Parsers::XML.parse(File.new("path/to/example.xmi"))
+# => returns Lutaml::Uml::Document model
+----
+
+`Lutaml::Uml::Document` model is a Lutaml model that can be further processed or
+converted to other formats.
+
+Please refer to https://github.com/lutaml/lutaml-model[lutaml-model] for more details.
+
+====

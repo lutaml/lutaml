@@ -1,0 +1,10 @@
+= Lutaml::Sysml
+
+Lutaml::Sysml extends Lutaml::Uml by adding concepts relevant to systems
+engineering, supporting a Model-Based Systems Engineering (MBSE) approach
+throughout the entire system lifecycle.
+
+== Usage
+
+Lutaml::Sysml provides specialized diagram types and elements for systems engineering modeling.
+
