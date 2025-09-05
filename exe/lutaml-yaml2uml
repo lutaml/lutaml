@@ -84,7 +84,7 @@ view_yaml["relations"]&.each do |values|
   process_association(values["source"], values, encountered_relations)
 end
 
-view_yaml["imports"].each_key do |entry| # rubocop:disable Metrics/BlockLength
+view_yaml["imports"]&.each_key do |entry| # rubocop:disable Metrics/BlockLength
   import = YAML.safe_load(File.read(File.join(models_path, "#{entry}.yml")))
   import_name = import["name"] || File.basename(entry)
   # Class notation
