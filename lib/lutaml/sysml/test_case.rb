@@ -1,5 +1,5 @@
 module Lutaml
-  module SysMl
+  module Sysml
     class TestCase < Lutaml::Uml::TopElement
       attr_accessor :base_behavior, :verifies
 

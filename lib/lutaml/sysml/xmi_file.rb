@@ -1,5 +1,5 @@
 module Lutaml
-  module SysMl
+  module Sysml
     class XmiFile
       attr_accessor :package_list, :model_list, :class_list, :activity_list,
                     :property_list, :port_list,

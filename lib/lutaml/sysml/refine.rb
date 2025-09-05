@@ -1,5 +1,5 @@
 module Lutaml
-  module SysMl
+  module Sysml
     class Refine < Lutaml::Uml::TopElement
       attr_accessor :base_abstraction
     end

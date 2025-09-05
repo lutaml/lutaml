@@ -1,5 +1,5 @@
 module Lutaml
-  module SysMl
+  module Sysml
     class Block < Lutaml::Uml::Class
       attr_accessor :base_class
 

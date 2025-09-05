@@ -1,5 +1,5 @@
 module Lutaml
-  module SysMl
+  module Sysml
     class NestedConnectorEnd < Lutaml::Uml::ConnectorEnd
       attr_accessor :base_connectorend, :property_path
 
