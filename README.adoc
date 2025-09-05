@@ -26,7 +26,7 @@ Directly:
 $ gem install lutaml
 ----
 
-== Usage
+== Usages
 
 === Parsing
 
@@ -100,6 +100,12 @@ $ lutaml -o assets -t png test.lutaml
 
 For additional info refer to `lutaml --help output`.
 
+== Other Usages
+
+* link:docs/lutaml-uml.adoc[Usage with Lutaml::Uml]
+* link:docs/lutaml-express.adoc[Usage with Lutaml::Express]
+* link:docs/lutaml-xmi.adoc[Usage with Lutaml::XMI]
+// * link:docs/lutaml-sysml.adoc[Usage with Lutaml::Sysml]
 
 == Copyright and license
 

@@ -1,0 +1,35 @@
+= Lutaml::Express
+
+Lutaml::Express provides functionality to parse and manipulate EXPRESS files,
+enabling seamless integration with the Lutaml framework.
+
+== Usages
+
+The parser `Lutaml::Express::Parsers::Exp` is used to parse EXPRESS schema file
+`.exp` into `Expressir::Model::Repository` model.
+
+=== Examples
+
+.EXPRESS schema file parsing
+[example]
+====
+
+When using the `Lutaml::Express::Parsers::Exp` parser, you can parse an EXPRESS
+schema file as follows:
+
+[source,ruby]
+----
+require "lutaml"
+
+Lutaml::Express::Parsers::Exp.parse(File.new("path/to/example.exp"))
+# => returns Expressir::Model::Repository model
+----
+
+
+`Expressir::Model::Repository` is a Lutaml model that can be further processed
+or converted to other formats.
+
+Please refer to https://github.com/lutaml/expressir[expressir] or
+https://github.com/lutaml/lutaml-model[lutaml-model] for more details.
+
+====

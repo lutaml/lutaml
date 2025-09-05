@@ -1,0 +1,111 @@
+= Lutaml::Uml
+
+Lutaml::Uml is a language for specifying UML class diagrams and a tool for
+converting it into various different formats.
+
+== Language
+
+See link:lutaml_syntax.adoc[LutaML syntax]
+
+== Usages
+
+Converter executables are available:
+
+* PlantUML WSD or PUML to LutaML UML: `lutaml-wsd2uml`
+* LutaML YAML to LutaML UML: `lutaml-yaml2uml`
+
+=== Examples
+
+.PlantUML to LutaML UML
+[example]
+====
+
+Given the following PlantUML PUML file `example.puml`:
+
+[source,plantuml]
+----
+@startuml
+Alice -> Bob: Authentication Request
+Bob --> Alice: Authentication Response
+@enduml
+----
+
+Running the command:
+
+```
+lutaml-wsd2uml example.puml
+```
+
+The following results will be produced:
+
+[source,lutaml]
+----
+diagram plantuml-simple.puml {
+  association {
+    owner Alice
+    member Request
+    member_type direct
+  }
+  association {
+    owner Bob
+    member Response
+    member_type direct
+  }
+}
+----
+====
+
+.LutaML YAML to LutaML UML
+[example]
+====
+
+Given the following LutaML YAML file `Address.yml`:
+
+[source,yaml]
+----
+name: Address
+modelType: class
+relations:
+  - target: AddressComponent
+    relationship:
+      source:
+        type: aggregation
+        attributes:
+          address:
+            cardinality:
+              min: 1
+              max: "*"
+      target:
+        type: direct
+        attributes:
+          addressComponent:
+            cardinality:
+              min: 1
+              max: "*"
+    action:
+      verb: comprises
+      direction: target
+----
+
+Running the command:
+
+```
+lutaml-yaml2uml Address.yml
+```
+
+The following results will be produced:
+
+[source,lutaml]
+----
+diagram Address {
+  title ''
+  caption ''
+  association {
+    owner_type aggregation
+    owner 
+    member_type direct
+    member AddressComponent
+  }
+}
+----
+====
