@@ -1,5 +1,5 @@
 module Lutaml
-  module SysMl
+  module Sysml
     class Allocated < Lutaml::Uml::TopElement
       attr_accessor :base_named_element, :allocated_from, :allocated_to
     end

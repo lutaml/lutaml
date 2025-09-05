@@ -1,4 +1,3 @@
-require "lutaml/sysml/version"
 require "lutaml/uml"
 require "nokogiri"
 

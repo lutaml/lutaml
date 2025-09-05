@@ -1,5 +1,5 @@
 module Lutaml
-  module SysMl
+  module Sysml
     class Allocate < Lutaml::Uml::Abstraction
       attr_accessor :base_abstraction
     end

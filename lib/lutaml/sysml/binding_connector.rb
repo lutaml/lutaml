@@ -1,5 +1,5 @@
 module Lutaml
-  module SysMl
+  module Sysml
     class BindingConnector < Lutaml::Uml::Connector
       attr_accessor :base_connector
     end

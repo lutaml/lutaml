@@ -1,5 +1,5 @@
 module Lutaml
-  module SysMl
+  module Sysml
     class ConstraintBlock < Block
       def initialize # rubocop:disable Lint/MissingSuper
         @xmi_id = nil

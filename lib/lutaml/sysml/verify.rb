@@ -1,5 +1,5 @@
 module Lutaml
-  module SysMl
+  module Sysml
     class Verify < Trace
     end
   end

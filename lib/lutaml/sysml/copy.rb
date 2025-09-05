@@ -1,5 +1,5 @@
 module Lutaml
-  module SysMl
+  module Sysml
     class Copy < Trace
     end
   end
