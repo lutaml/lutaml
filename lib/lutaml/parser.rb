@@ -1,5 +1,6 @@
 require "lutaml/express"
 require "lutaml/uml"
+require "lutaml/lml"
 require "lutaml/xmi"
 require "lutaml/xml"
 require "expressir/express/cache"
@@ -35,6 +36,8 @@ module Lutaml
         file_list.map { |file| Lutaml::Xml::Parsers::Xml.parse(file) }
       when "lutaml"
         file_list.map { |file| Lutaml::Uml::Parsers::Dsl.parse(file) }
+      when "lml"
+        file_list.map { |file| Lutaml::Lml::Parser.parse(file) }
       when "yml", "yaml"
         file_list.map { |file| Lutaml::Uml::Parsers::Yaml.parse(file.path) }
       else
