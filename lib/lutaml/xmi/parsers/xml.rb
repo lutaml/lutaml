@@ -99,7 +99,9 @@ module Lutaml
         # @return [Lutaml::Uml::Document]
         def parse(xmi_model)
           set_xmi_model(xmi_model)
-          serialized_hash = serialize_xmi(xmi_model)
+          serialized_hash = serialize_xmi(
+            xmi_model, with_gen: true, with_absolute_path: true
+          )
           create_uml_document(serialized_hash)
         end
 

@@ -5,6 +5,7 @@ require "lutaml/uml/association"
 require "lutaml/uml/constraint"
 require "lutaml/uml/operation"
 require "lutaml/uml/data_type"
+require "lutaml/uml/generalization"
 
 module Lutaml
   module Uml
@@ -22,6 +23,7 @@ module Lutaml
       attribute :methods, :string, collection: true, default: -> { [] }
 
       attribute :associations, Association, collection: true
+      attribute :generalization, Generalization
 
       yaml do
         map "nested_classifier", to: :nested_classifier
