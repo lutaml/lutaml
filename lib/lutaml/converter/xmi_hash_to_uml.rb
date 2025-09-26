@@ -76,6 +76,23 @@ module Lutaml
             klass.constraints = [] if klass.constraints
             klass.constraints << constraint
           end
+
+          if hash[:generalization]
+            generalization = create_uml_generalization(
+              hash[:generalization],
+            )
+            klass.generalization = generalization
+          end
+
+          hash[:association_generalization]&.each do |generalization_hash|
+            association_generalization = create_uml_association_generalization(
+              generalization_hash,
+            )
+            if klass.association_generalization.nil?
+              klass.association_generalization = []
+            end
+            klass.association_generalization << association_generalization
+          end
         end
       end
 
@@ -147,6 +164,117 @@ module Lutaml
         ::Lutaml::Uml::Cardinality.new.tap do |cardinality|
           cardinality.min = hash[:min]
           cardinality.max = hash[:max]
+        end
+      end
+
+      def create_uml_attributes(hash) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+        upper_klass = hash[:general_upper_klass]
+        gen_attrs = hash[:general_attributes]
+        gen_name = hash[:name]
+        attributes = []
+
+        gen_attrs&.each do |i|
+          name_ns = case i[:type_ns]
+                    when "core", "gml"
+                      upper_klass
+                    else
+                      i[:type_ns]
+                    end
+          name_ns = upper_klass if name_ns.nil?
+
+          i[:name_ns] = name_ns
+          i[:name] = "" if i[:name].nil?
+          i[:gen_name] = gen_name
+          attr = create_uml_general_attribute(i)
+          attributes << attr
+        end
+
+        attributes
+      end
+
+      def create_uml_generalization(hash) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
+        gen = ::Lutaml::Uml::Generalization.new
+        gen.general_id = hash[:general_id]
+        gen.general_name = hash[:general_name]
+        hash[:general_attributes]&.each do |attr_hash|
+          attr = create_uml_general_attribute(attr_hash)
+          gen.general_attributes = [] if gen.general_attributes.nil?
+          gen.general_attributes << attr
+        end
+        gen.general_upper_klass = hash[:general_upper_klass]
+        gen.has_general = !!hash[:general]
+        if hash[:general] && !hash[:general].empty?
+          gen.general = create_uml_generalization(hash[:general])
+        end
+        gen.name = hash[:name]
+        gen.type = hash[:type]
+        gen.definition = hash[:definition]
+        gen.stereotype = hash[:stereotype]
+        gen.attributes = create_uml_attributes(hash)
+        gen.owned_props = gen.attributes.select do |attr|
+          attr.association.nil?
+        end
+        gen.assoc_props = gen.attributes.select(&:association)
+        gen.inherited_props, gen.inherited_assoc_props = loop_general_item(
+          gen.general,
+        )
+
+        gen
+      end
+
+      def loop_general_item(gen) # rubocop:disable Metrics/MethodLength,Metrics/AbcSize,Metrics/PerceivedComplexity,Metrics/CyclomaticComplexity
+        general_item = gen
+        level = 0
+        inherited_props = []
+        inherited_assoc_props = []
+
+        while general_item&.has_general
+          gen_upper_klass = general_item.general_upper_klass
+          gen_name = general_item.general_name
+          # reverse the order to show super class first
+          general_item.attributes.reverse_each do |attr|
+            attr.upper_klass = gen_upper_klass
+            attr.gen_name = gen_name
+            attr.level = level
+
+            if attr.association
+              inherited_assoc_props << attr
+            else
+              inherited_props << attr
+            end
+          end
+
+          level += 1
+          general_item = general_item.general
+        end
+
+        [inherited_props.reverse, inherited_assoc_props.reverse]
+      end
+
+      def create_uml_general_attribute(hash) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+        ::Lutaml::Uml::GeneralAttribute.new.tap do |attr|
+          attr.id = hash[:id]
+          attr.name = hash[:name]
+          attr.type = hash[:type]
+          attr.xmi_id = hash[:xmi_id]
+          attr.is_derived = !!hash[:is_derived]
+          attr.cardinality = create_uml_cardinality(
+            hash[:cardinality],
+          )
+          attr.definition = hash[:definition]
+          attr.association = hash[:association]
+          attr.has_association = !!hash[:association]
+          attr.type_ns = hash[:type_ns]
+          attr.name_ns = hash[:name_ns]
+          attr.gen_name = hash[:gen_name]
+        end
+      end
+
+      def create_uml_association_generalization(hash)
+        ::Lutaml::Uml::AssociationGeneralization.new.tap do |gen|
+          gen.id = hash[:id]
+          gen.type = hash[:type]
+          gen.general = hash[:general]
         end
       end
 

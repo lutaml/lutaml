@@ -151,7 +151,7 @@ module Lutaml
         # @param with_gen: [Boolean]
         # @param with_absolute_path: [Boolean]
         # @return [Hash]
-        def build_klass_hash(klass, model, # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+        def build_klass_hash(klass, model, # rubocop:disable Metrics/AbcSize,Metrics/MethodLength,Metrics/CyclomaticComplexity
           with_gen: false, with_absolute_path: false, absolute_path: "")
           klass_hash = {
             xmi_id: klass.id,
@@ -171,6 +171,18 @@ module Lutaml
 
           if with_gen && klass.type?("uml:Class")
             klass_hash[:generalization] = serialize_generalization(klass)
+          end
+
+          if klass.generalization && !klass.generalization.empty?
+            klass_hash[:association_generalization] = []
+            klass.generalization.each do |gen|
+              association_generalization_hash = {}
+              association_generalization_hash[:id] = gen.id
+              association_generalization_hash[:type] = gen.type
+              association_generalization_hash[:general] = gen.general
+              klass_hash[:association_generalization] <<
+                association_generalization_hash
+            end
           end
 
           klass_hash
