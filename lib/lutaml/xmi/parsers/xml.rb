@@ -4,14 +4,14 @@ require "lutaml/xmi"
 require "xmi"
 require "lutaml/xmi/parsers/xmi_base"
 require "lutaml/uml"
-require "lutaml/converter/xmi_hash_to_uml"
+require "lutaml/converter/xmi_to_uml"
 
 module Lutaml
   module XMI
     module Parsers
       # Class for parsing .xmi schema files into ::Lutaml::Uml::Document
       class XML
-        include Lutaml::Converter::XmiHashToUml
+        include Lutaml::Converter::XmiToUml
 
         @id_name_mapping_static = {}
         @xmi_root_model_cache_static = {}
@@ -99,10 +99,7 @@ module Lutaml
         # @return [Lutaml::Uml::Document]
         def parse(xmi_model)
           set_xmi_model(xmi_model)
-          serialized_hash = serialize_xmi(
-            xmi_model, with_gen: true, with_absolute_path: true
-          )
-          create_uml_document(serialized_hash)
+          create_uml_document(xmi_model)
         end
 
         # @param xmi_model [Lutaml::Model::Serializable]
