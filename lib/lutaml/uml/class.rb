@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "lutaml/uml/package"
 require "lutaml/uml/association"
 require "lutaml/uml/constraint"
 require "lutaml/uml/operation"
@@ -14,7 +13,6 @@ module Lutaml
                                              default: -> { [] }
       attribute :is_abstract, :boolean, default: false
       attribute :type, :string
-      attribute :package, Package
       attribute :attributes, TopElementAttribute, collection: true
       attribute :modifier, :string
       attribute :constraints, Constraint, collection: true
@@ -29,7 +27,6 @@ module Lutaml
         map "nested_classifier", to: :nested_classifier
         map "is_abstract", to: :is_abstract
         map "type", to: :type
-        map "package", to: :package
         map "attributes", to: :attributes
         map "modifier", to: :modifier
         map "constraints", to: :constraints

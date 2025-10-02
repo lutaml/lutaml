@@ -15,6 +15,8 @@ module Lutaml
       attribute :is_derived, :boolean, default: false
 
       attribute :definition, :string
+      attribute :association, :string
+      attribute :type_ns, :string
 
       yaml do
         map "name", to: :name
@@ -31,6 +33,8 @@ module Lutaml
         map "definition", to: :definition, with: {
           to: :definition_to_yaml, from: :definition_from_yaml
         }
+        map "association", to: :association
+        map "type_ns", to: :type_ns
       end
 
       def definition_to_yaml(model, doc)
