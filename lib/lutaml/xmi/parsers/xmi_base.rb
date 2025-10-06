@@ -135,14 +135,12 @@ module Lutaml
           end
 
           klasses.map do |klass|
-            h = build_klass_hash(
+            build_klass_hash(
               klass, model,
-              with_gen: with_gen
+              with_gen: with_gen,
+              with_absolute_path: with_absolute_path,
+              absolute_path: absolute_path
             )
-
-            h[:absolute_path] = absolute_path if with_absolute_path
-
-            h
           end
         end
 
@@ -176,12 +174,11 @@ module Lutaml
           if klass.generalization && !klass.generalization.empty?
             klass_hash[:association_generalization] = []
             klass.generalization.each do |gen|
-              association_generalization_hash = {}
-              association_generalization_hash[:id] = gen.id
-              association_generalization_hash[:type] = gen.type
-              association_generalization_hash[:general] = gen.general
-              klass_hash[:association_generalization] <<
-                association_generalization_hash
+              klass_hash[:association_generalization] << {
+                id: gen.id,
+                type: gen.type,
+                general: gen.general,
+              }
             end
           end
 
