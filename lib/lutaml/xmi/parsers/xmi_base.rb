@@ -187,12 +187,14 @@ module Lutaml
 
         # @param klass [Lutaml::Model::Serializable]
         # # @return [Hash]
-        def serialize_generalization(klass)
-          general_hash, next_general_node_id = get_top_level_general_hash(klass)
+        def serialize_generalization(klass, options = {})
+          general_hash, next_general_node_id = get_top_level_general_hash(
+            klass, options
+          )
           return general_hash unless next_general_node_id
 
           general_hash[:general] = serialize_generalization_attributes(
-            next_general_node_id,
+            next_general_node_id, options
           )
 
           general_hash
@@ -200,8 +202,10 @@ module Lutaml
 
         # @param klass [Lutaml::Model::Serializable]
         # @return [Array<Hash>]
-        def get_top_level_general_hash(klass) # rubocop:disable Metrics/AbcSize
-          general_hash, next_general_node_id = get_general_hash(klass.id)
+        def get_top_level_general_hash(klass, options = {}) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+          general_hash, next_general_node_id = get_general_hash(
+            klass.id, options
+          )
           general_hash[:name] = klass.name
           general_hash[:type] = klass.type
           general_hash[:definition] = lookup_general_documentation(klass.id)
@@ -235,12 +239,13 @@ module Lutaml
         # @param model [Lutaml::Model::Serializable]
         # @return [Array<Hash>]
         # @note get generalization node and its owned attributes
-        def serialize_generalization_attributes(general_id)
-          general_hash, next_general_node_id = get_general_hash(general_id)
+        def serialize_generalization_attributes(general_id, options = {}) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+          general_hash, next_general_node_id = get_general_hash(general_id,
+                                                                options)
 
           if next_general_node_id
             general_hash[:general] = serialize_generalization_attributes(
-              next_general_node_id,
+              next_general_node_id, options
             )
           end
 
@@ -267,7 +272,7 @@ module Lutaml
 
         # @param general_id [String]
         # @return [Array<Hash>]
-        def get_general_hash(general_id)
+        def get_general_hash(general_id, options = {}) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           general_node = get_general_node(general_id)
           return [] unless general_node
 
@@ -280,7 +285,8 @@ module Lutaml
               general_id: general_id,
               general_name: general_node.name,
               general_attributes: general_node_attrs,
-              general_upper_klass: general_upper_klass,
+              general_upper_klass: ::Lutaml::XMI::PackageDrop
+                .new(general_upper_klass, nil, options),
               general: {},
             },
             next_general_node_id,
@@ -347,7 +353,7 @@ module Lutaml
 
           all_packaged_elements.each do |e|
             e.packaged_element.each do |pe|
-              @upper_level_cache[pe.id] = e.name
+              @upper_level_cache[pe.id] = e
             end
           end
         end
@@ -904,7 +910,7 @@ module Lutaml
           p = find_klass_packaged_element_by_name(type)
           return unless p
 
-          find_upper_level_packaged_element(p.id)
+          find_upper_level_packaged_element(p.id)&.name
         end
 
         # @param xmi_id [String]
@@ -915,7 +921,7 @@ module Lutaml
           p = find_packaged_element_by_id(xmi_id)
           return unless p
 
-          find_upper_level_packaged_element(p.id)
+          find_upper_level_packaged_element(p.id)&.name
         end
 
         # @param klass_id [String]

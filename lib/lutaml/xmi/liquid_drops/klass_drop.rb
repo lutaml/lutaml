@@ -51,7 +51,17 @@ module Lutaml
       end
 
       def absolute_path
-        "#{@options[:absolute_path]}::#{name}"
+        absolute_path_arr = [@model.name]
+        e = find_upper_level_packaged_element(@model.id)
+        absolute_path_arr << e.name if e
+
+        while e
+          e = find_upper_level_packaged_element(e.id)
+          absolute_path_arr << e.name if e
+        end
+
+        absolute_path_arr << "::#{@xmi_root_model.model.name}"
+        absolute_path_arr.reverse.join("::")
       end
 
       def package
@@ -170,7 +180,7 @@ module Lutaml
 
       def generalization
         if @options[:with_gen] && @model.type?("uml:Class")
-          generalization = serialize_generalization(@model)
+          generalization = serialize_generalization(@model, @options)
           return {} if generalization.nil?
 
           ::Lutaml::XMI::GeneralizationDrop.new(
@@ -181,7 +191,8 @@ module Lutaml
 
       def upper_packaged_element
         if @options[:with_gen]
-          find_upper_level_packaged_element(@model.id)
+          e = find_upper_level_packaged_element(@model.id)
+          e&.name
         end
       end
 
