@@ -238,7 +238,7 @@ module Lutaml
           gen.general_id = general_id
           gen.general_name = general_node.name
           gen.general_attributes = general_node_attrs
-          gen.general_upper_klass = general_upper_klass
+          gen.general_upper_klass = general_upper_klass&.name
           gen.name = general_node.name
           gen.type = general_node.type
           gen.definition = lookup_general_documentation(general_id)

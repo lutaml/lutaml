@@ -40,7 +40,17 @@ module Lutaml
       end
 
       def absolute_path
-        "#{@options[:absolute_path]}::#{name}"
+        absolute_path_arr = [@model.name]
+        e = find_upper_level_packaged_element(@model.id)
+        absolute_path_arr << e.name if e
+
+        while e
+          e = find_upper_level_packaged_element(e.id)
+          absolute_path_arr << e.name if e
+        end
+
+        absolute_path_arr << "::#{@xmi_root_model.model.name}"
+        absolute_path_arr.reverse.join("::")
       end
 
       def klasses # rubocop:disable Metrics/MethodLength

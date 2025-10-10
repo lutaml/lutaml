@@ -41,7 +41,8 @@ module Lutaml
       # @return name of the upper packaged element
       def upper_packaged_element
         if @options[:with_gen]
-          find_upper_level_packaged_element(@model.id)
+          e = find_upper_level_packaged_element(@model.id)
+          e&.name
         end
       end
 

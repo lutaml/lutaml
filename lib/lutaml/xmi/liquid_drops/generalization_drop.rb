@@ -38,16 +38,16 @@ module Lutaml
         !!@gen[:general]
       end
 
-      def attributes # rubocop:disable Metrics/MethodLength
+      def attributes # rubocop:disable Metrics/MethodLength,Metrics/AbcSize,Metrics/CyclomaticComplexity
         attrs = @gen[:general_attributes]
         attrs.each do |i|
           name_ns = case i[:type_ns]
                     when "core", "gml"
-                      upper_klass
+                      upper_klass&.name
                     else
                       i[:type_ns]
                     end
-          name_ns = upper_klass if name_ns.nil?
+          name_ns = upper_klass&.name if name_ns.nil?
 
           i[:name_ns] = name_ns
           i[:name] = "" if i[:name].nil?
