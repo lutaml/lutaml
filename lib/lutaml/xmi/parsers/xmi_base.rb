@@ -208,31 +208,13 @@ module Lutaml
           )
           general_hash[:name] = klass.name
           general_hash[:type] = klass.type
-          general_hash[:definition] = lookup_general_documentation(klass.id)
+          general_hash[:definition] =
+            lookup_element_prop_documentation(klass.id)
           general_hash[:stereotype] = doc_node_attribute_value(
             klass.id, "stereotype"
           )
 
-          # update_inherited_attributes(general_hash)
-          # update_gen_attributes(general_hash)
-
           [general_hash, next_general_node_id]
-        end
-
-        def lookup_general_documentation(klass_id)
-          # lookup_attribute_documentation(klass_id) ||
-          #   lookup_element_prop_documentation(klass_id)
-
-          lookup_element_prop_documentation(klass_id)
-        end
-
-        def update_gen_attributes(general_hash)
-          general_hash[:gen_attributes] = serialize_gen_attributes
-        end
-
-        def update_inherited_attributes(general_hash)
-          general_hash[:gml_attributes] = serialize_gml_attributes
-          general_hash[:core_attributes] = serialize_core_attributes
         end
 
         # @param xmi_id [String]
@@ -252,12 +234,6 @@ module Lutaml
           general_hash
         end
 
-        # @param xmi_id [String]
-        # @return [Lutaml::Model::Serializable]
-        def get_general_node(xmi_id)
-          find_packaged_element_by_id(xmi_id)
-        end
-
         # @param general_node [Lutaml::Model::Serializable]
         # @return [Hash]
         def get_general_attributes(general_node)
@@ -273,7 +249,7 @@ module Lutaml
         # @param general_id [String]
         # @return [Array<Hash>]
         def get_general_hash(general_id, options = {}) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
-          general_node = get_general_node(general_id)
+          general_node = find_packaged_element_by_id(general_id)
           return [] unless general_node
 
           general_node_attrs = get_general_attributes(general_node)
@@ -450,25 +426,25 @@ module Lutaml
         # @return [Lutaml::Model::Serializable]
         def select_dependencies_by_client(client_id)
           all_packaged_elements.select do |e|
-            e.client == client_id &&
-              e.type?("uml:Dependency")
+            e.client == client_id && e.type?("uml:Dependency")
           end
         end
 
         # @param name [String]
         # @return [Lutaml::Model::Serializable]
         def find_packaged_element_by_name(name)
-          all_packaged_elements.find do |e|
-            e.name == name
-          end
+          all_packaged_elements.find { |e| e.name == name }
         end
 
         # @param package [Lutaml::Model::Serializable]
         # @return [Array<Hash>]
         # @note xpath ./packagedElement[@xmi:type="uml:Enumeration"]
-        def serialize_model_enums(package)
-          package.packaged_element.select { |e| e.type?("uml:Enumeration") }
-            .map do |enum|
+        def serialize_model_enums(package) # rubocop:disable Metrics/MethodLength
+          enums = package.packaged_element.select do |e|
+            e.type?("uml:Enumeration")
+          end
+
+          enums.map do |enum|
             {
               xmi_id: enum.id,
               name: enum.name,
@@ -504,8 +480,9 @@ module Lutaml
         # @note xpath ./packagedElement[@xmi:type="uml:DataType"]
         def serialize_model_data_types(model) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           all_data_type_elements = []
-          select_all_packaged_elements(all_data_type_elements, model,
-                                       "uml:DataType")
+          select_all_packaged_elements(
+            all_data_type_elements, model, "uml:DataType"
+          )
           all_data_type_elements.map do |klass|
             {
               xmi_id: klass.id,
@@ -843,8 +820,11 @@ module Lutaml
         # @return [Array<Hash>]
         # @note xpath .//ownedAttribute[@xmi:type="uml:Property"]
         def serialize_class_attributes(klass, with_assoc: false) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength
-          klass.owned_attribute.select { |attr| attr.type?("uml:Property") }
-            .map do |oa|
+          owned_attributes = klass.owned_attribute.select do |attr|
+            attr.type?("uml:Property")
+          end
+
+          owned_attributes.map do |oa|
             if with_assoc || oa.association.nil?
               attrs = build_class_attributes(oa)
 
@@ -862,44 +842,6 @@ module Lutaml
         def loopup_assoc_def(association)
           connector = fetch_connector(association)
           connector&.documentation&.value
-        end
-
-        # @return [Array<Hash>]
-        def serialize_gml_attributes
-          element = find_packaged_element_by_name("_Feature")
-          attrs = serialize_class_attributes(element, with_assoc: true)
-          attrs.each { |attr| attr[:upper_klass] = "gml" }
-        end
-
-        # @return [Array<Hash>]
-        def serialize_core_attributes
-          element = find_packaged_element_by_name("_CityObject")
-          attrs = serialize_class_attributes(element, with_assoc: false)
-          attrs.each { |attr| attr[:upper_klass] = "core" }
-        end
-
-        # @return [Array<Hash>]
-        def select_gen_attributes
-          element = find_packaged_element_by_name("gen")
-          gen_attr_element = find_packaged_element_by_name("_genericAttribute")
-
-          element.packaged_element.select do |e|
-            e.type?("uml:Class") &&
-              e.generalization&.first&.general == gen_attr_element.id
-          end
-        end
-
-        # @return [Array<Hash>]
-        def serialize_gen_attributes
-          klasses = select_gen_attributes
-
-          klasses.map do |klass|
-            attr = serialize_class_attributes(klass, with_assoc: false)
-            attr.first[:name] = klass.name
-            attr.first[:type] = "gen:#{klass.name}"
-            attr.first[:upper_klass] = "gen"
-            attr
-          end.flatten!
         end
 
         # @param type [String]
