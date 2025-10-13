@@ -227,7 +227,7 @@ module Lutaml
       end
 
       def get_uml_general(general_id) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
-        general_node = get_general_node(general_id)
+        general_node = find_packaged_element_by_id(general_id)
         return [] unless general_node
 
         general_node_attrs = get_uml_general_attributes(general_node)
@@ -241,7 +241,7 @@ module Lutaml
           gen.general_upper_klass = general_upper_klass&.name
           gen.name = general_node.name
           gen.type = general_node.type
-          gen.definition = lookup_general_documentation(general_id)
+          gen.definition = lookup_element_prop_documentation(general_id)
           gen.stereotype = doc_node_attribute_value(general_id, "stereotype")
 
           if next_general_node_id
