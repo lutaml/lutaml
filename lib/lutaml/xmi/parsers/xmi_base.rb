@@ -20,7 +20,7 @@ module Lutaml
           # @param xml [String]
           # @return [Lutaml::Model::Serializable]
           def get_xmi_model(xml)
-            Xmi::Sparx::SparxRoot.parse_xml(File.read(xml))
+            ::Xmi::Sparx::SparxRoot.parse_xml(File.read(xml))
           end
         end
 
@@ -586,7 +586,7 @@ module Lutaml
           connector_node = fetch_connector(link_id)
           documentation = connector_node.send(node_name.to_sym).documentation
 
-          if documentation.is_a?(Xmi::Sparx::SparxElementDocumentation)
+          if documentation.is_a?(::Xmi::Sparx::SparxElementDocumentation)
             documentation&.value
           else
             documentation
@@ -1016,7 +1016,7 @@ module Lutaml
           @id_name_mapping[xmi_id]
         end
 
-        # @return [Array<Xmi::Uml::PackagedElement>]
+        # @return [Array<::Xmi::Uml::PackagedElement>]
         def all_packaged_elements
           return @all_packaged_elements_cache if @all_packaged_elements_cache
 
@@ -1047,7 +1047,7 @@ module Lutaml
         def select_all_packaged_elements(all_elements, model, type)
           select_all_items(all_elements, model, type, :packaged_element)
           all_elements.delete_if do |e|
-            !e.is_a?(Xmi::Uml::PackagedElement)
+            !e.is_a?(::Xmi::Uml::PackagedElement)
           end
         end
 
