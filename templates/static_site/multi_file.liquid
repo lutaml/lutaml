@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ config.title }}</title>
+  <meta name="description" content="{{ config.description }}">
+  <meta name="generator" content="{{ buildInfo.generator }}">
+
+  <!-- Styles (external) -->
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+  <div id="app" x-data="app" x-init="init()" :class="{ 'dark': darkMode }">
+    {% include 'components/header' %}
+
+    <div class="main-layout">
+      {% include 'components/sidebar' %}
+      {% include 'components/content' %}
+    </div>
+  </div>
+
+  <!-- Data URLs (external JSON files{% if config.apiMode %} or API endpoints{% endif %}) -->
+  <script>
+    {% if config.apiMode %}
+    // API mode: fetch from server endpoints
+    window.UML_DATA_URL = '/api/data';
+    window.SEARCH_INDEX_URL = '/api/search/index';
+    {% else %}
+    // Static mode: load from JSON files
+    window.UML_DATA_URL = 'data/model.json';
+    window.SEARCH_INDEX_URL = 'data/search.json';
+    {% endif %}
+    window.APP_CONFIG = {{ config | json }};
+  </script>
+
+  <!-- Alpine.js -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
+
+  <!-- lunr.js -->
+  <script src="https://cdn.jsdelivr.net/npm/lunr@2.3.9/lunr.min.js"></script>
+
+  <!-- Application Scripts (external) -->
+  <script src="assets/app.js"></script>
+</body>
+</html>

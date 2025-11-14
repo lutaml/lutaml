@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Lutaml
   module Sysml
     class Allocated < Lutaml::Uml::TopElement

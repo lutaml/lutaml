@@ -1,0 +1,968 @@
+# QEA Database Schema Configuration
+# This file defines the mapping between Enterprise Architect database tables
+# and their corresponding model classes for LutaML QEA parser
+
+# Metadata
+version: "1.0"
+description: "Enterprise Architect QEA database schema configuration"
+last_updated: "2025-10-30"
+phase: "Phase 4 - EA to UML Transformation Layer"
+
+# Model class mappings
+model_classes:
+  t_object: Lutaml::Qea::Models::EaObject
+  t_attribute: Lutaml::Qea::Models::EaAttribute
+  t_operation: Lutaml::Qea::Models::EaOperation
+  t_operationparams: Lutaml::Qea::Models::EaOperationParam
+  t_connector: Lutaml::Qea::Models::EaConnector
+  t_package: Lutaml::Qea::Models::EaPackage
+  t_diagram: Lutaml::Qea::Models::EaDiagram
+  t_diagramobjects: Lutaml::Qea::Models::EaDiagramObject
+  t_diagramlinks: Lutaml::Qea::Models::EaDiagramLink
+  t_objectconstraint: Lutaml::Qea::Models::EaObjectConstraint
+  t_taggedvalue: Lutaml::Qea::Models::EaTaggedValue
+  t_objectproperties: Lutaml::Qea::Models::EaObjectProperty
+  t_attributetag: Lutaml::Qea::Models::EaAttributeTag
+  t_xref: Lutaml::Qea::Models::EaXref
+  t_stereotypes: Lutaml::Qea::Models::EaStereotype
+  t_datatypes: Lutaml::Qea::Models::EaDatatype
+  t_constrainttypes: Lutaml::Qea::Models::EaConstraintType
+  t_connectortypes: Lutaml::Qea::Models::EaConnectorType
+  t_diagramtypes: Lutaml::Qea::Models::EaDiagramType
+  t_objecttypes: Lutaml::Qea::Models::EaObjectType
+  t_statustypes: Lutaml::Qea::Models::EaStatusType
+  t_complexitytypes: Lutaml::Qea::Models::EaComplexityType
+
+# Type mappings for SQLite to Ruby
+type_mappings:
+  INTEGER: integer
+  TEXT: string
+  REAL: float
+  BLOB: binary
+  NULL: null
+
+# Boolean conversion rules
+boolean_fields:
+  # Field names that should be treated as boolean (INTEGER 0/1)
+  - IsStatic
+  - IsCollection
+  - IsOrdered
+  - AllowDuplicates
+  - IsControlled
+  - Protected
+  - UseDTD
+  - LogXML
+  - IsRoot
+  - IsLeaf
+  - IsSpec
+  - IsActive
+  - Const
+  - Tagged
+
+# Null handling
+null_handling:
+  strategy: convert_empty_strings
+  empty_string_as_null: true
+  zero_as_null: false
+
+# Table definitions
+# Each table maps to a model class in the domain layer
+tables:
+  # Core UML Object table
+  - table_name: t_object
+    enabled: true
+    primary_key: Object_ID
+    collection_name: objects
+    description: "UML objects (classes, interfaces, etc.)"
+    columns:
+      - name: Object_ID
+        type: INTEGER
+        primary: true
+        nullable: false
+      - name: Object_Type
+        type: TEXT
+        nullable: true
+      - name: Diagram_ID
+        type: INTEGER
+        nullable: true
+      - name: Name
+        type: TEXT
+        nullable: true
+      - name: Alias
+        type: TEXT
+        nullable: true
+      - name: Author
+        type: TEXT
+        nullable: true
+      - name: Version
+        type: TEXT
+        nullable: true
+        default: "1.0"
+      - name: Note
+        type: TEXT
+        nullable: true
+      - name: Package_ID
+        type: INTEGER
+        nullable: true
+      - name: Stereotype
+        type: TEXT
+        nullable: true
+      - name: NType
+        type: INTEGER
+        nullable: true
+      - name: Complexity
+        type: TEXT
+        nullable: true
+      - name: Abstract
+        type: TEXT
+        nullable: true
+      - name: ea_guid
+        type: TEXT
+        nullable: true
+      - name: ParentID
+        type: INTEGER
+        nullable: true
+      - name: Classifier
+        type: INTEGER
+        nullable: true
+      - name: Classifier_guid
+        type: TEXT
+        nullable: true
+      - name: Visibility
+        type: TEXT
+        nullable: true
+      - name: IsRoot
+        type: INTEGER
+        nullable: true
+        boolean: true
+      - name: IsLeaf
+        type: INTEGER
+        nullable: true
+        boolean: true
+      - name: IsSpec
+        type: INTEGER
+        nullable: true
+        boolean: true
+      - name: IsActive
+        type: INTEGER
+        nullable: true
+        boolean: true
+      - name: CreatedDate
+        type: TEXT
+        nullable: true
+      - name: ModifiedDate
+        type: TEXT
+        nullable: true
+
+  # Attributes table
+  - table_name: t_attribute
+    enabled: true
+    primary_key: ID
+    collection_name: attributes
+    description: "Object attributes (class fields)"
+    columns:
+      - name: ID
+        type: INTEGER
+        primary: true
+        nullable: false
+      - name: Object_ID
+        type: INTEGER
+        nullable: true
+      - name: Name
+        type: TEXT
+        nullable: true
+      - name: Scope
+        type: TEXT
+        nullable: true
+      - name: Stereotype
+        type: TEXT
+        nullable: true
+      - name: Containment
+        type: TEXT
+        nullable: true
+      - name: IsStatic
+        type: INTEGER
+        nullable: true
+        boolean: true
+      - name: IsCollection
+        type: INTEGER
+        nullable: true
+        boolean: true
+      - name: IsOrdered
+        type: INTEGER
+        nullable: true
+        boolean: true
+      - name: AllowDuplicates
+        type: INTEGER
+        nullable: true
+        boolean: true
+      - name: LowerBound
+        type: TEXT
+        nullable: true
+      - name: UpperBound
+        type: TEXT
+        nullable: true
+      - name: Notes
+        type: TEXT
+        nullable: true
+      - name: Derived
+        type: TEXT
+        nullable: true
+      - name: Type
+        type: TEXT
+        nullable: true
+      - name: Default
+        type: TEXT
+        nullable: true
+      - name: ea_guid
+        type: TEXT
+        nullable: true
+      - name: Classifier
+        type: TEXT
+        nullable: true
+
+  # Operations table
+  - table_name: t_operation
+    enabled: true
+    primary_key: OperationID
+    collection_name: operations
+    description: "Object operations (methods)"
+    columns:
+      - name: OperationID
+        type: INTEGER
+        primary: true
+        nullable: false
+      - name: Object_ID
+        type: INTEGER
+        nullable: true
+      - name: Name
+        type: TEXT
+        nullable: true
+      - name: Scope
+        type: TEXT
+        nullable: true
+      - name: Type
+        type: TEXT
+        nullable: true
+      - name: ReturnArray
+        type: TEXT
+        nullable: true
+      - name: Stereotype
+        type: TEXT
+        nullable: true
+      - name: IsStatic
+        type: INTEGER
+        nullable: true
+        boolean: true
+      - name: Concurrency
+        type: TEXT
+        nullable: true
+      - name: Notes
+        type: TEXT
+        nullable: true
+      - name: Abstract
+        type: TEXT
+        nullable: true
+      - name: ea_guid
+        type: TEXT
+        nullable: true
+      - name: Classifier
+        type: TEXT
+        nullable: true
+
+  # Operation parameters table
+  - table_name: t_operationparams
+    enabled: true
+    primary_key: OperationID
+    collection_name: operation_params
+    description: "Method parameters"
+    columns:
+      - name: OperationID
+        type: INTEGER
+        primary: true
+        nullable: false
+      - name: Name
+        type: TEXT
+        nullable: true
+      - name: Type
+        type: TEXT
+        nullable: true
+      - name: Default
+        type: TEXT
+        nullable: true
+      - name: Notes
+        type: TEXT
+        nullable: true
+      - name: Pos
+        type: INTEGER
+        nullable: true
+      - name: Const
+        type: INTEGER
+        nullable: true
+        boolean: true
+      - name: Style
+        type: TEXT
+        nullable: true
+      - name: Kind
+        type: TEXT
+        nullable: true
+      - name: ea_guid
+        type: TEXT
+        nullable: true
+
+  # Connectors table (relationships)
+  - table_name: t_connector
+    enabled: true
+    primary_key: Connector_ID
+    collection_name: connectors
+    description: "Relationships between objects"
+    columns:
+      - name: Connector_ID
+        type: INTEGER
+        primary: true
+        nullable: false
+      - name: Name
+        type: TEXT
+        nullable: true
+      - name: Direction
+        type: TEXT
+        nullable: true
+      - name: Notes
+        type: TEXT
+        nullable: true
+      - name: Connector_Type
+        type: TEXT
+        nullable: true
+      - name: SubType
+        type: TEXT
+        nullable: true
+      - name: SourceCard
+        type: TEXT
+        nullable: true
+      - name: SourceAccess
+        type: TEXT
+        nullable: true
+      - name: SourceElement
+        type: TEXT
+        nullable: true
+      - name: DestCard
+        type: TEXT
+        nullable: true
+      - name: DestAccess
+        type: TEXT
+        nullable: true
+      - name: DestElement
+        type: TEXT
+        nullable: true
+      - name: SourceRole
+        type: TEXT
+        nullable: true
+      - name: SourceRoleType
+        type: TEXT
+        nullable: true
+      - name: DestRole
+        type: TEXT
+        nullable: true
+      - name: DestRoleType
+        type: TEXT
+        nullable: true
+      - name: SourceContainment
+        type: TEXT
+        nullable: true
+      - name: DestContainment
+        type: TEXT
+        nullable: true
+      - name: SourceIsAggregate
+        type: INTEGER
+        nullable: true
+      - name: DestIsAggregate
+        type: INTEGER
+        nullable: true
+      - name: SourceIsOrdered
+        type: INTEGER
+        nullable: true
+      - name: DestIsOrdered
+        type: INTEGER
+        nullable: true
+      - name: ea_guid
+        type: TEXT
+        nullable: true
+      - name: Start_Object_ID
+        type: INTEGER
+        nullable: true
+      - name: End_Object_ID
+        type: INTEGER
+        nullable: true
+
+  # Packages table
+  - table_name: t_package
+    enabled: true
+    primary_key: Package_ID
+    collection_name: packages
+    description: "Package hierarchy"
+    columns:
+      - name: Package_ID
+        type: INTEGER
+        primary: true
+        nullable: false
+      - name: Name
+        type: TEXT
+        nullable: true
+      - name: Parent_ID
+        type: INTEGER
+        nullable: true
+      - name: CreatedDate
+        type: TEXT
+        nullable: true
+      - name: ModifiedDate
+        type: TEXT
+        nullable: true
+      - name: Notes
+        type: TEXT
+        nullable: true
+      - name: ea_guid
+        type: TEXT
+        nullable: true
+      - name: IsControlled
+        type: INTEGER
+        nullable: true
+        boolean: true
+      - name: Version
+        type: TEXT
+        nullable: true
+      - name: Protected
+        type: INTEGER
+        nullable: true
+        boolean: true
+      - name: PkgOwner
+        type: TEXT
+        nullable: true
+      - name: UMLVersion
+        type: TEXT
+        nullable: true
+      - name: TPos
+        type: INTEGER
+        nullable: true
+
+  # Diagrams table
+  - table_name: t_diagram
+    enabled: true
+    primary_key: Diagram_ID
+    collection_name: diagrams
+    description: "UML diagrams"
+    columns:
+      - name: Diagram_ID
+        type: INTEGER
+        primary: true
+        nullable: false
+      - name: Package_ID
+        type: INTEGER
+        nullable: true
+      - name: ParentID
+        type: INTEGER
+        nullable: true
+      - name: Diagram_Type
+        type: TEXT
+        nullable: true
+      - name: Name
+        type: TEXT
+        nullable: true
+      - name: Version
+        type: TEXT
+        nullable: true
+      - name: Author
+        type: TEXT
+        nullable: true
+      - name: ShowDetails
+        type: INTEGER
+        nullable: true
+      - name: Notes
+        type: TEXT
+        nullable: true
+      - name: Stereotype
+        type: TEXT
+        nullable: true
+      - name: ea_guid
+        type: TEXT
+        nullable: true
+      - name: CreatedDate
+        type: TEXT
+        nullable: true
+      - name: ModifiedDate
+        type: TEXT
+        nullable: true
+
+  # Diagram Objects table (visual placement)
+  - table_name: t_diagramobjects
+    enabled: true
+    primary_key: Instance_ID
+    collection_name: diagram_objects
+    description: "Visual placement of elements on diagrams"
+    columns:
+      - name: Diagram_ID
+        type: INTEGER
+        nullable: false
+      - name: Object_ID
+        type: INTEGER
+        nullable: false
+      - name: RectTop
+        type: INTEGER
+        nullable: true
+      - name: RectLeft
+        type: INTEGER
+        nullable: true
+      - name: RectRight
+        type: INTEGER
+        nullable: true
+      - name: RectBottom
+        type: INTEGER
+        nullable: true
+      - name: Sequence
+        type: INTEGER
+        nullable: true
+      - name: ObjectStyle
+        type: TEXT
+        nullable: true
+      - name: Instance_ID
+        type: INTEGER
+        primary: true
+        nullable: false
+
+  # Diagram Links table (visual routing)
+  - table_name: t_diagramlinks
+    enabled: true
+    primary_key: Instance_ID
+    collection_name: diagram_links
+    description: "Visual routing of connectors on diagrams"
+    columns:
+      - name: DiagramID
+        type: INTEGER
+        nullable: false
+      - name: ConnectorID
+        type: INTEGER
+        nullable: false
+      - name: Geometry
+        type: TEXT
+        nullable: true
+      - name: Style
+        type: TEXT
+        nullable: true
+      - name: Hidden
+        type: INTEGER
+        nullable: true
+      - name: Path
+        type: TEXT
+        nullable: true
+      - name: Instance_ID
+        type: INTEGER
+        primary: true
+        nullable: false
+
+  # Object Constraints table (OCL)
+  - table_name: t_objectconstraint
+    enabled: true
+    primary_key: ConstraintID
+    collection_name: object_constraints
+    description: "OCL constraints on UML objects"
+    columns:
+      - name: ConstraintID
+        type: INTEGER
+        primary: true
+        nullable: false
+      - name: Object_ID
+        type: INTEGER
+        nullable: false
+      - name: Constraint
+        type: TEXT
+        nullable: true
+      - name: ConstraintType
+        type: TEXT
+        nullable: true
+      - name: Weight
+        type: REAL
+        nullable: true
+      - name: Notes
+        type: TEXT
+        nullable: true
+      - name: Status
+        type: TEXT
+        nullable: true
+
+  # Tagged Values table
+  - table_name: t_taggedvalue
+    enabled: true
+    primary_key: PropertyID
+    collection_name: tagged_values
+    description: "Custom metadata (tagged values) for UML elements"
+    columns:
+      - name: PropertyID
+        type: TEXT
+        primary: true
+        nullable: false
+      - name: ElementID
+        type: TEXT
+        nullable: false
+      - name: BaseClass
+        type: TEXT
+        nullable: true
+      - name: TagValue
+        type: TEXT
+        nullable: true
+      - name: Notes
+        type: TEXT
+        nullable: true
+
+  # Object Properties table
+  - table_name: t_objectproperties
+    enabled: true
+    primary_key: PropertyID
+    collection_name: object_properties
+    description: "Object-level properties (GML/XML Schema metadata)"
+    columns:
+      - name: PropertyID
+        type: INTEGER
+        primary: true
+        nullable: false
+      - name: Object_ID
+        type: INTEGER
+        nullable: false
+      - name: Property
+        type: TEXT
+        nullable: true
+      - name: Value
+        type: TEXT
+        nullable: true
+      - name: Notes
+        type: TEXT
+        nullable: true
+      - name: ea_guid
+        type: TEXT
+        nullable: true
+
+  # Attribute Tags table
+  - table_name: t_attributetag
+    enabled: true
+    primary_key: PropertyID
+    collection_name: attribute_tags
+    description: "Attribute-level tags (GML/XML Schema metadata)"
+    columns:
+      - name: PropertyID
+        type: INTEGER
+        primary: true
+        nullable: false
+      - name: ElementID
+        type: INTEGER
+        nullable: false
+      - name: Property
+        type: TEXT
+        nullable: true
+      - name: VALUE
+        type: TEXT
+        nullable: true
+      - name: NOTES
+        type: TEXT
+        nullable: true
+      - name: ea_guid
+        type: TEXT
+        nullable: true
+
+  # Cross-References table (metadata enhancements)
+  - table_name: t_xref
+    enabled: true
+    primary_key: XrefID
+    collection_name: xrefs
+    description: "Cross-references (stereotypes, custom properties, diagram settings)"
+    columns:
+      - name: XrefID
+        type: TEXT
+        primary: true
+        nullable: false
+      - name: Name
+        type: TEXT
+        nullable: true
+      - name: Type
+        type: TEXT
+        nullable: true
+      - name: Visibility
+        type: TEXT
+        nullable: true
+      - name: Namespace
+        type: TEXT
+        nullable: true
+      - name: Requirement
+        type: TEXT
+        nullable: true
+      - name: Constraint
+        type: TEXT
+        nullable: true
+      - name: Behavior
+        type: TEXT
+        nullable: true
+      - name: Partition
+        type: TEXT
+        nullable: true
+      - name: Description
+        type: TEXT
+        nullable: true
+      - name: Client
+        type: TEXT
+        nullable: true
+      - name: Supplier
+        type: TEXT
+        nullable: true
+      - name: Link
+        type: TEXT
+        nullable: true
+
+  # Stereotypes table (reference data)
+  - table_name: t_stereotypes
+    enabled: true
+    primary_key: null
+    collection_name: stereotypes
+    description: "Stereotype definitions (UML profile extensions)"
+    columns:
+      - name: Stereotype
+        type: TEXT
+        nullable: false
+      - name: AppliesTo
+        type: TEXT
+        nullable: false
+      - name: Description
+        type: TEXT
+        nullable: true
+      - name: MFEnabled
+        type: INTEGER
+        nullable: true
+      - name: MFPath
+        type: TEXT
+        nullable: true
+      - name: Metafile
+        type: BLOB
+        nullable: true
+      - name: Style
+        type: TEXT
+        nullable: true
+      - name: ea_guid
+        type: TEXT
+        nullable: true
+      - name: VisualType
+        type: TEXT
+        nullable: true
+
+  # Data Types table (reference data)
+  - table_name: t_datatypes
+    enabled: true
+    primary_key: DatatypeID
+    collection_name: datatypes
+    description: "Database-specific type definitions and mappings"
+    columns:
+      - name: Type
+        type: TEXT
+        nullable: true
+      - name: ProductName
+        type: TEXT
+        nullable: true
+      - name: DataType
+        type: TEXT
+        nullable: true
+      - name: Size
+        type: INTEGER
+        nullable: true
+      - name: MaxLen
+        type: INTEGER
+        nullable: true
+      - name: MaxPrec
+        type: INTEGER
+        nullable: true
+      - name: MaxScale
+        type: INTEGER
+        nullable: true
+      - name: DefaultLen
+        type: INTEGER
+        nullable: true
+      - name: DefaultPrec
+        type: INTEGER
+        nullable: true
+      - name: DefaultScale
+        type: INTEGER
+        nullable: true
+      - name: User
+        type: INTEGER
+        nullable: true
+      - name: PDATA1
+        type: TEXT
+        nullable: true
+      - name: PDATA2
+        type: TEXT
+        nullable: true
+      - name: PDATA3
+        type: TEXT
+        nullable: true
+      - name: PDATA4
+        type: TEXT
+        nullable: true
+      - name: HasLength
+        type: TEXT
+        nullable: true
+      - name: GenericType
+        type: TEXT
+        nullable: true
+      - name: DatatypeID
+        type: INTEGER
+        primary: true
+        nullable: false
+
+  # Constraint Types table (Priority 3 - lookup/reference data)
+  - table_name: t_constrainttypes
+    enabled: true
+    primary_key: Constraint
+    collection_name: constraint_types
+    description: "Constraint type definitions (Invariant, Pre-condition, etc.)"
+    columns:
+      - name: Constraint
+        type: TEXT
+        primary: true
+        nullable: false
+      - name: Description
+        type: TEXT
+        nullable: true
+      - name: Notes
+        type: TEXT
+        nullable: true
+
+  # Connector Types table (Priority 3 - lookup/reference data)
+  - table_name: t_connectortypes
+    enabled: true
+    primary_key: Connector_Type
+    collection_name: connector_types
+    description: "Connector/association type definitions"
+    columns:
+      - name: Connector_Type
+        type: TEXT
+        primary: true
+        nullable: false
+      - name: Description
+        type: TEXT
+        nullable: true
+
+  # Diagram Types table (Priority 3 - lookup/reference data)
+  - table_name: t_diagramtypes
+    enabled: true
+    primary_key: Diagram_Type
+    collection_name: diagram_types
+    description: "Diagram type definitions"
+    columns:
+      - name: Diagram_Type
+        type: TEXT
+        primary: true
+        nullable: false
+      - name: Name
+        type: TEXT
+        nullable: true
+      - name: Package_ID
+        type: INTEGER
+        nullable: true
+
+  # Object Types table (Priority 3 - lookup/reference data)
+  - table_name: t_objecttypes
+    enabled: true
+    primary_key: Object_Type
+    collection_name: object_types
+    description: "Object/class type definitions"
+    columns:
+      - name: Object_Type
+        type: TEXT
+        primary: true
+        nullable: false
+      - name: Description
+        type: TEXT
+        nullable: true
+      - name: DesignObject
+        type: INTEGER
+        nullable: true
+      - name: ImageID
+        type: INTEGER
+        nullable: true
+
+  # Status Types table (Priority 3 - lookup/reference data)
+  - table_name: t_statustypes
+    enabled: true
+    primary_key: Status
+    collection_name: status_types
+    description: "Status value definitions"
+    columns:
+      - name: Status
+        type: TEXT
+        primary: true
+        nullable: false
+      - name: Description
+        type: TEXT
+        nullable: true
+
+  # Complexity Types table (Priority 3 - lookup/reference data)
+  - table_name: t_complexitytypes
+    enabled: true
+    primary_key: Complexity
+    collection_name: complexity_types
+    description: "Complexity level definitions with numeric weights"
+    columns:
+      - name: Complexity
+        type: TEXT
+        primary: true
+        nullable: false
+      - name: NumericWeight
+        type: INTEGER
+        nullable: true
+
+# Transformation mappings for EA to UML conversion
+transformations:
+  # EA Object Type to UML Model mappings
+  object_types:
+    Class: Lutaml::Uml::Class
+    Interface: Lutaml::Uml::Class  # With interface stereotype
+    Enumeration: Lutaml::Uml::Enum
+    DataType: Lutaml::Uml::DataType
+    Package: Lutaml::Uml::Package
+    Component: Lutaml::Uml::Class  # With component stereotype
+    Node: Lutaml::Uml::Class
+    Actor: Lutaml::Uml::Actor
+    UseCase: Lutaml::Uml::Class
+
+  # EA Connector Type to UML Model mappings
+  connector_types:
+    Association: Lutaml::Uml::Association
+    Generalization: Lutaml::Uml::Generalization
+    Aggregation: Lutaml::Uml::Association  # With aggregation property
+    Composition: Lutaml::Uml::Association  # With composition property
+    Dependency: Lutaml::Uml::Dependency
+    Realization: Lutaml::Uml::Realization
+    Abstraction: Lutaml::Uml::Abstraction
+
+  # Visibility mapping from EA to UML
+  visibility_mapping:
+    Public: public
+    Private: private
+    Protected: protected
+    Package: package
+
+  # Cardinality patterns
+  cardinality_patterns:
+    "0..1": { min: "0", max: "1" }
+    "1": { min: "1", max: "1" }
+    "0..*": { min: "0", max: "*" }
+    "1..*": { min: "1", max: "*" }
+    "*": { min: "0", max: "*" }
+
+  # Transformer class mappings
+  transformers:
+    class: Lutaml::Qea::Factory::ClassTransformer
+    attribute: Lutaml::Qea::Factory::AttributeTransformer
+    operation: Lutaml::Qea::Factory::OperationTransformer
+    association: Lutaml::Qea::Factory::AssociationTransformer
+    generalization: Lutaml::Qea::Factory::GeneralizationTransformer
+    package: Lutaml::Qea::Factory::PackageTransformer
+    diagram: Lutaml::Qea::Factory::DiagramTransformer
+    constraint: Lutaml::Qea::Factory::ConstraintTransformer
+    tagged_value: Lutaml::Qea::Factory::TaggedValueTransformer
+    object_property: Lutaml::Qea::Factory::ObjectPropertyTransformer
+    attribute_tag: Lutaml::Qea::Factory::AttributeTagTransformer

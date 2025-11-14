@@ -1,0 +1,1467 @@
+<?xml  version='1.0' encoding='UTF-8' ?>
+<xmi:XMI xmlns:xmi="http://www.omg.org/spec/XMI/20131001" xmlns:uml="http://www.omg.org/spec/UML/20161101" xmlns:umldi="http://www.omg.org/spec/UML/20161101/UMLDI" xmlns:dc="http://www.omg.org/spec/UML/20161101/UMLDC" xmlns:ArcGIS="http://www.sparxsystems.com/profiles/ArcGIS/1.0">
+	<xmi:Documentation exporter="Enterprise Architect" exporterVersion="6.5" exporterID="1624"/>
+	<uml:Model xmi:type="uml:Model" name="EA_Model">
+		<packagedElement xmi:type="uml:Package" xmi:id="EAPK_D45343E7_143F_4d37_9751_334A6C0A8441" name="Model">
+			<packagedElement xmi:type="uml:Package" xmi:id="EAPK_1EA391DC_BDB1_4db2_B393_1474F56055F6" name="ArcGIS Workspace">
+				<ownedComment xmi:type="uml:Comment" xmi:id="EAID_CEAA949C_EC9E_40b5_9AC5_A77FE155A446" body="The model is structured as follows:&#xA;&lt;ul&gt;&#xA;&#x9;&lt;li&gt;Feature classes are contained in the &quot;Features&quot; package.    &lt;/li&gt;&#xA;&#x9;&lt;li&gt;CodedValue- and RangeDomains are contained in the &quot;Domains&quot; package.    &lt;/li&gt;&#xA;&#x9;&lt;li&gt;Object classes are contained in the &quot;Tables&quot; package.      &lt;/li&gt;&#xA;&#x9;&lt;li&gt;All association classes created to represent n:m relationships between model classes are contained in the &quot;Association Classes&quot; package.  &lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&#xA;&lt;b&gt;Before exporting your model to an ArcGIS schema, you can change the Spatial Reference element (currently set to EPSG:4326).&lt;/b&gt;&#xA;&#xA;The Spatial Reference element is available under the &quot;Spatial References&quot; package. To change the spatial reference system, simply select the &quot;MySpatialReference&quot; element and choose: &lt;b&gt;Extensions &amp;gt; ArcGIS &amp;gt; Set Coordinate System&lt;/b&gt;.&#xA;&#xA;You can export your model as an ArcGIS schema by selecting the ArcGIS Workspace in the Project Browser and choosing:&#xA;&lt;b&gt;Extensions &amp;gt; ArcGIS &amp;gt; Export to ArcGIS Workspace XML&lt;/b&gt;">
+					<annotatedElement xmi:idref="EAPK_1EA391DC_BDB1_4db2_B393_1474F56055F6"/>
+				</ownedComment>
+				<packagedElement xmi:type="uml:Package" xmi:id="EAPK_292B5D20_3946_4fc1_9497_7C33D833B27A" name="Association Classes"/>
+				<packagedElement xmi:type="uml:Package" xmi:id="EAPK_7CA4EC83_5319_49ac_B909_22C57C277B34" name="Tables"/>
+				<packagedElement xmi:type="uml:Package" xmi:id="EAPK_383B0B20_7CDE_4a14_9B51_60F47EC25AB0" name="Features"/>
+				<packagedElement xmi:type="uml:Package" xmi:id="EAPK_30F303EA_912D_46dc_BC15_0A3E915689B4" name="Domains"/>
+				<packagedElement xmi:type="uml:Package" xmi:id="EAPK_4A553670_D049_4bdb_87DC_011F75DBC9E6" name="Spatial References">
+					<ownedComment xmi:type="uml:Comment" xmi:id="EAID_F86A161E_218D_49bb_B3F7_95E2B3221C43" body="Use this diagram to define the spatial reference information of your schema. You can define one or more Spatial Reference elements, which are referred to by other elements in your schema that require Spatial Reference information, such as a coordinate system, XYTolerance etc.">
+						<annotatedElement xmi:idref="EAPK_4A553670_D049_4bdb_87DC_011F75DBC9E6"/>
+					</ownedComment>
+					<packagedElement xmi:type="uml:Class" xmi:id="EAID_E6CEBD40_616F_48c5_9084_1226AA9DA500" name="MySpatialReference"/>
+				</packagedElement>
+			</packagedElement>
+		</packagedElement>
+		<umldi:Diagram xmi:type="umldi:UMLClassDiagram" xmi:id="EAID_7D960BD8_65D8_4934_9C11_4EF860DD8FBA" isFrame="false" modelElement="EAPK_1EA391DC_BDB1_4db2_B393_1474F56055F6">
+			<ownedElement xmi:type="umldi:UMLCompartmentableShape" xmi:id="EAID_7D960BD8_65D8_4934_9B51_60F47EC25AB0" modelElement="EAPK_383B0B20_7CDE_4a14_9B51_60F47EC25AB0">
+				<ownedElement xmi:type="umldi:UMLKeywordLabel" xmi:id="EAID_KL000000_65D8_4934_9B51_60F47EC25AB0" text="FeatureDataset"/>
+				<ownedElement xmi:type="umldi:UMLNameLabel" xmi:id="EAID_NL000000_65D8_4934_9B51_60F47EC25AB0" text="Features"/>
+				<bounds xmi:type="dc:bounds" xmi:id="EAID_DB000000_65D8_4934_9B51_60F47EC25AB0" x="15" y="374" width="142" height="69"/>
+			</ownedElement>
+			<ownedElement xmi:type="umldi:UMLCompartmentableShape" xmi:id="EAID_7D960BD8_65D8_4934_BC15_0A3E915689B4" modelElement="EAPK_30F303EA_912D_46dc_BC15_0A3E915689B4">
+				<ownedElement xmi:type="umldi:UMLNameLabel" xmi:id="EAID_NL000000_65D8_4934_BC15_0A3E915689B4" text="Domains"/>
+				<bounds xmi:type="dc:bounds" xmi:id="EAID_DB000000_65D8_4934_BC15_0A3E915689B4" x="173" y="374" width="142" height="69"/>
+			</ownedElement>
+			<ownedElement xmi:type="umldi:UMLCompartmentableShape" xmi:id="EAID_7D960BD8_65D8_4934_87DC_011F75DBC9E6" modelElement="EAPK_4A553670_D049_4bdb_87DC_011F75DBC9E6">
+				<ownedElement xmi:type="umldi:UMLNameLabel" xmi:id="EAID_NL000000_65D8_4934_87DC_011F75DBC9E6" text="Spatial References"/>
+				<bounds xmi:type="dc:bounds" xmi:id="EAID_DB000000_65D8_4934_87DC_011F75DBC9E6" x="489" y="374" width="142" height="69"/>
+			</ownedElement>
+			<ownedElement xmi:type="umldi:UMLShape" xmi:id="EAID_7D960BD8_65D8_4934_9AC5_A77FE155A446" modelElement="EAID_CEAA949C_EC9E_40b5_9AC5_A77FE155A446">
+				<bounds xmi:type="dc:bounds" xmi:id="EAID_DB000000_65D8_4934_9AC5_A77FE155A446" x="69" y="27" width="548" height="308"/>
+			</ownedElement>
+			<ownedElement xmi:type="umldi:UMLCompartmentableShape" xmi:id="EAID_7D960BD8_65D8_4934_B909_22C57C277B34" modelElement="EAPK_7CA4EC83_5319_49ac_B909_22C57C277B34">
+				<ownedElement xmi:type="umldi:UMLNameLabel" xmi:id="EAID_NL000000_65D8_4934_B909_22C57C277B34" text="Tables"/>
+				<bounds xmi:type="dc:bounds" xmi:id="EAID_DB000000_65D8_4934_B909_22C57C277B34" x="331" y="374" width="142" height="69"/>
+			</ownedElement>
+			<ownedElement xmi:type="umldi:UMLCompartmentableShape" xmi:id="EAID_7D960BD8_65D8_4934_9497_7C33D833B27A" modelElement="EAPK_292B5D20_3946_4fc1_9497_7C33D833B27A">
+				<ownedElement xmi:type="umldi:UMLNameLabel" xmi:id="EAID_NL000000_65D8_4934_9497_7C33D833B27A" text="Association Classes"/>
+				<bounds xmi:type="dc:bounds" xmi:id="EAID_DB000000_65D8_4934_9497_7C33D833B27A" x="15" y="477" width="131" height="80"/>
+			</ownedElement>
+		</umldi:Diagram>
+		<umldi:Diagram xmi:type="umldi:UMLClassDiagram" xmi:id="EAID_9EE6A41B_5FAA_4c89_B98F_732059778630" isFrame="false" modelElement="EAPK_292B5D20_3946_4fc1_9497_7C33D833B27A"/>
+		<umldi:Diagram xmi:type="umldi:UMLClassDiagram" xmi:id="EAID_87DAE930_5069_4c58_AC65_4B0B2C0F32C8" isFrame="false" modelElement="EAPK_7CA4EC83_5319_49ac_B909_22C57C277B34"/>
+		<umldi:Diagram xmi:type="umldi:UMLClassDiagram" xmi:id="EAID_6A3C55E8_3C3C_4f3a_8AAC_0299C5B23070" isFrame="false" modelElement="EAPK_383B0B20_7CDE_4a14_9B51_60F47EC25AB0"/>
+		<umldi:Diagram xmi:type="umldi:UMLClassDiagram" xmi:id="EAID_1DE6B973_CE8A_416f_909B_54CEA1E5944E" isFrame="false" modelElement="EAPK_30F303EA_912D_46dc_BC15_0A3E915689B4"/>
+		<umldi:Diagram xmi:type="umldi:UMLClassDiagram" xmi:id="EAID_7C44AC09_27C1_47b3_9A85_88EC71C081FF" isFrame="false" modelElement="EAPK_4A553670_D049_4bdb_87DC_011F75DBC9E6">
+			<ownedElement xmi:type="umldi:UMLShape" xmi:id="EAID_7C44AC09_27C1_47b3_B3F7_95E2B3221C43" modelElement="EAID_F86A161E_218D_49bb_B3F7_95E2B3221C43">
+				<bounds xmi:type="dc:bounds" xmi:id="EAID_DB000000_27C1_47b3_B3F7_95E2B3221C43" x="50" y="30" width="273" height="146"/>
+			</ownedElement>
+			<ownedElement xmi:type="umldi:UMLClassifierShape" xmi:id="EAID_7C44AC09_27C1_47b3_9084_1226AA9DA500" modelElement="EAID_E6CEBD40_616F_48c5_9084_1226AA9DA500">
+				<ownedElement xmi:type="umldi:UMLKeywordLabel" xmi:id="EAID_KL000000_27C1_47b3_9084_1226AA9DA500" text="SpatialReference"/>
+				<ownedElement xmi:type="umldi:UMLNameLabel" xmi:id="EAID_NL000000_27C1_47b3_9084_1226AA9DA500" text="MySpatialReference"/>
+				<bounds xmi:type="dc:bounds" xmi:id="EAID_DB000000_27C1_47b3_9084_1226AA9DA500" x="49" y="216" width="260" height="254"/>
+			</ownedElement>
+		</umldi:Diagram>
+		<profileApplication xmi:type="uml:ProfileApplication" xmi:id="profileap_9B244878-1">
+			<appliedProfile xmi:type="uml:Profile" href="http://www.sparxsystems.com/profiles/ArcGIS/1.0#9B244878-1"/>
+		</profileApplication>
+	</uml:Model>
+	<xmi:Extension extender="Enterprise Architect" extenderID="6.5">
+		<elements>
+			<element xmi:idref="EAPK_D45343E7_143F_4d37_9751_334A6C0A8441">
+				<packageproperties/>
+				<paths/>
+				<times created="2012-04-17 00:00:00" modified="2012-04-17 00:00:00" lastloaddate="2014-11-07 13:33:43"/>
+				<flags iscontrolled="0" isprotected="0" usedtd="0" logxml="0" packageFlags="isModel=1;"/>
+			</element>
+			<element xmi:idref="EAPK_1EA391DC_BDB1_4db2_B393_1474F56055F6" xmi:type="uml:Package" name="ArcGIS Workspace" scope="public">
+				<model package2="EAID_1EA391DC_BDB1_4db2_B393_1474F56055F6" package="EAPK_D45343E7_143F_4d37_9751_334A6C0A8441" tpos="0" ea_localid="2" ea_eleType="package"/>
+				<properties isSpecification="false" sType="Package" nType="0" scope="public" stereotype="ArcGIS"/>
+				<project version="1.0" phase="1.0" created="2014-11-07 13:33:42" modified="2012-03-02 11:21:21" complexity="1" status="Proposed"/>
+				<code gentype="Java"/>
+				<style appearance="BackColor=-1;BorderColor=-1;BorderWidth=-1;FontColor=-1;VSwimLanes=1;HSwimLanes=1;BorderStyle=0;"/>
+				<tags>
+					<tag xmi:id="EAID_43B77AE2_315C_9131_9BCC_2DE1EEB10677" name="DefaultSpatialReference" value="{E6CEBD40-616F-48c5-9084-1226AA9DA500}" modelElement="EAID_1EA391DC_BDB1_4db2_B393_1474F56055F6"/>
+					<tag xmi:id="EAID_0C6BCFA1_797B_6879_AEE9_276F450D8353" name="MetaData" modelElement="EAID_1EA391DC_BDB1_4db2_B393_1474F56055F6"/>
+					<tag xmi:id="EAID_B4571FAF_5069_9950_B019_C4CFCC22E3AF" name="OrderInheritedFields" value="Top-down#NOTES#Values: Top-down,Alphabetic&#xA;Default: Top-down&#xA;" modelElement="EAID_1EA391DC_BDB1_4db2_B393_1474F56055F6"/>
+					<tag xmi:id="EAID_FC3F4171_B78B_8eb7_B1A6_BF6F25DFCDE1" name="WorkspaceType" value="esriLocalDatabaseWorkspace#NOTES#Values: esriFileSystemWorkspace,esriLocalDatabaseWorkspace,esriRemoteDatabaseWorkspace&#xA;Default: esriLocalDatabaseWorkspace&#xA;" modelElement="EAID_1EA391DC_BDB1_4db2_B393_1474F56055F6"/>
+				</tags>
+				<xrefs value="$XREFPROP=$XID={A1FFCF0D-9FAD-472e-864D-09BF32F7ED69}$XID;$NAM=Stereotypes$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=ArcGIS;FQName=ArcGIS::ArcGIS;@ENDSTEREO;$DES;$CLT={1EA391DC-BDB1-4db2-B393-1474F56055F6}$CLT;$SUP=&lt;none&gt;$SUP;$ENDXREF;"/>
+				<extendedProperties tagged="0" package_name="Model"/>
+				<packageproperties version="1.0" tpos="0"/>
+				<paths/>
+				<times created="2014-11-07 13:33:42" modified="2012-03-02 11:21:21" lastloaddate="2014-11-07 13:33:42" lastsavedate="2014-11-07 13:33:42"/>
+				<flags iscontrolled="0" isprotected="0" batchsave="0" batchload="0" usedtd="0" logxml="0"/>
+			</element>
+			<element xmi:idref="EAID_CEAA949C_EC9E_40b5_9AC5_A77FE155A446" xmi:type="uml:Note" scope="public">
+				<model package="EAPK_1EA391DC_BDB1_4db2_B393_1474F56055F6" tpos="0" ea_localid="2" ea_eleType="element"/>
+				<properties documentation="The model is structured as follows:&#xA;&lt;ul&gt;&#xA;&#x9;&lt;li&gt;Feature classes are contained in the &quot;Features&quot; package.    &lt;/li&gt;&#xA;&#x9;&lt;li&gt;CodedValue- and RangeDomains are contained in the &quot;Domains&quot; package.    &lt;/li&gt;&#xA;&#x9;&lt;li&gt;Object classes are contained in the &quot;Tables&quot; package.      &lt;/li&gt;&#xA;&#x9;&lt;li&gt;All association classes created to represent n:m relationships between model classes are contained in the &quot;Association Classes&quot; package.  &lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&#xA;&lt;b&gt;Before exporting your model to an ArcGIS schema, you can change the Spatial Reference element (currently set to EPSG:4326).&lt;/b&gt;&#xA;&#xA;The Spatial Reference element is available under the &quot;Spatial References&quot; package. To change the spatial reference system, simply select the &quot;MySpatialReference&quot; element and choose: &lt;b&gt;Extensions &amp;gt; ArcGIS &amp;gt; Set Coordinate System&lt;/b&gt;.&#xA;&#xA;You can export your model as an ArcGIS schema by selecting the ArcGIS Workspace in the Project Browser and choosing:&#xA;&lt;b&gt;Extensions &amp;gt; ArcGIS &amp;gt; Export to ArcGIS Workspace XML&lt;/b&gt;" isSpecification="false" sType="Note" nType="0" scope="public"/>
+				<project version="1.0" phase="1.0" created="2014-11-07 13:33:42" modified="2014-12-19 09:48:01" complexity="1" status="Proposed"/>
+				<code gentype="ArcGIS"/>
+				<style appearance="BackColor=-1;BorderColor=-1;BorderWidth=-1;FontColor=-1;VSwimLanes=1;HSwimLanes=1;BorderStyle=0;"/>
+				<tags/>
+				<xrefs/>
+				<extendedProperties tagged="0" package_name="ArcGIS Workspace"/>
+			</element>
+			<element xmi:idref="EAPK_292B5D20_3946_4fc1_9497_7C33D833B27A" xmi:type="uml:Package" name="Association Classes" scope="public">
+				<model package2="EAID_292B5D20_3946_4fc1_9497_7C33D833B27A" package="EAPK_1EA391DC_BDB1_4db2_B393_1474F56055F6" tpos="0" ea_localid="8" ea_eleType="package"/>
+				<properties isSpecification="false" sType="Package" nType="0" scope="public"/>
+				<project author="Johannes Echterhoff" version="1.0" phase="1.0" created="2014-11-20 17:23:04" modified="2014-11-20 17:23:04" complexity="1" status="Proposed"/>
+				<code gentype="Java"/>
+				<style appearance="BackColor=-1;BorderColor=-1;BorderWidth=-1;FontColor=-1;VSwimLanes=1;HSwimLanes=1;BorderStyle=0;"/>
+				<tags/>
+				<xrefs/>
+				<extendedProperties tagged="0" package_name="ArcGIS Workspace"/>
+				<packageproperties version="1.0"/>
+				<paths/>
+				<times created="2014-11-20 17:23:04" modified="2014-11-20 17:23:20"/>
+				<flags iscontrolled="0" isprotected="0" usedtd="0" logxml="0"/>
+			</element>
+			<element xmi:idref="EAPK_7CA4EC83_5319_49ac_B909_22C57C277B34" xmi:type="uml:Package" name="Tables" scope="public">
+				<model package2="EAID_7CA4EC83_5319_49ac_B909_22C57C277B34" package="EAPK_1EA391DC_BDB1_4db2_B393_1474F56055F6" tpos="0" ea_localid="7" ea_eleType="package"/>
+				<properties isSpecification="false" sType="Package" nType="0" scope="public"/>
+				<project author="Johannes Echterhoff" version="1.0" phase="1.0" created="2014-11-12 11:43:03" modified="2014-11-12 11:43:03" complexity="1" status="Proposed"/>
+				<code gentype="Java"/>
+				<style appearance="BackColor=-1;BorderColor=-1;BorderWidth=-1;FontColor=-1;VSwimLanes=1;HSwimLanes=1;BorderStyle=0;"/>
+				<tags/>
+				<xrefs/>
+				<extendedProperties tagged="0" package_name="ArcGIS Workspace"/>
+				<packageproperties version="1.0"/>
+				<paths/>
+				<times created="2014-11-12 11:43:03" modified="2014-11-12 11:47:36"/>
+				<flags iscontrolled="0" isprotected="0" usedtd="0" logxml="0"/>
+			</element>
+			<element xmi:idref="EAPK_383B0B20_7CDE_4a14_9B51_60F47EC25AB0" xmi:type="uml:Package" name="Features" scope="public">
+				<model package2="EAID_383B0B20_7CDE_4a14_9B51_60F47EC25AB0" package="EAPK_1EA391DC_BDB1_4db2_B393_1474F56055F6" tpos="1" ea_localid="3" ea_eleType="package"/>
+				<properties isSpecification="false" sType="Package" nType="0" scope="public" stereotype="FeatureDataset"/>
+				<project version="1.0" phase="1.0" created="2014-11-07 13:33:42" modified="2012-03-02 11:53:03" complexity="1" status="Proposed"/>
+				<code gentype="Java"/>
+				<style appearance="BackColor=-1;BorderColor=-1;BorderWidth=-1;FontColor=-1;VSwimLanes=1;HSwimLanes=1;BorderStyle=0;"/>
+				<tags>
+					<tag xmi:id="EAID_A6C738B8_AE8B_c8ae_9171_F65A157838FA" name="CanVersion" value="false#NOTES#Values: true,false&#xA;Default: false&#xA;" modelElement="EAID_383B0B20_7CDE_4a14_9B51_60F47EC25AB0"/>
+					<tag xmi:id="EAID_0038CD04_9457_5694_92B5_0D82C2BB4D88" name="DSID" modelElement="EAID_383B0B20_7CDE_4a14_9B51_60F47EC25AB0"/>
+					<tag xmi:id="EAID_A322DA8C_0E7F_160e_B7ED_38F4A0F4FA5E" name="FullPropsDefault" value="true#NOTES#Values: true,false&#xA;Default: true&#xA;" modelElement="EAID_383B0B20_7CDE_4a14_9B51_60F47EC25AB0"/>
+					<tag xmi:id="EAID_0C6BCFA1_C4D4_22c4_A355_E595E7A5A947" name="Metadata" modelElement="EAID_383B0B20_7CDE_4a14_9B51_60F47EC25AB0"/>
+					<tag xmi:id="EAID_5AE619BD_71D0_fe71_9C85_A6CA5F327C7E" name="SpatialReference" value="{E6CEBD40-616F-48c5-9084-1226AA9DA500}" modelElement="EAID_383B0B20_7CDE_4a14_9B51_60F47EC25AB0"/>
+					<tag xmi:id="EAID_42B02DCF_C962_45c9_BD32_7D1681661386" name="Versioned" value="false#NOTES#Values: true,false&#xA;Default: false&#xA;" modelElement="EAID_383B0B20_7CDE_4a14_9B51_60F47EC25AB0"/>
+				</tags>
+				<xrefs value="$XREFPROP=$XID={5D94762E-DA37-4d35-AE39-B745FFB9A533}$XID;$NAM=CustomProperties$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@PROP=@NAME=_defaultDiagramType@ENDNAME;@TYPE=string@ENDTYPE;@VALU=ArcGIS::ArcGIS@ENDVALU;@PRMT=@ENDPRMT;@ENDPROP;@PROP=@NAME=_makeComposite@ENDNAME;@TYPE=string@ENDTYPE;@VALU=true@ENDVALU;@PRMT=@ENDPRMT;@ENDPROP;$DES;$CLT={383B0B20-7CDE-4a14-9B51-60F47EC25AB0}$CLT;$ENDXREF;$XREFPROP=$XID={0BB57E88-3918-44ea-BC91-5B6AB30A43EF}$XID;$NAM=Stereotypes$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=FeatureDataset;FQName=ArcGIS::FeatureDataset;@ENDSTEREO;$DES;$CLT={383B0B20-7CDE-4a14-9B51-60F47EC25AB0}$CLT;$ENDXREF;"/>
+				<extendedProperties tagged="0" package_name="ArcGIS Workspace"/>
+				<packageproperties version="1.0" tpos="1"/>
+				<paths/>
+				<times created="2014-11-07 13:33:42" modified="2014-11-20 17:23:20" lastloaddate="2014-11-07 13:33:42" lastsavedate="2014-11-07 13:33:42"/>
+				<flags iscontrolled="0" isprotected="0" batchsave="0" batchload="0" usedtd="0" logxml="0"/>
+			</element>
+			<element xmi:idref="EAPK_30F303EA_912D_46dc_BC15_0A3E915689B4" xmi:type="uml:Package" name="Domains" scope="public">
+				<model package2="EAID_30F303EA_912D_46dc_BC15_0A3E915689B4" package="EAPK_1EA391DC_BDB1_4db2_B393_1474F56055F6" tpos="2" ea_localid="4" ea_eleType="package"/>
+				<properties isSpecification="false" sType="Package" nType="0" scope="public"/>
+				<project version="1.0" phase="1.0" created="2014-11-07 13:33:42" modified="2012-03-02 11:52:35" complexity="1" status="Proposed"/>
+				<code gentype="ArcGIS"/>
+				<style appearance="BackColor=-1;BorderColor=-1;BorderWidth=-1;FontColor=-1;VSwimLanes=1;HSwimLanes=1;BorderStyle=0;"/>
+				<tags/>
+				<xrefs/>
+				<extendedProperties tagged="0" package_name="ArcGIS Workspace"/>
+				<packageproperties version="1.0" tpos="2"/>
+				<paths/>
+				<times created="2014-11-07 13:33:42" modified="2014-11-12 11:47:36" lastloaddate="2014-11-07 13:33:42" lastsavedate="2014-11-07 13:33:42"/>
+				<flags iscontrolled="0" isprotected="0" batchsave="0" batchload="0" usedtd="0" logxml="0"/>
+			</element>
+			<element xmi:idref="EAPK_4A553670_D049_4bdb_87DC_011F75DBC9E6" xmi:type="uml:Package" name="Spatial References" scope="public">
+				<model package2="EAID_4A553670_D049_4bdb_87DC_011F75DBC9E6" package="EAPK_1EA391DC_BDB1_4db2_B393_1474F56055F6" tpos="3" ea_localid="5" ea_eleType="package"/>
+				<properties isSpecification="false" sType="Package" nType="0" scope="public"/>
+				<project version="1.0" phase="1.0" created="2014-11-07 13:33:42" modified="2012-03-02 11:52:20" complexity="1" status="Proposed"/>
+				<code gentype="ArcGIS"/>
+				<style appearance="BackColor=-1;BorderColor=-1;BorderWidth=-1;FontColor=-1;VSwimLanes=1;HSwimLanes=1;BorderStyle=0;"/>
+				<tags/>
+				<xrefs/>
+				<extendedProperties tagged="0" package_name="ArcGIS Workspace"/>
+				<packageproperties version="1.0" tpos="3"/>
+				<paths/>
+				<times created="2014-11-07 13:33:42" modified="2014-11-12 11:47:36" lastloaddate="2014-11-07 13:33:42" lastsavedate="2014-11-07 13:33:42"/>
+				<flags iscontrolled="0" isprotected="0" batchsave="0" batchload="0" usedtd="0" logxml="0"/>
+			</element>
+			<element xmi:idref="EAID_F86A161E_218D_49bb_B3F7_95E2B3221C43" xmi:type="uml:Note" scope="public">
+				<model package="EAPK_4A553670_D049_4bdb_87DC_011F75DBC9E6" tpos="0" ea_localid="8" ea_eleType="element"/>
+				<properties documentation="Use this diagram to define the spatial reference information of your schema. You can define one or more Spatial Reference elements, which are referred to by other elements in your schema that require Spatial Reference information, such as a coordinate system, XYTolerance etc." isSpecification="false" sType="Note" nType="0" scope="public"/>
+				<project version="1.0" phase="1.0" created="2014-11-07 13:33:42" modified="2012-03-02 11:39:19" complexity="1" status="Proposed"/>
+				<code gentype="ArcGIS"/>
+				<style appearance="BackColor=-1;BorderColor=-1;BorderWidth=-1;FontColor=-1;VSwimLanes=1;HSwimLanes=1;BorderStyle=0;"/>
+				<tags/>
+				<xrefs/>
+				<extendedProperties tagged="0" package_name="Spatial References"/>
+			</element>
+			<element xmi:idref="EAID_E6CEBD40_616F_48c5_9084_1226AA9DA500" xmi:type="uml:Class" name="MySpatialReference" scope="public">
+				<model package="EAPK_4A553670_D049_4bdb_87DC_011F75DBC9E6" tpos="0" ea_localid="9" ea_eleType="element"/>
+				<properties isSpecification="false" sType="Class" nType="0" scope="public" stereotype="SpatialReference" isRoot="false" isLeaf="false" isAbstract="false" isActive="false"/>
+				<project version="1.0" phase="1.0" created="2014-11-07 13:33:42" modified="2012-05-08 11:09:52" complexity="1" status="Proposed"/>
+				<code gentype="ArcGIS"/>
+				<style appearance="BackColor=-1;BorderColor=-1;BorderWidth=-1;FontColor=-1;VSwimLanes=1;HSwimLanes=1;BorderStyle=0;"/>
+				<tags>
+					<tag xmi:id="EAID_2A129DEF_83CD_3683_9B1B_C5A8C2B17873" name="CoordinateSystemType" value="GeographicCoordinateSystem#NOTES#Values:UnknownCoordinateSystem,GeographicCoordinateSystem,ProjectedCoordinateSystem&#xA; Default:UnknownCoordinateSystem" modelElement="EAID_E6CEBD40_616F_48c5_9084_1226AA9DA500"/>
+					<tag xmi:id="EAID_181CE0AC_1C6A_f41c_BBAC_465A777A7926" name="HighPrecision" value="true" modelElement="EAID_E6CEBD40_616F_48c5_9084_1226AA9DA500"/>
+					<tag xmi:id="EAID_6457EA16_25D4_2f25_8E9E_A01EB334A234" name="LeftLongitude" value="-180" modelElement="EAID_E6CEBD40_616F_48c5_9084_1226AA9DA500"/>
+					<tag xmi:id="EAID_D1C2BD55_F693_9af6_AE70_3AFC4F282668" name="MOrigin" value="-100000" modelElement="EAID_E6CEBD40_616F_48c5_9084_1226AA9DA500"/>
+					<tag xmi:id="EAID_069B42F5_4C73_924c_B69E_D418F76DD73A" name="MScale" value="10000" modelElement="EAID_E6CEBD40_616F_48c5_9084_1226AA9DA500"/>
+					<tag xmi:id="EAID_5EDEF14A_89C8_1a89_A8A3_B831BEB0C21E" name="MTolerance" value="0.001" modelElement="EAID_E6CEBD40_616F_48c5_9084_1226AA9DA500"/>
+					<tag xmi:id="EAID_6AAACF5B_DFF9_2ddf_8487_E5272A9EC121" name="VCSWKID" modelElement="EAID_E6CEBD40_616F_48c5_9084_1226AA9DA500"/>
+					<tag xmi:id="EAID_1A814C22_3D20_663d_A88D_60E010CD2033" name="VCSWKT" value="&lt;memo&gt;" modelElement="EAID_E6CEBD40_616F_48c5_9084_1226AA9DA500"/>
+					<tag xmi:id="EAID_0043162F_A3ED_4da3_BA03_D4640E82DBF6" name="WKID" value="4326" modelElement="EAID_E6CEBD40_616F_48c5_9084_1226AA9DA500"/>
+					<tag xmi:id="EAID_00020876_5294_e352_9C9C_36BDA2F1CBE8" name="WKT" value="&lt;memo&gt;#NOTES#GEOGCS[&quot;GCS_WGS_1984&quot;,DATUM[&quot;D_WGS_1984&quot;,SPHEROID[&quot;WGS_1984&quot;,6378137.0,298.257223563]],PRIMEM[&quot;Greenwich&quot;,0.0],UNIT[&quot;Degree&quot;,0.0174532925199433]]" modelElement="EAID_E6CEBD40_616F_48c5_9084_1226AA9DA500"/>
+					<tag xmi:id="EAID_208359A0_92DE_5b92_8309_823C56E9BF14" name="XOrigin" value="-400" modelElement="EAID_E6CEBD40_616F_48c5_9084_1226AA9DA500"/>
+					<tag xmi:id="EAID_37E5A4F9_CE17_7ace_AE69_BD34F6DCBDA1" name="XYScale" value="999999999.99999988" modelElement="EAID_E6CEBD40_616F_48c5_9084_1226AA9DA500"/>
+					<tag xmi:id="EAID_12D2B54E_3D6C_f33d_A2E1_A99D27C35C01" name="XYTolerance" value="8.983152841195215E-09" modelElement="EAID_E6CEBD40_616F_48c5_9084_1226AA9DA500"/>
+					<tag xmi:id="EAID_6D7D9661_CF9F_55cf_95E0_32485C092563" name="YOrigin" value="-400" modelElement="EAID_E6CEBD40_616F_48c5_9084_1226AA9DA500"/>
+					<tag xmi:id="EAID_BA77D322_0C60_500c_82ED_ED3337E6F856" name="ZOrigin" value="-100000" modelElement="EAID_E6CEBD40_616F_48c5_9084_1226AA9DA500"/>
+					<tag xmi:id="EAID_24EE5322_5CA0_e55c_8667_89C0C9D21BC7" name="ZScale" value="10000" modelElement="EAID_E6CEBD40_616F_48c5_9084_1226AA9DA500"/>
+					<tag xmi:id="EAID_93684FF7_E875_a3e8_8D98_8FED641C53C8" name="ZTolerance" value="0.001" modelElement="EAID_E6CEBD40_616F_48c5_9084_1226AA9DA500"/>
+				</tags>
+				<xrefs value="$XREFPROP=$XID={5F14E2F1-2B92-46a8-9678-1E533CDCDF6C}$XID;$NAM=Stereotypes$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=SpatialReference;FQName=ArcGIS::SpatialReference;@ENDSTEREO;$DES;$CLT={E6CEBD40-616F-48c5-9084-1226AA9DA500}$CLT;$ENDXREF;"/>
+				<extendedProperties tagged="0" package_name="Spatial References"/>
+			</element>
+		</elements>
+		<connectors/>
+		<primitivetypes>
+			<packagedElement xmi:type="uml:Package" xmi:id="EAPrimitiveTypesPackage" name="EA_PrimitiveTypes_Package"/>
+		</primitivetypes>
+		<profiles>
+			<uml:Profile xmlns:uml="http://www.omg.org/spec/UML/20161101" xmlns:xmi="http://www.omg.org/spec/XMI/20161101" xmi:id="9B244878-1" nsPrefix="ArcGIS" name="ArcGIS" metamodelReference="mmref01">
+				<ownedComment xmi:type="uml:Comment" xmi:id="comment01" annotatedElement="9B244878-1">
+					<body>ArcGIS Version:1.0</body>
+				</ownedComment>
+				<packageImport xmi:id="mmref01">
+					<importedPackage href="http://www.omg.org/spec/UML/20161101"/>
+				</packageImport>
+				<packagedElement xmi:type="uml:Stereotype" xmi:id="NetworkWeight" name="NetworkWeight">
+					<ownedAttribute xmi:type="uml:Property" xmi:id="NetworkWeight-base_Attribute" name="base_Attribute" association="Attribute_NetworkWeight">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#Attribute"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="NetworkWeight-WeightID" name="WeightID">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="NetworkWeight-NetWeightAssociation" name="NetWeightAssociation">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="NetworkWeight-WeightType" name="WeightType">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="NetworkWeight-BitGateSize" name="BitGateSize">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Extension" xmi:id="Attribute_NetworkWeight" name="A_Attribute_NetworkWeight" memberEnd="extension_NetworkWeight NetworkWeight-base_Attribute">
+					<ownedEnd xmi:type="uml:ExtensionEnd" xmi:id="extension_NetworkWeight" name="extension_NetworkWeight" type="NetworkWeight" isComposite="true" lower="0" upper="1" memberEnd="extension_NetworkWeight NetworkWeight-base_Attribute"/>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Stereotype" xmi:id="AttributeIndex" name="AttributeIndex">
+					<ownedAttribute xmi:type="uml:Property" xmi:id="AttributeIndex-base_Attribute" name="base_Attribute" association="Attribute_AttributeIndex">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#Attribute"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="AttributeIndex-IsAscending" name="IsAscending">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="AttributeIndex-Fields" name="Fields">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="AttributeIndex-IsUnique" name="IsUnique">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Extension" xmi:id="Attribute_AttributeIndex" name="A_Attribute_AttributeIndex" memberEnd="extension_AttributeIndex AttributeIndex-base_Attribute">
+					<ownedEnd xmi:type="uml:ExtensionEnd" xmi:id="extension_AttributeIndex" name="extension_AttributeIndex" type="AttributeIndex" isComposite="true" lower="0" upper="1" memberEnd="extension_AttributeIndex AttributeIndex-base_Attribute"/>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Stereotype" xmi:id="Polyline" name="Polyline">
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Polyline-base_Class" name="base_Class" association="Class_Polyline">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#Class"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Polyline-ModelName" name="ModelName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Polyline-RasterFieldName" name="RasterFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Polyline-OIDFieldName" name="OIDFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Polyline-Metadata" name="Metadata">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Polyline-CanVersion" name="CanVersion">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Polyline-Versioned" name="Versioned">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Polyline-FeatureType" name="FeatureType">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Polyline-AreaFieldName" name="AreaFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Polyline-HasSpatialIndex" name="HasSpatialIndex">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Polyline-HasZ" name="HasZ">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Polyline-LengthFieldName" name="LengthFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Polyline-HasM" name="HasM">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Polyline-GlobalIDFieldName" name="GlobalIDFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Polyline-ShapeFieldName" name="ShapeFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Polyline-SpatialReference" name="SpatialReference">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Polyline-DSID" name="DSID">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Extension" xmi:id="Class_Polyline" name="A_Class_Polyline" memberEnd="extension_Polyline Polyline-base_Class">
+					<ownedEnd xmi:type="uml:ExtensionEnd" xmi:id="extension_Polyline" name="extension_Polyline" type="Polyline" isComposite="true" lower="0" upper="1" memberEnd="extension_Polyline Polyline-base_Class"/>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Stereotype" xmi:id="Association" name="Association">
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Association-base_Association" name="base_Association" association="Association_Association">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#Association"/>
+					</ownedAttribute>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Extension" xmi:id="Association_Association" name="A_Association_Association" memberEnd="extension_Association Association-base_Association">
+					<ownedEnd xmi:type="uml:ExtensionEnd" xmi:id="extension_Association" name="extension_Association" type="Association" isComposite="true" lower="0" upper="1" memberEnd="extension_Association Association-base_Association"/>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Stereotype" xmi:id="RelationshipRule" name="RelationshipRule">
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RelationshipRule-base_Association" name="base_Association" association="Association_RelationshipRule">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#Association"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RelationshipRule-RuleID" name="RuleID">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Extension" xmi:id="Association_RelationshipRule" name="A_Association_RelationshipRule" memberEnd="extension_RelationshipRule RelationshipRule-base_Association">
+					<ownedEnd xmi:type="uml:ExtensionEnd" xmi:id="extension_RelationshipRule" name="extension_RelationshipRule" type="RelationshipRule" isComposite="true" lower="0" upper="1" memberEnd="extension_RelationshipRule RelationshipRule-base_Association"/>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Stereotype" xmi:id="MultiPatch" name="MultiPatch">
+					<ownedAttribute xmi:type="uml:Property" xmi:id="MultiPatch-base_Class" name="base_Class" association="Class_MultiPatch">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#Class"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="MultiPatch-ModelName" name="ModelName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="MultiPatch-RasterFieldName" name="RasterFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="MultiPatch-OIDFieldName" name="OIDFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="MultiPatch-Metadata" name="Metadata">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="MultiPatch-CanVersion" name="CanVersion">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="MultiPatch-Versioned" name="Versioned">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="MultiPatch-FeatureType" name="FeatureType">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="MultiPatch-AreaFieldName" name="AreaFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="MultiPatch-HasSpatialIndex" name="HasSpatialIndex">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="MultiPatch-HasZ" name="HasZ">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="MultiPatch-LengthFieldName" name="LengthFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="MultiPatch-HasM" name="HasM">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="MultiPatch-GlobalIDFieldName" name="GlobalIDFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="MultiPatch-ShapeFieldName" name="ShapeFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="MultiPatch-SpatialReference" name="SpatialReference">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="MultiPatch-DSID" name="DSID">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Extension" xmi:id="Class_MultiPatch" name="A_Class_MultiPatch" memberEnd="extension_MultiPatch MultiPatch-base_Class">
+					<ownedEnd xmi:type="uml:ExtensionEnd" xmi:id="extension_MultiPatch" name="extension_MultiPatch" type="MultiPatch" isComposite="true" lower="0" upper="1" memberEnd="extension_MultiPatch MultiPatch-base_Class"/>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Stereotype" xmi:id="RelationshipClass" name="RelationshipClass">
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RelationshipClass-base_Class" name="base_Class" association="Class_RelationshipClass">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#Class"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RelationshipClass-base_Association" name="base_Association" association="Association_RelationshipClass">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#Association"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RelationshipClass-base_AssociationClass" name="base_AssociationClass" association="AssociationClass_RelationshipClass">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#AssociationClass"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RelationshipClass-OriginForeignKey" name="OriginForeignKey">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RelationshipClass-ModelName" name="ModelName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RelationshipClass-DestinationForeignKey" name="DestinationForeignKey">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RelationshipClass-DestinationPrimaryKey" name="DestinationPrimaryKey">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RelationshipClass-RasterFieldName" name="RasterFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RelationshipClass-OriginPrimaryKey" name="OriginPrimaryKey">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RelationshipClass-OIDFieldName" name="OIDFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RelationshipClass-MetadataRetrieved" name="MetadataRetrieved">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RelationshipClass-Metadata" name="Metadata">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RelationshipClass-CanVersion" name="CanVersion">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RelationshipClass-Versioned" name="Versioned">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RelationshipClass-ClassKey" name="ClassKey">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RelationshipClass-IsReflexive" name="IsReflexive">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RelationshipClass-KeyType" name="KeyType">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RelationshipClass-CatalogPath" name="CatalogPath">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RelationshipClass-IsAttachmentRelationship" name="IsAttachmentRelationship">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RelationshipClass-DatasetType" name="DatasetType">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RelationshipClass-Notification" name="Notification">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RelationshipClass-GlobalIDFieldName" name="GlobalIDFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RelationshipClass-IsComposite" name="IsComposite">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RelationshipClass-DSID" name="DSID">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Extension" xmi:id="Class_RelationshipClass" name="A_Class_RelationshipClass" memberEnd="extension_RelationshipClass RelationshipClass-base_Class">
+					<ownedEnd xmi:type="uml:ExtensionEnd" xmi:id="extension_RelationshipClass" name="extension_RelationshipClass" type="RelationshipClass" isComposite="true" lower="0" upper="1" memberEnd="extension_RelationshipClass RelationshipClass-base_Class"/>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Extension" xmi:id="Association_RelationshipClass" name="A_Association_RelationshipClass" memberEnd="extension_RelationshipClass RelationshipClass-base_Association">
+					<ownedEnd xmi:type="uml:ExtensionEnd" xmi:id="extension_RelationshipClass" name="extension_RelationshipClass" type="RelationshipClass" isComposite="true" lower="0" upper="1" memberEnd="extension_RelationshipClass RelationshipClass-base_Association"/>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Extension" xmi:id="AssociationClass_RelationshipClass" name="A_AssociationClass_RelationshipClass" memberEnd="extension_RelationshipClass RelationshipClass-base_AssociationClass">
+					<ownedEnd xmi:type="uml:ExtensionEnd" xmi:id="extension_RelationshipClass" name="extension_RelationshipClass" type="RelationshipClass" isComposite="true" lower="0" upper="1" memberEnd="extension_RelationshipClass RelationshipClass-base_AssociationClass"/>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Stereotype" xmi:id="SubtypeField" name="SubtypeField">
+					<generalization xmi:type="uml:Generalization" xmi:id="SubtypeField_Field_generalization" general="Field"/>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Stereotype" xmi:id="ConnRule" name="ConnRule">
+					<ownedAttribute xmi:type="uml:Property" xmi:id="ConnRule-base_Association" name="base_Association" association="Association_ConnRule">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#Association"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="ConnRule-base_AssociationElement" name="base_AssociationElement" association="AssociationElement_ConnRule">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#AssociationElement"/>
+					</ownedAttribute>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Extension" xmi:id="Association_ConnRule" name="A_Association_ConnRule" memberEnd="extension_ConnRule ConnRule-base_Association">
+					<ownedEnd xmi:type="uml:ExtensionEnd" xmi:id="extension_ConnRule" name="extension_ConnRule" type="ConnRule" isComposite="true" lower="0" upper="1" memberEnd="extension_ConnRule ConnRule-base_Association"/>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Extension" xmi:id="AssociationElement_ConnRule" name="A_AssociationElement_ConnRule" memberEnd="extension_ConnRule ConnRule-base_AssociationElement">
+					<ownedEnd xmi:type="uml:ExtensionEnd" xmi:id="extension_ConnRule" name="extension_ConnRule" type="ConnRule" isComposite="true" lower="0" upper="1" memberEnd="extension_ConnRule ConnRule-base_AssociationElement"/>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Stereotype" xmi:id="DomainCodedValue" name="DomainCodedValue">
+					<ownedAttribute xmi:type="uml:Property" xmi:id="DomainCodedValue-base_Attribute" name="base_Attribute" association="Attribute_DomainCodedValue">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#Attribute"/>
+					</ownedAttribute>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Extension" xmi:id="Attribute_DomainCodedValue" name="A_Attribute_DomainCodedValue" memberEnd="extension_DomainCodedValue DomainCodedValue-base_Attribute">
+					<ownedEnd xmi:type="uml:ExtensionEnd" xmi:id="extension_DomainCodedValue" name="extension_DomainCodedValue" type="DomainCodedValue" isComposite="true" lower="0" upper="1" memberEnd="extension_DomainCodedValue DomainCodedValue-base_Attribute"/>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Stereotype" xmi:id="Point" name="Point">
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Point-base_Class" name="base_Class" association="Class_Point">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#Class"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Point-ModelName" name="ModelName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Point-RasterFieldName" name="RasterFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Point-OIDFieldName" name="OIDFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Point-Metadata" name="Metadata">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Point-CanVersion" name="CanVersion">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Point-Versioned" name="Versioned">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Point-FeatureType" name="FeatureType">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Point-AreaFieldName" name="AreaFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Point-HasSpatialIndex" name="HasSpatialIndex">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Point-HasZ" name="HasZ">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Point-LengthFieldName" name="LengthFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Point-HasM" name="HasM">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Point-GlobalIDFieldName" name="GlobalIDFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Point-ShapeFieldName" name="ShapeFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Point-SpatialReference" name="SpatialReference">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Point-AncillaryRole" name="AncillaryRole">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Point-DSID" name="DSID">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Extension" xmi:id="Class_Point" name="A_Class_Point" memberEnd="extension_Point Point-base_Class">
+					<ownedEnd xmi:type="uml:ExtensionEnd" xmi:id="extension_Point" name="extension_Point" type="Point" isComposite="true" lower="0" upper="1" memberEnd="extension_Point Point-base_Class"/>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Stereotype" xmi:id="DefaultField" name="DefaultField">
+					<generalization xmi:type="uml:Generalization" xmi:id="DefaultField_Field_generalization" general="Field"/>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Stereotype" xmi:id="Polygon" name="Polygon">
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Polygon-base_Class" name="base_Class" association="Class_Polygon">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#Class"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Polygon-ModelName" name="ModelName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Polygon-RasterFieldName" name="RasterFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Polygon-OIDFieldName" name="OIDFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Polygon-Metadata" name="Metadata">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Polygon-CanVersion" name="CanVersion">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Polygon-Versioned" name="Versioned">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Polygon-FeatureType" name="FeatureType">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Polygon-AreaFieldName" name="AreaFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Polygon-HasSpatialIndex" name="HasSpatialIndex">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Polygon-HasZ" name="HasZ">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Polygon-LengthFieldName" name="LengthFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Polygon-HasM" name="HasM">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Polygon-GlobalIDFieldName" name="GlobalIDFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Polygon-ShapeFieldName" name="ShapeFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Polygon-SpatialReference" name="SpatialReference">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Polygon-DSID" name="DSID">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Extension" xmi:id="Class_Polygon" name="A_Class_Polygon" memberEnd="extension_Polygon Polygon-base_Class">
+					<ownedEnd xmi:type="uml:ExtensionEnd" xmi:id="extension_Polygon" name="extension_Polygon" type="Polygon" isComposite="true" lower="0" upper="1" memberEnd="extension_Polygon Polygon-base_Class"/>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Stereotype" xmi:id="RequiredField" name="RequiredField">
+					<generalization xmi:type="uml:Generalization" xmi:id="RequiredField_Field_generalization" general="Field"/>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Stereotype" xmi:id="RasterDataset" name="RasterDataset">
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterDataset-base_Package" name="base_Package" association="Package_RasterDataset">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#Package"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterDataset-StorageDef" name="StorageDef">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterDataset-Metadata" name="Metadata">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterDataset-CanVersion" name="CanVersion">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterDataset-Versioned" name="Versioned">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterDataset-Permanent" name="Permanent">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterDataset-CompressionType" name="CompressionType">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterDataset-SensorType" name="SensorType">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterDataset-Format" name="Format">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterDataset-BandCount" name="BandCount">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterDataset-FullPropsDefault" name="FullPropsDefault">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterDataset-SpatialReference" name="SpatialReference">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterDataset-DSID" name="DSID">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Extension" xmi:id="Package_RasterDataset" name="A_Package_RasterDataset" memberEnd="extension_RasterDataset RasterDataset-base_Package">
+					<ownedEnd xmi:type="uml:ExtensionEnd" xmi:id="extension_RasterDataset" name="extension_RasterDataset" type="RasterDataset" isComposite="true" lower="0" upper="1" memberEnd="extension_RasterDataset RasterDataset-base_Package"/>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Stereotype" xmi:id="ArcGIS" name="ArcGIS">
+					<ownedAttribute xmi:type="uml:Property" xmi:id="ArcGIS-base_Package" name="base_Package" association="Package_ArcGIS">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#Package"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="ArcGIS-WorkspaceType" name="WorkspaceType">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="ArcGIS-OrderInheritedFields" name="OrderInheritedFields">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="ArcGIS-MetaData" name="MetaData">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="ArcGIS-DefaultSpatialReference" name="DefaultSpatialReference">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Extension" xmi:id="Package_ArcGIS" name="A_Package_ArcGIS" memberEnd="extension_ArcGIS ArcGIS-base_Package">
+					<ownedEnd xmi:type="uml:ExtensionEnd" xmi:id="extension_ArcGIS" name="extension_ArcGIS" type="ArcGIS" isComposite="true" lower="0" upper="1" memberEnd="extension_ArcGIS ArcGIS-base_Package"/>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Stereotype" xmi:id="RasterCatalog" name="RasterCatalog">
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterCatalog-base_Class" name="base_Class" association="Class_RasterCatalog">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#Class"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterCatalog-ModelName" name="ModelName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterCatalog-RasterFieldName" name="RasterFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterCatalog-OIDFieldName" name="OIDFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterCatalog-Metadata" name="Metadata">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterCatalog-CanVersion" name="CanVersion">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterCatalog-Versioned" name="Versioned">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterCatalog-FeatureType" name="FeatureType">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterCatalog-AreaFieldName" name="AreaFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterCatalog-HasSpatialIndex" name="HasSpatialIndex">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterCatalog-HasZ" name="HasZ">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterCatalog-LengthFieldName" name="LengthFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterCatalog-HasM" name="HasM">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterCatalog-GlobalIDFieldName" name="GlobalIDFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterCatalog-ShapeFieldName" name="ShapeFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterCatalog-ShapeType" name="ShapeType">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterCatalog-SpatialReference" name="SpatialReference">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterCatalog-DSID" name="DSID">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Extension" xmi:id="Class_RasterCatalog" name="A_Class_RasterCatalog" memberEnd="extension_RasterCatalog RasterCatalog-base_Class">
+					<ownedEnd xmi:type="uml:ExtensionEnd" xmi:id="extension_RasterCatalog" name="extension_RasterCatalog" type="RasterCatalog" isComposite="true" lower="0" upper="1" memberEnd="extension_RasterCatalog RasterCatalog-base_Class"/>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Stereotype" xmi:id="ArcGISSchemaView" name="ArcGISSchemaView">
+					<ownedAttribute xmi:type="uml:Property" xmi:id="ArcGISSchemaView-base_Package" name="base_Package" association="Package_ArcGISSchemaView">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#Package"/>
+					</ownedAttribute>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Extension" xmi:id="Package_ArcGISSchemaView" name="A_Package_ArcGISSchemaView" memberEnd="extension_ArcGISSchemaView ArcGISSchemaView-base_Package">
+					<ownedEnd xmi:type="uml:ExtensionEnd" xmi:id="extension_ArcGISSchemaView" name="extension_ArcGISSchemaView" type="ArcGISSchemaView" isComposite="true" lower="0" upper="1" memberEnd="extension_ArcGISSchemaView ArcGISSchemaView-base_Package"/>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Stereotype" xmi:id="Multipoint" name="Multipoint">
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Multipoint-base_Class" name="base_Class" association="Class_Multipoint">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#Class"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Multipoint-ModelName" name="ModelName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Multipoint-RasterFieldName" name="RasterFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Multipoint-OIDFieldName" name="OIDFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Multipoint-Metadata" name="Metadata">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Multipoint-CanVersion" name="CanVersion">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Multipoint-Versioned" name="Versioned">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Multipoint-FeatureType" name="FeatureType">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Multipoint-AreaFieldName" name="AreaFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Multipoint-HasSpatialIndex" name="HasSpatialIndex">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Multipoint-HasZ" name="HasZ">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Multipoint-LengthFieldName" name="LengthFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Multipoint-HasM" name="HasM">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Multipoint-GlobalIDFieldName" name="GlobalIDFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Multipoint-ShapeFieldName" name="ShapeFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Multipoint-SpatialReference" name="SpatialReference">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Multipoint-DSID" name="DSID">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Extension" xmi:id="Class_Multipoint" name="A_Class_Multipoint" memberEnd="extension_Multipoint Multipoint-base_Class">
+					<ownedEnd xmi:type="uml:ExtensionEnd" xmi:id="extension_Multipoint" name="extension_Multipoint" type="Multipoint" isComposite="true" lower="0" upper="1" memberEnd="extension_Multipoint Multipoint-base_Class"/>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Stereotype" xmi:id="Dimension" name="Dimension">
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Dimension-ModelName" name="ModelName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Dimension-RasterFieldName" name="RasterFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Dimension-OIDFieldName" name="OIDFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Dimension-Metadata" name="Metadata">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Dimension-CanVersion" name="CanVersion">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Dimension-Versioned" name="Versioned">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Dimension-FeatureType" name="FeatureType">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Dimension-AreaFieldName" name="AreaFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Dimension-HasSpatialIndex" name="HasSpatialIndex">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Dimension-HasZ" name="HasZ">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Dimension-LengthFieldName" name="LengthFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Dimension-HasM" name="HasM">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Dimension-GlobalIDFieldName" name="GlobalIDFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Dimension-ShapeFieldName" name="ShapeFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Dimension-ShapeType" name="ShapeType">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Dimension-SpatialReference" name="SpatialReference">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Dimension-DSID" name="DSID">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Stereotype" xmi:id="SpatialIndex" name="SpatialIndex">
+					<ownedAttribute xmi:type="uml:Property" xmi:id="SpatialIndex-base_Attribute" name="base_Attribute" association="Attribute_SpatialIndex">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#Attribute"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="SpatialIndex-IsAscending" name="IsAscending">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="SpatialIndex-IsUnique" name="IsUnique">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Extension" xmi:id="Attribute_SpatialIndex" name="A_Attribute_SpatialIndex" memberEnd="extension_SpatialIndex SpatialIndex-base_Attribute">
+					<ownedEnd xmi:type="uml:ExtensionEnd" xmi:id="extension_SpatialIndex" name="extension_SpatialIndex" type="SpatialIndex" isComposite="true" lower="0" upper="1" memberEnd="extension_SpatialIndex SpatialIndex-base_Attribute"/>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Stereotype" xmi:id="ObjectClass" name="ObjectClass">
+					<ownedAttribute xmi:type="uml:Property" xmi:id="ObjectClass-base_Class" name="base_Class" association="Class_ObjectClass">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#Class"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="ObjectClass-ModelName" name="ModelName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="ObjectClass-RasterFieldName" name="RasterFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="ObjectClass-OIDFieldName" name="OIDFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="ObjectClass-Metadata" name="Metadata">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="ObjectClass-CanVersion" name="CanVersion">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="ObjectClass-Versioned" name="Versioned">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="ObjectClass-GlobalIDFieldName" name="GlobalIDFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="ObjectClass-DSID" name="DSID">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Extension" xmi:id="Class_ObjectClass" name="A_Class_ObjectClass" memberEnd="extension_ObjectClass ObjectClass-base_Class">
+					<ownedEnd xmi:type="uml:ExtensionEnd" xmi:id="extension_ObjectClass" name="extension_ObjectClass" type="ObjectClass" isComposite="true" lower="0" upper="1" memberEnd="extension_ObjectClass ObjectClass-base_Class"/>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Stereotype" xmi:id="Subtype" name="Subtype">
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Subtype-base_Class" name="base_Class" association="Class_Subtype">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#Class"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Subtype-base_Generalization" name="base_Generalization" association="Generalization_Subtype">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#Generalization"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Subtype-SubtypeCode" name="SubtypeCode">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Extension" xmi:id="Class_Subtype" name="A_Class_Subtype" memberEnd="extension_Subtype Subtype-base_Class">
+					<ownedEnd xmi:type="uml:ExtensionEnd" xmi:id="extension_Subtype" name="extension_Subtype" type="Subtype" isComposite="true" lower="0" upper="1" memberEnd="extension_Subtype Subtype-base_Class"/>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Extension" xmi:id="Generalization_Subtype" name="A_Generalization_Subtype" memberEnd="extension_Subtype Subtype-base_Generalization">
+					<ownedEnd xmi:type="uml:ExtensionEnd" xmi:id="extension_Subtype" name="extension_Subtype" type="Subtype" isComposite="true" lower="0" upper="1" memberEnd="extension_Subtype Subtype-base_Generalization"/>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Stereotype" xmi:id="RasterBand" name="RasterBand">
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterBand-base_Class" name="base_Class" association="Class_RasterBand">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#Class"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterBand-ModelName" name="ModelName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterBand-MeanCellHeight" name="MeanCellHeight">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterBand-RasterFieldName" name="RasterFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterBand-IsInteger" name="IsInteger">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterBand-OIDFieldName" name="OIDFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterBand-PrimaryField" name="PrimaryField">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterBand-Height" name="Height">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterBand-Metadata" name="Metadata">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterBand-CanVersion" name="CanVersion">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterBand-PixelType" name="PixelType">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterBand-Versioned" name="Versioned">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterBand-MeanCellWidth" name="MeanCellWidth">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterBand-GlobalIDFieldName" name="GlobalIDFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterBand-Width" name="Width">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterBand-TableType" name="TableType">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterBand-SpatialReference" name="SpatialReference">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RasterBand-DSID" name="DSID">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Extension" xmi:id="Class_RasterBand" name="A_Class_RasterBand" memberEnd="extension_RasterBand RasterBand-base_Class">
+					<ownedEnd xmi:type="uml:ExtensionEnd" xmi:id="extension_RasterBand" name="extension_RasterBand" type="RasterBand" isComposite="true" lower="0" upper="1" memberEnd="extension_RasterBand RasterBand-base_Class"/>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Stereotype" xmi:id="NetWeight" name="NetWeight">
+					<ownedAttribute xmi:type="uml:Property" xmi:id="NetWeight-base_Class" name="base_Class" association="Class_NetWeight">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#Class"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="NetWeight-_weightName" name="_weightName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="NetWeight-_weightID" name="_weightID">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="NetWeight-_showLabels" name="_showLabels">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="NetWeight-_weightType" name="_weightType">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="NetWeight-_bitGateSize" name="_bitGateSize">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Extension" xmi:id="Class_NetWeight" name="A_Class_NetWeight" memberEnd="extension_NetWeight NetWeight-base_Class">
+					<ownedEnd xmi:type="uml:ExtensionEnd" xmi:id="extension_NetWeight" name="extension_NetWeight" type="NetWeight" isComposite="true" lower="0" upper="1" memberEnd="extension_NetWeight NetWeight-base_Class"/>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Stereotype" xmi:id="Field" name="Field">
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Field-base_Attribute" name="base_Attribute" association="Attribute_Field">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#Attribute"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Field-Scale" name="Scale">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Field-ModelName" name="ModelName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Field-Precision" name="Precision">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Field-Length" name="Length">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Field-GeometryDef" name="GeometryDef">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Field-Editable" name="Editable">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Field-Required" name="Required">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Field-IsNullable" name="IsNullable">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Field-DomainFixed" name="DomainFixed">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Field-RasterDef" name="RasterDef">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Extension" xmi:id="Attribute_Field" name="A_Attribute_Field" memberEnd="extension_Field Field-base_Attribute">
+					<ownedEnd xmi:type="uml:ExtensionEnd" xmi:id="extension_Field" name="extension_Field" type="Field" isComposite="true" lower="0" upper="1" memberEnd="extension_Field Field-base_Attribute"/>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Stereotype" xmi:id="GeometricNetworkMembership" name="GeometricNetworkMembership">
+					<ownedAttribute xmi:type="uml:Property" xmi:id="GeometricNetworkMembership-base_Attribute" name="base_Attribute" association="Attribute_GeometricNetworkMembership">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#Attribute"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="GeometricNetworkMembership-NetworkClassAncillaryRole" name="NetworkClassAncillaryRole">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Extension" xmi:id="Attribute_GeometricNetworkMembership" name="A_Attribute_GeometricNetworkMembership" memberEnd="extension_GeometricNetworkMembership GeometricNetworkMembership-base_Attribute">
+					<ownedEnd xmi:type="uml:ExtensionEnd" xmi:id="extension_GeometricNetworkMembership" name="extension_GeometricNetworkMembership" type="GeometricNetworkMembership" isComposite="true" lower="0" upper="1" memberEnd="extension_GeometricNetworkMembership GeometricNetworkMembership-base_Attribute"/>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Stereotype" xmi:id="FeatureDataset" name="FeatureDataset">
+					<ownedAttribute xmi:type="uml:Property" xmi:id="FeatureDataset-base_Package" name="base_Package" association="Package_FeatureDataset">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#Package"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="FeatureDataset-Metadata" name="Metadata">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="FeatureDataset-CanVersion" name="CanVersion">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="FeatureDataset-Versioned" name="Versioned">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="FeatureDataset-FullPropsDefault" name="FullPropsDefault">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="FeatureDataset-SpatialReference" name="SpatialReference">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="FeatureDataset-DSID" name="DSID">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Extension" xmi:id="Package_FeatureDataset" name="A_Package_FeatureDataset" memberEnd="extension_FeatureDataset FeatureDataset-base_Package">
+					<ownedEnd xmi:type="uml:ExtensionEnd" xmi:id="extension_FeatureDataset" name="extension_FeatureDataset" type="FeatureDataset" isComposite="true" lower="0" upper="1" memberEnd="extension_FeatureDataset FeatureDataset-base_Package"/>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Stereotype" xmi:id="TopologyMembership" name="TopologyMembership">
+					<ownedAttribute xmi:type="uml:Property" xmi:id="TopologyMembership-base_Attribute" name="base_Attribute" association="Attribute_TopologyMembership">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#Attribute"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="TopologyMembership-XYRank" name="XYRank">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="TopologyMembership-Weight" name="Weight">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="TopologyMembership-EventNotificationOnValidate" name="EventNotificationOnValidate">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="TopologyMembership-ZRank" name="ZRank">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Extension" xmi:id="Attribute_TopologyMembership" name="A_Attribute_TopologyMembership" memberEnd="extension_TopologyMembership TopologyMembership-base_Attribute">
+					<ownedEnd xmi:type="uml:ExtensionEnd" xmi:id="extension_TopologyMembership" name="extension_TopologyMembership" type="TopologyMembership" isComposite="true" lower="0" upper="1" memberEnd="extension_TopologyMembership TopologyMembership-base_Attribute"/>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Stereotype" xmi:id="Annotation" name="Annotation">
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Annotation-ModelName" name="ModelName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Annotation-RasterFieldName" name="RasterFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Annotation-OIDFieldName" name="OIDFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Annotation-Metadata" name="Metadata">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Annotation-CanVersion" name="CanVersion">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Annotation-Versioned" name="Versioned">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Annotation-FeatureType" name="FeatureType">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Annotation-AreaFieldName" name="AreaFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Annotation-HasSpatialIndex" name="HasSpatialIndex">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Annotation-HasZ" name="HasZ">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Annotation-LengthFieldName" name="LengthFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Annotation-HasM" name="HasM">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Annotation-GlobalIDFieldName" name="GlobalIDFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Annotation-ShapeFieldName" name="ShapeFieldName">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Annotation-ShapeType" name="ShapeType">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Annotation-SpatialReference" name="SpatialReference">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Annotation-DSID" name="DSID">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Stereotype" xmi:id="GeometricNetwork" name="GeometricNetwork">
+					<ownedAttribute xmi:type="uml:Property" xmi:id="GeometricNetwork-base_Package" name="base_Package" association="Package_GeometricNetwork">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#Package"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="GeometricNetwork-ReduceNetworkConflicts" name="ReduceNetworkConflicts">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="GeometricNetwork-UseZsForConnectivity" name="UseZsForConnectivity">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="GeometricNetwork-FormatNumber" name="FormatNumber">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="GeometricNetwork-Metadata" name="Metadata">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="GeometricNetwork-CanVersion" name="CanVersion">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="GeometricNetwork-Versioned" name="Versioned">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="GeometricNetwork-XYSnapTolerance" name="XYSnapTolerance">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="GeometricNetwork-ZSnapTolerance" name="ZSnapTolerance">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="GeometricNetwork-DSID" name="DSID">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="GeometricNetwork-LogicalNetworkID" name="LogicalNetworkID">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="GeometricNetwork-NetworkType" name="NetworkType">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Extension" xmi:id="Package_GeometricNetwork" name="A_Package_GeometricNetwork" memberEnd="extension_GeometricNetwork GeometricNetwork-base_Package">
+					<ownedEnd xmi:type="uml:ExtensionEnd" xmi:id="extension_GeometricNetwork" name="extension_GeometricNetwork" type="GeometricNetwork" isComposite="true" lower="0" upper="1" memberEnd="extension_GeometricNetwork GeometricNetwork-base_Package"/>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Stereotype" xmi:id="Topology" name="Topology">
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Topology-base_Package" name="base_Package" association="Package_Topology">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#Package"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Topology-ZClusterTolerance" name="ZClusterTolerance">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Topology-Metadata" name="Metadata">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Topology-CanVersion" name="CanVersion">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Topology-TopologyID" name="TopologyID">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Topology-Versioned" name="Versioned">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Topology-ChildrenExpanded" name="ChildrenExpanded">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Topology-ConfigurationKeyword" name="ConfigurationKeyword">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Topology-MaxGeneratedErrorCount" name="MaxGeneratedErrorCount">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Topology-ClusterTolerance" name="ClusterTolerance">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Topology-DSID" name="DSID">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Extension" xmi:id="Package_Topology" name="A_Package_Topology" memberEnd="extension_Topology Topology-base_Package">
+					<ownedEnd xmi:type="uml:ExtensionEnd" xmi:id="extension_Topology" name="extension_Topology" type="Topology" isComposite="true" lower="0" upper="1" memberEnd="extension_Topology Topology-base_Package"/>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Stereotype" xmi:id="Generalization" name="Generalization">
+					<ownedAttribute xmi:type="uml:Property" xmi:id="Generalization-base_Generalization" name="base_Generalization" association="Generalization_Generalization">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#Generalization"/>
+					</ownedAttribute>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Extension" xmi:id="Generalization_Generalization" name="A_Generalization_Generalization" memberEnd="extension_Generalization Generalization-base_Generalization">
+					<ownedEnd xmi:type="uml:ExtensionEnd" xmi:id="extension_Generalization" name="extension_Generalization" type="Generalization" isComposite="true" lower="0" upper="1" memberEnd="extension_Generalization Generalization-base_Generalization"/>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Stereotype" xmi:id="CodedValueDomain" name="CodedValueDomain">
+					<ownedAttribute xmi:type="uml:Property" xmi:id="CodedValueDomain-base_Class" name="base_Class" association="Class_CodedValueDomain">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#Class"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="CodedValueDomain-Description" name="Description">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Extension" xmi:id="Class_CodedValueDomain" name="A_Class_CodedValueDomain" memberEnd="extension_CodedValueDomain CodedValueDomain-base_Class">
+					<ownedEnd xmi:type="uml:ExtensionEnd" xmi:id="extension_CodedValueDomain" name="extension_CodedValueDomain" type="CodedValueDomain" isComposite="true" lower="0" upper="1" memberEnd="extension_CodedValueDomain CodedValueDomain-base_Class"/>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Stereotype" xmi:id="RangeDomain" name="RangeDomain">
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RangeDomain-base_Class" name="base_Class" association="Class_RangeDomain">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#Class"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="RangeDomain-Description" name="Description">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Extension" xmi:id="Class_RangeDomain" name="A_Class_RangeDomain" memberEnd="extension_RangeDomain RangeDomain-base_Class">
+					<ownedEnd xmi:type="uml:ExtensionEnd" xmi:id="extension_RangeDomain" name="extension_RangeDomain" type="RangeDomain" isComposite="true" lower="0" upper="1" memberEnd="extension_RangeDomain RangeDomain-base_Class"/>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Stereotype" xmi:id="TopologyRule" name="TopologyRule">
+					<ownedAttribute xmi:type="uml:Property" xmi:id="TopologyRule-base_Association" name="base_Association" association="Association_TopologyRule">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#Association"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="TopologyRule-TopologyRuleType" name="TopologyRuleType">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Extension" xmi:id="Association_TopologyRule" name="A_Association_TopologyRule" memberEnd="extension_TopologyRule TopologyRule-base_Association">
+					<ownedEnd xmi:type="uml:ExtensionEnd" xmi:id="extension_TopologyRule" name="extension_TopologyRule" type="TopologyRule" isComposite="true" lower="0" upper="1" memberEnd="extension_TopologyRule TopologyRule-base_Association"/>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Stereotype" xmi:id="StorageDef" name="StorageDef">
+					<ownedAttribute xmi:type="uml:Property" xmi:id="StorageDef-base_Class" name="base_Class" association="Class_StorageDef">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#Class"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="StorageDef-PyramidLevel" name="PyramidLevel">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="StorageDef-PyramidResampleType" name="PyramidResampleType">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="StorageDef-Origin" name="Origin">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="StorageDef-CellSizeX" name="CellSizeX">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="StorageDef-CellSizeY" name="CellSizeY">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="StorageDef-CompressionQuality" name="CompressionQuality">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="StorageDef-TileHeight" name="TileHeight">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="StorageDef-CompressionType" name="CompressionType">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="StorageDef-TileWidth" name="TileWidth">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="StorageDef-Tiled" name="Tiled">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Extension" xmi:id="Class_StorageDef" name="A_Class_StorageDef" memberEnd="extension_StorageDef StorageDef-base_Class">
+					<ownedEnd xmi:type="uml:ExtensionEnd" xmi:id="extension_StorageDef" name="extension_StorageDef" type="StorageDef" isComposite="true" lower="0" upper="1" memberEnd="extension_StorageDef StorageDef-base_Class"/>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Stereotype" xmi:id="SpatialReference" name="SpatialReference">
+					<ownedAttribute xmi:type="uml:Property" xmi:id="SpatialReference-base_Class" name="base_Class" association="Class_SpatialReference">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#Class"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="SpatialReference-XYTolerance" name="XYTolerance">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="SpatialReference-XYScale" name="XYScale">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="SpatialReference-CoordinateSystemType" name="CoordinateSystemType">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="SpatialReference-ZTolerance" name="ZTolerance">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="SpatialReference-LatestWKID" name="LatestWKID">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="SpatialReference-VCSWKT" name="VCSWKT">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="SpatialReference-LeftLongitude" name="LeftLongitude">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="SpatialReference-WKT" name="WKT">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="SpatialReference-MScale" name="MScale">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="SpatialReference-ZOrigin" name="ZOrigin">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="SpatialReference-HighPrecision" name="HighPrecision">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="SpatialReference-VCSWKID" name="VCSWKID">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="SpatialReference-WKID" name="WKID">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="SpatialReference-MTolerance" name="MTolerance">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="SpatialReference-XOrigin" name="XOrigin">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="SpatialReference-YOrigin" name="YOrigin">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="SpatialReference-MOrigin" name="MOrigin">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+					<ownedAttribute xmi:type="uml:Property" xmi:id="SpatialReference-ZScale" name="ZScale">
+						<type href="http://www.omg.org/spec/UML/20161101/UML.xmi#String"/>
+					</ownedAttribute>
+				</packagedElement>
+				<packagedElement xmi:type="uml:Extension" xmi:id="Class_SpatialReference" name="A_Class_SpatialReference" memberEnd="extension_SpatialReference SpatialReference-base_Class">
+					<ownedEnd xmi:type="uml:ExtensionEnd" xmi:id="extension_SpatialReference" name="extension_SpatialReference" type="SpatialReference" isComposite="true" lower="0" upper="1" memberEnd="extension_SpatialReference SpatialReference-base_Class"/>
+				</packagedElement>
+			</uml:Profile>
+		</profiles>
+		<diagrams>
+			<diagram xmi:id="EAID_7D960BD8_65D8_4934_9C11_4EF860DD8FBA">
+				<model package="EAPK_1EA391DC_BDB1_4db2_B393_1474F56055F6" localID="1" owner="EAPK_1EA391DC_BDB1_4db2_B393_1474F56055F6"/>
+				<properties name="ArcGIS Workspace" type="Logical"/>
+				<project author="Johannes Echterhoff" version="1.1" created="2014-11-07 13:33:42" modified="2014-11-20 17:23:20"/>
+				<style1 value="ShowPrivate=1;ShowProtected=1;ShowPublic=1;HideRelationships=0;Locked=0;Border=1;HighlightForeign=1;PackageContents=1;SequenceNotes=0;ScalePrintImage=0;PPgs.cx=1;PPgs.cy=1;DocSize.cx=850;DocSize.cy=1098;ShowDetails=0;Orientation=P;Zoom=100;ShowTags=0;OpParams=1;VisibleAttributeDetail=0;ShowOpRetType=1;ShowIcons=1;CollabNums=0;HideProps=0;ShowReqs=0;ShowCons=0;PaperSize=1;HideParents=0;UseAlias=0;HideAtts=0;HideOps=0;HideStereo=0;HideElemStereo=0;ShowTests=0;ShowMaint=0;ConnectorNotation=UML 2.1;ExplicitNavigability=0;ShowShape=1;AllDockable=0;AdvancedElementProps=1;AdvancedFeatureProps=1;AdvancedConnectorProps=1;m_bElementClassifier=1;SPT=1;ShowNotes=0;SuppressBrackets=0;SuppConnectorLabels=0;PrintPageHeadFoot=0;ShowAsList=0;"/>
+				<style2 value="ExcludeRTF=0;DocAll=0;HideQuals=0;AttPkg=1;ShowTests=0;ShowMaint=0;SuppressFOC=1;MatrixActive=0;SwimlanesActive=1;KanbanActive=0;MatrixLineWidth=1;MatrixLocked=0;TConnectorNotation=UML 2.1;TExplicitNavigability=0;AdvancedElementProps=1;AdvancedFeatureProps=1;AdvancedConnectorProps=1;ProfileData=;MDGDgm=ArcGIS::ArcGIS;DefaultLang=ArcGIS;STBLDgm=;ShowNotes=0;VisibleAttributeDetail=0;ShowOpRetType=1;SuppressBrackets=0;SuppConnectorLabels=0;PrintPageHeadFoot=0;ShowAsList=0;SuppressedCompartments=;SaveTag=9742218B;"/>
+				<swimlanes value="locked=false;orientation=0;width=0;inbar=false;names=false;color=0;bold=false;fcol=0;tcol=-1;ofCol=-1;ufCol=-1;hl=1;ufh=0;hh=0;cls=0;bw=0;hli=0;bro=0;SwimlaneFont=lfh:-10,lfw:0,lfi:0,lfu:0,lfs:0,lfface:Carlito,lfe:0,lfo:0,lfchar:1,lfop:0,lfcp:0,lfq:0,lfpf=0,lfWidth=0;"/>
+				<matrixitems value="locked=false;matrixactive=false;swimlanesactive=true;kanbanactive=false;width=1;clrLine=0;"/>
+				<extendedProperties/>
+				<xrefs/>
+				<elements>
+					<element geometry="Left=15;Top=477;Right=146;Bottom=557;" subject="EAID_292B5D20_3946_4fc1_9497_7C33D833B27A" seqno="1" style=" DUID=ACC8F004;NSL=0;BCol=-1;BFol=-1;LCol=-1;LWth=-1;fontsz=0;bold=0;black=0;italic=0;ul=0;charset=0;pitch=0;"/>
+					<element geometry="Left=331;Top=374;Right=473;Bottom=443;" subject="EAID_7CA4EC83_5319_49ac_B909_22C57C277B34" seqno="2" style=" DUID=1958DE9C;NSL=0;BCol=-1;BFol=-1;LCol=-1;LWth=-1;fontsz=0;bold=0;black=0;italic=0;ul=0;charset=0;pitch=0;"/>
+					<element geometry="Left=69;Top=27;Right=617;Bottom=335;" subject="EAID_CEAA949C_EC9E_40b5_9AC5_A77FE155A446" seqno="3" style="font=Arial;fontsz=100;bold=0;italic=0;ul=0;charset=0;pitch=34;DUID=8F283AD9;"/>
+					<element geometry="Left=489;Top=374;Right=631;Bottom=443;" subject="EAID_4A553670_D049_4bdb_87DC_011F75DBC9E6" seqno="4" style="DUID=82193B60;"/>
+					<element geometry="Left=173;Top=374;Right=315;Bottom=443;" subject="EAID_30F303EA_912D_46dc_BC15_0A3E915689B4" seqno="5" style="DUID=A290F35C;"/>
+					<element geometry="Left=15;Top=374;Right=157;Bottom=443;" subject="EAID_383B0B20_7CDE_4a14_9B51_60F47EC25AB0" seqno="6" style="NSL=0;BCol=-1;BFol=-1;LCol=-1;LWth=-1;fontsz=0;bold=0;italic=0;ul=0;charset=0;pitch=0;HideIcon=0;DUID=E02FD5DA;"/>
+				</elements>
+			</diagram>
+			<diagram xmi:id="EAID_9EE6A41B_5FAA_4c89_B98F_732059778630">
+				<model package="EAPK_292B5D20_3946_4fc1_9497_7C33D833B27A" localID="7" owner="EAPK_292B5D20_3946_4fc1_9497_7C33D833B27A"/>
+				<properties name="Association Classes" type="Logical"/>
+				<project version="1.0" created="2014-11-20 17:23:07" modified="2014-11-20 17:23:07"/>
+				<style1 value="ShowPrivate=1;ShowProtected=1;ShowPublic=1;HideRelationships=0;Locked=0;Border=1;HighlightForeign=1;PackageContents=1;SequenceNotes=0;ScalePrintImage=0;PPgs.cx=0;PPgs.cy=0;DocSize.cx=795;DocSize.cy=1138;ShowDetails=0;Orientation=P;Zoom=100;ShowTags=0;OpParams=1;VisibleAttributeDetail=0;ShowOpRetType=1;ShowIcons=1;CollabNums=0;HideProps=0;ShowReqs=0;ShowCons=0;PaperSize=9;HideParents=0;UseAlias=0;HideAtts=0;HideOps=0;HideStereo=0;HideElemStereo=0;ShowTests=0;ShowMaint=0;ConnectorNotation=UML 2.1;ExplicitNavigability=0;ShowShape=1;AllDockable=0;AdvancedElementProps=1;AdvancedFeatureProps=1;AdvancedConnectorProps=1;m_bElementClassifier=1;SPT=1;ShowNotes=0;SuppressBrackets=0;SuppConnectorLabels=0;PrintPageHeadFoot=0;ShowAsList=0;"/>
+				<style2/>
+				<swimlanes value="locked=false;orientation=0;width=0;inbar=false;names=false;color=-1;bold=false;fcol=0;tcol=-1;ofCol=-1;ufCol=-1;hl=1;ufh=0;hh=0;cls=0;bw=0;hli=0;bro=0;SwimlaneFont=lfh:-10,lfw:0,lfi:0,lfu:0,lfs:0,lfface:Carlito,lfe:0,lfo:0,lfchar:1,lfop:0,lfcp:0,lfq:0,lfpf=0,lfWidth=0;"/>
+				<matrixitems value="locked=false;matrixactive=false;swimlanesactive=true;kanbanactive=false;width=1;clrLine=0;"/>
+				<extendedProperties/>
+				<xrefs/>
+			</diagram>
+			<diagram xmi:id="EAID_87DAE930_5069_4c58_AC65_4B0B2C0F32C8">
+				<model package="EAPK_7CA4EC83_5319_49ac_B909_22C57C277B34" localID="6" owner="EAPK_7CA4EC83_5319_49ac_B909_22C57C277B34"/>
+				<properties name="Tables" type="Logical"/>
+				<project version="1.0" created="2014-11-12 11:48:16" modified="2014-11-12 11:48:16"/>
+				<style1 value="ShowPrivate=1;ShowProtected=1;ShowPublic=1;HideRelationships=0;Locked=0;Border=1;HighlightForeign=1;PackageContents=1;SequenceNotes=0;ScalePrintImage=0;PPgs.cx=0;PPgs.cy=0;DocSize.cx=795;DocSize.cy=1138;ShowDetails=0;Orientation=P;Zoom=100;ShowTags=0;OpParams=1;VisibleAttributeDetail=0;ShowOpRetType=1;ShowIcons=1;CollabNums=0;HideProps=0;ShowReqs=0;ShowCons=0;PaperSize=9;HideParents=0;UseAlias=0;HideAtts=0;HideOps=0;HideStereo=0;HideElemStereo=0;ShowTests=0;ShowMaint=0;ConnectorNotation=UML 2.1;ExplicitNavigability=0;ShowShape=1;AllDockable=0;AdvancedElementProps=1;AdvancedFeatureProps=1;AdvancedConnectorProps=1;m_bElementClassifier=1;SPT=1;ShowNotes=0;SuppressBrackets=0;SuppConnectorLabels=0;PrintPageHeadFoot=0;ShowAsList=0;"/>
+				<style2/>
+				<swimlanes value="locked=false;orientation=0;width=0;inbar=false;names=false;color=-1;bold=false;fcol=0;tcol=-1;ofCol=-1;ufCol=-1;hl=1;ufh=0;hh=0;cls=0;bw=0;hli=0;bro=0;SwimlaneFont=lfh:-10,lfw:0,lfi:0,lfu:0,lfs:0,lfface:Carlito,lfe:0,lfo:0,lfchar:1,lfop:0,lfcp:0,lfq:0,lfpf=0,lfWidth=0;"/>
+				<matrixitems value="locked=false;matrixactive=false;swimlanesactive=true;kanbanactive=false;width=1;clrLine=0;"/>
+				<extendedProperties/>
+				<xrefs/>
+			</diagram>
+			<diagram xmi:id="EAID_6A3C55E8_3C3C_4f3a_8AAC_0299C5B23070">
+				<model package="EAPK_383B0B20_7CDE_4a14_9B51_60F47EC25AB0" localID="2" owner="EAPK_383B0B20_7CDE_4a14_9B51_60F47EC25AB0"/>
+				<properties name="Features" type="Logical"/>
+				<project author="Johannes Echterhoff" version="1.1" created="2014-11-07 13:33:42" modified="2014-11-12 11:48:33"/>
+				<style1 value="ShowPrivate=1;ShowProtected=1;ShowPublic=1;HideRelationships=0;Locked=0;Border=1;HighlightForeign=1;PackageContents=1;SequenceNotes=0;ScalePrintImage=0;PPgs.cx=1;PPgs.cy=1;DocSize.cx=850;DocSize.cy=1098;ShowDetails=0;Orientation=P;Zoom=100;ShowTags=0;OpParams=1;VisibleAttributeDetail=0;ShowOpRetType=1;ShowIcons=1;CollabNums=0;HideProps=0;ShowReqs=0;ShowCons=0;PaperSize=1;HideParents=0;UseAlias=0;HideAtts=0;HideOps=0;HideStereo=0;HideElemStereo=0;ShowTests=0;ShowMaint=0;ConnectorNotation=UML 2.1;ExplicitNavigability=0;ShowShape=1;AllDockable=0;AdvancedElementProps=1;AdvancedFeatureProps=1;AdvancedConnectorProps=1;m_bElementClassifier=1;SPT=1;ShowNotes=0;SuppressBrackets=0;SuppConnectorLabels=0;PrintPageHeadFoot=0;ShowAsList=0;"/>
+				<style2 value="ExcludeRTF=0;DocAll=0;HideQuals=0;AttPkg=1;ShowTests=0;ShowMaint=0;SuppressFOC=1;MatrixActive=0;SwimlanesActive=1;KanbanActive=0;MatrixLineWidth=1;MatrixLocked=0;TConnectorNotation=UML 2.1;TExplicitNavigability=0;AdvancedElementProps=1;AdvancedFeatureProps=1;AdvancedConnectorProps=1;ProfileData=;MDGDgm=ArcGIS::ArcGIS;DefaultLang=ArcGIS;STBLDgm=;ShowNotes=0;VisibleAttributeDetail=0;ShowOpRetType=1;SuppressBrackets=0;SuppConnectorLabels=0;PrintPageHeadFoot=0;ShowAsList=0;SuppressedCompartments=;SaveTag=39335891;"/>
+				<swimlanes value="locked=false;orientation=0;width=0;inbar=false;names=false;color=0;bold=false;fcol=0;tcol=-1;ofCol=-1;ufCol=-1;hl=1;ufh=0;hh=0;cls=0;bw=0;hli=0;bro=0;SwimlaneFont=lfh:-10,lfw:0,lfi:0,lfu:0,lfs:0,lfface:Carlito,lfe:0,lfo:0,lfchar:1,lfop:0,lfcp:0,lfq:0,lfpf=0,lfWidth=0;"/>
+				<matrixitems value="locked=false;matrixactive=false;swimlanesactive=true;kanbanactive=false;width=1;clrLine=0;"/>
+				<extendedProperties/>
+				<xrefs/>
+			</diagram>
+			<diagram xmi:id="EAID_1DE6B973_CE8A_416f_909B_54CEA1E5944E">
+				<model package="EAPK_30F303EA_912D_46dc_BC15_0A3E915689B4" localID="3" owner="EAPK_30F303EA_912D_46dc_BC15_0A3E915689B4"/>
+				<properties name="Domains" type="Logical"/>
+				<project author="Johannes Echterhoff" version="1.1" created="2014-11-07 13:33:42" modified="2014-11-12 11:48:35"/>
+				<style1 value="ShowPrivate=1;ShowProtected=1;ShowPublic=1;HideRelationships=0;Locked=0;Border=1;HighlightForeign=1;PackageContents=1;SequenceNotes=0;ScalePrintImage=0;PPgs.cx=1;PPgs.cy=1;DocSize.cx=850;DocSize.cy=1098;ShowDetails=0;Orientation=P;Zoom=100;ShowTags=0;OpParams=1;VisibleAttributeDetail=0;ShowOpRetType=1;ShowIcons=1;CollabNums=0;HideProps=0;ShowReqs=0;ShowCons=0;PaperSize=1;HideParents=0;UseAlias=0;HideAtts=0;HideOps=0;HideStereo=0;HideElemStereo=0;ShowTests=0;ShowMaint=0;ConnectorNotation=UML 2.1;ExplicitNavigability=0;ShowShape=1;AllDockable=0;AdvancedElementProps=1;AdvancedFeatureProps=1;AdvancedConnectorProps=1;m_bElementClassifier=1;SPT=1;ShowNotes=0;SuppressBrackets=0;SuppConnectorLabels=0;PrintPageHeadFoot=0;ShowAsList=0;"/>
+				<style2 value="ExcludeRTF=0;DocAll=0;HideQuals=0;AttPkg=1;ShowTests=0;ShowMaint=0;SuppressFOC=1;MatrixActive=0;SwimlanesActive=1;KanbanActive=0;MatrixLineWidth=1;MatrixLocked=0;TConnectorNotation=UML 2.1;TExplicitNavigability=0;AdvancedElementProps=1;AdvancedFeatureProps=1;AdvancedConnectorProps=1;ProfileData=;MDGDgm=ArcGIS::ArcGIS;DefaultLang=ArcGIS;STBLDgm=;ShowNotes=0;VisibleAttributeDetail=0;ShowOpRetType=1;SuppressBrackets=0;SuppConnectorLabels=0;PrintPageHeadFoot=0;ShowAsList=0;SuppressedCompartments=;SaveTag=B6E5D122;"/>
+				<swimlanes value="locked=false;orientation=0;width=0;inbar=false;names=false;color=0;bold=false;fcol=0;tcol=-1;ofCol=-1;ufCol=-1;hl=1;ufh=0;hh=0;cls=0;bw=0;hli=0;bro=0;SwimlaneFont=lfh:-10,lfw:0,lfi:0,lfu:0,lfs:0,lfface:Carlito,lfe:0,lfo:0,lfchar:1,lfop:0,lfcp:0,lfq:0,lfpf=0,lfWidth=0;"/>
+				<matrixitems value="locked=false;matrixactive=false;swimlanesactive=true;kanbanactive=false;width=1;clrLine=0;"/>
+				<extendedProperties/>
+				<xrefs/>
+			</diagram>
+			<diagram xmi:id="EAID_7C44AC09_27C1_47b3_9A85_88EC71C081FF">
+				<model package="EAPK_4A553670_D049_4bdb_87DC_011F75DBC9E6" localID="4" owner="EAPK_4A553670_D049_4bdb_87DC_011F75DBC9E6"/>
+				<properties name="Spatial References" type="Logical"/>
+				<project version="1.1" created="2014-11-07 13:33:42" modified="2014-11-07 13:33:42"/>
+				<style1 value="ShowPrivate=1;ShowProtected=1;ShowPublic=1;HideRelationships=0;Locked=0;Border=1;HighlightForeign=1;PackageContents=1;SequenceNotes=0;ScalePrintImage=0;PPgs.cx=1;PPgs.cy=1;DocSize.cx=850;DocSize.cy=1098;ShowDetails=0;Orientation=P;Zoom=100;ShowTags=0;OpParams=1;VisibleAttributeDetail=0;ShowOpRetType=1;ShowIcons=1;CollabNums=0;HideProps=0;ShowReqs=0;ShowCons=0;PaperSize=1;HideParents=0;UseAlias=0;HideAtts=0;HideOps=0;HideStereo=0;HideElemStereo=0;ShowTests=0;ShowMaint=0;ConnectorNotation=UML 2.1;ExplicitNavigability=0;ShowShape=1;AllDockable=0;AdvancedElementProps=1;AdvancedFeatureProps=1;AdvancedConnectorProps=1;m_bElementClassifier=1;SPT=1;ShowNotes=0;SuppressBrackets=0;SuppConnectorLabels=0;PrintPageHeadFoot=0;ShowAsList=0;"/>
+				<style2 value="SaveTag=BD88206D;ExcludeRTF=0;DocAll=0;HideQuals=0;AttPkg=1;ShowTests=0;ShowMaint=0;SuppressFOC=1;MatrixActive=0;SwimlanesActive=1;KanbanActive=0;MatrixLineWidth=1;MatrixLocked=0;TConnectorNotation=UML 2.1;TExplicitNavigability=0;AdvancedElementProps=1;AdvancedFeatureProps=1;AdvancedConnectorProps=1;ProfileData=;MDGDgm=ArcGIS::ArcGIS;DefaultLang=ArcGIS;STBLDgm=;ShowNotes=0;VisibleAttributeDetail=0;ShowOpRetType=1;SuppressBrackets=0;SuppConnectorLabels=0;PrintPageHeadFoot=0;ShowAsList=0;SuppressedCompartments=;"/>
+				<swimlanes value="locked=false;orientation=0;width=0;inbar=false;names=false;color=0;bold=false;fcol=0;tcol=-1;ofCol=-1;ufCol=-1;hl=1;ufh=0;hh=0;cls=0;bw=0;hli=0;bro=0;SwimlaneFont=lfh:-10,lfw:0,lfi:0,lfu:0,lfs:0,lfface:Carlito,lfe:0,lfo:0,lfchar:1,lfop:0,lfcp:0,lfq:0,lfpf=0,lfWidth=0;"/>
+				<matrixitems value="locked=false;matrixactive=false;swimlanesactive=true;kanbanactive=false;width=1;clrLine=0;"/>
+				<extendedProperties/>
+				<xrefs/>
+				<elements>
+					<element geometry="Left=49;Top=216;Right=309;Bottom=470;" subject="EAID_E6CEBD40_616F_48c5_9084_1226AA9DA500" seqno="1" style="HideIcon=0;Tag=1;BCol=10092287;DUID=268F4BD5;"/>
+					<element geometry="Left=50;Top=30;Right=323;Bottom=176;" subject="EAID_F86A161E_218D_49bb_B3F7_95E2B3221C43" seqno="2" style="font=Arial;bold=0;italic=0;ul=0;charset=0;pitch=34;fontsz=110;DUID=43BF2EDA;"/>
+				</elements>
+			</diagram>
+		</diagrams>
+	</xmi:Extension>
+	<ArcGIS:ArcGIS base_Package="EAPK_1EA391DC_BDB1_4db2_B393_1474F56055F6" WorkspaceType="esriLocalDatabaseWorkspace" OrderInheritedFields="Top-down" DefaultSpatialReference="EAID_E6CEBD40_616F_48c5_9084_1226AA9DA500"/>
+	<ArcGIS:FeatureDataset base_Package="EAPK_383B0B20_7CDE_4a14_9B51_60F47EC25AB0" CanVersion="false" Versioned="false" FullPropsDefault="true" SpatialReference="EAID_E6CEBD40_616F_48c5_9084_1226AA9DA500"/>
+	<ArcGIS:SpatialReference base_Class="EAID_E6CEBD40_616F_48c5_9084_1226AA9DA500" XYTolerance="8.983152841195215E-09" XYScale="999999999.99999988" CoordinateSystemType="GeographicCoordinateSystem" ZTolerance="0.001" LeftLongitude="-180" WKT="GEOGCS[&quot;GCS_WGS_1984&quot;,DATUM[&quot;D_WGS_1984&quot;,SPHEROID[&quot;WGS_1984&quot;,6378137.0,298.257223563]],PRIMEM[&quot;Greenwich&quot;,0.0],UNIT[&quot;Degree&quot;,0.0174532925199433]]" MScale="10000" ZOrigin="-100000" HighPrecision="true" WKID="4326" MTolerance="0.001" XOrigin="-400" YOrigin="-400" MOrigin="-100000" ZScale="10000"/>
+</xmi:XMI>

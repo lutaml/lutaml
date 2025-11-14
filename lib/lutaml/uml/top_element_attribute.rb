@@ -17,6 +17,9 @@ module Lutaml
       attribute :definition, :string
       attribute :association, :string
       attribute :type_ns, :string
+      attribute :tagged_values, TaggedValue, collection: true, default: -> {
+        []
+      }
 
       yaml do
         map "name", to: :name
@@ -35,6 +38,7 @@ module Lutaml
         }
         map "association", to: :association
         map "type_ns", to: :type_ns
+        map "tagged_values", to: :tagged_values
       end
 
       def definition_to_yaml(model, doc)

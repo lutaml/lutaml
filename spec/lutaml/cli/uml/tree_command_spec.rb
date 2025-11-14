@@ -1,0 +1,55 @@
+# frozen_string_literal: true
+
+require "spec_helper"
+require "lutaml/cli/uml/tree_command"
+require "lutaml/uml_repository"
+require "tempfile"
+
+RSpec.describe Lutaml::Cli::Uml::TreeCommand do
+  let(:test_xmi) { File.join(__dir__, "../../fixtures/plateau_all_packages_export.xmi") }
+  let(:test_lur) do
+    temp_lur = Tempfile.new(["tree_test", ".lur"]).path
+    repo = Lutaml::UmlRepository::Repository.from_xmi(test_xmi)
+    repo.export_to_package(temp_lur)
+    temp_lur
+  end
+  let(:command) { described_class.new(options) }
+
+  after do
+    File.unlink(test_lur) if File.exist?(test_lur)
+  end
+
+  describe "#run" do
+    context "displaying tree structure" do
+      let(:options) { { format: "text", show_counts: true } }
+
+      it "displays package tree" do
+        expect { command.run(test_lur) }.not_to output(/ERROR/).to_stdout
+      end
+    end
+
+    context "with depth limit" do
+      let(:options) { { format: "text", depth: 2 } }
+
+      it "respects depth limit" do
+        expect { command.run(test_lur) }.not_to output(/ERROR/).to_stdout
+      end
+    end
+
+    context "with JSON format" do
+      let(:options) { { format: "json" } }
+
+      it "outputs JSON format" do
+        expect { command.run(test_lur) }.to output(/{/).to_stdout
+      end
+    end
+
+    context "error handling" do
+      let(:options) { {} }
+
+      it "handles non-existent package" do
+        expect { command.run(test_lur, "NonExistent::Package") }.to output(/Package not found/).to_stdout
+      end
+    end
+  end
+end

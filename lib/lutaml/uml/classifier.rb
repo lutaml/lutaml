@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require_relative "top_element"
+require_relative "association_generalization"
+
 module Lutaml
   module Uml
     class Classifier < TopElement

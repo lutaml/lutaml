@@ -1,24 +1,10 @@
 #!/usr/bin/env ruby
-# encoding: UTF-8
 # frozen_string_literal: true
 
-# resolve bin path, ignoring symlinks
 require "pathname"
 bin_file = Pathname.new(__FILE__).realpath
-
-# add self to libpath
 $:.unshift File.expand_path("../../lib", bin_file)
 
-# Fixes https://github.com/rubygems/rubygems/issues/1420
-require "rubygems/specification"
+require "lutaml/cli"
 
-module Gem
-  class Specification
-    def this; self; end
-  end
-end
-
-require "lutaml"
-require "lutaml/command_line"
-
-Lutaml::CommandLine.run(ARGV.dup, $stdout)
+Lutaml::CLI.start(ARGV)

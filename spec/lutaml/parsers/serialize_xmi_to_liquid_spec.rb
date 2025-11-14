@@ -1,6 +1,6 @@
 require "spec_helper"
 
-RSpec.describe Lutaml::XMI::Parsers::XML do
+RSpec.describe Lutaml::Xmi::Parsers::Xml do
   describe ".serialize_xmi_to_liquid" do
     subject(:output) do
       described_class.serialize_xmi_to_liquid(file)
@@ -97,8 +97,8 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
       end
       let(:first_package) { output.packages.first }
 
-      it "parses xml file into Lutaml::XMI::RootDrop object" do
-        expect(output).to(be_instance_of(Lutaml::XMI::RootDrop))
+      it "parses xml file into Lutaml::Xmi::RootDrop object" do
+        expect(output).to(be_instance_of(Lutaml::Xmi::RootDrop))
       end
 
       it "correctly parses model name" do

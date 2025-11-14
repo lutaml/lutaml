@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 module Lutaml
-  module XMI
+  module Xmi
     class CardinalityDrop < Liquid::Drop
-      include Parsers::XMIBase
+      include Parsers::XmiBase
 
       def initialize(model) # rubocop:disable Lint/MissingSuper
         @model = model

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "nokogiri"
 require "htmlentities"
 require "lutaml/uml/has_attributes"

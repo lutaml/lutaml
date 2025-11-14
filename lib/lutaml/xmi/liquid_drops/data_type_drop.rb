@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 module Lutaml
-  module XMI
+  module Xmi
     class DataTypeDrop < Liquid::Drop
-      include Parsers::XMIBase
+      include Parsers::XmiBase
 
       def initialize(model, options = {}) # rubocop:disable Lint/MissingSuper,Metrics/AbcSize,Metrics/MethodLength,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
         @model = model
@@ -33,7 +33,7 @@ module Lutaml
       def attributes
         @owned_attributes.map do |owned_attr|
           if @options[:with_assoc] || owned_attr.association.nil?
-            ::Lutaml::XMI::AttributeDrop.new(owned_attr, @options)
+            ::Lutaml::Xmi::AttributeDrop.new(owned_attr, @options)
           end
         end.compact
       end
@@ -41,7 +41,7 @@ module Lutaml
       def operations
         @model.owned_operation.map do |operation|
           if operation.association.nil?
-            ::Lutaml::XMI::OperationDrop.new(operation)
+            ::Lutaml::Xmi::OperationDrop.new(operation)
           end
         end.compact
       end
@@ -70,7 +70,7 @@ module Lutaml
             doc_node_name = (link_member == "start" ? "source" : "target")
             definition = fetch_definition_node_value(assoc.id, doc_node_name)
 
-            ::Lutaml::XMI::AssociationDrop.new(
+            ::Lutaml::Xmi::AssociationDrop.new(
               xmi_id: assoc.id,
               member_end: member_end,
               member_end_type: member_end_type,
@@ -97,7 +97,7 @@ module Lutaml
         end.flatten
 
         constraints.map do |constraint|
-          ::Lutaml::XMI::ConstraintDrop.new(constraint)
+          ::Lutaml::Xmi::ConstraintDrop.new(constraint)
         end
       end
 

@@ -1,10 +1,12 @@
 # frozen_string_literal: true
 
-require "lutaml/uml/association"
-require "lutaml/uml/constraint"
-require "lutaml/uml/operation"
-require "lutaml/uml/data_type"
-require "lutaml/uml/generalization"
+require_relative "top_element"
+require_relative "classifier"
+require_relative "association"
+require_relative "constraint"
+require_relative "operation"
+require_relative "data_type"
+require_relative "generalization"
 
 module Lutaml
   module Uml
@@ -18,8 +20,6 @@ module Lutaml
       attribute :constraints, Constraint, collection: true
       attribute :operations, Operation, collection: true
       attribute :data_types, DataType, collection: true
-      attribute :methods, :string, collection: true, default: -> { [] }
-
       attribute :associations, Association, collection: true
       attribute :generalization, Generalization
 
@@ -32,8 +32,6 @@ module Lutaml
         map "constraints", to: :constraints
         map "operations", to: :operations
         map "data_types", to: :data_types
-        map "methods", to: :methods
-
         map "associations", to: :associations, with: {
           to: :associations_to_yaml, from: :associations_from_yaml
         }

@@ -29,17 +29,19 @@ Gem::Specification.new do |spec|
 
   spec.required_ruby_version = ">= 2.7.0" # rubocop:disable Gemspec/RequiredRubyVersion
 
-  spec.add_dependency "expressir", "~> 2.1.0"
-  spec.add_dependency "hashie", "~> 4.1.0"
+  spec.add_dependency "expressir", "~> 2.1"
   spec.add_dependency "htmlentities"
   spec.add_dependency "liquid"
   spec.add_dependency "lutaml-model"
   spec.add_dependency "lutaml-path"
   spec.add_dependency "lutaml-xsd"
-  spec.add_dependency "nokogiri", "~> 1.10"
-  spec.add_dependency "parslet", "~> 2.0.0"
-  spec.add_dependency "ruby-graphviz", "~> 1.2"
-  spec.add_dependency "thor", "~> 1.0"
-  spec.add_dependency "xmi", "~> 0.3.20"
+  spec.add_dependency "nokogiri", "~> 1.18"
+  spec.add_dependency "paint"
+  spec.add_dependency "parslet", "~> 2.0"
+  spec.add_dependency "rubyzip", "~> 3.2"
+  spec.add_dependency "sinatra", "~> 4.2"
+  spec.add_dependency "table_tennis"
+  spec.add_dependency "thor", "~> 1.4"
+  spec.add_dependency "xmi", "~> 0.3"
   spec.metadata["rubygems_mfa_required"] = "true"
 end

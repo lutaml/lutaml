@@ -1,15 +1,14 @@
+# frozen_string_literal: true
+
 require "nokogiri"
 require "htmlentities"
-require "lutaml/uml/has_attributes"
-require "lutaml/uml/document"
-require "lutaml/xmi"
 require "xmi"
 require "digest"
 
 module Lutaml
-  module XMI
+  module Xmi
     module Parsers
-      module XMIBase
+      module XmiBase
         def self.included(base)
           base.extend(ClassMethods)
         end
@@ -261,7 +260,7 @@ module Lutaml
               general_id: general_id,
               general_name: general_node.name,
               general_attributes: general_node_attrs,
-              general_upper_klass: ::Lutaml::XMI::PackageDrop
+              general_upper_klass: ::Lutaml::Xmi::PackageDrop
                 .new(general_upper_klass, nil, options),
               general: {},
             },

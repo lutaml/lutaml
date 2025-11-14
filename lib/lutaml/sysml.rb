@@ -1,4 +1,6 @@
-require "lutaml/uml"
+# frozen_string_literal: true
+
+require_relative "uml"
 require "nokogiri"
 
 module Lutaml

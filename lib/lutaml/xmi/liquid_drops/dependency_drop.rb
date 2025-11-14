@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 module Lutaml
-  module XMI
+  module Xmi
     class DependencyDrop < Liquid::Drop
-      include Parsers::XMIBase
+      include Parsers::XmiBase
 
       def initialize(model, options = {}) # rubocop:disable Lint/MissingSuper
         @model = model
@@ -30,7 +30,7 @@ module Lutaml
 
       def connector
         connector = fetch_connector(@model.id)
-        ::Lutaml::XMI::ConnectorDrop.new(connector, @options)
+        ::Lutaml::Xmi::ConnectorDrop.new(connector, @options)
       end
     end
   end

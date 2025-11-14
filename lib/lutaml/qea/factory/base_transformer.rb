@@ -1,0 +1,82 @@
+# frozen_string_literal: true
+
+module Lutaml
+  module Qea
+    module Factory
+      # Abstract base class for all EA to UML transformers
+      # Implements the Strategy pattern for model transformation
+      class BaseTransformer
+        attr_reader :database
+
+        # Initialize transformer with database reference
+        # @param database [Lutaml::Qea::Database] QEA database instance
+        def initialize(database)
+          @database = database
+        end
+
+        # Transform a single EA model to UML model
+        # @param ea_model [BaseModel] EA model instance
+        # @return [Object] UML model instance
+        # @raise [NotImplementedError] Must be implemented by subclasses
+        def transform(ea_model)
+          raise NotImplementedError,
+                "#{self.class} must implement #transform"
+        end
+
+        # Transform a collection of EA models to UML models
+        # @param collection [Array<BaseModel>] Collection of EA models
+        # @return [Array<Object>] Collection of UML models
+        def transform_collection(collection)
+          return [] if collection.nil? || collection.empty?
+
+          collection.map { |item| transform(item) }.compact
+        end
+
+        protected
+
+        # Map EA visibility to UML visibility
+        # @param ea_visibility [String] EA visibility value
+        # @return [String] UML visibility value
+        def map_visibility(ea_visibility)
+          return "public" if ea_visibility.nil? || ea_visibility.empty?
+
+          case ea_visibility.downcase
+          when "public" then "public"
+          when "private" then "private"
+          when "protected" then "protected"
+          when "package" then "package"
+          else "public"
+          end
+        end
+
+        # Parse cardinality string to min/max values
+        # @param cardinality_str [String] Cardinality string (e.g., "0..1",
+        #   "1..*")
+        # @return [Hash] Hash with :min and :max keys
+        def parse_cardinality(cardinality_str)
+          return { min: nil, max: nil } if cardinality_str.nil? ||
+            cardinality_str.empty?
+
+          parts = cardinality_str.split("..")
+          if parts.size == 2
+            { min: parts[0], max: parts[1] }
+          elsif parts.size == 1
+            { min: parts[0], max: parts[0] }
+          else
+            { min: nil, max: nil }
+          end
+        end
+
+        # Convert boolean-like values to actual boolean
+        # @param value [Object] Value to convert
+        # @return [Boolean] Boolean value
+        def to_boolean(value)
+          return false if value.nil?
+          return value if [true, false].include?(value)
+
+          value.to_s == "1" || value.to_s.downcase == "true"
+        end
+      end
+    end
+  end
+end

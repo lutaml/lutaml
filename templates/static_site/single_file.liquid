@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ config.title }}</title>
+  <meta name="description" content="{{ config.description }}">
+  <meta name="generator" content="{{ buildInfo.generator }}">
+
+  <!-- Styles (embedded) -->
+  <style>
+    {% include 'assets/styles/00-variables' %}
+    {% include 'assets/styles/01-reset' %}
+    {% include 'assets/styles/02-base' %}
+    {% include 'assets/styles/03-layout' %}
+    {% include 'assets/styles/04-components' %}
+    {% include 'assets/styles/05-utilities' %}
+  </style>
+</head>
+<body>
+  <div id="app" x-data="app" x-init="init()" :class="{ 'dark': darkMode }">
+    {% include 'components/header' %}
+
+    <div class="main-layout">
+      {% include 'components/sidebar' %}
+      {% include 'components/content' %}
+    </div>
+  </div>
+
+  <!-- Data (embedded as JavaScript) -->
+  <script>
+    window.UML_DATA = {{ data | json }};
+    window.SEARCH_INDEX = {{ searchIndex | json }};
+    window.APP_CONFIG = {{ config | json }};
+  </script>
+
+  <!-- Alpine.js -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
+
+  <!-- lunr.js -->
+  <script src="https://cdn.jsdelivr.net/npm/lunr@2.3.9/lunr.min.js"></script>
+
+  <!-- Application Scripts (embedded) -->
+  <script>
+    {% include 'assets/scripts/core/utils' %}
+    {% include 'assets/scripts/core/state' %}
+    {% include 'assets/scripts/core/router' %}
+    {% include 'assets/scripts/search/lunr-custom' %}
+    {% include 'assets/scripts/ui/sidebar' %}
+    {% include 'assets/scripts/ui/details' %}
+    {% include 'assets/scripts/ui/search' %}
+    {% include 'assets/scripts/app' %}
+  </script>
+</body>
+</html>

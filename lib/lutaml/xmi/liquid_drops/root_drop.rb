@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Lutaml
-  module XMI
+  module Xmi
     class RootDrop < Liquid::Drop
       def initialize(model, guidance = nil, options = {}) # rubocop:disable Lint/MissingSuper,Metrics/AbcSize,Metrics/MethodLength,Metrics/CyclomaticComplexity
         @model = model
@@ -27,7 +27,7 @@ module Lutaml
 
       def packages
         @packages.map do |package|
-          ::Lutaml::XMI::PackageDrop.new(package, @guidance, @options)
+          ::Lutaml::Xmi::PackageDrop.new(package, @guidance, @options)
         end
       end
 

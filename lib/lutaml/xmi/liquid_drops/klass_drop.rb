@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 module Lutaml
-  module XMI
+  module Xmi
     class KlassDrop < Liquid::Drop
-      include Parsers::XMIBase
+      include Parsers::XmiBase
 
       def initialize(model, guidance = nil, options = {}) # rubocop:disable Lint/MissingSuper,Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
         @model = model
@@ -65,7 +65,7 @@ module Lutaml
       end
 
       def package
-        ::Lutaml::XMI::PackageDrop.new(
+        ::Lutaml::Xmi::PackageDrop.new(
           @package,
           @guidance,
           @options.merge(
@@ -83,34 +83,34 @@ module Lutaml
       def attributes
         @owned_attributes.map do |owned_attr|
           if @options[:with_assoc] || owned_attr.association.nil?
-            ::Lutaml::XMI::AttributeDrop.new(owned_attr, @options)
+            ::Lutaml::Xmi::AttributeDrop.new(owned_attr, @options)
           end
         end.compact
       end
 
       def owned_attributes
         @owned_attributes.map do |owned_attr|
-          ::Lutaml::XMI::AttributeDrop.new(owned_attr, @options)
+          ::Lutaml::Xmi::AttributeDrop.new(owned_attr, @options)
         end.compact
       end
 
       def suppliers_dependencies
         @suppliers_dependencies.map do |dependency|
-          ::Lutaml::XMI::DependencyDrop.new(dependency, @options)
+          ::Lutaml::Xmi::DependencyDrop.new(dependency, @options)
         end.compact
       end
 
       def clients_dependencies
         @clients_dependencies.map do |dependency|
-          ::Lutaml::XMI::DependencyDrop.new(dependency, @options)
+          ::Lutaml::Xmi::DependencyDrop.new(dependency, @options)
         end.compact
       end
 
       def inheritances
         @inheritance_ids.map do |inheritance_id|
-          # ::Lutaml::XMI::InheritanceDrop.new(dependency, @options)
+          # ::Lutaml::Xmi::InheritanceDrop.new(dependency, @options)
           connector = fetch_connector(inheritance_id)
-          ::Lutaml::XMI::ConnectorDrop.new(connector, @options)
+          ::Lutaml::Xmi::ConnectorDrop.new(connector, @options)
         end.compact
       end
 
@@ -139,7 +139,7 @@ module Lutaml
             doc_node_name = (link_member == "start" ? "source" : "target")
             definition = fetch_definition_node_value(assoc.id, doc_node_name)
 
-            ::Lutaml::XMI::AssociationDrop.new(
+            ::Lutaml::Xmi::AssociationDrop.new(
               xmi_id: assoc.id,
               member_end: member_end,
               member_end_type: member_end_type,
@@ -158,7 +158,7 @@ module Lutaml
       def operations
         @model.owned_operation.map do |operation|
           if operation.association.nil?
-            ::Lutaml::XMI::OperationDrop.new(operation)
+            ::Lutaml::Xmi::OperationDrop.new(operation)
           end
         end.compact
       end
@@ -174,7 +174,7 @@ module Lutaml
         end.flatten
 
         constraints.map do |constraint|
-          ::Lutaml::XMI::ConstraintDrop.new(constraint)
+          ::Lutaml::Xmi::ConstraintDrop.new(constraint)
         end
       end
 
@@ -183,7 +183,7 @@ module Lutaml
           generalization = serialize_generalization(@model, @options)
           return {} if generalization.nil?
 
-          ::Lutaml::XMI::GeneralizationDrop.new(
+          ::Lutaml::Xmi::GeneralizationDrop.new(
             generalization, @klass_guidance, @options
           )
         end
