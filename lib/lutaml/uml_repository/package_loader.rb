@@ -2,6 +2,7 @@
 
 require "zip"
 require "yaml"
+require_relative "../uml"
 
 module Lutaml
   module UmlRepository

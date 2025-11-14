@@ -1,4 +1,4 @@
-<div class="package-details" x-data="{ pkg: data.packages[currentPackage] }">
+<div class="package-details" x-data="{ get pkg() { return $store.app.data.packages[$store.app.currentPackage]; } }">
   <div class="entity-header">
     <h1 class="entity-name" x-text="pkg.name"></h1>
     <span class="entity-type-badge">Package</span>
@@ -26,12 +26,19 @@
     <div class="definition-content" x-html="pkg.definition"></div>
   </div>
 
+  <!-- Empty State Message -->
+  <template x-if="(!pkg.subPackages || pkg.subPackages.length === 0) && (!pkg.classes || pkg.classes.length === 0) && (!pkg.diagrams || pkg.diagrams.length === 0)">
+    <div class="empty-state">
+      <p class="empty-state-message">This package is empty. It contains no sub-packages, classes, or diagrams.</p>
+    </div>
+  </template>
+
   <!-- Sub-packages -->
   <div class="section" x-show="pkg.subPackages && pkg.subPackages.length > 0">
     <h3>Sub-packages</h3>
     <div class="package-list">
       <template x-for="subPkgId in pkg.subPackages" :key="subPkgId">
-        <div class="package-item" @click="selectPackage(subPkgId)">
+        <div class="package-item" @click="$store.app.selectPackage(subPkgId)">
           <svg class="item-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
           </svg>
@@ -56,7 +63,7 @@
       </thead>
       <tbody>
         <template x-for="classId in pkg.classes" :key="classId">
-          <tr @click="selectClass(classId)" class="clickable-row">
+          <tr @click="$store.app.selectClass(classId)" class="clickable-row">
             <td>
               <button class="link-button" x-text="data.classes[classId].name"></button>
             </td>

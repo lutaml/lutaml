@@ -9,21 +9,16 @@
 
   <!-- Styles (embedded) -->
   <style>
-    {% include 'assets/styles/00-variables' %}
-    {% include 'assets/styles/01-reset' %}
-    {% include 'assets/styles/02-base' %}
-    {% include 'assets/styles/03-layout' %}
-    {% include 'assets/styles/04-components' %}
-    {% include 'assets/styles/05-utilities' %}
+    {{ styles }}
   </style>
 </head>
 <body>
   <div id="app" x-data="app" x-init="init()" :class="{ 'dark': darkMode }">
-    {% include 'components/header' %}
+    {{ header }}
 
     <div class="main-layout">
-      {% include 'components/sidebar' %}
-      {% include 'components/content' %}
+      {{ sidebar }}
+      {{ content }}
     </div>
   </div>
 
@@ -31,7 +26,7 @@
   <script>
     window.UML_DATA = {{ data | json }};
     window.SEARCH_INDEX = {{ searchIndex | json }};
-    window.APP_CONFIG = {{ config | json }};
+    window.APP_CONFIG = {{ config }};
   </script>
 
   <!-- Alpine.js -->
@@ -40,16 +35,18 @@
   <!-- lunr.js -->
   <script src="https://cdn.jsdelivr.net/npm/lunr@2.3.9/lunr.min.js"></script>
 
+  <!-- Alpine.js Templates -->
+  <template id="package-details-template">
+    {{ package_details }}
+  </template>
+
+  <template id="class-details-template">
+    {{ class_details }}
+  </template>
+
   <!-- Application Scripts (embedded) -->
   <script>
-    {% include 'assets/scripts/core/utils' %}
-    {% include 'assets/scripts/core/state' %}
-    {% include 'assets/scripts/core/router' %}
-    {% include 'assets/scripts/search/lunr-custom' %}
-    {% include 'assets/scripts/ui/sidebar' %}
-    {% include 'assets/scripts/ui/details' %}
-    {% include 'assets/scripts/ui/search' %}
-    {% include 'assets/scripts/app' %}
+    {{ scripts }}
   </script>
 </body>
 </html>

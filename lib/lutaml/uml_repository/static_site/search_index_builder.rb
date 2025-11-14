@@ -133,9 +133,9 @@ module Lutaml
 
         # Build search document for an association
         def build_association_document(association)
-          member_ends = association.member_end || []
-          source_class = member_ends[0]&.type
-          target_class = member_ends[1]&.type
+          # Association model has simple string attributes, not arrays
+          source_name = association.owner_end  # String: class name
+          target_name = association.member_end  # String: class name
 
           {
             id: @id_generator.document_id("association", association.xmi_id),
@@ -144,9 +144,8 @@ module Lutaml
             entityId: @id_generator.association_id(association),
             name: association.name || "unnamed",
             qualifiedName: association.name || "unnamed",
-            package: find_association_package(source_class),
-            content: build_association_content(association, source_class,
-                                               target_class),
+            package: "", # Associations are document-level
+            content: build_association_content(association, source_name, target_name),
             boost: 0.8,
           }
         end
@@ -196,11 +195,14 @@ module Lutaml
         end
 
         # Build searchable content for an association
-        def build_association_content(association, source_class, target_class)
+        # @param association [Association] The association
+        # @param source_name [String] Source class name (already extracted)
+        # @param target_name [String] Target class name (already extracted)
+        def build_association_content(association, source_name, target_name)
           parts = [
             association.name,
-            source_class&.name,
-            target_class&.name,
+            source_name,
+            target_name,
           ].compact
 
           normalize_content(parts.join(" "))

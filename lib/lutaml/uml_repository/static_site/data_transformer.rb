@@ -119,6 +119,7 @@ module Lutaml
             name: package.name,
             path: package_path(package),
             classCount: package.classes&.size || 0,
+            classes: (package.classes || []).map { |c| @id_generator.class_id(c) },
             children: (package.packages || []).map do |child|
               build_tree_node(child)
             end,
@@ -238,32 +239,72 @@ module Lutaml
         end
 
         def serialize_association(association, id)
-          member_ends = association.member_end || []
-          source_end = member_ends[0]
-          target_end = member_ends[1]
-
+          # Association model has member_end/owner_end as strings (class names)
+          # Use member_end_xmi_id, member_end_type etc for more details
           {
             id: id,
             xmiId: association.xmi_id,
             name: association.name,
             type: "Association",
-            source: serialize_association_end(source_end),
-            target: serialize_association_end(target_end),
+            source: build_association_source(association),
+            target: build_association_target(association),
+          }
+        end
+
+        def build_association_source(association)
+          return nil unless association.owner_end
+
+          {
+            class: association.owner_end_xmi_id,
+            className: association.owner_end,
+            role: association.owner_end_attribute_name,
+            cardinality: serialize_cardinality(association.owner_end_cardinality),
+            aggregation: association.owner_end_type,
+          }
+        end
+
+        def build_association_target(association)
+          return nil unless association.member_end
+
+          {
+            class: association.member_end_xmi_id,
+            className: association.member_end,
+            role: association.member_end_attribute_name,
+            cardinality: serialize_cardinality(association.member_end_cardinality),
+            aggregation: association.member_end_type,
           }
         end
 
         def serialize_association_end(end_obj)
-          return nil unless end_obj&.type
+          return nil unless end_obj
+          return nil unless end_obj.respond_to?(:type) && end_obj.type
 
-          {
-            class: @id_generator.class_id(end_obj.type),
-            className: end_obj.type.name,
-            role: end_obj.name,
-            cardinality: serialize_cardinality(end_obj.cardinality),
-            navigable: end_obj.navigable?,
-            aggregation: end_obj.aggregation,
-            visibility: end_obj.visibility,
-          }
+          # end_obj.type can be a String (class name) or a Class object
+          type_value = end_obj.type
+
+          if type_value.is_a?(String)
+            # Type is a string reference (class name)
+            {
+              class: nil, # Can't generate ID without class object
+              className: type_value,
+              role: end_obj.respond_to?(:name) ? end_obj.name : nil,
+              cardinality: serialize_cardinality(end_obj.respond_to?(:cardinality) ? end_obj.cardinality : nil),
+              navigable: end_obj.respond_to?(:navigable?) ? end_obj.navigable? : false,
+              aggregation: end_obj.respond_to?(:aggregation) ? end_obj.aggregation : nil,
+              visibility: end_obj.respond_to?(:visibility) ? end_obj.visibility : nil,
+            }
+          else
+            # Type is a class object
+            {
+              class: @id_generator.class_id(type_value),
+              className: type_value.respond_to?(:name) ? type_value.name : type_value.to_s,
+              role: end_obj.respond_to?(:name) ? end_obj.name : nil,
+              cardinality: serialize_cardinality(end_obj.respond_to?(:cardinality) ? end_obj.cardinality : nil),
+              navigable: end_obj.respond_to?(:navigable?) ? end_obj.navigable? : false,
+              aggregation: end_obj.respond_to?(:aggregation) ? end_obj.aggregation : nil,
+              visibility: end_obj.respond_to?(:visibility) ? end_obj.visibility : nil,
+            }
+          end
         end
 
         # Build operations map

@@ -200,7 +200,7 @@ document.addEventListener('alpine:init', () => {
         breadcrumbs.unshift({
           type: 'package',
           id: currentPkg.id,
-          name: currentPkg.name
+          name: currentPkg.path || currentPkg.name  // Use full path for display
         });
 
         if (currentPkg.parent) {
@@ -217,16 +217,23 @@ document.addEventListener('alpine:init', () => {
       const cls = this.data.classes[classId];
       const breadcrumbs = [];
 
-      // Add package breadcrumbs
+      // Add package breadcrumbs using full path
       if (cls.package) {
-        breadcrumbs.push(...this.buildPackageBreadcrumbs(cls.package));
+        const pkg = this.data.packages[cls.package];
+        if (pkg) {
+          breadcrumbs.push({
+            type: 'package',
+            id: pkg.id,
+            name: pkg.path || pkg.name
+          });
+        }
       }
 
-      // Add class itself
+      // Add class itself with qualified name
       breadcrumbs.push({
         type: 'class',
         id: cls.id,
-        name: cls.name
+        name: cls.qualifiedName || cls.name
       });
 
       return breadcrumbs;
@@ -353,3 +360,45 @@ document.addEventListener('alpine:init', () => {
     }
   });
 });
+// Alpine.js Component Function
+// Wraps the store for use with x-data
+function app() {
+  return {
+    // Expose store as reactive data
+    get data() { return Alpine.store('app').data; },
+    get currentView() { return Alpine.store('app').currentView; },
+    get currentPackage() { return Alpine.store('app').currentPackage; },
+    get currentClass() { return Alpine.store('app').currentClass; },
+    get sidebarVisible() {
+      return Alpine.store('app').sidebarVisible;
+    },
+    set sidebarVisible(value) {
+      Alpine.store('app').sidebarVisible = value;
+    },
+    get darkMode() { return Alpine.store('app').darkMode; },
+    get breadcrumbs() { return Alpine.store('app').breadcrumbs; },
+
+    // Methods
+    init() {
+      Alpine.store('app').init();
+    },
+    showWelcome() {
+      Alpine.store('app').showWelcome();
+    },
+    selectPackage(id) {
+      Alpine.store('app').selectPackage(id);
+    },
+    selectClass(id) {
+      Alpine.store('app').selectClass(id);
+    },
+    toggleTheme() {
+      Alpine.store('app').toggleTheme();
+    },
+    expandAll() {
+      Alpine.store('app').expandAll();
+    },
+    collapseAll() {
+      Alpine.store('app').collapseAll();
+    }
+  };
+}

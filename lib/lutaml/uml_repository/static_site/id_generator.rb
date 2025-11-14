@@ -24,6 +24,8 @@ module Lutaml
         # @param package [Lutaml::Uml::Package] Package object
         # @return [String] Stable package ID (e.g., "pkg_a1b2c3d4")
         def package_id(package)
+          # Use XMI ID for uniqueness - each package has unique XMI ID
+          # even if names are identical in different hierarchies
           cache_key = [:package, package.xmi_id]
           @cache[cache_key] ||= generate_id("pkg", package.xmi_id)
         end
