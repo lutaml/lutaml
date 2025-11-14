@@ -50,8 +50,92 @@
     <!-- Package Details -->
     <div x-show="currentView === 'package'" x-transition class="view-package">
       <template x-if="currentPackage && data.packages[currentPackage]">
-        <div>
-          {% include 'components/package_details' %}
+        <div class="package-details" x-data="{ get pkg() { return $store.app.data.packages[$store.app.currentPackage]; } }">
+          <div class="entity-header">
+            <h1 class="entity-name" x-text="pkg.name"></h1>
+            <span class="entity-type-badge">Package</span>
+          </div>
+
+          <dl class="entity-metadata">
+            <dt>Path</dt>
+            <dd><code x-text="pkg.path"></code></dd>
+
+            <template x-if="pkg.stereotypes && pkg.stereotypes.length > 0">
+              <div>
+                <dt>Stereotypes</dt>
+                <dd>
+                  <template x-for="stereotype in pkg.stereotypes" :key="stereotype">
+                    <span class="stereotype-badge" x-text="stereotype"></span>
+                  </template>
+                </dd>
+              </div>
+            </template>
+          </dl>
+
+          <div class="entity-definition" x-show="pkg.definition">
+            <h3>Description</h3>
+            <div class="definition-content" x-html="pkg.definition"></div>
+          </div>
+
+          <!-- Empty State Message -->
+          <template x-if="(!pkg.subPackages || pkg.subPackages.length === 0) && (!pkg.classes || pkg.classes.length === 0) && (!pkg.diagrams || pkg.diagrams.length === 0)">
+            <div class="empty-state">
+              <p class="empty-state-message">This package is empty. It contains no sub-packages, classes, or diagrams.</p>
+            </div>
+          </template>
+
+          <div class="section" x-show="pkg.subPackages && pkg.subPackages.length > 0">
+            <h3>Sub-packages</h3>
+            <div class="package-list">
+              <template x-for="subPkgId in pkg.subPackages" :key="subPkgId">
+                <div class="package-item" @click="$store.app.selectPackage(subPkgId)">
+                  <svg class="item-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                  </svg>
+                  <span class="item-name" x-text="data.packages[subPkgId].name"></span>
+                  <span class="item-count" x-text="`${(data.packages[subPkgId].classes || []).length} classes`"></span>
+                </div>
+              </template>
+            </div>
+          </div>
+
+          <div class="section" x-show="pkg.classes && pkg.classes.length > 0">
+            <h3>Classes</h3>
+            <table class="data-table classes-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Type</th>
+                  <th>Stereotypes</th>
+                  <th>Attributes</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="classId in pkg.classes" :key="classId">
+                  <tr @click="$store.app.selectClass(classId)" class="clickable-row">
+                    <td>
+                      <button class="link-button" x-text="data.classes[classId].name"></button>
+                    </td>
+                    <td>
+                      <span class="type-badge" x-text="data.classes[classId].type"></span>
+                    </td>
+                    <td>
+                      <template x-if="data.classes[classId].stereotypes && data.classes[classId].stereotypes.length > 0">
+                        <div class="stereotypes-cell">
+                          <template x-for="stereotype in data.classes[classId].stereotypes" :key="stereotype">
+                            <span class="stereotype-tag" x-text="stereotype"></span>
+                          </template>
+                        </div>
+                      </template>
+                    </td>
+                    <td>
+                      <span class="count-value" x-text="(data.classes[classId].attributes || []).length"></span>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
         </div>
       </template>
     </div>
@@ -59,8 +143,76 @@
     <!-- Class Details -->
     <div x-show="currentView === 'class'" x-transition class="view-class">
       <template x-if="currentClass && data.classes[currentClass]">
-        <div>
-          {% include 'components/class_details' %}
+        <div class="class-details" x-data="{ get cls() { return $store.app.data.classes[$store.app.currentClass]; } }">
+          <div class="entity-header">
+            <h1 class="entity-name" x-text="cls.name"></h1>
+            <span class="entity-type-badge" x-text="cls.type"></span>
+            <span class="abstract-badge" x-show="cls.isAbstract">Abstract</span>
+          </div>
+
+          <dl class="entity-metadata">
+            <dt>Qualified Name</dt>
+            <dd><code x-text="cls.qualifiedName"></code></dd>
+
+            <dt>Package</dt>
+            <dd>
+              <button class="link-button" @click="$store.app.selectPackage(cls.package)" x-text="data.packages[cls.package] && data.packages[cls.package].name"></button>
+            </dd>
+
+            <template x-if="cls.stereotypes && cls.stereotypes.length > 0">
+              <div>
+                <dt>Stereotypes</dt>
+                <dd>
+                  <template x-for="stereotype in cls.stereotypes" :key="stereotype">
+                    <span class="stereotype-badge" x-text="stereotype"></span>
+                  </template>
+                </dd>
+              </div>
+            </template>
+          </dl>
+
+          <div class="entity-definition" x-show="cls.definition">
+            <h3>Description</h3>
+            <div class="definition-content" x-html="cls.definition"></div>
+          </div>
+
+          <div class="section" x-show="cls.attributes && cls.attributes.length > 0">
+            <h3>Attributes</h3>
+            <table class="data-table attributes-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Type</th>
+                  <th>Visibility</th>
+                  <th>Cardinality</th>
+                  <th>Modifiers</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="attrId in cls.attributes" :key="attrId">
+                  <tr x-data="{ attr: data.attributes[attrId] }">
+                    <td>
+                      <code x-text="attr.name"></code>
+                      <div class="cell-description" x-show="attr.definition" x-text="attr.definition"></div>
+                    </td>
+                    <td>
+                      <code class="type-name" x-text="attr.type"></code>
+                    </td>
+                    <td>
+                      <span class="visibility-badge" :data-visibility="attr.visibility" x-text="attr.visibility"></span>
+                    </td>
+                    <td>
+                      <code x-show="attr.cardinality" x-text="`${attr.cardinality.min}..${attr.cardinality.max}`"></code>
+                    </td>
+                    <td>
+                      <span class="modifier-badge" x-show="attr.isStatic">static</span>
+                      <span class="modifier-badge" x-show="attr.isReadOnly">readOnly</span>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
         </div>
       </template>
     </div>

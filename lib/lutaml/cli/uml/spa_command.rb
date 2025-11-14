@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../output_formatter"
+require_relative "../../uml"
 
 module Lutaml
   module Cli
@@ -63,7 +64,9 @@ module Lutaml
         rescue StandardError => e
           OutputFormatter.progress_done(success: false)
           puts OutputFormatter.error("SPA generation failed: #{e.message}")
-          puts e.backtrace.join("\n") if options[:verbose]
+          puts
+          puts "Backtrace:"
+          puts e.backtrace.first(20).join("\n")
           exit 1
         end
 
@@ -91,7 +94,7 @@ module Lutaml
         end
 
         def validate_output_path(mode)
-          output = options[:output]
+          output = options[:output] || options["output"]
 
           # For multi-file mode, ensure output is a directory
           if mode == :multi_file && File.extname(output) != ""

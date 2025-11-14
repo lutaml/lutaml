@@ -151,12 +151,14 @@ module Lutaml
         end
 
         def default_template_path
-          File.join(__dir__, "..", "..", "..", "templates", "static_site")
+          # From lib/lutaml/uml_repository/static_site/generator.rb
+          # Up 4 levels: static_site/ → uml_repository/ → lutaml/ → lib/ → (root)
+          File.expand_path("../../../../templates/static_site", __dir__)
         end
 
         def setup_liquid
           Liquid::Template.file_system = Liquid::LocalFileSystem.new(@options[:template_path])
-          Liquid::Template.error_mode = :strict
+          Liquid::Template.error_mode = :lax  # Changed from :strict to handle missing includes
         end
 
         # Generate single-file SPA
@@ -167,14 +169,34 @@ module Lutaml
           data = @data_transformer.transform
           search_index = @search_builder.build
 
-          # Build context
-          context = build_liquid_context(data, search_index, :single_file)
+          # Build CSS and JS
+          css_content = build_css
+          js_content = build_js
+
+          # Build initial context
+          context = build_liquid_context(
+            data.to_json, search_index.to_json, :single_file
+          )
+          context["styles"] = css_content
+          context["scripts"] = js_content
+
+          # Render components with context (call the lambda)
+          component_renderer = render_components
+          rendered_components = component_renderer.call(context)
+          context.merge!(rendered_components)
 
           # Render template
-          template_content = File.read(File.join(@options[:template_path],
-                                                 "single_file.liquid"))
+          template_path = File.join(@options[:template_path], "single_file.liquid")
+          template_content = File.read(template_path)
           template = Liquid::Template.parse(template_content)
+
           html = template.render(context)
+
+          # Check for rendering errors
+          if html.nil? || html.empty?
+            errors = template.errors.any? ? template.errors.join(", ") : "No specific errors, but output is empty"
+            raise "Template rendering failed. Errors: #{errors}"
+          end
 
           # Minify if requested
           html = minify_html(html) if @options[:minify]
@@ -184,6 +206,30 @@ module Lutaml
           puts "✓ Generated: #{@options[:output]} (#{File.size(@options[:output]) / 1024}KB)"
 
           @options[:output]
+        end
+
+        def render_components
+          # Set up Liquid file system for recursive includes
+          temp_file_system = Liquid::LocalFileSystem.new(@options[:template_path])
+
+          component_names = ["header", "sidebar", "content", "package_details", "class_details"]
+          components = {}
+
+          # We need the context to render components, so we'll return a lambda
+          # that will be called with the context
+          lambda do |context|
+            component_names.each do |name|
+              component_path = File.join(@options[:template_path], "components", "#{name}.liquid")
+              if File.exist?(component_path)
+                component_template = Liquid::Template.parse(File.read(component_path))
+                component_template.registers[:file_system] = temp_file_system
+                components[name] = component_template.render(context)
+              else
+                components[name] = "<!-- Component #{name} not found -->"
+              end
+            end
+            components
+          end
         end
 
         # Generate multi-file static site
@@ -223,14 +269,16 @@ module Lutaml
         end
 
         def build_liquid_context(data, search_index, mode)
+          config_hash = {
+            "mode" => mode.to_s,
+            "title" => @options[:title],
+            "description" => @options[:description],
+            "theme" => @options[:theme],
+            "apiMode" => false, # Static mode by default
+          }
+
           {
-            "config" => {
-              "mode" => mode.to_s,
-              "title" => @options[:title],
-              "description" => @options[:description],
-              "theme" => @options[:theme],
-              "apiMode" => false, # Static mode by default
-            },
+            "config" => JSON.generate(config_hash),
             "data" => data,
             "searchIndex" => search_index,
             "buildInfo" => {
