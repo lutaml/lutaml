@@ -389,9 +389,8 @@ module Lutaml
           uml_type = operation.uml_type.first
           uml_type_idref = uml_type.idref if uml_type
 
-          if operation.association.nil?
+          if !operation.respond_to?(:association) || operation.association.nil?
             ::Lutaml::Uml::Operation.new.tap do |op|
-              op.id = operation.id
               op.xmi_id = uml_type_idref
               op.name = operation.name
               op.definition = lookup_attribute_documentation(operation.id)
