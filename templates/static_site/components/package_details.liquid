@@ -1,0 +1,101 @@
+<div class="package-details" x-data="{ pkg: data.packages[currentPackage] }">
+  <div class="entity-header">
+    <h1 class="entity-name" x-text="pkg.name"></h1>
+    <span class="entity-type-badge">Package</span>
+  </div>
+
+  <dl class="entity-metadata">
+    <dt>Path</dt>
+    <dd><code x-text="pkg.path"></code></dd>
+
+    <template x-if="pkg.stereotypes && pkg.stereotypes.length > 0">
+      <div>
+        <dt>Stereotypes</dt>
+        <dd>
+          <template x-for="stereotype in pkg.stereotypes" :key="stereotype">
+            <span class="stereotype-badge" x-text="stereotype"></span>
+          </template>
+        </dd>
+      </div>
+    </template>
+  </dl>
+
+  <!-- Definition/Description -->
+  <div class="entity-definition" x-show="pkg.definition">
+    <h3>Description</h3>
+    <div class="definition-content" x-html="pkg.definition"></div>
+  </div>
+
+  <!-- Sub-packages -->
+  <div class="section" x-show="pkg.subPackages && pkg.subPackages.length > 0">
+    <h3>Sub-packages</h3>
+    <div class="package-list">
+      <template x-for="subPkgId in pkg.subPackages" :key="subPkgId">
+        <div class="package-item" @click="selectPackage(subPkgId)">
+          <svg class="item-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+          </svg>
+          <span class="item-name" x-text="data.packages[subPkgId].name"></span>
+          <span class="item-count" x-text="`${(data.packages[subPkgId].classes || []).length} classes`"></span>
+        </div>
+      </template>
+    </div>
+  </div>
+
+  <!-- Classes in Package -->
+  <div class="section" x-show="pkg.classes && pkg.classes.length > 0">
+    <h3>Classes</h3>
+    <table class="data-table classes-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Stereotypes</th>
+          <th>Attributes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <template x-for="classId in pkg.classes" :key="classId">
+          <tr @click="selectClass(classId)" class="clickable-row">
+            <td>
+              <button class="link-button" x-text="data.classes[classId].name"></button>
+            </td>
+            <td>
+              <span class="type-badge" x-text="data.classes[classId].type"></span>
+            </td>
+            <td>
+              <template x-if="data.classes[classId].stereotypes && data.classes[classId].stereotypes.length > 0">
+                <div class="stereotypes-cell">
+                  <template x-for="stereotype in data.classes[classId].stereotypes" :key="stereotype">
+                    <span class="stereotype-tag" x-text="stereotype"></span>
+                  </template>
+                </div>
+              </template>
+            </td>
+            <td>
+              <span class="count-value" x-text="(data.classes[classId].attributes || []).length"></span>
+            </td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Diagrams -->
+  <div class="section" x-show="pkg.diagrams && pkg.diagrams.length > 0">
+    <h3>Diagrams</h3>
+    <ul class="diagram-list">
+      <template x-for="diagramId in pkg.diagrams" :key="diagramId">
+        <li class="diagram-item">
+          <svg class="item-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="3" y1="9" x2="21" y2="9"></line>
+            <line x1="9" y1="21" x2="9" y2="9"></line>
+          </svg>
+          <span x-text="data.diagrams[diagramId] && data.diagrams[diagramId].name"></span>
+          <span class="diagram-type" x-text="data.diagrams[diagramId] && `(${data.diagrams[diagramId].type})`"></span>
+        </li>
+      </template>
+    </ul>
+  </div>
+</div>

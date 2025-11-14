@@ -1,0 +1,81 @@
+<div class="tree-node" :class="{ 'selected': isSelected }">
+  <div class="node-header">
+    <!-- Expand/Collapse Icon -->
+    <button
+      x-show="hasChildren"
+      @click="toggle()"
+      class="expand-icon"
+      :class="{ 'expanded': expanded }"
+      :aria-expanded="expanded"
+      :aria-label="expanded ? 'Collapse' : 'Expand'"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="9 18 15 12 9 6"></polyline>
+      </svg>
+    </button>
+    <span class="no-icon" x-show="!hasChildren"></span>
+
+    <!-- Package Icon -->
+    <svg class="package-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+    </svg>
+
+    <!-- Package Name (clickable) -->
+    <button
+      @click="selectPackage(node.id)"
+      class="node-label"
+      :class="{ 'active': isSelected }"
+      :title="node.path"
+    >
+      <span x-text="node.name"></span>
+    </button>
+
+    <!-- Class Count Badge -->
+    <span
+      class="count-badge"
+      x-show="node.classCount > 0"
+      x-text="node.classCount"
+      :title="`${node.classCount} class${node.classCount !== 1 ? 'es' : ''}`"
+    ></span>
+  </div>
+
+  <!-- Children (recursive package nodes) -->
+  <div
+    class="node-children"
+    x-show="expanded && hasChildren"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0 transform -translate-y-2"
+    x-transition:enter-end="opacity-100 transform translate-y-0"
+  >
+    <!-- Sub-packages (recursive) -->
+    <template x-for="child in (node.children || [])" :key="child.id">
+      <div x-data="treeNode(child)">
+        {% include 'components/tree_node' %}
+      </div>
+    </template>
+
+    <!-- Classes in this package -->
+    <template x-for="classId in (node.classes || [])" :key="classId">
+      <div
+        class="class-node"
+        @click="selectClass(classId)"
+        :class="{ 'selected': currentClass === classId }"
+      >
+        <span class="class-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          </svg>
+        </span>
+        <button
+          class="class-label"
+          :title="getClass(classId) && getClass(classId).qualifiedName"
+          x-text="getClass(classId) && getClass(classId).name"
+        ></button>
+        <span
+          class="class-type-badge"
+          x-text="getClass(classId) && getClass(classId).entityType"
+        ></span>
+      </div>
+    </template>
+  </div>
+</div>

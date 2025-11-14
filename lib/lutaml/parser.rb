@@ -1,12 +1,10 @@
-require "lutaml/express"
-require "lutaml/uml"
-require "lutaml/xmi"
-require "lutaml/xml"
+# frozen_string_literal: true
+
 require "expressir/express/cache"
 
 module Lutaml
   class Parser
-    EXPRESS_CACHE_PARSE_TYPE = "exp.cache".freeze
+    EXPRESS_CACHE_PARSE_TYPE = "exp.cache"
 
     attr_reader :parse_type, :file_list
 
@@ -29,8 +27,13 @@ module Lutaml
         Expressir::Express::Parser.from_files(file_list.map(&:path))
       when EXPRESS_CACHE_PARSE_TYPE
         Expressir::Express::Cache.from_file(file_list.first.path)
+      when "qea"
+        # QEA files: Direct database parsing for Enterprise Architect
+        # Parse single QEA file and return as array for consistency with XMI
+        document = Lutaml::Qea.parse(file_list.first.path)
+        [document]
       when "xmi"
-        file_list.map { |file| Lutaml::XMI::Parsers::XML.parse(file) }
+        file_list.map { |file| Lutaml::Xmi::Parsers::Xml.parse(file) }
       when "xml"
         file_list.map { |file| Lutaml::Xml::Parsers::Xml.parse(file) }
       when "lutaml"

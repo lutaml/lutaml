@@ -1,6 +1,6 @@
 RSpec.shared_examples "should output correct klass liquid drop" do |id, name|
-  it "outputs Lutaml::XMI::KlassDrop" do
-    expect(output).to be_instance_of(Lutaml::XMI::KlassDrop)
+  it "outputs Lutaml::Xmi::KlassDrop" do
+    expect(output).to be_instance_of(Lutaml::Xmi::KlassDrop)
   end
 
   it "correctly parses model name" do
@@ -13,7 +13,7 @@ RSpec.shared_examples "should output correct klass liquid drop" do |id, name|
 
   it "correctly outputs generalization" do
     expect(output.generalization).to(
-      be_instance_of(Lutaml::XMI::GeneralizationDrop),
+      be_instance_of(Lutaml::Xmi::GeneralizationDrop),
     )
   end
 

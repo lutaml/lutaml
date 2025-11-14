@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require_relative "namespace"
+require_relative "tagged_value"
+
 module Lutaml
   module Uml
     class TopElement < Lutaml::Model::Serializable
@@ -12,6 +15,8 @@ module Lutaml
       attribute :href, :string
       attribute :visibility, :string, default: "public"
       attribute :comments, :string, collection: true
+      attribute :tagged_values, TaggedValue, collection: true,
+                                             default: -> { [] }
 
       attribute :definition, :string
       attribute :full_name, :string
@@ -26,6 +31,7 @@ module Lutaml
         map "href", to: :href
         map "visibility", to: :visibility
         map "comments", to: :comments
+        map "tagged_values", to: :tagged_values
 
         map "definition", to: :definition, with: {
           to: :definition_to_yaml, from: :definition_from_yaml

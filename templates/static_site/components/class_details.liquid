@@ -1,0 +1,213 @@
+<div class="class-details" x-data="{ cls: data.classes[currentClass] }">
+  <div class="entity-header">
+    <h1 class="entity-name" x-text="cls.name"></h1>
+    <span class="entity-type-badge" x-text="cls.type"></span>
+    <span class="abstract-badge" x-show="cls.isAbstract">Abstract</span>
+  </div>
+
+  <dl class="entity-metadata">
+    <dt>Qualified Name</dt>
+    <dd><code x-text="cls.qualifiedName"></code></dd>
+
+    <dt>Package</dt>
+    <dd>
+      <button
+        class="link-button"
+        @click="selectPackage(cls.package)"
+        x-text="data.packages[cls.package] && data.packages[cls.package].name"
+      ></button>
+    </dd>
+
+    <template x-if="cls.stereotypes && cls.stereotypes.length > 0">
+      <div>
+        <dt>Stereotypes</dt>
+        <dd>
+          <template x-for="stereotype in cls.stereotypes" :key="stereotype">
+            <span class="stereotype-badge" x-text="stereotype"></span>
+          </template>
+        </dd>
+      </div>
+    </template>
+  </dl>
+
+  <!-- Definition/Description -->
+  <div class="entity-definition" x-show="cls.definition">
+    <h3>Description</h3>
+    <div class="definition-content" x-html="cls.definition"></div>
+  </div>
+
+  <!-- Inheritance -->
+  <div class="section" x-show="(cls.generalizations && cls.generalizations.length > 0) || (cls.specializations && cls.specializations.length > 0)">
+    <h3>Inheritance</h3>
+
+    <div x-show="cls.generalizations && cls.generalizations.length > 0">
+      <h4>Extends</h4>
+      <div class="inheritance-list">
+        <template x-for="parentId in cls.generalizations" :key="parentId">
+          <button
+            class="inheritance-item"
+            @click="selectClass(parentId)"
+          >
+            <svg class="item-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="18 15 12 9 6 15"></polyline>
+            </svg>
+            <span x-text="data.classes[parentId] && data.classes[parentId].name"></span>
+          </button>
+        </template>
+      </div>
+    </div>
+
+    <div x-show="cls.specializations && cls.specializations.length > 0">
+      <h4>Extended by</h4>
+      <div class="inheritance-list">
+        <template x-for="childId in cls.specializations" :key="childId">
+          <button
+            class="inheritance-item"
+            @click="selectClass(childId)"
+          >
+            <svg class="item-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+            <span x-text="data.classes[childId] && data.classes[childId].name"></span>
+          </button>
+        </template>
+      </div>
+    </div>
+  </div>
+
+  <!-- Attributes -->
+  <div class="section" x-show="cls.attributes && cls.attributes.length > 0">
+    <h3>Attributes</h3>
+    <table class="data-table attributes-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Visibility</th>
+          <th>Cardinality</th>
+          <th>Modifiers</th>
+        </tr>
+      </thead>
+      <tbody>
+        <template x-for="attrId in cls.attributes" :key="attrId">
+          <tr x-data="{ attr: data.attributes[attrId] }">
+            <td>
+              <code x-text="attr.name"></code>
+              <div class="cell-description" x-show="attr.definition" x-text="attr.definition"></div>
+            </td>
+            <td>
+              <code class="type-name" x-text="attr.type"></code>
+            </td>
+            <td>
+              <span class="visibility-badge" :data-visibility="attr.visibility" x-text="attr.visibility"></span>
+            </td>
+            <td>
+              <code x-show="attr.cardinality" x-text="`${attr.cardinality.min}..${attr.cardinality.max}`"></code>
+            </td>
+            <td>
+              <span class="modifier-badge" x-show="attr.isStatic">static</span>
+              <span class="modifier-badge" x-show="attr.isReadOnly">readOnly</span>
+            </td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Operations -->
+  <div class="section" x-show="cls.operations && cls.operations.length > 0">
+    <h3>Operations</h3>
+    <table class="data-table operations-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Return Type</th>
+          <th>Visibility</th>
+          <th>Modifiers</th>
+        </tr>
+      </thead>
+      <tbody>
+        <template x-for="opId in cls.operations" :key="opId">
+          <tr x-data="{ op: data.operations[opId] }">
+            <td>
+              <code x-text="op.name"></code>
+              <div class="parameters" x-show="op.parameters && op.parameters.length > 0">
+                <span class="param-label">Parameters:</span>
+                <template x-for="param in op.parameters" :key="param.name">
+                  <code class="param-item" x-text="`${param.name}: ${param.type}`"></code>
+                </template>
+              </div>
+            </td>
+            <td>
+              <code class="type-name" x-text="op.returnType || 'void'"></code>
+            </td>
+            <td>
+              <span class="visibility-badge" :data-visibility="op.visibility" x-text="op.visibility"></span>
+            </td>
+            <td>
+              <span class="modifier-badge" x-show="op.isStatic">static</span>
+              <span class="modifier-badge" x-show="op.isAbstract">abstract</span>
+            </td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Associations -->
+  <div class="section" x-show="cls.associations && cls.associations.length > 0">
+    <h3>Associations</h3>
+    <table class="data-table associations-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Target</th>
+          <th>Cardinality</th>
+          <th>Aggregation</th>
+          <th>Navigable</th>
+        </tr>
+      </thead>
+      <tbody>
+        <template x-for="assocId in cls.associations" :key="assocId">
+          <tr x-data="{ assoc: data.associations[assocId], target: getAssociationTarget(data.associations[assocId], currentClass) }">
+            <td>
+              <code x-text="assoc.name || 'unnamed'"></code>
+            </td>
+            <td>
+              <button
+                class="link-button"
+                @click="selectClass(target.class)"
+                x-text="target.className"
+              ></button>
+              <span class="role-name" x-show="target.role" x-text="`(${target.role})`"></span>
+            </td>
+            <td>
+              <code x-show="target.cardinality" x-text="`${target.cardinality.min}..${target.cardinality.max}`"></code>
+            </td>
+            <td>
+              <span class="aggregation-badge" x-show="target.aggregation" x-text="target.aggregation"></span>
+              <span x-show="target.aggregation === 'composite'">◆</span>
+              <span x-show="target.aggregation === 'shared'">◇</span>
+            </td>
+            <td>
+              <span x-text="target.navigable ? 'Yes →' : 'No'"></span>
+            </td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Enum Literals (if this is an Enum) -->
+  <div class="section" x-show="cls.literals && cls.literals.length > 0">
+    <h3>Literals</h3>
+    <ul class="literals-list">
+      <template x-for="literal in cls.literals" :key="literal.name">
+        <li class="literal-item">
+          <code x-text="literal.name"></code>
+          <span x-show="literal.definition" class="literal-description" x-text="literal.definition"></span>
+        </li>
+      </template>
+    </ul>
+  </div>
+</div>

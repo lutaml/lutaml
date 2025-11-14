@@ -1,0 +1,239 @@
+# frozen_string_literal: true
+
+require_relative "base_query"
+require_relative "../../uml/qualified_name"
+
+module Lutaml
+  module UmlRepository
+    module Queries
+      # Query service for inheritance operations.
+      #
+      # Provides methods to navigate class inheritance hierarchies using the
+      # inheritance_graph index, which maps parent qualified names to arrays
+      # of child qualified names.
+      #
+      # @example Getting a class's parent
+      #   query = InheritanceQuery.new(document, indexes)
+      #   parent = query.supertype("ModelRoot::Child")
+      #
+      # @example Getting all ancestors
+      #   ancestors = query.ancestors("ModelRoot::GrandChild")
+      #   # => [Parent, GrandParent, ...]
+      #
+      # @example Getting descendants
+      #   descendants = query.descendants("ModelRoot::Parent", max_depth: 2)
+      class InheritanceQuery < BaseQuery
+        # Get the direct parent class (supertype).
+        #
+        # @param class_or_qname [Lutaml::Uml::Class, String] The class object
+        #   or qualified name string
+        # @return [Lutaml::Uml::Class, nil] The parent class, or nil if no parent
+        # @example
+        #   parent = query.supertype("ModelRoot::Child")
+        #   # Or
+        #   parent = query.supertype(child_class)
+        def supertype(class_or_qname)
+          klass = resolve_class(class_or_qname)
+          return nil unless klass
+          return nil unless klass.respond_to?(:generalization)
+          return nil unless klass.generalization
+
+          parent_name = extract_parent_name(klass.generalization)
+          return nil unless parent_name
+
+          # Try to find in qualified_names index
+          qname_string = resolve_qname(class_or_qname)
+          return nil unless qname_string
+
+          qname = QualifiedName.new(qname_string)
+          package_path = qname.package_path.to_s
+
+          # Try to resolve parent qualified name
+          parent_qname = resolve_parent_qualified_name(parent_name,
+                                                       package_path)
+          return nil unless parent_qname
+
+          indexes[:qualified_names][parent_qname]
+        end
+
+        # Get direct child classes (subtypes).
+        #
+        # @param class_or_qname [Lutaml::Uml::Class, String] The class object
+        #   or qualified name string
+        # @param recursive [Boolean] Whether to include all descendants
+        #   (default: false)
+        # @return [Array] Array of child class objects
+        # @example Direct children only
+        #   children = query.subtypes("ModelRoot::Parent", recursive: false)
+        #
+        # @example All descendants
+        #   all_descendants = query.subtypes("ModelRoot::Parent", recursive: true)
+        def subtypes(class_or_qname, recursive: false)
+          qname_string = resolve_qname(class_or_qname)
+          return [] unless qname_string
+
+          if recursive
+            descendants(class_or_qname)
+          else
+            direct_subtypes(qname_string)
+          end
+        end
+
+        # Get all ancestor classes up to the root.
+        #
+        # Returns ancestors in order from immediate parent to root.
+        #
+        # @param class_or_qname [Lutaml::Uml::Class, String] The class object
+        #   or qualified name string
+        # @return [Array] Array of ancestor class objects, ordered from nearest
+        #   to furthest
+        # @example
+        #   ancestors = query.ancestors("ModelRoot::GrandChild")
+        #   # => [Parent, GrandParent]
+        def ancestors(class_or_qname)
+          result = []
+          current = class_or_qname
+
+          loop do
+            parent = supertype(current)
+            break unless parent
+
+            result << parent
+            current = parent
+          end
+
+          result
+        end
+
+        # Get all descendant classes.
+        #
+        # @param class_or_qname [Lutaml::Uml::Class, String] The class object
+        #   or qualified name string
+        # @param max_depth [Integer, nil] Maximum depth to traverse (nil for
+        #   unlimited)
+        # @return [Array] Array of descendant class objects
+        # @example
+        #   descendants = query.descendants("ModelRoot::Parent", max_depth: 2)
+        def descendants(class_or_qname, max_depth: nil)
+          qname_string = resolve_qname(class_or_qname)
+          return [] unless qname_string
+
+          collect_descendants(qname_string, max_depth, 0)
+        end
+
+        # Resolve a class or qualified name to a class object.
+        #
+        # @param class_or_qname [Lutaml::Uml::Class, String] The class object
+        #   or qualified name string
+        # @return [Lutaml::Uml::Class, nil] The class object, or nil if not found
+        def resolve_class(class_or_qname)
+          if class_or_qname.is_a?(String)
+            indexes[:qualified_names][class_or_qname]
+          else
+            class_or_qname
+          end
+        end
+
+        # Resolve a class or qualified name to a qualified name string.
+        #
+        # @param class_or_qname [Lutaml::Uml::Class, String] The class object
+        #   or qualified name string
+        # @return [String, nil] The qualified name string, or nil if not found
+        def resolve_qname(class_or_qname)
+          if class_or_qname.is_a?(String)
+            return class_or_qname if indexes[:qualified_names].key?(class_or_qname)
+
+            return nil
+          end
+
+          # Search for the class in the index
+          indexes[:qualified_names].each do |qname, klass|
+            return qname if klass == class_or_qname
+          end
+
+          nil
+        end
+
+        private
+
+        # Get direct subtypes of a class
+        #
+        # @param qname_string [String] Qualified name of the parent class
+        # @return [Array] Array of child class objects
+        def direct_subtypes(qname_string)
+          child_qnames = indexes[:inheritance_graph][qname_string]
+          return [] unless child_qnames
+
+          child_qnames.map do |child_qname|
+            indexes[:qualified_names][child_qname]
+          end.compact
+        end
+
+        # Recursively collect descendants
+        #
+        # @param qname_string [String] Qualified name of the parent class
+        # @param max_depth [Integer, nil] Maximum depth to traverse
+        # @param current_depth [Integer] Current depth
+        # @return [Array] Array of descendant class objects
+        def collect_descendants(qname_string, max_depth, current_depth)
+          return [] if max_depth && current_depth >= max_depth
+
+          children = direct_subtypes(qname_string)
+          result = children.dup
+
+          children.each do |child|
+            child_qname = resolve_qname(child)
+            next unless child_qname
+
+            grandchildren = collect_descendants(child_qname, max_depth,
+                                                current_depth + 1)
+            result.concat(grandchildren)
+          end
+
+          result
+        end
+
+        # Extract parent name from generalization object
+        #
+        # @param generalization [Lutaml::Uml::Generalization] Generalization object
+        # @return [String, nil] Parent class name
+        def extract_parent_name(generalization)
+          return nil unless generalization
+
+          # Check for general attribute (could be a string or object)
+          if generalization.respond_to?(:general)
+            parent = generalization.general
+            return parent.name if parent.respond_to?(:name)
+            return parent.to_s if parent
+          end
+
+          # Check for name attribute directly
+          return generalization.name if generalization.respond_to?(:name) && generalization.name
+
+          nil
+        end
+
+        # Resolve a class name to its qualified name
+        #
+        # @param name [String] Class name to resolve
+        # @param current_package_path [String] Current package context
+        # @return [String, nil] Resolved qualified name
+        def resolve_parent_qualified_name(name, current_package_path)
+          # If name contains "::", it might already be qualified
+          return name if indexes[:qualified_names].key?(name)
+
+          # Try in current package
+          local_qname = "#{current_package_path}::#{name}"
+          return local_qname if indexes[:qualified_names].key?(local_qname)
+
+          # Try to find in all qualified names (simple name match)
+          indexes[:qualified_names].each_key do |qname|
+            return qname if qname.end_with?("::#{name}")
+          end
+
+          nil
+        end
+      end
+    end
+  end
+end

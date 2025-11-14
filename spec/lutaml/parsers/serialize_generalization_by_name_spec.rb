@@ -1,6 +1,6 @@
 require "spec_helper"
 
-RSpec.describe Lutaml::XMI::Parsers::XML do
+RSpec.describe Lutaml::Xmi::Parsers::Xml do
   describe ".serialize_generalization_by_name" do
     let(:file) { File.new(fixtures_path("plateau_all_packages_export.xmi")) }
 

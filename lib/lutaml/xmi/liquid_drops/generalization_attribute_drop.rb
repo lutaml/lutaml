@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 module Lutaml
-  module XMI
+  module Xmi
     class GeneralizationAttributeDrop < Liquid::Drop
-      include Parsers::XMIBase
+      include Parsers::XmiBase
 
       def initialize(attr, upper_klass, gen_name, guidance = nil) # rubocop:disable Lint/MissingSuper,Metrics/ParameterLists,Layout/LineLength
         @attr = attr
@@ -33,7 +33,7 @@ module Lutaml
       end
 
       def cardinality
-        ::Lutaml::XMI::CardinalityDrop.new(@attr[:cardinality])
+        ::Lutaml::Xmi::CardinalityDrop.new(@attr[:cardinality])
       end
 
       def definition

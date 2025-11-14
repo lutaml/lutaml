@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-require "lutaml/uml/class"
-require "lutaml/uml/enum"
-require "lutaml/uml/data_type"
-require "lutaml/uml/diagram"
+require_relative "class"
+require_relative "enum"
+require_relative "data_type"
+require_relative "diagram"
 
 module Lutaml
   module Uml

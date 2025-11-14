@@ -1,0 +1,48 @@
+<aside
+  class="sidebar"
+  x-show="sidebarVisible"
+  x-transition
+  :aria-hidden="!sidebarVisible"
+  role="navigation"
+  aria-label="Package navigation"
+>
+  <div class="sidebar-header">
+    <h2>Packages</h2>
+    <div class="sidebar-actions">
+      <button
+        @click="expandAll()"
+        class="icon-button"
+        title="Expand all packages"
+        aria-label="Expand all packages"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="7 13 12 18 17 13"></polyline>
+          <polyline points="7 6 12 11 17 6"></polyline>
+        </svg>
+      </button>
+      <button
+        @click="collapseAll()"
+        class="icon-button"
+        title="Collapse all packages"
+        aria-label="Collapse all packages"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="17 11 12 6 7 11"></polyline>
+          <polyline points="17 18 12 13 7 18"></polyline>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="sidebar-content" x-data="packageTree">
+    <template x-if="data && data.packageTree">
+      <div x-data="treeNode(data.packageTree)">
+        {% include 'components/tree_node' %}
+      </div>
+    </template>
+
+    <div x-show="!data" class="sidebar-loading">
+      <p>Loading packages...</p>
+    </div>
+  </div>
+</aside>

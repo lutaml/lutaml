@@ -1,0 +1,137 @@
+<header class="app-header" role="banner">
+  <div class="header-content">
+    <div class="header-left">
+      <button
+        @click="sidebarVisible = !sidebarVisible"
+        class="sidebar-toggle"
+        aria-label="Toggle sidebar"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+
+      <h1 class="app-title">
+        <a href="#/" @click.prevent="showWelcome()">{{ config.title }}</a>
+      </h1>
+    </div>
+
+    <div class="header-center" x-data="searchComponent">
+      <div class="search-wrapper">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+
+        <input
+          type="search"
+          x-model="query"
+          @input.debounce.300ms="performSearch()"
+          @keydown.arrow-down.prevent="selectNext()"
+          @keydown.arrow-up.prevent="selectPrevious()"
+          @keydown.enter.prevent="openSelected()"
+          @keydown.escape="closeSearch()"
+          @focus="showResults = true"
+          placeholder="Search... (Press / or Ctrl+K)"
+          class="search-input"
+          x-ref="searchInput"
+          aria-label="Search UML model"
+        >
+
+        <button
+          x-show="query.length > 0"
+          @click="clearSearch()"
+          class="search-clear"
+          aria-label="Clear search"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+
+        <kbd class="search-hint">Ctrl+K</kbd>
+      </div>
+
+      <!-- Search Results Overlay -->
+      <div
+        x-show="showResults && results.length > 0"
+        @click.away="showResults = false"
+        x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0 transform scale-95"
+        x-transition:enter-end="opacity-100 transform scale-100"
+        class="search-results-overlay"
+        role="listbox"
+      >
+        <div class="search-results-header">
+          <span x-text="`${results.length} result${results.length !== 1 ? 's' : ''}`"></span>
+          <span class="search-hint-text">Use ↑↓ to navigate, Enter to open, Esc to close</span>
+        </div>
+
+        <div class="search-results-list">
+          <template x-for="(result, index) in results" :key="result.id">
+            <div
+              @click="openResult(result)"
+              @mouseenter="selectedIndex = index"
+              :class="{ 'selected': selectedIndex === index }"
+              class="search-result-item"
+              role="option"
+              :aria-selected="selectedIndex === index"
+            >
+              <div class="result-icon" :data-type="result.type">
+                <span x-text="getTypeIcon(result.type)"></span>
+              </div>
+
+              <div class="result-info">
+                <div class="result-name">
+                  <span x-html="highlightMatches(result.name, query)"></span>
+                  <span class="result-type-badge" x-text="result.entityType"></span>
+                </div>
+                <div class="result-path" x-text="result.qualifiedName || result.package"></div>
+              </div>
+
+              <div class="result-score">
+                <div class="score-bar" :style="`width: ${Math.min((result.score / maxScore) * 100, 100)}%`"></div>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <!-- No Results Message -->
+      <div
+        x-show="showResults && results.length === 0 && query.length > 0"
+        x-transition
+        class="search-no-results"
+      >
+        <p>No results found for "<span x-text="query"></span>"</p>
+        <p class="search-suggestion">Try different keywords or check spelling</p>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <button
+        @click="toggleTheme()"
+        class="theme-toggle"
+        :aria-label="darkMode ? 'Switch to light mode' : 'Switch to dark mode'"
+      >
+        <svg x-show="!darkMode" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line>
+          <line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+        <svg x-show="darkMode" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+</header>

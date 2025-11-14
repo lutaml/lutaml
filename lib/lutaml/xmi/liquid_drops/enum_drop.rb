@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 module Lutaml
-  module XMI
+  module Xmi
     class EnumDrop < Liquid::Drop
-      include Parsers::XMIBase
+      include Parsers::XmiBase
 
       def initialize(model, options = {}) # rubocop:disable Lint/MissingSuper
         @model = model
@@ -26,7 +26,7 @@ module Lutaml
 
       def values
         @owned_literals.map do |owned_literal|
-          ::Lutaml::XMI::EnumOwnedLiteralDrop.new(owned_literal, @options)
+          ::Lutaml::Xmi::EnumOwnedLiteralDrop.new(owned_literal, @options)
         end
       end
 

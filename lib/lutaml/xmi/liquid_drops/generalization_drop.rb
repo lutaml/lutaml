@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 module Lutaml
-  module XMI
+  module Xmi
     class GeneralizationDrop < Liquid::Drop
-      include Parsers::XMIBase
+      include Parsers::XmiBase
 
       def initialize(gen, guidance = nil, options = {}) # rubocop:disable Lint/MissingSuper
         @gen = gen

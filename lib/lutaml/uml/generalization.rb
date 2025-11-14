@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "general_attribute"
+
 module Lutaml
   module Uml
     class Generalization < Lutaml::Model::Serializable

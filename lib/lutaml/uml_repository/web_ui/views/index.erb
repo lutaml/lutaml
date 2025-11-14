@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UML Repository Explorer</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>UML Repository Explorer</h1>
+      <div class="search-container">
+        <input type="text" id="search-input" placeholder="Search classes, attributes, associations...">
+        <button id="search-btn">Search</button>
+      </div>
+    </header>
+
+    <div class="main-content">
+      <aside class="sidebar">
+        <h2>Packages</h2>
+        <div id="package-tree"></div>
+      </aside>
+
+      <main class="content">
+        <nav class="breadcrumb" id="breadcrumb"></nav>
+        <div id="details-pane">
+          <div class="welcome">
+            <h2>Welcome to UML Repository Explorer</h2>
+            <p>Select a package or class from the sidebar to view details.</p>
+            <div id="stats-container"></div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

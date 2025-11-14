@@ -1,0 +1,995 @@
+== LutaML diagramming syntax
+
+=== Purpose
+
+LutaML Diagram is a textual language for defining UML diagrams. It is designed
+to be simple and easy to read and write.
+
+The language is used to define the structure of a UML diagram, supporting
+classes, attributes, methods, associations, data types, and enumerations.
+
+
+=== Diagram
+
+A diagram is defined by a `diagram` block. The block contains a list of
+elements that are used to define the diagram.
+
+[source]
+----
+diagram CeramicInformationModel {
+  title "Ceramic Information Model" <1>
+  caption "Modeling klins, colors, and cultural artifacts" <2>
+  fontname "Times New Roman" <3>
+}
+----
+<1> `title`: (optional) set a custom title for the diagram
+<2> `caption`: (optional) set a custom caption for the diagram
+<3> `fontname`: (optional) specify the font name to use
+
+
+== LutaML UML syntax
+
+=== Purpose
+
+LutaML UML is a textual language for defining UML models, based on the OMG UML
+2.5 specification.
+
+It is used for defining the structure of a UML model, supporting packages,
+classes, attributes, methods, associations, data types, and enumerations.
+
+=== Syntax
+
+The syntax supports the following modeling elements:
+
+* Package
+* Class
+** Attributes
+** Methods
+* Enumeration
+* Data types
+* Associations
+* Comments
+* Value specification
+
+=== Common
+
+==== Element structure
+
+The following syntax is used to define a common structure for supported elements.
+
+The elements supported are:
+
+* `package`
+* `class`
+* `enum`
+* `data_type`
+
+
+[source]
+----
+[visibility] [element_type] element_name {
+  // element definition
+}
+----
+
+Where:
+
+`visibility`:: (optional) Represents the visibility of the element. It accepts the following values:
+
+`-` (private):: The element is private.
+`+` (public):: The element is public.
+`#` (protected):: The element is protected.
+`~` (friendly):: The element is friendly.
+
+`element_type`::
+(optional for `package` and `class` blocks)
+The type of the element. The default value differs in each context: in a
+`package` block, the default value is `class`; in a `class` block, the default
+value is `attribute`. In other contexts, the element type is required.
++
+It can be one of the following:
+
+`package`:: A package.
+`class`:: A class.
+`enum`:: An enumeration.
+`data_type`:: A data type.
+
+`element_name`:: The name of the element.
+
+`element definition`:: The definition of the element.
+
+NOTE: A named element is an element that can have a name and a defined
+visibility (`public`, `private`, `protected`, `package`).
+
+
+[example]
+.Declaring a class named "Ceramic"
+====
+[source]
+----
+class Ceramic {
+  // class definition
+}
+----
+====
+
+==== Comment
+
+===== Single-line comment
+
+Comments can be entered at any line after the special symbol pattern `//`.
+
+These lines are ignored by the parser.
+
+[example]
+====
+[source]
+----
+// TODO: attributes <1>
+class Ceramic {
+  // Write docs <2>
+  + glazeType: GlazeType // Glaze type <3>
+}
+----
+
+<1> A line beginning with `//` is a comment.
+<2> A line beginning with whitespaces followed by `//` is a comment.
+<3> A line with `//` is a tail comment: the text after `//` is a comment.
+====
+
+
+===== Multi-line comment
+
+Use `\**`(one line comment) or `*| |*`(multiline comment) to create comment object for diagram entry.
+
+If this syntax is used inside a `class`/`enum`/`association` block, it will be created for owner of this block.
+
+[source]
+----
+** I am a document comment
+
+*|
+  This is a
+  multi-line
+  document comment.
+*|
+
+class A
+enum B {
+  ** one line enum comment
+  foo
+  *|
+    This is a
+    multi-line
+    class comment.
+  *|
+  bar
+}
+----
+
+==== Description
+
+The `definition` block is used to define a multiline description for a class.
+
+Syntax:
+
+[source]
+----
+class ClassName {
+  definition {
+    inner text
+  }
+}
+----
+
+[example]
+.Declaring a class named "Ceramic" with a description
+====
+[source]
+----
+class Ceramic {
+  definition {
+    This class represents a ceramic object.
+  }
+}
+----
+====
+
+
+
+
+=== Package
+
+==== General
+
+A package is a container for other elements, such as classes, data types, and
+enumerations.
+
+[source]
+----
+package PackageName {
+  // package definition
+}
+----
+
+[example]
+.Declaring a package named "Ceramic"
+====
+[source]
+----
+package Ceramic {
+  // package definition
+}
+----
+====
+
+==== Inner and multiple packages
+
+A package can contain one or more inner packages.
+
+[source]
+----
+package PackageName {
+  package SubPackageName {
+    // package definition
+  }
+}
+----
+
+[example]
+.Declaring a package named "Ceramic" with an inner package named "Glaze"
+====
+[source]
+----
+package Ceramic {
+  package Glaze {
+    // package definition
+  }
+}
+----
+====
+
+[example]
+.Declaring a package named "Ceramic" with multiple inner packages
+====
+[source]
+----
+package Ceramic {
+  package Glaze {
+    // package definition
+  }
+
+  package Kiln {
+    // package definition
+  }
+}
+----
+====
+
+
+==== Visibility
+
+A package can set visibility modifier on its contents, which can be one of the
+following:
+
+`+` (public):: The element is public and can be accessed from any other package.
+`-` (private):: The element is private and can only be accessed from within the package.
+`#` (protected):: The element is protected and can only be accessed from within the package.
+`~` (friendly):: The element is friendly and can only be accessed from within the package and its subclasses.
+
+The name of the element and its visibility are optional.
+
+[example]
+.Declaring a package named "Ceramic" with a public visibility modifier
+====
+[source]
+----
+package CeramicInformationModel {
+  class Ceramic {}
+  - class PrivateCeramic {}
+  # class ProtectedCeramic {}
+}
+----
+====
+
+
+
+=== Class
+
+==== General
+
+A class is a blueprint for creating objects. It represents a concept or
+entity in the real world.
+
+A class can be created inside a package or as a top-level element.
+
+[source]
+----
+class ClassName {
+  // class definition
+}
+----
+
+[example]
+.Declaring a class named "Ceramic"
+====
+[source]
+----
+class Ceramic {
+  // class definition
+}
+----
+====
+
+
+==== Abstract class
+
+An abstract class is a class that cannot
+be instantiated. It is used as a base class for other classes.
+
+[source]
+----
+abstract class ClassName {
+  // class definition
+}
+----
+
+[example]
+.Declaring an abstract class named "CeramicBluePrint"
+====
+[source]
+----
+abstract class CeramicBluePrint {
+  // class definition
+}
+----
+====
+
+
+==== Inheritance
+
+Inheritance is a mechanism in which a new class inherits attributes and methods
+from an existing class.
+
+[source]
+----
+class ClassName {
+  generalize ParentClassName
+}
+----
+
+[example]
+.Declaring a class named "Ceramic" that inherits from "CeramicBluePrint"
+====
+[source]
+----
+class CeramicBluePrint {
+  // class definition
+}
+
+class Ceramic {
+  generalize CeramicBluePrint
+}
+----
+====
+
+
+
+
+// ==== Interface
+
+// An interface is a class that contains only abstract methods. It is used to
+// define a contract that other classes must implement.
+
+// [source]
+// ----
+// interface InterfaceName {
+//   // class definition
+// }
+// ----
+
+// [example]
+// .Declaring an interface named "CeramicInterface"
+// ====
+// [source]
+// ----
+// interface CeramicInterface {
+//   // class definition
+// }
+// ----
+// ====
+
+
+
+
+=== Data types
+
+==== General
+
+A data type is a type that represents a set of values. It is used to define the
+type of an attribute.
+
+LutaML supports three types of data types: `data_type`, `primitive`, and `enum`.
+
+[example]
+====
+[source]
+----
+diagram CeramicInformationModel {
+  title "Ceramic Information Model"
+  caption "Modeling kilns, colors, and cultural artifacts"
+  fontname "Times New Roman"
+
+  enum GlazeType {}
+
+  enum KilnType {
+    +kilnType: CharacterString
+  }
+
+  data_type "Ceramic Information" {
+    "glaze code"
+    "kiln temperature"
+  }
+
+  primitive Integer
+
+  enum Profile {
+    implicitAttributeProfile: CharacterString
+    +attributeProfile: CharacterString
+    -privateAttributeProfile: CharacterString
+    ~friendlyAttributeProfile: CharacterString
+    #protectedAttributeProfile: CharacterString
+  }
+}
+----
+====
+
+==== Custom data type
+
+A custom data type is a user-defined data type that can be used to define
+attributes with specific properties.
+
+Define a custom data type by using the `data_type` keyword with a list of
+attributes.
+
+Syntax:
+
+[source]
+----
+data_type "DataTypeName" {
+  "attribute1"
+  "attribute2"
+  ...
+}
+----
+
+[example]
+.Declaring a custom data type named "Ceramic Information" with two attributes
+====
+[source]
+----
+data_type "Ceramic Information" {
+  "glaze code"
+  "kiln temperature"
+}
+----
+====
+
+
+==== Basic data type
+
+A basic data type is a predefined data type that is provided by the language.
+
+The keyword `primitive` is used to define a basic data type.
+
+Syntax:
+
+[source]
+----
+primitive DataTypeName
+----
+
+[example]
+.Declaring a primitive data type named "Integer"
+====
+[source]
+----
+primitive Integer
+----
+====
+
+==== Enumeration
+
+An enumeration is a list of named values. It is used to define a set of
+constants.
+
+The keyword `enum` is used to define an enumeration with a list of attributes.
+
+Syntax:
+
+[source]
+----
+enum EnumName {
+  +attribute1: DataType
+  -attribute2: DataType
+  ...
+}
+----
+
+Example:
+
+[source]
+----
+enum Profile {
+  implicitAttributeProfile: CharacterString
+  +attributeProfile: CharacterString
+  -privateAttributeProfile: CharacterString
+  ~friendlyAttributeProfile: CharacterString
+  #protectedAttributeProfile: CharacterString
+}
+----
+
+NOTE: Attribute visibility is described in <<attribute-visibility>>.
+
+
+=== Attributes
+
+==== General
+
+An attribute is a property of a class that represents a value or a relationship
+to another class.
+
+Syntax:
+
+[source]
+----
+[visibility][/][attribute] name [:type][multiplicity][=initial value][{attribute body}]
+----
+
+Where:
+
+`visibility`:: (optional) Represents the visibility of the attribute. It accepts the following values:
+
+`-` (private):: The attribute is private.
+`+` (public):: The attribute is public.
+`#` (protected):: The attribute is protected.
+`~` (friendly):: The attribute is friendly.
+
+`/`:: Represents a derived attribute.
+
+`attribute`:: (optional) Explicit declaration of an attribute. Without this
+keyword, the attribute is still implicitly declared.
+
+`name`:: The name of the attribute.
+
+`type`:: (optional) The data type of the attribute.
+
+`multiplicity`:: (optional) Represents the number of values that an attribute can have. It accepts the following values:
+
+`1`:: The attribute has one value.
+`*`:: The attribute has many values.
+`[1..*]`:: The attribute has one or many values.
+`[0..1]`:: The attribute has zero or one value.
+
+
+`initial value`:: The initial value of the attribute, when no value is provided.
+
+`{attribute body}`:: (optional) Additional properties for the attribute.
+
+
+One can use explicit or implicit syntax for attribute definition.
+
+Explicit syntax (`attribute` keyword included):
+
+[source]
+----
+class A {
+  attribute my_attribute
+}
+
+enum A {
+  entry my_val2
+}
+----
+
+Implicit syntax (`attribute` keyword omitted):
+
+[source]
+----
+class A {
+  my_attribute
+}
+
+enum A {
+  my_val2
+}
+----
+
+[[attribute-visibility]]
+==== Visibility
+
+Syntax for defining visibility: `[+|-|#|~] [attribute] attribute_name`.
+
+LutaML uses these modifiers to define attribute (entry) visibility:
+
+`+`:: public
+`-`:: private
+`#`:: protected
+`~`:: package
+
+[example]
+.Declaring attributes with different visibility modifiers
+====
+[source]
+----
+class Figure {
+  // Public attribute `radius`
+  + radius
+  // Private attribute `filled`
+  - filled
+  // Protected attribute `length`
+  # length
+}
+----
+====
+
+
+==== Description
+
+The `definition` block is used to define a multiline description for an attribute.
+
+Syntax:
+
+[source]
+----
+class ClassName {
+  + attribute_name {
+    definition {
+      inner text
+    }
+  }
+}
+----
+
+
+[example]
+.Declaring a class named "Ceramic" with an attribute named "glazeType" and a description
+====
+[source]
+----
+class Figure {
+  + radius {
+    definition {
+      Radius of the Figure
+    }
+  }
+}
+----
+====
+
+
+=== Methods
+
+==== General
+
+A method is a function that is defined inside a class and can be called to
+perform a specific task.
+
+
+Syntax for defining methods:
+
+[source]
+----
+[visibility] method-name (parameter-list): return type {property-modifier}
+----
+
+Where:
+
+`visibility`:: (optional) Represents the visibility of the method. It accepts
+the following values:
+
+`-` (private)::: The method is private.
+`+` (public)::: The method is public.
+`#` (protected)::: The method is protected.
+`~` (friendly)::: The method is friendly.
+
+`return type`:: (optional) Represents the return type of the method.
+
+`property-modifier`:: (optional) Represents the properties of the method.
+By default, `unordered` and `nonunique` are applied.
+It accepts the following values:
+
+`redefines`::: The method redefines a method in the superclass.
+`query`::: The method is a query and does not modify the state of the object.
+`ordered`::: The method returns an ordered collection.
+`unordered`::: (default) The method returns an unordered collection.
+`unique`::: The method returns a collection with unique elements.
+`nonunique`::: (default) The method returns a collection with non-unique elements.
+
+
+`parameter-list`:: (optional) Represents the list of parameters that the method
+accepts. It is defined as follows:
++
+[source]
+----
+[direction] name:type [multiplicity] [=default] [{property string}]
+----
++
+Where:
+
+`direction`:: (optional) Represents the direction of the parameter. It accepts
+the following values:
+`in`:: The parameter is an input parameter.
+`out`:: The parameter is an output parameter.
+`inout`:: The parameter is an input/output parameter.
+`return`:: The parameter is a return parameter.
+
+`name`:: The name of the parameter.
+
+`type`:: The data type of the parameter.
+
+`multiplicity`:: (optional) Represents the number of values that a parameter can have. It accepts the following values:
+`1`:: The parameter has one value.
+`*`:: The parameter has many values.
+`[1..*]`:: The parameter has one or many values.
+`[0..1]`:: The parameter has zero or one value.
+
+`default`:: (optional) The default value of the parameter.
+
+`property string`:: (optional) Additional properties for the parameter.
+
+[example]
+.Declaring a class named "Ceramic" with a method named "getGlazeType"
+====
+[source]
+----
+class Ceramic {
+  + getGlazeType(): GlazeType
+}
+----
+====
+
+[example]
+.Declaring a class named "Ceramic" with a method named "getGlazeType" that accepts a parameter
+====
+[source]
+----
+class Ceramic {
+  + getGlazeType(glazeCode: CharacterString): GlazeType
+}
+----
+====
+
+[example]
+.Declaring a class named "Ceramic" with a method named "getGlazeType" that accepts a parameter with a default value
+====
+[source]
+----
+class Ceramic {
+  + getGlazeType(glazeCode: CharacterString = "123"): GlazeType
+}
+----
+====
+
+[example]
+.Declaring a class named "Ceramic" with a method named "getGlazeType" that returns a collection of values
+====
+[source]
+----
+class Ceramic {
+  + getGlazeType(): GlazeType[1..*]
+}
+----
+====
+[example]
+.Declaring a class named "Ceramic" with a method named "getGlazeType" that returns a collection of unique values
+====
+[source]
+----
+class Ceramic {
+  + getGlazeType(): GlazeType[1..*] {unique}
+}
+----
+====
+
+[example]
+.Declaring a class named "Ceramic" with a method named "getGlazeType" that returns a collection of ordered values
+====
+[source]
+----
+class Ceramic {
+  + getGlazeType(): GlazeType[1..*] {ordered}
+}
+----
+====
+
+[example]
+.Declaring a class named "Ceramic" with a method named "getGlazeType" that returns a collection of ordered and unique values
+====
+[source]
+----
+class Ceramic {
+  + getGlazeType(): GlazeType[1..*] {ordered, unique}
+}
+----
+====
+
+[example]
+.Declaring a class named "Ceramic" with a method named "getGlazeType" that returns a collection of ordered and unique values and redefines a method in the superclass
+====
+[source]
+----
+class Ceramic {
+  + getGlazeType(): GlazeType[1..*] {ordered, unique, redefines}
+}
+----
+====
+
+[example]
+.Declaring a class named "Ceramic" with a method named "getGlazeType" that returns a collection of ordered and unique values and is a query method
+====
+[source]
+----
+class Ceramic {
+  + getGlazeType(): GlazeType[1..*] {ordered, unique, query}
+}
+----
+====
+
+[example]
+.Declaring a class named "Ceramic" with a method named "getGlazeType" that returns a collection of ordered and unique values and is a query method with a parameter
+====
+[source]
+----
+class Ceramic {
+  + getGlazeType(glazeCode: CharacterString): GlazeType[1..*] {ordered, unique, query}
+}
+----
+====
+
+[example]
+.Declaring a class named "Ceramic" with a method named "getGlazeType" that returns a collection of ordered and unique values and is a query method with a parameter that has a default value
+====
+[source]
+----
+class Ceramic {
+  + getGlazeType(glazeCode: CharacterString = "123"): GlazeType[1..*] {ordered, unique, query}
+}
+----
+====
+
+
+
+=== Associations
+
+==== General
+
+An association is a relationship between two classes. It represents how the
+classes are connected to each other.
+
+Syntax:
+
+[source]
+----
+association {
+  // association definition
+}
+----
+
+[example]
+.Declaring an association between the classes "Ceramic" and "Glaze"
+====
+[source]
+----
+association {
+  Ceramic -> Glaze
+}
+----
+====
+
+==== Explicit declaration
+
+Syntax:
+
+[source]
+----
+association name {
+  owned_type association|composition|aggregation|generalization|uses
+  member_type association|composition|aggregation|generalization|uses
+  owned association_name[#attribute_name] [{property_string}][cardinality]
+  member association_name[#attribute_name] [{property_string}][cardinality]
+}
+----
+
+where:
+
+* `owned_type` - optional, use to define a bidirectional association (`association`|`composition`|`aggregation`|`generalization`|`uses`)
+* `member_type` - association type (`association`|`composition`|`aggregation`|`generalization`|`uses`)
+* `owned|member` - end of association, use `\#attribute_name` to set a role name
+* `property_string` - property string for attributes associations
+* `cardinality` - examples: `1..*`, `*`
+
+Example:
+
+[source]
+----
+class Association {
+  +association:
+}
+class Type {
+  +endType:
+}
+
+association AssociatingTypeAndAssociation {
+  type uses
+  from Association#+association {subsets relationship}[*]
+  to Type#+/endType {readOnly, subsets relatedElement} [1..*]
+}
+----
+
+==== Undirected associations
+
+The simplest way to define relationship between two classes is to use `generalize` keyword:
+
+[source]
+----
+class Pet {}
+class Cat {
+  generalize Pet
+}
+----
+
+==== Attribute relationship
+
+Derived attribute `relatedElement` can have 1 to many `Element` associated with it through `union`
+
+[source]
+----
+class Relationship {
+   +/relatedElement: Element[1..*] {union}
+}
+class Element {}
+----
+
+=== Class' multiline "definition" property
+
+==== Definition
+
+Full syntax:
+
+[source]
+----
+definition {
+  inner text
+}
+----
+
+
+=== import files
+
+Use `include` special word:
+
+[source]
+----
+include path/to/file
+----
+
+
+
+
+=== Value specification
+
+A value specification indicates one or several values in a model. Examples for value specifications include simple, mathematical expressions, such as `4+2`, and expressions with values from the object model, `Integer::MAX_INT-1`
+
+[source]
+----
+class {Class name, if any} {as ref name, optional} {
+  {attribute name} = {attribute value}
+  {attribute name}:{attribute class} = {attribute value}
+}
+
+instance :{Class name, if any} {as ref name, optional} {
+  {attribute name} = {attribute value}
+  {attribute name}:{attribute class} = {attribute value}
+}
+----

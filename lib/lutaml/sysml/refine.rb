@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Lutaml
   module Sysml
     class Refine < Lutaml::Uml::TopElement

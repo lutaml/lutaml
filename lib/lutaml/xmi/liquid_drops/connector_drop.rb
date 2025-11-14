@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 module Lutaml
-  module XMI
+  module Xmi
     class ConnectorDrop < Liquid::Drop
-      include Parsers::XMIBase
+      include Parsers::XmiBase
 
       def initialize(model, options = {}) # rubocop:disable Lint/MissingSuper
         @model = model
@@ -37,11 +37,11 @@ module Lutaml
       end
 
       def source
-        ::Lutaml::XMI::SourceTargetDrop.new(@model.source, @options)
+        ::Lutaml::Xmi::SourceTargetDrop.new(@model.source, @options)
       end
 
       def target
-        ::Lutaml::XMI::SourceTargetDrop.new(@model.target, @options)
+        ::Lutaml::Xmi::SourceTargetDrop.new(@model.target, @options)
       end
 
       def recognized?

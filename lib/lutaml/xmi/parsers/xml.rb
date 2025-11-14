@@ -1,16 +1,16 @@
+# frozen_string_literal: true
+
 require "nokogiri"
 require "htmlentities"
-require "lutaml/xmi"
 require "xmi"
-require "lutaml/xmi/parsers/xmi_base"
-require "lutaml/uml"
+require_relative "xmi_base"
 require "lutaml/converter/xmi_to_uml"
 
 module Lutaml
-  module XMI
+  module Xmi
     module Parsers
       # Class for parsing .xmi schema files into ::Lutaml::Uml::Document
-      class XML
+      class Xml
         include Lutaml::Converter::XmiToUml
 
         @id_name_mapping_static = {}
@@ -19,7 +19,7 @@ module Lutaml
         attr_reader :id_name_mapping, :xmi_root_model,
                     :all_packaged_elements_cache
 
-        include XMIBase
+        include XmiBase
 
         class << self
           # @param xml [String] path to xml
@@ -127,7 +127,7 @@ module Lutaml
             with_gen: true,
             with_absolute_path: true,
           }
-          ::Lutaml::XMI::RootDrop.new(model, guidance, options)
+          ::Lutaml::Xmi::RootDrop.new(model, guidance, options)
         end
 
         # @param xmi_model [Lutaml::Model::Serializable]
@@ -147,7 +147,7 @@ module Lutaml
             with_absolute_path: true,
           }
           puts "Error: Class not found for name: #{name}!" if klass.nil?
-          ::Lutaml::XMI::KlassDrop.new(
+          ::Lutaml::Xmi::KlassDrop.new(
             klass,
             guidance,
             options,
@@ -170,7 +170,7 @@ module Lutaml
             with_absolute_path: true,
           }
           puts "Error: Enumeration not found for name: #{name}!" if enum.nil?
-          ::Lutaml::XMI::EnumDrop.new(enum, options)
+          ::Lutaml::Xmi::EnumDrop.new(enum, options)
         end
       end
     end

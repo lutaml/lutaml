@@ -1,10 +1,12 @@
+# frozen_string_literal: true
+
 require "optparse"
 require "pathname"
-require "lutaml/formatter"
-require "lutaml/uml/has_attributes"
-require "lutaml/uml/parsers/attribute"
-require "lutaml/uml/parsers/dsl"
-require "lutaml/uml/parsers/yaml"
+require_relative "formatter"
+require_relative "uml/has_attributes"
+require_relative "uml/parsers/attribute"
+require_relative "uml/parsers/dsl"
+require_relative "uml/parsers/yaml"
 
 module Lutaml
   class CommandLine
@@ -15,7 +17,7 @@ module Lutaml
     include ::Lutaml::Uml::HasAttributes
 
     SUPPORTED_FORMATS = %w[yaml lutaml exp].freeze
-    DEFAULT_INPUT_FORMAT = "lutaml".freeze
+    DEFAULT_INPUT_FORMAT = "lutaml"
 
     def self.run(args, out_object, attributes = {})
       new(attributes, out_object).run(args)

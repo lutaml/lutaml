@@ -1,0 +1,106 @@
+<main class="content-area" role="main">
+  <!-- Breadcrumb Navigation -->
+  <nav class="breadcrumb" aria-label="Breadcrumb" x-show="breadcrumbs.length > 0">
+    <template x-for="(crumb, index) in breadcrumbs" :key="index">
+      <span class="breadcrumb-item">
+        <a
+          href="#"
+          @click.prevent="navigateToCrumb(crumb)"
+          x-text="crumb.name"
+        ></a>
+        <span x-show="index < breadcrumbs.length - 1" class="breadcrumb-separator">/</span>
+      </span>
+    </template>
+  </nav>
+
+  <!-- Content Pane -->
+  <div class="content-pane">
+    <!-- Welcome Screen -->
+    <div x-show="currentView === 'welcome'" x-transition class="view-welcome">
+      <div class="welcome-content">
+        <h1>Welcome to {{ config.title }}</h1>
+        <p class="welcome-description">Browse UML packages, classes, and associations with powerful search capabilities.</p>
+
+        <div class="stats-grid" x-show="data && data.metadata">
+          <div class="stat-card">
+            <div class="stat-value" x-text="data.metadata.statistics.packages"></div>
+            <div class="stat-label">Packages</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" x-text="data.metadata.statistics.classes"></div>
+            <div class="stat-label">Classes</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" x-text="data.metadata.statistics.attributes"></div>
+            <div class="stat-label">Attributes</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" x-text="data.metadata.statistics.associations"></div>
+            <div class="stat-label">Associations</div>
+          </div>
+        </div>
+
+        <div class="welcome-actions">
+          <p>Select a package from the sidebar or use the search to get started.</p>
+          <kbd class="keyboard-hint">Press <kbd>/</kbd> or <kbd>Ctrl+K</kbd> to search</kbd>
+        </div>
+      </div>
+    </div>
+
+    <!-- Package Details -->
+    <div x-show="currentView === 'package'" x-transition class="view-package">
+      <template x-if="currentPackage && data.packages[currentPackage]">
+        <div>
+          {% include 'components/package_details' %}
+        </div>
+      </template>
+    </div>
+
+    <!-- Class Details -->
+    <div x-show="currentView === 'class'" x-transition class="view-class">
+      <template x-if="currentClass && data.classes[currentClass]">
+        <div>
+          {% include 'components/class_details' %}
+        </div>
+      </template>
+    </div>
+
+    <!-- Search Results -->
+    <div x-show="currentView === 'search'" x-transition class="view-search">
+      <div x-data="searchResultsView">
+        <h2>Search Results</h2>
+        <p class="search-query">Showing results for "<span x-text="searchQuery"></span>"</p>
+
+        <div x-show="searchResults.length === 0" class="no-results">
+          <p>No results found.</p>
+        </div>
+
+        <div x-show="searchResults.length > 0" class="results-container">
+          <!-- Group by type -->
+          <template x-for="group in groupedResults" :key="group.type">
+            <div class="result-group">
+              <h3 x-text="`${group.type}s (${group.items.length})`"></h3>
+
+              <div class="result-list">
+                <template x-for="result in group.items" :key="result.id">
+                  <div class="result-item" @click="openResult(result)">
+                    <div class="result-header">
+                      <span class="result-name" x-html="highlightMatches(result.name, searchQuery)"></span>
+                      <span class="result-score" :title="`Relevance: ${result.score.toFixed(2)}`">
+                        <div class="score-dot" :class="getScoreClass(result.score)"></div>
+                      </span>
+                    </div>
+                    <div class="result-details">
+                      <span class="result-type" x-text="result.entityType"></span>
+                      <span class="result-path" x-text="result.qualifiedName || result.package"></span>
+                    </div>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>

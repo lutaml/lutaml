@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require "lutaml/uml/node/base"
-require "lutaml/uml/node/class_node"
+require_relative "base"
+require_relative "class_node"
 
 module Lutaml
   module Uml

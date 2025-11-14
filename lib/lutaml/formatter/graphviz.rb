@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 require "open3"
-require "lutaml/formatter/base"
-require "lutaml/layout/graph_viz_engine"
+require_relative "base"
+require_relative "../layout/graph_viz_engine"
 
 module Lutaml
   module Formatter
@@ -87,7 +87,7 @@ module Lutaml
           .gsub("]", "&#93;")
       end
 
-      def format_field(node) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+      def format_attribute(node) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
         symbol = ACCESS_SYMBOLS[node.visibility]
         result = "#{symbol}#{node.name}"
         if node.type
@@ -104,7 +104,7 @@ module Lutaml
         result
       end
 
-      def format_method(node) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength
+      def format_operation(node) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength
         symbol = ACCESS_SYMBOLS[node.access]
         result = "#{symbol} #{node.name}"
         if node.arguments
@@ -217,7 +217,7 @@ module Lutaml
         end
 
         field_rows = members.map do |field|
-          %{<TR><TD ALIGN="LEFT">#{format_field(field)}</TD></TR>}
+          %{<TR><TD ALIGN="LEFT">#{format_attribute(field)}</TD></TR>}
         end
         field_table = <<~HEREDOC.chomp
           <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
@@ -238,7 +238,9 @@ module Lutaml
         HEREDOC
 
         field_table = format_member_rows(node.attributes, hide_members)
-        method_table = format_member_rows(node.methods, hide_members)
+        method_table = if node.respond_to?(:operations)
+                         format_member_rows(node.operations, hide_members)
+                       end
         table_body = [name_html, field_table, method_table].map do |type|
           next if type.nil?
 

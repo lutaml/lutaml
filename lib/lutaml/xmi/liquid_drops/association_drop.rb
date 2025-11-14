@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 module Lutaml
-  module XMI
+  module Xmi
     class AssociationDrop < Liquid::Drop
-      include Parsers::XMIBase
+      include Parsers::XmiBase
 
       def initialize( # rubocop:disable Lint/MissingSuper,Metrics/ParameterLists,Metrics/MethodLength
         xmi_id:,
@@ -44,7 +44,7 @@ module Lutaml
       end
 
       def member_end_cardinality
-        ::Lutaml::XMI::CardinalityDrop.new(@member_end_cardinality)
+        ::Lutaml::Xmi::CardinalityDrop.new(@member_end_cardinality)
       end
 
       def member_end_attribute_name
@@ -69,7 +69,7 @@ module Lutaml
 
       def connector
         connector = fetch_connector(@xmi_id)
-        ::Lutaml::XMI::ConnectorDrop.new(connector, @options)
+        ::Lutaml::Xmi::ConnectorDrop.new(connector, @options)
       end
     end
   end

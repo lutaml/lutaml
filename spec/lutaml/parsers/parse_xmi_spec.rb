@@ -1,6 +1,6 @@
 require "spec_helper"
 
-RSpec.describe Lutaml::XMI::Parsers::XML do
+RSpec.describe Lutaml::Xmi::Parsers::Xml do
   describe ".parse" do
     subject(:parse) { described_class.parse(file) }
 

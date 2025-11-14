@@ -1,0 +1,55 @@
+# frozen_string_literal: true
+
+require "spec_helper"
+require "lutaml/cli/uml/find_command"
+require "lutaml/uml_repository"
+require "tempfile"
+
+RSpec.describe Lutaml::Cli::Uml::FindCommand do
+  let(:test_xmi) { File.join(__dir__, "../../fixtures/plateau_all_packages_export.xmi") }
+  let(:test_lur) do
+    temp_lur = Tempfile.new(["find_test", ".lur"]).path
+    repo = Lutaml::UmlRepository::Repository.from_xmi(test_xmi)
+    repo.export_to_package(temp_lur)
+    temp_lur
+  end
+  let(:command) { described_class.new(options) }
+
+  after do
+    File.unlink(test_lur) if File.exist?(test_lur)
+  end
+
+  describe "#run" do
+    context "finding by stereotype" do
+      let(:options) { { stereotype: "interface", format: "text" } }
+
+      it "finds elements by stereotype" do
+        expect { command.run(test_lur) }.not_to output(/ERROR/).to_stdout
+      end
+    end
+
+    context "finding by package" do
+      let(:options) { { package: "ModelRoot", format: "text" } }
+
+      it "finds elements in package" do
+        expect { command.run(test_lur) }.not_to output(/ERROR/).to_stdout
+      end
+    end
+
+    context "finding by pattern" do
+      let(:options) { { pattern: "^Building", format: "text" } }
+
+      it "finds elements matching pattern" do
+        expect { command.run(test_lur) }.not_to output(/ERROR/).to_stdout
+      end
+    end
+
+    context "error handling" do
+      let(:options) { { format: "text" } }
+
+      it "requires at least one filter" do
+        expect { command.run(test_lur) }.to output(/Please specify at least one filter/).to_stdout
+      end
+    end
+  end
+end

@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 module Lutaml
-  module XMI
+  module Xmi
     class PackageDrop < Liquid::Drop
-      include Parsers::XMIBase
+      include Parsers::XmiBase
 
       def initialize(model, guidance = nil, options = {}) # rubocop:disable Lint/MissingSuper,Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
         @model = model
@@ -55,7 +55,7 @@ module Lutaml
 
       def klasses # rubocop:disable Metrics/MethodLength
         @klasses.map do |klass|
-          ::Lutaml::XMI::KlassDrop.new(
+          ::Lutaml::Xmi::KlassDrop.new(
             klass,
             @guidance,
             @options.merge(
@@ -74,13 +74,13 @@ module Lutaml
         end
 
         enums.map do |enum|
-          ::Lutaml::XMI::EnumDrop.new(enum, @options)
+          ::Lutaml::Xmi::EnumDrop.new(enum, @options)
         end
       end
 
       def data_types
         @all_data_type_elements.map do |data_type|
-          ::Lutaml::XMI::DataTypeDrop.new(data_type, @options)
+          ::Lutaml::Xmi::DataTypeDrop.new(data_type, @options)
         end
       end
 
@@ -90,13 +90,13 @@ module Lutaml
         end
 
         diagrams.map do |diagram|
-          ::Lutaml::XMI::DiagramDrop.new(diagram, @options)
+          ::Lutaml::Xmi::DiagramDrop.new(diagram, @options)
         end
       end
 
       def packages # rubocop:disable Metrics/MethodLength
         @packages.map do |package|
-          ::Lutaml::XMI::PackageDrop.new(
+          ::Lutaml::Xmi::PackageDrop.new(
             package,
             @guidance,
             @options.merge(

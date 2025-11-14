@@ -1,0 +1,1357 @@
+= Enterprise Architect QEA file format
+:toc:
+:toclevels: 3
+
+== Purpose
+
+This document describes the Enterprise Architect QEA file format and how LutaML parses and transforms it into UML models.
+
+== General
+
+=== What is QEA?
+
+QEA (Quantified EA) is Enterprise Architect's native database format based on SQLite 3. It stores complete UML models including:
+
+* Packages, classes, interfaces, enumerations, data types
+* Attributes, operations, and parameters
+* Associations, generalizations, and other relationships
+* Diagrams with visual layout information
+* EA-specific metadata (stereotypes, tagged values, constraints)
+* Cross-references and extended properties
+
+=== Why direct QEA parsing?
+
+Direct QEA parsing offers significant advantages over XMI export:
+
+Performance:: 10-20x faster than XMI parsing (1-2 seconds vs 20-40 seconds for a 20MB model)
+No export step:: Parse directly from EA database without manual export
+EA metadata:: Access to EA-specific information not available in standard XMI
+Memory efficient:: Streams data from SQLite without loading entire file into memory
+
+=== File structure
+
+QEA files are SQLite 3 databases with a specific table schema defined by Enterprise Architect.
+
+.QEA file characteristics
+[source]
+----
+File Type: SQLite 3 database
+Extension: .qea
+Typical Size: 5-50MB for medium models
+Tables: ~95 total tables (42 non-empty in typical models)
+Encoding: UTF-8
+----
+
+== Architecture
+
+=== Two-layer transformation pipeline
+
+LutaML uses a strict two-layer architecture to transform QEA data into UML models:
+
+[source]
+----
+┌────────────────────────────────────────────────────────────────┐
+│ QEA DATABASE (SQLite)                                          │
+│ - Flat relational tables (t_object, t_connector, etc.)        │
+└────────────────────────────────────────────────────────────────┘
+                            ↓
+┌────────────────────────────────────────────────────────────────┐
+│ LAYER 1: QEA PARSE LAYER (Lutaml::Qea::Models)               │
+│ - EaObject, EaConnector, EaDiagram, etc.                      │
+│ - Direct 1:1 mapping to database rows                         │
+│ - Flat relational structure matching database schema          │
+└────────────────────────────────────────────────────────────────┘
+                            ↓
+┌────────────────────────────────────────────────────────────────┐
+│ TRANSFORMERS (Lutaml::Qea::Factory)                           │
+│ - ClassTransformer, DiagramTransformer, etc.                  │
+│ - Convert flat relational to tree-like structure              │
+│ - Resolve references and build relationships                  │
+└────────────────────────────────────────────────────────────────┘
+                            ↓
+┌────────────────────────────────────────────────────────────────┐
+│ LAYER 2: UML DOMAIN LAYER (Lutaml::Uml)                      │
+│ - Class (with nested Attribute[], Operation[], Constraint[]) │
+│ - Package (with nested Package[], Class[])                    │
+│ - Diagram (with nested DiagramObject[], DiagramLink[])        │
+│ - Tree-like structure with rich domain behavior              │
+└────────────────────────────────────────────────────────────────┘
+----
+
+=== Layer 1: QEA parse layer
+
+==== General
+
+The QEA parse layer provides direct representation of database tables as Ruby model objects.
+
+Location:: [`lib/lutaml/qea/models/`](../lib/lutaml/qea/models/)
+Purpose:: 1:1 mapping of SQLite rows to Ruby objects
+Structure:: Flat relational data matching database schema
+Base class:: [`Lutaml::Qea::Models::BaseModel`](../lib/lutaml/qea/models/base_model.rb)
+
+==== Characteristics
+
+* Each table maps to one model class
+* Column names map directly to attributes
+* No nested relationships (references stored as IDs)
+* No business logic or domain behavior
+* Serializable using `lutaml-model` gem
+
+.Example QEA model class
+[source,ruby]
+----
+class EaObject < BaseModel
+  attribute :object_id, :integer
+  attribute :object_type, :string
+  attribute :name, :string
+  attribute :package_id, :integer  # Foreign key, not resolved
+  attribute :stereotype, :string
+  # ... additional attributes matching database columns
+end
+----
+
+=== Layer 2: UML domain layer
+
+==== General
+
+The UML domain layer provides rich, hierarchical UML model objects.
+
+Location:: [`lib/lutaml/uml/`](../lib/lutaml/uml/)
+Purpose:: Tree-like domain model with nested object hierarchies
+Structure:: Objects contain child objects (not just IDs)
+Namespace:: ALL UML elements MUST be in `Lutaml::Uml` namespace
+
+==== Characteristics
+
+* Hierarchical structure with parent-child relationships
+* Resolved references (objects contain other objects, not IDs)
+* Domain-specific behavior and methods
+* Follows UML metamodel conventions
+* Used by all LutaML consumers
+
+.Example UML domain class
+[source,ruby]
+----
+class Class
+  attribute :name, :string
+  attribute :attributes, Attribute, collection: true  # Nested objects
+  attribute :operations, Operation, collection: true  # Nested objects
+  attribute :constraints, Constraint, collection: true  # Nested objects
+  attribute :generalizations, Generalization, collection: true
+  # Rich domain behavior...
+end
+----
+
+=== Transformation layer
+
+==== General
+
+Transformers convert QEA models to UML domain objects.
+
+Location:: [`lib/lutaml/qea/factory/`](../lib/lutaml/qea/factory/)
+Purpose:: Convert flat relational data to tree-like domain model
+Base class:: [`Lutaml::Qea::Factory::BaseTransformer`](../lib/lutaml/qea/factory/base_transformer.rb)
+
+==== Transformation responsibilities
+
+Reference resolution:: Convert object IDs to actual object references
+Hierarchy building:: Create parent-child relationships
+Data mapping:: Map EA concepts to UML metamodel
+Validation:: Ensure data integrity during transformation
+
+.Example transformer
+[source,ruby]
+----
+class ClassTransformer < BaseTransformer
+  def transform(ea_object, database)
+    uml_class = Lutaml::Uml::Class.new
+    uml_class.name = ea_object.name
+
+    # Resolve attributes (nested objects, not IDs)
+    uml_class.attributes = load_attributes(ea_object.object_id, database)
+
+    # Resolve operations
+    uml_class.operations = load_operations(ea_object.object_id, database)
+
+    # Resolve constraints
+    uml_class.constraints = load_constraints(ea_object.object_id, database)
+
+    uml_class
+  end
+end
+----
+
+== Implemented tables
+
+=== Core UML tables
+
+These tables are fully implemented and provide the essential UML model structure.
+
+==== t_object - UML objects
+
+Primary key:: `Object_ID`
+Purpose:: Classes, interfaces, enumerations, data types, and other UML objects
+Row count:: Typically 500-1000+ in production models
+UML mapping:: [`Lutaml::Uml::Class`](../lib/lutaml/uml/class.rb), [`Lutaml::Uml::Enum`](../lib/lutaml/uml/enum.rb), [`Lutaml::Uml::DataType`](../lib/lutaml/uml/data_type.rb)
+
+.Key columns
+[cols="1,2,3"]
+|===
+|Column |Type |Purpose
+
+|`Object_ID`
+|INTEGER
+|Primary key
+
+|`Object_Type`
+|TEXT
+|"Class", "Interface", "Enumeration", etc.
+
+|`Name`
+|TEXT
+|Element name
+
+|`Package_ID`
+|INTEGER
+|Parent package reference
+
+|`Stereotype`
+|TEXT
+|UML stereotype (e.g., "featureType")
+
+|`Abstract`
+|TEXT
+|"1" if abstract class
+
+|`ea_guid`
+|TEXT
+|Enterprise Architect GUID
+
+|`Classifier`
+|INTEGER
+|Type reference for typed elements
+|===
+
+==== t_attribute - Class attributes
+
+Primary key:: `ID`
+Purpose:: Attributes (fields/properties) of UML classes
+Row count:: Typically 1500-2500+ in production models
+UML mapping:: [`Lutaml::Uml::Attribute`](../lib/lutaml/uml/attribute.rb)
+
+.Key columns
+[cols="1,2,3"]
+|===
+|Column |Type |Purpose
+
+|`ID`
+|INTEGER
+|Primary key
+
+|`Object_ID`
+|INTEGER
+|Owner class reference
+
+|`Name`
+|TEXT
+|Attribute name
+
+|`Type`
+|TEXT
+|Attribute type
+
+|`Scope`
+|TEXT
+|Visibility ("Public", "Private", etc.)
+
+|`Stereotype`
+|TEXT
+|Attribute stereotype
+
+|`LowerBound`
+|TEXT
+|Minimum cardinality
+
+|`UpperBound`
+|TEXT
+|Maximum cardinality
+
+|`IsStatic`
+|INTEGER
+|1 if static attribute
+
+|`Classifier`
+|TEXT
+|Type classifier reference
+|===
+
+==== t_operation - Class operations
+
+Primary key:: `OperationID`
+Purpose:: Methods/operations of UML classes
+Row count:: Varies (0-500+ depending on model)
+UML mapping:: [`Lutaml::Uml::Operation`](../lib/lutaml/uml/operation.rb)
+
+.Key columns
+[cols="1,2,3"]
+|===
+|Column |Type |Purpose
+
+|`OperationID`
+|INTEGER
+|Primary key
+
+|`Object_ID`
+|INTEGER
+|Owner class reference
+
+|`Name`
+|TEXT
+|Operation name
+
+|`Type`
+|TEXT
+|Return type
+
+|`Scope`
+|TEXT
+|Visibility
+
+|`Stereotype`
+|TEXT
+|Operation stereotype
+
+|`IsStatic`
+|INTEGER
+|1 if static method
+
+|`Abstract`
+|TEXT
+|1 if abstract operation
+|===
+
+==== t_operationparams - Operation parameters
+
+Primary key:: `OperationID` + `Pos`
+Purpose:: Parameters of operations/methods
+Row count:: Varies based on operations
+UML mapping:: [`Lutaml::Uml::Parameter`](../lib/lutaml/uml/parameter.rb)
+
+.Key columns
+[cols="1,2,3"]
+|===
+|Column |Type |Purpose
+
+|`OperationID`
+|INTEGER
+|Parent operation reference
+
+|`Name`
+|TEXT
+|Parameter name
+
+|`Type`
+|TEXT
+|Parameter type
+
+|`Default`
+|TEXT
+|Default value
+
+|`Pos`
+|INTEGER
+|Parameter position
+
+|`Kind`
+|TEXT
+|Parameter direction ("in", "out", etc.)
+|===
+
+==== t_connector - Relationships
+
+Primary key:: `Connector_ID`
+Purpose:: Associations, generalizations, dependencies, and other relationships
+Row count:: Typically 800-1200+ in production models
+UML mapping:: [`Lutaml::Uml::Association`](../lib/lutaml/uml/association.rb), [`Lutaml::Uml::Generalization`](../lib/lutaml/uml/generalization.rb)
+
+.Key columns
+[cols="1,2,3"]
+|===
+|Column |Type |Purpose
+
+|`Connector_ID`
+|INTEGER
+|Primary key
+
+|`Connector_Type`
+|TEXT
+|"Association", "Generalization", "Aggregation", etc.
+
+|`Start_Object_ID`
+|INTEGER
+|Source element
+
+|`End_Object_ID`
+|INTEGER
+|Target element
+
+|`SourceRole`
+|TEXT
+|Source role name
+
+|`DestRole`
+|TEXT
+|Target role name
+
+|`SourceCard`
+|TEXT
+|Source cardinality ("0..1", "1..*", etc.)
+
+|`DestCard`
+|TEXT
+|Target cardinality
+
+|`Direction`
+|TEXT
+|Association direction
+|===
+
+==== t_package - Package hierarchy
+
+Primary key:: `Package_ID`
+Purpose:: Package organization and hierarchy
+Row count:: Typically 50-100+ in production models
+UML mapping:: [`Lutaml::Uml::Package`](../lib/lutaml/uml/package.rb)
+
+.Key columns
+[cols="1,2,3"]
+|===
+|Column |Type |Purpose
+
+|`Package_ID`
+|INTEGER
+|Primary key
+
+|`Name`
+|TEXT
+|Package name
+
+|`Parent_ID`
+|INTEGER
+|Parent package reference (NULL for root)
+
+|`ea_guid`
+|TEXT
+|Enterprise Architect GUID
+
+|`Notes`
+|TEXT
+|Package documentation
+
+|`TPos`
+|INTEGER
+|Tree position for ordering
+|===
+
+=== Diagram tables
+
+These tables store diagram definitions and visual layout information.
+
+==== t_diagram - Diagram definitions
+
+Primary key:: `Diagram_ID`
+Purpose:: UML diagram metadata
+Row count:: Typically 100-300+ in production models
+UML mapping:: [`Lutaml::Uml::Diagram`](../lib/lutaml/uml/diagram.rb)
+
+.Key columns
+[cols="1,2,3"]
+|===
+|Column |Type |Purpose
+
+|`Diagram_ID`
+|INTEGER
+|Primary key
+
+|`Package_ID`
+|INTEGER
+|Containing package
+
+|`Name`
+|TEXT
+|Diagram name
+
+|`Diagram_Type`
+|TEXT
+|"Logical", "Use Case", "Class", etc.
+
+|`Notes`
+|TEXT
+|Diagram documentation
+
+|`ea_guid`
+|TEXT
+|Enterprise Architect GUID
+|===
+
+==== t_diagramobjects - Element placement
+
+Primary key:: `Instance_ID`
+Purpose:: Visual placement of elements on diagrams
+Row count:: Typically 1500-2500+ in production models
+UML mapping:: [`Lutaml::Uml::Diagram::DiagramObject`](../lib/lutaml/uml/diagram.rb) (nested class)
+
+.Key columns
+[cols="1,2,3"]
+|===
+|Column |Type |Purpose
+
+|`Instance_ID`
+|INTEGER
+|Primary key
+
+|`Diagram_ID`
+|INTEGER
+|Parent diagram
+
+|`Object_ID`
+|INTEGER
+|Element being displayed
+
+|`RectTop`
+|INTEGER
+|Y coordinate
+
+|`RectLeft`
+|INTEGER
+|X coordinate
+
+|`RectRight`
+|INTEGER
+|Right edge X
+
+|`RectBottom`
+|INTEGER
+|Bottom edge Y
+
+|`ObjectStyle`
+|TEXT
+|Visual styling properties
+|===
+
+==== t_diagramlinks - Connector routing
+
+Primary key:: `Instance_ID`
+Purpose:: Visual routing of connectors on diagrams
+Row count:: Typically 1500-2500+ in production models
+UML mapping:: [`Lutaml::Uml::Diagram::DiagramLink`](../lib/lutaml/uml/diagram.rb) (nested class)
+
+.Key columns
+[cols="1,2,3"]
+|===
+|Column |Type |Purpose
+
+|`Instance_ID`
+|INTEGER
+|Primary key
+
+|`DiagramID`
+|INTEGER
+|Parent diagram
+
+|`ConnectorID`
+|INTEGER
+|Connector being displayed
+
+|`Geometry`
+|TEXT
+|Line routing coordinates
+
+|`Path`
+|TEXT
+|Waypoint path
+
+|`Hidden`
+|INTEGER
+|1 if hidden on diagram
+
+|`Style`
+|TEXT
+|Visual styling
+|===
+
+=== Metadata tables
+
+These tables store additional semantic information beyond core UML.
+
+==== t_objectconstraint - OCL constraints
+
+Primary key:: `ConstraintID`
+Purpose:: OCL and other formal constraints on classes
+Row count:: Typically 0-20 in models with constraints
+UML mapping:: [`Lutaml::Uml::Constraint`](../lib/lutaml/uml/constraint.rb)
+
+.Key columns
+[cols="1,2,3"]
+|===
+|Column |Type |Purpose
+
+|`ConstraintID`
+|INTEGER
+|Primary key
+
+|`Object_ID`
+|INTEGER
+|Constrained element
+
+|`Constraint`
+|TEXT
+|OCL expression or constraint text
+
+|`ConstraintType`
+|TEXT
+|"Invariant", "Pre-condition", "Post-condition"
+
+|`Weight`
+|REAL
+|Constraint priority/weight
+
+|`Status`
+|TEXT
+|"Approved", "Proposed", etc.
+|===
+
+.Example OCL constraint
+[source]
+----
+count(self.legalConstraints.accessConstraints) >= 1
+----
+
+==== t_taggedvalue - Tagged values
+
+Primary key:: `PropertyID`
+Purpose:: Custom metadata on UML elements
+Row count:: Typically 1000-1500+ in production models
+UML mapping:: Embedded as metadata in UML elements
+
+.Key columns
+[cols="1,2,3"]
+|===
+|Column |Type |Purpose
+
+|`PropertyID`
+|TEXT
+|Primary key
+
+|`ElementID`
+|TEXT
+|Tagged element
+
+|`BaseClass`
+|TEXT
+|Element type ("Class", "Attribute", etc.)
+
+|`TagValue`
+|TEXT
+|Tag name
+
+|`Notes`
+|TEXT
+|Tag value
+|===
+
+==== t_objectproperties - Object properties
+
+Primary key:: `PropertyID`
+Purpose:: Object-level properties (GML/XML Schema metadata)
+Row count:: Typically 1500-2000+ in ISO 19xxx models
+UML mapping:: Embedded as properties in UML elements
+
+.Key columns
+[cols="1,2,3"]
+|===
+|Column |Type |Purpose
+
+|`PropertyID`
+|INTEGER
+|Primary key
+
+|`Object_ID`
+|INTEGER
+|Owner object
+
+|`Property`
+|TEXT
+|Property name
+
+|`Value`
+|TEXT
+|Property value
+
+|`Notes`
+|TEXT
+|Property documentation
+|===
+
+==== t_attributetag - Attribute tags
+
+Primary key:: `PropertyID`
+Purpose:: Attribute-level tags (GML/XML Schema metadata)
+Row count:: Typically 100-200+ in ISO 19xxx models
+UML mapping:: Embedded as metadata in [`Lutaml::Uml::Attribute`](../lib/lutaml/uml/attribute.rb)
+
+.Key columns
+[cols="1,2,3"]
+|===
+|Column |Type |Purpose
+
+|`PropertyID`
+|INTEGER
+|Primary key
+
+|`ElementID`
+|INTEGER
+|Owner attribute
+
+|`Property`
+|TEXT
+|Tag name
+
+|`VALUE`
+|TEXT
+|Tag value
+
+|`NOTES`
+|TEXT
+|Tag documentation
+|===
+
+==== t_xref - Cross-references
+
+Primary key:: `XrefID`
+Purpose:: Stereotypes, custom properties, diagram settings
+Row count:: Typically 1000-1500+ in production models
+UML mapping:: Used for stereotype resolution and metadata
+
+.Key columns
+[cols="1,2,3"]
+|===
+|Column |Type |Purpose
+
+|`XrefID`
+|TEXT
+|Primary key
+
+|`Name`
+|TEXT
+|Reference name
+
+|`Type`
+|TEXT
+|Reference type
+
+|`Client`
+|TEXT
+|Source element GUID
+
+|`Supplier`
+|TEXT
+|Target element GUID
+
+|`Description`
+|TEXT
+|Reference description
+|===
+
+=== Lookup/reference tables
+
+These tables define valid values and type information.
+
+==== t_stereotypes - Stereotype library
+
+Primary key:: None (multi-column)
+Purpose:: Stereotype definitions from UML profiles
+Row count:: Typically 100-200+ in production models
+Usage:: Referenced during stereotype resolution
+
+.Key columns
+[cols="1,2,3"]
+|===
+|Column |Type |Purpose
+
+|`Stereotype`
+|TEXT
+|Stereotype name
+
+|`AppliesTo`
+|TEXT
+|Applicable element types
+
+|`Description`
+|TEXT
+|Stereotype documentation
+
+|`ea_guid`
+|TEXT
+|Unique identifier
+|===
+
+==== t_datatypes - Type definitions
+
+Primary key:: `DatatypeID`
+Purpose:: Database-specific type definitions and mappings
+Row count:: Typically 500-800+ entries
+Usage:: Type resolution and database mapping
+
+.Key columns
+[cols="1,2,3"]
+|===
+|Column |Type |Purpose
+
+|`DatatypeID`
+|INTEGER
+|Primary key
+
+|`Type`
+|TEXT
+|Type name
+
+|`ProductName`
+|TEXT
+|Database product
+
+|`DataType`
+|TEXT
+|Mapped database type
+
+|`GenericType`
+|TEXT
+|Generic type category
+|===
+
+==== t_constrainttypes - Constraint types
+
+Primary key:: `Constraint`
+Purpose:: Valid constraint type definitions
+Row count:: 4 standard types
+Usage:: Constraint type validation
+
+.Standard constraint types
+[cols="1,2"]
+|===
+|Constraint |Description
+
+|Invariant
+|Condition that must always hold
+
+|Pre-condition
+|Condition required before operation
+
+|Post-condition
+|Condition guaranteed after operation
+
+|Definition
+|Derived value or definition
+|===
+
+==== t_connectortypes - Connector types
+
+Primary key:: `Connector_Type`
+Purpose:: Valid connector/relationship type definitions
+Row count:: ~30 standard types
+Usage:: Relationship type validation
+
+.Common connector types
+[cols="1,2"]
+|===
+|Connector_Type |UML Mapping
+
+|Association
+|[`Lutaml::Uml::Association`](../lib/lutaml/uml/association.rb)
+
+|Generalization
+|[`Lutaml::Uml::Generalization`](../lib/lutaml/uml/generalization.rb)
+
+|Aggregation
+|[`Lutaml::Uml::Association`](../lib/lutaml/uml/association.rb) (with aggregation property)
+
+|Composition
+|[`Lutaml::Uml::Association`](../lib/lutaml/uml/association.rb) (with composition property)
+
+|Dependency
+|[`Lutaml::Uml::Dependency`](../lib/lutaml/uml/dependency.rb)
+
+|Realization
+|[`Lutaml::Uml::Realization`](../lib/lutaml/uml/realization.rb)
+|===
+
+==== t_diagramtypes - Diagram types
+
+Primary key:: `Diagram_Type`
+Purpose:: Valid diagram type definitions
+Row count:: ~15 standard types
+Usage:: Diagram type validation
+
+.Common diagram types
+[cols="1,2"]
+|===
+|Diagram_Type |Description
+
+|Logical
+|Class diagram
+
+|Use Case
+|Use case diagram
+
+|Component
+|Component diagram
+
+|Deployment
+|Deployment diagram
+
+|Sequence
+|Sequence diagram
+|===
+
+==== t_objecttypes - Object types
+
+Primary key:: `Object_Type`
+Purpose:: Valid object/element type definitions
+Row count:: ~80 types
+Usage:: Object type validation and classification
+
+.Common object types
+[cols="1,2"]
+|===
+|Object_Type |UML Mapping
+
+|Class
+|[`Lutaml::Uml::Class`](../lib/lutaml/uml/class.rb)
+
+|Interface
+|[`Lutaml::Uml::Class`](../lib/lutaml/uml/class.rb) (with interface stereotype)
+
+|Enumeration
+|[`Lutaml::Uml::Enum`](../lib/lutaml/uml/enum.rb)
+
+|DataType
+|[`Lutaml::Uml::DataType`](../lib/lutaml/uml/data_type.rb)
+
+|Package
+|[`Lutaml::Uml::Package`](../lib/lutaml/uml/package.rb)
+|===
+
+==== t_statustypes - Status values
+
+Primary key:: `Status`
+Purpose:: Valid status value definitions
+Row count:: ~5 standard statuses
+Usage:: Status field validation
+
+.Standard status types
+[cols="1,2"]
+|===
+|Status |Description
+
+|Approved
+|Approved for use
+
+|Proposed
+|Under review
+
+|Validated
+|Validated design
+
+|Mandatory
+|Mandatory element
+
+|Implemen ted
+|Implemented
+|===
+
+==== t_complexitytypes - Complexity levels
+
+Primary key:: `Complexity`
+Purpose:: Complexity level definitions with numeric weights
+Row count:: ~6 complexity levels
+Usage:: Complexity assessment
+
+.Standard complexity types
+[cols="1,2"]
+|===
+|Complexity |NumericWeight
+
+|Easy
+|1
+
+|Medium
+|5
+
+|Difficult
+|10
+|===
+
+== Excluded tables
+
+The following table categories are NOT implemented in LutaML as they are not relevant for UML model extraction:
+
+=== Project management tables
+
+These tables manage EA project workflow and are not part of the UML model:
+
+* `t_tasks` - Task tracking
+* `t_phase` - Project phases
+* `t_projectroles` - Project role assignments
+* `t_resources` - Resource allocation
+* `t_objectresource` - Object resource mapping
+* `t_objecteffort` - Effort tracking
+* `t_efforttypes` - Effort type definitions
+
+=== Problem/issue tracking
+
+These tables track issues and risks, not UML semantics:
+
+* `t_issues` - Issue tracking
+* `t_objectproblems` - Problem assignments
+* `t_problemtypes` - Problem type definitions
+* `t_objectrisks` - Risk assignments
+* `t_risktypes` - Risk type definitions
+
+=== Testing/quality
+
+These tables manage test cases and scenarios:
+
+* `t_tests` - Test definitions
+* `t_objecttests` - Test assignments
+* `t_testclass` - Test classifications
+* `t_testplans` - Test plans
+* `t_testtypes` - Test type definitions
+* `t_scenarios` - Test scenarios
+* `t_objectscenarios` - Scenario assignments
+* `t_scenariotypes` - Scenario type definitions
+
+=== Requirements/traceability
+
+These tables manage requirements traceability:
+
+* `t_objectrequires` - Requirement links
+* `t_requiretypes` - Requirement type definitions
+* `t_trxtypes` - Traceability type definitions
+* `t_objecttrx` - Traceability links
+
+=== Security
+
+These tables manage EA repository security:
+
+* `t_secgroup` - Security groups
+* `t_secgrouppermission` - Group permissions
+* `t_seclocks` - Element locks
+* `t_secpermission` - Permission definitions
+* `t_secpolicies` - Security policies
+* `t_secuser` - User accounts
+* `t_secusergroup` - User-group assignments
+* `t_secuserpermission` - User permissions
+
+=== System tables
+
+SQLite system tables and EA internal tables:
+
+* `sqlite_sequence` - SQLite auto-increment tracking
+* `usys_*` - EA system tables
+
+=== Content/media
+
+These tables store rich content not relevant for UML extraction:
+
+* `t_document` - Documentation artifacts
+* `t_script` - Behavioral scripts
+* `t_html` - HTML content
+* `t_image` - Image data
+* `t_rtf` - RTF documents
+* `t_rtfreport` - Report templates
+* `t_template` - Code templates
+* `t_snapshot` - Version snapshots
+
+=== Other excluded tables
+
+Miscellaneous tables not relevant for UML models:
+
+* `t_authors` - Author information
+* `t_category` - Element categories
+* `t_clients` - Client information
+* `t_constants` - System constants
+* `t_ecf` - Environmental complexity factors
+* `t_implement` - Implementation tracking
+* `t_lists` - List definitions
+* `t_method` - Method library
+* `t_objectmetrics` - Metrics data
+* `t_ocf` - Organizational complexity factors
+* `t_operationposts` - Post-conditions (use `t_objectconstraint` instead)
+* `t_operationpres` - Pre-conditions (use `t_objectconstraint` instead)
+* `t_operationtag` - Operation tags
+* `t_palette` - Toolbox palettes
+* `t_paletteitem` - Palette items
+* `t_roleconstraint` - Role constraints
+* `t_rules` - Validation rules
+* `t_tcf` - Technical complexity factors
+* `t_umlpattern` - Pattern library
+* `t_version` - Version history
+* `t_xrefuser` - Cross-reference user data
+
+== Configuration
+
+=== Schema configuration file
+
+QEA parsing is configured via [`config/qea_schema.yml`](../config/qea_schema.yml).
+
+.Configuration structure
+[source,yaml]
+----
+version: "1.0"
+description: "EA QEA database schema configuration"
+
+model_classes:
+  t_object: Lutaml::Qea::Models::EaObject
+  t_attribute: Lutaml::Qea::Models::EaAttribute
+  # ... other tables
+
+tables:
+  - table_name: t_object
+    enabled: true
+    primary_key: Object_ID
+    collection_name: objects
+    description: "UML objects (classes, interfaces, etc.)"
+    columns:
+      - name: Object_ID
+        type: INTEGER
+        primary: true
+      # ... other columns
+
+transformations:
+  object_types:
+    Class: Lutaml::Uml::Class
+    Interface: Lutaml::Uml::Class
+    # ... other mappings
+
+  transformers:
+    class: Lutaml::Qea::Factory::ClassTransformer
+    # ... other transformers
+----
+
+=== Boolean field handling
+
+EA stores boolean values as INTEGER (0/1). The configuration specifies which fields should be treated as boolean:
+
+.Boolean fields
+[source,yaml]
+----
+boolean_fields:
+  - IsStatic
+  - IsCollection
+  - IsOrdered
+  - AllowDuplicates
+  - IsControlled
+  - Protected
+  - IsRoot
+  - IsLeaf
+  - IsSpec
+  - IsActive
+  - Const
+  - Tagged
+----
+
+=== Type mappings
+
+SQLite types are mapped to Ruby types:
+
+.Type mappings
+[cols="1,1"]
+|===
+|SQLite Type |Ruby Type
+
+|INTEGER
+|integer
+
+|TEXT
+|string
+
+|REAL
+|float
+
+|BLOB
+|binary
+
+|NULL
+|null
+|===
+
+== Usage
+
+=== Parsing a QEA file
+
+.Basic parsing
+[source,ruby]
+----
+require "lutaml/qea"
+
+# Parse QEA file directly
+document = Lutaml::Qea.parse("model.qea")
+# => Returns Lutaml::Uml::Document
+
+# With options
+document = Lutaml::Qea.parse("model.qea",
+  include_diagrams: true,
+  validate: true
+)
+----
+
+=== Using with parser API
+
+.Integration with Lutaml::Parser
+[source,ruby]
+----
+require "lutaml"
+
+# Auto-detect file type
+model = Lutaml::Parser.parse([File.new("model.qea")])
+# => Returns array with Lutaml::Uml::Document
+
+document = model.first
+----
+
+=== Database information
+
+.Get quick statistics
+[source,ruby]
+----
+require "lutaml/qea"
+
+# Get database statistics
+info = Lutaml::Qea.database_info("model.qea")
+puts info
+# => {
+#      "objects" => 693,
+#      "attributes" => 1910,
+#      "connectors" => 908,
+#      "packages" => 58,
+#      "diagrams" => 205
+#    }
+----
+
+=== Low-level database access
+
+.Direct database loading
+[source,ruby]
+----
+require "lutaml/qea"
+
+# Load database with progress callback
+database = Lutaml::Qea.load_database("model.qea") do |table, current, total|
+  puts "Loading #{table}: #{current}/#{total}"
+end
+
+# Access raw data
+database.objects.each do |ea_object|
+  puts "Class: #{ea_object.name}"
+end
+----
+
+=== File validation
+
+.Validate QEA file
+[source,ruby]
+----
+require "lutaml/qea/file_detector"
+
+# Check if file is valid QEA
+if Lutaml::Qea::FileDetector.qea_file?("model.qea")
+  puts "Valid QEA file"
+end
+
+# Validate structure
+result = Lutaml::Qea::FileDetector.validate_qea("model.qea")
+if result[:valid]
+  puts "QEA file is valid"
+  puts "Tables: #{result[:table_count]}"
+  puts "Objects: #{result[:object_count]}"
+else
+  result[:errors].each { |e| puts "ERROR: #{e}" }
+end
+----
+
+== Performance
+
+=== Benchmarks
+
+Typical performance for a 20MB EA model with 693 objects:
+
+.QEA vs XMI parsing
+[cols="1,1,1"]
+|===
+|Format |Parse Time |Memory
+
+|QEA
+|1-2 seconds
+|Lower
+
+|XMI
+|20-40 seconds
+|Higher
+|===
+
+Speedup:: 10-20x faster than XMI
+Memory usage:: Lower memory footprint with streaming
+
+=== Optimization techniques
+
+The QEA parser uses several optimization techniques:
+
+Streaming:: Reads data from SQLite without loading entire file
+Lazy loading:: Loads only requested tables
+Indexed queries:: Uses database indexes for fast lookups
+Batch processing:: Processes related records together
+Connection pooling:: Reuses database connections
+
+== Limitations
+
+=== File format requirements
+
+* QEA files must be SQLite 3 format
+* Requires EA-specific table structure
+* Unicode (UTF-8) encoding required
+
+=== Feature support
+
+* Read-only access (does not write back to EA database)
+* Some EA proprietary features may not be fully supported
+* Diagram layout is approximate (EA uses proprietary rendering)
+* Version control information not extracted
+
+=== Compatibility
+
+* Tested with EA versions 13-16
+* May not support very old EA versions (< 10)
+* Custom EA schema modifications not supported
+
+== References
+
+=== Documentation
+
+* link:QEA_DATABASE_TABLE_ANALYSIS.md[Detailed table analysis]
+* link:../README.adoc[LutaML main documentation]
+* link:DIAGRAM_SUPPORT_IMPLEMENTATION.md[Diagram implementation details]
+* link:OBJECT_PROPERTIES_IMPLEMENTATION.md[Object properties implementation]
+
+=== Source code
+
+* [`lib/lutaml/qea/`](../lib/lutaml/qea/) - QEA module
+* [`lib/lutaml/qea/models/`](../lib/lutaml/qea/models/) - EA model classes
+* [`lib/lutaml/qea/factory/`](../lib/lutaml/qea/factory/) - Transformers
+* [`lib/lutaml/uml/`](../lib/lutaml/uml/) - UML domain layer
+* [`config/qea_schema.yml`](../config/qea_schema.yml) - Schema configuration
+
+=== External resources
+
+* https://sparxsystems.com/[Sparx Systems EA]
+* https://www.sqlite.org/[SQLite database]
+* https://www.omg.org/spec/UML/[UML specification]

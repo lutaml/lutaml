@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "lutaml/uml/has_attributes"
+require_relative "../has_attributes"
 
 module Lutaml
   module Uml

@@ -1,0 +1,50 @@
+# frozen_string_literal: true
+
+require_relative "../output_formatter"
+module Lutaml
+  module Cli
+    module Uml
+      # ReplCommand starts interactive REPL shell
+      class ReplCommand
+        attr_reader :options
+
+        def initialize(options = {})
+          @options = options
+        end
+
+        def self.add_options_to(thor_class, _method_name)
+          thor_class.long_desc <<-DESC
+          Start an interactive REPL for exploring the model.
+
+          Examples:
+            lutaml uml repl model.lur
+            lutaml uml repl model.lur --no-color
+          DESC
+
+          thor_class.option :color, type: :boolean, default: true,
+                                    desc: "Enable colored output"
+          thor_class.option :icons, type: :boolean, default: true,
+                                    desc: "Enable icons in output"
+        end
+
+        def run(lur_path)
+          unless File.exist?(lur_path)
+            puts OutputFormatter.error("Package file not found: #{lur_path}")
+            exit 1
+          end
+
+          config = {
+            color: options[:color],
+            icons: options[:icons],
+          }
+
+          shell = InteractiveShell.new(lur_path, config: config)
+          shell.start
+        rescue StandardError => e
+          puts OutputFormatter.error("Shell error: #{e.message}")
+          exit 1
+        end
+      end
+    end
+  end
+end
