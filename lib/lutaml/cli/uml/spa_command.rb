@@ -127,9 +127,15 @@ module Lutaml
         def load_from_qea(path)
           require_relative "../../qea"
 
+          # Load QEA database
           qea_db = Lutaml::Qea::Services::DatabaseLoader.new(path).load
-          # TODO: Add QEA to UML conversion when factory is available
-          raise "QEA support not yet implemented. Please use LUR files."
+
+          # Convert to UML Document using factory
+          factory = Lutaml::Qea::Factory::EaToUmlFactory.new(qea_db)
+          document = factory.create_document
+
+          # Create repository from document
+          Lutaml::UmlRepository::Repository.new(document: document)
         end
 
         def generate_spa(repository, mode, output_path)

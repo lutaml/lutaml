@@ -158,7 +158,10 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Configuration do
     let(:config) { described_class.load }
 
     it "checks if feature is enabled" do
-      # Assuming "search" is enabled in default config
+      # Debug: check what features actually contains
+      flags = config.feature_flags
+
+      # The YAML config has search: true under features
       expect(config.feature_enabled?("search")).to be true
     end
 

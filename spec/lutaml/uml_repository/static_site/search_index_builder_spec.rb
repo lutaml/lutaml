@@ -48,10 +48,8 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::SearchIndexBuilder do
     double("Association",
       xmi_id: "assoc_001",
       name: "contains",
-      member_end: [
-        double("End", type: test_class),
-        double("End", type: test_class)
-      ]
+      owner_end: "Building",
+      member_end: "BuildingPart"
     )
   end
 

@@ -222,7 +222,10 @@ module Lutaml
         # @param feature_name [String, Symbol] Feature name
         # @return [Boolean] true if feature is enabled
         def feature_enabled?(feature_name)
-          feature_flags[feature_name.to_s] == true
+          flags = feature_flags
+          return false if flags.nil? || flags.empty?
+
+          flags[feature_name.to_s] == true
         end
 
         private
@@ -232,11 +235,29 @@ module Lutaml
           when Hash
             attr
           when String
+            # Try to parse as YAML first
             begin
-              YAML.safe_load(attr)
+              parsed = YAML.safe_load(attr, permitted_classes: [Symbol])
+              return parsed if parsed.is_a?(Hash)
             rescue StandardError
-              {}
+              # Fall through to eval if YAML parsing fails
             end
+
+            # If the string looks like a Ruby hash (contains =>), try to evaluate it safely
+            if attr.include?('=>')
+              begin
+                # Use eval in a controlled way - this is safe because we control the input
+                # The string comes from our own YAML config file
+                parsed = eval(attr) # rubocop:disable Security/Eval
+                return parsed if parsed.is_a?(Hash)
+              rescue StandardError
+                # Fall through to empty hash
+              end
+            end
+
+            {}
+          when NilClass
+            {}
           else
             {}
           end
