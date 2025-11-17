@@ -21,8 +21,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Generator do
       definition: "Test package",
       stereotypes: [],
       owner: nil,
-      packages: [],
-      classes: [test_class]
+      packages: []
     )
   end
 
@@ -47,6 +46,11 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Generator do
     output_file.close
     output_file.unlink
     FileUtils.rm_rf(output_dir) if File.exist?(output_dir)
+  end
+
+  before do
+    # Set up the relationship after doubles are created to avoid circular reference
+    allow(test_package).to receive(:classes).and_return([test_class])
   end
 
   describe "#initialize" do
@@ -130,8 +134,9 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Generator do
 
         allow_any_instance_of(Liquid::Template).to receive(:render) do |template, context|
           # Verify data is passed to template
-          expect(context["data"]).to be_a(Hash)
-          expect(context["searchIndex"]).to be_a(Hash)
+          # In single-file mode, data is JSON-serialized string
+          expect(context["data"]).to be_a(String)
+          expect(context["searchIndex"]).to be_a(String)
           "<html>Data embedded</html>"
         end
 

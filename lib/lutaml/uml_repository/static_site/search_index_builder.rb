@@ -171,7 +171,7 @@ module Lutaml
             klass.name,
             qualified_name(klass),
             class_type(klass),
-            (klass.respond_to?(:stereotype) ? klass.stereotype&.join(" ") : nil),
+            (klass.respond_to?(:stereotype) && klass.stereotype ? Array(klass.stereotype).join(" ") : nil),
             klass.definition,
             klass.attributes&.map(&:name)&.join(" "),
             (klass.respond_to?(:operations) ? klass.operations&.map(&:name)&.join(" ") : nil),
@@ -188,7 +188,7 @@ module Lutaml
             owner.name,
             qualified_name(owner),
             attribute.definition,
-            (attribute.respond_to?(:stereotype) ? attribute.stereotype&.join(" ") : nil),
+            (attribute.respond_to?(:stereotype) && attribute.stereotype ? Array(attribute.stereotype).join(" ") : nil),
           ].compact
 
           normalize_content(parts.join(" "))
@@ -214,7 +214,7 @@ module Lutaml
             package.name,
             package_path(package),
             package.definition,
-            (package.respond_to?(:stereotype) ? package.stereotype&.join(" ") : nil),
+            (package.respond_to?(:stereotype) && package.stereotype ? Array(package.stereotype).join(" ") : nil),
           ].compact
 
           normalize_content(parts.join(" "))
