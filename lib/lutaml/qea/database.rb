@@ -216,6 +216,20 @@ module Lutaml
         @collections[:complexity_types] || []
       end
 
+      # Get documents collection (Priority 4)
+      #
+      # @return [Array<Models::EaDocument>] Array of document artifacts
+      def documents
+        @collections[:documents] || []
+      end
+
+      # Get scripts collection (Priority 4)
+      #
+      # @return [Array<Models::EaScript>] Array of behavioral scripts
+      def scripts
+        @collections[:scripts] || []
+      end
+
       # Get statistics for all collections
       #
       # @return [Hash<String, Integer>] Record counts by collection name

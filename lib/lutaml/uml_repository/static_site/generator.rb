@@ -89,10 +89,29 @@ module Lutaml
                     else
                       @config.output&.multi_file&.minify
                     end,
-            template_path: @config.templates&.dig("base_path") || default_template_path,
+            template_path: parse_template_path || default_template_path,
           }.compact
 
           defaults.merge(config_options).merge(user_options)
+        end
+
+        def parse_template_path
+          return nil unless @config.templates
+
+          templates_hash = case @config.templates
+                          when Hash
+                            @config.templates
+                          when String
+                            begin
+                              YAML.safe_load(@config.templates)
+                            rescue StandardError
+                              nil
+                            end
+                          else
+                            nil
+                          end
+
+          templates_hash&.dig("base_path")
         end
 
         def determine_default_output

@@ -24,6 +24,8 @@ model_classes:
   t_objectproperties: Lutaml::Qea::Models::EaObjectProperty
   t_attributetag: Lutaml::Qea::Models::EaAttributeTag
   t_xref: Lutaml::Qea::Models::EaXref
+  t_document: Lutaml::Qea::Models::EaDocument
+  t_script: Lutaml::Qea::Models::EaScript
   t_stereotypes: Lutaml::Qea::Models::EaStereotype
   t_datatypes: Lutaml::Qea::Models::EaDatatype
   t_constrainttypes: Lutaml::Qea::Models::EaConstraintType
@@ -912,6 +914,60 @@ tables:
         nullable: false
       - name: NumericWeight
         type: INTEGER
+        nullable: true
+
+  # Document table (Priority 4)
+  - table_name: t_document
+    enabled: true
+    primary_key: DocID
+    collection_name: documents
+    description: "Documentation style templates and artifacts"
+    columns:
+      - name: DocID
+        type: TEXT
+        primary: true
+        nullable: false
+      - name: DocName
+        type: TEXT
+        nullable: true
+      - name: DocType
+        type: TEXT
+        nullable: true
+      - name: StrContent
+        type: TEXT
+        nullable: true
+      - name: BinContent
+        type: BLOB
+        nullable: true
+      - name: ElementID
+        type: TEXT
+        nullable: true
+
+  # Script table (Priority 4)
+  - table_name: t_script
+    enabled: true
+    primary_key: ScriptID
+    collection_name: scripts
+    description: "Behavioral scripts and debugging configurations"
+    columns:
+      - name: ScriptID
+        type: INTEGER
+        primary: true
+        nullable: false
+      - name: ScriptCategory
+        type: TEXT
+        nullable: true
+      - name: ScriptName
+        type: TEXT
+        nullable: true
+      - name: ScriptAuthor
+        type: TEXT
+        nullable: true
+      - name: Notes
+        type: TEXT
+        nullable: true
+      - name: Script
+        type: TEXT
         nullable: true
 
 # Transformation mappings for EA to UML conversion

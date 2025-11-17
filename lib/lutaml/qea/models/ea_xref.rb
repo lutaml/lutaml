@@ -5,184 +5,162 @@ require_relative "base_model"
 module Lutaml
   module Qea
     module Models
-      # EA Cross-Reference Model
-      #
-      # Represents a row from the t_xref table. Cross-references store
-      # supplementary metadata for UML elements including stereotypes,
-      # custom properties, and diagram properties. These enhance existing
-      # elements but are not standalone UML elements.
-      #
-      # The Description field contains structured data in EA's proprietary
-      # format, such as:
-      # - Stereotypes: @STEREO;Name=...;FQName=...;@ENDSTEREO;
-      # - Custom Properties: @PROP=@NAME=...@ENDNAME;@TYPE=...@ENDTYPE;...
-      # - Diagram Settings: DGS=On=0:CNT=8:W=120:H=40:...
-      #
-      # @example Stereotype cross-reference
-      #   xref = EaXref.new(
-      #     xref_id: "{ABC-123}",
-      #     name: "Stereotypes",
-      #     type: "element property",
-      #     client: "{DEF-456}",
-      #     description: "@STEREO;Name=FeatureType;...@ENDSTEREO;"
-      #   )
-      #
-      # @example Custom property cross-reference
-      #   xref = EaXref.new(
-      #     name: "CustomProperties",
-      #     type: "element property",
-      #     description: "@PROP=@NAME=isID@ENDNAME;@TYPE=Boolean@ENDTYPE;..."
-      #   )
+      # Represents a cross-reference from the t_xref table in EA database
+      # Stores cross-references for stereotypes, properties, and relationships
+      # between UML elements
       class EaXref < BaseModel
-        # @!attribute xrefid
-        #   @return [String] Unique cross-reference identifier (GUID)
-        attribute :xrefid, :string
+        attribute :xref_id, Lutaml::Model::Type::String
+        attribute :name, Lutaml::Model::Type::String
+        attribute :xref_type, Lutaml::Model::Type::String
+        attribute :client, Lutaml::Model::Type::String
+        attribute :supplier, Lutaml::Model::Type::String
+        attribute :description, Lutaml::Model::Type::String
 
-        # @!attribute name
-        #   @return [String, nil] Cross-reference category
-        #     (e.g., "Stereotypes", "CustomProperties")
-        attribute :name, :string
-
-        # @!attribute type
-        #   @return [String, nil] Type of cross-reference
-        #     Values include:
-        #     - "element property" (objects)
-        #     - "attribute property" (attributes)
-        #     - "connector property" (connectors)
-        #     - "connectorSrcEnd property" (connector source ends)
-        #     - "connectorDestEnd property" (connector destination ends)
-        #     - "diagram properties" (diagrams)
-        attribute :type, :string
-
-        # @!attribute visibility
-        #   @return [String, nil] Visibility of the cross-reference
-        attribute :visibility, :string
-
-        # @!attribute namespace
-        #   @return [String, nil] Namespace for the cross-reference
-        attribute :namespace, :string
-
-        # @!attribute requirement
-        #   @return [String, nil] Requirement information
-        attribute :requirement, :string
-
-        # @!attribute constraint
-        #   @return [String, nil] Constraint information
-        attribute :constraint, :string
-
-        # @!attribute behavior
-        #   @return [String, nil] Behavior information
-        attribute :behavior, :string
-
-        # @!attribute partition
-        #   @return [String, nil] Partition information
-        attribute :partition, :string
-
-        # @!attribute description
-        #   @return [String, nil] Structured metadata in EA's proprietary
-        #     format. Contains the actual stereotype names, custom property
-        #     values, or diagram settings.
-        attribute :description, :string
-
-        # @!attribute client
-        #   @return [String, nil] GUID of the element this xref belongs to
-        #     Links to Object_ID in t_object, ea_guid in t_connector,
-        #     ea_guid in t_attribute, or ea_guid in t_diagram
-        attribute :client, :string
-
-        # @!attribute supplier
-        #   @return [String, nil] GUID of the supplier element
-        attribute :supplier, :string
-
-        # @!attribute link
-        #   @return [String, nil] Link information
-        attribute :link, :string
-
-        # Parse stereotype information from Description field
-        #
-        # @return [Hash, nil] Parsed stereotype data with keys:
-        #   - :name (String) - Stereotype name
-        #   - :fqname (String, optional) - Fully qualified name
-        #   - :guid (String, optional) - Stereotype GUID
-        #
-        # @example
-        #   xref.parse_stereotype
-        #   # => {name: "FeatureType", fqname: "GML::FeatureType"}
-        def parse_stereotype
-          return nil unless name == "Stereotypes" && description
-
-          result = {}
-          description.scan(/(\w+)=([^;]+);/) do |key, value|
-            result[key.downcase.to_sym] = value
-          end
-          result.empty? ? nil : result
+        def self.primary_key_column
+          :xref_id
         end
 
-        # Parse custom property information from Description field
-        #
-        # @return [Hash, nil] Parsed custom property with keys:
-        #   - :name (String) - Property name
-        #   - :type (String) - Property type
-        #   - :value (String) - Property value
-        #   - :prompt (String, optional) - Prompt text
-        #
-        # @example
-        #   xref.parse_custom_property
-        #   # => {name: "isID", type: "Boolean", value: "0"}
-        def parse_custom_property
-          return nil unless name == "CustomProperties" && description
-
-          result = {}
-          # Parse @NAME=...@ENDNAME; format
-          result[:name] = description[/@NAME=([^@]+)@ENDNAME/, 1]
-          result[:type] = description[/@TYPE=([^@]+)@ENDTYPE/, 1]
-          result[:value] = description[/@VALU=([^@]+)@ENDVALU/, 1]
-          result[:prompt] = description[/@PRMT=([^@]+)@ENDPRMT/, 1]
-
-          result.compact!
-          result.empty? ? nil : result
+        def self.table_name
+          "t_xref"
         end
 
-        # Check if this is a stereotype cross-reference
+        # Create from database row
         #
-        # @return [Boolean] true if this xref represents a stereotype
+        # @param row [Hash] Database row with string keys
+        # @return [EaXref, nil] New instance or nil if row is nil
+        def self.from_db_row(row)
+          return nil if row.nil?
+
+          new(
+            xref_id: row["XrefID"],
+            name: row["Name"],
+            xref_type: row["Type"],
+            client: row["Client"],
+            supplier: row["Supplier"],
+            description: row["Description"],
+          )
+        end
+
+        # Convenience aliases
+        alias_method :id, :xref_id
+        alias_method :type, :xref_type
+
+        # Parse the Description field into structured data
+        #
+        # @return [Hash] Parsed description data
+        def parsed_description
+          return @parsed_description if defined?(@parsed_description)
+
+          @parsed_description = parse_description_field(description)
+        end
+
+        # Check if this xref is for stereotypes
+        # @return [Boolean]
         def stereotype?
-          name == "Stereotypes"
+          name == "Stereotypes" || description&.include?("@STEREO")
         end
 
-        # Check if this is a custom property cross-reference
-        #
-        # @return [Boolean] true if this xref represents a custom property
-        def custom_property?
-          name == "CustomProperties"
-        end
-
-        # Check if this xref applies to an element (object)
-        #
-        # @return [Boolean] true if type is "element property"
+        # Check if this xref is for element properties
+        # @return [Boolean]
         def element_property?
-          type == "element property"
+          xref_type == "element property"
         end
 
-        # Check if this xref applies to an attribute
-        #
-        # @return [Boolean] true if type is "attribute property"
-        def attribute_property?
-          type == "attribute property"
-        end
-
-        # Check if this xref applies to a connector
-        #
-        # @return [Boolean] true if type contains "connector"
+        # Check if this xref is for connector properties
+        # @return [Boolean]
         def connector_property?
-          type&.include?("connector")
+          xref_type&.include?("connector") && xref_type&.include?("property")
         end
 
-        # Check if this xref applies to a diagram
-        #
-        # @return [Boolean] true if type is "diagram properties"
+        # Check if this xref is for diagram properties
+        # @return [Boolean]
         def diagram_property?
-          type == "diagram properties"
+          xref_type == "diagram properties"
+        end
+
+        # Check if this xref is for attribute properties
+        # @return [Boolean]
+        def attribute_property?
+          xref_type == "attribute property"
+        end
+
+        private
+
+        # Parse Description field with various formats
+        #
+        # Formats:
+        # - @STEREO;Name=X;GUID={...};
+        # - @TAG;Name=X;Value=Y;GUID={...};
+        # - key=value;key=value;
+        #
+        # @param desc [String] Description field content
+        # @return [Hash] Parsed data
+        def parse_description_field(desc)
+          return {} if desc.nil? || desc.empty?
+
+          result = { raw: desc }
+
+          # Detect format
+          if desc.start_with?("@STEREO")
+            result[:format] = :stereotype
+            result[:data] = parse_stereo_format(desc)
+          elsif desc.start_with?("@TAG")
+            result[:format] = :tag
+            result[:data] = parse_tag_format(desc)
+          else
+            result[:format] = :key_value
+            result[:data] = parse_key_value_format(desc)
+          end
+
+          result
+        end
+
+        # Parse @STEREO format
+        # Example: @STEREO;Name=FeatureType;GUID={ABC...};
+        def parse_stereo_format(desc)
+          data = {}
+          parts = desc.sub(/^@STEREO;/, "").split(";")
+
+          parts.each do |part|
+            next if part.empty?
+
+            key, value = part.split("=", 2)
+            data[key.downcase.to_sym] = value if key && value
+          end
+
+          data
+        end
+
+        # Parse @TAG format
+        # Example: @TAG;Name=author;Value=John;GUID={...};
+        def parse_tag_format(desc)
+          data = {}
+          parts = desc.sub(/^@TAG;/, "").split(";")
+
+          parts.each do |part|
+            next if part.empty?
+
+            key, value = part.split("=", 2)
+            data[key.downcase.to_sym] = value if key && value
+          end
+
+          data
+        end
+
+        # Parse key=value format
+        # Example: aggregation=composite;direction=source;
+        def parse_key_value_format(desc)
+          data = {}
+          parts = desc.split(";")
+
+          parts.each do |part|
+            next if part.empty?
+
+            key, value = part.split("=", 2)
+            data[key.downcase.to_sym] = value if key && value
+          end
+
+          data
         end
       end
     end

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "lutaml/xmi"
 
 RSpec.describe "QEA and XMI Equivalency", :integration do
   let(:qea_path) { "examples/qea/basic.qea" }

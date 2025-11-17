@@ -20,6 +20,7 @@ module Lutaml
           @document.enums = []
           @document.data_types = []
           @document.primitives = []
+          @document.instances = []
           @document.associations = []
         end
 
@@ -60,6 +61,16 @@ module Lutaml
           return self if data_types.nil? || data_types.empty?
 
           @document.data_types.concat(data_types)
+          self
+        end
+
+        # Add instances to document
+        # @param instances [Array<Lutaml::Uml::Instance>] Instances to add
+        # @return [self] For method chaining
+        def add_instances(instances)
+          return self if instances.nil? || instances.empty?
+
+          @document.instances.concat(instances)
           self
         end
 
@@ -124,6 +135,7 @@ module Lutaml
             classes: @document.classes.size,
             enums: @document.enums.size,
             data_types: @document.data_types.size,
+            instances: @document.instances.size,
             associations: @document.associations.size,
           }
         end
@@ -153,6 +165,7 @@ module Lutaml
           ids.concat(@document.classes.map(&:xmi_id).compact)
           ids.concat(@document.enums.map(&:xmi_id).compact)
           ids.concat(@document.data_types.map(&:xmi_id).compact)
+          ids.concat(@document.instances.map(&:xmi_id).compact)
 
           # Recursively collect from packages (where most classes actually are)
           @document.packages.each do |package|
@@ -172,6 +185,7 @@ module Lutaml
           ids.concat(package.classes.map(&:xmi_id).compact) if package.classes
           ids.concat(package.enums.map(&:xmi_id).compact) if package.enums
           ids.concat(package.data_types.map(&:xmi_id).compact) if package.data_types
+          ids.concat(package.instances.map(&:xmi_id).compact) if package.instances
 
           # Recursively collect from child packages
           package.packages&.each do |child_package|

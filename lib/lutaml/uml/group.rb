@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "lutaml/model"
+
 module Lutaml
   module Uml
     class Group < Lutaml::Model::Serializable

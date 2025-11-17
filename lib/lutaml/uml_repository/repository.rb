@@ -568,6 +568,32 @@ fields: [:name])
         query(&block).execute
       end
 
+      # Convenience methods for SPA data transformer
+
+      # Get all packages as an array (excluding root Document)
+      # @return [Array<Lutaml::Uml::Package>] All packages
+      def packages_index
+        (@indexes[:package_paths]&.values || []).select { |p| p.is_a?(Lutaml::Uml::Package) }
+      end
+
+      # Get all classes (including datatypes and enums) as an array
+      # @return [Array] All classifiers
+      def classes_index
+        @indexes[:qualified_names]&.values || []
+      end
+
+      # Get all associations as an array
+      # @return [Array<Lutaml::Uml::Association>] All associations
+      def associations_index
+        @document.associations || []
+      end
+
+      # Get all diagrams as an array
+      # @return [Array<Lutaml::Uml::Diagram>] All diagrams
+      def diagrams_index
+        all_diagrams
+      end
+
       # DEPRECATED: Use search with types: [:class] instead
       # @deprecated Use {#search} with types filter
       def search_classes(query_string)

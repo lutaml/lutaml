@@ -2,11 +2,11 @@
 # See https://github.com/metanorma/cimas
 inherit_from:
   - .rubocop_todo.yml
-  - https://raw.githubusercontent.com/riboseinc/oss-guides/master/ci/rubocop.yml
+  - https://raw.githubusercontent.com/riboseinc/oss-guides/main/ci/rubocop.yml
 
 # local repo-specific modifications
 # ...
 
 AllCops:
-  TargetRubyVersion: 2.5
+  TargetRubyVersion: 2.7
   NewCops: enable
