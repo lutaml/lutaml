@@ -14,6 +14,7 @@ require_relative "uml/find_command"
 require_relative "uml/export_command"
 require_relative "uml/docs_command"
 require_relative "uml/serve_command"
+require_relative "uml/spa_command"
 require_relative "uml/repl_command"
 require_relative "uml/verify_command"
 require_relative "element_identifier"
@@ -121,6 +122,12 @@ module Lutaml
       Uml::DocsCommand.add_options_to(self, :docs)
       def docs(lur_path)
         Uml::DocsCommand.new(options.to_h).run(lur_path)
+      end
+
+      desc "build-spa INPUT", "Generate interactive SPA browser"
+      Uml::SpaCommand.add_options_to(self, :build_spa)
+      def build_spa(input_path)
+        Uml::SpaCommand.new(options.to_h).run(input_path)
       end
 
       desc "serve LUR", "Start interactive web UI"

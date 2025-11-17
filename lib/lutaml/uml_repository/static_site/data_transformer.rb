@@ -94,7 +94,7 @@ module Lutaml
         # Build hierarchical package tree
         def build_package_tree
           root_packages = repository.packages_index.select do |pkg|
-            pkg.owner.nil? || !pkg.owner.is_a?(Lutaml::Uml::Package)
+            !pkg.respond_to?(:namespace) || pkg.namespace.nil? || !pkg.namespace.is_a?(Lutaml::Uml::Package)
           end
 
           if root_packages.size == 1
@@ -140,11 +140,11 @@ module Lutaml
         def serialize_package(package, id)
           {
             id: id,
-            xmiId: package.xmi_id,
+            xmiId: package.respond_to?(:xmi_id) ? package.xmi_id : nil,
             name: package.name,
             path: package_path(package),
-            definition: format_definition(package.definition),
-            stereotypes: package.stereotypes || [],
+            definition: format_definition(package.respond_to?(:definition) ? package.definition : nil),
+            stereotypes: package.respond_to?(:stereotype) ? (package.stereotype || []) : [],
             classes: (package.classes || []).map do |c|
               @id_generator.class_id(c)
             end,
@@ -154,7 +154,7 @@ module Lutaml
             diagrams: package_diagrams(package).map do |d|
               @id_generator.diagram_id(d)
             end,
-            parent: package.owner.is_a?(Lutaml::Uml::Package) ? @id_generator.package_id(package.owner) : nil,
+            parent: (package.respond_to?(:namespace) && package.namespace.is_a?(Lutaml::Uml::Package)) ? @id_generator.package_id(package.namespace) : nil,
           }
         end
 
@@ -178,7 +178,7 @@ module Lutaml
             qualifiedName: qualified_name(klass),
             type: class_type(klass),
             package: package_id_for_class(klass),
-            stereotypes: klass.stereotypes || [],
+            stereotypes: klass.respond_to?(:stereotype) ? (klass.stereotype || []) : [],
             definition: format_definition(klass.definition),
             attributes: (klass.attributes || []).map do |attr|
               @id_generator.attribute_id(attr, klass)
@@ -218,7 +218,7 @@ module Lutaml
             ownerName: owner.name,
             cardinality: serialize_cardinality(attribute.cardinality),
             definition: format_definition(attribute.definition),
-            stereotypes: attribute.stereotypes || [],
+            stereotypes: attribute.respond_to?(:stereotype) ? (attribute.stereotype || []) : [],
             isStatic: attribute.respond_to?(:is_static) ? attribute.is_static : false,
             isReadOnly: attribute.respond_to?(:is_read_only) ? attribute.is_read_only : false,
             defaultValue: attribute.respond_to?(:default) ? attribute.default : nil,
@@ -336,23 +336,24 @@ module Lutaml
         # Helper methods
 
         def package_path(package)
-          return package.name unless package.owner.is_a?(Lutaml::Uml::Package)
+          return package.name unless package.respond_to?(:namespace) && package.namespace
+          return package.name unless package.namespace.is_a?(Lutaml::Uml::Package)
 
-          "#{package_path(package.owner)}::#{package.name}"
+          "#{package_path(package.namespace)}::#{package.name}"
         end
 
         def qualified_name(klass)
           path_parts = []
           current = klass
 
-          # Walk up the ownership chain
+          # Walk up the namespace chain
           while current
             if current.is_a?(Lutaml::Uml::TopElement)
               path_parts.unshift(current.name)
-              current = current.owner
+              current = current.respond_to?(:namespace) ? current.namespace : nil
             elsif current.is_a?(Lutaml::Uml::Package)
               path_parts.unshift(current.name)
-              current = current.owner
+              current = current.namespace
             else
               break
             end
@@ -366,10 +367,10 @@ module Lutaml
         end
 
         def package_id_for_class(klass)
-          owner = klass.owner
-          return nil unless owner.is_a?(Lutaml::Uml::Package)
+          ns = klass.respond_to?(:namespace) ? klass.namespace : nil
+          return nil unless ns&.is_a?(Lutaml::Uml::Package)
 
-          @id_generator.package_id(owner)
+          @id_generator.package_id(ns)
         end
 
         def package_diagrams(package)

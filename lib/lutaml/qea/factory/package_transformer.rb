@@ -2,6 +2,7 @@
 
 require_relative "base_transformer"
 require_relative "tagged_value_transformer"
+require_relative "instance_transformer"
 require "lutaml/uml"
 
 module Lutaml
@@ -33,6 +34,7 @@ module Lutaml
             pkg.classes = []
             pkg.enums = []
             pkg.data_types = []
+            pkg.instances = []
             pkg.diagrams = []
           end
         end
@@ -99,6 +101,13 @@ module Lutaml
           ea_objects.select(&:uml_class?).each do |ea_obj|
             uml_class = class_transformer.transform(ea_obj)
             pkg.classes << uml_class if uml_class
+          end
+
+          # Transform instances (Object type)
+          instance_transformer = InstanceTransformer.new(database)
+          ea_objects.select(&:instance?).each do |ea_obj|
+            uml_instance = instance_transformer.transform(ea_obj)
+            pkg.instances << uml_instance if uml_instance
           end
 
           # Note: Enums and DataTypes could be added similarly

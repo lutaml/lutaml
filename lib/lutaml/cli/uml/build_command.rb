@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require_relative "../output_formatter"
+require_relative "../../uml_repository"
+
 module Lutaml
   module Cli
     module Uml
@@ -102,10 +104,10 @@ module Lutaml
 
           # Export to package
           export_options = {
-            serialization_format: options[:format].to_sym,
-            version: options[:version],
+            serialization_format: (options[:format] || options["format"] || "marshal").to_sym,
+            version: options[:version] || options["version"] || "1.0",
           }
-          export_options[:name] = options[:name] if options[:name]
+          export_options[:name] = options[:name] || options["name"] if options[:name] || options["name"]
 
           OutputFormatter.progress("Exporting to LUR package")
           repo.export_to_package(output_path, export_options)

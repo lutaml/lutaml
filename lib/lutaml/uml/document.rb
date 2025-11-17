@@ -10,6 +10,7 @@ require_relative "enum"
 require_relative "package"
 require_relative "primitive_type"
 require_relative "association"
+require_relative "instance"
 
 module Lutaml
   module Uml
@@ -27,6 +28,7 @@ module Lutaml
       attribute :enums, Enum, collection: true, default: -> { [] }
       attribute :packages, Package, collection: true, default: -> { [] }
       attribute :primitives, PrimitiveType, collection: true, default: -> { [] }
+      attribute :instances, Instance, collection: true, default: -> { [] }
       attribute :associations, Association, collection: true, default: -> { [] }
 
       yaml do
@@ -43,6 +45,7 @@ module Lutaml
         map "enums", to: :enums
         map "packages", to: :packages
         map "primitives", to: :primitives
+        map "instances", to: :instances
 
         map "associations", to: :associations, with: {
           to: :associations_to_yaml, from: :associations_from_yaml

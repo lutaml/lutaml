@@ -18,6 +18,8 @@ require_relative "../models/ea_tagged_value"
 require_relative "../models/ea_object_property"
 require_relative "../models/ea_attribute_tag"
 require_relative "../models/ea_xref"
+require_relative "../models/ea_document"
+require_relative "../models/ea_script"
 require_relative "../models/ea_stereotype"
 require_relative "../models/ea_datatype"
 require_relative "../models/ea_constraint_type"
@@ -69,6 +71,8 @@ module Lutaml
           "t_objectproperties" => Models::EaObjectProperty,
           "t_attributetag" => Models::EaAttributeTag,
           "t_xref" => Models::EaXref,
+          "t_document" => Models::EaDocument,
+          "t_script" => Models::EaScript,
           "t_stereotypes" => Models::EaStereotype,
           "t_datatypes" => Models::EaDatatype,
           "t_constrainttypes" => Models::EaConstraintType,

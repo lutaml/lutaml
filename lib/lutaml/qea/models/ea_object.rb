@@ -184,6 +184,12 @@ module Lutaml
           object_type == "DataType"
         end
 
+        # Check if object is an Instance (UML Object)
+        # @return [Boolean]
+        def instance?
+          object_type == "Object"
+        end
+
         # Check if object is root
         # @return [Boolean]
         def root?

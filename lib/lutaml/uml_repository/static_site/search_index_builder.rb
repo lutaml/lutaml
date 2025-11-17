@@ -70,15 +70,17 @@ module Lutaml
 
         # Build the document store
         def build_document_store
-          # Index classes
-          documents = repository.classes_index.map do |klass|
-            build_class_document(klass)
+          documents = []
+
+          # Index classes and their attributes
+          repository.classes_index.each do |klass|
+            documents << build_class_document(klass)
 
             # Index attributes
-            next unless klass.attributes
-
-            klass.attributes.each do |attr|
-              documents << build_attribute_document(attr, klass)
+            if klass.attributes
+              klass.attributes.each do |attr|
+                documents << build_attribute_document(attr, klass)
+              end
             end
           end
 
@@ -170,7 +172,7 @@ module Lutaml
             klass.name,
             qualified_name(klass),
             class_type(klass),
-            klass.stereotypes&.join(" "),
+            (klass.respond_to?(:stereotype) ? klass.stereotype&.join(" ") : nil),
             klass.definition,
             klass.attributes&.map(&:name)&.join(" "),
             (klass.respond_to?(:operations) ? klass.operations&.map(&:name)&.join(" ") : nil),
@@ -187,7 +189,7 @@ module Lutaml
             owner.name,
             qualified_name(owner),
             attribute.definition,
-            attribute.stereotypes&.join(" "),
+            (attribute.respond_to?(:stereotype) ? attribute.stereotype&.join(" ") : nil),
           ].compact
 
           normalize_content(parts.join(" "))
@@ -210,7 +212,7 @@ module Lutaml
             package.name,
             package_path(package),
             package.definition,
-            package.stereotypes&.join(" "),
+            (package.respond_to?(:stereotype) ? package.stereotype&.join(" ") : nil),
           ].compact
 
           normalize_content(parts.join(" "))
@@ -238,10 +240,10 @@ module Lutaml
           while current
             if current.is_a?(Lutaml::Uml::TopElement)
               path_parts.unshift(current.name)
-              current = current.owner
+              current = current.respond_to?(:namespace) ? current.namespace : nil
             elsif current.is_a?(Lutaml::Uml::Package)
               path_parts.unshift(current.name)
-              current = current.owner
+              current = current.respond_to?(:namespace) ? current.namespace : nil
             else
               break
             end
@@ -251,22 +253,24 @@ module Lutaml
         end
 
         def package_name(klass)
-          owner = klass.owner
-          return "" unless owner.is_a?(Lutaml::Uml::Package)
+          ns = klass.respond_to?(:namespace) ? klass.namespace : nil
+          return "" unless ns.is_a?(Lutaml::Uml::Package)
 
-          package_path(owner)
+          package_path(ns)
         end
 
         def parent_package_name(package)
-          return "" unless package.owner.is_a?(Lutaml::Uml::Package)
+          ns = package.respond_to?(:namespace) ? package.namespace : nil
+          return "" unless ns.is_a?(Lutaml::Uml::Package)
 
-          package_path(package.owner)
+          package_path(ns)
         end
 
         def package_path(package)
-          return package.name unless package.owner.is_a?(Lutaml::Uml::Package)
+          ns = package.respond_to?(:namespace) ? package.namespace : nil
+          return package.name unless ns.is_a?(Lutaml::Uml::Package)
 
-          "#{package_path(package.owner)}::#{package.name}"
+          "#{package_path(ns)}::#{package.name}"
         end
 
         def find_association_package(klass)
