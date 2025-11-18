@@ -16,6 +16,8 @@ module Lutaml
           thor_class.long_desc <<-DESC
           Start a web server with an interactive UI for browsing the model.
 
+          Uses the modern single-page application with JSON API and lunr.js search.
+
           Examples:
             lutaml uml serve model.lur
             lutaml uml serve model.lur --port 8080
@@ -33,8 +35,7 @@ module Lutaml
             exit 1
           end
 
-          puts OutputFormatter.colorize("\n=== Starting Web UI Server ===\n",
-                                        :cyan)
+          puts OutputFormatter.colorize("\n=== Starting Web UI Server ===\n", :cyan)
           puts "Loading repository from: #{lur_path}"
           puts "Server will be available at: http://#{options[:host]}:#{options[:port]}"
           puts "\nPress Ctrl+C to stop the server\n\n"
@@ -46,6 +47,7 @@ module Lutaml
           puts "\n\n#{OutputFormatter.colorize('Server stopped', :yellow)}"
         rescue StandardError => e
           puts OutputFormatter.error("Server error: #{e.message}")
+          puts e.backtrace.first(5).join("\n") if options[:verbose]
           exit 1
         end
       end
