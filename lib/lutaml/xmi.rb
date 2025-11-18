@@ -34,5 +34,10 @@ module Lutaml
       autoload :ConnectorDrop, "lutaml/xmi/liquid_drops/connector_drop"
       autoload :SourceTargetDrop, "lutaml/xmi/liquid_drops/source_target_drop"
     end
+
+    # Web UI
+    module WebUi
+      autoload :App, "lutaml/uml_repository/web_ui/app"
+    end
   end
 end
