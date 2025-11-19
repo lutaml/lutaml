@@ -23,7 +23,7 @@ module Lutaml
             supertype_obj = find_object(ea_connector.end_object_id)
 
             if supertype_obj
-              gen.general_id = supertype_obj.ea_guid
+              gen.general_id = normalize_guid_to_xmi_format(supertype_obj.ea_guid, "EAID")
               gen.general_name = supertype_obj.name
             end
 

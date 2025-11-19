@@ -19,7 +19,7 @@ module Lutaml
           Lutaml::Uml::Instance.new.tap do |instance|
             # Map basic properties
             instance.name = ea_object.name
-            instance.xmi_id = ea_object.ea_guid
+            instance.xmi_id = normalize_guid_to_xmi_format(ea_object.ea_guid, "EAID")
 
             # Map classifier (the class this is an instance of)
             if ea_object.classifier && ea_object.classifier > 0

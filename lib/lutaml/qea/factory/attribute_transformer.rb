@@ -19,7 +19,8 @@ module Lutaml
             attr.name = ea_attribute.name
             attr.type = ea_attribute.type
             attr.visibility = map_visibility(ea_attribute.scope)
-            attr.xmi_id = ea_attribute.ea_guid
+            attr.xmi_id = normalize_guid_to_xmi_format(ea_attribute.ea_guid, "EAID")
+            attr.id = normalize_guid_to_xmi_format(ea_attribute.ea_guid, "EAID")
             attr.static = ea_attribute.static? ? "true" : nil
             attr.is_derived = ea_attribute.derived == "1"
 

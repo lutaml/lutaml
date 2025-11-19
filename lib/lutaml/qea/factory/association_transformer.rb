@@ -20,13 +20,13 @@ module Lutaml
             # Map basic properties
             assoc.name = ea_connector.name unless
               ea_connector.name.nil? || ea_connector.name.empty?
-            assoc.xmi_id = ea_connector.ea_guid
+            assoc.xmi_id = normalize_guid_to_xmi_format(ea_connector.ea_guid, "EAID")
 
             # Map source (owner) end
             source_obj = find_object(ea_connector.start_object_id)
             if source_obj
               assoc.owner_end = source_obj.name
-              assoc.owner_end_xmi_id = source_obj.ea_guid
+              assoc.owner_end_xmi_id = normalize_guid_to_xmi_format(source_obj.ea_guid, "EAID")
               assoc.owner_end_attribute_name = ea_connector.sourcerole
               assoc.owner_end_cardinality = build_cardinality_from_string(
                 ea_connector.sourcecard,
@@ -37,7 +37,7 @@ module Lutaml
             target_obj = find_object(ea_connector.end_object_id)
             if target_obj
               assoc.member_end = target_obj.name
-              assoc.member_end_xmi_id = target_obj.ea_guid
+              assoc.member_end_xmi_id = normalize_guid_to_xmi_format(target_obj.ea_guid, "EAID")
               assoc.member_end_attribute_name = ea_connector.destrole
               assoc.member_end_cardinality = build_cardinality_from_string(
                 ea_connector.destcard,
