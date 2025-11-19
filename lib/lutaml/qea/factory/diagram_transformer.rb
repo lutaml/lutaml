@@ -21,17 +21,16 @@ module Lutaml
           Lutaml::Uml::Diagram.new.tap do |diagram|
             # Map basic properties
             diagram.name = ea_diagram.name
-            diagram.xmi_id = ea_diagram.ea_guid
+            diagram.xmi_id = normalize_guid_to_xmi_format(ea_diagram.ea_guid, "EAID")
             diagram.diagram_type = ea_diagram.diagram_type
 
-            # Map package relationship
-            diagram.package_id = ea_diagram.package_id.to_s if
-              ea_diagram.package_id
-
-            # Load and set package name
+            # Map package relationship - use GUID not numeric ID
             if ea_diagram.package_id
               package = find_package(ea_diagram.package_id)
-              diagram.package_name = package.name if package
+              if package
+                diagram.package_id = normalize_guid_to_xmi_format(package.ea_guid, "EAPK")
+                diagram.package_name = package.name
+              end
             end
 
             # Map definition/notes
@@ -102,7 +101,7 @@ module Lutaml
             # Try to find and set xmi_id from the referenced object
             if ea_obj.ea_object_id
               uml_object = find_object_by_id(ea_obj.ea_object_id)
-              obj.object_xmi_id = uml_object.ea_guid if uml_object
+              obj.object_xmi_id = normalize_guid_to_xmi_format(uml_object.ea_guid, "EAID") if uml_object
             end
           end
         end
@@ -138,7 +137,7 @@ module Lutaml
             # Try to find and set xmi_id from the referenced connector
             if ea_link.connectorid
               connector = find_connector_by_id(ea_link.connectorid)
-              link.connector_xmi_id = connector.ea_guid if connector
+              link.connector_xmi_id = normalize_guid_to_xmi_format(connector.ea_guid, "EAID") if connector
             end
           end
         end

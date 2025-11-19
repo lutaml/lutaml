@@ -6,6 +6,8 @@ require_relative "operation_transformer"
 require_relative "constraint_transformer"
 require_relative "tagged_value_transformer"
 require_relative "object_property_transformer"
+require_relative "generalization_transformer"
+require_relative "association_transformer"
 require "lutaml/uml"
 
 module Lutaml
@@ -18,25 +20,46 @@ module Lutaml
         # @return [Lutaml::Uml::Class] UML class
         def transform(ea_object)
           return nil if ea_object.nil?
-          return nil unless ea_object.uml_class? || ea_object.interface?
+
+          # Allow Class, Interface, and Text objects that appear on diagrams
+          is_class_type = ea_object.uml_class? || ea_object.interface?
+          is_text_class = ea_object.object_type == 'Text'
+          return nil unless is_class_type || is_text_class
 
           Lutaml::Uml::Class.new.tap do |klass|
             # Map basic properties
             klass.name = ea_object.name
-            klass.xmi_id = ea_object.ea_guid
+            klass.xmi_id = normalize_guid_to_xmi_format(ea_object.ea_guid, "EAID")
             klass.is_abstract = ea_object.abstract?
+            klass.type = is_text_class ? "Class" : "Class"  # Text objects exported as Class in XMI
             klass.visibility = map_visibility(ea_object.visibility)
 
-            # Map stereotype
+            # Map stereotype - return string if single, array if multiple
+            stereotypes = []
             if ea_object.stereotype && !ea_object.stereotype.empty?
-              klass.stereotype = [ea_object.stereotype]
+              stereotypes << ea_object.stereotype
+            end
+
+            # Check t_xref for additional stereotypes (only if not already added)
+            xref_stereotype = load_stereotype_from_xref(ea_object.ea_guid)
+            if xref_stereotype && !stereotypes.include?(xref_stereotype)
+              stereotypes << xref_stereotype
+            end
+
+            # Return string if single stereotype, array if multiple, nil if none
+            unless stereotypes.empty?
+              klass.stereotype = stereotypes.size == 1 ? stereotypes.first : stereotypes
             end
 
             # Add "interface" stereotype if it's an interface
             if ea_object.interface?
-              klass.stereotype ||= []
-              klass.stereotype << "interface" unless
-                klass.stereotype.include?("interface")
+              if klass.stereotype.nil?
+                klass.stereotype = "interface"
+              elsif klass.stereotype.is_a?(String)
+                klass.stereotype = [klass.stereotype, "interface"].uniq
+              elsif klass.stereotype.is_a?(Array)
+                klass.stereotype << "interface" unless klass.stereotype.include?("interface")
+              end
             end
 
             # Map definition/notes
@@ -45,6 +68,9 @@ module Lutaml
 
             # Load and transform attributes
             klass.attributes = load_attributes(ea_object.ea_object_id)
+
+            # Add association-based attributes (navigable association ends)
+            klass.attributes.concat(load_association_attributes(ea_object.ea_object_id))
 
             # Load and transform operations
             klass.operations = load_operations(ea_object.ea_object_id)
@@ -57,6 +83,15 @@ module Lutaml
 
             # Load and transform object properties (as additional tagged values)
             klass.tagged_values.concat(load_object_properties(ea_object.ea_object_id))
+
+            # Load generalization (inheritance)
+            klass.generalization = load_generalization(ea_object.ea_object_id)
+
+            # Load association generalizations
+            klass.association_generalization = load_association_generalizations(ea_object.ea_object_id)
+
+            # Load associations for this class
+            klass.associations = load_class_associations(ea_object.ea_object_id, ea_object.ea_guid)
           end
         end
 
@@ -150,6 +185,207 @@ module Lutaml
           # Transform to UML tagged values
           prop_transformer = ObjectPropertyTransformer.new(database)
           prop_transformer.transform_collection(ea_props)
+        end
+
+        # Load stereotype from t_xref table
+        # @param ea_guid [String] Element GUID
+        # @return [String, nil] Stereotype value
+        def load_stereotype_from_xref(ea_guid)
+          return nil if ea_guid.nil?
+          return nil unless database.xrefs
+
+          # Find stereotype xref from the in-memory collection
+          xref = database.xrefs.find do |x|
+            x.client == ea_guid && x.name == 'Stereotypes' && x.type == 'element property'
+          end
+
+          return nil unless xref
+
+          # Parse stereotype from Description field
+          # Format: @STEREO;Name=FeatureType;FQName=...;@ENDSTEREO;
+          description = xref.description
+          return nil if description.nil? || description.empty?
+
+          # Extract the Name value from the @STEREO format
+          if description =~ /@STEREO;Name=([^;]+);/
+            return $1
+          end
+
+          nil
+        end
+
+        # Load generalization for a class
+        # @param object_id [Integer] Object ID
+        # @return [Lutaml::Uml::Generalization, nil] UML generalization or nil
+        def load_generalization(object_id)
+          return nil if object_id.nil?
+
+          # Query for generalization connector where this class is the subtype (Start_Object_ID)
+          query = "SELECT * FROM t_connector WHERE Start_Object_ID = ? AND Connector_Type = 'Generalization' LIMIT 1"
+          rows = database.connection.execute(query, object_id)
+          return nil if rows.empty?
+
+          ea_connector = Models::EaConnector.from_db_row(rows.first)
+          gen_transformer = GeneralizationTransformer.new(database)
+          generalization = gen_transformer.transform(ea_connector)
+
+          # Build inheritance chain recursively
+          if generalization && generalization.general_id
+            # Find parent object by GUID (need to normalize for lookup)
+            parent_guid = generalization.general_id.tr('_', '-').sub(/^EAID_/, '{') + '}'
+            parent_query = "SELECT * FROM t_object WHERE ea_guid = ?"
+            parent_rows = database.connection.execute(parent_query, parent_guid)
+
+            if !parent_rows.empty?
+              parent_obj = Models::EaObject.from_db_row(parent_rows.first)
+
+              # Load parent's attributes for inherited properties
+              generalization.general_attributes = load_attributes(parent_obj.ea_object_id)
+
+              # Recursively load parent's generalization
+              parent_gen = load_generalization(parent_obj.ea_object_id)
+              if parent_gen
+                generalization.general = parent_gen
+                generalization.has_general = true
+              end
+            end
+          end
+
+          generalization
+        end
+
+        # Load association generalizations for a class
+        # @param object_id [Integer] Object ID
+        # @return [Array<String>] List of generalization xmi_ids
+        def load_association_generalizations(object_id)
+          return [] if object_id.nil?
+
+          # Query for ALL generalization connectors for this class
+          query = "SELECT ea_guid FROM t_connector WHERE Start_Object_ID = ? AND Connector_Type = 'Generalization'"
+          rows = database.connection.execute(query, object_id)
+
+          rows.map { |row| normalize_guid_to_xmi_format(row[0], "EAID") }
+        end
+
+        # Load associations for a class
+        # @param object_id [Integer] Object ID
+        # @param object_guid [String] Object GUID
+        # @return [Array<Lutaml::Uml::Association>] UML associations
+        def load_class_associations(object_id, object_guid)
+          return [] if object_id.nil?
+
+          # Find connectors where this class participates
+          # Note: Using UNION to avoid parameter duplication issue
+          query = <<-SQL
+            SELECT * FROM t_connector
+            WHERE Connector_Type = 'Association'
+            AND (Start_Object_ID = ? OR End_Object_ID = ?)
+          SQL
+
+          rows = database.connection.execute(query, [object_id, object_id])
+
+          assoc_transformer = AssociationTransformer.new(database)
+          normalized_xmi_id = normalize_guid_to_xmi_format(object_guid, "EAID")
+
+          rows.map do |row|
+            ea_connector = Models::EaConnector.from_db_row(row)
+            assoc = assoc_transformer.transform(ea_connector)
+
+            # Only include if this class is the owner end
+            next unless assoc && assoc.owner_end_xmi_id == normalized_xmi_id
+
+            assoc
+          end.compact
+        end
+
+        # Load association-based attributes (navigable association ends with role names)
+        # @param object_id [Integer] Object ID
+        # @return [Array<Lutaml::Uml::TopElementAttribute>] Association-based attributes
+        def load_association_attributes(object_id)
+          return [] if object_id.nil?
+
+          attributes = []
+
+          # Find all association-type connectors (Association, Aggregation, Composition)
+          query = "SELECT * FROM t_connector WHERE (Start_Object_ID = ? OR End_Object_ID = ?) AND Connector_Type IN ('Association', 'Aggregation', 'Composition')"
+          rows = database.connection.execute(query, [object_id, object_id])
+
+          rows.each do |row|
+            ea_connector = Models::EaConnector.from_db_row(row)
+
+            # Check if this object is the source (owner) or target (member)
+            if ea_connector.start_object_id == object_id
+              # This class is the source - check for dest role
+              next if ea_connector.destrole.nil? || ea_connector.destrole.empty?
+
+              target_obj = find_object_by_id(ea_connector.end_object_id)
+              next unless target_obj
+
+              attributes << create_association_attribute(
+                name: ea_connector.destrole,
+                type: target_obj.name,
+                type_xmi_id: target_obj.ea_guid,
+                association_xmi_id: ea_connector.ea_guid,
+                cardinality: ea_connector.destcard
+              )
+            elsif ea_connector.end_object_id == object_id
+              # This class is the target - check for source role
+              next if ea_connector.sourcerole.nil? || ea_connector.sourcerole.empty?
+
+              source_obj = find_object_by_id(ea_connector.start_object_id)
+              next unless source_obj
+
+              attributes << create_association_attribute(
+                name: ea_connector.sourcerole,
+                type: source_obj.name,
+                type_xmi_id: source_obj.ea_guid,
+                association_xmi_id: ea_connector.ea_guid,
+                cardinality: ea_connector.sourcecard
+              )
+            end
+          end
+
+          attributes.compact
+        end
+
+        # Create an attribute from association end
+        # @param name [String] Attribute name (role name)
+        # @param type [String] Attribute type (class name)
+        # @param type_xmi_id [String] Type XMI ID
+        # @param association_xmi_id [String] Association XMI ID
+        # @param cardinality [String] Cardinality string
+        # @return [Lutaml::Uml::TopElementAttribute] Created attribute
+        def create_association_attribute(name:, type:, type_xmi_id:, association_xmi_id:, cardinality:)
+          Lutaml::Uml::TopElementAttribute.new.tap do |attr|
+            attr.name = name
+            attr.type = type
+            attr.xmi_id = normalize_guid_to_xmi_format(type_xmi_id, "EAID")
+            attr.association = normalize_guid_to_xmi_format(association_xmi_id, "EAID")
+
+            # Map cardinality if present
+            if cardinality && !cardinality.empty?
+              parsed = parse_cardinality(cardinality)
+              if parsed[:min] || parsed[:max]
+                attr.cardinality = Lutaml::Uml::Cardinality.new.tap do |card|
+                  card.min = parsed[:min]
+                  card.max = parsed[:max]
+                end
+              end
+            end
+          end
+        end
+
+        # Find object by ID
+        # @param object_id [Integer] Object ID
+        # @return [Models::EaObject, nil] EA object or nil
+        def find_object_by_id(object_id)
+          return nil if object_id.nil?
+
+          query = "SELECT * FROM t_object WHERE Object_ID = ?"
+          rows = database.connection.execute(query, [object_id])
+          return nil if rows.empty?
+
+          Models::EaObject.from_db_row(rows.first)
         end
       end
     end

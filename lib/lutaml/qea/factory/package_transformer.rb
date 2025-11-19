@@ -19,7 +19,7 @@ module Lutaml
           Lutaml::Uml::Package.new.tap do |pkg|
             # Map basic properties
             pkg.name = ea_package.name
-            pkg.xmi_id = ea_package.ea_guid
+            pkg.xmi_id = normalize_guid_to_xmi_format(ea_package.ea_guid, "EAPK")
 
             # Map definition/notes
             pkg.definition = ea_package.notes unless
@@ -27,6 +27,10 @@ module Lutaml
 
             # Load and transform tagged values
             pkg.tagged_values = load_tagged_values(ea_package.ea_guid)
+
+            # Load stereotype from t_xref
+            stereotype = load_stereotype(ea_package.ea_guid)
+            pkg.stereotype = stereotype if stereotype
 
             # Note: Child packages and contents will be loaded separately
             # to avoid circular dependencies and allow lazy loading
@@ -96,9 +100,15 @@ module Lutaml
 
           ea_objects = rows.map { |row| Models::EaObject.from_db_row(row) }
 
-          # Transform classes
+          # Transform classes - include ALL class-type objects, even without names
+          # Also include Text objects that appear on diagrams (EA exports these as classes in XMI)
           class_transformer = ClassTransformer.new(database)
-          ea_objects.select(&:uml_class?).each do |ea_obj|
+          ea_objects.each do |ea_obj|
+            is_class_type = ea_obj.uml_class? || ea_obj.interface?
+            is_text_on_diagram = ea_obj.object_type == 'Text' && appears_on_diagram?(ea_obj.ea_object_id)
+
+            next unless is_class_type || is_text_on_diagram
+
             uml_class = class_transformer.transform(ea_obj)
             pkg.classes << uml_class if uml_class
           end
@@ -141,6 +151,44 @@ module Lutaml
           # Transform to UML tagged values
           tag_transformer = TaggedValueTransformer.new(database)
           tag_transformer.transform_collection(ea_tags)
+        end
+
+        # Load stereotype from t_xref table
+        # @param ea_guid [String] Element GUID
+        # @return [String, nil] Stereotype value (as string to match XMI format)
+        def load_stereotype(ea_guid)
+          return nil if ea_guid.nil?
+          return nil unless database.xrefs
+
+          # Find stereotype xref from the in-memory collection
+          xref = database.xrefs.find do |x|
+            x.client == ea_guid && x.name == 'Stereotypes' && x.type == 'element property'
+          end
+
+          return nil unless xref
+
+          # Parse stereotype from Description field
+          # Format: @STEREO;Name=ApplicationSchema;FQName=GML::ApplicationSchema;@ENDSTEREO;
+          description = xref.description
+          return nil if description.nil? || description.empty?
+
+          # Extract the Name value from the @STEREO format
+          if description =~ /@STEREO;Name=([^;]+);/
+            return $1
+          end
+
+          nil
+        end
+
+        # Check if an object appears on any diagram
+        # @param object_id [Integer] Object ID
+        # @return [Boolean] True if object appears on a diagram
+        def appears_on_diagram?(object_id)
+          return false if object_id.nil?
+          return false unless database.diagram_objects
+
+          # Check if object appears in any diagram's objects
+          database.diagram_objects.any? { |dobj| dobj.ea_object_id == object_id }
         end
       end
     end

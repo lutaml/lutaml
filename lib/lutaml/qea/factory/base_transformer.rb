@@ -76,6 +76,19 @@ module Lutaml
 
           value.to_s == "1" || value.to_s.downcase == "true"
         end
+
+        # Normalize EA GUID to XMI ID format
+        # Converts {GUID-WITH-HYPHENS} to PREFIX_GUID_WITH_UNDERSCORES
+        # @param ea_guid [String] EA GUID in format "{XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX}"
+        # @param prefix [String] Prefix to add (e.g., "EAID", "EAPK")
+        # @return [String, nil] XMI ID in format "PREFIX_XXXXXXXX_XXXX_XXXX_XXXX_XXXXXXXXXXXX"
+        def normalize_guid_to_xmi_format(ea_guid, prefix = "EAID")
+          return nil if ea_guid.nil? || ea_guid.empty?
+
+          # Remove braces and replace hyphens with underscores
+          clean = ea_guid.tr('{}', '').tr('-', '_')
+          "#{prefix}_#{clean}"
+        end
       end
     end
   end
