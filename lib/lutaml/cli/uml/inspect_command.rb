@@ -47,7 +47,7 @@ module Lutaml
           element = find_element(repo, identifier)
           unless element
             puts OutputFormatter.error("Element not found: #{element_id}")
-            exit 1
+            raise Thor::Error, "Element not found: #{element_id}"
           end
 
           display_element_details(element, identifier, repo)

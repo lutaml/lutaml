@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/qea/file_detector"
+require_relative "../../../lib/lutaml/qea/file_detector"
 require "tempfile"
 
 RSpec.describe Lutaml::Qea::FileDetector do

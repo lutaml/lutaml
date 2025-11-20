@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/qea/factory/attribute_transformer"
-require "lutaml/qea/models/ea_attribute"
+require_relative "../../../../lib/lutaml/qea/factory/attribute_transformer"
+require_relative "../../../../lib/lutaml/qea/models/ea_attribute"
 
 RSpec.describe Lutaml::Qea::Factory::AttributeTransformer do
   let(:database) { double("Database") }

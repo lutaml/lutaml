@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/qea/models/base_model"
+require_relative "../../../../lib/lutaml/qea/models/base_model"
 
 RSpec.describe Lutaml::Qea::Models::BaseModel do
   # Create a concrete test class to test the abstract base

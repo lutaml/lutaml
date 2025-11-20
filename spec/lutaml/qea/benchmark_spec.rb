@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/qea/benchmark"
+require_relative "../../../lib/lutaml/qea/benchmark"
 
 RSpec.describe Lutaml::Qea::Benchmark do
   let(:qea_file_path) { File.join(__dir__, "../../fixtures/test.qea") }

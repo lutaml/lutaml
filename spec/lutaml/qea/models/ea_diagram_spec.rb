@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/qea/models/ea_diagram"
+require_relative "../../../../lib/lutaml/qea/models/ea_diagram"
 
 RSpec.describe Lutaml::Qea::Models::EaDiagram do
   describe ".primary_key_column" do

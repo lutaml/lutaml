@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/qea/validation/validation_message"
+require_relative "../../../../lib/lutaml/qea/validation/validation_message"
 
 RSpec.describe Lutaml::Qea::Validation::ValidationMessage do
   let(:message_attributes) do

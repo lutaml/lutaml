@@ -9,7 +9,7 @@ module Lutaml
         attr_reader :options
 
         def initialize(options = {})
-          @options = options
+          @options = options.transform_keys(&:to_sym)
         end
 
         def self.add_options_to(thor_class, _method_name)
@@ -32,7 +32,7 @@ module Lutaml
         def run(lur_path)
           unless File.exist?(lur_path)
             puts OutputFormatter.error("Package file not found: #{lur_path}")
-            exit 1
+            raise Thor::Error, "Package file not found: #{lur_path}"
           end
 
           OutputFormatter.progress("Loading repository")
@@ -53,7 +53,7 @@ module Lutaml
         rescue StandardError => e
           OutputFormatter.progress_done(success: false)
           puts OutputFormatter.error("Documentation generation failed: #{e.message}")
-          exit 1
+          raise Thor::Error, "Documentation generation failed: #{e.message}"
         end
       end
     end

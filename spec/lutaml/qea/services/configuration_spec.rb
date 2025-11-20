@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/qea/services/configuration"
+require_relative "../../../../lib/lutaml/qea/services/configuration"
 
 RSpec.describe Lutaml::Qea::Services::Configuration do
   let(:config_path) { File.expand_path("../../../../config/qea_schema.yml", __dir__) }

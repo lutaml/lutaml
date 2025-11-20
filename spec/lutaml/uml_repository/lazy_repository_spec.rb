@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/uml_repository/lazy_repository"
-require "lutaml/uml_repository/repository"
+require_relative "../../../lib/lutaml/uml_repository/lazy_repository"
+require_relative "../../../lib/lutaml/uml_repository/repository"
 
 RSpec.describe Lutaml::UmlRepository::LazyRepository do
   let(:xmi_path) { "spec/fixtures/ea-xmi-2.5.1.xmi" }

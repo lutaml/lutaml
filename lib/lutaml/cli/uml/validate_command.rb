@@ -9,7 +9,7 @@ module Lutaml
         attr_reader :options
 
         def initialize(options = {})
-          @options = options
+          @options = options.transform_keys(&:to_sym)
         end
 
         def self.add_options_to(thor_class, _method_name)
@@ -55,7 +55,7 @@ module Lutaml
         def run(file_path)
           unless File.exist?(file_path)
             puts OutputFormatter.error("File not found: #{file_path}")
-            exit 1
+            raise Thor::Error, "File not found: #{file_path}"
           end
 
           # Auto-detect file type
@@ -67,7 +67,7 @@ module Lutaml
             puts OutputFormatter.error(
               "Unsupported file type. Please provide a .qea or .lur file.",
             )
-            exit 1
+            raise Thor::Error, "Unsupported file type. Please provide a .qea or .lur file."
           end
         rescue StandardError => e
           OutputFormatter.progress_done(success: false)
@@ -95,7 +95,9 @@ module Lutaml
 
           display_validation_results(result)
 
-          exit 1 if options[:strict] && result.errors.any?
+          if options[:strict] && result.errors.any?
+            raise Thor::Error, "Package validation failed"
+          end
         end
 
         def validate_qea_file(qea_path)
@@ -143,7 +145,7 @@ module Lutaml
           if options[:strict] && validation_result.has_errors?
             puts ""
             puts OutputFormatter.error("Validation FAILED")
-            exit 1
+            raise Thor::Error, "Validation FAILED"
           elsif validation_result.valid?
             puts ""
             puts OutputFormatter.success("Validation PASSED")

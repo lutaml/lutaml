@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/qea/database"
-require "lutaml/qea/models/ea_object"
-require "lutaml/qea/models/ea_package"
-require "lutaml/qea/models/ea_attribute"
+require_relative "../../../lib/lutaml/qea/database"
+require_relative "../../../lib/lutaml/qea/models/ea_object"
+require_relative "../../../lib/lutaml/qea/models/ea_package"
+require_relative "../../../lib/lutaml/qea/models/ea_attribute"
 
 RSpec.describe Lutaml::Qea::Database do
   let(:qea_path) { "test.qea" }

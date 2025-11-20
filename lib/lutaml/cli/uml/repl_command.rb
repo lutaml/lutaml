@@ -9,7 +9,7 @@ module Lutaml
         attr_reader :options
 
         def initialize(options = {})
-          @options = options
+          @options = options.transform_keys(&:to_sym)
         end
 
         def self.add_options_to(thor_class, _method_name)
@@ -30,7 +30,7 @@ module Lutaml
         def run(lur_path)
           unless File.exist?(lur_path)
             puts OutputFormatter.error("Package file not found: #{lur_path}")
-            exit 1
+            raise Thor::Error, "Package file not found: #{lur_path}"
           end
 
           config = {
@@ -42,7 +42,7 @@ module Lutaml
           shell.start
         rescue StandardError => e
           puts OutputFormatter.error("Shell error: #{e.message}")
-          exit 1
+          raise Thor::Error, "Shell error: #{e.message}"
         end
       end
     end

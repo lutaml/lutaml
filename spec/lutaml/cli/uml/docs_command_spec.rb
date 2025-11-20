@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/cli/uml/docs_command"
-require "lutaml/uml_repository"
+require_relative "../../../../lib/lutaml/cli/uml/docs_command"
+require_relative "../../../../lib/lutaml/uml_repository"
 require "tempfile"
 require "fileutils"
 
 RSpec.describe Lutaml::Cli::Uml::DocsCommand do
-  let(:test_xmi) { File.join(__dir__, "../../fixtures/plateau_all_packages_export.xmi") }
+  let(:test_xmi) { File.join(__dir__, "../../../fixtures/plateau_all_packages_export.xmi") }
   let(:test_lur) do
     temp_lur = Tempfile.new(["docs_test", ".lur"]).path
     repo = Lutaml::UmlRepository::Repository.from_xmi(test_xmi)
@@ -39,7 +39,9 @@ RSpec.describe Lutaml::Cli::Uml::DocsCommand do
       let(:options) { { output: output_dir } }
 
       it "handles missing LUR file" do
-        expect { command.run("nonexistent.lur") }.to output(/Package file not found/).to_stdout
+        expect {
+          expect { command.run("nonexistent.lur") }.to raise_error(SystemExit)
+        }.to output(/Package file not found/).to_stdout
       end
     end
   end

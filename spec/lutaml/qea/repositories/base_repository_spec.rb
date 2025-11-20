@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/qea/repositories/base_repository"
-require "lutaml/qea/models/ea_object"
+require_relative "../../../../lib/lutaml/qea/repositories/base_repository"
+require_relative "../../../../lib/lutaml/qea/models/ea_object"
 
 RSpec.describe Lutaml::Qea::Repositories::BaseRepository do
   let(:object1) do

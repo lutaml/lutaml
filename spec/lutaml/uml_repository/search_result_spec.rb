@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/uml_repository/search_result"
+require_relative "../../../lib/lutaml/uml_repository/search_result"
 
 RSpec.describe Lutaml::UmlRepository::SearchResult do
   let(:mock_element) { double("UML Element", name: "TestClass") }

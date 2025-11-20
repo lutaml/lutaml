@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/qea/infrastructure/database_connection"
-require "lutaml/qea/infrastructure/schema_reader"
+require_relative "../../../../lib/lutaml/qea/infrastructure/database_connection"
+require_relative "../../../../lib/lutaml/qea/infrastructure/schema_reader"
 
 RSpec.describe Lutaml::Qea::Infrastructure::SchemaReader do
   let(:test_qea_file) { File.expand_path("../../../../examples/qea/test.qea", __dir__) }

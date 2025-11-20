@@ -2,11 +2,6 @@
 
 require "bundler/setup"
 require_relative "../lib/lutaml"
-require_relative "../lib/lutaml/express"
-require_relative "../lib/lutaml/sysml"
-require_relative "../lib/lutaml/uml"
-require_relative "../lib/lutaml/xmi"
-require_relative "../lib/lutaml/xml"
 
 RSpec.configure do |config|
   # Disable RSpec exposing methods globally on `Module` and `main`

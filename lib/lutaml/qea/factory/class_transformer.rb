@@ -264,7 +264,10 @@ module Lutaml
           query = "SELECT ea_guid FROM t_connector WHERE Start_Object_ID = ? AND Connector_Type = 'Generalization'"
           rows = database.connection.execute(query, object_id)
 
-          rows.map { |row| normalize_guid_to_xmi_format(row[0], "EAID") }
+          rows.map do |row|
+            guid = row.is_a?(Hash) ? (row['ea_guid'] || row[:ea_guid]) : row[0]
+            normalize_guid_to_xmi_format(guid, "EAID") if guid
+          end.compact
         end
 
         # Load associations for a class

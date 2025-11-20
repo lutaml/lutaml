@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/model_transformations/format_registry"
-require "lutaml/model_transformations/parsers/base_parser"
+require_relative "../../../lib/lutaml/model_transformations/format_registry"
+require_relative "../../../lib/lutaml/model_transformations/parsers/base_parser"
 require "tempfile"
 
 RSpec.describe Lutaml::ModelTransformations::FormatRegistry do

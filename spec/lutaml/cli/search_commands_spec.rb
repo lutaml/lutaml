@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/cli/uml_commands"
-require "lutaml/uml_repository/repository"
+require_relative "../../../lib/lutaml/cli/uml_commands"
+require_relative "../../../lib/lutaml/uml_repository/repository"
 require "tempfile"
 
 RSpec.describe "Search and Find Commands (via UmlCommands)" do

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/uml_repository/static_site/id_generator"
+require_relative "../../../../lib/lutaml/uml_repository/static_site/id_generator"
 
 RSpec.describe Lutaml::UmlRepository::StaticSite::IDGenerator do
   let(:generator) { described_class.new }

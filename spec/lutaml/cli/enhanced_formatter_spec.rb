@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/cli/enhanced_formatter"
+require_relative "../../../lib/lutaml/cli/enhanced_formatter"
 
 RSpec.describe Lutaml::Cli::EnhancedFormatter do
   describe ".format_tree_with_icons" do

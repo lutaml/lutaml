@@ -2,7 +2,7 @@
 
 require "spec_helper"
 require "rack/test"
-require "lutaml/uml_repository/web_ui/app"
+require_relative "../../../../lib/lutaml/uml_repository/web_ui/app"
 
 RSpec.describe Lutaml::Xmi::WebUi::App do
   include Rack::Test::Methods

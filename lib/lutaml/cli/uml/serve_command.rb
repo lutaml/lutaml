@@ -9,7 +9,7 @@ module Lutaml
         attr_reader :options
 
         def initialize(options = {})
-          @options = options
+          @options = options.transform_keys(&:to_sym)
         end
 
         def self.add_options_to(thor_class, _method_name)
@@ -32,7 +32,7 @@ module Lutaml
         def run(lur_path)
           unless File.exist?(lur_path)
             puts OutputFormatter.error("Package file not found: #{lur_path}")
-            exit 1
+            raise Thor::Error, "Package file not found: #{lur_path}"
           end
 
           puts OutputFormatter.colorize("\n=== Starting Web UI Server ===\n", :cyan)
@@ -48,7 +48,7 @@ module Lutaml
         rescue StandardError => e
           puts OutputFormatter.error("Server error: #{e.message}")
           puts e.backtrace.first(5).join("\n") if options[:verbose]
-          exit 1
+          raise Thor::Error, "Server error: #{e.message}"
         end
       end
     end

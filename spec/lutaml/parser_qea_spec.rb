@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/parser"
+require_relative "../../lib/lutaml/parser"
 require "tempfile"
 
 RSpec.describe Lutaml::Parser, "#parse with QEA files" do

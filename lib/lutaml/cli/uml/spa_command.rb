@@ -11,7 +11,7 @@ module Lutaml
         attr_reader :options
 
         def initialize(options = {})
-          @options = options
+          @options = options.transform_keys(&:to_sym)
         end
 
         def self.add_options_to(thor_class, _method_name)
@@ -64,10 +64,9 @@ module Lutaml
         rescue StandardError => e
           OutputFormatter.progress_done(success: false)
           puts OutputFormatter.error("SPA generation failed: #{e.message}")
-          puts
           puts "Backtrace:"
           puts e.backtrace.first(20).join("\n")
-          exit 1
+          raise Thor::Error, "SPA generation failed: #{e.message}"
         end
 
         private
@@ -76,11 +75,25 @@ module Lutaml
           return if File.exist?(input_path)
 
           puts OutputFormatter.error("Input file not found: #{input_path}")
-          exit 1
+          raise Thor::Error, "Input file not found: #{input_path}"
+        end
+
+        def detect_mode
+          mode_value = options[:mode] || options["mode"] || "single-file"
+
+          case mode_value.downcase
+          when "single-file", "single_file", "single"
+            :single_file
+          when "multi-file", "multi_file", "multi"
+            :multi_file
+          else
+            puts OutputFormatter.error("Invalid mode: #{mode_value}. Use 'single-file' or 'multi-file'")
+            raise Thor::Error, "Invalid mode: #{mode_value}. Use 'single-file' or 'multi-file'"
+          end
         end
 
         def determine_mode
-          mode_value = options[:mode] || options["mode"] || "single-file"
+          mode_value = options[:mode] || "single-file"
 
           case mode_value.to_s.downcase
           when "multi-file", "multi_file", "multifile"
@@ -89,12 +102,12 @@ module Lutaml
             :single_file
           else
             puts OutputFormatter.error("Invalid mode: #{mode_value}. Use 'single-file' or 'multi-file'")
-            exit 1
+            raise Thor::Error, "Invalid mode: #{mode_value}. Use 'single-file' or 'multi-file'"
           end
         end
 
         def validate_output_path(mode)
-          output = options[:output] || options["output"]
+          output = options[:output]
 
           # For multi-file mode, ensure output is a directory
           if mode == :multi_file && File.extname(output) != ""
@@ -142,9 +155,9 @@ module Lutaml
           generation_options = {
             mode: mode,
             output: output_path,
-            title: options[:title] || options["title"] || "UML Model Browser",
-            minify: options[:minify] || options["minify"] || false,
-            theme: options[:theme] || options["theme"] || "light"
+            title: options[:title] || "UML Model Browser",
+            minify: options[:minify] || false,
+            theme: options[:theme] || "light"
           }
 
           Lutaml::UmlRepository::StaticSite.generate(repository, generation_options)

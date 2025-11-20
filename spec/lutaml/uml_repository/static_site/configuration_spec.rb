@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/uml_repository/static_site/configuration"
+require_relative "../../../../lib/lutaml/uml_repository/static_site/configuration"
 require "tempfile"
 
 RSpec.describe Lutaml::UmlRepository::StaticSite::Configuration do

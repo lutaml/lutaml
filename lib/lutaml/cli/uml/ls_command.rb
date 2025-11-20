@@ -13,7 +13,7 @@ module Lutaml
         attr_reader :options
 
         def initialize(options = {})
-          @options = options
+          @options = options.transform_keys(&:to_sym)
         end
 
         def self.add_options_to(thor_class, _method_name)
@@ -53,16 +53,17 @@ module Lutaml
                          repo.all_classes
                        end
                      when "diagrams"
-                       if path
-                         repo.diagrams_in_package(path)
-                       else
+                       # Use all_diagrams when no specific path is provided
+                       if path == "ModelRoot"
                          repo.all_diagrams
+                       else
+                         repo.diagrams_in_package(path)
                        end
                      when "all"
                        list_all_elements(repo, path)
                      else
                        puts OutputFormatter.error("Unknown type: #{options[:type]}")
-                       exit 1
+                       raise Thor::Error, "Unknown type: #{options[:type]}"
                      end
 
           if elements.empty?

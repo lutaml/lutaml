@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/cli/uml/export_command"
-require "lutaml/uml_repository"
+require_relative "../../../../lib/lutaml/cli/uml/export_command"
+require_relative "../../../../lib/lutaml/uml_repository"
 require "tempfile"
 
 RSpec.describe Lutaml::Cli::Uml::ExportCommand do
-  let(:test_xmi) { File.join(__dir__, "../../fixtures/plateau_all_packages_export.xmi") }
+  let(:test_xmi) { File.join(__dir__, "../../../fixtures/plateau_all_packages_export.xmi") }
   let(:test_lur) do
     temp_lur = Tempfile.new(["export_test", ".lur"]).path
     repo = Lutaml::UmlRepository::Repository.from_xmi(test_xmi)

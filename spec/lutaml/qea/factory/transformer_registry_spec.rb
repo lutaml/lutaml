@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/qea/factory/transformer_registry"
+require_relative "../../../../lib/lutaml/qea/factory/transformer_registry"
 
 RSpec.describe Lutaml::Qea::Factory::TransformerRegistry do
   # Reset registry before each test

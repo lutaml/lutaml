@@ -2,8 +2,8 @@
 
 require "spec_helper"
 require "stringio"
-require "lutaml/cli/interactive_shell"
-require "lutaml/uml_repository/repository"
+require_relative "../../../lib/lutaml/cli/interactive_shell"
+require_relative "../../../lib/lutaml/uml_repository/repository"
 
 RSpec.describe Lutaml::Cli::InteractiveShell do
   let(:mock_repo) do
@@ -48,9 +48,14 @@ RSpec.describe Lutaml::Cli::InteractiveShell do
 
     describe "#cmd_pwd" do
       it "prints current working directory" do
-        expect {
-          shell.send(:cmd_pwd, [])
-        }.to output(/ModelRoot/).to_stdout
+        output = StringIO.new
+        original_stdout = $stdout
+        $stdout = output
+
+        shell.send(:cmd_pwd, [])
+
+        $stdout = original_stdout
+        expect(output.string).to include("ModelRoot")
       end
     end
 
@@ -61,10 +66,14 @@ RSpec.describe Lutaml::Cli::InteractiveShell do
       end
 
       it "changes to specified package" do
-        expect {
-          shell.send(:cmd_cd, ["test::package"])
-        }.to output(/Changed to/).to_stdout
+        output = StringIO.new
+        original_stdout = $stdout
+        $stdout = output
 
+        shell.send(:cmd_cd, ["test::package"])
+
+        $stdout = original_stdout
+        expect(output.string).to include("Changed to")
         expect(shell.current_path).to eq("test::package")
       end
 
@@ -72,15 +81,25 @@ RSpec.describe Lutaml::Cli::InteractiveShell do
         allow(mock_repo).to receive(:find_package).with("nonexistent")
           .and_return(nil)
 
-        expect {
-          shell.send(:cmd_cd, ["nonexistent"])
-        }.to output(/not found/).to_stdout
+        output = StringIO.new
+        original_stdout = $stdout
+        $stdout = output
+
+        shell.send(:cmd_cd, ["nonexistent"])
+
+        $stdout = original_stdout
+        expect(output.string).to include("not found")
       end
 
       it "shows usage when no path provided" do
-        expect {
-          shell.send(:cmd_cd, [])
-        }.to output(/Usage/).to_stdout
+        output = StringIO.new
+        original_stdout = $stdout
+        $stdout = output
+
+        shell.send(:cmd_cd, [])
+
+        $stdout = original_stdout
+        expect(output.string).to include("Usage")
       end
     end
 
@@ -90,20 +109,28 @@ RSpec.describe Lutaml::Cli::InteractiveShell do
       end
 
       it "goes up one level" do
-        expect {
-          shell.send(:cmd_up, [])
-        }.to output(/Changed to/).to_stdout
+        output = StringIO.new
+        original_stdout = $stdout
+        $stdout = output
 
+        shell.send(:cmd_up, [])
+
+        $stdout = original_stdout
+        expect(output.string).to include("Changed to")
         expect(shell.current_path).to eq("ModelRoot::Package")
       end
 
       it "stays at root when already there" do
         shell.instance_variable_set(:@current_path, "ModelRoot")
 
-        expect {
-          shell.send(:cmd_up, [])
-        }.to output(/Already at root/).to_stdout
+        output = StringIO.new
+        original_stdout = $stdout
+        $stdout = output
 
+        shell.send(:cmd_up, [])
+
+        $stdout = original_stdout
+        expect(output.string).to include("Already at root")
         expect(shell.current_path).to eq("ModelRoot")
       end
     end
@@ -114,10 +141,14 @@ RSpec.describe Lutaml::Cli::InteractiveShell do
       end
 
       it "navigates to root" do
-        expect {
-          shell.send(:cmd_root, [])
-        }.to output(/Changed to/).to_stdout
+        output = StringIO.new
+        original_stdout = $stdout
+        $stdout = output
 
+        shell.send(:cmd_root, [])
+
+        $stdout = original_stdout
+        expect(output.string).to include("Changed to")
         expect(shell.current_path).to eq("ModelRoot")
       end
     end
@@ -129,10 +160,14 @@ RSpec.describe Lutaml::Cli::InteractiveShell do
       end
 
       it "goes back to previous location" do
-        expect {
-          shell.send(:cmd_back, [])
-        }.to output(/Changed to/).to_stdout
+        output = StringIO.new
+        original_stdout = $stdout
+        $stdout = output
 
+        shell.send(:cmd_back, [])
+
+        $stdout = original_stdout
+        expect(output.string).to include("Changed to")
         expect(shell.current_path).to eq("ModelRoot")
       end
     end
@@ -147,19 +182,29 @@ RSpec.describe Lutaml::Cli::InteractiveShell do
       end
 
       it "lists packages in current path" do
-        expect {
-          shell.send(:cmd_ls, [])
-        }.to output(/Package1/).to_stdout
-         .and output(/Package2/).to_stdout
-         .and output(/Total: 2/).to_stdout
+        output = StringIO.new
+        original_stdout = $stdout
+        $stdout = output
+
+        shell.send(:cmd_ls, [])
+
+        $stdout = original_stdout
+        expect(output.string).to include("Package1")
+        expect(output.string).to include("Package2")
+        expect(output.string).to include("Total: 2")
       end
 
       it "shows warning when no packages found" do
         allow(mock_repo).to receive(:list_packages).and_return([])
 
-        expect {
-          shell.send(:cmd_ls, [])
-        }.to output(/No packages found/).to_stdout
+        output = StringIO.new
+        original_stdout = $stdout
+        $stdout = output
+
+        shell.send(:cmd_ls, [])
+
+        $stdout = original_stdout
+        expect(output.string).to include("No packages found")
       end
     end
 
@@ -170,43 +215,66 @@ RSpec.describe Lutaml::Cli::InteractiveShell do
       end
 
       it "finds classes and stores results" do
-        expect {
-          shell.send(:cmd_find, ["Test"])
-        }.to output(/Found 2 class/).to_stdout
-         .and output(/TestClass/).to_stdout
+        output = StringIO.new
+        original_stdout = $stdout
+        $stdout = output
 
+        shell.send(:cmd_find, ["Test"])
+
+        $stdout = original_stdout
+        expect(output.string).to include("Found 2 class")
+        expect(output.string).to include("TestClass")
         expect(shell.last_results).to eq(["TestClass", "AnotherClass"])
       end
 
       it "shows warning when no results found" do
         allow(mock_repo).to receive(:search).and_return(class: [])
 
-        expect {
-          shell.send(:cmd_find, ["NonExistent"])
-        }.to output(/No classes found/).to_stdout
+        output = StringIO.new
+        original_stdout = $stdout
+        $stdout = output
+
+        shell.send(:cmd_find, ["NonExistent"])
+
+        $stdout = original_stdout
+        expect(output.string).to include("No classes found")
       end
 
       it "requires a search term" do
-        expect {
-          shell.send(:cmd_find, [])
-        }.to output(/Usage/).to_stdout
+        output = StringIO.new
+        original_stdout = $stdout
+        $stdout = output
+
+        shell.send(:cmd_find, [])
+
+        $stdout = original_stdout
+        expect(output.string).to include("Usage")
       end
     end
 
     describe "bookmark management" do
       describe "#bookmark_add" do
         it "adds bookmark for current path" do
-          expect {
-            shell.send(:bookmark_add, "my_bookmark")
-          }.to output(/added/).to_stdout
+          output = StringIO.new
+          original_stdout = $stdout
+          $stdout = output
 
+          shell.send(:bookmark_add, "my_bookmark")
+
+          $stdout = original_stdout
+          expect(output.string).to include("added")
           expect(shell.bookmarks["my_bookmark"]).to eq("ModelRoot")
         end
 
         it "requires bookmark name" do
-          expect {
-            shell.send(:bookmark_add, nil)
-          }.to output(/Usage/).to_stdout
+          output = StringIO.new
+          original_stdout = $stdout
+          $stdout = output
+
+          shell.send(:bookmark_add, nil)
+
+          $stdout = original_stdout
+          expect(output.string).to include("Usage")
         end
       end
 
@@ -214,18 +282,28 @@ RSpec.describe Lutaml::Cli::InteractiveShell do
         it "lists all bookmarks" do
           shell.instance_variable_set(:@bookmarks, { "bm1" => "Path1", "bm2" => "Path2" })
 
-          expect {
-            shell.send(:bookmark_list)
-          }.to output(/bm1/).to_stdout
-           .and output(/Path1/).to_stdout
-           .and output(/bm2/).to_stdout
-           .and output(/Path2/).to_stdout
+          output = StringIO.new
+          original_stdout = $stdout
+          $stdout = output
+
+          shell.send(:bookmark_list)
+
+          $stdout = original_stdout
+          expect(output.string).to include("bm1")
+          expect(output.string).to include("Path1")
+          expect(output.string).to include("bm2")
+          expect(output.string).to include("Path2")
         end
 
         it "shows message when no bookmarks" do
-          expect {
-            shell.send(:bookmark_list)
-          }.to output(/No bookmarks/).to_stdout
+          output = StringIO.new
+          original_stdout = $stdout
+          $stdout = output
+
+          shell.send(:bookmark_list)
+
+          $stdout = original_stdout
+          expect(output.string).to include("No bookmarks")
         end
       end
 
@@ -237,17 +315,26 @@ RSpec.describe Lutaml::Cli::InteractiveShell do
         end
 
         it "jumps to bookmarked location" do
-          expect {
-            shell.send(:bookmark_go, "test")
-          }.to output(/Changed to/).to_stdout
+          output = StringIO.new
+          original_stdout = $stdout
+          $stdout = output
 
+          shell.send(:bookmark_go, "test")
+
+          $stdout = original_stdout
+          expect(output.string).to include("Changed to")
           expect(shell.current_path).to eq("ModelRoot::Package")
         end
 
         it "shows error for non-existent bookmark" do
-          expect {
-            shell.send(:bookmark_go, "nonexistent")
-          }.to output(/not found/).to_stdout
+          output = StringIO.new
+          original_stdout = $stdout
+          $stdout = output
+
+          shell.send(:bookmark_go, "nonexistent")
+
+          $stdout = original_stdout
+          expect(output.string).to include("not found")
         end
       end
 
@@ -257,17 +344,26 @@ RSpec.describe Lutaml::Cli::InteractiveShell do
         end
 
         it "removes bookmark" do
-          expect {
-            shell.send(:bookmark_remove, "test")
-          }.to output(/removed/).to_stdout
+          output = StringIO.new
+          original_stdout = $stdout
+          $stdout = output
 
+          shell.send(:bookmark_remove, "test")
+
+          $stdout = original_stdout
+          expect(output.string).to include("removed")
           expect(shell.bookmarks).not_to have_key("test")
         end
 
         it "shows error for non-existent bookmark" do
-          expect {
-            shell.send(:bookmark_remove, "nonexistent")
-          }.to output(/not found/).to_stdout
+          output = StringIO.new
+          original_stdout = $stdout
+          $stdout = output
+
+          shell.send(:bookmark_remove, "nonexistent")
+
+          $stdout = original_stdout
+          expect(output.string).to include("not found")
         end
       end
     end
@@ -276,53 +372,83 @@ RSpec.describe Lutaml::Cli::InteractiveShell do
       it "shows last results" do
         shell.instance_variable_set(:@last_results, ["Class1", "Class2"])
 
-        expect {
-          shell.send(:cmd_results, [])
-        }.to output(/Class1/).to_stdout
-         .and output(/Class2/).to_stdout
+        output = StringIO.new
+        original_stdout = $stdout
+        $stdout = output
+
+        shell.send(:cmd_results, [])
+
+        $stdout = original_stdout
+        expect(output.string).to include("Class1")
+        expect(output.string).to include("Class2")
       end
 
       it "shows warning when no results" do
-        expect {
-          shell.send(:cmd_results, [])
-        }.to output(/No previous results/).to_stdout
+        output = StringIO.new
+        original_stdout = $stdout
+        $stdout = output
+
+        shell.send(:cmd_results, [])
+
+        $stdout = original_stdout
+        expect(output.string).to include("No previous results")
       end
     end
 
     describe "#cmd_stats" do
       it "displays repository statistics" do
-        expect {
-          shell.send(:cmd_stats, [])
-        }.to output(/5/).to_stdout
-         .and output(/20/).to_stdout
+        output = StringIO.new
+        original_stdout = $stdout
+        $stdout = output
+
+        shell.send(:cmd_stats, [])
+
+        $stdout = original_stdout
+        expect(output.string).to include("5")
+        expect(output.string).to include("20")
       end
     end
 
     describe "#cmd_config" do
       it "displays current configuration" do
-        expect {
-          shell.send(:cmd_config, [])
-        }.to output(/Configuration/).to_stdout
-         .and output(/color/).to_stdout
-         .and output(/icons/).to_stdout
+        output = StringIO.new
+        original_stdout = $stdout
+        $stdout = output
+
+        shell.send(:cmd_config, [])
+
+        $stdout = original_stdout
+        expect(output.string).to include("Configuration")
+        expect(output.string).to include("color")
+        expect(output.string).to include("icons")
       end
     end
 
     describe "#cmd_clear" do
       it "sends clear screen sequence" do
-        expect {
-          shell.send(:cmd_clear, [])
-        }.to output(/\e\[2J\e\[H/).to_stdout
+        output = StringIO.new
+        original_stdout = $stdout
+        $stdout = output
+
+        shell.send(:cmd_clear, [])
+
+        $stdout = original_stdout
+        expect(output.string).to include("\e[2J\e[H")
       end
     end
 
     describe "#cmd_help" do
       it "displays general help" do
-        expect {
-          shell.send(:cmd_help, [])
-        }.to output(/Available Commands/).to_stdout
-         .and output(/Navigation/).to_stdout
-         .and output(/Query/).to_stdout
+        output = StringIO.new
+        original_stdout = $stdout
+        $stdout = output
+
+        shell.send(:cmd_help, [])
+
+        $stdout = original_stdout
+        expect(output.string).to include("Available Commands")
+        expect(output.string).to include("Navigation")
+        expect(output.string).to include("Query")
       end
     end
   end

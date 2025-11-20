@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/model_transformations/configuration"
+require_relative "../../../lib/lutaml/model_transformations/configuration"
 require "tempfile"
 
 RSpec.describe Lutaml::ModelTransformations::Configuration do

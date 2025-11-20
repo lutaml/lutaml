@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/uml_repository/error_handler"
-require "lutaml/uml_repository/repository"
+require_relative "../../../lib/lutaml/uml_repository/error_handler"
+require_relative "../../../lib/lutaml/uml_repository/repository"
 
 RSpec.describe Lutaml::UmlRepository::ErrorHandler do
   let(:xmi_path) { fixtures_path("ea-xmi-2.5.1.xmi") }

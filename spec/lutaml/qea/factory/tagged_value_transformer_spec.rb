@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/qea/models/ea_tagged_value"
-require "lutaml/qea/factory/tagged_value_transformer"
+require_relative "../../../../lib/lutaml/qea/models/ea_tagged_value"
+require_relative "../../../../lib/lutaml/qea/factory/tagged_value_transformer"
 
 RSpec.describe Lutaml::Qea::Factory::TaggedValueTransformer do
   let(:database) { instance_double(Lutaml::Qea::Database) }

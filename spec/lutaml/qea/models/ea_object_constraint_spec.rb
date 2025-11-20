@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/qea/models/ea_object_constraint"
+require_relative "../../../../lib/lutaml/qea/models/ea_object_constraint"
 
 RSpec.describe Lutaml::Qea::Models::EaObjectConstraint do
   describe ".from_db_row" do
