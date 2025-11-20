@@ -3,7 +3,7 @@ source "https://rubygems.org"
 # Specify your gem's dependencies in lutaml.gemspec
 gemspec
 
-gem "canon"
+gem "canon", "=0.1.3"
 gem "listen"
 gem "pry"
 gem "rack-test"
