@@ -819,3 +819,31 @@
 .inheritance-path, .inheritance-attrs {
   font-size: var(--font-size-xs);
 }
+
+/* Inherited group styling */
+.inherited-group {
+  margin-bottom: var(--space-xl);
+}
+
+.inherited-group-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  background-color: var(--color-bg-secondary);
+  border-left: 4px solid var(--color-accent);
+  margin-bottom: var(--space-md);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+}
+
+.inherited-group-header .link-button {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-accent);
+}
+
+.inherited-group-header .link-button:hover {
+  text-decoration: none;
+  opacity: 0.8;
+}

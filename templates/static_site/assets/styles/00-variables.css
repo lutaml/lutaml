@@ -92,7 +92,7 @@
 }
 
 /* Dark Theme */
-:root.dark {
+#app.dark {
   /* Colors - Dark Theme */
   --color-bg: #1e1e1e;
   --color-bg-secondary: #252526;
