@@ -33,7 +33,7 @@
           @keydown.arrow-up.prevent="selectPrevious()"
           @keydown.enter.prevent="openSelected()"
           @keydown.escape="closeSearch()"
-          @focus="showResults = true"
+          @focus="showResults = query.length >= 2"
           placeholder="Search... (Press / or Ctrl+K)"
           class="search-input"
           x-ref="searchInput"
@@ -57,7 +57,7 @@
 
       <!-- Search Results Overlay -->
       <div
-        x-show="showResults && results.length > 0"
+        x-show="showResults && query.length >= 2"
         @click.away="showResults = false"
         x-transition:enter="transition ease-out duration-200"
         x-transition:enter-start="opacity-0 transform scale-95"
@@ -70,7 +70,8 @@
           <span class="search-hint-text">Use ↑↓ to navigate, Enter to open, Esc to close</span>
         </div>
 
-        <div class="search-results-list">
+        <!-- Results list -->
+        <div class="search-results-list" x-show="results.length > 0">
           <template x-for="(result, index) in results" :key="result.id">
             <div
               @click="openResult(result)"
@@ -98,16 +99,12 @@
             </div>
           </template>
         </div>
-      </div>
 
-      <!-- No Results Message -->
-      <div
-        x-show="showResults && results.length === 0 && query.length > 0"
-        x-transition
-        class="search-no-results"
-      >
-        <p>No results found for "<span x-text="query"></span>"</p>
-        <p class="search-suggestion">Try different keywords or check spelling</p>
+        <!-- No Results Message INSIDE overlay -->
+        <div class="search-no-results" x-show="results.length === 0">
+          <p>No results found for "<span x-text="query"></span>"</p>
+          <p class="search-suggestion">Try different keywords or check spelling</p>
+        </div>
       </div>
     </div>
 

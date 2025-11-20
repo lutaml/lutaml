@@ -184,6 +184,22 @@ module Lutaml
         end
 
         def serialize_class(klass, id)
+          # Get associations and sort by local role
+          class_associations = find_class_associations(klass)
+          sorted_associations = class_associations.sort_by do |assoc_id|
+            assoc = repository.associations_index.find { |a| @id_generator.association_id(a) == assoc_id }
+            next '' unless assoc
+
+            # Determine local role for this class
+            if assoc.owner_end_xmi_id == klass.xmi_id
+              assoc.owner_end_attribute_name || assoc.owner_end || ''
+            elsif assoc.member_end_xmi_id == klass.xmi_id
+              assoc.member_end_attribute_name || assoc.member_end || ''
+            else
+              ''
+            end
+          end
+
           {
             id: id,
             xmiId: klass.xmi_id,
@@ -197,7 +213,7 @@ module Lutaml
               @id_generator.attribute_id(attr, klass)
             end,
             operations: serialize_class_operations(klass),
-            associations: find_class_associations(klass),
+            associations: sorted_associations,
             generalizations: find_generalizations(klass),
             specializations: find_specializations(klass),
             isAbstract: klass.respond_to?(:is_abstract) ? klass.is_abstract : false,
