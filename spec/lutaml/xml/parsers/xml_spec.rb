@@ -1,5 +1,5 @@
 require "spec_helper"
-require "equivalent-xml"
+require "canon"
 
 RSpec.describe Lutaml::Xml::Parsers::Xml do
   describe ".parse" do
@@ -44,7 +44,7 @@ RSpec.describe Lutaml::Xml::Parsers::Xml do
       it "outputs xml as same as the xml file it reads" do
         input_xml = File.read(xml_file_path)
         formatted_xml = Nokogiri::XML(parse.to_xml).root.to_xml
-        expect(formatted_xml).to be_equivalent_to(input_xml)
+        expect(formatted_xml).to be_xml_equivalent_to(input_xml)
       end
 
       it "parses xml file and able to output hash" do
