@@ -462,6 +462,18 @@
   overflow: hidden;
 }
 
+.table-wrapper {
+  overflow-x: auto;
+  margin: var(--space-md) 0;
+  border-radius: var(--border-radius-lg);
+  border: 1px solid var(--color-border);
+}
+
+.table-wrapper .data-table {
+  border: none;
+  margin: 0;
+}
+
 .data-table thead {
   background-color: var(--color-primary);
   color: white;
@@ -745,4 +757,65 @@
   color: #c62828;
   font-weight: var(--font-weight-medium);
   font-family: monospace;
+}
+
+/* Inherited items styling */
+.inherited-attributes-table,
+.inherited-associations-table {
+  opacity: 0.9;
+  font-size: var(--font-size-sm);
+}
+
+.inherited-attributes-table tbody tr,
+.inherited-associations-table tbody tr {
+  background-color: var(--color-bg-secondary);
+}
+
+.inherited-from-cell {
+  background-color: var(--color-bg-tertiary);
+  font-style: italic;
+  white-space: nowrap;
+  min-width: 120px;
+}
+
+.inherited-link {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.inherited-link:hover {
+  color: var(--color-link);
+}
+
+/* Make inherited tables more compact */
+.inherited-attributes-table th,
+.inherited-associations-table th {
+  font-size: var(--font-size-xs);
+  padding: var(--space-sm);
+}
+
+.inherited-attributes-table td,
+.inherited-associations-table td {
+  padding: var(--space-sm);
+  font-size: var(--font-size-sm);
+}
+
+/* Inheritance section */
+.inheritance-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.inheritance-meta {
+  margin-left: var(--space-lg);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  display: flex;
+  gap: var(--space-md);
+}
+
+.inheritance-path, .inheritance-attrs {
+  font-size: var(--font-size-xs);
 }
