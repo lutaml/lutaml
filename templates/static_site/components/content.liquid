@@ -47,7 +47,7 @@
       </div>
     </div>
 
-    <!-- Package Details -->
+    <!-- Package Details INLINE WITH FIXES -->
     <div x-show="currentView === 'package'" x-transition class="view-package">
       <template x-if="currentPackage && data.packages[currentPackage]">
         <div class="package-details" x-data="{ get pkg() { return $store.app.data.packages[$store.app.currentPackage]; } }">
@@ -77,19 +77,45 @@
             <div class="definition-content" x-html="pkg.definition"></div>
           </div>
 
-          <!-- Empty State Message -->
+          <!-- Empty State -->
           <template x-if="(!pkg.subPackages || pkg.subPackages.length === 0) && (!pkg.classes || pkg.classes.length === 0) && (!pkg.diagrams || pkg.diagrams.length === 0)">
             <div class="empty-state">
-              <p class="empty-state-message">This package is empty. It contains no sub-packages, classes, or diagrams.</p>
+              <p class="empty-state-message">This package is empty.</p>
             </div>
           </template>
 
+          <!-- Diagrams FIRST and PROMINENT -->
+          <div class="section" x-show="pkg.diagrams && pkg.diagrams.length > 0">
+            <h3>Diagrams (<span x-text="pkg.diagrams.length"></span>)</h3>
+            <ul class="diagram-list">
+              <template x-for="diagramId in pkg.diagrams" :key="diagramId">
+                <li class="diagram-item">
+                  <svg class="item-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="3" y1="9" x2="21" y2="9"></line>
+                    <line x1="9" y1="21" x2="9" y2="9"></line>
+                  </svg>
+                  <span class="diagram-name" x-text="$store.app.data.diagrams[diagramId] && $store.app.data.diagrams[diagramId].name"></span>
+                  <span class="diagram-type" x-text="$store.app.data.diagrams[diagramId] && `(${$store.app.data.diagrams[diagramId].type})`"></span>
+                </li>
+              </template>
+            </ul>
+          </div>
+
+          <!-- Info message -->
+          <template x-if="(!pkg.classes || pkg.classes.length === 0) && pkg.diagrams && pkg.diagrams.length > 0">
+            <div class="info-message">
+              <p>This package contains <strong x-text="pkg.diagrams.length"></strong> diagram(s) but no classes.</p>
+            </div>
+          </template>
+
+          <!-- Sub-packages -->
           <div class="section" x-show="pkg.subPackages && pkg.subPackages.length > 0">
             <h3>Sub-packages</h3>
             <div class="package-list">
               <template x-for="subPkgId in pkg.subPackages" :key="subPkgId">
                 <div class="package-item" @click="$store.app.selectPackage(subPkgId)">
-                  <svg class="item-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <svg class="item-icon"  xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
                   </svg>
                   <span class="item-name" x-text="data.packages[subPkgId].name"></span>
@@ -99,6 +125,7 @@
             </div>
           </div>
 
+          <!-- Classes -->
           <div class="section" x-show="pkg.classes && pkg.classes.length > 0">
             <h3>Classes</h3>
             <table class="data-table classes-table">
@@ -113,12 +140,8 @@
               <tbody>
                 <template x-for="classId in pkg.classes" :key="classId">
                   <tr @click="$store.app.selectClass(classId)" class="clickable-row">
-                    <td>
-                      <button class="link-button" x-text="data.classes[classId].name"></button>
-                    </td>
-                    <td>
-                      <span class="type-badge" x-text="data.classes[classId].type"></span>
-                    </td>
+                    <td><button class="link-button" x-text="data.classes[classId].name"></button></td>
+                    <td><span class="type-badge" x-text="data.classes[classId].type"></span></td>
                     <td>
                       <template x-if="data.classes[classId].stereotypes && data.classes[classId].stereotypes.length > 0">
                         <div class="stereotypes-cell">
@@ -128,9 +151,7 @@
                         </div>
                       </template>
                     </td>
-                    <td>
-                      <span class="count-value" x-text="(data.classes[classId].attributes || []).length"></span>
-                    </td>
+                    <td><span class="count-value" x-text="(data.classes[classId].attributes || []).length"></span></td>
                   </tr>
                 </template>
               </tbody>
@@ -140,12 +161,19 @@
       </template>
     </div>
 
-    <!-- Class Details -->
+    <!-- Class Details INLINE WITH FIXES -->
     <div x-show="currentView === 'class'" x-transition class="view-class">
       <template x-if="currentClass && data.classes[currentClass]">
-        <div class="class-details" x-data="{ get cls() { return $store.app.data.classes[$store.app.currentClass]; } }">
+        <div class="class-details" x-data="{
+          get cls() { return data.classes[currentClass]; },
+          isUmlBasicType(type) { return window.UMLUtils.isUmlBasicType(type); },
+          findClassByName(name) { return window.UMLUtils.findClassByName(data, name); }
+        }">
           <div class="entity-header">
-            <h1 class="entity-name" x-text="cls.name"></h1>
+            <div class="entity-title">
+              <h1 class="entity-name" x-text="cls.qualifiedName"></h1>
+              <p class="entity-subtitle" x-show="cls.name !== cls.qualifiedName" x-text="`(${cls.name})`"></p>
+            </div>
             <span class="entity-type-badge" x-text="cls.type"></span>
             <span class="abstract-badge" x-show="cls.isAbstract">Abstract</span>
           </div>
@@ -156,7 +184,7 @@
 
             <dt>Package</dt>
             <dd>
-              <button class="link-button" @click="$store.app.selectPackage(cls.package)" x-text="data.packages[cls.package] && data.packages[cls.package].name"></button>
+              <button class="link-button" @click="selectPackage(cls.package)" x-text="data.packages[cls.package] && data.packages[cls.package].name"></button>
             </dd>
 
             <template x-if="cls.stereotypes && cls.stereotypes.length > 0">
@@ -176,6 +204,7 @@
             <div class="definition-content" x-html="cls.definition"></div>
           </div>
 
+          <!-- Attributes with TYPE CLICKABILITY -->
           <div class="section" x-show="cls.attributes && cls.attributes.length > 0">
             <h3>Attributes</h3>
             <table class="data-table attributes-table">
@@ -196,18 +225,58 @@
                       <div class="cell-description" x-show="attr.definition" x-text="attr.definition"></div>
                     </td>
                     <td>
-                      <code class="type-name" x-text="attr.type"></code>
+                      <template x-if="isUmlBasicType(attr.type)">
+                        <code class="type-name uml-basic-type" x-text="attr.type" title="UML basic type"></code>
+                      </template>
+                      <template x-if="!isUmlBasicType(attr.type) && findClassByName(attr.type)">
+                        <button class="type-link" @click="selectClass(findClassByName(attr.type))" x-text="attr.type" title="Click to navigate"></button>
+                      </template>
+                      <template x-if="!isUmlBasicType(attr.type) && !findClassByName(attr.type)">
+                        <span class="type-unresolved" :title="'Unresolved type: ' + attr.type">
+                          <span x-text="'⚠️ ' + attr.type"></span>
+                        </span>
+                      </template>
                     </td>
-                    <td>
-                      <span class="visibility-badge" :data-visibility="attr.visibility" x-text="attr.visibility"></span>
-                    </td>
-                    <td>
-                      <code x-show="attr.cardinality" x-text="`${attr.cardinality.min}..${attr.cardinality.max}`"></code>
-                    </td>
+                    <td><span class="visibility-badge" :data-visibility="attr.visibility" x-text="attr.visibility"></span></td>
+                    <td><code x-show="attr.cardinality" x-text="`${attr.cardinality.min}..${attr.cardinality.max}`"></code></td>
                     <td>
                       <span class="modifier-badge" x-show="attr.isStatic">static</span>
                       <span class="modifier-badge" x-show="attr.isReadOnly">readOnly</span>
                     </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Associations -->
+          <div class="section" x-show="cls.associations && cls.associations.length > 0">
+            <h3>Associations</h3>
+            <table class="data-table associations-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Target</th>
+                  <th>Cardinality</th>
+                  <th>Aggregation</th>
+                  <th>Navigable</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="assocId in cls.associations" :key="assocId">
+                  <tr x-data="{ assoc: data.associations[assocId], target: getAssociationTarget(data.associations[assocId], currentClass) }">
+                    <td><code x-text="assoc.name || 'unnamed'"></code></td>
+                    <td>
+                      <button class="link-button" @click="selectClass(target.class)" x-text="target.className"></button>
+                      <span class="role-name" x-show="target.role" x-text="`(${target.role})`"></span>
+                    </td>
+                    <td><code x-show="target.cardinality" x-text="`${target.cardinality.min}..${target.cardinality.max}`"></code></td>
+                    <td>
+                      <span class="aggregation-badge" x-show="target.aggregation" x-text="target.aggregation"></span>
+                      <span x-show="target.aggregation === 'composite'">◆</span>
+                      <span x-show="target.aggregation === 'shared'">◇</span>
+                    </td>
+                    <td><span x-text="target.navigable ? 'Yes →' : 'No'"></span></td>
                   </tr>
                 </template>
               </tbody>
@@ -228,7 +297,6 @@
         </div>
 
         <div x-show="searchResults.length > 0" class="results-container">
-          <!-- Group by type -->
           <template x-for="group in groupedResults" :key="group.type">
             <div class="result-group">
               <h3 x-text="`${group.type}s (${group.items.length})`"></h3>

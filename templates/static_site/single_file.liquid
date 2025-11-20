@@ -12,8 +12,8 @@
     {{ styles }}
   </style>
 </head>
-<body>
-  <div id="app" x-data="app" x-init="init()" :class="{ 'dark': darkMode }">
+<body :class="{ 'dark': $store.app.darkMode }">
+  <div id="app" x-data="app" x-init="init()">
     {{ header }}
 
     <div class="main-layout">
