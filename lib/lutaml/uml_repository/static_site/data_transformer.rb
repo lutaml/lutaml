@@ -120,13 +120,19 @@ module Lutaml
         def build_tree_node(package)
           pkg_id = @id_generator.package_id(package)
 
+          # Sort child packages by name
+          sorted_children = (package.packages || []).sort_by { |p| p.name || '' }
+
+          # Sort classes by name
+          sorted_classes = (package.classes || []).reject { |c| c.name.nil? || c.name.empty? }.sort_by { |c| c.name }
+
           {
             id: pkg_id,
             name: package.name,
             path: package_path(package),
-            classCount: (package.classes || []).reject { |c| c.name.nil? || c.name.empty? }.size,
-            classes: (package.classes || []).map { |c| @id_generator.class_id(c) },
-            children: (package.packages || []).map do |child|
+            classCount: sorted_classes.size,
+            classes: sorted_classes.map { |c| @id_generator.class_id(c) },
+            children: sorted_children.map do |child|
               build_tree_node(child)
             end,
           }
@@ -187,7 +193,7 @@ module Lutaml
             package: package_id_for_class(klass),
             stereotypes: normalize_stereotypes(klass.respond_to?(:stereotype) ? klass.stereotype : nil),
             definition: format_definition(klass.definition),
-            attributes: (klass.attributes || []).map do |attr|
+            attributes: (klass.attributes || []).sort_by { |a| a.name || '' }.map do |attr|
               @id_generator.attribute_id(attr, klass)
             end,
             operations: serialize_class_operations(klass),
@@ -196,6 +202,8 @@ module Lutaml
             specializations: find_specializations(klass),
             isAbstract: klass.respond_to?(:is_abstract) ? klass.is_abstract : false,
             literals: serialize_literals(klass),
+            inheritedAttributes: compute_inherited_attributes(klass),
+            inheritedAssociations: compute_inherited_associations(klass),
           }
         end
 
@@ -252,6 +260,7 @@ module Lutaml
             xmiId: association.xmi_id,
             name: association.name,
             type: "Association",
+            definition: format_definition(association.respond_to?(:definition) ? association.definition : nil),
             source: build_association_source(association),
             target: build_association_target(association),
           }
@@ -499,7 +508,8 @@ module Lutaml
 
         def find_specializations(klass)
           children = repository.subtypes_of(klass)
-          children.map { |child| @id_generator.class_id(child) }
+          # Filter out self if somehow included
+          children.reject { |child| child.xmi_id == klass.xmi_id }.map { |child| @id_generator.class_id(child) }
         rescue StandardError
           []
         end
@@ -515,6 +525,107 @@ module Lutaml
           end
         rescue StandardError
           []
+        end
+
+        # Compute inherited attributes from generalization chain
+        def compute_inherited_attributes(klass)
+          return [] unless klass.respond_to?(:generalization) && klass.generalization
+
+          inherited = []
+          current_gen = klass.generalization
+          parent_order = 0
+
+          while current_gen
+            parent_class = find_class_by_xmi_id(current_gen.general_id)
+            break unless parent_class
+
+            if parent_class.attributes
+              # Sort attributes by name within this parent
+              sorted_attrs = parent_class.attributes.sort_by { |a| a.name || '' }
+              sorted_attrs.each do |attr|
+                attr_id = @id_generator.attribute_id(attr, parent_class)
+                inherited << {
+                  attributeId: attr_id,
+                  attribute: serialize_attribute(attr, parent_class, attr_id),
+                  inheritedFrom: @id_generator.class_id(parent_class),
+                  inheritedFromName: parent_class.name,
+                  parentOrder: parent_order,  # Track hierarchy order
+                }
+              end
+            end
+
+            # Move to parent's parent
+            parent_order += 1
+            current_gen = current_gen.respond_to?(:general) ? current_gen.general : nil
+          end
+
+          # Already sorted by parent hierarchy, then by name within parent
+          inherited
+        rescue StandardError => e
+          warn "Error computing inherited attributes: #{e.message}"
+          []
+        end
+
+        # Compute inherited associations from generalization chain
+        def compute_inherited_associations(klass)
+          return [] unless klass.respond_to?(:generalization) && klass.generalization
+
+          inherited = []
+          current_gen = klass.generalization
+          parent_order = 0
+
+          while current_gen
+            parent_class = find_class_by_xmi_id(current_gen.general_id)
+            break unless parent_class
+
+            parent_associations = find_class_associations(parent_class)
+
+            # Get association details and determine local role from parent's perspective
+            assoc_with_roles = parent_associations.map do |assoc_id|
+              assoc = repository.associations_index.find { |a| @id_generator.association_id(a) == assoc_id }
+              next unless assoc
+
+              # Determine which role is the "local" one for the parent class
+              # This becomes the inherited local role
+              local_role = if assoc.owner_end_xmi_id == parent_class.xmi_id
+                assoc.owner_end_attribute_name || assoc.owner_end || ''
+              elsif assoc.member_end_xmi_id == parent_class.xmi_id
+                assoc.member_end_attribute_name || assoc.member_end || ''
+              else
+                ''
+              end
+
+              { id: assoc_id, role: local_role }
+            end.compact
+
+            # Sort by local role within this parent
+            assoc_with_roles.sort_by { |a| a[:role] }.each do |item|
+              inherited << {
+                associationId: item[:id],
+                inheritedFrom: @id_generator.class_id(parent_class),
+                inheritedFromName: parent_class.name,
+                parentOrder: parent_order,
+                localRole: item[:role],  # Include for template use
+              }
+            end
+
+            # Move to parent's parent
+            parent_order += 1
+            current_gen = current_gen.respond_to?(:general) ? current_gen.general : nil
+          end
+
+          inherited
+        rescue StandardError => e
+          warn "Error computing inherited associations: #{e.message}"
+          []
+        end
+
+        # Find class by XMI ID
+        def find_class_by_xmi_id(xmi_id)
+          return nil unless xmi_id
+          repository.classes_index.find { |c| c.xmi_id == xmi_id }
+        rescue StandardError
+          nil
         end
 
         # Normalize stereotype to always be an array

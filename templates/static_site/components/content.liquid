@@ -167,7 +167,16 @@
         <div class="class-details" x-data="{
           get cls() { return data.classes[currentClass]; },
           isUmlBasicType(type) { return window.UMLUtils.isUmlBasicType(type); },
-          findClassByName(name) { return window.UMLUtils.findClassByName(data, name); }
+          findClassByName(name) { return window.UMLUtils.findClassByName(data, name); },
+          getAssociationEnds(assoc, cls) {
+            if (!assoc || !cls) return { local: {}, remote: {}, direction: '↔' };
+            if (assoc.source && assoc.source.class === cls.xmiId) {
+              return { local: assoc.source, remote: assoc.target, direction: '→' };
+            } else if (assoc.target && assoc.target.class === cls.xmiId) {
+              return { local: assoc.target, remote: assoc.source, direction: '←' };
+            }
+            return { local: assoc.source || {}, remote: assoc.target || {}, direction: '↔' };
+          }
         }">
           <div class="entity-header">
             <div class="entity-title">
@@ -202,6 +211,44 @@
           <div class="entity-definition" x-show="cls.definition">
             <h3>Description</h3>
             <div class="definition-content" x-html="cls.definition"></div>
+          </div>
+
+          <!-- Inheritance (Generalization) -->
+          <div class="section" x-show="(cls.generalizations && cls.generalizations.length > 0) || (cls.specializations && cls.specializations.length > 0)">
+            <h3>Inheritance</h3>
+
+            <div x-show="cls.generalizations && cls.generalizations.length > 0">
+              <h4>Extends (Superclasses)</h4>
+              <div class="inheritance-list">
+                <template x-for="parentId in cls.generalizations" :key="parentId">
+                  <div class="inheritance-item">
+                    <button @click="selectClass(parentId)" class="link-button">
+                      <svg class="item icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="18 15 12 9 6 15"></polyline>
+                      </svg>
+                      <span x-text="data.classes[parentId] && data.classes[parentId].name"></span>
+                    </button>
+                    <div class="inheritance-meta" x-show="data.classes[parentId]">
+                      <span class="inheritance-path" x-text="data.classes[parentId] && data.classes[parentId].qualifiedName"></span>
+                    </div>
+                  </div>
+                </template>
+              </div>
+            </div>
+
+            <div x-show="cls.specializations && cls.specializations.length > 0">
+              <h4>Extended by (Subclasses)</h4>
+              <div class="inheritance-list">
+                <template x-for="childId in cls.specializations" :key="childId">
+                  <button @click="selectClass(childId)" class="inheritance-item link-button">
+                    <svg class="item-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                    <span x-text="data.classes[childId] && data.classes[childId].name"></span>
+                  </button>
+                </template>
+              </div>
+            </div>
           </div>
 
           <!-- Attributes with TYPE CLICKABILITY -->
@@ -249,38 +296,157 @@
             </table>
           </div>
 
-          <!-- Associations -->
-          <div class="section" x-show="cls.associations && cls.associations.length > 0">
-            <h3>Associations</h3>
-            <table class="data-table associations-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Target</th>
-                  <th>Cardinality</th>
-                  <th>Aggregation</th>
-                  <th>Navigable</th>
-                </tr>
-              </thead>
-              <tbody>
-                <template x-for="assocId in cls.associations" :key="assocId">
-                  <tr x-data="{ assoc: data.associations[assocId], target: getAssociationTarget(data.associations[assocId], currentClass) }">
-                    <td><code x-text="assoc.name || 'unnamed'"></code></td>
-                    <td>
-                      <button class="link-button" @click="selectClass(target.class)" x-text="target.className"></button>
-                      <span class="role-name" x-show="target.role" x-text="`(${target.role})`"></span>
-                    </td>
-                    <td><code x-show="target.cardinality" x-text="`${target.cardinality.min}..${target.cardinality.max}`"></code></td>
-                    <td>
-                      <span class="aggregation-badge" x-show="target.aggregation" x-text="target.aggregation"></span>
-                      <span x-show="target.aggregation === 'composite'">◆</span>
-                      <span x-show="target.aggregation === 'shared'">◇</span>
-                    </td>
-                    <td><span x-text="target.navigable ? 'Yes →' : 'No'"></span></td>
+          <!-- Inherited Attributes -->
+          <div class="section" x-show="cls.inheritedAttributes && cls.inheritedAttributes.length > 0">
+            <h3>Inherited Attributes (<span x-text="cls.inheritedAttributes.length"></span>)</h3>
+            <div class="table-wrapper">
+              <table class="data-table inherited-attributes-table">
+                <thead>
+                  <tr>
+                    <th>Inherited From</th>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Visibility</th>
+                    <th>Cardinality</th>
+                    <th>Modifiers</th>
                   </tr>
-                </template>
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  <template x-for="item in cls.inheritedAttributes" :key="item.attributeId">
+                    <tr x-data="{ attr: item.attribute }">
+                      <td class="inherited-from-cell">
+                        <button class="link-button inherited-link" @click="selectClass(item.inheritedFrom)" x-text="item.inheritedFromName" title="Click to view parent class"></button>
+                      </td>
+                      <td>
+                        <code x-text="attr.name"></code>
+                        <div class="cell-description" x-show="attr.definition" x-text="attr.definition"></div>
+                      </td>
+                      <td>
+                        <template x-if="isUmlBasicType(attr.type)">
+                          <code class="type-name uml-basic-type" x-text="attr.type" title="UML basic type"></code>
+                        </template>
+                        <template x-if="!isUmlBasicType(attr.type) && findClassByName(attr.type)">
+                          <button class="type-link" @click="selectClass(findClassByName(attr.type))" x-text="attr.type" title="Click to navigate"></button>
+                        </template>
+                        <template x-if="!isUmlBasicType(attr.type) && !findClassByName(attr.type)">
+                          <span class="type-unresolved" :title="'Unresolved type: ' + attr.type">
+                            <span x-text="'⚠️ ' + attr.type"></span>
+                          </span>
+                        </template>
+                      </td>
+                      <td><span class="visibility-badge" :data-visibility="attr.visibility" x-text="attr.visibility"></span></td>
+                      <td><code x-show="attr.cardinality" x-text="`${attr.cardinality.min}..${attr.cardinality.max}`"></code></td>
+                      <td>
+                        <span class="modifier-badge" x-show="attr.isStatic">static</span>
+                        <span class="modifier-badge" x-show="attr.isReadOnly">readOnly</span>
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Associations WITH DESCRIPTIONS -->
+          <div class="section" x-show="cls.associations && cls.associations.length > 0">
+            <h3>Associations (<span x-text="cls.associations.length"></span>)</h3>
+            <div class="table-wrapper">
+              <table class="data-table associations-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Target</th>
+                    <th>Dir</th>
+                    <th>Local Role</th>
+                    <th>Local Card</th>
+                    <th>Target Role</th>
+                    <th>Target Card</th>
+                    <th>Type</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <template x-for="assocId in cls.associations" :key="assocId">
+                    <tr x-data="{
+                      assoc: data.associations[assocId],
+                      get ends() { return getAssociationEnds(assoc, cls); }
+                    }">
+                      <td>
+                        <code x-text="assoc.name || '(unnamed)'"></code>
+                        <div class="cell-description" x-show="assoc.definition" x-text="assoc.definition"></div>
+                      </td>
+                      <td>
+                        <button class="link-button" @click="selectClass(ends.remote.class)" x-text="ends.remote.className"></button>
+                      </td>
+                      <td><span x-text="ends.direction"></span></td>
+                      <td><code x-text="ends.local.role || '(unnamed)'"></code></td>
+                      <td><code x-show="ends.local.cardinality" x-text="`${ends.local.cardinality.min}..${ends.local.cardinality.max}`"></code></td>
+                      <td><code x-text="ends.remote.role || '(unnamed)'"></code></td>
+                      <td><code x-show="ends.remote.cardinality" x-text="`${ends.remote.cardinality.min}..${ends.remote.cardinality.max}`"></code></td>
+                      <td>
+                        <span x-show="ends.local.aggregation === 'composite'" title="Composition">◆</span>
+                        <span x-show="ends.local.aggregation === 'shared'" title="Aggregation">◇</span>
+                        <span x-show="ends.remote.aggregation === 'composite'" title="Composition">◆</span>
+                        <span x-show="ends.remote.aggregation === 'shared'" title="Aggregation">◇</span>
+                        <span x-show="!ends.local.aggregation && !ends.remote.aggregation">Assoc</span>
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Inherited Associations WITH DESCRIPTIONS -->
+          <div class="section" x-show="cls.inheritedAssociations && cls.inheritedAssociations.length > 0">
+            <h3>Inherited Associations (<span x-text="cls.inheritedAssociations.length"></span>)</h3>
+            <div class="table-wrapper">
+              <table class="data-table inherited-associations-table">
+                <thead>
+                  <tr>
+                    <th>Inherited From</th>
+                    <th>Name</th>
+                    <th>Target</th>
+                    <th>Dir</th>
+                    <th>Local Role</th>
+                    <th>Local Card</th>
+                    <th>Target Role</th>
+                    <th>Target Card</th>
+                    <th>Type</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <template x-for="item in cls.inheritedAssociations" :key="item.associationId">
+                    <tr x-data="{
+                      assoc: data.associations[item.associationId],
+                      get ends() { return getAssociationEnds(data.associations[item.associationId], cls); }
+                    }">
+                      <td class="inherited-from-cell">
+                        <button class="link-button inherited-link" @click="selectClass(item.inheritedFrom)" x-text="item.inheritedFromName" title="View parent class"></button>
+                      </td>
+                      <td>
+                        <code x-text="assoc.name || '(unnamed)'"></code>
+                        <div class="cell-description" x-show="assoc.definition" x-text="assoc.definition"></div>
+                      </td>
+                      <td>
+                        <button class="link-button" @click="selectClass(ends.remote.class)" x-text="ends.remote.className"></button>
+                      </td>
+                      <td><span x-text="ends.direction"></span></td>
+                      <td><code x-text="ends.local.role || '(unnamed)'"></code></td>
+                      <td><code x-show="ends.local.cardinality" x-text="`${ends.local.cardinality.min}..${ends.local.cardinality.max}`"></code></td>
+                      <td><code x-text="ends.remote.role || '(unnamed)'"></code></td>
+                      <td><code x-show="ends.remote.cardinality" x-text="`${ends.remote.cardinality.min}..${ends.remote.cardinality.max}`"></code></td>
+                      <td>
+                        <span x-show="ends.local.aggregation === 'composite'">◆</span>
+                        <span x-show="ends.local.aggregation === 'shared'">◇</span>
+                        <span x-show="ends.remote.aggregation === 'composite'">◆</span>
+                        <span x-show="ends.remote.aggregation === 'shared'">◇</span>
+                        <span x-show="!ends.local.aggregation && !ends.remote.aggregation">Assoc</span>
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </template>
