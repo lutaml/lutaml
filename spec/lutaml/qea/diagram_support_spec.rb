@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/qea/services/database_loader"
-require "lutaml/qea/factory/diagram_transformer"
+require_relative "../../../lib/lutaml/qea/services/database_loader"
+require_relative "../../../lib/lutaml/qea/factory/diagram_transformer"
 
 RSpec.describe "Comprehensive Diagram Support" do
   let(:qea_path) { "examples/qea/20251010_current_plateau_v5.1.qea" }

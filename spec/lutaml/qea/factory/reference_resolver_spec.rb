@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/qea/factory/reference_resolver"
+require_relative "../../../../lib/lutaml/qea/factory/reference_resolver"
 
 RSpec.describe Lutaml::Qea::Factory::ReferenceResolver do
   let(:resolver) { described_class.new }

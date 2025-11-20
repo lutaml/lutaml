@@ -1,5 +1,5 @@
 require "spec_helper"
-require "lutaml/command_line"
+require_relative "../../lib/lutaml/command_line"
 
 RSpec.describe Lutaml::CommandLine do
   describe ".run" do

@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/uml_repository/repository"
-require "lutaml/qea/parser"
+require_relative "../../../../lib/lutaml/uml_repository/repository"
+require_relative "../../../../lib/lutaml/qea/parser"
 
 RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
   # Test file pairs - each QEA should contain all information from corresponding XMI

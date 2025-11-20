@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/qea/factory/base_transformer"
+require_relative "../../../../lib/lutaml/qea/factory/base_transformer"
 
 RSpec.describe Lutaml::Qea::Factory::BaseTransformer do
   let(:database) { double("Database") }

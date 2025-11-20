@@ -13,6 +13,10 @@ module Lutaml
     # - Stereotypes (e.g., "featureType" => [Class, Class, ...])
     # - Inheritance graph (parent_qname => [child_qname, ...])
     # - Diagram index (package_id => [Diagram, ...])
+    # - Package to path mapping (package_id => path)
+    # - Class to qualified name mapping (class_id => qualified_name)
+    # - Classes (class_id => Class)
+    # - Associations (association_id => Association)
     #
     # All indexes are frozen to ensure immutability.
     #
@@ -32,6 +36,10 @@ module Lutaml
       #   - :stereotypes - Groups classes by stereotype
       #   - :inheritance_graph - Maps parent qualified names to child qualified names
       #   - :diagram_index - Maps package IDs/paths to Diagram objects
+      #   - :package_to_path - Maps package XMI IDs to paths
+      #   - :class_to_qname - Maps class XMI IDs to qualified names
+      #   - :classes - Maps class XMI IDs to Class objects
+      #   - :associations - Maps association XMI IDs to Association objects
       def self.build_all(document)
         {
           package_paths: build_package_paths(document),
@@ -39,6 +47,10 @@ module Lutaml
           stereotypes: build_stereotypes(document),
           inheritance_graph: build_inheritance_graph(document, nil),
           diagram_index: build_diagram_index(document, nil),
+          package_to_path: build_package_to_path(document),
+          class_to_qname: build_class_to_qname(document),
+          classes: build_classes(document),
+          associations: build_associations(document),
         }.freeze
       end
 
@@ -52,6 +64,12 @@ module Lutaml
         builder.instance_variable_get(:@package_paths).freeze
       end
 
+      def self.build_package_to_path(document)
+        builder = new(document)
+        builder.build_package_path_index
+        builder.instance_variable_get(:@package_to_path).freeze
+      end
+
       # Build qualified names index
       #
       # @param document [Lutaml::Uml::Document] The UML document
@@ -60,6 +78,24 @@ module Lutaml
         builder = new(document)
         builder.build_qualified_name_index
         builder.instance_variable_get(:@qualified_names).freeze
+      end
+
+      def self.build_class_to_qname(document)
+        builder = new(document)
+        builder.build_qualified_name_index
+        builder.instance_variable_get(:@class_to_qname).freeze
+      end
+
+      def self.build_classes(document)
+        builder = new(document)
+        builder.build_qualified_name_index
+        builder.instance_variable_get(:@classes).freeze
+      end
+
+      def self.build_associations(document)
+        builder = new(document)
+        builder.build_association_index
+        builder.instance_variable_get(:@associations).freeze
       end
 
       # Build stereotypes index
@@ -115,6 +151,10 @@ module Lutaml
         @stereotypes = {}
         @inheritance_graph = {}
         @diagram_index = {}
+        @package_to_path = {}
+        @class_to_qname = {}
+        @classes = {}
+        @associations = {}
       end
 
       # Build all indexes and return them as a frozen hash
@@ -126,6 +166,7 @@ module Lutaml
         build_stereotype_index
         build_inheritance_graph_index
         build_diagram_index
+        build_association_index
 
         {
           package_paths: @package_paths.freeze,
@@ -133,6 +174,10 @@ module Lutaml
           stereotypes: @stereotypes.freeze,
           inheritance_graph: @inheritance_graph.freeze,
           diagram_index: @diagram_index.freeze,
+          package_to_path: @package_to_path.freeze,
+          class_to_qname: @class_to_qname.freeze,
+          classes: @classes.freeze,
+          associations: @associations.freeze,
         }.freeze
       end
 
@@ -151,6 +196,7 @@ module Lutaml
         traverse_packages(@document.packages,
                           parent_path: ROOT_PACKAGE_NAME) do |package, path|
           @package_paths[path] = package
+          @package_to_path[package.xmi_id] = path if package.xmi_id
         end
       end
 
@@ -177,6 +223,16 @@ module Lutaml
           index_classifiers(package.classes, path) if package.classes
           index_classifiers(package.data_types, path) if package.data_types
           index_classifiers(package.enums, path) if package.enums
+        end
+      end
+
+      def build_association_index
+        return unless @document.associations
+
+        @document.associations.each do |assoc|
+          next unless assoc.xmi_id
+
+          @associations[assoc.xmi_id] = assoc
         end
       end
 
@@ -279,6 +335,8 @@ module Lutaml
 
           qualified_name = "#{package_path}::#{classifier.name}"
           @qualified_names[qualified_name] = classifier
+          @class_to_qname[classifier.xmi_id] = qualified_name if classifier.xmi_id
+          @classes[classifier.xmi_id] = classifier if classifier.xmi_id
         end
       end
 

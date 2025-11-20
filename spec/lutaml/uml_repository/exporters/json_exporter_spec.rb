@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/uml_repository/exporters/json_exporter"
+require_relative "../../../../lib/lutaml/uml_repository/exporters/json_exporter"
 require "json"
 require "tempfile"
 

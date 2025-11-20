@@ -65,14 +65,14 @@ module Lutaml
           def in_package(package_path_string, recursive: false)
             return [] if package_path_string.nil? || package_path_string.empty?
 
-            package_path = PackagePath.new(package_path_string)
+            package_path = Lutaml::Uml::PackagePath.new(package_path_string)
             results = []
 
             # Check if the path is absolute (starts with ModelRoot)
             is_absolute = package_path.absolute?
 
             indexes[:qualified_names].each do |qname_string, klass|
-              qname = QualifiedName.new(qname_string)
+              qname = Lutaml::Uml::QualifiedName.new(qname_string)
 
               matched = if is_absolute
                 # Absolute path - exact match

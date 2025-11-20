@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/qea/validation/validation_result"
+require_relative "../../../../lib/lutaml/qea/validation/validation_result"
 
 RSpec.describe Lutaml::Qea::Validation::ValidationResult do
   subject(:result) { described_class.new }

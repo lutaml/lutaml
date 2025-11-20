@@ -1,12 +1,14 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/cli/uml/build_command"
-require "lutaml/uml_repository"
+require_relative "../../../../lib/lutaml/cli/uml/build_command"
+require_relative "../../../../lib/lutaml/uml_repository"
 require "tempfile"
 
 RSpec.describe Lutaml::Cli::Uml::BuildCommand do
-  let(:test_xmi) { File.join(__dir__, "../../fixtures/plateau_all_packages_export.xmi") }
+  let(:test_xmi) {
+    File.join(__dir__, "../../../fixtures/plateau_all_packages_export.xmi")
+  }
   let(:output_lur) { Tempfile.new(["build_test", ".lur"]).path }
   let(:command) { described_class.new(options) }
 
@@ -19,7 +21,9 @@ RSpec.describe Lutaml::Cli::Uml::BuildCommand do
       let(:options) { { output: output_lur, name: "TestPackage", version: "1.0" } }
 
       it "builds LUR package successfully" do
-        expect { command.run(test_xmi) }.to output(/Package built successfully/).to_stdout
+        expect {
+          command.run(test_xmi)
+        }.to output(/Package built successfully/).to_stdout
         expect(File.exist?(output_lur)).to be true
       end
 

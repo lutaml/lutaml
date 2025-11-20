@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/qea/factory/package_transformer"
-require "lutaml/qea/models/ea_package"
+require_relative "../../../../lib/lutaml/qea/factory/package_transformer"
+require_relative "../../../../lib/lutaml/qea/models/ea_package"
 
 RSpec.describe Lutaml::Qea::Factory::PackageTransformer do
   let(:connection) { double("Connection") }

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/qea/factory/document_builder"
+require_relative "../../../../lib/lutaml/qea/factory/document_builder"
 
 RSpec.describe Lutaml::Qea::Factory::DocumentBuilder do
   let(:builder) { described_class.new(name: "Test Model") }

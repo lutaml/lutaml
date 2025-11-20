@@ -13,7 +13,7 @@ module Lutaml
         attr_reader :options
 
         def initialize(options = {})
-          @options = options
+          @options = options.transform_keys(&:to_sym)
         end
 
         def self.add_options_to(thor_class, _method_name)
@@ -37,27 +37,56 @@ module Lutaml
         end
 
         def run(lur_path)
+          validate_options!
+
+          # Load the repository from the LUR file
           repo = load_repository(lur_path, lazy: options[:lazy])
 
-          results = if options[:stereotype]
+          # Get results based on the filter type
+          results = if options[:pattern]
+                      repo.find_by_pattern(options[:pattern], type: options[:type] || :class)
+                    elsif options[:stereotype]
                       repo.find_classes_by_stereotype(options[:stereotype])
                     elsif options[:package]
-                      repo.classes_in_package(options[:package])
-                    elsif options[:pattern]
-                      pattern = Regexp.new(options[:pattern])
-                      repo.find_by_pattern(pattern, type: :class)
+                      repo.classes_in_package(options[:package], recursive: false)
                     else
-                      puts OutputFormatter.error("Please specify at least one filter")
-                      exit 1
+                      []
                     end
 
-          if results.empty?
-            puts OutputFormatter.warning("No results found")
+          # Extract classes from the nested structure
+          classes = case results
+                    when Array
+                      if results.length == 2 && results[0] == :classes
+                        results[1]  # Extract the actual classes array
+                      else
+                        results     # Assume it's already an array of classes
+                      end
+                    when NilClass
+                      []
+                    else
+                      [results]     # Wrap single result in array
+                    end
+
+          if classes.nil? || classes.empty?
+            filter_desc = options[:pattern] ? "pattern: #{options[:pattern]}" :
+                          options[:stereotype] ? "stereotype: #{options[:stereotype]}" :
+                          options[:package] ? "package: #{options[:package]}" : "criteria"
+            puts "No elements found matching #{filter_desc}"
             return
           end
 
-          output = results.map { |cls| cls.name || cls.to_s }
-          puts OutputFormatter.format(output, format: options[:format])
+          output = classes.map { |cls| cls.respond_to?(:name) ? (cls.name || cls.to_s) : cls.to_s }
+          puts output.join("\n")
+        end
+
+        private
+
+        def validate_options!
+          # At least one filter option must be specified
+          unless options[:pattern] || options[:stereotype] || options[:package]
+            puts "Please specify at least one filter: --pattern, --stereotype, or --package"
+            raise Thor::Error, "Please specify at least one filter: --pattern, --stereotype, or --package"
+          end
         end
       end
     end

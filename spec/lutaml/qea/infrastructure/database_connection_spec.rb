@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/qea/infrastructure/database_connection"
+require_relative "../../../../lib/lutaml/qea/infrastructure/database_connection"
 require "tempfile"
 require "sqlite3"
 

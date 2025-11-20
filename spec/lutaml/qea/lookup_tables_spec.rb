@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/qea"
+require_relative "../../../lib/lutaml/qea"
 
 RSpec.describe "Priority 3 Lookup Tables" do
   let(:qea_file) { File.join(__dir__, "../../../examples/qea/20251010_current_plateau_v5.1.qea") }

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/qea"
+require_relative "../../lib/lutaml/qea"
 
 RSpec.describe Lutaml::Qea do
   let(:test_qea_file) { File.expand_path("../../examples/qea/test.qea", __dir__) }

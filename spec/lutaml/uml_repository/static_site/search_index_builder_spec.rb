@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/uml_repository/static_site/search_index_builder"
+require_relative "../../../../lib/lutaml/uml_repository/static_site/search_index_builder"
 
 RSpec.describe Lutaml::UmlRepository::StaticSite::SearchIndexBuilder do
   let(:repository) do

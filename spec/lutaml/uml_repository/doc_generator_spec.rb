@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/uml_repository/doc_generator"
+require_relative "../../../lib/lutaml/uml_repository/doc_generator"
 require "tempfile"
 require "fileutils"
 

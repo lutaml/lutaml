@@ -42,6 +42,8 @@ module Lutaml
       end
 
       def associations_to_yaml(model, doc)
+        return unless model.associations
+
         associations = model.associations.map(&:to_hash)
         doc["associations"] = associations unless associations.empty?
       end

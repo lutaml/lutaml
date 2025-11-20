@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/qea/models/ea_attribute"
+require_relative "../../../../lib/lutaml/qea/models/ea_attribute"
 
 RSpec.describe Lutaml::Qea::Models::EaAttribute do
   describe ".primary_key_column" do

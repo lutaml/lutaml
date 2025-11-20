@@ -11,7 +11,7 @@ module Lutaml
         attr_reader :options
 
         def initialize(options = {})
-          @options = options
+          @options = options.transform_keys(&:to_sym)
         end
 
         def self.add_options_to(thor_class, _method_name)
@@ -57,7 +57,7 @@ module Lutaml
         def run(model_path)
           unless File.exist?(model_path)
             puts OutputFormatter.error("Model file not found: #{model_path}")
-            exit 1
+            raise Thor::Error, "Model file not found: #{model_path}"
           end
 
           # Set default output path if not provided
@@ -86,7 +86,7 @@ module Lutaml
             if options[:strict] && qea_validation_result.has_errors?
               puts ""
               puts OutputFormatter.error("Build failed due to validation errors")
-              exit 1
+              raise Thor::Error, "Build failed due to validation errors"
             end
           end
 
@@ -98,7 +98,9 @@ module Lutaml
 
             unless result.valid?
               handle_validation_result(result)
-              exit 1 if options[:strict] && result.errors.any?
+              if options[:strict] && result.errors.any?
+                raise Thor::Error, "Build failed due to validation errors"
+              end
             end
           end
 
@@ -128,7 +130,7 @@ module Lutaml
           OutputFormatter.progress_done(success: false)
           puts OutputFormatter.error("Failed to build package: #{e.message}")
           puts e.backtrace.first(5).join("\n") if ENV["DEBUG"]
-          exit 1
+          raise Thor::Error, "Failed to build package: #{e.message}"
         end
 
         private

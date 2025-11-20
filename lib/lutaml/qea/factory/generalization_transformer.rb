@@ -25,11 +25,19 @@ module Lutaml
             if supertype_obj
               gen.general_id = normalize_guid_to_xmi_format(supertype_obj.ea_guid, "EAID")
               gen.general_name = supertype_obj.name
+
+              # Find the package/upper class for the general
+              if supertype_obj.package_id
+                parent_package = find_package(supertype_obj.package_id)
+                if parent_package
+                  gen.general_upper_klass = extract_package_prefix(parent_package)
+                end
+              end
             end
 
             if subtype_obj
               gen.name = subtype_obj.name
-              gen.type = subtype_obj.object_type
+              gen.type = "uml:Class"
             end
 
             # Map definition/notes
@@ -37,11 +45,14 @@ module Lutaml
               ea_connector.notes.nil? || ea_connector.notes.empty?
 
             # Map stereotype
-            gen.stereotype = ea_connector.stereotype unless
-              ea_connector.stereotype.nil? || ea_connector.stereotype.empty?
+            gen.stereotype = supertype_obj&.stereotype unless
+              supertype_obj&.stereotype.nil? || supertype_obj&.stereotype.empty?
 
             # Set has_general flag
             gen.has_general = !supertype_obj.nil?
+
+            # Note: owned_props, assoc_props, inherited_props, inherited_assoc_props
+            # will be populated later during post-processing phase
           end
         end
 
@@ -58,6 +69,28 @@ module Lutaml
           return nil if rows.empty?
 
           Models::EaObject.from_db_row(rows.first)
+        end
+
+        # Find package by ID
+        # @param package_id [Integer] Package ID
+        # @return [EaPackage, nil] EA package or nil if not found
+        def find_package(package_id)
+          return nil if package_id.nil?
+          return nil unless database.packages
+
+          database.packages.find { |pkg| pkg.ea_package_id == package_id }
+        end
+
+        # Extract package prefix from package
+        # @param package [EaPackage] EA package
+        # @return [String, nil] Package prefix or nil
+        def extract_package_prefix(package)
+          return nil unless package
+
+          # Try to extract a meaningful prefix from package name
+          # Common patterns: "ModelRoot::i-UR::urf" -> "urf"
+          parts = package.name&.split("::")
+          parts&.last
         end
       end
     end

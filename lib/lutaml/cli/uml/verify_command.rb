@@ -9,7 +9,7 @@ module Lutaml
         attr_reader :options
 
         def initialize(options = {})
-          @options = options
+          @options = options.transform_keys(&:to_sym)
         end
 
         def self.add_options_to(thor_class, _method_name)
@@ -29,12 +29,12 @@ module Lutaml
         def run(xmi_path, qea_path)
           unless File.exist?(xmi_path)
             puts OutputFormatter.error("XMI file not found: #{xmi_path}")
-            exit 1
+            raise Thor::Error, "XMI file not found: #{xmi_path}"
           end
 
           unless File.exist?(qea_path)
             puts OutputFormatter.error("QEA file not found: #{qea_path}")
-            exit 1
+            raise Thor::Error, "QEA file not found: #{qea_path}"
           end
 
           puts OutputFormatter.colorize(
@@ -53,7 +53,7 @@ module Lutaml
           rescue StandardError => e
             OutputFormatter.progress_done(success: false)
             puts OutputFormatter.error("Verification failed: #{e.message}")
-            exit 1
+            raise Thor::Error, "Verification failed: #{e.message}"
           end
 
           display_verification_result(result)
@@ -62,14 +62,15 @@ module Lutaml
             save_verification_report(result, options[:report])
           end
 
-          unless result.equivalent?
+          # Exit with appropriate status
+          if options[:strict] && !result.equivalent?
             puts ""
             puts OutputFormatter.error("Verification FAILED")
-            exit 1
+            raise Thor::Error, "Verification FAILED"
+          elsif result.equivalent?
+            puts ""
+            puts OutputFormatter.success("Verification PASSED")
           end
-
-          puts ""
-          puts OutputFormatter.success("Verification PASSED")
         end
 
         private

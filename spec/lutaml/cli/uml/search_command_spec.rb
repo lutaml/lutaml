@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/cli/uml/search_command"
-require "lutaml/uml_repository"
+require_relative "../../../../lib/lutaml/cli/uml/search_command"
+require_relative "../../../../lib/lutaml/uml_repository"
 require "tempfile"
 
 RSpec.describe Lutaml::Cli::Uml::SearchCommand do
-  let(:test_xmi) { File.join(__dir__, "../../fixtures/plateau_all_packages_export.xmi") }
+  let(:test_xmi) { File.join(__dir__, "../../../fixtures/plateau_all_packages_export.xmi") }
   let(:test_lur) do
     temp_lur = Tempfile.new(["search_test", ".lur"]).path
     repo = Lutaml::UmlRepository::Repository.from_xmi(test_xmi)

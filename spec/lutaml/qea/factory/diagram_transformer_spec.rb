@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/qea/factory/diagram_transformer"
-require "lutaml/qea/models/ea_diagram"
+require_relative "../../../../lib/lutaml/qea/factory/diagram_transformer"
+require_relative "../../../../lib/lutaml/qea/models/ea_diagram"
 
 RSpec.describe Lutaml::Qea::Factory::DiagramTransformer do
   let(:connection) { double("Connection") }

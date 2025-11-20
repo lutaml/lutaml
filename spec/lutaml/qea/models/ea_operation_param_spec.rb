@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/qea/models/ea_operation_param"
+require_relative "../../../../lib/lutaml/qea/models/ea_operation_param"
 
 RSpec.describe Lutaml::Qea::Models::EaOperationParam do
   describe ".primary_key_column" do

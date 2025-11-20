@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/qea/factory/class_transformer"
-require "lutaml/qea/models/ea_object"
+require_relative "../../../../lib/lutaml/qea/factory/class_transformer"
+require_relative "../../../../lib/lutaml/qea/models/ea_object"
 
 RSpec.describe Lutaml::Qea::Factory::ClassTransformer do
   let(:connection) { double("Connection") }

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/qea"
+require_relative "../../../../lib/lutaml/qea"
 
 RSpec.describe "QEA Full Parsing Integration", :integration do
   let(:qea_path) do

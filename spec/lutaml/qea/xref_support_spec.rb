@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/qea"
+require_relative "../../../lib/lutaml/qea"
 
 RSpec.describe "QEA Cross-Reference Support" do
   let(:qea_file) { "examples/qea/20251010_current_plateau_v5.1.qea" }

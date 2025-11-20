@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/qea/factory/constraint_transformer"
-require "lutaml/qea/models/ea_object_constraint"
-require "lutaml/qea/database"
+require_relative "../../../../lib/lutaml/qea/factory/constraint_transformer"
+require_relative "../../../../lib/lutaml/qea/models/ea_object_constraint"
+require_relative "../../../../lib/lutaml/qea/database"
 
 RSpec.describe Lutaml::Qea::Factory::ConstraintTransformer do
   let(:database) { instance_double(Lutaml::Qea::Database) }

@@ -9,7 +9,7 @@ module Lutaml
         attr_reader :options
 
         def initialize(options = {})
-          @options = options
+          @options = options.transform_keys(&:to_sym)
         end
 
         def self.add_options_to(thor_class, _method_name)
@@ -30,7 +30,7 @@ module Lutaml
         def run(lur_path)
           unless File.exist?(lur_path)
             puts OutputFormatter.error("Package file not found: #{lur_path}")
-            exit 1
+            raise StandardError, "Package file not found: #{lur_path}"
           end
 
           require "zip"
@@ -41,7 +41,7 @@ module Lutaml
               metadata_entry = zip.find_entry("metadata.yaml")
               unless metadata_entry
                 puts OutputFormatter.error("Invalid package: missing metadata")
-                exit 1
+                raise StandardError, "Invalid package: missing metadata"
               end
 
               metadata = YAML.safe_load(metadata_entry.get_input_stream.read)
@@ -54,7 +54,7 @@ module Lutaml
             end
           rescue StandardError => e
             puts OutputFormatter.error("Failed to read package info: #{e.message}")
-            exit 1
+            raise e
           end
         end
 

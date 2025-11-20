@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/uml_repository/presenters/attribute_presenter"
-require "lutaml/uml/top_element_attribute"
+require_relative "../../../../lib/lutaml/uml_repository/presenters/attribute_presenter"
+require_relative "../../../../lib/lutaml/uml/top_element_attribute"
 
 RSpec.describe Lutaml::UmlRepository::Presenters::AttributePresenter do
   let(:attribute) do

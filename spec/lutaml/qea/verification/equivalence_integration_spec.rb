@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/qea/verification/document_verifier"
+require_relative "../../../../lib/lutaml/qea/verification/document_verifier"
 
 RSpec.describe "XMI/QEA Equivalence Integration" do
   let(:verifier) { Lutaml::Qea::Verification::DocumentVerifier.new }

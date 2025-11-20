@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/qea/models/ea_object_property"
-require "lutaml/qea/factory/object_property_transformer"
-require "lutaml/qea/services/database_loader"
+require_relative "../../../lib/lutaml/qea/models/ea_object_property"
+require_relative "../../../lib/lutaml/qea/factory/object_property_transformer"
+require_relative "../../../lib/lutaml/qea/services/database_loader"
 
 RSpec.describe "Object Properties Support" do
   let(:qea_file) { "examples/qea/20251010_current_plateau_v5.1.qea" }

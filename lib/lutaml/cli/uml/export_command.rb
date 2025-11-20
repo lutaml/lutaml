@@ -9,7 +9,7 @@ module Lutaml
         attr_reader :options
 
         def initialize(options = {})
-          @options = options
+          @options = options.transform_keys(&:to_sym)
         end
 
         def self.add_options_to(thor_class, _method_name)
@@ -43,7 +43,7 @@ module Lutaml
                              Lutaml::UmlRepository::Exporters::MarkdownExporter
                            else
                              puts OutputFormatter.error("Unknown format: #{options[:format]}")
-                             exit 1
+                             raise Thor::Error, "Unknown format: #{options[:format]}"
                            end
 
           exporter = exporter_class.new(repo)
@@ -57,7 +57,7 @@ module Lutaml
         rescue StandardError => e
           OutputFormatter.progress_done(success: false)
           puts OutputFormatter.error("Export failed: #{e.message}")
-          exit 1
+          raise Thor::Error, "Export failed: #{e.message}"
         end
 
         private
@@ -70,7 +70,7 @@ module Lutaml
         rescue StandardError => e
           OutputFormatter.progress_done(success: false)
           puts OutputFormatter.error("Failed to load repository: #{e.message}")
-          exit 1
+          raise Thor::Error, "Failed to load repository: #{e.message}"
         end
       end
     end
