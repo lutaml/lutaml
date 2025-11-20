@@ -720,3 +720,29 @@
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
 }
+
+/* Type link and styling */
+.type-link {
+  color: var(--color-link);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  font-family: monospace;
+}
+
+.type-link:hover {
+  color: var(--color-link-hover);
+}
+
+.uml-basic-type {
+  color: #1976d2;
+  font-weight: var(--font-weight-medium);
+}
+
+.type-unresolved {
+  color: #c62828;
+  font-weight: var(--font-weight-medium);
+  font-family: monospace;
+}

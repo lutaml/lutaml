@@ -93,9 +93,15 @@ module Lutaml
 
         # Build hierarchical package tree
         def build_package_tree
-          root_packages = repository.packages_index.select do |pkg|
-            !pkg.respond_to?(:namespace) || pkg.namespace.nil? || !pkg.namespace.is_a?(Lutaml::Uml::Package)
-          end
+          # Get root packages from document.packages (not from index)
+          root_packages = if repository.document.respond_to?(:packages) && repository.document.packages
+                           repository.document.packages
+                         else
+                           # Fallback: find packages without parent namespace
+                           repository.packages_index.select do |pkg|
+                             !pkg.respond_to?(:namespace) || pkg.namespace.nil? || !pkg.namespace.is_a?(Lutaml::Uml::Package)
+                           end
+                         end
 
           if root_packages.size == 1
             build_tree_node(root_packages.first)
@@ -118,7 +124,7 @@ module Lutaml
             id: pkg_id,
             name: package.name,
             path: package_path(package),
-            classCount: package.classes&.size || 0,
+            classCount: (package.classes || []).reject { |c| c.name.nil? || c.name.empty? }.size,
             classes: (package.classes || []).map { |c| @id_generator.class_id(c) },
             children: (package.packages || []).map do |child|
               build_tree_node(child)
@@ -145,7 +151,7 @@ module Lutaml
             name: package.name,
             path: package_path(package),
             definition: format_definition(package.respond_to?(:definition) ? package.definition : nil),
-            stereotypes: package.respond_to?(:stereotype) ? (package.stereotype || []) : [],
+            stereotypes: normalize_stereotypes(package.respond_to?(:stereotype) ? package.stereotype : nil),
             classes: (package.classes || []).map do |c|
               @id_generator.class_id(c)
             end,
@@ -179,7 +185,7 @@ module Lutaml
             qualifiedName: qualified_name(klass),
             type: class_type(klass),
             package: package_id_for_class(klass),
-            stereotypes: klass.respond_to?(:stereotype) ? (klass.stereotype || []) : [],
+            stereotypes: normalize_stereotypes(klass.respond_to?(:stereotype) ? klass.stereotype : nil),
             definition: format_definition(klass.definition),
             attributes: (klass.attributes || []).map do |attr|
               @id_generator.attribute_id(attr, klass)
@@ -219,7 +225,7 @@ module Lutaml
             ownerName: owner.name,
             cardinality: serialize_cardinality(attribute.cardinality),
             definition: format_definition(attribute.definition),
-            stereotypes: attribute.respond_to?(:stereotype) ? (attribute.stereotype || []) : [],
+            stereotypes: normalize_stereotypes(attribute.respond_to?(:stereotype) ? attribute.stereotype : nil),
             isStatic: attribute.respond_to?(:is_static) ? attribute.is_static : false,
             isReadOnly: attribute.respond_to?(:is_read_only) ? attribute.is_read_only : false,
             defaultValue: attribute.respond_to?(:default) ? attribute.default : nil,
@@ -417,8 +423,10 @@ module Lutaml
         def package_diagrams(package)
           return [] unless @options[:include_diagrams]
 
-          repository.diagrams_in_package(package_path(package))
-        rescue StandardError
+          # Use the package's direct diagrams attribute instead of querying
+          package.diagrams || []
+        rescue StandardError => e
+          warn "Error getting diagrams for #{package.name}: #{e.message}"
           []
         end
 
@@ -507,6 +515,16 @@ module Lutaml
           end
         rescue StandardError
           []
+        end
+
+        # Normalize stereotype to always be an array
+        # @param stereotype [String, Array, nil] Stereotype value
+        # @return [Array<String>] Array of stereotypes
+        def normalize_stereotypes(stereotype)
+          return [] if stereotype.nil?
+          return stereotype if stereotype.is_a?(Array)
+
+          [stereotype]
         end
       end
     end

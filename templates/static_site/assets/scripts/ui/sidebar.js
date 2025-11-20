@@ -67,12 +67,19 @@ document.addEventListener('alpine:init', () => {
   // Recursive tree rendering component with full reactivity
   Alpine.data('renderTree', (rootNode) => ({
     treeHtml: '',
+    rootNode,
 
     init() {
       this.rebuildTree();
 
+      // Listen for tree toggle events
+      window.addEventListener('tree-toggle', (e) => {
+        Alpine.store('app').toggleNode(e.detail);
+        this.rebuildTree();
+      });
+
       // Watch for state changes and rebuild tree
-      this.$watch('$store.app.expandedNodes', () => {
+      this.$watch('$store.app.expandedNodes.size', () => {
         this.rebuildTree();
       });
 
@@ -86,7 +93,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     rebuildTree() {
-      this.treeHtml = this.buildTreeNode(rootNode);
+      this.treeHtml = this.buildTreeNode(this.rootNode);
     },
 
     buildTreeNode(node) {
@@ -99,9 +106,9 @@ document.addEventListener('alpine:init', () => {
       let html = `<div class="tree-node${isSelected ? ' selected' : ''}">`;
       html += '<div class="node-header">';
 
-      // Expand/collapse button
+      // Expand/collapse button - use custom event
       if (hasChildren) {
-        html += `<button onclick="Alpine.store('app').toggleNode('${node.id}')" class="expand-icon${expanded ? ' expanded' : ''}">`;
+        html += `<button onclick="window.dispatchEvent(new CustomEvent('tree-toggle', {detail: '${node.id}'}));" class="expand-icon${expanded ? ' expanded' : ''}">`;
         html += '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">';
         html += '<polyline points="9 18 15 12 9 6"></polyline></svg></button>';
       } else {

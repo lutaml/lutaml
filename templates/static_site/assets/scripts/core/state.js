@@ -91,6 +91,11 @@ document.addEventListener('alpine:init', () => {
     },
 
     selectPackage(packageId) {
+      if (!this.data || !this.data.packages[packageId]) {
+        console.warn('Package not found:', packageId);
+        return;
+      }
+
       this.currentPackage = packageId;
       this.currentClass = null;
       this.currentView = 'package';
@@ -99,8 +104,12 @@ document.addEventListener('alpine:init', () => {
     },
 
     selectClass(classId) {
+      if (!this.data || !this.data.classes[classId]) {
+        console.warn('Class not found:', classId);
+        return;
+      }
+
       const cls = this.data.classes[classId];
-      if (!cls) return;
 
       this.currentClass = classId;
       this.currentPackage = cls.package;
@@ -193,50 +202,42 @@ document.addEventListener('alpine:init', () => {
     },
 
     buildPackageBreadcrumbs(packageId) {
-      const breadcrumbs = [];
-      let currentPkg = this.data.packages[packageId];
+      const pkg = this.data.packages[packageId];
+      if (!pkg) return [];
 
-      while (currentPkg) {
-        breadcrumbs.unshift({
-          type: 'package',
-          id: currentPkg.id,
-          name: currentPkg.path || currentPkg.name  // Use full path for display
-        });
-
-        if (currentPkg.parent) {
-          currentPkg = this.data.packages[currentPkg.parent];
-        } else {
-          break;
-        }
-      }
-
-      return breadcrumbs;
+      // Show full qualified path
+      return [{
+        type: 'package',
+        id: pkg.id,
+        name: pkg.path || pkg.name
+      }];
     },
 
     buildClassBreadcrumbs(classId) {
       const cls = this.data.classes[classId];
-      const breadcrumbs = [];
+      if (!cls) return [];
 
-      // Add package breadcrumbs using full path
+      // Build full UML path: Package::Package::Class
+      const parts = [];
+
+      // Add package path
       if (cls.package) {
         const pkg = this.data.packages[cls.package];
-        if (pkg) {
-          breadcrumbs.push({
-            type: 'package',
-            id: pkg.id,
-            name: pkg.path || pkg.name
-          });
+        if (pkg && pkg.path) {
+          parts.push(pkg.path.replace(/::/g, '::'));
         }
       }
 
-      // Add class itself with qualified name
-      breadcrumbs.push({
+      // Add class name
+      parts.push(cls.name);
+
+      const fullPath = parts.join('::');
+
+      return [{
         type: 'class',
         id: cls.id,
-        name: cls.qualifiedName || cls.name
-      });
-
-      return breadcrumbs;
+        name: fullPath
+      }];
     },
 
     navigateToCrumb(crumb) {
@@ -399,6 +400,20 @@ function app() {
     },
     collapseAll() {
       Alpine.store('app').collapseAll();
+    },
+
+    // Helper methods for type resolution
+    isUmlBasicType(typeName) {
+      return window.UMLUtils.isUmlBasicType(typeName);
+    },
+
+    findClassByName(className) {
+      if (!this.data || !className) return null;
+      return window.UMLUtils.findClassByName(this.data, className);
+    },
+
+    getClass(classId) {
+      return this.data?.classes[classId];
     }
   };
 }

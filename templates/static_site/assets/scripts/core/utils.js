@@ -91,6 +91,32 @@ function getTypeIcon(type) {
   return icons[type.toLowerCase()] || '?';
 }
 
+// UML basic types
+const UML_BASIC_TYPES = [
+  'String', 'Integer', 'Boolean', 'Real', 'UnlimitedNatural',
+  'int', 'float', 'double', 'boolean', 'string', 'char',
+  'byte', 'short', 'long', 'void',
+  // XML Schema types
+  'xs:string', 'xs:int', 'xs:integer', 'xs:boolean', 'xs:date', 'xs:dateTime',
+  'xs:decimal', 'xs:double', 'xs:float', 'xs:anyURI', 'xs:gYear',
+  // GML types
+  'gml:CodeType', 'gml:MeasureType', 'gml:StringOrRefType'
+];
+
+// Check if type is a UML basic type
+function isUmlBasicType(typeName) {
+  if (!typeName) return false;
+  return UML_BASIC_TYPES.includes(typeName);
+}
+
+// Find class by name in data
+function findClassByName(data, className) {
+  if (!className || !data || !data.classes) return null;
+
+  const classes = Object.values(data.classes);
+  return classes.find(c => c.name === className)?.id || null;
+}
+
 // Export utilities
 window.UMLUtils = {
   debounce,
@@ -101,5 +127,7 @@ window.UMLUtils = {
   isInViewport,
   scrollToElement,
   formatBytes,
-  getTypeIcon
+  getTypeIcon,
+  isUmlBasicType,
+  findClassByName
 };

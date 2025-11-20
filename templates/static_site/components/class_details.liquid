@@ -1,6 +1,13 @@
-<div class="class-details" x-data="{ cls: data.classes[currentClass] }">
+<div class="class-details" x-data="{
+  cls: data.classes[currentClass],
+  isUmlBasicType(type) { return window.UMLUtils.isUmlBasicType(type); },
+  findClassByName(name) { return window.UMLUtils.findClassByName(data, name); }
+}">
   <div class="entity-header">
-    <h1 class="entity-name" x-text="cls.name"></h1>
+    <div class="entity-title">
+      <h1 class="entity-name" x-text="cls.qualifiedName"></h1>
+      <p class="entity-subtitle" x-show="cls.name !== cls.qualifiedName" x-text="`(${cls.name})`"></p>
+    </div>
     <span class="entity-type-badge" x-text="cls.type"></span>
     <span class="abstract-badge" x-show="cls.isAbstract">Abstract</span>
   </div>
@@ -46,8 +53,7 @@
         <template x-for="parentId in cls.generalizations" :key="parentId">
           <button
             class="inheritance-item"
-            @click="selectClass(parentId)"
-          >
+            @click="selectClass(parentId)">
             <svg class="item-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="18 15 12 9 6 15"></polyline>
             </svg>
@@ -63,8 +69,7 @@
         <template x-for="childId in cls.specializations" :key="childId">
           <button
             class="inheritance-item"
-            @click="selectClass(childId)"
-          >
+            @click="selectClass(childId)">
             <svg class="item-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="6 9 12 15 18 9"></polyline>
             </svg>
@@ -96,7 +101,17 @@
               <div class="cell-description" x-show="attr.definition" x-text="attr.definition"></div>
             </td>
             <td>
-              <code class="type-name" x-text="attr.type"></code>
+              <template x-if="'object' !== typeof attr.type && isUmlBasicType(attr.type)">
+                <code class="type-name uml-basic-type" x-text="attr.type" title="UML basic type"></code>
+              </template>
+              <template x-if="'object' === typeof attr.type && findClassByName(attr.type)">
+                <button class="type-link" @click="selectClass(findClassByName(attr.type))" x-text="attr.type" title="Click to navigate"></button>
+              </template>
+              <template x-if="'object' === typeof attr.type && !findClassByName(attr.type)">
+                <span class="type-unresolved" :title="'Unresolved type: ' + attr.type">
+                  <span x-text="'⚠️ ' + attr.type"></span>
+                </span>
+              </template>
             </td>
             <td>
               <span class="visibility-badge" :data-visibility="attr.visibility" x-text="attr.visibility"></span>
