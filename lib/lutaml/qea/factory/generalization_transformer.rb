@@ -78,7 +78,7 @@ module Lutaml
           return nil if package_id.nil?
           return nil unless database.packages
 
-          database.packages.find { |pkg| pkg.ea_package_id == package_id }
+          database.packages.find { |pkg| pkg.package_id == package_id }
         end
 
         # Extract package prefix from package
