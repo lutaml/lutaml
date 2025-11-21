@@ -72,9 +72,8 @@ document.addEventListener('alpine:init', () => {
     init() {
       this.rebuildTree();
 
-      // Listen for tree toggle events
-      window.addEventListener('tree-toggle', (e) => {
-        Alpine.store('app').toggleNode(e.detail);
+      // Listen for manual rebuild triggers
+      window.addEventListener('tree-rebuild', () => {
         this.rebuildTree();
       });
 
@@ -110,9 +109,9 @@ document.addEventListener('alpine:init', () => {
       let html = `<div class="tree-node${isSelected ? ' selected' : ''}">`;
       html += '<div class="node-header">';
 
-      // Expand/collapse button - use custom event
+      // Expand/collapse button - call store method directly and trigger rebuild
       if (hasChildren) {
-        html += `<button onclick="window.dispatchEvent(new CustomEvent('tree-toggle', {detail: '${node.id}'}));" class="expand-icon${expanded ? ' expanded' : ''}">`;
+        html += `<button onclick="Alpine.store('app').toggleNode('${node.id}'); window.dispatchEvent(new CustomEvent('tree-rebuild'));" class="expand-icon${expanded ? ' expanded' : ''}">`;
         html += '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">';
         html += '<polyline points="9 18 15 12 9 6"></polyline></svg></button>';
       } else {

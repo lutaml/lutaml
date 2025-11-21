@@ -101,13 +101,13 @@
               <div class="cell-description" x-show="attr.definition" x-text="attr.definition"></div>
             </td>
             <td>
-              <template x-if="'object' !== typeof attr.type && isUmlBasicType(attr.type)">
+              <template x-if="isUmlBasicType(attr.type)">
                 <code class="type-name uml-basic-type" x-text="attr.type" title="UML basic type"></code>
               </template>
-              <template x-if="'object' === typeof attr.type && findClassByName(attr.type)">
+              <template x-if="!isUmlBasicType(attr.type) && findClassByName(attr.type)">
                 <button class="type-link" @click="selectClass(findClassByName(attr.type))" x-text="attr.type" title="Click to navigate"></button>
               </template>
-              <template x-if="'object' === typeof attr.type && !findClassByName(attr.type)">
+              <template x-if="!isUmlBasicType(attr.type) && !findClassByName(attr.type)">
                 <span class="type-unresolved" :title="'Unresolved type: ' + attr.type">
                   <span x-text="'⚠️ ' + attr.type"></span>
                 </span>

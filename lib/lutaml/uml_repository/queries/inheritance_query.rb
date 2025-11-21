@@ -45,7 +45,7 @@ module Lutaml
           qname_string = resolve_qname(class_or_qname)
           return nil unless qname_string
 
-          qname = QualifiedName.new(qname_string)
+          qname = Lutaml::Uml::QualifiedName.new(qname_string)
           package_path = qname.package_path.to_s
 
           # Try to resolve parent qualified name

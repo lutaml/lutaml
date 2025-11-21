@@ -157,8 +157,11 @@ module Lutaml
         end
 
         def setup_liquid
-          Liquid::Template.file_system = Liquid::LocalFileSystem.new(@options[:template_path])
-          Liquid::Template.error_mode = :lax  # Changed from :strict to handle missing includes
+          # Use environment instead of deprecated class-level setters
+          environment = Liquid::Environment.new
+          environment.file_system = Liquid::LocalFileSystem.new(@options[:template_path])
+          environment.error_mode = :lax  # Changed from :strict to handle missing includes
+          @liquid_environment = environment
         end
 
         # Generate single-file SPA

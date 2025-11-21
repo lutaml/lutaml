@@ -15,13 +15,7 @@ module Lutaml
         def initialize(name: "EA Model")
           @document = Lutaml::Uml::Document.new
           @document.name = name
-          @document.packages = []
-          @document.classes = []
-          @document.enums = []
-          @document.data_types = []
-          @document.primitives = []
-          @document.instances = []
-          @document.associations = []
+          # Don't initialize collections - they have default values
         end
 
         # Add packages to document
