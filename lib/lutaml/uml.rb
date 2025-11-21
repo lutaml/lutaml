@@ -73,6 +73,8 @@ module Lutaml
     # Documentation
     autoload :Comment, "lutaml/uml/comment"
     autoload :Diagram, "lutaml/uml/diagram"
+    autoload :DiagramObject, "lutaml/uml/diagram_object"
+    autoload :DiagramLink, "lutaml/uml/diagram_link"
     autoload :Instance, "lutaml/uml/instance"
     autoload :Document, "lutaml/uml/document"
 

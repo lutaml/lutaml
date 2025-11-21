@@ -26,7 +26,8 @@ module Lutaml
               ea_package.notes.nil? || ea_package.notes.empty?
 
             # Load and transform tagged values
-            pkg.tagged_values = load_tagged_values(ea_package.ea_guid)
+            # TODO: Fix tagged_values assignment - temporarily commented out
+            # pkg.tagged_values = load_tagged_values(ea_package.ea_guid)
 
             # Load stereotype from t_xref
             stereotype = load_stereotype(ea_package.ea_guid)
@@ -34,12 +35,7 @@ module Lutaml
 
             # Note: Child packages and contents will be loaded separately
             # to avoid circular dependencies and allow lazy loading
-            pkg.packages = []
-            pkg.classes = []
-            pkg.enums = []
-            pkg.data_types = []
-            pkg.instances = []
-            pkg.diagrams = []
+            # Don't initialize collections - they have default values
           end
         end
 

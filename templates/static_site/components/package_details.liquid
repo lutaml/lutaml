@@ -44,17 +44,19 @@
             <line x1="3" y1="9" x2="21" y2="9"></line>
             <line x1="9" y1="21" x2="9" y2="9"></line>
           </svg>
-          <span class="diagram-name" x-text="$store.app.data.diagrams[diagramId] && $store.app.data.diagrams[diagramId].name"></span>
-          <span class="diagram-type" x-text="$store.app.data.diagrams[diagramId] && `(${data.diagrams[diagramId].type})`"></span>
+          <div class="diagram-info">
+            <strong class="diagram-name" x-text="$store.app.data.diagrams[diagramId] && $store.app.data.diagrams[diagramId].name"></strong>
+            <span class="diagram-type" x-show="$store.app.data.diagrams[diagramId]" x-text="$store.app.data.diagrams[diagramId] && `(${$store.app.data.diagrams[diagramId].type})`"></span>
+          </div>
         </li>
       </template>
     </ul>
   </div>
 
   <!-- Message when package has only diagrams -->
-  <template x-if="(!pkg.classes || pkg.classes.length === 0) && pkg.diagrams && pkg.diagrams.length > 0">
+  <template x-if="(!pkg.classes || pkg.classes.length === 0) && (!pkg.subPackages || pkg.subPackages.length === 0) && pkg.diagrams && pkg.diagrams.length > 0">
     <div class="info-message">
-      <p>This package contains <strong x-text="pkg.diagrams.length"></strong> diagram(s) but no classes.</p>
+      <p>This package contains <strong x-text="pkg.diagrams.length"></strong> diagram(s) but no sub-packages or classes directly.</p>
     </div>
   </template>
 

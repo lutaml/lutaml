@@ -17,6 +17,7 @@ require_relative "uml/serve_command"
 require_relative "uml/spa_command"
 require_relative "uml/repl_command"
 require_relative "uml/verify_command"
+require_relative "uml/diagram_command"
 require_relative "element_identifier"
 require_relative "resource_registry"
 
@@ -136,6 +137,12 @@ module Lutaml
         Uml::ServeCommand.new(options.to_h).run(lur_path)
       end
 
+      desc "diagram ACTION", "Diagram rendering commands"
+      Uml::DiagramCommand.add_options_to(self, :diagram)
+      def diagram(action, *args)
+        Uml::DiagramCommand.new(options.to_h).run(action, *args)
+      end
+
       # ===================================================================
       # DEVELOPMENT COMMANDS
       # ===================================================================
@@ -150,6 +157,12 @@ module Lutaml
       Uml::VerifyCommand.add_options_to(self, :verify)
       def verify(xmi_path, qea_path)
         Uml::VerifyCommand.new(options.to_h).run(xmi_path, qea_path)
+      end
+
+      desc "diagram ACTION", "Diagram rendering commands"
+      Uml::DiagramCommand.add_options_to(self, :diagram)
+      def diagram(action, *args)
+        Uml::DiagramCommand.new(options.to_h).run(action, *args)
       end
     end
   end

@@ -256,17 +256,23 @@ module Lutaml
 
         # Load association generalizations for a class
         # @param object_id [Integer] Object ID
-        # @return [Array<String>] List of generalization xmi_ids
+        # @return [Array<Hash>] List of hashes with :connector_xmi_id and :parent_object_id
         def load_association_generalizations(object_id)
           return [] if object_id.nil?
 
           # Query for ALL generalization connectors for this class
-          query = "SELECT ea_guid FROM t_connector WHERE Start_Object_ID = ? AND Connector_Type = 'Generalization'"
+          # Get both the connector EAID and the end_object_id (parent class ID)
+          query = "SELECT ea_guid, End_Object_ID FROM t_connector WHERE Start_Object_ID = ? AND Connector_Type = 'Generalization'"
           rows = database.connection.execute(query, object_id)
 
           rows.map do |row|
             guid = row.is_a?(Hash) ? (row['ea_guid'] || row[:ea_guid]) : row[0]
-            normalize_guid_to_xmi_format(guid, "EAID") if guid
+            parent_object_id = row.is_a?(Hash) ? (row['End_Object_ID'] || row[:End_Object_ID]) : row[1]
+
+            {
+              connector_xmi_id: normalize_guid_to_xmi_format(guid, "EAID"),
+              parent_object_id: parent_object_id
+            }
           end.compact
         end
 

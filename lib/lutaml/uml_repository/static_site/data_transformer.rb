@@ -59,8 +59,7 @@ module Lutaml
           }
         end
 
-        # Build a mapping of child class XMI ID to array of parent class IDs
-        # This supports multiple inheritance where a class can have multiple parents
+        # Build generalization map for multiple inheritance
         def build_generalization_map
           map = Hash.new { |h, k| h[k] = [] }
 
@@ -69,12 +68,19 @@ module Lutaml
             next unless klass.respond_to?(:association_generalization)
             next unless klass.association_generalization && !klass.association_generalization.empty?
 
-            # Each class has an association_generalization array with connector XMI IDs
-            # We need to find the parent class for each connector
-            if klass.respond_to?(:generalization) && klass.generalization && klass.generalization.general_id
-              # The generalization.general_id is the parent class XMI ID
-              parent_xmi_id = klass.generalization.general_id
-              map[klass.xmi_id] << parent_xmi_id unless map[klass.xmi_id].include?(parent_xmi_id)
+            # Each class has an association_generalization array with AssociationGeneralization objects
+            klass.association_generalization.each do |assoc_gen|
+              # Access lutaml-model object attributes directly
+              next unless assoc_gen.respond_to?(:parent_object_id)
+
+              parent_object_id = assoc_gen.parent_object_id
+              next unless parent_object_id
+
+              # Find the parent class by object_id and get its XMI ID
+              parent_class = find_class_by_object_id(parent_object_id)
+              if parent_class && parent_class.xmi_id
+                map[klass.xmi_id] << parent_class.xmi_id unless map[klass.xmi_id].include?(parent_class.xmi_id)
+              end
             end
           end
 
@@ -146,8 +152,11 @@ module Lutaml
           # Sort child packages by name
           sorted_children = (package.packages || []).sort_by { |p| p.name || '' }
 
-          # Sort classes by name
-          sorted_classes = (package.classes || []).reject { |c| c.name.nil? || c.name.empty? }.sort_by { |c| c.name }
+          # Sort classes by name, filtering out unnamed classes
+          # This prevents unnamed classes from appearing in the tree or being counted
+          sorted_classes = (package.classes || [])
+                          .reject { |c| c.name.nil? || c.name.empty? }
+                          .sort_by { |c| c.name }
 
           # Build child nodes first to get their counts
           child_nodes = sorted_children.map do |child|
@@ -155,6 +164,7 @@ module Lutaml
           end
 
           # Calculate total count including nested packages
+          # Only counts named classes (unnamed classes are already filtered out)
           total_class_count = sorted_classes.size + child_nodes.sum { |child| child[:classCount] || 0 }
 
           {
@@ -760,6 +770,14 @@ module Lutaml
         def find_class_by_xmi_id(xmi_id)
           return nil unless xmi_id
           repository.classes_index.find { |c| c.xmi_id == xmi_id }
+        rescue StandardError
+          nil
+        end
+
+        # Find class by object ID (EA object ID)
+        def find_class_by_object_id(object_id)
+          return nil unless object_id
+          repository.classes_index.find { |c| c.respond_to?(:ea_object_id) && c.ea_object_id == object_id }
         rescue StandardError
           nil
         end

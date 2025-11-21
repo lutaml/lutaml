@@ -2,6 +2,8 @@
 
 require_relative "base_transformer"
 require "lutaml/uml"
+require_relative "../../uml/diagram_object"
+require_relative "../../uml/diagram_link"
 
 module Lutaml
   module Qea
@@ -22,7 +24,8 @@ module Lutaml
             # Map basic properties
             diagram.name = ea_diagram.name
             diagram.xmi_id = normalize_guid_to_xmi_format(ea_diagram.ea_guid, "EAID")
-            diagram.diagram_type = ea_diagram.diagram_type
+            # TODO: Fix diagram_type assignment - lutaml-model compatibility issue
+            # diagram.diagram_type = ea_diagram.diagram_type
 
             # Map package relationship - use GUID not numeric ID
             if ea_diagram.package_id
@@ -43,12 +46,12 @@ module Lutaml
             end
 
             # Load and transform diagram objects (visual placement)
-            diagram.diagram_objects = load_diagram_objects(
-              ea_diagram.diagram_id,
-            )
+            diagram_objects = load_diagram_objects(ea_diagram.diagram_id)
+            diagram.diagram_objects.concat(diagram_objects) if diagram_objects.any?
 
             # Load and transform diagram links (visual routing)
-            diagram.diagram_links = load_diagram_links(ea_diagram.diagram_id)
+            diagram_links = load_diagram_links(ea_diagram.diagram_id)
+            diagram.diagram_links.concat(diagram_links) if diagram_links.any?
           end
         end
 
@@ -69,8 +72,7 @@ module Lutaml
 
         # Load diagram objects for a diagram
         # @param diagram_id [Integer] Diagram ID
-        # @return [Array<Lutaml::Uml::Diagram::DiagramObject>] UML diagram
-        #   objects
+        # @return [Array<Lutaml::Uml::DiagramObject>] UML diagram objects
         def load_diagram_objects(diagram_id)
           return [] if diagram_id.nil?
 
@@ -85,11 +87,11 @@ module Lutaml
 
         # Transform EA diagram object to UML diagram object
         # @param ea_obj [Models::EaDiagramObject] EA diagram object
-        # @return [Lutaml::Uml::Diagram::DiagramObject] UML diagram object
+        # @return [Lutaml::Uml::DiagramObject] UML diagram object
         def transform_diagram_object(ea_obj)
           return nil if ea_obj.nil?
 
-          Lutaml::Uml::Diagram::DiagramObject.new.tap do |obj|
+          Lutaml::Uml::DiagramObject.new.tap do |obj|
             obj.diagram_object_id = ea_obj.ea_object_id.to_s
             obj.left = ea_obj.rectleft
             obj.top = ea_obj.recttop
@@ -108,7 +110,7 @@ module Lutaml
 
         # Load diagram links for a diagram
         # @param diagram_id [Integer] Diagram ID
-        # @return [Array<Lutaml::Uml::Diagram::DiagramLink>] UML diagram links
+        # @return [Array<Lutaml::Uml::DiagramLink>] UML diagram links
         def load_diagram_links(diagram_id)
           return [] if diagram_id.nil?
 
@@ -123,11 +125,11 @@ module Lutaml
 
         # Transform EA diagram link to UML diagram link
         # @param ea_link [Models::EaDiagramLink] EA diagram link
-        # @return [Lutaml::Uml::Diagram::DiagramLink] UML diagram link
+        # @return [Lutaml::Uml::DiagramLink] UML diagram link
         def transform_diagram_link(ea_link)
           return nil if ea_link.nil?
 
-          Lutaml::Uml::Diagram::DiagramLink.new.tap do |link|
+          Lutaml::Uml::DiagramLink.new.tap do |link|
             link.connector_id = ea_link.connectorid.to_s
             link.geometry = ea_link.geometry
             link.style = ea_link.style
