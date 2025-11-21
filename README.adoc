@@ -115,7 +115,7 @@ document = Lutaml::Parser.parse([File.new("model.qea")]).first
 # => returns Lutaml::Uml::Document
 
 # Use with UmlRepository
-repo = Lutaml::Xmi::UmlRepository.new(document: document)
+repo = Lutaml::UmlRepository::Repository.new(document: document)
 
 # Query the model
 classes = repo.find_classes_by_stereotype("featureType")
@@ -307,7 +307,7 @@ Equivalent Ruby code:
 ----
 require "lutaml/xmi"
 
-repo = Lutaml::Xmi::UmlRepository.from_xmi("model.xmi")
+repo = Lutaml::UmlRepository::Repository.from_xmi("model.xmi")
 repo.export_to_package("model.lur")
 ----
 ====
@@ -357,7 +357,7 @@ LutaML UML Repository provides a fast, queryable interface for UML models with b
 require "lutaml/xmi"
 
 # Build from XMI file
-repo = Lutaml::Xmi::UmlRepository.from_xmi("model.xmi")
+repo = Lutaml::UmlRepository::Repository.from_xmi("model.xmi")
 
 # Query the model
 package = repo.find_package("ModelRoot::MyPackage")
@@ -381,14 +381,14 @@ repo.export_to_package("model.lur",
 )
 
 # Load from package (< 100ms vs 5-8s parsing XMI)
-repo = Lutaml::Xmi::UmlRepository.from_package("model.lur")
+repo = Lutaml::UmlRepository::Repository.from_package("model.lur")
 
 # Smart file detection (auto-detects format)
-repo = Lutaml::Xmi::UmlRepository.from_file("model.xmi")
-repo = Lutaml::Xmi::UmlRepository.from_file("model.lur")
+repo = Lutaml::UmlRepository::Repository.from_file("model.xmi")
+repo = Lutaml::UmlRepository::Repository.from_file("model.lur")
 
 # Intelligent caching (uses cache if fresh, rebuilds if stale)
-repo = Lutaml::Xmi::UmlRepository.from_file_cached("model.xmi")
+repo = Lutaml::UmlRepository::Repository.from_file_cached("model.xmi")
 # Creates model.lur and reuses it on subsequent runs
 ----
 
@@ -406,7 +406,7 @@ config.save
 
 # Use aliases
 path = config.resolve_alias("@my-model")
-repo = Lutaml::Xmi::UmlRepository.from_package(path)
+repo = Lutaml::UmlRepository::Repository.from_package(path)
 ----
 
 ==== Better error messages
@@ -590,12 +590,12 @@ lutaml uml watch model.xmi \
 [source,ruby]
 ----
 # Auto-detect file type
-repo = Lutaml::Xmi::UmlRepository.from_file("model.xmi")
-repo = Lutaml::Xmi::UmlRepository.from_file("model.lur")
+repo = Lutaml::UmlRepository::Repository.from_file("model.xmi")
+repo = Lutaml::UmlRepository::Repository.from_file("model.lur")
 
 # Smart caching (only rebuilds when XMI is newer than cache)
-repo = Lutaml::Xmi::UmlRepository.from_file_cached("model.xmi")
-repo = Lutaml::Xmi::UmlRepository.from_file_cached("model.xmi",
+repo = Lutaml::UmlRepository::Repository.from_file_cached("model.xmi")
+repo = Lutaml::UmlRepository::Repository.from_file_cached("model.xmi",
                                                      lur_path: "cache/model.lur")
 ----
 
@@ -1985,7 +1985,7 @@ lutaml uml show class MyClass --from @my-model
 [source,ruby]
 ----
 # In lutaml-klin workflow
-uml_repo = Lutaml::Xmi::UmlRepository.from_package("model.lur")
+uml_repo = Lutaml::UmlRepository::Repository.from_package("model.lur")
 xsd_repo = Lutaml::Xsd::SchemaRepository.from_package("schemas.lxr")
 
 # Map UML classes to XSD types
