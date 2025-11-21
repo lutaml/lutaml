@@ -526,6 +526,13 @@
   font-weight: var(--font-weight-medium);
 }
 
+.stereotype-prefix {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-normal);
+  margin-right: 0.25em;
+}
+
 .type-badge {
   padding: 0.2em 0.5em;
   background-color: var(--color-bg-tertiary);
