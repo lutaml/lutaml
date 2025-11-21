@@ -222,9 +222,23 @@ module Lutaml
 
         # Normalize content for consistent search
         def normalize_content(text)
-          # Remove extra whitespace
-          # Convert to lowercase for case-insensitive search
-          text.gsub(/\s+/, " ").strip.downcase
+          # Convert to lowercase first
+          text = text.downcase
+
+          # Split on spaces, colons, and other delimiters to create searchable tokens
+          # This allows "xs:date" to match "date" and "xs" separately
+          # Also allows "urbanplanning" to match "urban" and "planning" as separate tokens
+          tokens = text.split(/[\s:]+/)
+
+          # Also keep the original compound words
+          # So both "urban planning" and "urbanplanning" will be searchable
+          all_content = [text] + tokens
+
+          # Remove stop words and duplicates
+          all_content = all_content.uniq.reject { |word| STOP_WORDS.include?(word) }
+
+          # Join back together with spaces
+          all_content.join(" ").gsub(/\s+/, " ").strip
         end
 
         # Helper methods

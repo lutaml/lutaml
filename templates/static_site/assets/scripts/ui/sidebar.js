@@ -103,6 +103,10 @@ document.addEventListener('alpine:init', () => {
       const hasChildren = (node.children && node.children.length > 0) ||
                           (node.classes && node.classes.length > 0);
 
+      // Get package data for stereotypes
+      const pkg = store.data?.packages[node.id];
+      const stereotypes = pkg?.stereotypes || node.stereotypes || [];
+
       let html = `<div class="tree-node${isSelected ? ' selected' : ''}">`;
       html += '<div class="node-header">';
 
@@ -120,6 +124,12 @@ document.addEventListener('alpine:init', () => {
       html += '<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>';
 
       html += `<button onclick="Alpine.store('app').selectPackage('${node.id}')" class="node-label${isSelected ? ' active' : ''}" title="${node.path || ''}">`;
+
+      // Add stereotype prefix if present
+      if (stereotypes.length > 0) {
+        html += `<span class="stereotype-prefix">«${this.escapeHtml(stereotypes[0])}»</span> `;
+      }
+
       html += `<span>${this.escapeHtml(node.name)}</span></button>`;
 
       // Class count badge
@@ -142,8 +152,11 @@ document.addEventListener('alpine:init', () => {
 
         // Render classes
         if (node.classes && node.classes.length > 0) {
-          node.classes.forEach(classId => {
-            html += this.buildClassNode(classId);
+          node.classes.forEach(classData => {
+            // classData can be either string ID or object with {id, name, stereotypes}
+            const classId = typeof classData === 'string' ? classData : classData.id;
+            const classStereotypes = typeof classData === 'object' ? classData.stereotypes : null;
+            html += this.buildClassNode(classId, classStereotypes);
           });
         }
 
@@ -154,12 +167,13 @@ document.addEventListener('alpine:init', () => {
       return html;
     },
 
-    buildClassNode(classId) {
+    buildClassNode(classId, providedStereotypes = null) {
       const store = Alpine.store('app');
       const cls = store.data?.classes[classId];
       if (!cls) return '';
 
       const isSelected = store.currentClass === classId;
+      const stereotypes = providedStereotypes || cls.stereotypes || [];
 
       let html = `<div class="tree-node class-node${isSelected ? ' selected' : ''}">`;
       html += '<div class="node-header">';
@@ -173,6 +187,12 @@ document.addEventListener('alpine:init', () => {
       html += '</svg>';
 
       html += `<button onclick="Alpine.store('app').selectClass('${classId}')" class="node-label${isSelected ? ' active' : ''}" title="${this.escapeHtml(cls.qualifiedName || cls.name)}">`;
+
+      // Add stereotype prefix if present
+      if (stereotypes.length > 0) {
+        html += `<span class="stereotype-prefix">«${this.escapeHtml(stereotypes[0])}»</span> `;
+      }
+
       html += `<span>${this.escapeHtml(cls.name)}</span></button>`;
 
       html += '</div>'; // node-header

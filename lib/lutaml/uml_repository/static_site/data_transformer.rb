@@ -30,6 +30,7 @@ module Lutaml
           @repository = repository
           @options = default_options.merge(options)
           @id_generator = IDGenerator.new
+          @generalization_map = build_generalization_map
         end
 
         # Transform repository to JSON structure
@@ -56,6 +57,28 @@ module Lutaml
             format_definitions: true,
             max_definition_length: nil,
           }
+        end
+
+        # Build a mapping of child class XMI ID to array of parent class IDs
+        # This supports multiple inheritance where a class can have multiple parents
+        def build_generalization_map
+          map = Hash.new { |h, k| h[k] = [] }
+
+          # Scan all classes for generalization relationships
+          repository.classes_index.each do |klass|
+            next unless klass.respond_to?(:association_generalization)
+            next unless klass.association_generalization && !klass.association_generalization.empty?
+
+            # Each class has an association_generalization array with connector XMI IDs
+            # We need to find the parent class for each connector
+            if klass.respond_to?(:generalization) && klass.generalization && klass.generalization.general_id
+              # The generalization.general_id is the parent class XMI ID
+              parent_xmi_id = klass.generalization.general_id
+              map[klass.xmi_id] << parent_xmi_id unless map[klass.xmi_id].include?(parent_xmi_id)
+            end
+          end
+
+          map
         end
 
         # Build metadata section
@@ -126,15 +149,28 @@ module Lutaml
           # Sort classes by name
           sorted_classes = (package.classes || []).reject { |c| c.name.nil? || c.name.empty? }.sort_by { |c| c.name }
 
+          # Build child nodes first to get their counts
+          child_nodes = sorted_children.map do |child|
+            build_tree_node(child)
+          end
+
+          # Calculate total count including nested packages
+          total_class_count = sorted_classes.size + child_nodes.sum { |child| child[:classCount] || 0 }
+
           {
             id: pkg_id,
             name: package.name,
             path: package_path(package),
-            classCount: sorted_classes.size,
-            classes: sorted_classes.map { |c| @id_generator.class_id(c) },
-            children: sorted_children.map do |child|
-              build_tree_node(child)
-            end,
+            stereotypes: normalize_stereotypes(package.respond_to?(:stereotype) ? package.stereotype : nil),
+            classCount: total_class_count,
+            classes: sorted_classes.map { |c|
+              {
+                id: @id_generator.class_id(c),
+                name: c.name,
+                stereotypes: normalize_stereotypes(c.respond_to?(:stereotype) ? c.stereotype : nil)
+              }
+            },
+            children: child_nodes,
           }
         end
 
@@ -499,7 +535,7 @@ module Lutaml
           # Basic markdown formatting
           # - Preserve line breaks
           # - Convert URLs to links
-          text.gsub(%r{(https?://[^\s]+)}, '[\\1](\\1)')
+          text.gsub(%r{(https?://[^\s]+)}, '[\1](\1)')
         end
 
         def serialize_class_operations(klass)
@@ -516,9 +552,24 @@ module Lutaml
         end
 
         def find_generalizations(klass)
+          # Use the pre-built generalization map for multiple inheritance
+          parent_xmi_ids = @generalization_map[klass.xmi_id]
+
+          if parent_xmi_ids && !parent_xmi_ids.empty?
+            # Map each parent XMI ID to class ID
+            parents = parent_xmi_ids.map do |parent_xmi_id|
+              parent = find_class_by_xmi_id(parent_xmi_id)
+              parent ? @id_generator.class_id(parent) : nil
+            end.compact
+
+            return parents unless parents.empty?
+          end
+
+          # Fallback: single parent via repository query
           parent = repository.supertype_of(klass)
           parent ? [@id_generator.class_id(parent)] : []
-        rescue StandardError
+        rescue StandardError => e
+          warn "Error finding generalizations for #{klass.name}: #{e.message}"
           []
         end
 
@@ -543,10 +594,71 @@ module Lutaml
           []
         end
 
-        # Compute inherited attributes from generalization chain
-        def compute_inherited_attributes(klass)
-          return [] unless klass.respond_to?(:generalization) && klass.generalization
+        def serialize_generalization(klass, visited = Set.new)
+          return nil unless klass.respond_to?(:generalization) && klass.generalization
+          return nil if visited.include?(klass.xmi_id)  # Prevent infinite loops
 
+          visited.add(klass.xmi_id)
+          gen = klass.generalization
+
+          {
+            generalId: gen.general_id,
+            generalName: gen.general_name,
+            generalUpperKlass: gen.respond_to?(:general_upper_klass) ? gen.general_upper_klass : nil,
+            hasGeneral: gen.respond_to?(:has_general) ? gen.has_general : false,
+            name: gen.name,
+            type: gen.type,
+            definition: format_definition(gen.definition),
+            stereotype: gen.respond_to?(:stereotype) ? gen.stereotype : nil,
+            ownedProps: (gen.respond_to?(:owned_props) ? gen.owned_props : []).map { |attr| serialize_general_attribute(attr) },
+            assocProps: (gen.respond_to?(:assoc_props) ? gen.assoc_props : []).map { |attr| serialize_general_attribute(attr) },
+            inheritedProps: (gen.respond_to?(:inherited_props) ? gen.inherited_props : []).map { |attr| serialize_general_attribute(attr) },
+            inheritedAssocProps: (gen.respond_to?(:inherited_assoc_props) ? gen.inherited_assoc_props : []).map { |attr| serialize_general_attribute(attr) },
+          }
+        rescue StandardError => e
+          warn "Error serializing generalization: #{e.message}"
+          nil
+        end
+
+        def serialize_general_attribute(attr)
+          return nil unless attr
+
+          {
+            name: attr.name,
+            type: attr.type,
+            cardinality: serialize_cardinality(attr.cardinality),
+            definition: format_definition(attr.definition),
+            upperKlass: attr.respond_to?(:upper_klass) ? attr.upper_klass : nil,
+            nameNs: attr.respond_to?(:name_ns) ? attr.name_ns : nil,
+            typeNs: attr.respond_to?(:type_ns) ? attr.type_ns : nil,
+          }
+        end
+
+        def find_generalization(parent_id)
+          parent = find_class_by_xmi_id(parent_id)
+          return nil unless parent
+
+          # Recursively find all ancestors
+          ancestors = find_all_ancestors(parent, []) || []
+          ancestors
+        end
+
+        def find_all_ancestors(klass, ancestors = [])
+          return ancestors if klass.nil?
+
+          unless ancestors.include?(klass.xmi_id)
+            ancestors << klass.xmi_id
+            find_all_ancestors(klass.generalization&.general_class, ancestors) if klass.generalization&.general_classierarchy
+          end
+          ancestors
+        end
+
+        # Compute inherited attributes from generalization chain
+        def compute_inherited_attributes(klass, visited = Set.new)
+          return [] unless klass.respond_to?(:generalization) && klass.generalization
+          return [] if visited.include?(klass.xmi_id)  # Prevent infinite loops
+
+          visited.add(klass.xmi_id)
           inherited = []
           current_gen = klass.generalization
           parent_order = 0
@@ -554,6 +666,9 @@ module Lutaml
           while current_gen
             parent_class = find_class_by_xmi_id(current_gen.general_id)
             break unless parent_class
+            break if visited.include?(parent_class.xmi_id)  # Prevent cycles
+
+            visited.add(parent_class.xmi_id)
 
             if parent_class.attributes
               # Sort attributes by name within this parent
@@ -583,9 +698,11 @@ module Lutaml
         end
 
         # Compute inherited associations from generalization chain
-        def compute_inherited_associations(klass)
+        def compute_inherited_associations(klass, visited = Set.new)
           return [] unless klass.respond_to?(:generalization) && klass.generalization
+          return [] if visited.include?(klass.xmi_id)  # Prevent infinite loops
 
+          visited.add(klass.xmi_id)
           inherited = []
           current_gen = klass.generalization
           parent_order = 0
@@ -593,6 +710,9 @@ module Lutaml
           while current_gen
             parent_class = find_class_by_xmi_id(current_gen.general_id)
             break unless parent_class
+            break if visited.include?(parent_class.xmi_id)  # Prevent cycles
+
+            visited.add(parent_class.xmi_id)
 
             parent_associations = find_class_associations(parent_class)
 
