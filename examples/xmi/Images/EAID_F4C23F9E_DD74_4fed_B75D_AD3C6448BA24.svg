@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="4.07cm" height="5.13cm" viewBox="0 0 154 194">
+<title></title>
+<desc>Created with Enterprise Architect (Build: 1624) 2</desc>
+
+<g style="fill:#FFFFFF;fill-opacity:1.00;">
+	 <rect x="0" y="0" width="154" height="194" shape-rendering="auto"/>
+</g><g style="stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel; fill:#FFFFFF;fill-opacity:1.00; stroke:#000000; stroke-opacity:1.00">
+  <polygon points="10 44 144 44 144 184 10 184 10 44" shape-rendering="auto"   style="fill-rule:evenodd;"/>
+  <polygon points="10 10 117 10 117 44 10 44 10 10" shape-rendering="auto"   style="fill-rule:evenodd;"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00">
+	<text x="15.00" y="23.00" textLength="92" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 15.00 23.00)">«applicationSchema»</text>
+	<text x="15.00" y="35.00" textLength="57" style="font-family:Cambria; font-weight:700; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 15.00 35.00)">Test Schema</text>
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#FEFAF5;fill-opacity:1.00; stroke:#577AC1; stroke-opacity:1.00">
+ <rect x="15" y="48" width="11" height="14" rx="0.00" shape-rendering="auto"  />
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#FFFFFF;fill-opacity:1.00; stroke:#577AC1; stroke-opacity:1.00">
+ <rect x="15" y="48" width="11" height="4" rx="0.00" shape-rendering="auto"  />
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#000000;fill-opacity:0.00; stroke:#577AC1; stroke-opacity:1.00">
+  <path d="M 15 55 L 25 55" shape-rendering="auto"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#000000;fill-opacity:0.00; stroke:#EF8585; stroke-opacity:1.00">
+  <path d="M 17 53 L 21 53" shape-rendering="auto"/>
+  <path d="M 23 53 L 24 53" shape-rendering="auto"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#000000;fill-opacity:0.00; stroke:#4D4D4D; stroke-opacity:1.00">
+  <path d="M 17 57 L 21 57" shape-rendering="auto"/>
+  <path d="M 23 57 L 24 57" shape-rendering="auto"/>
+  <path d="M 17 59 L 21 59" shape-rendering="auto"/>
+  <path d="M 23 59 L 24 59" shape-rendering="auto"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00">
+	<text x="33.00" y="59.00" textLength="45" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 33.00 59.00)">+ CodeList</text>
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#FEFAF5;fill-opacity:1.00; stroke:#577AC1; stroke-opacity:1.00">
+ <rect x="15" y="64" width="11" height="14" rx="0.00" shape-rendering="auto"  />
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#FFFFFF;fill-opacity:1.00; stroke:#577AC1; stroke-opacity:1.00">
+ <rect x="15" y="64" width="11" height="4" rx="0.00" shape-rendering="auto"  />
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#000000;fill-opacity:0.00; stroke:#577AC1; stroke-opacity:1.00">
+  <path d="M 15 71 L 25 71" shape-rendering="auto"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#000000;fill-opacity:0.00; stroke:#EF8585; stroke-opacity:1.00">
+  <path d="M 17 69 L 21 69" shape-rendering="auto"/>
+  <path d="M 23 69 L 24 69" shape-rendering="auto"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#000000;fill-opacity:0.00; stroke:#4D4D4D; stroke-opacity:1.00">
+  <path d="M 17 73 L 21 73" shape-rendering="auto"/>
+  <path d="M 23 73 L 24 73" shape-rendering="auto"/>
+  <path d="M 17 75 L 21 75" shape-rendering="auto"/>
+  <path d="M 23 75 L 24 75" shape-rendering="auto"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00">
+	<text x="33.00" y="75.00" textLength="50" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 33.00 75.00)">+ DataType</text>
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#FEFAF5;fill-opacity:1.00; stroke:#577AC1; stroke-opacity:1.00">
+ <rect x="15" y="80" width="11" height="14" rx="0.00" shape-rendering="auto"  />
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#FFFFFF;fill-opacity:1.00; stroke:#577AC1; stroke-opacity:1.00">
+ <rect x="15" y="80" width="11" height="4" rx="0.00" shape-rendering="auto"  />
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#000000;fill-opacity:0.00; stroke:#577AC1; stroke-opacity:1.00">
+  <path d="M 15 87 L 25 87" shape-rendering="auto"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#000000;fill-opacity:0.00; stroke:#EF8585; stroke-opacity:1.00">
+  <path d="M 17 85 L 21 85" shape-rendering="auto"/>
+  <path d="M 23 85 L 24 85" shape-rendering="auto"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#000000;fill-opacity:0.00; stroke:#4D4D4D; stroke-opacity:1.00">
+  <path d="M 17 89 L 21 89" shape-rendering="auto"/>
+  <path d="M 23 89 L 24 89" shape-rendering="auto"/>
+  <path d="M 17 91 L 21 91" shape-rendering="auto"/>
+  <path d="M 23 91 L 24 91" shape-rendering="auto"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00">
+	<text x="33.00" y="91.00" textLength="56" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 33.00 91.00)">+ DataType2</text>
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#E6FFE1;fill-opacity:1.00; stroke:#577AC1; stroke-opacity:1.00">
+ <rect x="15" y="96" width="12" height="13" rx="0.00" shape-rendering="auto"  />
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#000000;fill-opacity:0.00; stroke:#7D0000; stroke-opacity:1.00">
+  <path d="M 20 98 L 17 98 L 17 102 L 20 102" shape-rendering="auto"/>
+  <path d="M 17 100 L 19 100" shape-rendering="auto"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#000000;fill-opacity:0.00; stroke:#577AC1; stroke-opacity:1.00">
+  <path d="M 22 98 L 24 98" shape-rendering="auto"/>
+  <path d="M 22 100 L 24 100" shape-rendering="auto"/>
+  <path d="M 22 102 L 24 102" shape-rendering="auto"/>
+  <path d="M 15 104 L 26 104" shape-rendering="auto"/>
+  <path d="M 17 106 L 24 106" shape-rendering="auto"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00">
+	<text x="33.00" y="107.00" textLength="65" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 33.00 107.00)">+ Enumeration</text>
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#FEFAF5;fill-opacity:1.00; stroke:#577AC1; stroke-opacity:1.00">
+ <rect x="15" y="112" width="11" height="14" rx="0.00" shape-rendering="auto"  />
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#FFFFFF;fill-opacity:1.00; stroke:#577AC1; stroke-opacity:1.00">
+ <rect x="15" y="112" width="11" height="4" rx="0.00" shape-rendering="auto"  />
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#000000;fill-opacity:0.00; stroke:#577AC1; stroke-opacity:1.00">
+  <path d="M 15 119 L 25 119" shape-rendering="auto"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#000000;fill-opacity:0.00; stroke:#EF8585; stroke-opacity:1.00">
+  <path d="M 17 117 L 21 117" shape-rendering="auto"/>
+  <path d="M 23 117 L 24 117" shape-rendering="auto"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#000000;fill-opacity:0.00; stroke:#4D4D4D; stroke-opacity:1.00">
+  <path d="M 17 121 L 21 121" shape-rendering="auto"/>
+  <path d="M 23 121 L 24 121" shape-rendering="auto"/>
+  <path d="M 17 123 L 21 123" shape-rendering="auto"/>
+  <path d="M 23 123 L 24 123" shape-rendering="auto"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00">
+	<text x="33.00" y="123.00" textLength="69" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 33.00 123.00)">+ FeatureType1</text>
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#FEFAF5;fill-opacity:1.00; stroke:#577AC1; stroke-opacity:1.00">
+ <rect x="15" y="128" width="11" height="14" rx="0.00" shape-rendering="auto"  />
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#FFFFFF;fill-opacity:1.00; stroke:#577AC1; stroke-opacity:1.00">
+ <rect x="15" y="128" width="11" height="4" rx="0.00" shape-rendering="auto"  />
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#000000;fill-opacity:0.00; stroke:#577AC1; stroke-opacity:1.00">
+  <path d="M 15 135 L 25 135" shape-rendering="auto"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#000000;fill-opacity:0.00; stroke:#EF8585; stroke-opacity:1.00">
+  <path d="M 17 133 L 21 133" shape-rendering="auto"/>
+  <path d="M 23 133 L 24 133" shape-rendering="auto"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#000000;fill-opacity:0.00; stroke:#4D4D4D; stroke-opacity:1.00">
+  <path d="M 17 137 L 21 137" shape-rendering="auto"/>
+  <path d="M 23 137 L 24 137" shape-rendering="auto"/>
+  <path d="M 17 139 L 21 139" shape-rendering="auto"/>
+  <path d="M 23 139 L 24 139" shape-rendering="auto"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00">
+	<text x="33.00" y="139.00" textLength="69" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 33.00 139.00)">+ FeatureType2</text>
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#FEFAF5;fill-opacity:1.00; stroke:#577AC1; stroke-opacity:1.00">
+ <rect x="15" y="144" width="11" height="14" rx="0.00" shape-rendering="auto"  />
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#FFFFFF;fill-opacity:1.00; stroke:#577AC1; stroke-opacity:1.00">
+ <rect x="15" y="144" width="11" height="4" rx="0.00" shape-rendering="auto"  />
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#000000;fill-opacity:0.00; stroke:#577AC1; stroke-opacity:1.00">
+  <path d="M 15 151 L 25 151" shape-rendering="auto"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#000000;fill-opacity:0.00; stroke:#EF8585; stroke-opacity:1.00">
+  <path d="M 17 149 L 21 149" shape-rendering="auto"/>
+  <path d="M 23 149 L 24 149" shape-rendering="auto"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#000000;fill-opacity:0.00; stroke:#4D4D4D; stroke-opacity:1.00">
+  <path d="M 17 153 L 21 153" shape-rendering="auto"/>
+  <path d="M 23 153 L 24 153" shape-rendering="auto"/>
+  <path d="M 17 155 L 21 155" shape-rendering="auto"/>
+  <path d="M 23 155 L 24 155" shape-rendering="auto"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00">
+	<text x="33.00" y="155.00" textLength="47" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 33.00 155.00)">+ NilUnion</text>
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#FEFAF5;fill-opacity:1.00; stroke:#577AC1; stroke-opacity:1.00">
+ <rect x="15" y="160" width="11" height="14" rx="0.00" shape-rendering="auto"  />
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#FFFFFF;fill-opacity:1.00; stroke:#577AC1; stroke-opacity:1.00">
+ <rect x="15" y="160" width="11" height="4" rx="0.00" shape-rendering="auto"  />
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#000000;fill-opacity:0.00; stroke:#577AC1; stroke-opacity:1.00">
+  <path d="M 15 167 L 25 167" shape-rendering="auto"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#000000;fill-opacity:0.00; stroke:#EF8585; stroke-opacity:1.00">
+  <path d="M 17 165 L 21 165" shape-rendering="auto"/>
+  <path d="M 23 165 L 24 165" shape-rendering="auto"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#000000;fill-opacity:0.00; stroke:#4D4D4D; stroke-opacity:1.00">
+  <path d="M 17 169 L 21 169" shape-rendering="auto"/>
+  <path d="M 23 169 L 24 169" shape-rendering="auto"/>
+  <path d="M 17 171 L 21 171" shape-rendering="auto"/>
+  <path d="M 23 171 L 24 171" shape-rendering="auto"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00">
+	<text x="33.00" y="171.00" textLength="34" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 33.00 171.00)">+ Union</text>
+</g>
+</svg>

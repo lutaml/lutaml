@@ -6,7 +6,7 @@ require_relative "../../../lib/lutaml/uml_repository/repository"
 require "tempfile"
 
 RSpec.describe "Search and Find Commands (via UmlCommands)" do
-  let(:xmi_file) { File.join(__dir__, "../../fixtures/plateau_all_packages_export.xmi") }
+  let(:xmi_file) { File.join(__dir__, "../../../examples/xmi/test.xmi") }
   let(:lur_file) do
     Tempfile.new(["test_search", ".lur"]).tap do |f|
       f.close
@@ -23,13 +23,13 @@ RSpec.describe "Search and Find Commands (via UmlCommands)" do
   describe "search command" do
     it "searches and returns results" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["search", lur_file, "Building", "--limit", "5"])
+        Lutaml::Cli::UmlCommands.start(["search", lur_file, "Class", "--limit", "5"])
       }.not_to output(/ERROR/).to_stdout
     end
 
     it "filters by element type" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["search", lur_file, "Building",
+        Lutaml::Cli::UmlCommands.start(["search", lur_file, "Class",
                                        "--type", "class", "--limit", "5"])
       }.not_to output(/ERROR/).to_stdout
     end
@@ -37,7 +37,7 @@ RSpec.describe "Search and Find Commands (via UmlCommands)" do
     it "supports package filtering" do
       expect {
         Lutaml::Cli::UmlCommands.start(["search", lur_file, "building",
-                                       "--package", "ModelRoot", "--limit", "5"])
+                                       "--package", "Model", "--limit", "5"])
       }.not_to output(/ERROR/).to_stdout
     end
 
@@ -51,14 +51,14 @@ RSpec.describe "Search and Find Commands (via UmlCommands)" do
 
     it "searches in name field by default" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["search", lur_file, "Building",
+        Lutaml::Cli::UmlCommands.start(["search", lur_file, "Class",
                                        "--in", "name", "--limit", "5"])
       }.not_to output(/ERROR/).to_stdout
     end
 
     it "accepts documentation field option" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["search", lur_file, "Building",
+        Lutaml::Cli::UmlCommands.start(["search", lur_file, "Class",
                                        "--in", "name", "documentation",
                                        "--limit", "5"])
       }.not_to output(/ERROR/).to_stdout
@@ -66,21 +66,21 @@ RSpec.describe "Search and Find Commands (via UmlCommands)" do
 
     it "outputs JSON format" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["search", lur_file, "Building",
+        Lutaml::Cli::UmlCommands.start(["search", lur_file, "Class",
                                        "--format", "json", "--limit", "2"])
       }.to output(/\[/).to_stdout
     end
 
     it "outputs YAML format" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["search", lur_file, "Building",
+        Lutaml::Cli::UmlCommands.start(["search", lur_file, "Class",
                                        "--format", "yaml", "--limit", "2"])
       }.to output(/---/).to_stdout
     end
 
     it "outputs table format" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["search", lur_file, "Building",
+        Lutaml::Cli::UmlCommands.start(["search", lur_file, "Class",
                                        "--format", "table", "--limit", "5"])
       }.not_to output(/ERROR/).to_stdout
     end
@@ -113,7 +113,7 @@ RSpec.describe "Search and Find Commands (via UmlCommands)" do
 
     it "finds by package" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["find", lur_file, "--package", "ModelRoot"])
+        Lutaml::Cli::UmlCommands.start(["find", lur_file, "--package", "Model"])
       }.not_to output(/ERROR/).to_stdout
     end
 
@@ -125,14 +125,14 @@ RSpec.describe "Search and Find Commands (via UmlCommands)" do
 
     it "outputs in JSON format" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["find", lur_file, "--package", "ModelRoot",
+        Lutaml::Cli::UmlCommands.start(["find", lur_file, "--package", "Model",
                                        "--format", "json"])
       }.to output(/\[/).to_stdout
     end
 
     it "outputs in YAML format" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["find", lur_file, "--package", "ModelRoot",
+        Lutaml::Cli::UmlCommands.start(["find", lur_file, "--package", "Model",
                                        "--format", "yaml"])
       }.not_to output(/ERROR/).to_stdout
     end

@@ -1,0 +1,200 @@
+# diagram_styles.yml - Configurable EA Diagram Styling
+# This file defines the default styling for LutaML diagram generation
+
+# Global defaults - applied when no other configuration matches
+defaults:
+  colors:
+    background: "#FFFFFF"
+    default_fill: "#E0E0E0"
+    default_stroke: "#000000"
+    text: "#000000"
+
+  fonts:
+    default:
+      family: "Carlito, Arial, sans-serif"
+      size: 9
+      weight: 400
+      style: normal
+
+    class_name:
+      family: "Carlito, Arial, sans-serif"
+      size: 9
+      weight: 700  # bold
+      style: normal
+
+    stereotype:
+      family: "Carlito, Arial, sans-serif"
+      size: 9
+      weight: 400
+      style: normal
+
+    attribute:
+      family: "Carlito, Arial, sans-serif"
+      size: 9
+      weight: 400
+      style: normal
+
+    operation:
+      family: "Carlito, Arial, sans-serif"
+      size: 9
+      weight: 400
+      style: normal
+
+  box:
+    stroke_width: 2
+    stroke_linecap: round
+    stroke_linejoin: bevel
+    corner_radius: 0
+    padding: 5
+    fill_opacity: 1.0
+    stroke_opacity: 1.0
+
+  text:
+    visibility_public: "+"
+    visibility_private: "-"
+    visibility_protected: "#"
+    visibility_package: "~"
+    cardinality_format: "[%s]"
+    stereotype_format: "«%s»"
+
+# Stereotype-based styling
+# These apply when elements have specific stereotypes
+stereotypes:
+  DataType:
+    colors:
+      fill: "#FFCCFF"  # Pink for i-UR DataTypes
+      stroke: "#000000"
+    fonts:
+      class_name:
+        weight: 700
+        style: italic
+
+  FeatureType:
+    colors:
+      fill: "#FFFFCC"  # Yellow for CityGML FeatureTypes
+      stroke: "#000000"
+
+  GMLType:
+    colors:
+      fill: "#CCFFCC"  # Green for GML Types
+      stroke: "#000000"
+
+  Interface:
+    colors:
+      fill: "#FFFFEE"
+      stroke: "#000000"
+    fonts:
+      class_name:
+        style: italic
+
+  Enumeration:
+    colors:
+      fill: "#FFE6CC"
+      stroke: "#000000"
+
+  Abstract:
+    fonts:
+      class_name:
+        style: italic
+
+# Package-based styling (optional)
+# Supports wildcards: "CityGML::*" matches any package starting with "CityGML::"
+packages:
+  "CityGML::*":
+    colors:
+      fill: "#FFFFCC"
+
+  "i-UR::*":
+    colors:
+      fill: "#FFCCFF"
+
+  "gml::*":
+    colors:
+      fill: "#CCFFCC"
+
+# Class-specific overrides (highest priority after EA data)
+# These take precedence over package and stereotype styling
+classes: {}
+
+# Connector styling
+connectors:
+  generalization:
+    arrow:
+      type: hollow_triangle
+      size: 10
+    line:
+      stroke_width: 1
+      stroke: "#000000"
+      fill: none
+
+  association:
+    arrow:
+      type: open_arrow
+      size: 8
+    line:
+      stroke_width: 1
+      stroke: "#000000"
+    labels:
+      show_role_names: true
+      show_cardinality: true
+      font:
+        family: "Carlito, Arial, sans-serif"
+        size: 8
+
+  dependency:
+    arrow:
+      type: open_arrow
+      size: 8
+    line:
+      stroke_width: 1
+      stroke: "#000000"
+      stroke_dasharray: "5,5"
+
+  aggregation:
+    arrow:
+      type: diamond
+      size: 10
+      fill: white
+    line:
+      stroke_width: 1
+      stroke: "#000000"
+
+  composition:
+    arrow:
+      type: filled_diamond
+      size: 10
+      fill: black
+    line:
+      stroke_width: 1
+      stroke: "#000000"
+
+  realization:
+    arrow:
+      type: hollow_triangle
+      size: 10
+    line:
+      stroke_width: 1
+      stroke: "#000000"
+      stroke_dasharray: "5,5"
+
+# Legend configuration
+legend:
+  enabled: true
+  position: bottom_right
+  title: "Legend"
+  box:
+    fill: "#FFFFFF"
+    stroke: "#000000"
+    stroke_width: 1
+    padding: 10
+  font:
+    family: "Carlito, Arial, sans-serif"
+    size: 9
+    weight: 400
+  entries:
+    - label: "i-UR DataTypes"
+      color: "#FFCCFF"
+    - label: "CityGML FeatureTypes"
+      color: "#FFFFCC"
+    - label: "GML Types"
+      color: "#CCFFCC"
