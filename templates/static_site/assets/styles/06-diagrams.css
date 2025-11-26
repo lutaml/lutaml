@@ -1,0 +1,277 @@
+/* ============================================================================
+   Diagram Viewer Styles
+   ============================================================================ */
+
+/* Diagram Viewer Container */
+.diagram-viewer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 400px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+/* Diagram Controls */
+.diagram-controls {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.diagram-controls button {
+  padding: 0.5rem 1rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.diagram-controls button:hover {
+  background: var(--bg-hover);
+  border-color: var(--primary-color);
+}
+
+.diagram-controls button:active {
+  transform: translateY(1px);
+}
+
+.diagram-controls button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Diagram Container */
+#diagram-container {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  background: var(--diagram-background, #ffffff);
+  cursor: grab;
+}
+
+#diagram-container:active {
+  cursor: grabbing;
+}
+
+/* Diagram Wrapper */
+.diagram-wrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s ease-out;
+}
+
+.diagram-wrapper svg {
+  max-width: 100%;
+  max-height: 100%;
+  display: block;
+}
+
+/* Diagram Metadata */
+.diagram-metadata {
+  padding: 0.75rem 1rem;
+  background: var(--bg-primary);
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  gap: 1.5rem;
+  flex-shrink: 0;
+  font-size: 0.875rem;
+}
+
+.metadata-item {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.metadata-label {
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.metadata-value {
+  color: var(--text-primary);
+}
+
+/* Diagram Error State */
+.diagram-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  text-align: center;
+  height: 100%;
+  min-height: 300px;
+}
+
+.diagram-error h3 {
+  margin: 0 0 0.5rem 0;
+  color: var(--error-color);
+  font-size: 1.25rem;
+}
+
+.diagram-error p {
+  margin: 0.25rem 0;
+  color: var(--text-secondary);
+}
+
+.diagram-error .error-message {
+  font-family: monospace;
+  font-size: 0.875rem;
+  color: var(--error-color);
+  background: var(--bg-secondary);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  margin: 1rem 0;
+  max-width: 500px;
+}
+
+.diagram-error button {
+  margin-top: 1rem;
+  padding: 0.5rem 1.5rem;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.diagram-error button:hover {
+  background: var(--primary-hover);
+}
+
+/* Loading State */
+.diagram-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 300px;
+  color: var(--text-secondary);
+}
+
+.diagram-loading::before {
+  content: "";
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Diagram Section in Details Panel */
+.diagram-section {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.diagram-section h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Diagram List (for package/class diagrams) */
+.diagram-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.diagram-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.diagram-list-item:hover {
+  background: var(--bg-hover);
+  border-color: var(--primary-color);
+}
+
+.diagram-list-item-info {
+  flex: 1;
+}
+
+.diagram-list-item-name {
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.diagram-list-item-meta {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.diagram-list-item-action {
+  padding: 0.25rem 0.75rem;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.diagram-list-item-action:hover {
+  background: var(--primary-hover);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .diagram-controls {
+    flex-wrap: wrap;
+  }
+
+  .diagram-controls button {
+    flex: 1;
+    min-width: 80px;
+  }
+
+  .diagram-metadata {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  #diagram-container {
+    background: var(--diagram-background-dark, #1e1e1e);
+  }
+
+  .diagram-wrapper svg {
+    filter: brightness(0.9);
+  }
+}
