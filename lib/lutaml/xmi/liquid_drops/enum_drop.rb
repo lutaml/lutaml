@@ -2,52 +2,54 @@
 
 module Lutaml
   module Xmi
-    class EnumDrop < Liquid::Drop
-      include Parsers::XmiBase
+    module LiquidDrops
+      class EnumDrop < Liquid::Drop
+        include Parsers::XmiBase
 
-      def initialize(model, options = {}) # rubocop:disable Lint/MissingSuper
-        @model = model
-        @options = options
-        @xmi_root_model = options[:xmi_root_model]
-        @id_name_mapping = options[:id_name_mapping]
+        def initialize(model, options = {}) # rubocop:disable Lint/MissingSuper
+          @model = model
+          @options = options
+          @xmi_root_model = options[:xmi_root_model]
+          @id_name_mapping = options[:id_name_mapping]
 
-        @owned_literals = model&.owned_literal&.select do |owned_literal|
-          owned_literal.type? "uml:EnumerationLiteral"
+          @owned_literals = model&.owned_literal&.select do |owned_literal|
+            owned_literal.type? "uml:EnumerationLiteral"
+          end
         end
-      end
 
-      def xmi_id
-        @model.id
-      end
-
-      def name
-        @model.name
-      end
-
-      def values
-        @owned_literals.map do |owned_literal|
-          ::Lutaml::Xmi::EnumOwnedLiteralDrop.new(owned_literal, @options)
+        def xmi_id
+          @model.id
         end
-      end
 
-      def definition
-        doc_node_attribute_value(@model.id, "documentation")
-      end
-
-      def stereotype
-        doc_node_attribute_value(@model.id, "stereotype")
-      end
-
-      # @return name of the upper packaged element
-      def upper_packaged_element
-        if @options[:with_gen]
-          e = find_upper_level_packaged_element(@model.id)
-          e&.name
+        def name
+          @model.name
         end
-      end
 
-      def subtype_of
-        find_subtype_of_from_owned_attribute_type(@model.id)
+        def values
+          @owned_literals.map do |owned_literal|
+            ::Lutaml::Xmi::LiquidDrops::EnumOwnedLiteralDrop.new(owned_literal, @options)
+          end
+        end
+
+        def definition
+          doc_node_attribute_value(@model.id, "documentation")
+        end
+
+        def stereotype
+          doc_node_attribute_value(@model.id, "stereotype")
+        end
+
+        # @return name of the upper packaged element
+        def upper_packaged_element
+          if @options[:with_gen]
+            e = find_upper_level_packaged_element(@model.id)
+            e&.name
+          end
+        end
+
+        def subtype_of
+          find_subtype_of_from_owned_attribute_type(@model.id)
+        end
       end
     end
   end

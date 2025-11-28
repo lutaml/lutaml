@@ -91,7 +91,8 @@ module Lutaml
           end
 
           # Validate repository if requested (XMI files or additional validation)
-          if options[:validate] && !is_qea
+          # Strict mode forces validation even if --no-validate is passed
+          if (options[:validate] || options[:strict]) && !is_qea
             OutputFormatter.progress("Validating repository")
             result = repo.validate
             OutputFormatter.progress_done

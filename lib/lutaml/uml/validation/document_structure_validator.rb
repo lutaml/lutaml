@@ -197,9 +197,9 @@ context_path)
 
           # Build a set of all valid type names
           valid_types = Set.new
-          all_classes.each_key { |cls| valid_types << cls.name if cls.name }
-          all_data_types.each_key { |dt| valid_types << dt.name if dt.name }
-          all_enums.each_key { |enum| valid_types << enum.name if enum.name }
+          all_classes.each { |cls, _path| valid_types << cls.name if cls.name }
+          all_data_types.each { |dt, _path| valid_types << dt.name if dt.name }
+          all_enums.each { |enum, _path| valid_types << enum.name if enum.name }
 
           # Check attribute type references
           all_classes.each do |cls, path|

@@ -1,0 +1,987 @@
+= EA Diagram Generation - Technical Guide
+:toc:
+:toclevels: 3
+
+== Introduction
+
+This document provides technical details on LutaML's EA-style diagram generation system. It covers architecture, implementation details, configuration, and extension patterns for developers working with or extending the diagram generation functionality.
+
+== Architecture Overview
+
+=== Component Hierarchy
+
+[source]
+----
+Lutaml::UmlRepository::Presenters::DiagramPresenter
+  • Entry point for diagram generation
+  • Orchestrates the entire rendering pipeline
+  • Transforms repository data to renderable format
+  ↓
+Lutaml::Ea::Diagram::LayoutEngine
+  • Coordinate conversion (EA → SVG)
+  • Bounds calculation
+  • Auto-layout for unpositioned elements
+  ↓
+Lutaml::Ea::Diagram::StyleResolver
+  • Multi-source style resolution
+  • Configuration loading and caching
+  • EA style string parsing
+  ↓
+Lutaml::Ea::Diagram::SvgRenderer
+  • SVG document generation
+  • Layer management
+  • Renderer orchestration
+  ↓
+Lutaml::Ea::Diagram::ElementRenderers::*
+  • BaseRenderer: Foundation for all renderers
+  • ClassRenderer: Three-compartment class boxes
+  • PackageRenderer: Tab-style package boxes
+  ↓
+Lutaml::Ea::Diagram::PathBuilder
+  • EA geometry parsing
+  • Connector path calculation
+  • Waypoint handling
+----
+
+=== Component Responsibilities
+
+==== DiagramPresenter
+
+**Location**: `lib/lutaml/uml_repository/presenters/diagram_presenter.rb`
+
+**Purpose**: Transforms EA diagram data from the repository into a format suitable for rendering.
+
+**Key Responsibilities**:
+
+* Extract elements from `diagram_objects`
+* Extract connectors from `diagram_links`
+* Resolve XMI IDs to actual UML elements
+* Parse EA internal IDs (SOID, EOID, DUID)
+* Extract element metadata (stereotypes, attributes, operations)
+* Build source/target relationships for connectors
+
+**Key Methods**:
+
+* `svg_output(options)` - Main entry point for SVG generation
+* `elements` - Returns array of element data hashes
+* `connectors` - Returns array of connector data hashes
+* `build_elements_data` - Private: Transforms diagram_objects
+* `build_connectors_data` - Private: Transforms diagram_links
+
+==== LayoutEngine
+
+**Location**: `lib/lutaml/ea/diagram/layout_engine.rb`
+
+**Purpose**: Handles coordinate conversion and layout calculation.
+
+**Key Responsibilities**:
+
+* Convert EA coordinates (left/top/right/bottom) to SVG (x/y/width/height)
+* Calculate diagram bounds including connector endpoints
+* Normalize coordinates to handle negative values
+* Provide auto-layout for unpositioned elements
+
+**Key Methods**:
+
+* `convert_ea_coordinates(diagram_object)` - Convert single element
+* `calculate_bounds(diagram_data)` - Calculate viewBox bounds
+* `normalize_coordinates(elements)` - Ensure positive coordinates
+* `apply_layout(elements, connectors)` - Auto-position elements
+
+==== StyleResolver
+
+**Location**: `lib/lutaml/ea/diagram/style_resolver.rb`
+
+**Purpose**: Resolves styling from multiple sources with priority hierarchy.
+
+**Key Responsibilities**:
+
+* Load and cache configuration files
+* Parse EA style strings (BCol, LCol, LWth, BFol, IFol)
+* Resolve styles with priority: EA Data → Class → Package → Stereotype → Defaults
+* Determine connector types (generalization, association, aggregation, composition)
+
+**Key Methods**:
+
+* `resolve_element_style(element, diagram_object)` - Get complete element style
+* `resolve_connector_style(connector, diagram_link)` - Get complete connector style
+* `resolve_fill_color(element, diagram_object)` - Get fill color
+* `resolve_font(element, context)` - Get font properties
+
+==== SvgRenderer
+
+**Location**: `lib/lutaml/ea/diagram/svg_renderer.rb`
+
+**Purpose**: Assembles complete SVG document from diagram data.
+
+**Key Responsibilities**:
+
+* Generate SVG header with viewBox
+* Create defs section with CSS and markers
+* Render layers in correct order (background, grid, connectors, elements)
+* Determine correct markers for connector types
+* Integrate element renderers and path builder
+
+**Key Methods**:
+
+* `render` - Generate complete SVG document
+* `svg_header` - Generate SVG opening tag
+* `defs_section` - Generate styles and markers
+* `render_connector(connector)` - Render single connector
+* `render_element(element)` - Render single element
+* `determine_marker_type(type)` - Get marker URLs for connector type
+
+==== Element Renderers
+
+**Location**: `lib/lutaml/ea/diagram/element_renderers/`
+
+===== BaseRenderer
+
+**Purpose**: Foundation for all element renderers.
+
+**Provides**:
+
+* Basic shape rendering
+* Label rendering with centering
+* XML escaping for text content
+* Style resolution integration
+
+**Key Methods**:
+
+* `render` - Main rendering method
+* `render_shape(style)` - Abstract: Generate shape SVG
+* `render_label(style)` - Abstract: Generate label SVG
+* `escape_xml(text)` - Escape special characters
+
+===== ClassRenderer
+
+**Purpose**: Render UML class boxes with three compartments.
+
+**Features**:
+
+* Name compartment with optional stereotype
+* Attributes compartment with visibility symbols
+* Operations compartment with parameters and return types
+* Dynamic height calculation
+* Compartment separators
+
+**Compartment Layout**:
+
+[source]
+----
+┌─────────────────────────┐
+│    <<Stereotype>>       │  ← Optional stereotype (italic)
+│     ClassName           │  ← Class name (bold)
+├─────────────────────────┤
+│ + attr1: Type           │  ← Attributes with visibility
+│ - attr2: Type           │
+├─────────────────────────┤
+│ + operation(): Type     │  ← Operations with parameters
+│ # method(p: Type): Type │
+└─────────────────────────┘
+----
+
+===== PackageRenderer
+
+**Purpose**: Render UML package boxes with tab.
+
+**Features**:
+
+* Tab for package name (1/3 box width, 20px height)
+* Main body for contents
+* Separate styling for tab and body
+
+**Package Layout**:
+
+[source]
+----
+┌──────────┐
+│ Package  │  ← Tab with name
+└──────────┬─────────────────┐
+           │                 │
+           │    Body Area    │  ← Main content area
+           │                 │
+           └─────────────────┘
+----
+
+==== PathBuilder
+
+**Location**: `lib/lutaml/ea/diagram/path_builder.rb`
+
+**Purpose**: Generate SVG path commands from EA connector geometry.
+
+**Key Responsibilities**:
+
+* Parse EA geometry strings (SX/SY/EX/EY/EDGE/EDGEn)
+* Calculate connection points on element edges
+* Generate SVG path commands
+* Support multiple routing: straight, manhattan, orthogonal, bezier
+
+**EA Geometry Format**:
+
+[source]
+----
+SX=10;SY=5;EX=-10;EY=-5;EDGE=1;EDGE1=250,125;EDGE2=300,175;
+----
+
+Where:
+
+* `SX`, `SY` - Source offset from element center
+* `EX`, `EY` - Target offset from element center
+* `EDGE` - Edge identifier
+* `EDGEn` - Waypoint coordinates (absolute)
+
+== Data Flow
+
+=== Complete Rendering Pipeline
+
+[source]
+----
+┌──────────────────────┐
+│  QEA/XMI Repository  │
+└──────────┬───────────┘
+           │
+     1. Load diagram
+           │
+           ▼
+┌──────────────────────┐
+│  DiagramPresenter    │
+│  ┌────────────────┐  │
+│  │ diagram_objects│◄─┼─── Extract elements
+│  └────────────────┘  │
+│  ┌────────────────┐  │
+│  │ diagram_links  │◄─┼─── Extract connectors
+│  └────────────────┘  │
+└──────────┬───────────┘
+           │
+     2. Build data
+           │
+           ▼
+┌──────────────────────┐
+│   LayoutEngine       │
+│  ┌────────────────┐  │
+│  │ EA → SVG       │◄─┼─── Convert coordinates
+│  └────────────────┘  │
+│  ┌────────────────┐  │
+│  │ Calculate      │◄─┼─── Compute bounds
+│  │ Bounds         │  │
+│  └────────────────┘  │
+└──────────┬───────────┘
+           │
+     3. Layout
+           │
+           ▼
+┌──────────────────────┐
+│   StyleResolver      │
+│  ┌────────────────┐  │
+│  │ Parse EA       │◄─┼─── Extract colors, fonts
+│  │ Styles         │  │
+│  └────────────────┘  │
+│  ┌────────────────┐  │
+│  │ Apply Config   │◄─┼─── Merge configurations
+│  └────────────────┘  │
+│  ┌────────────────┐  │
+│  │ Resolve with   │◄─┼─── Priority hierarchy
+│  │ Priority       │  │
+│  └────────────────┘  │
+└──────────┬───────────┘
+           │
+     4. Style
+           │
+           ▼
+┌──────────────────────┐
+│   SvgRenderer        │
+│  ┌────────────────┐  │
+│  │ SVG Header     │◄─┼─── viewBox, xmlns
+│  └────────────────┘  │
+│  ┌────────────────┐  │
+│  │ Defs Section   │◄─┼─── CSS, markers
+│  └────────────────┘  │
+│  ┌────────────────┐  │
+│  │ Background     │◄─┼─── Layer 1
+│  └────────────────┘  │
+│  ┌────────────────┐  │
+│  │ Grid (optional)│◄─┼─── Layer 2
+│  └────────────────┘  │
+│  ┌────────────────┐  │
+│  │ Connectors ────┼──┼─► PathBuilder
+│  └────────────────┘  │
+│  ┌────────────────┐  │
+│  │ Elements   ────┼──┼─► ElementRenderers
+│  └────────────────┘  │
+│  ┌────────────────┐  │
+│  │ Interactive    │◄─┼─── JavaScript (optional)
+│  └────────────────┘  │
+└──────────┬───────────┘
+           │
+     5. Render
+           │
+           ▼
+┌──────────────────────┐
+│   Complete SVG       │
+│   Document           │
+└──────────────────────┘
+----
+
+== Coordinate Systems
+
+=== EA Coordinate Format
+
+Enterprise Architect stores element positions using a bounding-box format:
+
+[source]
+----
+DiagramObject:
+  left: 100      # X coordinate of left edge
+  top: 50        # Y coordinate of top edge
+  right: 220     # X coordinate of right edge
+  bottom: 130    # Y coordinate of bottom edge
+----
+
+**Properties**:
+
+* Origin at top-left (0, 0)
+* Y-axis positive downward
+* All values in pixels
+* Can have negative values
+
+=== SVG Coordinate Format
+
+LutaML converts to standard SVG format:
+
+[source]
+----
+Element:
+  x: 100         # X coordinate of top-left corner
+  y: 50          # Y coordinate of top-left corner
+  width: 120     # Width of element (right - left)
+  height: 80     # Height of element (bottom - top)
+----
+
+**Properties**:
+
+* Origin at top-left (0, 0)
+* Y-axis positive downward
+* Matches CSS box model
+* Normalized to positive values
+
+=== Conversion Algorithm
+
+[source,ruby]
+----
+def convert_ea_coordinates(diagram_object)
+  {
+    x: diagram_object.left,
+    y: diagram_object.top,
+    width: diagram_object.right - diagram_object.left,
+    height: diagram_object.bottom - diagram_object.top
+  }
+end
+----
+
+=== ViewBox Calculation
+
+The viewBox encompasses all elements and connectors with padding:
+
+[source,ruby]
+----
+# Find minimum and maximum coordinates
+min_x = elements.map { |e| e[:x] }.min
+min_y = elements.map { |e| e[:y] }.min
+max_x = elements.map { |e| e[:x] + e[:width] }.max
+max_y = elements.map { |e| e[:y] + e[:height] }.max
+
+# Include connector endpoints
+connectors.each do |c|
+  # ... extend bounds to include waypoints
+end
+
+# Apply padding
+viewBox = "#{min_x - padding} #{min_y - padding} " \
+          "#{max_x - min_x + 2*padding} #{max_y - min_y + 2*padding}"
+----
+
+== Connector Geometry
+
+=== EA Geometry Format
+
+EA stores connector geometry as a semicolon-delimited string:
+
+[source]
+----
+SX=10;SY=5;EX=-10;EY=-5;EDGE=1;EDGE1=250,125;EDGE2=300,175;
+----
+
+**Components**:
+
+`SX`, `SY`:: Source offset from element center (pixels)
+`EX`, `EY`:: Target offset from element center (pixels)
+`EDGE`:: Edge identifier (meaning varies by EA version)
+`EDGEn`:: Waypoint n at absolute coordinates (x,y)
+
+=== Waypoint Handling
+
+PathBuilder processes waypoints in order:
+
+[source,ruby]
+----
+# Parse geometry string
+geometry.split(';').each do |pair|
+  key, value = pair.split('=')
+  if key =~ /^EDGE(\d+)$/
+    # Waypoint found
+    x, y = value.split(',').map(&:to_f)
+    waypoints << { x: x, y: y }
+  end
+end
+----
+
+=== Path Generation
+
+PathBuilder generates SVG path commands:
+
+[source]
+----
+Start Point (element1 edge)
+     │
+     ▼
+Waypoint 1 ──► Waypoint 2 ──► ... ──► Waypoint N
+                                           │
+                                           ▼
+                                   End Point (element2 edge)
+----
+
+SVG Output:
+
+[source,svg]
+----
+<path d="M 160,90 L 250,125 L 300,175 L 360,190" />
+----
+
+== Configuration System
+
+=== Configuration File Structure
+
+[source,yaml]
+----
+# Global defaults (lowest priority)
+defaults:
+  colors:
+    background: "#FFFFFF"
+    default_fill: "#E0E0E0"
+    default_stroke: "#000000"
+
+  fonts:
+    class_name:
+      family: "Carlito, Arial, sans-serif"
+      size: 9
+      weight: 700
+      style: normal
+
+# Stereotype-based styling
+stereotypes:
+  DataType:
+    colors:
+      fill: "#FFCCFF"
+    fonts:
+      class_name:
+        style: italic
+
+# Package-based styling (supports wildcards)
+packages:
+  "CityGML::*":           # Matches CityGML::Core, CityGML::Building, etc.
+    colors:
+      fill: "#FFFFCC"
+
+  "ModelRoot::Exact":     # Exact match only
+    colors:
+      fill: "#CCFFCC"
+
+# Class-specific styling (highest priority)
+classes:
+  Building:
+    colors:
+      fill: "#FFCCCC"
+      stroke: "#FF0000"
+    fonts:
+      class_name:
+        weight: 900
+
+# Connector styling by type
+connectors:
+  generalization:
+    arrow:
+      type: hollow_triangle
+      size: 10
+    line:
+      stroke: "#000000"
+      stroke_width: 1
+
+  composition:
+    arrow:
+      type: filled_diamond
+      size: 12
+    line:
+      stroke_width: 2
+----
+
+=== Configuration Loading
+
+[source,ruby]
+----
+class Configuration
+  def initialize(config_path = nil)
+    @config = if config_path && File.exist?(config_path)
+      YAML.load_file(config_path)
+    else
+      load_default_config
+    end
+  end
+
+  def style_for(element, path)
+    # Navigate nested hash using path (e.g., "colors.fill")
+    keys = path.split('.')
+
+    # Try class-specific
+    if element.name && (class_config = @config.dig('classes', element.name))
+      return navigate(class_config, keys) if navigate(class_config, keys)
+    end
+
+    # Try package wildcard
+    if element.package_name
+      @config.fetch('packages', {}).each do |pattern, config|
+        next unless File.fnmatch(pattern, element.package_name)
+        return navigate(config, keys) if navigate(config, keys)
+      end
+    end
+
+    # Try stereotype
+    if element.stereotype
+      stereo_config = @config.dig('stereotypes', element.stereotype)
+      return navigate(stereo_config, keys) if navigate(stereo_config, keys)
+    end
+
+    # Fall back to defaults
+    navigate(@config['defaults'], keys)
+  end
+end
+----
+
+=== Priority Resolution Algorithm
+
+[source]
+----
+For property P of element E:
+
+1. IF EA data contains P
+     RETURN EA value
+
+2. IF class config for E.name contains P
+     RETURN class config value
+
+3. FOR EACH package pattern in config
+     IF pattern matches E.package_name AND config contains P
+       RETURN package config value
+
+4. IF stereotype config for E.stereotype contains P
+     RETURN stereotype config value
+
+5. RETURN default value for P
+----
+
+== Extension Patterns
+
+=== Adding New Element Types
+
+1. Create renderer class extending `BaseRenderer`:
+
+[source,ruby]
+----
+module Lutaml::Ea::Diagram::ElementRenderers
+  class InterfaceRenderer < BaseRenderer
+    protected
+
+    def render_shape(style)
+      # Circle with "I" or interface-specific shape
+      radius = element[:width] / 2
+      cx = element[:x] + radius
+      cy = element[:y] + radius
+
+      <<~SVG
+        <circle cx="#{cx}" cy="#{cy}" r="#{radius}"
+                fill="#{style[:fill]}"
+                stroke="#{style[:stroke]}"
+                stroke-width="#{style[:stroke_width]}" />
+      SVG
+    end
+
+    def render_label(style)
+      # Center name in circle
+      # ...implementation
+    end
+  end
+end
+----
+
+2. Register in `SvgRenderer`:
+
+[source,ruby]
+----
+def render_element(element)
+  renderer_class = case element[:type]
+  when "interface" then ElementRenderers::InterfaceRenderer
+  when "class", "datatype" then ElementRenderers::ClassRenderer
+  when "package" then ElementRenderers::PackageRenderer
+  else ElementRenderers::BaseRenderer
+  end
+
+  renderer_class.new(element, style_resolver).render
+end
+----
+
+3. Add configuration section:
+
+[source,yaml]
+----
+stereotypes:
+  Interface:
+    colors:
+      fill: "#FFFFFF"
+      stroke: "#000000"
+    fonts:
+      class_name:
+        style: italic
+----
+
+=== Adding New Connector Types
+
+1. Add connector type detection in `StyleResolver`:
+
+[source,ruby]
+----
+def determine_connector_type(connector)
+  case connector.class.name
+  when /Substitution/ then "substitution"
+  when /Generalization/ then "generalization"
+  # ... existing types
+  end
+end
+----
+
+2. Add marker definition in `SvgRenderer`:
+
+[source,ruby]
+----
+def arrow_markers
+  <<~SVG
+    <!-- Existing markers -->
+
+    <!-- Substitution: Double open arrow -->
+    <marker id="substitution-arrow" markerWidth="15" markerHeight="10"
+            refX="15" refY="5" orient="auto">
+      <path d="M 0,0 L 7,5 L 0,10 M 7,0 L 15,5 L 7,10"
+            fill="none" stroke="#000000" stroke-width="1" />
+    </marker>
+  SVG
+end
+----
+
+3. Update marker determination:
+
+[source,ruby]
+----
+def determine_marker_type(connector_type)
+  case connector_type&.to_s&.downcase
+  when "substitution"
+    { start: nil, end: "url(#substitution-arrow)" }
+  # ... existing types
+  end
+end
+----
+
+4. Add configuration:
+
+[source,yaml]
+----
+connectors:
+  substitution:
+    arrow:
+      type: double_open_arrow
+      size: 15
+    line:
+      stroke: "#000000"
+      stroke_width: 1
+      stroke_dasharray: "5,5"
+----
+
+=== Custom Path Algorithms
+
+Extend `PathBuilder` with new routing algorithms:
+
+[source,ruby]
+----
+class PathBuilder
+  def build_path
+    case waypoints.length
+    when 0 then straight_path
+    when 1 then single_waypoint_path
+    else custom_algorithm_path
+    end
+  end
+
+  private
+
+  def custom_algorithm_path
+    # Implement custom routing logic
+    # Return SVG path string
+  end
+end
+----
+
+== Testing Strategy
+
+=== Test Structure
+
+Each component has dedicated test spec:
+
+[source]
+----
+spec/lutaml/ea/diagram/
+  layout_engine_spec.rb        (114 tests)
+  path_builder_spec.rb         (568 tests)
+  style_resolver_spec.rb       (56 tests)
+  svg_renderer_spec.rb         (105 tests)
+  element_renderers/
+    base_renderer_spec.rb      (35 tests)
+    class_renderer_spec.rb     (57 tests)
+    package_renderer_spec.rb   (24 tests)
+    connector_renderer_spec.rb (35 tests)
+
+spec/lutaml/uml_repository/presenters/
+  diagram_presenter_spec.rb    (114 tests)
+----
+
+=== Testing Patterns
+
+==== Unit Testing
+
+Test individual components in isolation:
+
+[source,ruby]
+----
+RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
+  describe "#convert_ea_coordinates" do
+    it "converts EA format to SVG format" do
+      diagram_object = double(left: 100, top: 50, right: 220, bottom: 130)
+
+      result = subject.convert_ea_coordinates(diagram_object)
+
+      expect(result[:x]).to eq(100)
+      expect(result[:y]).to eq(50)
+      expect(result[:width]).to eq(120)
+      expect(result[:height]).to eq(80)
+    end
+  end
+end
+----
+
+==== Integration Testing
+
+Test component interactions:
+
+[source,ruby]
+----
+RSpec.describe "SVG Generation Pipeline" do
+  it "generates valid SVG from diagram data" do
+    diagram_data = build_diagram_data
+    renderer = build_renderer(diagram_data)
+
+    svg = renderer.render
+
+    # Validate SVG structure
+    expect(svg).to include('<?xml')
+    expect(svg).to include('<svg')
+    expect(svg).to include('</svg>')
+
+    # Validate parseable
+    doc = Nokogiri::XML(svg) { |config| config.strict }
+    expect(doc.errors).to be_empty
+  end
+end
+----
+
+== Performance Optimization
+
+=== Style Caching
+
+Configuration is loaded once and cached:
+
+[source,ruby]
+----
+class StyleResolver
+  def initialize(config_path = nil)
+    @configuration = Configuration.new(config_path)  # Cached
+    @style_parser = StyleParser.new                  # Stateless
+  end
+end
+----
+
+=== Lazy Element Rendering
+
+Elements rendered on-demand during SVG generation:
+
+[source,ruby]
+----
+def elements_layer
+  elements_svg = diagram_renderer.elements.map do |element|
+    render_element(element)  # Generated when needed
+  end.join("\n")
+
+  "<g id=\"elements-layer\">#{elements_svg}</g>"
+end
+----
+
+=== Streaming Output
+
+SVG generated as string concatenation (memory efficient):
+
+[source,ruby]
+----
+def render
+  svg_content = String.new
+  svg_content << svg_header
+  svg_content << defs_section
+  # ... incremental building
+  svg_content << svg_footer
+  svg_content
+end
+----
+
+== Troubleshooting
+
+=== Common Issues
+
+**Issue**: Elements not appearing in SVG
+
+* Check XMI ID resolution in `find_element_by_xmi_id`
+* Verify `diagram_objects` contains valid data
+* Check coordinate values are not extreme
+
+**Issue**: Connectors not connecting properly
+
+* Verify source/target element resolution
+* Check EA geometry string format
+* Validate waypoint coordinates
+
+**Issue**: Styles not applying
+
+* Check configuration file syntax (valid YAML)
+* Verify priority hierarchy (EA data overrides config)
+* Check wildcard package matching
+
+**Issue**: SVG not rendering
+
+* Validate SVG with `Nokogiri::XML(svg) { |c| c.strict }`
+* Check viewBox includes all elements
+* Verify no XML special characters unescaped
+
+=== Debugging Tips
+
+Enable verbose logging:
+
+[source,ruby]
+----
+# Add to diagram_presenter.rb
+def build_elements_data
+  puts "Building elements from #{element.diagram_objects.count} objects"
+  # ... implementation
+end
+----
+
+Inspect intermediate data:
+
+[source,ruby]
+----
+presenter = DiagramPresenter.new(diagram, repo)
+puts presenter.elements.inspect
+puts presenter.connectors.inspect
+----
+
+Validate SVG incrementally:
+
+[source,ruby]
+----
+svg = renderer.render
+File.write("debug.svg", svg)
+# Open in browser to visually inspect
+----
+
+== References
+
+* EA Geometry Format: Enterprise Architect User Guide, Connector Routing
+* SVG Specification: https://www.w3.org/TR/SVG2/
+* UML 2.5 Specification: https://www.omg.org/spec/UML/
+
+== Appendix A: EA Style String Format
+
+=== DiagramObject Style Properties
+
+[cols="1,3,1"]
+|===
+|Property |Description |Example
+
+|`BCol`
+|Background color (BGR integer)
+|`BCol=16764159` → #FFCCFF
+
+|`LCol`
+|Line color (BGR integer)
+|`LCol=255` → #0000FF
+
+|`LWth`
+|Line width (pixels)
+|`LWth=2`
+
+|`BFol`
+|Bold font (0=normal, 1=bold)
+|`BFol=1`
+
+|`IFol`
+|Italic font (0=normal, 1=italic)
+|`IFol=1`
+
+|`DUID`
+|Diagram UID (EA internal)
+|`DUID=ABC123`
+|===
+
+=== DiagramLink Style Properties
+
+[cols="1,3,1"]
+|===
+|Property |Description |Example
+
+|`LCol`
+|Line color (BGR integer)
+|`LCol=0` → #000000
+
+|`LWth`
+|Line width (pixels)
+|`LWth=1`
+
+|`LStyle`
+|Line style (0=solid, 1=dash, 2=dot)
+|`LStyle=1`
+
+|`SOID`
+|Source object ID
+|`SOID=12345`
+
+|`EOID`
+|End object ID
+|`EOID=67890`
+|===
+
+== Appendix B: Default Configuration
+
+See `config/diagram_styles.yml` for complete default configuration with EA-style defaults for all element types, stereotypes, and connectors.

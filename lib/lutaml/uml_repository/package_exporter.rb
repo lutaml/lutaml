@@ -125,11 +125,11 @@ module Lutaml
 
         case format
         when :yaml
-          zip.get_output_stream("models/document.yaml") do |io|
+          zip.get_output_stream("repository.yaml") do |io|
             io.write(@repository.document.to_yaml)
           end
         when :marshal
-          zip.get_output_stream("models/document.marshal") do |io|
+          zip.get_output_stream("repository.marshal") do |io|
             io.write(Marshal.dump(@repository.document))
           end
         end

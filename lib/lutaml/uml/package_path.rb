@@ -16,15 +16,26 @@ module Lutaml
 
       attr_reader :path
 
-      # Create a new PackagePath from a string.
+      # Create a new PackagePath from a string or array.
       #
-      # @param path [String] The package path string (e.g., "ModelRoot::i-UR::urf")
-      # @raise [ArgumentError] if path is nil or empty
+      # @param path [String, Array<String>] The package path string or array of segments
+      # @raise [ArgumentError] if path is nil
       def initialize(path)
-        raise ArgumentError, "Path cannot be nil or empty" if path.nil? || path.empty?
+        if path.nil?
+          raise ArgumentError, "Path cannot be nil"
+        end
 
-        @path = path.freeze
-        @segments = @path.split(SEPARATOR).freeze
+        # Handle both string and array inputs
+        if path.is_a?(Array)
+          @segments = path.reject { |s| s.nil? || s.empty? }.freeze
+          @path = @segments.join(SEPARATOR).freeze
+        else
+          # String input - allow empty string
+          # Filter out empty segments from string paths
+          @segments = path.split(SEPARATOR).reject(&:empty?).freeze
+          @path = @segments.join(SEPARATOR).freeze
+        end
+        
         freeze
       end
 
@@ -54,12 +65,16 @@ module Lutaml
 
       # Get the depth of this path.
       #
-      # @return [Integer] The number of segments in the path
+      # Depth is counted as number of separators (segments.size - 1).
+      #
+      # @return [Integer] The depth of the path (0 for single segment)
       # @example
-      #   PackagePath.new("ModelRoot").depth # => 1
-      #   PackagePath.new("ModelRoot::i-UR::urf").depth # => 3
+      #   PackagePath.new("ModelRoot").depth # => 0
+      #   PackagePath.new("ModelRoot::i-UR").depth # => 1
+      #   PackagePath.new("ModelRoot::i-UR::urf").depth # => 2
       def depth
-        segments.size
+        return 0 if segments.empty?
+        segments.size - 1
       end
 
       # Get the parent path.
@@ -69,9 +84,9 @@ module Lutaml
       #   PackagePath.new("ModelRoot::i-UR::urf").parent
       #   # => PackagePath("ModelRoot::i-UR")
       def parent
-        return nil if depth <= 1
+        return nil if segments.size <= 1
 
-        self.class.new(segments[0...-1].join(SEPARATOR))
+        self.class.new(segments[0...-1])
       end
 
       # Create a child path by appending a segment.
@@ -87,20 +102,20 @@ module Lutaml
 
       # Get the relative path from a base path.
       #
-      # @param base_path_string [String] The base path to calculate relative to
-      # @return [PackagePath, nil] The relative path, or nil if not relative
+      # @param base_path_string [String, PackagePath] The base path to calculate relative to
+      # @return [PackagePath] The relative path, or self if not relative
       # @example
       #   path = PackagePath.new("ModelRoot::i-UR::urf")
       #   path.relative_to("ModelRoot::i-UR")
       #   # => PackagePath("urf")
       def relative_to(base_path_string)
-        base = self.class.new(base_path_string)
-        return nil unless starts_with?(base)
+        base = base_path_string.is_a?(PackagePath) ? base_path_string : self.class.new(base_path_string)
+        return self unless starts_with?(base)
 
-        remaining = segments[base.depth..]
-        return nil if remaining.empty?
+        remaining = segments[base.segments.size..]
+        return self.class.new("") if remaining.empty?
 
-        self.class.new(remaining.join(SEPARATOR))
+        self.class.new(remaining)
       end
 
       # Check if this path starts with another path.
@@ -113,9 +128,9 @@ module Lutaml
       #   path.starts_with?("ModelRoot::CityGML") # => false
       def starts_with?(other)
         other_path = other.is_a?(PackagePath) ? other : self.class.new(other)
-        return false if other_path.depth > depth
+        return false if other_path.segments.size > segments.size
 
-        segments[0...other_path.depth] == other_path.segments
+        segments[0...other_path.segments.size] == other_path.segments
       end
 
       # Check if this path matches a glob pattern.
@@ -134,6 +149,13 @@ module Lutaml
       def matches_glob?(pattern)
         pattern_segments = pattern.split(SEPARATOR)
         match_segments(segments, pattern_segments)
+      end
+
+      # Check if this path is empty.
+      #
+      # @return [Boolean] true if empty (no segments)
+      def empty?
+        @segments.empty?
       end
 
       # Convert to string representation.
@@ -188,8 +210,16 @@ module Lutaml
 
           match_segments(path_segs[1..], pattern_segs[1..])
         else
-          # Match exact segment
-          return false if path_segs.empty? || path_segs.first != pattern_seg
+          # Match segment - support string wildcards like "Class*"
+          return false if path_segs.empty?
+          
+          if pattern_seg.include?("*")
+            # Convert glob pattern to regex
+            regex_pattern = Regexp.escape(pattern_seg).gsub('\*', '.*')
+            return false unless path_segs.first.match?(/\A#{regex_pattern}\z/)
+          else
+            return false unless path_segs.first == pattern_seg
+          end
 
           match_segments(path_segs[1..], pattern_segs[1..])
         end

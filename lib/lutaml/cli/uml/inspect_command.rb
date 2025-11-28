@@ -51,6 +51,12 @@ module Lutaml
           end
 
           display_element_details(element, identifier, repo)
+        rescue Thor::Error
+          raise
+        rescue ArgumentError => e
+          raise Thor::Error, e.message
+        rescue StandardError => e
+          raise Thor::Error, "Inspect command failed: #{e.message}"
         end
 
         private

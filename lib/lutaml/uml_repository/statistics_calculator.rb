@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "index_builder"
+
 module Lutaml
   module UmlRepository
     # StatisticsCalculator provides comprehensive statistics about a UML repository
@@ -149,23 +151,18 @@ module Lutaml
       # Complexity is measured by the sum of attributes, associations, and operations.
       #
       # @param limit [Integer] Maximum number of classes to return
-      # @return [Array<Hash>] Array of complexity information hashes
+      # @return [Array<Hash>] Array of complexity information hashes with :class and :complexity keys
       def most_complex_classes(limit: 10)
         classes = @indexes[:qualified_names].select { |_, obj| obj.is_a?(Lutaml::Uml::Class) }
 
-        complexities = classes.map do |qname, klass|
+        complexities = classes.map do |_qname, klass|
           {
-            name: qname,
-            attributes: klass.attributes&.size || 0,
-            associations: klass.associations&.size || 0,
-            operations: klass.operations&.size || 0,
-            total_complexity: (klass.attributes&.size || 0) +
-              (klass.associations&.size || 0) +
-              (klass.operations&.size || 0),
+            class: klass,
+            complexity: class_complexity(klass),
           }
         end
 
-        complexities.sort_by { |c| -c[:total_complexity] }.first(limit)
+        complexities.sort_by { |c| -c[:complexity] }.first(limit)
       end
 
       # Get average class complexity
@@ -175,13 +172,20 @@ module Lutaml
         classes = @indexes[:qualified_names].select { |_, obj| obj.is_a?(Lutaml::Uml::Class) }
         return 0.0 if classes.empty?
 
-        total_complexity = classes.sum do |_, klass|
-          (klass.attributes&.size || 0) +
-            (klass.associations&.size || 0) +
-            (klass.operations&.size || 0)
-        end
-
+        total_complexity = classes.sum { |_, klass| class_complexity(klass) }
         total_complexity.to_f / classes.size
+      end
+
+      # Calculate complexity for a single class
+      #
+      # Complexity is the sum of attributes, associations, and operations
+      #
+      # @param klass [Lutaml::Uml::Class] The class to calculate complexity for
+      # @return [Integer] Complexity score
+      def class_complexity(klass)
+        (klass.attributes&.size || 0) +
+          (klass.associations&.size || 0) +
+          (klass.operations&.size || 0)
       end
 
       # Get total attribute count across all classes
@@ -193,6 +197,21 @@ module Lutaml
           next 0 unless obj.attributes
 
           obj.attributes.size
+        end
+      end
+
+      # Alias for attribute_count to match test expectations
+      alias total_attributes attribute_count
+
+      # Get total operation count across all classes
+      #
+      # @return [Integer] Total number of operations
+      def total_operations
+        @indexes[:qualified_names].sum do |_, obj|
+          next 0 unless obj.is_a?(Lutaml::Uml::Class)
+          next 0 unless obj.operations
+
+          obj.operations.size
         end
       end
 

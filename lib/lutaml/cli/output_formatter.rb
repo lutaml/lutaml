@@ -34,15 +34,42 @@ module Lutaml
       def self.format(data, format: "text")
         case format.to_s.downcase
         when "yaml"
-          data.to_yaml
+          # Convert to plain hash if needed for proper YAML serialization
+          plain_data = convert_to_plain_hash(data)
+          plain_data.to_yaml
         when "json"
-          JSON.pretty_generate(data)
+          # Convert to plain hash for proper JSON serialization
+          plain_data = convert_to_plain_hash(data)
+          JSON.pretty_generate(plain_data)
         when "table"
           format_table(data)
         when "text"
           format_text(data)
         else
           data.to_s
+        end
+      end
+
+      # Convert data to a plain Ruby hash for serialization.
+      #
+      # @param data [Object] Data to convert
+      # @return [Hash] Plain Ruby hash
+      def self.convert_to_plain_hash(data)
+        return data unless data
+
+        case data
+        when Hash
+          # Deep convert to plain hash
+          data.each_with_object({}) do |(key, value), result|
+            result[key] = convert_to_plain_hash(value)
+          end
+        when Array
+          data.map { |item| convert_to_plain_hash(item) }
+        when String, Integer, Float, TrueClass, FalseClass, NilClass
+          data
+        else
+          # For complex objects, convert to string representation
+          data.respond_to?(:name) ? data.name : data.to_s
         end
       end
 
@@ -167,6 +194,8 @@ module Lutaml
       # @param detailed [Boolean] Whether to show detailed stats
       # @return [String] Formatted statistics
       def self.format_stats(stats, detailed: false)
+        return "No statistics available" unless stats
+
         lines = []
 
         lines << colorize("Repository Statistics", :cyan)
@@ -175,17 +204,17 @@ module Lutaml
 
         # Basic counts
         lines << colorize("Basic Counts:", :yellow)
-        lines << "  Total Packages:    #{stats[:total_packages]}"
-        lines << "  Total Classes:     #{stats[:total_classes]}"
-        lines << "  Total Data Types:  #{stats[:total_data_types]}"
-        lines << "  Total Enums:       #{stats[:total_enums]}"
-        lines << "  Total Diagrams:    #{stats[:total_diagrams]}"
+        lines << "  Total Packages:    #{stats[:total_packages] || 0}"
+        lines << "  Total Classes:     #{stats[:total_classes] || 0}"
+        lines << "  Total Data Types:  #{stats[:total_data_types] || 0}"
+        lines << "  Total Enums:       #{stats[:total_enums] || 0}"
+        lines << "  Total Diagrams:    #{stats[:total_diagrams] || 0}"
         lines << ""
 
         # Package statistics
         lines << colorize("Package Statistics:", :yellow)
-        lines << "  Max Depth:         #{stats[:max_package_depth]}"
-        lines << "  Avg Depth:         #{'%.2f' % stats[:avg_package_depth]}"
+        lines << "  Max Depth:         #{stats[:max_package_depth] || 0}"
+        lines << "  Avg Depth:         #{'%.2f' % (stats[:avg_package_depth] || 0)}"
 
         if detailed && stats[:packages_by_depth]
           lines << "  Depth Distribution:"
@@ -197,9 +226,9 @@ module Lutaml
 
         # Class statistics
         lines << colorize("Class Statistics:", :yellow)
-        lines << "  Total Attributes:  #{stats[:total_attributes]}"
-        lines << "  Total Associations: #{stats[:total_associations]}"
-        lines << "  Avg Complexity:    #{'%.2f' % stats[:avg_class_complexity]}"
+        lines << "  Total Attributes:  #{stats[:total_attributes] || 0}"
+        lines << "  Total Associations: #{stats[:total_associations] || 0}"
+        lines << "  Avg Complexity:    #{'%.2f' % (stats[:avg_class_complexity] || 0)}"
 
         if detailed && stats[:classes_by_stereotype] &&
             !stats[:classes_by_stereotype].empty?
@@ -221,9 +250,9 @@ module Lutaml
         # Quality metrics
         if detailed
           lines << colorize("Quality Metrics:", :yellow)
-          lines << "  Abstract Classes:  #{stats[:abstract_class_count]}"
-          lines << "  Undocumented:      #{stats[:classes_without_documentation]}"
-          lines << "  Without Attrs:     #{stats[:classes_without_attributes]}"
+          lines << "  Abstract Classes:  #{stats[:abstract_class_count] || 0}"
+          lines << "  Undocumented:      #{stats[:classes_without_documentation] || 0}"
+          lines << "  Without Attrs:     #{stats[:classes_without_attributes] || 0}"
           lines << ""
         end
 
@@ -231,12 +260,12 @@ module Lutaml
         if detailed && stats[:most_complex_classes] &&
             !stats[:most_complex_classes].empty?
           lines << colorize("Most Complex Classes:", :yellow)
-          stats[:most_complex_classes].first(5).each do |cls|
-            lines << "  #{cls[:name]}"
-            lines << "    Attrs: #{cls[:attributes]}, " \
-                     "Assocs: #{cls[:associations]}, " \
-                     "Ops: #{cls[:operations]} " \
-                     "(Total: #{cls[:total_complexity]})"
+          stats[:most_complex_classes].first(5).each do |item|
+            klass = item[:class]
+            complexity = item[:complexity]
+            class_name = klass.respond_to?(:name) ? klass.name : klass.to_s
+            
+            lines << "  #{class_name} (complexity: #{complexity})"
           end
         end
 

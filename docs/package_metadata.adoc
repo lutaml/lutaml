@@ -1,0 +1,409 @@
+= Package Metadata Configuration
+:toc:
+:toclevels: 3
+
+== Overview
+
+The `PackageMetadata` system provides external configuration of package metadata without modifying the UML model itself. This enables separation of concerns: the UML model contains the structure, while configuration files contain the metadata.
+
+== Purpose
+
+Package metadata configuration enables:
+
+* *XSD Generation*: Get xmlns, targetNamespace, schemaLocation from packages
+* *Documentation*: Get package descriptions and annotations
+* *Styling*: Get package-specific styling rules for diagrams
+* *Validation*: Get package constraints and rules
+* *Custom Metadata*: Store any custom key-value pairs per package
+
+== Architecture
+
+=== Design Principles
+
+* *Separation of Concerns*: Metadata lives outside the UML model
+* *Hierarchical Matching*: Exact matches override wildcard patterns
+* *Extensibility*: Support any custom metadata keys
+* *Performance*: Built-in caching for repeated queries
+
+=== Key Classes
+
+[source,ruby]
+----
+Lutaml::UmlRepository::PackageMetadata
+----
+
+Main class for loading and querying package metadata.
+
+== Configuration Format
+
+=== YAML Structure
+
+[source,yaml]
+----
+packages:
+  "Package::Path::Here":
+    xmlns: "http://example.com/namespace"
+    targetNamespace: "http://example.com/target"
+    schemaLocation: "schemas/example.xsd"
+    prefix: "ex"
+    documentation: "Package description"
+    # Any custom keys supported
+----
+
+=== Required Structure
+
+* Root key must be `packages`
+* Each package path is a key under `packages`
+* Package paths use `::` as separator (UML qualified name format)
+* Values are key-value pairs (any structure supported)
+
+=== Wildcard Patterns
+
+==== Single-Level Wildcard
+
+[source,yaml]
+----
+packages:
+  "Root::*":
+    prefix: "default"
+----
+
+Matches any direct child of `Root`:
+
+* ✅ `Root::Child1`
+* ✅ `Root::Child2`
+* ❌ `Root::Child1::Grandchild` (too deep)
+
+==== Multi-Level Wildcard
+
+[source,yaml]
+----
+packages:
+  "Root::*::Common":
+    documentation: "Common elements"
+----
+
+Matches packages with wildcard in middle:
+
+* ✅ `Root::Package1::Common`
+* ✅ `Root::Package2::Common`
+* ❌ `Root::Common` (no middle component)
+* ❌ `Root::Package1::Common::Sub` (too deep)
+
+=== Precedence Rules
+
+1. *Exact matches* always take precedence
+2. *Wildcard patterns* are applied first
+3. *Later matches* override earlier matches
+4. *All matches* are merged together
+
+.Example: Precedence in Action
+====
+[source,yaml]
+----
+packages:
+  "Root::Child::*":
+    prefix: "wildcard"
+    xmlns: "http://wildcard.com"
+
+  "Root::Child::Specific":
+    prefix: "exact"
+    documentation: "Exact match"
+----
+
+Query for `Root::Child::Specific`:
+
+[source,ruby]
+----
+metadata.metadata_for("Root::Child::Specific")
+# => {
+#   prefix: "exact",              # From exact match
+#   xmlns: "http://wildcard.com", # From wildcard
+#   documentation: "Exact match"  # From exact match
+# }
+----
+====
+
+== Usage
+
+=== Basic Usage
+
+[source,ruby]
+----
+require 'lutaml/uml_repository/package_metadata'
+
+# Load configuration
+metadata = Lutaml::UmlRepository::PackageMetadata.new(
+  "config/package_metadata.yml"
+)
+
+# Get complete metadata
+data = metadata.metadata_for("ModelRoot::i-UR::uro")
+# => {
+#   xmlns: "http://...",
+#   prefix: "uro",
+#   documentation: "...",
+#   ...
+# }
+
+# Get specific fields
+xmlns = metadata.xmlns_for("ModelRoot::i-UR::uro")
+prefix = metadata.prefix_for("ModelRoot::i-UR::uro")
+doc = metadata.documentation_for("ModelRoot::i-UR::uro")
+----
+
+=== Nil Configuration
+
+[source,ruby]
+----
+# Create empty metadata (no config file)
+metadata = Lutaml::UmlRepository::PackageMetadata.new(nil)
+
+# All queries return empty/nil
+metadata.metadata_for("Any::Package")  # => {}
+metadata.xmlns_for("Any::Package")     # => nil
+----
+
+=== Checking for Metadata
+
+[source,ruby]
+----
+if metadata.has_metadata?("ModelRoot::i-UR::uro")
+  puts "Metadata exists for this package"
+end
+----
+
+=== Listing All Packages
+
+[source,ruby]
+----
+# Get all configured package paths (including wildcards)
+paths = metadata.package_paths
+# => ["ModelRoot::i-UR::uro", "ModelRoot::*::Common", ...]
+----
+
+=== Cache Management
+
+[source,ruby]
+----
+# Cache is automatic
+metadata.metadata_for("Package::Path")  # First query (loads & caches)
+metadata.metadata_for("Package::Path")  # Second query (returns cached)
+
+# Clear cache if needed
+metadata.clear_cache
+----
+
+=== Standard Metadata Keys
+
+While any keys are supported, these are commonly used:
+
+[cols="1,3"]
+|===
+|Key |Purpose
+
+|`xmlns`
+|XML namespace URI
+
+|`targetNamespace`
+|XSD target namespace URI
+
+|`schemaLocation`
+|XSD schema file location
+
+|`prefix`
+|Namespace prefix (e.g., "uro", "core")
+
+|`documentation`
+|Package description/documentation
+
+|`version`
+|Package version (e.g., "2.0")
+
+|`author`
+|Package author/organization
+
+|`license`
+|Package license
+
+|`contact`
+|Contact information
+|===
+
+== Integration Examples
+
+=== XSD Generation Integration
+
+[source,ruby]
+----
+class XsdGenerator
+  def initialize(repository, metadata_config)
+    @repository = repository
+    @metadata = PackageMetadata.new(metadata_config)
+  end
+
+  def generate_schema(package)
+    package_path = package.package_path
+
+    # Get metadata for this package
+    xmlns = @metadata.xmlns_for(package_path)
+    target_ns = @metadata.target_namespace_for(package_path)
+    schema_loc = @metadata.schema_location_for(package_path)
+    prefix = @metadata.prefix_for(package_path)
+
+    # Use metadata in XSD generation
+    builder.schema(
+      xmlns: xmlns,
+      targetNamespace: target_ns,
+      # ... rest of schema
+    )
+  end
+end
+----
+
+=== Documentation Generation Integration
+
+[source,ruby]
+----
+class DocGenerator
+  def initialize(repository, metadata_config)
+    @repository = repository
+    @metadata = PackageMetadata.new(metadata_config)
+  end
+
+  def document_package(package)
+    package_path = package.package_path
+
+    # Get documentation from metadata
+    doc = @metadata.documentation_for(package_path)
+    version = @metadata.metadata_for(package_path)[:version]
+    author = @metadata.metadata_for(package_path)[:author]
+
+    # Include in documentation
+    puts "# #{package.name}"
+    puts doc if doc
+    puts "Version: #{version}" if version
+    puts "Author: #{author}" if author
+  end
+end
+----
+
+=== Diagram Styling Integration
+
+[source,ruby]
+----
+class DiagramPresenter
+  def initialize(diagram, repository, metadata_config)
+    @diagram = diagram
+    @repository = repository
+    @metadata = PackageMetadata.new(metadata_config)
+  end
+
+  def element_style(element)
+    package_path = element.owner.package_path
+
+    # Get package-specific styling from metadata
+    style_data = @metadata.metadata_for(package_path)[:style]
+
+    if style_data
+      apply_custom_style(style_data)
+    else
+      default_style
+    end
+  end
+end
+----
+
+== Error Handling
+
+=== Configuration File Errors
+
+[source,ruby]
+----
+begin
+  metadata = PackageMetadata.new("config/packages.yml")
+rescue Errno::ENOENT => e
+  # File not found
+  puts "Config file not found: #{e.message}"
+rescue Psych::SyntaxError => e
+  # Invalid YAML syntax
+  puts "Invalid YAML: #{e.message}"
+rescue ArgumentError => e
+  # Invalid configuration format
+  puts "Invalid format: #{e.message}"
+end
+----
+
+=== Safe Query Handling
+
+[source,ruby]
+----
+# Safe - always returns hash or nil
+metadata = PackageMetadata.new("config/packages.yml")
+
+data = metadata.metadata_for("NonExistent::Package")
+# => {} (empty hash, not error)
+
+xmlns = metadata.xmlns_for("NonExistent::Package")
+# => nil (not error)
+----
+
+== Performance Considerations
+
+=== Caching Strategy
+
+* Metadata is cached after first query per package path
+* Cache key is the complete package path string
+* Cache persists for lifetime of PackageMetadata instance
+* Clear cache with `clear_cache` if configuration changes
+
+=== Best Practices
+
+1. *Reuse instances*: Create one PackageMetadata instance per configuration file
+2. *Avoid repeated loads*: Don't create new instances for every query
+3. *Wildcard efficiency*: Use exact matches when possible (faster than wildcards)
+4. *Cache awareness*: Clear cache after external configuration changes
+
+[source,ruby]
+----
+# Good: Reuse instance
+@metadata ||= PackageMetadata.new("config/packages.yml")
+
+# Bad: Creates new instance every time
+def get_xmlns(package_path)
+  PackageMetadata.new("config/packages.yml").xmlns_for(package_path)
+end
+----
+
+== Testing
+
+=== Test File Location
+
+[source]
+----
+spec/lutaml/uml_repository/package_metadata_spec.rb
+----
+
+=== Running Tests
+
+[source,bash]
+----
+bundle exec rspec spec/lutaml/uml_repository/package_metadata_spec.rb
+----
+
+=== Test Coverage
+
+* 42 examples, 0 failures
+* 100% public API coverage
+* Edge cases: nil config, invalid YAML, wildcards, caching
+* Integration tests with Tempfile for configuration
+
+== Example Configuration
+
+See link:../config/package_metadata.example.yml[config/package_metadata.example.yml] for a complete example configuration file with detailed comments.
+
+== See Also
+
+* link:README.adoc[LutaML README] - Main documentation
+* link:diagram_generation.adoc[Diagram Generation] - Diagram styling integration
+* link:../lib/lutaml/uml_repository/package_metadata.rb[PackageMetadata source] - Implementation

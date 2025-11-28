@@ -77,6 +77,12 @@ module Lutaml
 
           output = classes.map { |cls| cls.respond_to?(:name) ? (cls.name || cls.to_s) : cls.to_s }
           puts output.join("\n")
+        rescue Thor::Error
+          raise
+        rescue ArgumentError => e
+          raise Thor::Error, e.message
+        rescue StandardError => e
+          raise Thor::Error, "Find command failed: #{e.message}"
         end
 
         private

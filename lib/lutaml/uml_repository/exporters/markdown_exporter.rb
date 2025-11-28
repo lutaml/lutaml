@@ -76,10 +76,10 @@ module Lutaml
 
             ## Statistics
 
-            - **Total Packages**: #{stats[:total_packages]}
-            - **Total Classes**: #{stats[:total_classes]}
-            - **Total Associations**: #{stats[:total_associations]}
-            - **Total Diagrams**: #{stats[:total_diagrams]}
+            - **Total Packages**: #{stats&.dig(:total_packages) || 0}
+            - **Total Classes**: #{stats&.dig(:total_classes) || 0}
+            - **Total Associations**: #{stats&.dig(:total_associations) || 0}
+            - **Total Diagrams**: #{stats&.dig(:total_diagrams) || 0}
 
             ## Package Structure
 
@@ -229,11 +229,28 @@ module Lutaml
           qname = qualified_name(klass)
           link = class_link(qname)
           type = klass.class.name.split("::").last
-          stereotypes = klass.stereotypes&.join(", ") || ""
+          stereotypes = format_stereotypes(klass.stereotype)
           attrs_count = klass.attributes&.size || 0
           assocs_count = count_associations(klass)
 
           "| [#{klass.name}](#{link}) | #{type} | #{stereotypes} | #{attrs_count} | #{assocs_count} |\n"
+        end
+
+        # Format stereotypes (can be string or array).
+        #
+        # @param stereotype [String, Array, nil] The stereotype(s)
+        # @return [String] Formatted stereotype string
+        def format_stereotypes(stereotype)
+          return "" unless stereotype
+
+          case stereotype
+          when Array
+            stereotype.join(", ")
+          when String
+            stereotype
+          else
+            ""
+          end
         end
 
         # Build diagrams section.
@@ -263,7 +280,7 @@ module Lutaml
                         recursive: options.fetch(:recursive, true),
                       )
                     else
-                      indexes[:classes].values
+                      indexes&.dig(:classes)&.values || []
                     end
 
           classes.each do |klass|
@@ -323,11 +340,29 @@ module Lutaml
         # @param klass [Object] The class object
         # @return [String] Markdown content
         def build_stereotypes_section(klass)
-          return "" unless klass.stereotypes&.any?
+          stereotypes_array = normalize_stereotypes(klass.stereotype)
+          return "" if stereotypes_array.empty?
 
-          "**Stereotypes**: #{klass.stereotypes.map do |s|
+          "**Stereotypes**: #{stereotypes_array.map do |s|
             "`#{s}`"
           end.join(', ')}\n\n"
+        end
+
+        # Normalize stereotypes to array format.
+        #
+        # @param stereotype [String, Array, nil] The stereotype(s)
+        # @return [Array] Array of stereotypes
+        def normalize_stereotypes(stereotype)
+          return [] unless stereotype
+
+          case stereotype
+          when Array
+            stereotype
+          when String
+            [stereotype]
+          else
+            []
+          end
         end
 
         # Build definition section.
@@ -492,7 +527,7 @@ module Lutaml
         # @param package [Object] The package object
         # @return [String] The package path
         def package_path(package)
-          indexes[:package_to_path][package.xmi_id] || package.name
+          indexes&.dig(:package_to_path, package.xmi_id) || package.name
         end
 
         # Get qualified name.
@@ -500,7 +535,7 @@ module Lutaml
         # @param klass [Object] The class object
         # @return [String] The qualified name
         def qualified_name(klass)
-          indexes[:class_to_qname][klass.xmi_id] || klass.name
+          indexes&.dig(:class_to_qname, klass.xmi_id) || klass.name
         end
 
         # Extract package path from qualified name.

@@ -1,0 +1,709 @@
+= Diagram Configuration Guide
+
+Complete reference for configuring EA-style diagram generation in LutaML.
+
+== Overview
+
+LutaML's diagram styling system uses a three-tier priority hierarchy to merge styles from multiple sources:
+
+1. **EA Data** (highest) - Styles embedded in QEA/XMI files
+2. **User Configuration** - Custom YAML configuration files  
+3. **Built-in Defaults** (lowest) - EA-style defaults shipped with LutaML
+
+This ensures that:
+
+* EA's original styling is always preserved when present
+* Users can customize defaults without modifying code
+* Sensible EA-compatible defaults are always available
+
+== Configuration File Format
+
+Configuration files use YAML format with the following top-level sections:
+
+[source,yaml]
+----
+stereotypes:     # Styling by stereotype
+  <stereotype>:
+    colors: {...}
+    fonts: {...}
+    box: {...}
+
+packages:        # Styling by package (wildcards supported)
+  <pattern>:
+    colors: {...}
+    fonts: {...}
+
+classes:         # Styling by class name
+  <className>:
+    colors: {...}
+    fonts: {...}
+
+connectors:      # Connector styling by type
+  <type>:
+    arrow: {...}
+    line: {...}
+    labels: {...}
+
+defaults:        # Global default styles
+  colors: {...}
+  fonts: {...}
+  box: {...}
+  text: {...}
+
+legend:          # Legend configuration
+  enabled: true
+  position: "bottom_right"
+  entries: [...]
+----
+
+== Priority Resolution
+
+=== Element Styling Priority
+
+For any element (class, datatype, enum), styles are resolved in this order:
+
+1. **Class-specific override** (highest)
++
+[source,yaml]
+----
+classes:
+  "MySpecialClass":
+    colors:
+      fill: "#FF0000"
+----
+
+2. **Package-based styling** (with wildcard support)
++
+[source,yaml]
+----
+packages:
+  "CityGML::*":
+    colors:
+      fill: "#FFFFCC"
+----
+
+3. **Stereotype-based styling**
++
+[source,yaml]
+----
+stereotypes:
+  DataType:
+    colors:
+      fill: "#FFCCFF"
+----
+
+4. **Global defaults** (lowest)
++
+[source,yaml]
+----
+defaults:
+  colors:
+    default_fill: "#E0E0E0"
+----
+
+**IMPORTANT**: EA data from DiagramObject.style always overrides everything when present.
+
+=== Example Resolution
+
+Given this configuration:
+
+[source,yaml]
+----
+stereotypes:
+  DataType:
+    colors:
+      fill: "#FFCCFF"
+
+packages:
+  "CityGML::*":
+    colors:
+      fill: "#FFFFCC"
+
+classes:
+  "Building":
+    colors:
+      fill: "#FF0000"
+----
+
+For a class named "Building" with stereotype "DataType" in package "CityGML::Core":
+
+* **Result**: `#FF0000` (red) from class-specific override
+* Without class override: `#FFFFCC` (yellow) from package pattern
+* Without package match: `#FFCCFF` (pink) from stereotype
+* Without stereotype: `#E0E0E0` (gray) from defaults
+* **If EA data present**: EA color always wins
+
+== Configuration Sections
+
+=== Stereotypes
+
+Define styles for UML stereotypes:
+
+[source,yaml]
+----
+stereotypes:
+  DataType:
+    colors:
+      fill: "#FFCCFF"        # Background color (pink)
+      stroke: "#000000"      # Border color (black)
+    fonts:
+      class_name:
+        family: "Carlito, Arial, sans-serif"
+        size: 9
+        weight: 700          # Bold
+        style: "italic"
+    box:
+      stroke_width: 2
+      corner_radius: 0
+
+  FeatureType:
+    colors:
+      fill: "#FFFFCC"        # Yellow
+      stroke: "#000000"
+
+  Interface:
+    fonts:
+      class_name:
+        style: "italic"      # Italic names for interfaces
+----
+
+=== Packages
+
+Define styles for package hierarchies with wildcard support:
+
+[source,yaml]
+----
+packages:
+  # Exact match
+  "ModelRoot::CityGML":
+    colors:
+      fill: "#FFFFCC"
+
+  # Wildcard: all packages under CityGML
+  "CityGML::*":
+    colors:
+      fill: "#FFFFCC"
+
+  # Multiple wildcards
+  "*::Core::*":
+    colors:
+      fill: "#CCFFFF"
+----
+
+Wildcard patterns:
+
+* `*` - Matches any characters (including `::`)
+* `CityGML::*` - Matches `CityGML::Core`, `CityGML::Building`, etc.
+* `*::Core` - Matches any package ending with `Core`
+
+=== Classes
+
+Define styles for specific classes by name:
+
+[source,yaml]
+----
+classes:
+  Building:
+    colors:
+      fill: "#FF0000"
+      stroke: "#000000"
+    fonts:
+      class_name:
+        size: 11            # Larger font
+        weight: 700
+
+  Person:
+    colors:
+      fill: "#00FF00"
+----
+
+=== Connectors
+
+Configure connector appearance by type:
+
+[source,yaml]
+----
+connectors:
+  generalization:
+    arrow:
+      type: "hollow_triangle"
+      size: 10
+    line:
+      stroke_width: 1
+      stroke: "#000000"
+
+  association:
+    arrow:
+      type: "open_arrow"
+      size: 8
+    line:
+      stroke_width: 1
+      stroke: "#000000"
+    labels:
+      show_role_names: true
+      show_cardinality: true
+      font:
+        family: "Carlito, Arial, sans-serif"
+        size: 8
+
+  aggregation:
+    arrow:
+      type: "diamond"       # Hollow diamond
+      size: 10
+    line:
+      stroke_width: 1
+
+  composition:
+    arrow:
+      type: "filled_diamond"
+      size: 10
+
+  dependency:
+    arrow:
+      type: "open_arrow"
+    line:
+      stroke_width: 1
+      stroke_dasharray: "5,5"  # Dashed line
+----
+
+Arrow types:
+
+* `hollow_triangle` - Generalization/inheritance
+* `open_arrow` - Association, dependency
+* `diamond` - Aggregation (hollow)
+* `filled_diamond` - Composition (filled)
+
+=== Defaults
+
+Global default styles applied when no specific style matches:
+
+[source,yaml]
+----
+defaults:
+  colors:
+    background: "#FFFFFF"
+    default_fill: "#E0E0E0"
+    default_stroke: "#000000"
+    text: "#000000"
+
+  fonts:
+    default:
+      family: "Carlito, Arial, sans-serif"
+      size: 9
+      weight: 400
+      style: "normal"
+
+    class_name:
+      family: "Carlito, Arial, sans-serif"
+      size: 9
+      weight: 700          # Bold for class names
+      style: "normal"
+
+    stereotype:
+      family: "Carlito, Arial, sans-serif"
+      size: 9
+      weight: 400
+      style: "normal"
+
+    attribute:
+      family: "Carlito, Arial, sans-serif"
+      size: 9
+      weight: 400
+      style: "normal"
+
+  box:
+    stroke_width: 2
+    stroke_linecap: "round"
+    stroke_linejoin: "bevel"
+    corner_radius: 0
+    padding: 5
+    fill_opacity: 1.0
+    stroke_opacity: 1.0
+
+  text:
+    visibility_public: "+"
+    visibility_private: "-"
+    visibility_protected: "#"
+    visibility_package: "~"
+    cardinality_format: "[%s]"
+    stereotype_format: "«%s»"
+----
+
+=== Legend
+
+Configure diagram legends (optional):
+
+[source,yaml]
+----
+legend:
+  enabled: true
+  position: "bottom_right"    # or top_left, top_right, bottom_left
+  title: "Legend"
+  entries:
+    - label: "i-UR DataTypes"
+      color: "#FFCCFF"
+    - label: "CityGML FeatureTypes"
+      color: "#FFFFCC"
+    - label: "GML Types"
+      color: "#CCFFCC"
+----
+
+== Color Format
+
+Colors must be specified as hex strings:
+
+* `"#RRGGBB"` format (6 digits)
+* `"#RGB"` shorthand also supported
+* Examples: `"#FFCCFF"`, `"#000"`, `"#F0F"`
+
+EA stores colors as BGR integers internally. LutaML automatically converts:
+
+* EA BGR `16764159` → `"#FFCCFF"` (pink)
+* EA BGR `16777164` → `"#FFFFCC"` (yellow)
+* EA BGR `13434828` → `"#CCFFCC"` (green)
+
+== Font Configuration
+
+=== Font Properties
+
+[source,yaml]
+----
+fonts:
+  class_name:
+    family: "Carlito, Arial, sans-serif"  # Font stack
+    size: 9                                # Point size
+    weight: 700                            # 400=normal, 700=bold
+    style: "normal"                        # or "italic"
+----
+
+=== Font Contexts
+
+Different font contexts for different text elements:
+
+* `default` - Base font for all text
+* `class_name` - Element names (classes, datatypes)
+* `stereotype` - Stereotype labels («DataType»)
+* `attribute` - Attribute text
+* `operation` - Operation text
+
+=== Font Stack
+
+Always specify fallback fonts:
+
+[source,yaml]
+----
+family: "Carlito, Arial, sans-serif"
+----
+
+Reasons:
+
+* Carlito matches EA's default font metrics
+* Arial is widely available
+* sans-serif ensures generic fallback
+
+== Box Styling
+
+Control element box appearance:
+
+[source,yaml]
+----
+box:
+  stroke_width: 2              # Border thickness
+  stroke_linecap: "round"      # round | square | butt
+  stroke_linejoin: "bevel"     # bevel | miter | round
+  corner_radius: 0             # Rounded corners (0 = square)
+  padding: 5                   # Internal padding
+  fill_opacity: 1.0            # 0.0 to 1.0
+  stroke_opacity: 1.0          # 0.0 to 1.0
+----
+
+== Text Formatting
+
+Configure text display conventions:
+
+[source,yaml]
+----
+text:
+  visibility_public: "+"
+  visibility_private: "-"
+  visibility_protected: "#"
+  visibility_package: "~"
+  cardinality_format: "[%s]"      # e.g., [0..*]
+  stereotype_format: "«%s»"       # e.g., «DataType»
+----
+
+== Configuration File Locations
+
+LutaML searches for configuration files in this order:
+
+1. Path specified via `config_path` parameter  
+2. `config/diagram_styles.yml` (project-specific)
+3. `~/.lutaml/diagram_styles.yml` (user-specific)
+4. Built-in defaults (always available)
+
+.Using custom configuration
+[example]
+====
+[source,ruby]
+----
+presenter = DiagramPresenter.new(
+  diagram,
+  repository,
+  config_path: "my_custom_styles.yml"
+)
+----
+====
+
+== Common Configuration Patterns
+
+=== CityGML Styling
+
+[source,yaml]
+----
+stereotypes:
+  DataType:
+    colors:
+      fill: "#FFCCFF"
+
+  FeatureType:
+    colors:
+      fill: "#FFFFCC"
+
+packages:
+  "CityGML::*":
+    colors:
+      fill: "#FFFFCC"
+
+  "GML::*":
+    colors:
+      fill: "#CCFFCC"
+----
+
+=== Custom Theme
+
+[source,yaml]
+----
+defaults:
+  colors:
+    background: "#F5F5F5"
+    default_fill: "#E8E8E8"
+    default_stroke: "#333333"
+    text: "#222222"
+
+  fonts:
+    default:
+      family: "Roboto, Arial, sans-serif"
+      size: 10
+
+stereotypes:
+  DataType:
+    colors:
+      fill: "#E1F5FE"      # Light blue
+      stroke: "#01579B"    # Dark blue
+
+  FeatureType:
+    colors:
+      fill: "#FFF9C4"      # Light yellow
+      stroke: "#F57F17"    # Dark yellow
+----
+
+=== Monochrome Theme
+
+[source,yaml]
+----
+defaults:
+  colors:
+    background: "#FFFFFF"
+    default_fill: "#FFFFFF"
+    default_stroke: "#000000"
+
+stereotypes:
+  DataType:
+    colors:
+      fill: "#FFFFFF"
+    fonts:
+      class_name:
+        style: "italic"
+
+  FeatureType:
+    colors:
+      fill: "#FFFFFF"
+    box:
+      stroke_width: 3
+----
+
+== Troubleshooting
+
+=== Colors Not Applied
+
+1. **Check Priority**: EA data overrides config. If diagram has embedded colors, they take precedence.
+
+2. **Verify Stereotype Names**: Stereotypes are case-sensitive. `"DataType"` ≠ `"datatype"`.
+
+3. **Check Package Patterns**: Ensure wildcard patterns match. Test with:
++
+[source,ruby]
+----
+config = Lutaml::Ea::Diagram::Configuration.new("styles.yml")
+puts config.matches_package?("CityGML::Core", "CityGML::*")  # Should be true
+----
+
+=== Fonts Not Rendering
+
+1. **Font Availability**: Ensure fonts are installed or use web-safe fallbacks.
+
+2. **Font Stack**: Always include fallbacks:
++
+[source,yaml]
+----
+family: "Carlito, Arial, sans-serif"
+----
+
+3. **Size Units**: Font size should be numeric (points assumed):
++
+[source,yaml]
+----
+size: 9    # Correct
+size: "9pt" # Also works but numeric preferred
+----
+
+=== Configuration Not Loading
+
+1. **File Path**: Verify configuration file exists and path is correct.
+
+2. **YAML Syntax**: Validate YAML syntax with:
++
+[source,ruby]
+----
+require 'yaml'
+YAML.load_file("diagram_styles.yml")
+----
+
+3. **File Permissions**: Ensure file is readable.
+
+== Advanced Patterns
+
+=== Conditional Styling by Package Hierarchy
+
+[source,yaml]
+----
+packages:
+  # Root level
+  "ModelRoot":
+    colors:
+      fill: "#F0F0F0"
+
+  # Second level wildcard
+  "ModelRoot::*":
+    colors:
+      fill: "#E0E0E0"
+
+  # Specific subfolder
+  "ModelRoot::CityGML::Core":
+    colors:
+      fill: "#FFFFCC"
+
+  # Deep wildcard
+  "*::Core::*":
+    colors:
+      fill: "#CCFFFF"
+----
+
+=== Multiple Stereotype Handling
+
+Classes can have multiple stereotypes. LutaML uses the first matching stereotype:
+
+[source,yaml]
+----
+stereotypes:
+  DataType:
+    colors:
+      fill: "#FFCCFF"
+
+  Abstract:
+    fonts:
+      class_name:
+        style: "italic"
+----
+
+For a class with stereotypes `["DataType", "Abstract"]`:
+
+* Color from `DataType` (first match)
+* Font from `Abstract` if `DataType` doesn't define fonts
+
+=== Per-Element Type Styling
+
+[source,yaml]
+----
+# Different styles for different classifiers
+stereotypes:
+  DataType:
+    colors:
+      fill: "#FFCCFF"
+
+  Enumeration:
+    colors:
+      fill: "#E0FFE0"
+    fonts:
+      class_name:
+        family: "monospace"
+
+  Interface:
+    colors:
+      fill: "#FFFFEE"
+    fonts:
+      class_name:
+        style: "italic"
+----
+
+== Performance Considerations
+
+* **File Size**: Keep configuration files under 100KB
+* **Pattern Count**: Limit wildcards to <50 patterns
+* **Caching**: Configuration is loaded once per rendering session
+* **Priority**: Early matches short-circuit pattern checking
+
+== API Integration
+
+=== Using Configuration Programmatically
+
+[source,ruby]
+----
+require 'lutaml/ea/diagram/configuration'
+
+# Load configuration
+config = Lutaml::Ea::Diagram::Configuration.new("my_styles.yml")
+
+# Query styles
+fill = config.style_for(element, "colors.fill")
+font = config.style_for(element, "fonts.class_name.family")
+
+# Check patterns
+matches = config.matches_package?("CityGML::Core", "CityGML::*")
+
+# Get full config
+data = config.to_h
+----
+
+=== Using with StyleResolver
+
+[source,ruby]
+----
+require 'lutaml/ea/diagram/style_resolver'
+
+# Create resolver with config
+resolver = Lutaml::Ea::Diagram::StyleResolver.new("my_styles.yml")
+
+# Resolve complete element style
+style = resolver.resolve_element_style(element, diagram_object)
+# Returns: { fill: "#FFCCFF", stroke: "#000000", font_family: "Carlito", ... }
+
+# Resolve connector style
+conn_style = resolver.resolve_connector_style(connector, diagram_link)
+----
+
+== See Also
+
+* link:diagram-generation.adoc[Diagram Generation Guide]
+* link:../README.adoc[LutaML README]
+* link:../config/diagram_styles.yml[Default Configuration File]

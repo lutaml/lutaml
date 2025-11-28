@@ -141,12 +141,43 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
       end
 
       it "handles strict validation mode" do
-        # This test should fail due to validation errors in strict mode
+        # Create a test XMI with validation errors
+        invalid_xmi = Tempfile.new(["invalid", ".xmi"])
+        invalid_xmi.write(<<~XML)
+          <?xml version="1.0" encoding="UTF-8"?>
+          <XMI xmi.version="1.1" xmlns:UML="org.omg/UML1.3">
+            <XMI.content>
+              <UML:Model name="TestModel" xmi.id="model1">
+                <UML:Namespace.ownedElement>
+                  <UML:Package name="TestPackage" xmi.id="pkg1">
+                    <UML:Namespace.ownedElement>
+                      <UML:Class name="InvalidClass" xmi.id="cls1">
+                        <UML:Classifier.feature>
+                          <UML:Attribute name="attr1" xmi.id="attr1">
+                            <UML:StructuralFeature.type>
+                              <UML:DataType xmi.idref="NonExistentType"/>
+                            </UML:StructuralFeature.type>
+                          </UML:Attribute>
+                        </UML:Classifier.feature>
+                      </UML:Class>
+                    </UML:Namespace.ownedElement>
+                  </UML:Package>
+                </UML:Namespace.ownedElement>
+              </UML:Model>
+            </XMI.content>
+          </XMI>
+        XML
+        invalid_xmi.close
+
+        # This test should raise SystemExit due to validation errors in strict mode
+        # Thor::Error raised inside Thor.start() is caught by Thor and converted to SystemExit
         expect {
-          Lutaml::Cli::UmlCommands.start(["build", test_xmi,
+          Lutaml::Cli::UmlCommands.start(["build", invalid_xmi.path,
                                         "-o", output_lur,
                                         "--strict"])
-        }.to raise_error(Thor::Error)
+        }.to raise_error(SystemExit)
+
+        File.unlink(invalid_xmi.path)
       end
     end
 

@@ -46,6 +46,12 @@ module Lutaml
           else
             puts OutputFormatter.format(statistics, format: options[:format])
           end
+        rescue Thor::Error
+          raise
+        rescue ArgumentError => e
+          raise Thor::Error, e.message
+        rescue StandardError => e
+          raise Thor::Error, "Stats command failed: #{e.message}"
         end
       end
     end

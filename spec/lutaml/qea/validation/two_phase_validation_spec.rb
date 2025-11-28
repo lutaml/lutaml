@@ -2,6 +2,7 @@
 
 require "spec_helper"
 require_relative "../../../../lib/lutaml/qea"
+require_relative "../../../../lib/lutaml/qea/parser"
 
 RSpec.describe "Two-Phase Validation System" do
   let(:qea_file) { "examples/qea/test.qea" }

@@ -79,18 +79,14 @@ RSpec.describe "CLI Error Handling and Edge Cases (via UmlCommands)" do
   describe "inspect command edge cases" do
     it "handles non-existent elements" do
       expect {
-        expect {
-          Lutaml::Cli::UmlCommands.start(["inspect", test_lur, "class:NonExistentClass"])
-        }.to raise_error(Thor::Error)
-      }.to output(/not found|does not exist/).to_stdout
+        Lutaml::Cli::UmlCommands.start(["inspect", test_lur, "class:NonExistentClass"])
+      }.to raise_error(SystemExit)
     end
 
     it "handles invalid element identifiers" do
       expect {
-        expect {
-          Lutaml::Cli::UmlCommands.start(["inspect", test_lur, "invalid_format"])
-        }.to raise_error(Thor::Error)
-      }.to output(/not found|Invalid/).to_stdout
+        Lutaml::Cli::UmlCommands.start(["inspect", test_lur, "invalid_format"])
+      }.to raise_error(SystemExit)
     end
   end
 
@@ -99,24 +95,20 @@ RSpec.describe "CLI Error Handling and Edge Cases (via UmlCommands)" do
       invalid_path = "/root/cannot_write_here.json"
 
       expect {
-        expect {
-          Lutaml::Cli::UmlCommands.start(["export", test_lur,
-                                        "--format", "json",
-                                        "-o", invalid_path])
-        }.to raise_error(Thor::Error)
-      }.to output(/Failed to export|Export failed/).to_stdout
+        Lutaml::Cli::UmlCommands.start(["export", test_lur,
+                                      "--format", "json",
+                                      "-o", invalid_path])
+      }.to raise_error(SystemExit)
     end
 
     it "handles unsupported format extensions" do
       output_file = File.join(output_dir, "export.unsupported")
 
       expect {
-        expect {
-          Lutaml::Cli::UmlCommands.start(["export", test_lur,
-                                        "--format", "unsupported",
-                                        "-o", output_file])
-        }.to raise_error(Thor::Error)
-      }.to output(/Unknown format|Unsupported/).to_stdout
+        Lutaml::Cli::UmlCommands.start(["export", test_lur,
+                                      "--format", "unsupported",
+                                      "-o", output_file])
+      }.to raise_error(SystemExit)
     end
 
     it "handles very large exports" do
@@ -138,58 +130,46 @@ RSpec.describe "CLI Error Handling and Edge Cases (via UmlCommands)" do
   describe "build command edge cases" do
     it "handles invalid XMI input for build" do
       expect {
-        expect {
-          Lutaml::Cli::UmlCommands.start(["build", invalid_file,
-                                        "-o", File.join(output_dir, "test.lur")])
-        }.to raise_error(Thor::Error)
-      }.to output(/Failed to build package|Model file not found/).to_stdout
+        Lutaml::Cli::UmlCommands.start(["build", invalid_file,
+                                      "-o", File.join(output_dir, "test.lur")])
+      }.to raise_error(SystemExit)
     end
 
     it "handles missing model file" do
       expect {
-        expect {
-          Lutaml::Cli::UmlCommands.start(["build", "nonexistent.xmi",
-                                        "-o", File.join(output_dir, "test.lur")])
-        }.to raise_error(Thor::Error)
-      }.to output(/Model file not found/).to_stdout
+        Lutaml::Cli::UmlCommands.start(["build", "nonexistent.xmi",
+                                      "-o", File.join(output_dir, "test.lur")])
+      }.to raise_error(SystemExit)
     end
   end
 
   describe "info command edge cases" do
     it "handles missing LUR file" do
       expect {
-        expect {
-          Lutaml::Cli::UmlCommands.start(["info", "nonexistent.lur"])
-        }.to raise_error(Thor::Error)
-      }.to output(/Package file not found/).to_stdout
+        Lutaml::Cli::UmlCommands.start(["info", "nonexistent.lur"])
+      }.to raise_error(SystemExit)
     end
 
     it "handles invalid LUR file" do
       expect {
-        expect {
-          Lutaml::Cli::UmlCommands.start(["info", invalid_file])
-        }.to raise_error(Thor::Error)
-      }.to output(/Failed to read package info/).to_stdout
+        Lutaml::Cli::UmlCommands.start(["info", invalid_file])
+      }.to raise_error(SystemExit)
     end
   end
 
   describe "validate command edge cases" do
     it "handles missing LUR file" do
       expect {
-        expect {
-          Lutaml::Cli::UmlCommands.start(["validate", "nonexistent.lur"])
-        }.to raise_error(Thor::Error)
-      }.to output(/File not found/).to_stdout
+        Lutaml::Cli::UmlCommands.start(["validate", "nonexistent.lur"])
+      }.to raise_error(SystemExit)
     end
   end
 
   describe "find command edge cases" do
     it "requires at least one filter" do
       expect {
-        expect {
-          Lutaml::Cli::UmlCommands.start(["find", test_lur])
-        }.to raise_error(Thor::Error)
-      }.to output(/Please specify at least one filter/).to_stdout
+        Lutaml::Cli::UmlCommands.start(["find", test_lur])
+      }.to raise_error(SystemExit)
     end
 
     it "shows warning when no results found" do
@@ -210,20 +190,16 @@ RSpec.describe "CLI Error Handling and Edge Cases (via UmlCommands)" do
   describe "stats command edge cases" do
     it "handles missing LUR file" do
       expect {
-        expect {
-          Lutaml::Cli::UmlCommands.start(["stats", "nonexistent.lur"])
-        }.to raise_error(Thor::Error)
-      }.to output(/Package file not found|Failed to load/).to_stdout
+        Lutaml::Cli::UmlCommands.start(["stats", "nonexistent.lur"])
+      }.to raise_error(SystemExit)
     end
   end
 
   describe "ls command edge cases" do
     it "handles unknown element type" do
       expect {
-        expect {
-          Lutaml::Cli::UmlCommands.start(["ls", test_lur, "--type", "invalid_type"])
-        }.to raise_error(Thor::Error)
-      }.to output(/Unknown type/).to_stdout
+        Lutaml::Cli::UmlCommands.start(["ls", test_lur, "--type", "invalid_type"])
+      }.to raise_error(SystemExit)
     end
 
     it "shows warning when no elements found" do

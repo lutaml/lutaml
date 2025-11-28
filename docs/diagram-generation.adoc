@@ -1,0 +1,310 @@
+= EA-Style Diagram Generation
+
+LutaML can generate pixel-perfect SVG diagrams from Enterprise Architect (EA) models, matching EA's visual style exactly including colors, fonts, and layout.
+
+== Features
+
+* **EA-style colors**: DataType (pink #FFCCFF), FeatureType (yellow #FFFFCC), GML types (green #CCFFCC)
+* **Configurable styling**: Full YAML-based configuration system
+* **Multiple connector types**: Generalization, association, aggregation, composition, dependency
+* **Stereotype rendering**: Displays stereotypes in EA format («stereotype»)
+* **Lazy-loading in SPA mode**: Diagrams loaded on-demand for performance
+* **CLI extraction**: Extract diagrams individually or in batch
+* **Priority-based styling**: EA data > user config > built-in defaults
+
+== Quick Start
+
+=== Generate Diagram from QEA File
+
+[source,ruby]
+----
+require 'lutaml'
+
+# Load QEA file
+document = Lutaml::Qea.parse("model.qea")
+repo = Lutaml::UmlRepository::Repository.new(document: document)
+
+# Get a diagram
+diagram = repo.packages_index.flat_map(&:diagrams).first
+
+# Generate SVG
+presenter = Lutaml::UmlRepository::Presenters::DiagramPresenter.new(diagram, repo)
+svg = presenter.svg_output
+
+# Save to file
+File.write("diagram.svg", svg)
+----
+
+=== CLI Usage
+
+[source,bash]
+----
+# Extract single diagram
+lutaml diagram extract model.qea -d EAID_12345 -o diagram.svg
+
+# Extract all diagrams to directory
+lutaml diagram extract model.qea -o diagrams/
+
+# List all diagrams
+lutaml diagram list model.qea
+
+# Generate static site with diagrams
+lutaml generate-site model.qea -o output/
+----
+
+== Configuration
+
+Diagram styling is fully configurable via YAML. Create a `diagram_styles.yml` file:
+
+[source,yaml]
+----
+stereotypes:
+  DataType:
+    colors:
+      fill: "#FFCCFF"      # Pink for datatypes
+      stroke: "#000000"
+    fonts:
+      class_name:
+        weight: 700
+        style: "italic"
+
+  FeatureType:
+    colors:
+      fill: "#FFFFCC"      # Yellow for feature types
+      stroke: "#000000"
+
+defaults:
+  colors:
+    default_fill: "#E0E0E0"
+    default_stroke: "#000000"
+  fonts:
+    default:
+      family: "Carlito, Arial, sans-serif"
+      size: 9
+      weight: 400
+----
+
+=== Configuration Priority
+
+The style resolver merges styles from multiple sources with this priority:
+
+1. **EA Data** (highest) - Colors and styles from `.qea` file
+2. **User Configuration** - Your custom `diagram_styles.yml`
+3. **Built-in Defaults** (lowest) - Sensible EA-style defaults
+
+This ensures EA's original styling is preserved while allowing customization.
+
+=== Configuration Options
+
+==== Stereotypes
+
+Define styles for specific stereotypes:
+
+[source,yaml]
+----
+stereotypes:
+  Interface:
+    colors:
+      fill: "#FFFFEE"
+    fonts:
+      class_name:
+        style: "italic"
+----
+
+==== Packages  
+
+Define styles for package hierarchies (supports wildcards):
+
+[source,yaml]
+----
+packages:
+  "CityGML::*":
+    colors:
+      fill: "#FFFFCC"
+----
+
+==== Classes
+
+Define styles for specific classes:
+
+[source,yaml]
+----
+classes:
+  Building:
+    colors:
+      fill: "#CCFFFF"
+----
+
+==== Connectors
+
+Customize connector appearance:
+
+[source,yaml]
+----
+connectors:
+  association:
+    arrow:
+      type: "open_arrow"
+      size: 8
+    line:
+      stroke_width: 1
+      stroke: "#000000"
+    labels:
+      show_role_names: true
+      show_cardinality: true
+----
+
+== API Usage
+
+=== DiagramPresenter
+
+The main class for generating diagrams:
+
+[source,ruby]
+----
+presenter = Lutaml::UmlRepository::Presenters::DiagramPresenter.new(
+  diagram,
+  repository,
+  config_path: "custom_styles.yml"  # Optional
+)
+
+# Generate SVG
+svg = presenter.svg_output(
+  padding: 20,                     # Padding around diagram
+  background_color: "#ffffff",     # Background color
+  grid_visible: false,             # Show grid
+  interactive: false               # Enable click handlers
+)
+----
+
+=== Accessing Diagram Data
+
+[source,ruby]
+----
+# Get all diagrams
+diagrams = repo.packages_index.flat_map(&:diagrams).compact
+
+# Find specific diagram
+diagram = diagrams.find { |d| d.xmi_id.include?("EAID_12345") }
+
+# Get diagram info
+puts "Name: #{diagram.name}"
+puts "Type: #{diagram.diagram_type}" 
+puts "Elements: #{diagram.diagram_objects.count}"
+puts "Links: #{diagram.diagram_links.count}"
+----
+
+== Architecture
+
+=== Component Overview
+
+[source]
+----
+DiagramPresenter
+    │
+    ├─> LayoutEngine (coordinate conversion)
+    ├─> StyleResolver (style merging)
+    ├─> SvgRenderer (SVG generation)
+    │       │
+    │       ├─> ElementRenderers (class, package, etc.)
+    │       └─> PathBuilder (connector routing)
+    │
+    └─> Configuration (YAML config loading)
+----
+
+=== Key Components
+
+* **DiagramPresenter**: Coordinates the entire rendering pipeline
+* **LayoutEngine**: Converts EA coordinates (left/top/right/bottom) to SVG (x/y/width/height)
+* **StyleResolver**: Merges EA data + user config + defaults with priority system
+* **SvgRenderer**: Generates complete SVG with layers (background, connectors, elements)
+* **PathBuilder**: Parses EA geometry strings and builds SVG paths
+* **ElementRenderers**: Render specific element types (classes, packages, etc.)
+
+== Coordinate System
+
+EA uses a different coordinate system than SVG:
+
+* **EA**: Uses left/top/right/bottom for element bounds
+* **SVG**: Uses x/y/width/height
+
+The LayoutEngine automatically converts between these:
+
+[source,ruby]
+----
+# EA coordinates
+diagram_object.left   # Left edge
+diagram_object.top    # Top edge  
+diagram_object.right  # Right edge
+diagram_object.bottom # Bottom edge
+
+# Converted to SVG
+{
+  x: left,
+  y: top,
+  width: right - left,
+  height: bottom - top
+}
+----
+
+== Troubleshooting
+
+=== Diagrams Not Appearing
+
+1. Check that diagrams exist in the QEA file:
++
+[source,bash]
+----
+lutaml diagram list model.qea
+----
+
+2. Verify diagram has visual elements:
++
+[source,ruby]
+----
+puts "Objects: #{diagram.diagram_objects.count}"
+puts "Links: #{diagram.diagram_links.count}"
+----
+
+=== Colors Not Matching EA
+
+1. Check if EA data exists in diagram_object.style
+2. Verify configuration file is being loaded
+3. Check stereotype names match exactly (case-sensitive)
+
+=== Elements Positioned Incorrectly
+
+EA coordinates may have negative values. The LayoutEngine should normalize these, but you can verify:
+
+[source,ruby]
+----
+diagram.diagram_objects.each do |obj|
+  puts "#{obj.object_xmi_id}: (#{obj.left}, #{obj.top})"
+end
+----
+
+== Performance
+
+Diagram generation is optimized for both single and batch operations:
+
+* **Single diagram**: <1 second
+* **Batch (100 diagrams)**: ~2 minutes
+* **Memory usage**: Modest, processes one diagram at a time
+
+For large batches, diagrams are generated and saved incrementally to avoid memory issues.
+
+== Future Enhancements
+
+Planned features for future releases:
+
+* **PNG/PDF export**: Generate raster and PDF formats
+* **Interactive diagrams**: Click handlers and tooltips
+* **Diagram comparison**: Visual diff between versions
+* **Custom themes**: Pre-built color schemes
+* **Legend generation**: Auto-generate color legends
+
+== See Also
+
+* link:diagram-configuration.adoc[Complete Configuration Reference]
+* link:../README.adoc[LutaML README]
+* link:../config/diagram_styles.yml[Default Styles]

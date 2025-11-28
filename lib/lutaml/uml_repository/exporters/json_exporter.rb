@@ -67,10 +67,10 @@ module Lutaml
           stats = repository.statistics
           {
             exported_at: Time.now.utc.iso8601,
-            total_packages: stats[:total_packages],
-            total_classes: stats[:total_classes],
-            total_associations: stats[:total_associations],
-            total_diagrams: stats[:total_diagrams],
+            total_packages: stats&.dig(:total_packages) || 0,
+            total_classes: stats&.dig(:total_classes) || 0,
+            total_associations: stats&.dig(:total_associations) || 0,
+            total_diagrams: stats&.dig(:total_diagrams) || 0,
           }
         end
 
@@ -111,7 +111,7 @@ module Lutaml
         # @param package [Object] The package object
         # @return [String] The package path
         def package_path(package)
-          indexes[:package_to_path][package.xmi_id] || package.name
+          indexes&.dig(:package_to_path, package.xmi_id) || package.name
         end
 
         # Build classes section.
@@ -125,7 +125,7 @@ module Lutaml
                         recursive: options[:recursive] || false,
                       )
                     else
-                      indexes[:classes].values
+                      indexes&.dig(:classes)&.values || []
                     end
 
           classes.map { |klass| serialize_class(klass) }
@@ -144,12 +144,29 @@ module Lutaml
             qualified_name: qname,
             name: klass.name,
             type: class_type(klass),
-            stereotypes: klass.stereotypes || [],
+            stereotypes: normalize_stereotypes(klass.stereotype),
             package: extract_package_path(qname),
             attributes: serialize_attributes(klass),
             operations: serialize_operations(klass),
             generalizations: serialize_generalizations(klass),
           }
+        end
+
+        # Normalize stereotypes to array format.
+        #
+        # @param stereotype [String, Array, nil] The stereotype(s)
+        # @return [Array] Array of stereotypes
+        def normalize_stereotypes(stereotype)
+          return [] unless stereotype
+
+          case stereotype
+          when Array
+            stereotype
+          when String
+            [stereotype]
+          else
+            []
+          end
         end
 
         # Get class type.
@@ -165,7 +182,7 @@ module Lutaml
         # @param klass [Object] The class object
         # @return [String] The qualified name
         def qualified_name(klass)
-          indexes[:class_to_qname][klass.xmi_id] || klass.name
+          indexes&.dig(:class_to_qname, klass.xmi_id) || klass.name
         end
 
         # Extract package path from qualified name.

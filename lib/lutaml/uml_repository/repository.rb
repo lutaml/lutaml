@@ -594,6 +594,14 @@ fields: [:name])
         all_diagrams
       end
 
+      # Get all classes in the repository
+      # @return [Array] All class objects (classes, datatypes, enums)
+      # @example
+      #   all = repo.all_classes
+      def all_classes
+        classes_index
+      end
+
       # DEPRECATED: Use search with types: [:class] instead
       # @deprecated Use {#search} with types filter
       def search_classes(query_string)

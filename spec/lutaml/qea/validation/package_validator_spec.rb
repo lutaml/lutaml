@@ -7,7 +7,8 @@ require_relative "../../../../lib/lutaml/qea/models/ea_package"
 
 RSpec.describe Lutaml::Qea::Validation::PackageValidator do
   let(:result) { Lutaml::Qea::Validation::ValidationResult.new }
-  let(:context) { { packages: packages } }
+  let(:database) { double("Database", packages: packages) }
+  let(:context) { { db_packages: packages, database: database } }
   let(:validator) { described_class.new(result: result, context: context) }
 
   describe "#validate" do
