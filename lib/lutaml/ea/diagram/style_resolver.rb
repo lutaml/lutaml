@@ -135,6 +135,11 @@ module Lutaml
           }.compact
         end
 
+        # Backward compatibility alias
+        # @deprecated Use resolve_element_style instead
+        alias parse_element_style resolve_element_style
+
+        private
         private
 
         # Parse DiagramObject.style string (EA format: "BCol=16764159;LCol=0;SOID=123")

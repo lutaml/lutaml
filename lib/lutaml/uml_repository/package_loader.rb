@@ -136,9 +136,9 @@ module Lutaml
       # @return [Lutaml::Uml::Document] The loaded document
       # @raise [RuntimeError] If document file is missing
       def self.load_yaml_document(zip)
-        entry = zip.find_entry("models/document.yaml")
+        entry = zip.find_entry("repository.yaml")
         unless entry
-          raise "Invalid LUR package: missing models/document.yaml"
+          raise "Invalid LUR package: missing repository.yaml"
         end
 
         Lutaml::Uml::Document.from_yaml(entry.get_input_stream.read)
@@ -152,9 +152,9 @@ module Lutaml
       # @return [Lutaml::Uml::Document] The loaded document
       # @raise [RuntimeError] If document file is missing
       def self.load_marshal_document(zip)
-        entry = zip.find_entry("models/document.marshal")
+        entry = zip.find_entry("repository.marshal")
         unless entry
-          raise "Invalid LUR package: missing models/document.marshal"
+          raise "Invalid LUR package: missing repository.marshal"
         end
 
         Marshal.load(entry.get_input_stream.read)

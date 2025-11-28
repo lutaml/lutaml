@@ -27,7 +27,7 @@ module Lutaml
         rescue StandardError => e
           OutputFormatter.progress_done(success: false)
           puts OutputFormatter.error("Failed to load repository: #{e.message}")
-          raise e
+          raise Thor::Error, e.message
         end
 
         # Normalize path syntax

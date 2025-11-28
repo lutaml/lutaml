@@ -14,6 +14,7 @@ module Lutaml
       attribute :nested_classifier, :string, collection: true,
                                              default: -> { [] }
       attribute :is_abstract, :boolean, default: false
+      attribute :stereotype, :string, collection: true, default: -> { [] }
       attribute :type, :string
       attribute :attributes, TopElementAttribute, collection: true
       attribute :modifier, :string
@@ -26,6 +27,7 @@ module Lutaml
       yaml do
         map "nested_classifier", to: :nested_classifier
         map "is_abstract", to: :is_abstract
+        map "stereotype", to: :stereotype
         map "type", to: :type
         map "attributes", to: :attributes
         map "modifier", to: :modifier

@@ -30,7 +30,7 @@ module Lutaml
         def run(lur_path)
           unless File.exist?(lur_path)
             puts OutputFormatter.error("Package file not found: #{lur_path}")
-            raise StandardError, "Package file not found: #{lur_path}"
+            raise Thor::Error, "Package file not found: #{lur_path}"
           end
 
           require "zip"
@@ -41,7 +41,7 @@ module Lutaml
               metadata_entry = zip.find_entry("metadata.yaml")
               unless metadata_entry
                 puts OutputFormatter.error("Invalid package: missing metadata")
-                raise StandardError, "Invalid package: missing metadata"
+                raise Thor::Error, "Invalid package: missing metadata"
               end
 
               metadata = YAML.safe_load(metadata_entry.get_input_stream.read)
@@ -52,9 +52,11 @@ module Lutaml
                 puts OutputFormatter.format(metadata, format: options[:format])
               end
             end
+          rescue Thor::Error
+            raise
           rescue StandardError => e
             puts OutputFormatter.error("Failed to read package info: #{e.message}")
-            raise e
+            raise Thor::Error, "Failed to read package info: #{e.message}"
           end
         end
 

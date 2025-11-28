@@ -17,13 +17,12 @@ module Lutaml
           Export repository data to various formats.
 
           Examples:
-            lutaml uml export model.lur --format csv -o classes.csv
             lutaml uml export model.lur --format json -o model.json
             lutaml uml export model.lur --format markdown -o docs/
           DESC
 
           thor_class.option :format, type: :string, required: true,
-                                     desc: "Export format (csv|json|markdown)"
+                                     desc: "Export format (json|markdown)"
           thor_class.option :output, aliases: "-o", required: true,
                                      desc: "Output path"
           thor_class.option :package, type: :string, desc: "Filter by package"
@@ -35,8 +34,6 @@ module Lutaml
           repo = load_repository(lur_path)
 
           exporter_class = case options[:format].downcase
-                           when "csv"
-                             Lutaml::UmlRepository::Exporters::CsvExporter
                            when "json"
                              Lutaml::UmlRepository::Exporters::JsonExporter
                            when "markdown"

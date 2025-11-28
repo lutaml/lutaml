@@ -1,0 +1,79 @@
+# Continuation Prompt: SPA Template/UI Fixes
+
+## Context
+The QEA parser has been completely fixed (16/16 issues resolved). All data is being correctly extracted and transformed. The SPA templates have been updated with proper logic, but the JavaScript interactivity needs refinement to make everything work in the browser.
+
+## Current State
+- ✅ QEA Parser: 100% working, all tests passing
+- ✅ SPA Data Layer: Correct (stereotypes arrays, diagrams loaded, tree deduplicated)
+- 🔄 SPA Template/UI: Templates updated but JavaScript event handling needs fixes
+
+## What Needs to Be Done
+
+### Critical (P0) - Must Fix Immediately
+
+1. **Navigation tree expand/collapse broken**
+   - Location: `templates/static_site/assets/scripts/ui/sidebar.js` line 105
+   - Problem: onclick calls rebuildTree() but Alpine doesn't detect the change
+   - Solution: Use custom events or proper Alpine reactivity
+
+2. **Type column not actually clickable**
+   - Location: `templates/static_site/components/class_details.liquid` line 101
+   - Problem: isUmlBasicType() and findClassByName() not in scope
+   - Solution: Add these as methods to app() component or use $root scope
+
+3. **Show diagrams when package has diagrams**
+   - Location: `templates/static_site/components/package_details.liquid`
+   - Problem: Diagrams listed but need better display
+   - CRITICAL: Must show diagram names prominently, not just say "package is empty"
+
+### High Priority (P1)
+
+4. **Filter unnamed classes from navigation count**
+   - Location: `lib/lutaml/uml_repository/static_site/data_transformer.rb` line 121
+   - Problem: 位置図 shows "1" for unnamed class
+   - Fix: `classCount: package.classes&.reject { |c| c.name.nil? || c.name.empty? }&.size`
+
+5. **Add package name to class details page**
+   - Location: `templates/static_site/components/class_details.liquid`
+   - Add Package field after qualified name, before stereotypes
+
+### Medium Priority (P2)
+
+6. **Auto-expand navigation to selected class**
+   - When clicking a class, expand its package hierarchy in nav tree
+   - Scroll selected class into view
+
+7. **Different icons for entity types**
+   - Class: rectangle
+   - DataType: circle
+   - Enum: hexagon
+   - Interface: double circle
+
+### Testing
+After fixes, regenerate and test:
+```bash
+bundle exec lutaml uml build-spa examples/qea/20251010_current_plateau_v5.1.lur -o test_final.html
+```
+
+Then open in browser and verify:
+- [ ] Can expand/collapse all packages
+- [ ] Clicking type in attributes navigates to that class
+- [ ] UML types show in blue, unresolved in red
+- [ ] Diagrams are displayed with names
+- [ ] All classes visible in nav tree
+- [ ] Search works
+
+## Files to Modify
+
+1. `templates/static_site/assets/scripts/ui/sidebar.js` - Fix expand/collapse
+2. `templates/static_site/components/class_details.liquid` - Fix type scope, add package name
+3. `templates/static_site/assets/scripts/core/state.js` - Add helper methods to app()
+4. `lib/lutaml/uml_repository/static_site/data_transformer.rb` - Filter unnamed classes
+5. `templates/static_site/components/package_details.liquid` - Show diagrams prominently
+
+## Success Criteria
+- All navigation and type clicking works in browser
+- No JavaScript console errors
+- Diagrams properly displayed
+- All data accessible and navigable

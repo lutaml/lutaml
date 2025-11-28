@@ -39,6 +39,11 @@ module Lutaml
     # This class serves as a thin delegation layer to individual command classes,
     # keeping the Thor integration separate from business logic.
     class UmlCommands < Thor
+      # Make Thor raise errors instead of exiting
+      def self.exit_on_failure?
+        true
+      end
+
       # Command aliases for convenience
       map "ls" => :list
       map "t" => :tree

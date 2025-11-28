@@ -44,9 +44,16 @@ RSpec.describe Lutaml::Qea::Validation::ValidationEngine do
     let(:engine) { described_class.new(document, database: database) }
 
     before do
+      # Mock document methods for UML tree extraction
+      allow(document).to receive(:classes).and_return([])
+      allow(document).to receive(:packages).and_return([])
+      allow(document).to receive(:enums).and_return([])
+      allow(document).to receive(:data_types).and_return([])
+      allow(document).to receive(:associations).and_return([])
+
       # Mock database collections
       allow(database).to receive(:packages).and_return([])
-      allow(database).to receive(:objects).and_return([])
+      allow(database).to receive(:objects).and_return(double("ObjectRepository", all: []))
       allow(database).to receive(:attributes).and_return([])
       allow(database).to receive(:operations).and_return([])
       allow(database).to receive(:connectors).and_return([])
@@ -120,6 +127,13 @@ RSpec.describe Lutaml::Qea::Validation::ValidationEngine do
     end
 
     it "returns true when no errors" do
+      # Mock document methods for this test
+      allow(document).to receive(:classes).and_return([])
+      allow(document).to receive(:packages).and_return([])
+      allow(document).to receive(:enums).and_return([])
+      allow(document).to receive(:data_types).and_return([])
+      allow(document).to receive(:associations).and_return([])
+
       expect(engine.valid?).to be true
     end
   end
@@ -145,8 +159,16 @@ RSpec.describe Lutaml::Qea::Validation::ValidationEngine do
     let(:engine) { described_class.new(document, database: database) }
 
     before do
+      # Mock document methods
+      allow(document).to receive(:classes).and_return([])
+      allow(document).to receive(:packages).and_return([])
+      allow(document).to receive(:enums).and_return([])
+      allow(document).to receive(:data_types).and_return([])
+      allow(document).to receive(:associations).and_return([])
+
+      # Mock database collections
       allow(database).to receive(:packages).and_return([])
-      allow(database).to receive(:objects).and_return([])
+      allow(database).to receive(:objects).and_return(double("ObjectRepository", all: []))
       allow(database).to receive(:attributes).and_return([])
       allow(database).to receive(:operations).and_return([])
       allow(database).to receive(:connectors).and_return([])

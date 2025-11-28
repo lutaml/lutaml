@@ -2,51 +2,53 @@
 
 module Lutaml
   module Xmi
-    class ConnectorDrop < Liquid::Drop
-      include Parsers::XmiBase
+    module LiquidDrops
+      class ConnectorDrop < Liquid::Drop
+        include Parsers::XmiBase
 
-      def initialize(model, options = {}) # rubocop:disable Lint/MissingSuper
-        @model = model
-        @options = options
-        @xmi_root_model = options[:xmi_root_model]
-        @id_name_mapping = options[:id_name_mapping]
-      end
+        def initialize(model, options = {}) # rubocop:disable Lint/MissingSuper
+          @model = model
+          @options = options
+          @xmi_root_model = options[:xmi_root_model]
+          @id_name_mapping = options[:id_name_mapping]
+        end
 
-      def idref
-        @model.idref
-      end
+        def idref
+          @model.idref
+        end
 
-      def name
-        @model.name
-      end
+        def name
+          @model.name
+        end
 
-      def type
-        @model&.properties&.ea_type
-      end
+        def type
+          @model&.properties&.ea_type
+        end
 
-      def documentation
-        @model&.documentation&.value
-      end
+        def documentation
+          @model&.documentation&.value
+        end
 
-      def ea_type
-        @model&.properties&.ea_type
-      end
+        def ea_type
+          @model&.properties&.ea_type
+        end
 
-      def direction
-        @model&.properties&.direction
-      end
+        def direction
+          @model&.properties&.direction
+        end
 
-      def source
-        ::Lutaml::Xmi::SourceTargetDrop.new(@model.source, @options)
-      end
+        def source
+          ::Lutaml::Xmi::LiquidDrops::SourceTargetDrop.new(@model.source, @options)
+        end
 
-      def target
-        ::Lutaml::Xmi::SourceTargetDrop.new(@model.target, @options)
-      end
+        def target
+          ::Lutaml::Xmi::LiquidDrops::SourceTargetDrop.new(@model.target, @options)
+        end
 
-      def recognized?
-        !!@id_name_mapping[@model.source.idref] &&
-          !!@id_name_mapping[@model.target.idref]
+        def recognized?
+          !!@id_name_mapping[@model.source.idref] &&
+            !!@id_name_mapping[@model.target.idref]
+        end
       end
     end
   end

@@ -72,6 +72,12 @@ module Lutaml
           end
 
           display_element_list(elements, options[:type])
+        rescue Thor::Error
+          raise
+        rescue ArgumentError => e
+          raise Thor::Error, e.message
+        rescue StandardError => e
+          raise Thor::Error, "List command failed: #{e.message}"
         end
 
         private

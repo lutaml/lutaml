@@ -1,19 +1,23 @@
 # frozen_string_literal: true
 
+require_relative "path_builder"
+require_relative "style_resolver"
 require_relative "element_renderers/base_renderer"
+require_relative "element_renderers/class_renderer"
+require_relative "element_renderers/package_renderer"
 
 module Lutaml
   module Ea
     module Diagram
       # Main SVG renderer for EA diagrams
       class SvgRenderer
-        attr_reader :diagram_renderer, :options, :bounds
+        attr_reader :diagram_renderer, :options, :bounds, :style_resolver
 
         DEFAULT_OPTIONS = {
           padding: 20,
           background_color: "#ffffff",
           grid_visible: false,
-          interactive: true,
+          interactive: false,
           css_classes: []
         }.freeze
 
@@ -21,6 +25,7 @@ module Lutaml
           @diagram_renderer = diagram_renderer
           @options = DEFAULT_OPTIONS.merge(options)
           @bounds = diagram_renderer.bounds
+          @style_resolver = StyleResolver.new(options[:config_path])
         end
 
         # Render the complete SVG diagram
@@ -57,7 +62,7 @@ module Lutaml
                  height="#{height}cm"
                  viewBox="#{view_box}"
                  class="#{css_classes.join(' ')}">
-            <title></title>
+            <title>#{diagram_renderer.diagram_data[:name]}</title>
             <desc>Created with LutaML EA Diagram Renderer</desc>
           SVG
         end
@@ -72,20 +77,35 @@ module Lutaml
                 .lutaml-diagram-connector { fill: none; stroke: #000000; stroke-width: 1; }
                 .lutaml-diagram-connector:hover { stroke-width: 2; }
                 .lutaml-diagram-grid { stroke: #e0e0e0; stroke-width: 0.5; }
+                .lutaml-diagram-text { font-family: Arial, sans-serif; font-size: 11px; }
+                .lutaml-diagram-stereotype { font-style: italic; font-size: 9px; }
+                .lutaml-diagram-class-name { font-weight: bold; font-size: 12px; }
                 ]]>
               </style>
-              <!-- Arrow markers for connectors -->
-              <marker id="arrowhead" markerWidth="10" markerHeight="7"
+              <!-- EA-style arrow markers -->
+              <marker id="generalization-arrow" markerWidth="10" markerHeight="7"
+                      refX="9" refY="3.5" orient="auto">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#FFFFFF" stroke="#000000" stroke-width="1" />
+              </marker>
+              <marker id="association-arrow" markerWidth="10" markerHeight="7"
                       refX="9" refY="3.5" orient="auto">
                 <polygon points="0 0, 10 3.5, 0 7" fill="#000000" />
               </marker>
-              <marker id="diamond" markerWidth="12" markerHeight="12"
+              <marker id="aggregation-arrow" markerWidth="12" markerHeight="12"
                       refX="6" refY="6" orient="auto">
                 <polygon points="6,0 12,6 6,12 0,6" fill="#FFFFFF" stroke="#000000" stroke-width="1" />
               </marker>
-              <marker id="filled-diamond" markerWidth="12" markerHeight="12"
+              <marker id="composition-arrow" markerWidth="12" markerHeight="12"
                       refX="6" refY="6" orient="auto">
                 <polygon points="6,0 12,6 6,12 0,6" fill="#000000" stroke="#000000" stroke-width="1" />
+              </marker>
+              <marker id="dependency-arrow" markerWidth="10" markerHeight="7"
+                      refX="9" refY="3.5" orient="auto">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#000000" />
+              </marker>
+              <marker id="realization-arrow" markerWidth="10" markerHeight="7"
+                      refX="9" refY="3.5" orient="auto">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#FFFFFF" stroke="#000000" stroke-width="1" />
               </marker>
             </defs>
           SVG
@@ -93,7 +113,7 @@ module Lutaml
 
         def background_layer
           <<~SVG
-            <g style="fill:#{options[:background_color]};fill-opacity:1.00;">
+            <g id="background-layer" style="fill:#{options[:background_color]};fill-opacity:1.00;">
               <rect x="#{bounds[:x] - options[:padding]}"
                     y="#{bounds[:y] - options[:padding]}"
                     width="#{bounds[:width] + (options[:padding] * 2)}"
@@ -122,7 +142,7 @@ module Lutaml
             y += grid_size
           end
 
-          "<g class=\"lutaml-diagram-grid-layer\">\n#{grid_lines}</g>\n"
+          "<g id=\"grid-layer\" class=\"lutaml-diagram-grid-layer\">\n#{grid_lines}</g>\n"
         end
 
         def connectors_layer
@@ -130,7 +150,7 @@ module Lutaml
             render_connector(connector)
           end.join("\n")
 
-          "<g class=\"lutaml-diagram-connectors-layer\">\n#{connectors_svg}\n</g>\n"
+          "<g id=\"connectors-layer\" class=\"lutaml-diagram-connectors-layer\">\n#{connectors_svg}\n</g>\n"
         end
 
         def elements_layer
@@ -138,7 +158,7 @@ module Lutaml
             render_element(element)
           end.join("\n")
 
-          "<g class=\"lutaml-diagram-elements-layer\">\n#{elements_svg}\n</g>\n"
+          "<g id=\"elements-layer\" class=\"lutaml-diagram-elements-layer\">\n#{elements_svg}\n</g>\n"
         end
 
         def interactive_layer
@@ -151,6 +171,13 @@ module Lutaml
                 var elements = document.querySelectorAll('.lutaml-diagram-element');
                 elements.forEach(function(el) {
                   el.addEventListener('click', function(e) {
+                    var event = new CustomEvent('lutaml:element:click', {
+                      detail: {
+                        elementId: e.target.getAttribute('data-element-id'),
+                        elementType: e.target.getAttribute('data-element-type')
+                      }
+                    });
+                    document.dispatchEvent(event);
                     console.log('Element clicked:', e.target.getAttribute('data-element-id'));
                   });
                 });
@@ -168,24 +195,12 @@ module Lutaml
           path_builder = PathBuilder.new(connector)
           path_data = path_builder.build_path
 
-          style = diagram_renderer.style_parser.parse_connector_style(connector)
+          style = style_resolver.resolve_connector_style(connector)
 
           # Determine marker based on connector type
-          marker_start = ""
-          marker_end = "url(#arrowhead)"
-
-          case connector[:type]
-          when "generalization"
-            marker_end = "url(#arrowhead)"
-          when "aggregation"
-            marker_start = "url(#diamond)"
-            marker_end = ""
-          when "composition"
-            marker_start = "url(#filled-diamond)"
-            marker_end = ""
-          when "dependency"
-            marker_end = "url(#arrowhead)"
-          end
+          markers = determine_marker_type(connector[:type])
+          marker_start = markers[:start] || ""
+          marker_end = markers[:end] || ""
 
           # Build style string
           style_attrs = []
@@ -212,13 +227,34 @@ module Lutaml
 
         def render_element(element)
           renderer_class = case element[:type]
-                           when "class" then ElementRenderers::ClassRenderer
+                           when "class", "datatype" then ElementRenderers::ClassRenderer
                            when "package" then ElementRenderers::PackageRenderer
                            else ElementRenderers::BaseRenderer
                            end
 
-          renderer = renderer_class.new(element, diagram_renderer.style_parser)
+          renderer = renderer_class.new(element, style_resolver)
           renderer.render
+        end
+
+        def determine_marker_type(connector_type)
+          normalized_type = connector_type.to_s.downcase
+          
+          case normalized_type
+          when "generalization", "inheritance"
+            { end: "url(#generalization-arrow)" }
+          when "association"
+            { end: "url(#association-arrow)" }
+          when "aggregation"
+            { start: "url(#aggregation-arrow)" }
+          when "composition"
+            { start: "url(#composition-arrow)" }
+          when "dependency"
+            { end: "url(#dependency-arrow)" }
+          when "realization", "implementation"
+            { end: "url(#realization-arrow)" }
+          else
+            { end: "url(#association-arrow)" }
+          end
         end
 
         def style_to_css(style_hash)

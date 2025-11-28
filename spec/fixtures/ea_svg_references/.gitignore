@@ -1,0 +1,14 @@
+# Track this directory but don't require SVG files
+# SVG files can be added optionally for local testing
+
+# Allow README
+!README.md
+
+# Allow .gitignore itself
+!.gitignore
+
+# Ignore all SVG files (they're optional)
+*.svg
+
+# But allow committing them if explicitly added with git add -f
+# This gives flexibility: tests skip without them, but can commit if needed

@@ -69,10 +69,13 @@ module Lutaml
             )
             raise Thor::Error, "Unsupported file type. Please provide a .qea or .lur file."
           end
+        rescue Thor::Error
+          raise
         rescue StandardError => e
           OutputFormatter.progress_done(success: false)
           puts OutputFormatter.error("Validation failed: #{e.message}")
           puts e.backtrace.first(5).join("\n") if ENV["DEBUG"]
+          raise Thor::Error, "Validation failed: #{e.message}"
         end
 
         private

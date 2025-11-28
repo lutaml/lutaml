@@ -82,6 +82,35 @@ module Lutaml
           element
         end
 
+        # Backward compatibility methods (deprecated)
+        # These methods are no longer used in the current architecture
+        # but kept for test compatibility
+
+        # Convert EA coordinates (deprecated - now handled by DiagramPresenter)
+        # @deprecated Use DiagramPresenter coordinate handling instead
+        def convert_ea_coordinates(diagram_object)
+          {
+            left: diagram_object.left || 0,
+            top: diagram_object.top || 0,
+            right: diagram_object.right || 100,
+            bottom: diagram_object.bottom || 100
+          }
+        end
+
+        # Normalize coordinates (deprecated)
+        # @deprecated No longer needed in current architecture
+        def normalize_coordinates(elements)
+          elements
+        end
+
+        # Parse geometry offsets (deprecated)
+        # @deprecated Use PathBuilder geometry parsing instead
+        def parse_geometry_offsets(geometry_string)
+          return [] unless geometry_string
+          
+          geometry_string.scan(/EDGE=(\d+);/).flatten.map(&:to_i)
+        end
+
         private
 
         def element_width_for(element)
