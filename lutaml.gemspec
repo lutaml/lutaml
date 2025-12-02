@@ -39,7 +39,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "paint"
   spec.add_dependency "parslet", "~> 2.0"
   spec.add_dependency "ruby-graphviz"
-  spec.add_dependency "rubyzip", "~> 3.2"
+  spec.add_dependency "rubyzip", "~> 2.3"
   spec.add_dependency "sinatra", "~> 4.2"
   spec.add_dependency "sqlite3"
   spec.add_dependency "table_tennis"
