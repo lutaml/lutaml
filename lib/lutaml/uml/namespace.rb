@@ -2,9 +2,9 @@
 
 module Lutaml
   module Uml
-    class NameSpace < Lutaml::Model::Serializable
+    class Namespace < Lutaml::Model::Serializable
       attribute :name, :string
-      attribute :namespace, NameSpace
+      attribute :namespace, Namespace
     end
   end
 end
