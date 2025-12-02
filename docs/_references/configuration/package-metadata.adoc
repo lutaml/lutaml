@@ -1,3 +1,10 @@
+---
+title: Package Metadata Configuration
+parent: Configuration
+grand_parent: Reference
+nav_order: 2
+---
+
 = Package Metadata Configuration
 :toc:
 :toclevels: 3
@@ -404,6 +411,6 @@ See link:../config/package_metadata.example.yml[config/package_metadata.example.
 
 == See Also
 
-* link:README.adoc[LutaML README] - Main documentation
-* link:diagram_generation.adoc[Diagram Generation] - Diagram styling integration
+* link:README[LutaML README] - Main documentation
+* link:diagram_generation[Diagram Generation] - Diagram styling integration
 * link:../lib/lutaml/uml_repository/package_metadata.rb[PackageMetadata source] - Implementation

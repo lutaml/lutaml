@@ -26,6 +26,27 @@ Directly:
 $ gem install lutaml
 ----
 
+== Documentation
+
+Complete documentation is available at https://lutaml.github.io/lutaml/
+
+The documentation includes:
+
+* **Getting Started**: link:docs/_tutorials/getting-started.adoc[Quick Start Tutorial]
+* **User Guides**: link:docs/_guides/index.adoc[Task-oriented how-to guides]
+* **Core Topics**: link:docs/_pages/index.adoc[Fundamental concepts and architecture]
+* **Reference**: link:docs/_references/index.adoc[Detailed specifications and API documentation]
+
+You can also build and browse the documentation locally:
+
+[source,shell]
+----
+cd docs
+bundle install
+bundle exec jekyll serve
+# Open http://localhost:4000/lutaml/
+----
+
 == Usages
 
 === Parsing
@@ -2003,12 +2024,16 @@ See the `examples/` directory for complete examples:
 * `examples/lur_cli_workflow.rb` - Command-line workflow
 * `examples/lur_statistics.rb` - Statistics and validation
 
-== Other Usages
+== See Also
 
-* link:docs/lutaml-uml.adoc[Usage with Lutaml::Uml]
-* link:docs/lutaml-express.adoc[Usage with Lutaml::Express]
-* link:docs/lutaml-xmi.adoc[Usage with Lutaml::XMI]
-// * link:docs/lutaml-sysml.adoc[Usage with Lutaml::Sysml]
+For detailed information on specific topics:
+
+* link:docs/_guides/uml-modeling.adoc[UML Modeling Guide]
+* link:docs/_guides/parsing/express-parsing.adoc[EXPRESS Parsing Guide]
+* link:docs/_guides/parsing/xmi-parsing.adoc[XMI Parsing Guide]
+* link:docs/_guides/sysml-modeling.adoc[SysML Modeling Guide]
+* link:docs/_guides/diagram-generation.adoc[Diagram Generation Guide]
+* link:docs/_references/formats/qea-structure.adoc[QEA File Format Reference]
 
 == Copyright and license
 

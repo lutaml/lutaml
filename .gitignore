@@ -11,3 +11,6 @@ Gemfile.lock
 /tmp/
 /.yardoc
 /_yardoc/
+
+_site/
+old-docs

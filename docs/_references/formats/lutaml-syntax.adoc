@@ -1,3 +1,10 @@
+---
+title: LutaML Syntax Reference
+parent: File Formats
+grand_parent: Reference
+nav_order: 2
+---
+
 = LutaML syntax
 
 == `diagram` syntax

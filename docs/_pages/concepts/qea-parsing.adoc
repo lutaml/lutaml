@@ -1,0 +1,357 @@
+---
+title: QEA Direct Parsing
+parent: Core Topics
+nav_order: 10
+---
+
+= QEA Direct Parsing
+
+== Purpose
+
+This document explains Enterprise Architect's QEA format and why direct SQLite parsing provides significant advantages over XMI export.
+
+== What is QEA?
+
+QEA (Quantified EA) is Enterprise Architect's native database format based on SQLite 3. It stores complete UML models including:
+
+* Packages, classes, interfaces, enumerations, data types
+* Attributes, operations, and parameters
+* Associations, generalizations, and other relationships
+* Diagrams with visual layout information
+* EA-specific metadata (stereotypes, tagged values, constraints)
+* Cross-references and extended properties
+
+== File Structure
+
+QEA files are SQLite 3 databases with EA-specific schema:
+
+[source]
+----
+model.qea (SQLite 3 Database)
+├── t_object          # UML objects (classes, etc.)
+├── t_attribute       # Class attributes
+├── t_operation       # Operations/methods
+├── t_connector       # Relationships
+├── t_package         # Package hierarchy
+├── t_diagram         # Diagram definitions
+├── t_diagramobjects  # Element placement
+├── t_diagramlinks    # Connector routing
+└── ~95 tables total
+----
+
+== Why Direct QEA Parsing?
+
+=== Performance
+
+**10-20x faster** than XMI parsing:
+
+[cols="1,1,1"]
+|===
+|Format |Parse Time |Memory
+
+|QEA
+|1-2 seconds
+|Lower
+
+|XMI
+|20-40 seconds
+|Higher
+|===
+
+For a typical 20MB EA model with 693 objects.
+
+=== No Export Step
+
+Parse directly from EA database:
+
+* No manual XMI export required
+* No export configuration needed
+* Always in sync with EA project
+* Works with locked/shared files
+
+=== EA Metadata
+
+Access EA-specific information not available in standard XMI:
+
+* Extended properties
+* Custom tagged values
+* Diagram styling data
+* EA-specific stereotypes
+* Version control information
+
+=== Memory Efficiency
+
+Streams data from SQLite without loading entire file:
+
+* Progressive loading
+* Lazy evaluation possible
+* Lower memory footprint
+* Better for large models
+
+== How QEA Parsing Works
+
+=== Two-Layer Architecture
+
+LutaML uses strict separation:
+
+[source]
+----
+QEA File (SQLite)
+    ↓
+QEA Parse Layer (Lutaml::Qea::Models::*)
+    ├─ EaObject
+    ├─ EaConnector
+    ├─ EaDiagram
+    └─ etc. (1:1 table mapping)
+    ↓
+Transformers (Lutaml::Qea::Factory::*)
+    ├─ ClassTransformer
+    ├─ DiagramTransformer
+    └─ etc.
+    ↓
+UML Domain Layer (Lutaml::Uml::*)
+    ├─ Class
+    ├─ Package
+    ├─ Diagram
+    └─ etc. (hierarchical)
+----
+
+=== Parse Layer
+
+**Direct 1:1 mapping** to database tables:
+
+[source,ruby]
+----
+class EaObject < BaseModel
+  attribute :object_id, :integer      # Primary key
+  attribute :name, :string            # Object name
+  attribute :object_type, :string     # "Class", "Interface", etc.
+  attribute :package_id, :integer     # Foreign key (not resolved)
+  attribute :stereotype, :string      # UML stereotype
+  # ... matches database columns exactly
+end
+----
+
+**Characteristics**:
+
+* No business logic
+* No nested relationships
+* References as IDs
+* Serializable
+
+=== Transformation Layer
+
+**Convert to UML domain model**:
+
+[source,ruby]
+----
+class ClassTransformer < BaseTransformer
+  def transform(ea_object, database)
+    uml_class = Lutaml::Uml::Class.new
+    uml_class.name = ea_object.name
+
+    # Resolve nested objects
+    uml_class.attributes = load_attributes(ea_object.object_id, database)
+    uml_class.operations = load_operations(ea_object.object_id, database)
+
+    uml_class
+  end
+end
+----
+
+**Responsibilities**:
+
+* Reference resolution
+* Hierarchy building
+* Data validation
+* Type mapping
+
+=== Domain Layer
+
+**Rich UML metamodel**:
+
+[source,ruby]
+----
+class Class
+  attribute :name, :string
+  attribute :attributes, Attribute, collection: true    # Nested!
+  attribute :operations, Operation, collection: true    # Nested!
+  attribute :generalizations, Generalization, collection: true
+
+  # Domain methods
+  def abstract?
+    @is_abstract == true
+  end
+end
+----
+
+== Usage Examples
+
+=== Basic Parsing
+
+[source,ruby]
+----
+require "lutaml/qea"
+
+# Parse QEA file
+document = Lutaml::Qea.parse("model.qea")
+# => Returns Lutaml::Uml::Document
+
+# Access model
+document.packages.each do |package|
+  puts package.name
+end
+----
+
+=== With Options
+
+[source,ruby]
+----
+document = Lutaml::Qea.parse("model.qea",
+  include_diagrams: true,
+  validate: true
+)
+----
+
+=== Via Unified Parser
+
+[source,ruby]
+----
+require "lutaml"
+
+# Auto-detects QEA format
+documents = Lutaml::Parser.parse([File.new("model.qea")])
+document = documents.first
+----
+
+=== Low-Level Access
+
+[source,ruby]
+----
+# Load database directly
+database = Lutaml::Qea.load_database("model.qea") do |table, current, total|
+  puts "Loading #{table}: #{current}/#{total}"
+end
+
+# Access raw EA data
+database.objects.each do |ea_object|
+  puts "#{ea_object.name} (#{ea_object.object_type})"
+end
+----
+
+=== Database Information
+
+[source,ruby]
+----
+# Quick statistics
+info = Lutaml::Qea.database_info("model.qea")
+puts info  # => {"objects" => 693, "attributes" => 1910, ...}
+----
+
+== Performance Benchmarking
+
+Compare QEA vs XMI:
+
+[source,ruby]
+----
+require "lutaml/qea/benchmark"
+
+results = Lutaml::Qea::Benchmark.compare("model.qea", "model.xmi")
+
+puts "QEA: #{results[:qea][:time]}s"
+puts "XMI: #{results[:xmi][:time]}s"
+puts "Speedup: #{results[:speedup]}x"
+----
+
+== File Validation
+
+[source,ruby]
+----
+require "lutaml/qea/file_detector"
+
+# Check if valid QEA
+if Lutaml::Qea::FileDetector.qea_file?("model.qea")
+  puts "Valid QEA file"
+end
+
+# Validate structure
+result = Lutaml::Qea::FileDetector.validate_qea("model.qea")
+if result[:valid]
+  puts "QEA file is valid"
+  puts "Objects: #{result[:object_count]}"
+else
+  result[:errors].each { |e| puts "ERROR: #{e}" }
+end
+----
+
+== Configuration
+
+QEA parsing is configured via `config/qea_schema.yml`:
+
+[source,yaml]
+----
+tables:
+  - table_name: t_object
+    enabled: true
+    model_class: EaObject
+    primary_key: Object_ID
+
+  - table_name: t_attribute
+    enabled: true
+    model_class: EaAttribute
+    primary_key: ID
+----
+
+== Limitations
+
+=== File Format
+
+* QEA files must be SQLite 3 format
+* Requires EA-specific table structure
+* Only reads from database (no writes)
+
+=== EA Versions
+
+* Tested with EA versions 13-16
+* May not support very old versions (< 10)
+* Custom schema modifications not supported
+
+=== Features
+
+* Some EA proprietary features may not be fully supported
+* Diagram layout is approximate (EA uses proprietary rendering)
+* Version control information not fully extracted
+
+== Performance Tips
+
+1. **Use QEA for large models** - 10-20x faster than XMI
+2. **Enable lazy loading** - For very large repositories
+3. **Disable validation** - If speed critical (use with caution)
+4. **Use statistics first** - Check model size before full parse
+
+== Troubleshooting
+
+=== "Not a valid SQLite database"
+
+**Cause**: File is not SQLite or is corrupted
+
+**Solution**: Open in EA and verify, or re-save
+
+=== "Missing required tables"
+
+**Cause**: Not a valid QEA file or wrong EA version
+
+**Solution**: Ensure file is from EA 10+
+
+=== Slow parsing
+
+**Cause**: Very large model or slow disk
+
+**Solution**: Use SSD, enable lazy loading, check file size
+
+== See Also
+
+* link:../../references/formats/qea-structure[Complete QEA Format Specification]
+* link:../architecture[System Architecture]
+* link:lur-format[LUR Package Format]
+* link:../../guides/parsing[Parsing Guides]

@@ -1,0 +1,64 @@
+---
+title: Home
+nav_order: 1
+---
+= Home
+:page-layout: home
+:page-title: LutaML Documentation Home
+
+== Welcome to LutaML
+
+LutaML is a universal Ruby library and CLI for accessing, parsing, and manipulating data models across multiple modeling languages.
+
+=== What LutaML Does
+
+LutaML provides a unified interface for:
+
+* **UML Model Access**: Parse Enterprise Architect (EA) models from QEA (SQLite) and XMI formats
+* **EXPRESS Support**: Handle ISO 10303-11 EXPRESS schemas used in industrial standards
+* **Diagram Generation**: Generate pixel-perfect SVG diagrams from EA models with full styling
+* **Model Transformation**: Convert between different modeling formats
+* **Repository Management**: Store and query models in compressed LUR (LutaML UML Repository) format
+* **Documentation Generation**: Create browsable SPA (Single Page Application) sites from models
+
+=== Getting Started
+
+New to LutaML? Start here:
+
+* link:/installation[Installation Guide] - Get LutaML up and running
+* link:/tutorials/getting-started[Quick Start Tutorial] - Your first steps with LutaML
+* link:/overview[What is LutaML?] - Learn about the architecture and capabilities
+
+=== Documentation Sections
+
+==== link:/core[Core Topics]
+
+Fundamental concepts and essential information about LutaML's architecture, components, and capabilities.
+
+==== link:/tutorials[Tutorials]
+
+Step-by-step learning paths to help you accomplish specific tasks with LutaML.
+
+==== link:/guides[Guides]
+
+Task-oriented how-to documentation for common workflows and operations.
+
+==== link:/references[Reference]
+
+Detailed technical specifications, API documentation, and configuration schemas.
+
+=== Quick Links
+
+* https://github.com/lutaml/lutaml[GitHub Repository]
+* https://rubygems.org/gems/lutaml[RubyGems Package]
+* link:/installation[Installation]
+* link:/references/cli/commands[CLI Reference]
+* link:/references/api/repository[API Reference]
+
+=== Community
+
+LutaML is open source and maintained by https://www.ribose.com[Ribose].
+
+* Report issues: https://github.com/lutaml/lutaml/issues
+* Contribute: https://github.com/lutaml/lutaml/blob/main/CONTRIBUTING.md
+* License: https://github.com/lutaml/lutaml/blob/main/LICENSE[BSD-3-Clause]

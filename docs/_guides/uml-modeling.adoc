@@ -1,3 +1,9 @@
+---
+title: UML Modeling with LutaML
+parent: Guides
+nav_order: 11
+---
+
 = Lutaml::Uml
 
 Lutaml::Uml is a language for specifying UML class diagrams and a tool for
@@ -5,7 +11,7 @@ converting it into various different formats.
 
 == Language
 
-See link:lutaml_syntax.adoc[LutaML syntax]
+See link:lutaml_syntax[LutaML syntax]
 
 == Usages
 
@@ -102,7 +108,7 @@ diagram Address {
   caption ''
   association {
     owner_type aggregation
-    owner 
+    owner
     member_type direct
     member AddressComponent
   }
