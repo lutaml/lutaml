@@ -9,7 +9,7 @@ module Lutaml
       attribute :name, :string
       attribute :xmi_id, :string
       attribute :xmi_uuid, :string
-      attribute :namespace, NameSpace
+      attribute :namespace, Namespace
       attribute :keyword, :string
       attribute :stereotype, :string, collection: true, default: -> { [] }
       attribute :href, :string
