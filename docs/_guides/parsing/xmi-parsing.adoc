@@ -1,3 +1,10 @@
+---
+title: XMI Parsing
+parent: Parsing Guides
+grand_parent: Guides
+nav_order: 2
+---
+
 = Lutaml::XMI
 
 Lutaml::XMI provides functionality to parse and manipulate

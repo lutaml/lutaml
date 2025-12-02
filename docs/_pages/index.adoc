@@ -1,0 +1,48 @@
+---
+title: Core Topics
+nav_order: 1
+has_children: true
+---
+= Core Topics
+
+== Overview
+
+This section covers fundamental concepts and essential information about LutaML's architecture, components, and capabilities.
+
+== What You'll Find Here
+
+=== link:/overview[What is LutaML?]
+
+Introduction to LutaML, its purpose, and the problems it solves. Learn about the unified interface for accessing multiple modeling languages.
+
+=== link:/installation[Installation]
+
+Get LutaML installed and configured on your system. Covers installation via RubyGems, bundler, and from source.
+
+=== link:/architecture[System Architecture]
+
+Understanding LutaML's two-layer architecture: the QEA parse layer and the UML domain layer. Learn how data flows through the system.
+
+=== Core Concepts
+
+==== link:/concepts/qea-parsing[QEA Direct Parsing]
+
+Learn about Enterprise Architect's QEA format and why direct SQLite parsing is 10-20x faster than XMI export.
+
+==== link:/concepts/lur-format[LUR Package Format]
+
+Understanding LutaML's compressed binary format for fast loading and efficient querying of UML models.
+
+==== link:/concepts/uml-models[UML Model Structure]
+
+How LutaML represents UML models internally, including packages, classes, attributes, and relationships.
+
+==== link:/concepts/diagram-generation[Diagram Generation]
+
+Overview of LutaML's production-ready diagram generation system with EA-style rendering.
+
+== Related Sections
+
+* link:../tutorials[Tutorials] - Step-by-step learning paths
+* link:../guides[Guides] - Task-oriented how-to documentation
+* link:../references[Reference] - Detailed technical specifications

@@ -105,6 +105,8 @@ module Lutaml
 
         def validate_qea_file(qea_path)
           require_relative "../../qea"
+          require_relative "../../qea/validation/formatters/text_formatter"
+          require_relative "../../qea/validation/formatters/json_formatter"
 
           puts OutputFormatter.colorize("\n=== QEA File Validation ===\n",
                                         :cyan)

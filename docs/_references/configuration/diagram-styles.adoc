@@ -1,3 +1,10 @@
+---
+title: Diagram Styling Configuration
+parent: Configuration
+grand_parent: Reference
+nav_order: 1
+---
+
 = Diagram Configuration Guide
 
 Complete reference for configuring EA-style diagram generation in LutaML.
@@ -7,7 +14,7 @@ Complete reference for configuring EA-style diagram generation in LutaML.
 LutaML's diagram styling system uses a three-tier priority hierarchy to merge styles from multiple sources:
 
 1. **EA Data** (highest) - Styles embedded in QEA/XMI files
-2. **User Configuration** - Custom YAML configuration files  
+2. **User Configuration** - Custom YAML configuration files
 3. **Built-in Defaults** (lowest) - EA-style defaults shipped with LutaML
 
 This ensures that:
@@ -436,7 +443,7 @@ text:
 
 LutaML searches for configuration files in this order:
 
-1. Path specified via `config_path` parameter  
+1. Path specified via `config_path` parameter
 2. `config/diagram_styles.yml` (project-specific)
 3. `~/.lutaml/diagram_styles.yml` (user-specific)
 4. Built-in defaults (always available)
@@ -704,6 +711,6 @@ conn_style = resolver.resolve_connector_style(connector, diagram_link)
 
 == See Also
 
-* link:diagram-generation.adoc[Diagram Generation Guide]
-* link:../README.adoc[LutaML README]
+* link:diagram-generation[Diagram Generation Guide]
+* link:../README[LutaML README]
 * link:../config/diagram_styles.yml[Default Configuration File]

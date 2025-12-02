@@ -269,6 +269,10 @@ module Lutaml
             return
           end
 
+          # Require formatters
+          require_relative "../../qea/validation/formatters/text_formatter"
+          require_relative "../../qea/validation/formatters/json_formatter"
+
           # Use formatter for display
           formatter_class = case options[:validation_format]
                             when "json"
