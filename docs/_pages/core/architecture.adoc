@@ -1,0 +1,329 @@
+---
+title: System Architecture
+parent: Core Topics
+nav_order: 3
+---
+
+= System Architecture
+
+== Purpose
+
+This document describes LutaML's overall architecture, design principles, and key components.
+
+== Architecture Overview
+
+LutaML uses a **two-layer architecture** that strictly separates parsing from domain modeling. This design ensures clean separation of concerns, extensibility, and maintainability.
+
+== Two-Layer Design
+
+[source]
+----
+┌───────────────────────────────────────────────────────────────┐
+│ SOURCE FILES (QEA, XMI, EXPRESS)                              │
+│ - Multiple formats with different structures                  │
+└───────────────────────────────────────────────────────────────┘
+                            ↓
+┌───────────────────────────────────────────────────────────────┐
+│ LAYER 1: PARSE LAYER                                          │
+│ - Format-specific models (Lutaml::Qea::Models::*)             │
+│ - 1:1 mapping to source format                                │
+│ - Flat relational structure                                   │
+│ - No business logic                                           │
+└───────────────────────────────────────────────────────────────┘
+                            ↓
+┌───────────────────────────────────────────────────────────────┐
+│ TRANSFORMERS                                                  │
+│ - Convert flat to hierarchical                                │
+│ - Resolve references                                          │
+│ - Build relationships                                         │
+└───────────────────────────────────────────────────────────────┘
+                            ↓
+┌───────────────────────────────────────────────────────────────┐
+│ LAYER 2: DOMAIN LAYER                                         │
+│ - UML metamodel (Lutaml::Uml::*)                              │
+│ - Tree-like hierarchical structure                            │
+│ - Rich domain behavior                                        │
+│ - Format-independent                                          │
+└───────────────────────────────────────────────────────────────┘
+----
+
+=== Layer 1: Parse Layer
+
+**Location**: `lib/lutaml/qea/models/`, `lib/lutaml/xmi/parsers/`
+
+**Purpose**: Direct 1:1 mapping of source formats to Ruby objects
+
+**Characteristics**:
+
+* Each source table/element maps to one model class
+* Column/attribute names match source exactly
+* References stored as IDs (not resolved)
+* No nested relationships
+* Serializable with lutaml-model gem
+
+**Example**:
+[source,ruby]
+----
+class EaObject < BaseModel
+  attribute :object_id, :integer
+  attribute :name, :string
+  attribute :package_id, :integer  # FK, not resolved
+  attribute :stereotype, :string
+end
+----
+
+=== Layer 2: Domain Layer
+
+**Location**: `lib/lutaml/uml/`
+
+**Purpose**: Format-independent UML metamodel
+
+**Characteristics**:
+
+* Hierarchical parent-child relationships
+* Resolved references (objects contain objects, not IDs)
+* Domain-specific behavior and methods
+* Follows UML metamodel conventions
+* Used by all LutaML consumers
+
+**Example**:
+[source,ruby]
+----
+class Class
+  attribute :name, :string
+  attribute :attributes, Attribute, collection: true
+  attribute :operations, Operation, collection: true
+  attribute :generalizations, Generalization, collection: true
+  # Rich domain methods...
+end
+----
+
+=== Transformation Layer
+
+**Location**: `lib/lutaml/qea/factory/`, `lib/lutaml/xmi/transformers/`
+
+**Purpose**: Convert parse layer to domain layer
+
+**Responsibilities**:
+
+. **Reference Resolution** - Convert IDs to object references
+. **Hierarchy Building** - Create parent-child relationships
+. **Data Mapping** - Map format concepts to UML metamodel
+. **Validation** - Ensure data integrity
+
+== Core Components
+
+=== Parser System
+
+**File**: `lib/lutaml/parser.rb`
+
+Single entry point for all formats:
+
+[source,ruby]
+----
+Lutaml::Parser.parse(files) # Auto-detects format
+----
+
+Delegates to format-specific parsers:
+
+* **QEA Parser** - Direct SQLite access
+* **XMI Parser** - XML parsing
+* **EXPRESS Parser** - Via Expressir integration
+* **LutaML Parser** - Native format
+
+=== QEA System
+
+**Directory**: `lib/lutaml/qea/`
+
+Direct SQLite database access for EA files:
+
+* **Database** - SQLite connection management
+* **Models** - EA table representations
+* **Factory** - EA to UML transformation
+* **Validators** - Database integrity checks
+
+**Performance**: 10-20x faster than XMI
+
+=== Repository System
+
+**Directory**: `lib/lutaml/uml_repository/`
+
+Compressed binary storage with querying:
+
+* **Repository** - Main interface
+* **LazyRepository** - Lazy loading for large models
+* **PackageLoader/Exporter** - L
+
+UR format I/O
+* **QueryDSL** - Powerful query language
+* **StatisticsCalculator** - Model analytics
+
+=== Diagram Generation
+
+**Directory**: `lib/lutaml/ea/diagram/`
+
+Production-ready SVG generation pipeline:
+
+* **DiagramPresenter** - Data transformation
+* **LayoutEngine** - Positioning and bounds
+* **StyleResolver** - Hierarchical style merging
+* **SvgRenderer** - Document assembly
+* **PathBuilder** - Connector path generation
+
+=== CLI System
+
+**Directory**: `lib/lutaml/cli/`
+
+Thor-based command-line interface:
+
+* **Thin Wrapper** - All logic in API layer
+* **Commands** - Individual command classes
+* **Helpers** - Shared utilities
+
+== Design Principles
+
+=== 1. Object-Oriented Design
+
+Every class has single responsibility with proper inheritance and composition.
+
+=== 2. MECE Architecture
+
+**Mutually Exclusive**: No overlapping responsibilities between components
+
+**Collectively Exhaustive**: All concerns addressed, no gaps
+
+=== 3. Separation of Concerns
+
+Each layer handles ONE concern:
+
+* **Parse Layer**: Format mapping only
+* **Transform Layer**: Conversion only
+* **Domain Layer**: Business logic only
+* **Repository Layer**: Storage only
+
+=== 4. Extensibility
+
+**Open/Closed Principle**: Open for extension, closed for modification
+
+**Extension Points**:
+
+* New parsers via BaseParser
+* New transformers via BaseTransformer
+* New element renderers via BaseRenderer
+* Custom queries via QueryDSL
+
+=== 5. Configuration Over Convention
+
+* YAML-based configuration throughout
+* Explicit over implicit
+* Documented defaults
+* User overrides supported
+
+== Data Flow
+
+=== Parsing Flow
+
+[source]
+----
+Source File (QEA/XMI/EXPRESS)
+    ↓
+Format-specific Parser
+    ↓
+Parse Layer Models
+    ↓
+Transformer
+    ↓
+Domain Layer Models (Lutaml::Uml::Document)
+    ↓
+Repository or Direct Use
+----
+
+=== Repository Flow
+
+[source]
+----
+Document
+    ↓
+Repository.new(document)
+    ↓
+Index Building
+    ↓
+PackageExporter.export → LUR File
+    ↓
+PackageLoader.load ← LUR File
+    ↓
+Repository with Indexes
+----
+
+=== Diagram Generation Flow
+
+[source]
+----
+Repository + Diagram ID
+    ↓
+DiagramPresenter
+    ↓
+LayoutEngine (positioning)
+    ↓
+StyleResolver (styling)
+    ↓
+SvgRenderer
+    ↓
+SVG Document
+----
+
+== Performance Characteristics
+
+* **QEA Parsing**: O(n) for n objects, 1-2 seconds for 20MB
+* **XMI Parsing**: O(n) but slower, 20-40 seconds for 20MB
+* **Repository Load**: O(1) with indexes, <100ms for LUR
+* **Search**: O(n) linear with optimizations
+* **Diagram Generation**: O(n+c) for n elements, c connectors
+
+== Module Organization
+
+[source]
+----
+lib/lutaml/
+├── parser.rb                # Unified entry point
+├── qea/                     # QEA parsing
+│   ├── models/             # EA models
+│   ├── factory/            # Transformers
+│   └── validation/         # Validators
+├── xmi/                     # XMI parsing
+│   └── parsers/            # XMI parsers
+├── express/                 # EXPRESS support
+│   └── parsers/            # EXPRESS parsers
+├── uml/                     # Domain models
+│   ├── document.rb
+│   ├── package.rb
+│   ├── class.rb
+│   └── ...
+├── uml_repository/          # Repository system
+│   ├── repository.rb
+│   ├── query_dsl/
+│   └── presenters/
+├── ea/diagram/              # Diagram generation
+│   ├── configuration.rb
+│   ├── layout_engine.rb
+│   ├── style_resolver.rb
+│   ├── svg_renderer.rb
+│   └── element_renderers/
+└── cli/                     # CLI commands
+    ├── commands/
+    └── uml/
+----
+
+== Testing Strategy
+
+* **Unit Tests**: One spec per class
+* **Integration Tests**: Pipeline workflows
+* **No Mocks**: Use real objects
+* **MECE Coverage**: Each behavior tested once
+
+== Related Documentation
+
+* link:concepts/qea-parsing[QEA Parsing] - Parse layer details
+* link:concepts/lur-format[LUR Format] - Repository format
+* link:concepts/diagram-generation[Diagram Generation] - Rendering pipeline
+* link:../guides[Guides] - Implementation guides

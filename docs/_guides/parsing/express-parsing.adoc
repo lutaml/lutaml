@@ -1,3 +1,10 @@
+---
+title: EXPRESS Parsing
+parent: Parsing Guides
+grand_parent: Guides
+nav_order: 1
+---
+
 = Lutaml::Express
 
 Lutaml::Express provides functionality to parse and manipulate EXPRESS files,

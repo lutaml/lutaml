@@ -1,3 +1,10 @@
+---
+title: QEA File Format
+parent: File Formats
+grand_parent: Reference
+nav_order: 1
+---
+
 = Enterprise Architect QEA file format
 :toc:
 :toclevels: 3
@@ -1338,7 +1345,7 @@ Connection pooling:: Reuses database connections
 === Documentation
 
 * link:QEA_DATABASE_TABLE_ANALYSIS.md[Detailed table analysis]
-* link:../README.adoc[LutaML main documentation]
+* link:../README[LutaML main documentation]
 * link:DIAGRAM_SUPPORT_IMPLEMENTATION.md[Diagram implementation details]
 * link:OBJECT_PROPERTIES_IMPLEMENTATION.md[Object properties implementation]
 

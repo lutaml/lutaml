@@ -1,3 +1,9 @@
+---
+title: Diagram Generation Guide
+parent: Guides
+nav_order: 10
+---
+
 = EA-Style Diagram Generation
 
 LutaML can generate pixel-perfect SVG diagrams from Enterprise Architect (EA) models, matching EA's visual style exactly including colors, fonts, and layout.
@@ -111,7 +117,7 @@ stereotypes:
         style: "italic"
 ----
 
-==== Packages  
+==== Packages
 
 Define styles for package hierarchies (supports wildcards):
 
@@ -189,7 +195,7 @@ diagram = diagrams.find { |d| d.xmi_id.include?("EAID_12345") }
 
 # Get diagram info
 puts "Name: #{diagram.name}"
-puts "Type: #{diagram.diagram_type}" 
+puts "Type: #{diagram.diagram_type}"
 puts "Elements: #{diagram.diagram_objects.count}"
 puts "Links: #{diagram.diagram_links.count}"
 ----
@@ -234,7 +240,7 @@ The LayoutEngine automatically converts between these:
 ----
 # EA coordinates
 diagram_object.left   # Left edge
-diagram_object.top    # Top edge  
+diagram_object.top    # Top edge
 diagram_object.right  # Right edge
 diagram_object.bottom # Bottom edge
 
@@ -305,6 +311,6 @@ Planned features for future releases:
 
 == See Also
 
-* link:diagram-configuration.adoc[Complete Configuration Reference]
-* link:../README.adoc[LutaML README]
+* link:diagram-configuration[Complete Configuration Reference]
+* link:../README[LutaML README]
 * link:../config/diagram_styles.yml[Default Styles]

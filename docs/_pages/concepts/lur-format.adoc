@@ -1,0 +1,449 @@
+---
+title: LUR Package Format
+parent: Core Topics
+nav_order: 11
+---
+
+= LUR Package Format
+
+== Purpose
+
+LUR (LutaML UML Repository) is a compressed binary package format designed for fast loading and efficient querying of UML models.
+
+== What is LUR?
+
+LUR packages are ZIP archives containing:
+
+* Serialized UML model data (Marshal or YAML)
+* Pre-built indexes for O(1) lookups
+* Metadata and statistics
+* Versioning information
+
+[source]
+----
+model.lur (ZIP Archive)
+├── metadata.yaml          # Package info, statistics
+├── models/
+│   └── document.marshal   # Serialized UML model
+├── indexes/
+│   └── all.marshal        # Pre-built indexes
+└── statistics.yaml        # Detailed statistics
+----
+
+== Why LUR Format?
+
+=== Fast Loading
+
+**100x faster** than parsing source files:
+
+[cols="1,1,1"]
+|===
+|Source |Load Time |Notes
+
+|XMI file
+|5-8 seconds
+|XML parsing
+
+|QEA file
+|1-2 seconds
+|SQLite access
+
+|LUR package
+|<100ms
+|Pre-built, indexed
+|===
+
+=== Efficient Storage
+
+Compression reduces file size:
+
+* **15-30MB** for large models
+* **Zlib compression** built-in
+* **Delta encoding** for versions
+* **Incremental updates** possible
+
+===Built-In Indexing
+
+Pre-computed indexes enable O(1) lookups:
+
+* **By name** - Find elements instantly
+* **By stereotype** - Filter by type
+* **By package** - Navigate hierarchy
+* **By XMI ID** - Reference resolution
+
+=== Portability
+
+Single file contains everything:
+
+* Complete model
+* All metadata
+* Statistics
+* No external dependencies
+
+== Package Structure
+
+=== Metadata
+
+`metadata.yaml` contains package information:
+
+[source,yaml]
+----
+name: "My UML Model"
+version: "1.0.0"
+created_at: "2024-01-01T00:00:00Z"
+serialization_format: "marshal"  # or "yaml"
+model_format: "xmi"              # source format
+statistics:
+  total_packages: 58
+  total_classes: 693
+  total_attributes: 1910
+  total_operations: 245
+  total_connectors: 908
+  total_diagrams: 205
+----
+
+=== Model Data
+
+Serialized UML document:
+
+* **Marshal format** (default) - Fast binary
+* **YAML format** (optional) - Human-readable
+
+Format choice affects:
+
+* **Load speed** - Marshal is faster
+* **Portability** - YAML more portable
+* **Debugging** - YAML easier to inspect
+
+=== Indexes
+
+Pre-built indexes for common queries:
+
+[source,ruby]
+----
+{
+  by_name: {
+    "Building" => <Lutaml::Uml::Class>,
+    "Person" => <Lutaml::Uml::Class>,
+    # ...
+  },
+  by_stereotype: {
+    "featureType" => [<Class>, <Class>, ...],
+    "dataType" => [<Class>, ...],
+    # ...
+  },
+  by_package: {
+    "ModelRoot::Core" => [<Class>, <Class>, ...],
+    # ...
+  }
+}
+----
+
+=== Statistics
+
+Detailed model statistics:
+
+[source,yaml]
+----
+classes_by_stereotype:
+  featureType: 123
+  dataType: 45
+  enumeration: 12
+
+packages_by_depth:
+  level_1: 5
+  level_2: 15
+  level_3: 38
+
+complexity:
+  average_attributes_per_class: 2.76
+  average_operations_per_class: 0.35
+  max_inheritance_depth: 4
+----
+
+== Creating LUR Packages
+
+=== From XMI
+
+[source,ruby]
+----
+require "lutaml"
+
+# Build from XMI
+repo = Lutaml::UmlRepository::Repository.from_xmi("model.xmi")
+
+# Export to LUR
+repo.export_to_package("model.lur",
+  name: "My Model",
+  version: "1.0",
+  serialization_format: :marshal
+)
+----
+
+=== From QEA
+
+[source,ruby]
+----
+# Build from QEA (faster)
+repo = Lutaml::UmlRepository::Repository.from_qea("model.qea")
+
+# Export to LUR
+repo.export_to_package("model.lur")
+----
+
+=== Via CLI
+
+[source,console]
+----
+# Build from XMI
+$ lutaml uml build model.xmi -o model.lur
+
+# Build from QEA (recommended)
+$ lutaml uml build model.qea -o model.lur
+
+# With options
+$ lutaml uml build model.xmi \
+  --output model.lur \
+  --name "My Model" \
+  --version "1.0" \
+  --format yaml
+----
+
+== Loading LUR Packages
+
+=== Basic Loading
+
+[source,ruby]
+----
+require "lutaml/uml_repository"
+
+# Load LUR package
+repo = Lutaml::UmlRepository::Repository.from_package("model.lur")
+
+# Immediate access - no parsing needed
+package = repo.find_package("ModelRoot::Core")
+klass = repo.find_class("ModelRoot::Core::Building")
+----
+
+=== Lazy Loading
+
+For very large models:
+
+[source,ruby]
+----
+# Lazy repository - load on demand
+repo = Lutaml::UmlRepository::LazyRepository.new("model.lur")
+
+# Only loads requested packages
+package = repo.find_package("ModelRoot::Core")  # Loads this package
+----
+
+=== Smart Caching
+
+Auto-detect and cache:
+
+[source,ruby]
+----
+# Auto-detect format and use cache
+repo = Lutaml::UmlRepository::Repository.from_file("model.xmi")
+# First run: parses XMI, creates model.lur
+# Subsequent runs: loads model.lur (if newer)
+
+# Force cache use
+repo = Lutaml::UmlRepository::Repository.from_file_cached("model.xmi")
+----
+
+== Querying LUR Packages
+
+=== Indexed Lookups
+
+O(1) performance:
+
+[source,ruby]
+----
+# By qualified name
+klass = repo.find_class("ModelRoot::Core::Building")
+
+# By stereotype (indexed)
+feature_types = repo.find_classes_by_stereotype("featureType")
+
+# By package (indexed)
+classes = repo.classes_in_package("ModelRoot::Core")
+----
+
+=== Search
+
+Full-text search:
+
+[source,ruby]
+----
+results = repo.search("urban planning",
+  types: [:class, :attribute]
+)
+
+puts "Found #{results[:total]} matches"
+results[:classes].each do |klass|
+  puts "- #{klass.qualified_name}"
+end
+----
+
+=== Query DSL
+
+Complex queries:
+
+[source,ruby]
+----
+results = repo.query! do |q|
+  q.classes
+    .with_stereotype('featureType')
+    .where { |c| c.attributes&.size > 10 }
+    .order_by(:name)
+    .limit(10)
+end
+----
+
+== Package Metadata
+
+=== Accessing Metadata
+
+[source,ruby]
+----
+repo = Lutaml::UmlRepository::Repository.from_package("model.lur")
+
+# Package info
+metadata = repo.metadata
+puts "Name: #{metadata[:name]}"
+puts "Version: #{metadata[:version]}"
+puts "Created: #{metadata[:created_at]}"
+
+# Statistics
+stats = repo.statistics
+puts "Classes: #{stats[:total_classes]}"
+puts "Packages: #{stats[:total_packages]}"
+----
+
+=== Via CLI
+
+[source,console]
+----
+$ lutaml uml info model.lur
+
+Package: My Model
+Version: 1.0.0
+Created: 2024-01-01 00:00:00 UTC
+Format: marshal
+Source: xmi
+
+Statistics:
+  Packages: 58
+  Classes: 693
+  Attributes: 1,910
+  Operations: 245
+  Connectors: 908
+  Diagrams: 205
+----
+
+== Versioning
+
+LUR supports model versioning:
+
+=== Version Metadata
+
+[source,ruby]
+----
+repo.export_to_package("model-v2.lur",
+  version: "2.0",
+  changelog: "Added new features"
+)
+----
+
+=== Version Comparison
+
+[source,ruby]
+----
+v1 = Lutaml::UmlRepository::Repository.from_package("model-v1.lur")
+v2 = Lutaml::UmlRepository::Repository.from_package("model-v2.lur")
+
+# Compare versions
+diff = v1.diff(v2)
+puts "Added: #{diff[:added].count} classes"
+puts "Removed: #{diff[:removed].count} classes"
+puts "Modified: #{diff[:modified].count} classes"
+----
+
+== Configuration
+
+=== Export Options
+
+[source,ruby]
+----
+repo.export_to_package("model.lur",
+  name: "My Model",
+  version: "1.0",
+  serialization_format: :marshal,  # or :yaml
+  compression_level: 9,             # 0-9, default 6
+  include_statistics: true,         # default true
+  validate: true                    # validate before export
+)
+----
+
+=== Load Options
+
+[source,ruby]
+----
+repo = Lutaml::UmlRepository::Repository.from_package("model.lur",
+  lazy: false,                      # default false
+  validate: true,                   # validate after load
+  rebuild_indexes: false            # default false
+)
+----
+
+== Performance Characteristics
+
+=== Build Time
+
+* **From XMI**: <10s for 20MB files
+* **From QEA**: <3s for 20MB files
+* **Incremental**: <1s for small changes
+
+=== Load Time
+
+* **First load**: Parse + index + export (~10s)
+* **Cached load**: <100ms
+* **Lazy load**: <50ms initial + on-demand
+
+=== Package Size
+
+* **Typical**: 15-30MB for large models
+* **Compression ratio**: 3-5x vs uncompressed
+* **Index overhead**: ~10-15% of package size
+
+=== Query Performance
+
+* **Indexed lookup**: O(1)
+* **Linear search**: O(n) with optimizations
+* **Query DSL**: Depends on filters
+
+== Best Practices
+
+1. **Use QEA source** when possible (faster build)
+2. **Use Marshal format** for production (faster load)
+3. **Use YAML format** for debugging/inspection
+4. **Enable caching** for development workflows
+5. **Validate packages** before deployment
+6. **Version packages** for tracking changes
+7. **Use lazy loading** for very large models
+
+== Limitations
+
+* **Binary format** - Not human-editable
+* **Ruby-specific** - Marshal ties to Ruby
+* **No incremental updates** - Full rebuild required
+* **Memory usage** - Full model loaded (unless lazy)
+
+== See Also
+
+* link:qea-parsing[QEA Direct Parsing]
+* link:../architecture[System Architecture]
+* link:../../tutorials/first-lur-package[Tutorial: Building LUR Packages]
+* link:../../guides[Repository Management Guide]
