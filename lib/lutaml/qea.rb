@@ -12,6 +12,8 @@ require_relative "qea/validation/validation_result"
 require_relative "qea/validation/base_validator"
 require_relative "qea/validation/validator_registry"
 require_relative "qea/validation/validation_engine"
+require_relative "qea/validation/formatters/json_formatter"
+require_relative "qea/validation/formatters/text_formatter"
 
 module Lutaml
   # QEA module provides direct SQLite database parsing for Enterprise Architect
