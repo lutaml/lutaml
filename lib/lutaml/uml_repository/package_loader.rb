@@ -101,9 +101,17 @@ module Lutaml
           raise "Invalid LUR package: missing metadata.yaml"
         end
 
+        # permit all Lutaml::Uml classes for safe loading
+        uml_constants = Lutaml::Uml.constants
+        uml_classes = uml_constants.map do |const_name|
+          constant_value = Lutaml::Uml.const_get(const_name)
+          constant_value if constant_value.is_a?(Class)
+        end.compact
+        permitted_classes = [Symbol, Time, Date, DateTime, uml_classes].flatten
+
         YAML.safe_load(
           metadata_entry.get_input_stream.read,
-          permitted_classes: [Symbol, Time, Date, DateTime],
+          permitted_classes: permitted_classes,
           aliases: true
         )
       rescue Psych::SyntaxError => e
