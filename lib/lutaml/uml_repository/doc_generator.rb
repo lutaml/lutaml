@@ -294,7 +294,7 @@ module Lutaml
           qname = qualified_name(klass)
           link = class_link(qname)
           type = klass.class.name.split("::").last
-          stereotypes = klass.stereotypes&.join(", ") || ""
+          stereotypes = format_stereotypes(klass.stereotype)
           attrs_count = klass.attributes&.size || 0
 
           html += "<tr>"
@@ -371,7 +371,7 @@ module Lutaml
               </nav>
 
               <main class="content">
-                #{"<p><strong>Stereotypes:</strong> #{klass.stereotypes.map { |s| "<code>#{s}</code>" }.join(', ')}</p>" if klass.stereotypes&.any?}
+                #{build_stereotypes_html(klass.stereotype)}
                 #{"<div class=\"description\">#{klass.definition}</div>" if klass.respond_to?(:definition) && klass.definition}
 
                 #{build_attributes_html(klass)}
@@ -580,6 +580,30 @@ module Lutaml
       # @return [String] Relative link
       def class_link(qname)
         "../classes/#{sanitize_filename(qname)}.html"
+      end
+
+      # Format stereotypes for display.
+      #
+      # @param stereotype [String, Array, nil] The stereotype value
+      # @return [String] Formatted stereotypes string
+      def format_stereotypes(stereotype)
+        return "" if stereotype.nil?
+        return stereotype if stereotype.is_a?(String)
+        stereotype.is_a?(Array) ? stereotype.join(", ") : ""
+      end
+
+      # Build stereotypes HTML.
+      #
+      # @param stereotype [String, Array, nil] The stereotype value
+      # @return [String] HTML for stereotypes
+      def build_stereotypes_html(stereotype)
+        return "" if stereotype.nil? || (stereotype.respond_to?(:empty?) && stereotype.empty?)
+        
+        stereotypes_array = stereotype.is_a?(Array) ? stereotype : [stereotype]
+        return "" if stereotypes_array.empty?
+        
+        formatted = stereotypes_array.map { |s| "<code>#{s}</code>" }.join(', ')
+        "<p><strong>Stereotypes:</strong> #{formatted}</p>"
       end
 
       # Sanitize filename for filesystem compatibility.

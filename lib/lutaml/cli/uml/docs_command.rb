@@ -39,7 +39,7 @@ module Lutaml
           repo = Lutaml::UmlRepository::Repository.from_package(lur_path)
           OutputFormatter.progress_done
 
-          generator = Lutaml::Xmi::DocGenerator.new(repo)
+          generator = Lutaml::UmlRepository::DocGenerator.new(repo)
 
           OutputFormatter.progress("Generating documentation site")
           generator.generate(options[:output],
