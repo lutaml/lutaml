@@ -99,6 +99,12 @@ module Lutaml
 
             unless result.valid?
               handle_validation_result(result)
+              
+              # Display unique unresolved types if present
+              if result.respond_to?(:external_references) && result.external_references.any?
+                display_unresolved_types(result.external_references)
+              end
+              
               if options[:strict] && result.errors.any?
                 raise Thor::Error, "Build failed due to validation errors"
               end
@@ -294,6 +300,27 @@ module Lutaml
           puts formatter.format
         end
 
+        def display_unresolved_types(external_references)
+          # Extract unique type names
+          unique_types = external_references.map { |ref| ref[:referenced_type] }.uniq.sort
+          
+          return if unique_types.empty?
+          
+          puts ""
+          puts OutputFormatter.colorize("Unresolved Types Summary:", :cyan)
+          puts ""
+          puts "Found #{unique_types.size} unique unresolved type(s):"
+          puts ""
+          unique_types.each { |type| puts "  - #{type}" }
+          puts ""
+          puts OutputFormatter.colorize("To suppress these warnings, add these types to a configuration file:", :yellow)
+          puts ""
+          puts "  # config/external_types.yml"
+          puts "  external_types:"
+          unique_types.each { |type| puts "    - #{type}" }
+          puts ""
+        end
+  
         def format_collection_name(table_name)
           # Convert t_object -> objects, t_package -> packages, etc.
           name = table_name.sub(/^t_/, "")
