@@ -127,7 +127,7 @@ module Lutaml
             with_gen: true,
             with_absolute_path: true,
           }
-          ::Lutaml::Xmi::RootDrop.new(model, guidance, options)
+          ::Lutaml::Xmi::LiquidDrops::RootDrop.new(model, guidance, options)
         end
 
         # @param xmi_model [Lutaml::Model::Serializable]
@@ -147,7 +147,7 @@ module Lutaml
             with_absolute_path: true,
           }
           puts "Error: Class not found for name: #{name}!" if klass.nil?
-          ::Lutaml::Xmi::KlassDrop.new(
+          ::Lutaml::Xmi::LiquidDrops::KlassDrop.new(
             klass,
             guidance,
             options,
@@ -170,7 +170,7 @@ module Lutaml
             with_absolute_path: true,
           }
           puts "Error: Enumeration not found for name: #{name}!" if enum.nil?
-          ::Lutaml::Xmi::EnumDrop.new(enum, options)
+          ::Lutaml::Xmi::LiquidDrops::EnumDrop.new(enum, options)
         end
       end
     end

@@ -260,7 +260,7 @@ module Lutaml
               general_id: general_id,
               general_name: general_node.name,
               general_attributes: general_node_attrs,
-              general_upper_klass: ::Lutaml::Xmi::PackageDrop
+              general_upper_klass: ::Lutaml::Xmi::LiquidDrops::PackageDrop
                 .new(general_upper_klass, nil, options),
               general: {},
             },

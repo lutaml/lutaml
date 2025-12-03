@@ -97,8 +97,8 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
       end
       let(:first_package) { output.packages.first }
 
-      it "parses xml file into Lutaml::Xmi::RootDrop object" do
-        expect(output).to(be_instance_of(Lutaml::Xmi::RootDrop))
+      it "parses xml file into Lutaml::Xmi::LiquidDrops::RootDrop object" do
+        expect(output).to(be_instance_of(Lutaml::Xmi::LiquidDrops::RootDrop))
       end
 
       it "correctly parses model name" do
