@@ -12,7 +12,6 @@ require_relative "uml/stats_command"
 require_relative "uml/search_command"
 require_relative "uml/find_command"
 require_relative "uml/export_command"
-require_relative "uml/docs_command"
 require_relative "uml/serve_command"
 require_relative "uml/spa_command"
 require_relative "uml/repl_command"
@@ -124,13 +123,7 @@ module Lutaml
         Uml::ExportCommand.new(options.to_h).run(lur_path)
       end
 
-      desc "docs LUR", "Generate static documentation site"
-      Uml::DocsCommand.add_options_to(self, :docs)
-      def docs(lur_path)
-        Uml::DocsCommand.new(options.to_h).run(lur_path)
-      end
-
-      desc "build-spa INPUT", "Generate interactive SPA browser"
+      desc "build-spa INPUT", "Generate interactive SPA browser (single-file or multi-file)"
       Uml::SpaCommand.add_options_to(self, :build_spa)
       def build_spa(input_path)
         Uml::SpaCommand.new(options.to_h).run(input_path)

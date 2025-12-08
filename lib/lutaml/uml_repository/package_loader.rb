@@ -3,6 +3,7 @@
 require "zip"
 require "yaml"
 require_relative "../uml"
+require_relative "package_metadata"
 
 module Lutaml
   module UmlRepository
@@ -31,10 +32,11 @@ module Lutaml
 
         document = nil
         indexes = nil
+        metadata = nil
 
         begin
           Zip::File.open(lur_path) do |zip|
-            # Read metadata to determine format
+            # Read metadata (now returns PackageMetadata)
             metadata = load_metadata(zip)
 
             # Load Document based on format
@@ -49,8 +51,8 @@ module Lutaml
           raise "Failed to load package: #{e.message}"
         end
 
-        # Create repository with loaded data
-        Repository.new(document: document, indexes: indexes)
+        # Create repository with loaded data and metadata
+        Repository.new(document: document, indexes: indexes, metadata: metadata)
       end
 
       # Load only the document from a LUR package without building indexes.
@@ -70,10 +72,11 @@ module Lutaml
         end
 
         document = nil
+        metadata = nil
 
         begin
           Zip::File.open(lur_path) do |zip|
-            # Read metadata to determine format
+            # Read metadata (now returns PackageMetadata)
             metadata = load_metadata(zip)
 
             # Load Document based on format
@@ -85,15 +88,15 @@ module Lutaml
           raise "Failed to load package: #{e.message}"
         end
 
-        # Create lazy repository without indexes
+        # Create lazy repository without indexes but with metadata
         require_relative "../lazy_repository"
-        LazyRepository.new(document: document, lazy: true)
+        LazyRepository.new(document: document, lazy: true, metadata: metadata)
       end
 
       # Load metadata from the package.
       #
       # @param zip [Zip::File] The ZIP archive
-      # @return [Hash] The metadata hash
+      # @return [PackageMetadata] The package metadata object
       # @raise [RuntimeError] If metadata is missing or invalid
       def self.load_metadata(zip)
         metadata_entry = zip.find_entry("metadata.yaml")
@@ -101,7 +104,7 @@ module Lutaml
           raise "Invalid LUR package: missing metadata.yaml"
         end
 
-        # permit all Lutaml::Uml classes for safe loading
+        # Permit all Lutaml::Uml classes for safe loading
         uml_constants = Lutaml::Uml.constants
         uml_classes = uml_constants.map do |const_name|
           constant_value = Lutaml::Uml.const_get(const_name)
@@ -109,11 +112,26 @@ module Lutaml
         end.compact
         permitted_classes = [Symbol, Time, Date, DateTime, uml_classes].flatten
 
-        YAML.safe_load(
+        # Load full metadata hash (includes operational fields)
+        metadata_hash = YAML.safe_load(
           metadata_entry.get_input_stream.read,
           permitted_classes: permitted_classes,
           aliases: true
         )
+
+        # Extract only PackageMetadata fields and normalize to symbols
+        package_fields = %w[
+          name version publisher license description keywords
+          homepage authors maintainers serialization_format
+        ]
+
+        metadata_attrs = {}
+        package_fields.each do |field|
+          metadata_attrs[field.to_sym] = metadata_hash[field] if metadata_hash.key?(field)
+        end
+
+        # Create PackageMetadata using lutaml-model constructor
+        PackageMetadata.new(**metadata_attrs)
       rescue Psych::SyntaxError => e
         raise "Invalid metadata format: #{e.message}"
       end
@@ -121,12 +139,16 @@ module Lutaml
       # Load the Document from the package.
       #
       # @param zip [Zip::File] The ZIP archive
-      # @param metadata [Hash] The package metadata
+      # @param metadata [PackageMetadata] The package metadata
       # @return [Lutaml::Uml::Document] The loaded document
       # @raise [RuntimeError] If document is missing or format is unknown
       def self.load_document(zip, metadata)
-        format = metadata["serialization_format"] ||
-          metadata[:serialization_format]
+        # Handle both PackageMetadata object and Hash (backward compatibility)
+        format = if metadata.respond_to?(:serialization_format)
+                   metadata.serialization_format
+                 else
+                   metadata["serialization_format"] || metadata[:serialization_format]
+                 end
 
         case format.to_s
         when "yaml"

@@ -129,6 +129,58 @@
     </table>
   </div>
 
+  <!-- Inherited Attributes -->
+  <div class="section" x-show="cls.inheritedAttributes && cls.inheritedAttributes.length > 0">
+    <h3>Inherited Attributes</h3>
+    <table class="data-table attributes-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Visibility</th>
+          <th>Cardinality</th>
+          <th>Inherited From</th>
+        </tr>
+      </thead>
+      <tbody>
+        <template x-for="inherited in cls.inheritedAttributes" :key="inherited.attributeId">
+          <tr x-data="{ attr: inherited.attribute }">
+            <td>
+              <code x-text="attr.name"></code>
+              <div class="cell-description" x-show="attr.definition" x-text="attr.definition"></div>
+            </td>
+            <td>
+              <template x-if="isUmlBasicType(attr.type)">
+                <code class="type-name uml-basic-type" x-text="attr.type" title="UML basic type"></code>
+              </template>
+              <template x-if="!isUmlBasicType(attr.type) && findClassByName(attr.type)">
+                <button class="type-link" @click="selectClass(findClassByName(attr.type))" x-text="attr.type" title="Click to navigate"></button>
+              </template>
+              <template x-if="!isUmlBasicType(attr.type) && !findClassByName(attr.type)">
+                <span class="type-unresolved" :title="'Unresolved type: ' + attr.type">
+                  <span x-text="'⚠️ ' + attr.type"></span>
+                </span>
+              </template>
+            </td>
+            <td>
+              <span class="visibility-badge" :data-visibility="attr.visibility" x-text="attr.visibility"></span>
+            </td>
+            <td>
+              <code x-show="attr.cardinality" x-text="`${attr.cardinality.min}..${attr.cardinality.max}`"></code>
+            </td>
+            <td>
+              <button
+                class="link-button inherited-from"
+                @click="selectClass(inherited.inheritedFrom)"
+                x-text="inherited.inheritedFromName"
+              ></button>
+            </td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+  </div>
+
   <!-- Operations -->
   <div class="section" x-show="cls.operations && cls.operations.length > 0">
     <h3>Operations</h3>
@@ -206,6 +258,54 @@
             </td>
             <td>
               <span x-text="target.navigable ? 'Yes →' : 'No'"></span>
+            </td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Inherited Associations -->
+  <div class="section" x-show="cls.inheritedAssociations && cls.inheritedAssociations.length > 0">
+    <h3>Inherited Associations</h3>
+    <table class="data-table associations-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Target</th>
+          <th>Cardinality</th>
+          <th>Aggregation</th>
+          <th>Inherited From</th>
+        </tr>
+      </thead>
+      <tbody>
+        <template x-for="inherited in cls.inheritedAssociations" :key="inherited.associationId">
+          <tr x-data="{ assoc: data.associations[inherited.associationId], target: getAssociationTarget(data.associations[inherited.associationId], inherited.inheritedFrom) }">
+            <td>
+              <code x-text="assoc.name || 'unnamed'"></code>
+            </td>
+            <td>
+              <button
+                class="link-button"
+                @click="selectClass(target.class)"
+                x-text="target.className"
+              ></button>
+              <span class="role-name" x-show="target.role" x-text="`(${target.role})`"></span>
+            </td>
+            <td>
+              <code x-show="target.cardinality" x-text="`${target.cardinality.min}..${target.cardinality.max}`"></code>
+            </td>
+            <td>
+              <span class="aggregation-badge" x-show="target.aggregation" x-text="target.aggregation"></span>
+              <span x-show="target.aggregation === 'composite'">◆</span>
+              <span x-show="target.aggregation === 'shared'">◇</span>
+            </td>
+            <td>
+              <button
+                class="link-button inherited-from"
+                @click="selectClass(inherited.inheritedFrom)"
+                x-text="inherited.inheritedFromName"
+              ></button>
             </td>
           </tr>
         </template>

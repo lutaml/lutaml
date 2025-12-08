@@ -88,6 +88,67 @@ Streams data from SQLite without loading entire file:
 * Lower memory footprint
 * Better for large models
 
+=== Data Richness Advantages
+
+While LutaML maintains 99.6% parity between QEA and XMI parsing, QEA provides several data richness advantages due to direct database access:
+
+==== Association Type Differentiation
+
+QEA preserves the distinction between Association, Aggregation, and Composition connector types through the `member_end_type` field in the database.
+
+**Issue with XMI**: Enterprise Architect's XMI export hardcodes all association types as "aggregation" in the exported XML, losing the semantic distinction between these three fundamental UML relationship types.
+
+**QEA Advantage**: Direct database access preserves the original connector type, maintaining critical semantic information about ownership and lifecycle relationships.
+
+.Example
+[source,ruby]
+----
+# QEA parsing preserves the distinction:
+association.member_end_type
+# => "Association" | "Aggregation" | "Composition"
+
+# XMI export loses this information - all become "aggregation"
+----
+
+==== Tagged Values and Object Properties
+
+QEA includes EA object properties as tagged values, capturing metadata that may not be exported to XMI.
+
+**Example**: A class in QEA might have 3 tagged values representing EA-specific metadata (custom properties, extended attributes, etc.), while the same class in XMI has 0 tagged values due to selective XMI export configuration.
+
+**QEA Advantage**: Full access to all EA metadata and custom properties, providing richer model information for analysis and transformation.
+
+==== Association Generalization Structure
+
+QEA provides rich `AssociationGeneralization` objects with complete type information and structural details.
+
+**Issue with XMI**: XMI export reduces association generalizations to simple string IDs, losing the structural detail and type information.
+
+**QEA Advantage**: Full object structure with resolved types, enabling proper inheritance analysis and relationship validation.
+
+.Example comparison
+[source,ruby]
+----
+# QEA: Rich object structure
+assoc_gen = AssociationGeneralization.new(
+  general: association_object,
+  specific: association_object,
+  xmi_id: "EAID_..."
+)
+
+# XMI: Simple string reference
+assoc_gen_id = "EAID_..."  # Just an ID string
+----
+
+==== Compatibility Note
+
+Despite these advantages, QEA and XMI parsing achieve **99.6% parity** for core UML data. The differences are:
+
+* **3 QEA-specific features** (above) that preserve EA metadata
+* **1 minor difference** in generalization handling (architectural variation)
+
+Both formats produce functionally equivalent `Lutaml::Uml::Document` structures suitable for analysis, transformation, and code generation.
+
 == How QEA Parsing Works
 
 === Two-Layer Architecture

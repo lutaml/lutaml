@@ -94,6 +94,8 @@ module Lutaml
 
       def self.build_associations(document)
         builder = new(document)
+        # build_association_index needs @qualified_names to collect class-level associations
+        builder.build_qualified_name_index
         builder.build_association_index
         builder.instance_variable_get(:@associations).freeze
       end
@@ -227,12 +229,25 @@ module Lutaml
       end
 
       def build_association_index
-        return unless @document.associations
+        # Collect document-level associations (XMI format)
+        if @document.associations
+          @document.associations.each do |assoc|
+            next unless assoc.xmi_id
 
-        @document.associations.each do |assoc|
-          next unless assoc.xmi_id
+            @associations[assoc.xmi_id] = assoc
+          end
+        end
 
-          @associations[assoc.xmi_id] = assoc
+        # Collect class-level associations (QEA/EA format)
+        # Note: This requires qualified_names index to be built first
+        @qualified_names.values.each do |klass|
+          next unless klass.respond_to?(:associations) && klass.associations
+
+          klass.associations.each do |assoc|
+            next unless assoc.xmi_id
+            # Avoid duplicates - only add if not already present
+            @associations[assoc.xmi_id] ||= assoc
+          end
         end
       end
 

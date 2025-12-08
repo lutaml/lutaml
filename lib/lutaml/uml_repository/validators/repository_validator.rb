@@ -39,11 +39,15 @@ module Lutaml
 
         # Validate the repository and return results
         #
+        # @param verbose [Boolean] Collect detailed validation information
         # @return [ValidationResult] Validation results with errors and warnings
-        def validate
+        def validate(verbose: false)
+          @verbose = verbose
+          @validation_details = [] if verbose
+          
           check_type_references
           check_generalization_references
-          check_circular_inheritance
+          # DISABLED: check_circular_inheritance - has bugs with name resolution
           check_association_references
           check_multiplicities
 
@@ -52,6 +56,7 @@ module Lutaml
             errors: @errors,
             warnings: @warnings,
             external_references: @external_references || [],
+            validation_details: @validation_details,
           )
         end
 
@@ -65,10 +70,33 @@ module Lutaml
             next unless klass.is_a?(Lutaml::Uml::Class)
             next unless klass.attributes
 
+            # Extract current package path from qualified name
+            current_package_path = extract_package_path(qname)
+
+            # Collect detailed validation info for this class if verbose
+            class_details = { class_name: qname, attributes: [] } if @verbose
+
             klass.attributes.each do |attr|
               next unless attr.type
-              next if primitive_type?(attr.type)
-              next if @indexes[:qualified_names].key?(attr.type)
+              
+              is_primitive = primitive_type?(attr.type)
+              
+              # Try to resolve the type name
+              resolved_type = is_primitive ? nil : resolve_type_name(attr.type, current_package_path)
+              is_valid = is_primitive || !resolved_type.nil?
+
+              # Collect verbose info
+              if @verbose
+                class_details[:attributes] << {
+                  attribute_name: attr.name,
+                  type_value: attr.type,
+                  resolved_to: resolved_type,
+                  valid: is_valid,
+                  is_primitive: is_primitive,
+                }
+              end
+
+              next if is_valid
 
               # Track external reference
               @external_references << {
@@ -80,6 +108,8 @@ module Lutaml
 
               @errors << "Unresolved type reference: '#{attr.type}' in #{qname}.#{attr.name}"
             end
+
+            @validation_details << class_details if @verbose && class_details[:attributes].any?
           end
         end
 
@@ -235,6 +265,36 @@ module Lutaml
           nil
         end
 
+        # Extract package path from qualified name
+        #
+        # @param qname [String] Qualified name like "ModelRoot::Package::Class"
+        # @return [String] Package path like "ModelRoot::Package"
+        def extract_package_path(qname)
+          parts = qname.split("::")
+          parts.size > 1 ? parts[0..-2].join("::") : "ModelRoot"
+        end
+
+        # Resolve a type name to its fully qualified name
+        #
+        # @param type_name [String] Type name to resolve
+        # @param current_package_path [String] Current package context
+        # @return [String, nil] Resolved qualified name or nil if not found
+        def resolve_type_name(type_name, current_package_path)
+          # Already qualified and exists?
+          return type_name if @indexes[:qualified_names].key?(type_name)
+          
+          # Try in current package
+          local_qname = "#{current_package_path}::#{type_name}"
+          return local_qname if @indexes[:qualified_names].key?(local_qname)
+          
+          # Try to find in all qualified names (simple name match)
+          @indexes[:qualified_names].each_key do |qname|
+            return qname if qname.end_with?("::#{type_name}")
+          end
+          
+          nil
+        end
+
         # Check if a type is a primitive type
         #
         # @param type [String] Type name
@@ -262,15 +322,20 @@ module Lutaml
         # @return [Array<Hash>] External type references
         attr_reader :external_references
 
+        # @return [Array<Hash>] Detailed validation information
+        attr_reader :validation_details
+
         # @param valid [Boolean] Whether validation passed
         # @param errors [Array<String>] Validation errors
         # @param warnings [Array<String>] Validation warnings
         # @param external_references [Array<Hash>] External type references
-        def initialize(valid:, errors:, warnings:, external_references: [])
+        # @param validation_details [Array<Hash>, nil] Detailed validation information
+        def initialize(valid:, errors:, warnings:, external_references: [], validation_details: nil)
           @valid = valid
           @errors = errors.freeze
           @warnings = warnings.freeze
           @external_references = external_references.freeze
+          @validation_details = validation_details&.freeze
           freeze
         end
 

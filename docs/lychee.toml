@@ -1,0 +1,83 @@
+# Lychee link checker configuration for LutaML documentation
+
+# Cache results for 1 day to speed up repeated checks
+cache = true
+
+# Maximum number of concurrent requests
+max_concurrency = 10
+
+# Request timeout in seconds
+timeout = 30
+
+# Maximum number of retries per link
+max_retries = 3
+
+# Follow redirects
+follow_redirects = true
+
+# Maximum redirect depth
+max_redirects = 5
+
+# Accept status codes
+accept = [
+    200,  # OK
+    203,  # Non-Authoritative Information
+    204,  # No Content
+    206,  # Partial Content
+    429,  # Too Many Requests (we'll retry)
+]
+
+# Exclude patterns (glob format)
+exclude = [
+    # Exclude localhost links
+    'http://localhost*',
+    'http://127.0.0.1*',
+
+    # Exclude example domains
+    'http://example.com*',
+    'https://example.com*',
+
+    # Exclude GitHub edit links (they may 404 for non-contributors)
+    'https://github.com/*/edit/*',
+
+    # Exclude potential rate-limited APIs
+    'https://api.github.com/*',
+]
+
+# Include patterns - check these file types
+include = [
+    '**/*.html',
+    '**/*.md',
+    '**/*.adoc',
+]
+
+# HTTP headers to send with requests
+[headers]
+# Set user agent
+User-Agent = "Mozilla/5.0 (compatible; Lychee/0.13.0; +https://github.com/lycheeverse/lychee)"
+
+# GitHub API token (if available in environment)
+# Authorization = "Bearer ${GITHUB_TOKEN}"
+
+# Verbose output
+verbose = true
+
+# Don't show progress bar in CI
+no_progress = true
+
+# Output format
+format = "markdown"
+
+# Exclude paths from file system checks
+exclude_path = [
+    ".git/",
+    "_site/",
+    "node_modules/",
+    "vendor/",
+]
+
+# Scheme to use when checking local files
+scheme = "https"
+
+# Base URL for relative links
+# base = "https://lutaml.github.io/lutaml"

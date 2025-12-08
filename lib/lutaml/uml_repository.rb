@@ -14,7 +14,6 @@ module Lutaml
     autoload :Repository, "lutaml/uml_repository/repository"
     autoload :LazyRepository, "lutaml/uml_repository/lazy_repository"
     autoload :RepositoryEnhanced, "lutaml/uml_repository/repository_enhanced"
-    autoload :DocGenerator, "lutaml/uml_repository/doc_generator"
     autoload :StaticSite, "lutaml/uml_repository/static_site"
 
     # Exporters

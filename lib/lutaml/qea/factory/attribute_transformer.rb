@@ -19,10 +19,14 @@ module Lutaml
             attr.name = ea_attribute.name
             attr.type = ea_attribute.type
             attr.visibility = map_visibility(ea_attribute.scope)
-            attr.xmi_id = normalize_guid_to_xmi_format(ea_attribute.ea_guid, "EAID")
+
+            # XMI uses the TYPE's XMI ID, not the attribute's ID
+            type_xmi_id = lookup_type_xmi_id(ea_attribute.classifier)
+            attr.xmi_id = type_xmi_id || normalize_guid_to_xmi_format(ea_attribute.ea_guid, "EAID")
+
             attr.id = normalize_guid_to_xmi_format(ea_attribute.ea_guid, "EAID")
             attr.static = ea_attribute.static? ? "true" : nil
-            attr.is_derived = ea_attribute.derived == "1"
+            attr.is_derived = ea_attribute.derived == "1" ? true : nil
 
             # Map cardinality if bounds are present
             if ea_attribute.lowerbound || ea_attribute.upperbound
@@ -33,7 +37,7 @@ module Lutaml
             end
 
             # Map definition/notes
-            attr.definition = ea_attribute.notes unless
+            attr.definition = normalize_line_endings(ea_attribute.notes) unless
               ea_attribute.notes.nil? || ea_attribute.notes.empty?
 
             # Load and transform attribute tags
@@ -42,6 +46,20 @@ module Lutaml
         end
 
         private
+
+        # Look up the type object's XMI ID from classifier
+        # @param classifier_id [Integer] Classifier ID
+        # @return [String, nil] Type's XMI ID
+        def lookup_type_xmi_id(classifier_id)
+          return nil if classifier_id.nil? || classifier_id.to_i == 0
+
+          query = "SELECT ea_guid FROM t_object WHERE Object_ID = ?"
+          rows = database.connection.execute(query, [classifier_id])
+          return nil if rows.empty?
+
+          ea_guid = rows.first.is_a?(Hash) ? (rows.first['ea_guid'] || rows.first[:ea_guid]) : rows.first[0]
+          normalize_guid_to_xmi_format(ea_guid, "EAID")
+        end
 
         # Build cardinality from lower and upper bounds
         # @param lower [String] Lower bound

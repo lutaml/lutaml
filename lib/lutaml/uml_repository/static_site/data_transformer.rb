@@ -79,6 +79,9 @@ module Lutaml
               # Find the parent class by object_id and get its XMI ID
               parent_class = find_class_by_object_id(parent_object_id)
               if parent_class && parent_class.xmi_id
+                # Skip self-referential generalization (class can't be its own parent)
+                next if parent_class.xmi_id == klass.xmi_id
+                
                 map[klass.xmi_id] << parent_class.xmi_id unless map[klass.xmi_id].include?(parent_class.xmi_id)
               end
             end
@@ -303,9 +306,13 @@ module Lutaml
         end
 
         # Build associations map
+        # Uses repository.associations_index which handles both XMI and QEA formats
         def build_associations_map
           associations = {}
 
+          # Repository.associations_index collects from both:
+          # - Document-level associations (XMI format)
+          # - Class-level associations (QEA/EA format)
           repository.associations_index.each do |assoc|
             id = @id_generator.association_id(assoc)
             associations[id] = serialize_association(assoc, id)
@@ -317,10 +324,23 @@ module Lutaml
         def serialize_association(association, id)
           # Association model has member_end/owner_end as strings (class names)
           # Use member_end_xmi_id, member_end_type etc for more details
+          # IMPORTANT: Do NOT generate synthetic names - use actual data only
+          
+          # If association.name is nil, use the role name as fallback
+          # In EA models, the association name is often stored in the role fields
+          # IMPORTANT: Prioritize owner_end_attribute_name which has the actual role name
+          assoc_name = association.name
+          if assoc_name.nil? || assoc_name.empty?
+            # Try owner_end_attribute_name first (this is the role from owner's perspective)
+            assoc_name = association.owner_end_attribute_name
+            # Fallback to member_end_attribute_name (but this often contains class name, not role)
+            assoc_name = association.member_end_attribute_name if assoc_name.nil? || assoc_name.empty?
+          end
+          
           {
             id: id,
             xmiId: association.xmi_id,
-            name: association.name,
+            name: assoc_name,
             type: "Association",
             definition: format_definition(association.respond_to?(:definition) ? association.definition : nil),
             source: build_association_source(association),
@@ -568,6 +588,9 @@ module Lutaml
           if parent_xmi_ids && !parent_xmi_ids.empty?
             # Map each parent XMI ID to class ID
             parents = parent_xmi_ids.map do |parent_xmi_id|
+              # Skip self-referential generalization
+              next if parent_xmi_id == klass.xmi_id
+              
               parent = find_class_by_xmi_id(parent_xmi_id)
               parent ? @id_generator.class_id(parent) : nil
             end.compact
@@ -577,6 +600,9 @@ module Lutaml
 
           # Fallback: single parent via repository query
           parent = repository.supertype_of(klass)
+          # Skip if parent is self (self-referential generalization)
+          return [] if parent && parent.xmi_id == klass.xmi_id
+          
           parent ? [@id_generator.class_id(parent)] : []
         rescue StandardError => e
           warn "Error finding generalizations for #{klass.name}: #{e.message}"

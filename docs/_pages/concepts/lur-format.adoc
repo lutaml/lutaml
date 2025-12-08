@@ -4,8 +4,6 @@ parent: Core Topics
 nav_order: 11
 ---
 
-= LUR Package Format
-
 == Purpose
 
 LUR (LutaML UML Repository) is a compressed binary package format designed for fast loading and efficient querying of UML models.
@@ -79,6 +77,311 @@ Single file contains everything:
 * All metadata
 * Statistics
 * No external dependencies
+
+== Package Metadata
+
+=== General
+
+LUR packages contain structured metadata describing the package itself. This metadata is separate from the model data and provides information about the package's identity, licensing, and provenance.
+
+Package metadata is defined using the [`PackageMetadata`](../../lib/lutaml/uml_repository/package_metadata.rb) class and stored in `metadata.yaml` inside the LUR archive.
+
+=== Metadata Fields
+
+==== Required Fields
+
+name:: Package name (string). Human-readable identifier for the package.
+version:: Package version (string). Semantic version recommended (e.g., "1.0.0").
+
+==== Recommended Fields
+
+publisher:: Organization or person publishing the package (string).
+license:: Software license identifier (string). Use SPDX identifiers (e.g., "CC-BY-4.0", "MIT").
+description:: Short description of the package contents (string).
+
+==== Optional Fields
+
+homepage:: Project homepage URL (string).
+keywords:: Search keywords (array of strings).
+authors:: Package authors (array of strings). Format: "Name <email>".
+maintainers:: Package maintainers (array of strings). Format: "Name <email>".
+repository:: Source repository URL (string).
+documentation:: Documentation URL (string).
+
+==== Technical Fields (Auto-Populated)
+
+created_at:: Package creation timestamp (ISO 8601 datetime).
+created_by:: Tool and version used to create package (string). Example: "lutaml-xmi v0.9.0".
+lutaml_version:: LutaML library version (string).
+serialization_format:: Document serialization format (string). Either "marshal" or "yaml".
+
+==== Custom Fields
+
+Any additional metadata can be stored in the `custom` hash. This allows domain-specific metadata without modifying the core structure.
+
+[example]
+====
+[source,yaml]
+----
+custom:
+  industry: "geospatial"
+  standard: "ISO 19109"
+  compliance_level: "full"
+  revision_date: "2024-01-15"
+----
+====
+
+=== Specifying Metadata via CLI
+
+==== Basic Metadata
+
+[source,console]
+----
+$ lutaml uml build model.xmi \
+  --name "Urban Planning Model" \
+  --version "2.3.0" \
+  --publisher "City Planning Department" \
+  --license "CC-BY-4.0"
+----
+
+==== Extended Metadata
+
+[source,console]
+----
+$ lutaml uml build model.qea \
+  --name "PLATEAU City GML" \
+  --version "5.1" \
+  --publisher "MLIT Japan" \
+  --license "CC-BY-4.0" \
+  --description "3D city model application schema" \
+  --homepage "https://plateauproject.jp" \
+  --keywords "3dcity,gml,plateau,urban" \
+  --authors "MLIT,Project Team"
+----
+
+==== From Metadata File
+
+Create a metadata file (YAML or JSON):
+
+[source,yaml]
+----
+# package-info.yaml
+name: "Urban Planning Model"
+version: "2.3.0"
+publisher: "City Planning Department"
+license: "CC-BY-4.0"
+description: "Comprehensive urban planning data model"
+homepage: "https://example.org/urbanplanning"
+keywords:
+  - urban
+  - planning
+  - gis
+authors:
+  - "John Doe <john@example.org>"
+  - "Jane Smith <jane@example.org>"
+custom:
+  standard: "ISO 19109"
+  revision_date: "2024-01-15"
+  compliance_level: "full"
+----
+
+Then reference it:
+
+[source,console]
+----
+$ lutaml uml build model.xmi --metadata-file package-info.yaml
+----
+
+CLI options override file values:
+
+[source,console]
+----
+$ lutaml uml build model.xmi \
+  --metadata-file package-info.yaml \
+  --version "2.4.0"  # Overrides version from file
+----
+
+=== Specifying Metadata via API
+
+==== Creating Metadata Object
+
+[source,ruby]
+----
+require "lutaml/uml_repository"
+
+metadata = Lutaml::UmlRepository::PackageMetadata.new(
+  name: "Urban Planning Model",
+  version: "2.3.0",
+  publisher: "City Planning Department",
+  license: "CC-BY-4.0",
+  description: "Comprehensive urban planning data model",
+  keywords: ["urban", "planning", "gis"],
+  authors: ["John Doe <john@example.org>", "Jane Smith <jane@example.org>"],
+  homepage: "https://example.org/urbanplanning"
+)
+
+# Add custom fields
+metadata.add_custom("standard", "ISO 19109")
+metadata.add_custom("revision_date", "2024-01-15")
+metadata.add_custom("compliance_level", "full")
+----
+
+==== Exporting with Metadata
+
+[source,ruby]
+----
+repo = Lutaml::UmlRepository::Repository.from_xmi("model.xmi")
+
+# Using PackageMetadata object
+repo.export_to_package("model.lur", metadata: metadata)
+
+# Or using Hash (backward compatible)
+repo.export_to_package("model.lur",
+  name: "Urban Planning Model",
+  version: "2.3.0",
+  publisher: "City Planning Department",
+  license: "CC-BY-4.0",
+  serialization_format: :marshal
+)
+----
+
+==== Loading Metadata
+
+[source,ruby]
+----
+repo = Lutaml::UmlRepository::Repository.from_package("model.lur")
+
+metadata = repo.metadata
+puts "Package: #{metadata.name} v#{metadata.version}"
+puts "Publisher: #{metadata.publisher}"
+puts "License: #{metadata.license}"
+puts "Created: #{metadata.created_at}"
+puts "Format: #{metadata.serialization_format}"
+
+# Access custom fields
+if metadata.custom_fields["standard"]
+  puts "Standard: #{metadata.custom_fields['standard']}"
+end
+----
+
+=== Metadata Validation
+
+Package metadata is validated before export to ensure required fields are present.
+
+[source,ruby]
+----
+metadata = Lutaml::UmlRepository::PackageMetadata.new(
+  version: "1.0.0"
+  # Missing required 'name' field
+)
+
+metadata.validate!
+# Raises: "Package metadata is invalid: name is required"
+----
+
+Required fields:
+- `name` - Must be present and non-empty
+- `version` - Must be present and non-empty
+
+All other fields are optional but recommended for proper package identification and licensing.
+
+=== Best Practices
+
+1. **Use Semantic Versioning**: Follow semver (MAJOR.MINOR.PATCH) for the version field.
+2. **Specify License**: Always include a license to clarify usage rights.
+3. **Provide Publisher**: Identify the organization or person responsible for the package.
+4. **Use SPDX Identifiers**: Use standard license identifiers from https://spdx.org/licenses/.
+5. **Include Description**: Help users understand package contents at a glance.
+6. **Add Keywords**: Improve discoverability through search.
+7. **Document Authors**: Give credit to contributors.
+8. **Use Metadata Files**: For complex metadata, use YAML/JSON files instead of long CLI commands.
+9. **Custom Fields for Domain Data**: Use custom fields for domain-specific metadata (standards compliance, industry codes, etc.).
+
+=== Common Use Cases
+
+==== Standards Compliance
+
+[source,yaml]
+----
+name: "ISO 19109 Application Schema"
+version: "3.0.0"
+publisher: "Standards Organization"
+license: "CC-BY-4.0"
+custom:
+  standard: "ISO 19109"
+  compliance_level: "full"
+  certification_date: "2024-01-15"
+----
+
+==== Open Data Publishing
+
+[source,yaml]
+----
+name: "City Infrastructure Model"
+version: "2024.1"
+publisher: "City Planning Department"
+license: "CC0-1.0"
+description: "Open data model for city infrastructure"
+homepage: "https://data.cityname.gov"
+keywords:
+  - open-data
+  - infrastructure
+  - city-planning
+----
+
+==== Academic Research
+
+[source,yaml]
+----
+name: "Research Data Model"
+version: "1.0.0"
+publisher: "University Research Lab"
+license: "CC-BY-NC-4.0"
+authors:
+  - "Dr. Jane Smith <jane@university.edu>"
+  - "Dr. John Doe <john@university.edu>"
+custom:
+  project: "NSF Grant #12345"
+  doi: "10.1234/example.doi"
+  publication_date: "2024-06-15"
+----
+
+=== Accessing Metadata via CLI
+
+View package metadata:
+
+[source,console]
+----
+$ lutaml uml info model.lur
+
+Package: Urban Planning Model
+Version: 2.3.0
+Publisher: City Planning Department
+License: CC-BY-4.0
+Created: 2024-01-15 10:30:00 UTC
+Format: marshal
+Source: xmi
+
+Description: Comprehensive urban planning data model
+Homepage: https://example.org/urbanplanning
+
+Keywords: urban, planning, gis
+
+Authors:
+  - John Doe <john@example.org>
+  - Jane Smith <jane@example.org>
+
+Custom Fields:
+  standard: ISO 19109
+  revision_date: 2024-01-15
+  compliance_level: full
+
+Statistics:
+  Packages: 58
+  Classes: 693
+  Attributes: 1,910
+  ...
+----
 
 == Package Structure
 
@@ -300,47 +603,6 @@ results = repo.query! do |q|
     .order_by(:name)
     .limit(10)
 end
-----
-
-== Package Metadata
-
-=== Accessing Metadata
-
-[source,ruby]
-----
-repo = Lutaml::UmlRepository::Repository.from_package("model.lur")
-
-# Package info
-metadata = repo.metadata
-puts "Name: #{metadata[:name]}"
-puts "Version: #{metadata[:version]}"
-puts "Created: #{metadata[:created_at]}"
-
-# Statistics
-stats = repo.statistics
-puts "Classes: #{stats[:total_classes]}"
-puts "Packages: #{stats[:total_packages]}"
-----
-
-=== Via CLI
-
-[source,console]
-----
-$ lutaml uml info model.lur
-
-Package: My Model
-Version: 1.0.0
-Created: 2024-01-01 00:00:00 UTC
-Format: marshal
-Source: xmi
-
-Statistics:
-  Packages: 58
-  Classes: 693
-  Attributes: 1,910
-  Operations: 245
-  Connectors: 908
-  Diagrams: 205
 ----
 
 == Versioning

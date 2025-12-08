@@ -9,6 +9,7 @@ require_relative "statistics_calculator"
 require_relative "validators/repository_validator"
 require_relative "package_exporter"
 require_relative "package_loader"
+require_relative "package_metadata"
 require_relative "queries/package_query"
 require_relative "queries/class_query"
 require_relative "queries/inheritance_query"
@@ -53,6 +54,9 @@ module Lutaml
       # @return [Hash] The indexes for fast lookups
       attr_reader :indexes
 
+      # @return [PackageMetadata, nil] The package metadata (if loaded from LUR)
+      attr_reader :metadata
+
       # Initialize a new Repository.
       #
       # This is typically not called directly. Use [`from_xmi`](#from_xmi) instead.
@@ -60,13 +64,15 @@ module Lutaml
       # @param document [Lutaml::Uml::Document] The UML document to wrap
       # @param indexes [Hash, nil] Pre-built indexes, or nil to build them
       #   automatically
+      # @param metadata [PackageMetadata, nil] Package metadata (if loaded from LUR)
       # @return [Repository] A new frozen repository instance
       # @example
       #   indexes = IndexBuilder.build_all(document)
       #   repo = Repository.new(document: document, indexes: indexes)
-      def initialize(document:, indexes: nil)
+      def initialize(document:, indexes: nil, metadata: nil)
         @document = document.freeze
         @indexes = indexes || IndexBuilder.build_all(document)
+        @metadata = metadata
 
         # Initialize runtime query services (not serialized to LUR)
         # These are lightweight wrappers that operate on @document and @indexes
@@ -233,8 +239,11 @@ module Lutaml
       #
       # @param output_path [String] Path for the output .lur file
       # @param options [Hash] Export options
+      # @option options [PackageMetadata, Hash] :metadata Package metadata
       # @option options [String] :name ("UML Model") Package name
+      #   (deprecated, use :metadata)
       # @option options [String] :version ("1.0") Package version
+      #   (deprecated, use :metadata)
       # @option options [Boolean] :include_xmi (false) Include source XMI
       # @option options [Symbol] :serialization_format (:marshal) Format to use
       #   (:marshal or :yaml)
@@ -243,7 +252,15 @@ module Lutaml
       # @example Export with defaults
       #   repo.export_to_package("model.lur")
       #
-      # @example Export with custom options
+      # @example Export with PackageMetadata
+      #   metadata = PackageMetadata.new(
+      #     name: "Urban Model",
+      #     version: "2.0",
+      #     publisher: "City Planning"
+      #   )
+      #   repo.export_to_package("model.lur", metadata: metadata)
+      #
+      # @example Export with custom options (backward compatible)
       #   repo.export_to_package("model.lur",
       #     name: "My Model",
       #     version: "2.0",
@@ -516,6 +533,7 @@ fields: [:name])
       # - Association reference validation
       # - Multiplicity validation
       #
+      # @param verbose [Boolean] Collect detailed validation information
       # @return [Validators::ValidationResult] Validation results
       # @example
       #   result = repo.validate
@@ -524,8 +542,8 @@ fields: [:name])
       #   else
       #     result.errors.each { |error| puts "ERROR: #{error}" }
       #   end
-      def validate
-        Validators::RepositoryValidator.new(@document, @indexes).validate
+      def validate(verbose: false)
+        Validators::RepositoryValidator.new(@document, @indexes).validate(verbose: verbose)
       end
 
       # Build a query using the Query DSL
@@ -583,9 +601,30 @@ fields: [:name])
       end
 
       # Get all associations as an array
+      # Collects from both document-level (XMI) and class-level (QEA/EA)
       # @return [Array<Lutaml::Uml::Association>] All associations
       def associations_index
-        @document.associations || []
+        # Use cached index if available (built by IndexBuilder)
+        return @indexes[:associations].values if @indexes[:associations]
+
+        # Fallback for edge cases: collect from document and classes
+        associations = []
+
+        # Document-level associations (XMI format)
+        associations.concat(@document.associations) if @document.associations
+
+        # Class-level associations (QEA/EA format)
+        classes_index.each do |klass|
+          next unless klass.respond_to?(:associations) && klass.associations
+
+          klass.associations.each do |assoc|
+            # Avoid duplicates - check xmi_id
+            next if associations.any? { |a| a.xmi_id == assoc.xmi_id }
+            associations << assoc
+          end
+        end
+
+        associations
       end
 
       # Get all diagrams as an array
@@ -634,26 +673,27 @@ fields: [:name])
 
       # Custom marshaling to exclude runtime-only query objects
       #
-      # Only serializes the core data (document and indexes), not the
+      # Only serializes the core data (document, indexes, and metadata), not the
       # derived query service objects. This keeps serialized size minimal.
       #
-      # @return [Hash] Serializable state (document and indexes only)
+      # @return [Hash] Serializable state (document, indexes, and metadata)
       # @api private
       def marshal_dump
-        { document: @document, indexes: @indexes }
+        { document: @document, indexes: @indexes, metadata: @metadata }
       end
 
       # Restore from marshaled state
       #
-      # Reconstructs the repository from serialized document and indexes,
+      # Reconstructs the repository from serialized document, indexes, and metadata,
       # reinitializing all query services.
       #
-      # @param data [Hash] Serialized state with :document and :indexes
+      # @param data [Hash] Serialized state with :document, :indexes, and :metadata
       # @return [void]
       # @api private
       def marshal_load(data)
         @document = data[:document]
         @indexes = data[:indexes]
+        @metadata = data[:metadata]
 
         # Reinitialize runtime query services
         @package_query = Queries::PackageQuery.new(@document, @indexes)

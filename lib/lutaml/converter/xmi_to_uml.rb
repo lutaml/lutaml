@@ -145,7 +145,9 @@ module Lutaml
         return [] if klass.owned_attribute.nil?
 
         owned_attributes = klass.owned_attribute.select do |attr|
-          attr.type?("uml:Property")
+          # Only include Property elements that are NOT association endpoints
+          # ownedAttribute with association="..." are association endpoints, not attributes
+          attr.type?("uml:Property") && !attr.association
         end
 
         owned_attributes.map do |oa|
@@ -358,6 +360,9 @@ module Lutaml
           owner_end = serialize_owned_type(xmi_id, assoc, link_owner)
           doc_node = link_member == "start" ? "source" : "target"
           definition = fetch_definition_node_value(assoc.id, doc_node)
+          
+          # Get owner_end_attribute_name from the ownedAttribute that references this association
+          owner_end_attribute_name = find_owner_attribute_name(xmi_id, assoc.id)
 
           if member_end &&
               (
@@ -376,10 +381,24 @@ module Lutaml
               association.member_end_xmi_id = member_end_xmi_id
               association.owner_end = owner_end
               association.owner_end_xmi_id = xmi_id
+              association.owner_end_attribute_name = owner_end_attribute_name
               association.definition = definition
             end
           end
         end.compact
+      end
+
+      # Find the ownedAttribute name that references this association
+      # This gives us the role name from the owner's perspective
+      def find_owner_attribute_name(owner_xmi_id, assoc_id)
+        owner_node = find_packaged_element_by_id(owner_xmi_id)
+        return nil unless owner_node&.owned_attribute
+
+        owned_attr = owner_node.owned_attribute.find do |oa|
+          oa.association == assoc_id
+        end
+
+        owned_attr&.name
       end
 
       def create_uml_operations(klass) # rubocop:disable Metrics/MethodLength,Metrics/AbcSize

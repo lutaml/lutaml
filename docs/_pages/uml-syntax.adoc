@@ -1,4 +1,4 @@
-== LutaML diagramming syntax
+== LutaML diagram syntax
 
 === Purpose
 
