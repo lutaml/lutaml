@@ -3,6 +3,7 @@
 require "zip"
 require "yaml"
 require "time"
+require_relative "package_metadata"
 
 module Lutaml
   module UmlRepository
@@ -19,7 +20,17 @@ module Lutaml
     #   exporter = PackageExporter.new(repository)
     #   exporter.export("model.lur")
     #
-    # @example Export with custom options
+    # @example Export with PackageMetadata
+    #   metadata = PackageMetadata.new(
+    #     name: "Urban Model",
+    #     version: "2.0",
+    #     publisher: "City Planning",
+    #     license: "CC-BY-4.0"
+    #   )
+    #   exporter = PackageExporter.new(repository, metadata: metadata)
+    #   exporter.export("model.lur")
+    #
+    # @example Export with metadata hash (backward compatible)
     #   exporter = PackageExporter.new(repository,
     #     name: "My Model",
     #     version: "2.0",
@@ -33,10 +44,15 @@ module Lutaml
       # @return [Hash] Export options
       attr_reader :options
 
+      # @return [PackageMetadata] The package metadata
+      attr_reader :metadata
+
       # Initialize a new PackageExporter.
       #
       # @param repository [UmlRepository] The repository to export
       # @param options [Hash] Export options
+      # @option options [PackageMetadata, Hash] :metadata Package metadata
+      #   (can be PackageMetadata object or Hash)
       # @option options [Symbol] :serialization_format (:marshal) Format for
       #   Document serialization (:marshal or :yaml)
       # @option options [Boolean] :include_xmi (false) Include source XMI
@@ -44,10 +60,13 @@ module Lutaml
       # @option options [Integer] :compression_level (6) ZIP compression level
       #   (0-9)
       # @option options [String] :name ("UML Model") Package name
+      #   (deprecated, use :metadata)
       # @option options [String] :version ("1.0") Package version
+      #   (deprecated, use :metadata)
       def initialize(repository, options = {})
         @repository = repository
         @options = default_options.merge(options)
+        @metadata = build_metadata(@options)
       end
 
       # Export the repository to a LUR package file.
@@ -64,6 +83,7 @@ module Lutaml
           write_metadata(zip)
           write_document(zip)
           write_indexes(zip)
+          write_index_tree(zip)
           write_statistics(zip)
         end
       end
@@ -83,6 +103,39 @@ module Lutaml
         }
       end
 
+      # Build PackageMetadata from options.
+      #
+      # Handles three cases:
+      # 1. :metadata is a PackageMetadata object - use directly
+      # 2. :metadata is a Hash - build from hash
+      # 3. Old-style :name/:version options - build from those
+      #
+      # @param options [Hash] Export options
+      # @return [PackageMetadata] Package metadata
+      def build_metadata(options)
+        # Case 1: metadata is already a PackageMetadata object
+        if options[:metadata].is_a?(PackageMetadata)
+          return options[:metadata]
+        end
+
+        # Case 2: metadata is a Hash
+        if options[:metadata].is_a?(Hash)
+          metadata_hash = options[:metadata].dup
+          # Ensure serialization_format is set
+          metadata_hash[:serialization_format] ||= options[:serialization_format]
+          # Normalize keys to symbols and create directly
+          normalized = metadata_hash.transform_keys(&:to_sym)
+          return PackageMetadata.new(**normalized)
+        end
+
+        # Case 3: Old-style options (backward compatibility)
+        PackageMetadata.new(
+          name: options[:name],
+          version: options[:version],
+          serialization_format: options[:serialization_format].to_s
+        )
+      end
+
       # Validate export options.
       #
       # @return [void]
@@ -98,21 +151,26 @@ module Lutaml
 
       # Write metadata.yaml to the package.
       #
+      # Converts PackageMetadata to YAML hash, then adds operational
+      # metadata (created_at, created_by, etc.).
+      #
       # @param zip [Zip::File] The ZIP archive
       # @return [void]
       def write_metadata(zip)
-        metadata = {
-          "name" => @options[:name],
-          "version" => @options[:version],
-          "created_at" => Time.now.utc.iso8601,
-          "created_by" => "lutaml-xmi v#{Lutaml::VERSION}",
-          "lutaml_version" => Lutaml::VERSION,
-          "serialization_format" => @options[:serialization_format].to_s,
-          "statistics" => @repository.statistics,
-        }
+        # Convert PackageMetadata to hash via YAML round-trip
+        metadata_hash = YAML.load(@metadata.to_yaml)
+
+        # Add operational metadata (not in PackageMetadata model)
+        metadata_hash["created_at"] = Time.now.utc.iso8601
+        metadata_hash["created_by"] = "lutaml-xmi v#{Lutaml::VERSION}"
+        metadata_hash["lutaml_version"] = Lutaml::VERSION
+        metadata_hash["statistics"] = @repository.statistics
+
+        # Ensure serialization_format is set
+        metadata_hash["serialization_format"] ||= @options[:serialization_format].to_s
 
         zip.get_output_stream("metadata.yaml") do |io|
-          io.write(YAML.dump(metadata))
+          io.write(YAML.dump(metadata_hash))
         end
       end
 
@@ -143,6 +201,117 @@ module Lutaml
         zip.get_output_stream("indexes/all.marshal") do |io|
           io.write(Marshal.dump(@repository.indexes))
         end
+      end
+
+      # Write index tree (searchable list of all model elements) to the package.
+      #
+      # @param zip [Zip::File] The ZIP archive
+      # @return [void]
+      def write_index_tree(zip)
+        tree = build_index_tree
+
+        zip.get_output_stream("index_tree.yaml") do |io|
+          io.write(YAML.dump(tree))
+        end
+      end
+
+      # Build a complete index tree of all model elements
+      #
+      # @return [Hash] Index tree structure
+      def build_index_tree
+        {
+          "format" => "lutaml_index_tree_v1",
+          "generated_at" => Time.now.utc.iso8601,
+          "packages" => build_packages_index,
+          "classes" => build_classes_index,
+          "summary" => {
+            "total_packages" => @repository.indexes[:package_paths].size,
+            "total_classes" => @repository.indexes[:qualified_names].size,
+            "total_attributes" => count_all_attributes,
+          }
+        }
+      end
+
+      # Build packages index
+      #
+      # @return [Hash] Packages indexed by path
+      def build_packages_index
+        packages = {}
+        @repository.indexes[:package_paths].each do |path, package|
+          next unless package.is_a?(Lutaml::Uml::Package)
+
+          packages[path] = {
+            "name" => package.name,
+            "xmi_id" => package.xmi_id,
+            "classes_count" => @repository.classes_in_package(path, recursive: false).size,
+            "diagrams_count" => package.diagrams&.size || 0,
+          }
+        end
+        packages
+      end
+
+      # Build classes index
+      #
+      # @return [Hash] Classes indexed by qualified name
+      def build_classes_index
+        classes = {}
+        @repository.indexes[:qualified_names].each do |qname, klass|
+          classes[qname] = {
+            "name" => klass.name,
+            "xmi_id" => klass.xmi_id,
+            "type" => klass.class.name.split("::").last, # Class, DataType, Enum
+            "stereotype" => format_stereotype(klass.stereotype),
+            "attributes" => build_attributes_list(klass),
+            "package_path" => extract_package_path(qname),
+          }
+        end
+        classes
+      end
+
+      # Build attributes list for a class
+      #
+      # @param klass [Object] The class object
+      # @return [Array<Hash>] List of attributes
+      def build_attributes_list(klass)
+        return [] unless klass.respond_to?(:attributes) && klass.attributes
+
+        klass.attributes.map do |attr|
+          {
+            "name" => attr.name,
+            "type" => attr.type,
+            "visibility" => attr.respond_to?(:visibility) ? attr.visibility : nil,
+          }.compact
+        end
+      end
+
+      # Format stereotype for consistent output
+      #
+      # @param stereotype [String, Array, nil] Stereotype value
+      # @return [String, Array, nil] Formatted stereotype
+      def format_stereotype(stereotype)
+        return nil if stereotype.nil?
+        return stereotype if stereotype.is_a?(String)
+        stereotype.is_a?(Array) && stereotype.empty? ? nil : stereotype
+      end
+
+      # Extract package path from qualified name
+      #
+      # @param qname [String] Qualified name
+      # @return [String] Package path
+      def extract_package_path(qname)
+        parts = qname.split("::")
+        parts.size > 1 ? parts[0..-2].join("::") : "ModelRoot"
+      end
+
+      # Count all attributes across all classes
+      #
+      # @return [Integer] Total attribute count
+      def count_all_attributes
+        total = 0
+        @repository.indexes[:qualified_names].each_value do |klass|
+          total += klass.attributes.size if klass.respond_to?(:attributes) && klass.attributes
+        end
+        total
       end
 
       # Write statistics to the package.

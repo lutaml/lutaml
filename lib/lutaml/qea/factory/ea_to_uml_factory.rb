@@ -41,9 +41,13 @@ module Lutaml
           # Transform associations (references classes by xmi_id)
           associations = transform_associations
 
-          # Build document
+          # Collect class-level associations from packages
+          class_associations = collect_class_associations(packages)
+
+          # Build document with both connector-level and class-level associations
           builder.add_packages(packages)
             .add_associations(associations)
+            .add_associations(class_associations)
 
           # Add diagrams if requested
           if options[:include_diagrams]
@@ -213,6 +217,41 @@ module Lutaml
           return if element.nil? || element.xmi_id.nil?
 
           @resolver.register(element.xmi_id, element)
+        end
+
+        # Collect all associations from classes within package hierarchy
+        # @param packages [Array<Lutaml::Uml::Package>] Root packages
+        # @return [Array<Lutaml::Uml::Association>] All class-level associations
+        def collect_class_associations(packages)
+          associations = []
+          
+          packages.each do |package|
+            collect_package_associations(package, associations)
+          end
+          
+          associations
+        end
+
+        # Recursively collect associations from package and its descendants
+        # @param package [Lutaml::Uml::Package] Package to collect from
+        # @param associations [Array] Accumulator for associations
+        # @return [void]
+        def collect_package_associations(package, associations)
+          # Collect from classes in this package
+          if package.classes
+            package.classes.each do |klass|
+              if klass.respond_to?(:associations) && klass.associations
+                associations.concat(klass.associations)
+              end
+            end
+          end
+
+          # Recursively collect from child packages
+          if package.packages
+            package.packages.each do |child_package|
+              collect_package_associations(child_package, associations)
+            end
+          end
         end
       end
     end

@@ -63,14 +63,11 @@ module Lutaml
             end
 
             # Map definition/notes
-            klass.definition = ea_object.note unless
+            klass.definition = normalize_line_endings(ea_object.note) unless
               ea_object.note.nil? || ea_object.note.empty?
 
             # Load and transform attributes
             klass.attributes = load_attributes(ea_object.ea_object_id)
-
-            # Add association-based attributes (navigable association ends)
-            klass.attributes.concat(load_association_attributes(ea_object.ea_object_id))
 
             # Load and transform operations
             klass.operations = load_operations(ea_object.ea_object_id)
@@ -216,52 +213,194 @@ module Lutaml
 
         # Load generalization for a class
         # @param object_id [Integer] Object ID
+        # @param visited [Set] Set of visited object IDs to prevent circular references
+        # @param is_leaf [Boolean] Whether this is the leaf class (not a parent in recursion)
         # @return [Lutaml::Uml::Generalization, nil] UML generalization or nil
-        def load_generalization(object_id)
+        def load_generalization(object_id, visited = Set.new, is_leaf = true)
           return nil if object_id.nil?
 
-          # Query for generalization connector where this class is the subtype (Start_Object_ID)
+          # Detect circular reference
+          if visited.include?(object_id)
+            warn "Circular inheritance detected for object_id #{object_id}, stopping recursion"
+            return nil
+          end
+
+          # Add current object to visited set
+          visited = visited.dup.add(object_id)
+
+          # 1. Load CURRENT object
+          current_obj = find_object_by_id(object_id)
+          return nil unless current_obj
+
+          # 2. Find generalization connector where this class is the subtype
           query = "SELECT * FROM t_connector WHERE Start_Object_ID = ? AND Connector_Type = 'Generalization' LIMIT 1"
           rows = database.connection.execute(query, object_id)
-          return nil if rows.empty?
 
-          ea_connector = Models::EaConnector.from_db_row(rows.first)
-          gen_transformer = GeneralizationTransformer.new(database)
-          generalization = gen_transformer.transform(ea_connector)
+          # 3. Create generalization object for current class
+          # Even if no parent exists, we need a Generalization representing this class
+          if rows.empty?
+            # No parent - create terminal generalization
+            gen_transformer = GeneralizationTransformer.new(database)
+            generalization = gen_transformer.transform(nil, current_obj)
+            return nil unless generalization
+          else
+            # Has parent - create generalization with parent connector
+            ea_connector = Models::EaConnector.from_db_row(rows.first)
+            gen_transformer = GeneralizationTransformer.new(database)
+            generalization = gen_transformer.transform(ea_connector, current_obj)
+            return nil unless generalization
+          end
 
-          # Build inheritance chain recursively
-          if generalization && generalization.general_id
-            # Find parent object by GUID (need to normalize for lookup)
-            parent_guid = generalization.general_id.tr('_', '-').sub(/^EAID_/, '{') + '}'
-            parent_query = "SELECT * FROM t_object WHERE ea_guid = ?"
-            parent_rows = database.connection.execute(parent_query, parent_guid)
+          # 4. Load CURRENT object attributes and convert to GeneralAttribute
+          current_attrs = load_attributes(object_id)
+          general_attrs = convert_to_general_attributes(current_attrs)
 
-            if !parent_rows.empty?
-              parent_obj = Models::EaObject.from_db_row(parent_rows.first)
+          # Set gen_name and name_ns on general_attributes (matches current class context)
+          upper_klass = generalization.general_upper_klass
+          gen_name = generalization.general_name
+          general_attrs.each do |attr|
+            attr.gen_name = gen_name
+            # Determine name_ns based on type_ns (same logic as transform_general_attributes)
+            name_ns = case attr.type_ns
+                      when "core", "gml"
+                        upper_klass
+                      else
+                        attr.type_ns
+                      end
+            attr.name_ns = name_ns || upper_klass
+          end
 
-              # Load parent's attributes for inherited properties
-              generalization.general_attributes = load_attributes(parent_obj.ea_object_id)
+          generalization.general_attributes = general_attrs
 
-              # Recursively load parent's generalization
-              parent_gen = load_generalization(parent_obj.ea_object_id)
-              if parent_gen
-                generalization.general = parent_gen
-                generalization.has_general = true
-              end
+          # 5. Transform attributes (set name_ns, gen_name) - creates working copies
+          generalization.attributes = transform_general_attributes(generalization)
+
+          # 6. Partition into owned_props and assoc_props
+          generalization.owned_props = generalization.attributes.select { |a| !a.has_association }
+          generalization.assoc_props = generalization.attributes.select(&:has_association)
+
+          # 7. Recursively load PARENT generalization with circular reference detection
+          # Pass is_leaf=false so parent doesn't populate inherited_props
+          parent_object_id = ea_connector&.end_object_id
+          if parent_object_id
+            parent_gen = load_generalization(parent_object_id, visited, false)
+            if parent_gen
+              generalization.general = parent_gen
+              generalization.has_general = true
             end
           end
+
+          # 8. Collect inherited properties from ancestor chain
+          # Only populate inherited_props at the LEAF level (matches XMI behavior)
+          collect_inherited_properties(generalization) if is_leaf && generalization.has_general
 
           generalization
         end
 
+        # Convert TopElementAttribute array to GeneralAttribute array
+        # @param attributes [Array<Lutaml::Uml::TopElementAttribute>]
+        # @return [Array<Lutaml::Uml::GeneralAttribute>]
+        def convert_to_general_attributes(attributes)
+          attributes.map do |attr|
+            Lutaml::Uml::GeneralAttribute.new.tap do |gen_attr|
+              gen_attr.id = attr.id
+              gen_attr.name = attr.name
+              gen_attr.type = attr.type
+              gen_attr.xmi_id = attr.xmi_id
+              gen_attr.is_derived = !!attr.is_derived
+              gen_attr.cardinality = attr.cardinality
+              gen_attr.definition = attr.definition
+              gen_attr.association = attr.association
+              gen_attr.has_association = !!attr.association
+              gen_attr.type_ns = attr.type_ns
+            end
+          end
+        end
+
+        # Transform GeneralAttributes with context (name_ns, gen_name)
+        # Similar to XMI's create_uml_attributes
+        # @param generalization [Lutaml::Uml::Generalization]
+        # @return [Array<Lutaml::Uml::GeneralAttribute>]
+        def transform_general_attributes(generalization)
+          upper_klass = generalization.general_upper_klass
+          gen_name = generalization.general_name
+          gen_attrs = generalization.general_attributes
+
+          gen_attrs.map do |attr|
+            # Clone to avoid mutation
+            transformed = attr.dup
+
+            # Set name_ns based on type_ns
+            name_ns = case attr.type_ns
+                      when "core", "gml"
+                        upper_klass
+                      else
+                        attr.type_ns
+                      end
+            name_ns = upper_klass if name_ns.nil?
+
+            transformed.name_ns = name_ns
+            transformed.gen_name = gen_name
+            transformed.name = "" if transformed.name.nil?
+
+            transformed
+          end
+        end
+
+        # Collect inherited properties from ancestor chain
+        # Similar to XMI's loop_general_item
+        # @param generalization [Lutaml::Uml::Generalization]
+        # @return [void] (modifies generalization in place)
+        def collect_inherited_properties(generalization)
+          inherited_props = []
+          inherited_assoc_props = []
+          level = 0
+
+          # Walk the general chain
+          current_gen = generalization.general
+          while current_gen
+            # Set metadata on BOTH general_attributes and attributes (matches XMI behavior)
+            # upper_klass and level are set during the inheritance walk
+            [current_gen.general_attributes, current_gen.attributes].each do |attr_list|
+              attr_list&.each do |attr|
+                attr.upper_klass = current_gen.general_upper_klass
+                attr.level = level
+              end
+            end
+
+            # Process each attribute in reverse order (to show super class first after reversal)
+            current_gen.attributes.reverse_each do |attr|
+              # Clone attribute for inherited collection
+              inherited_attr = attr.dup
+              inherited_attr.upper_klass = current_gen.general_upper_klass
+              inherited_attr.gen_name = current_gen.general_name
+              inherited_attr.level = level
+
+              # Partition by association
+              if attr.has_association
+                inherited_assoc_props << inherited_attr
+              else
+                inherited_props << inherited_attr
+              end
+            end
+
+            # Move to next level
+            level += 1
+            current_gen = current_gen.general
+          end
+
+          # Reverse to show super class first
+          generalization.inherited_props = inherited_props.reverse
+          generalization.inherited_assoc_props = inherited_assoc_props.reverse
+        end
+
         # Load association generalizations for a class
         # @param object_id [Integer] Object ID
-        # @return [Array<Hash>] List of hashes with :connector_xmi_id and :parent_object_id
+        # @return [Array<Lutaml::Uml::AssociationGeneralization>] UML association generalizations
         def load_association_generalizations(object_id)
           return [] if object_id.nil?
 
           # Query for ALL generalization connectors for this class
-          # Get both the connector EAID and the end_object_id (parent class ID)
           query = "SELECT ea_guid, End_Object_ID FROM t_connector WHERE Start_Object_ID = ? AND Connector_Type = 'Generalization'"
           rows = database.connection.execute(query, object_id)
 
@@ -269,42 +408,96 @@ module Lutaml
             guid = row.is_a?(Hash) ? (row['ea_guid'] || row[:ea_guid]) : row[0]
             parent_object_id = row.is_a?(Hash) ? (row['End_Object_ID'] || row[:End_Object_ID]) : row[1]
 
-            {
-              connector_xmi_id: normalize_guid_to_xmi_format(guid, "EAID"),
-              parent_object_id: parent_object_id
-            }
+            # Find parent object to get its GUID
+            parent_obj = find_object_by_id(parent_object_id)
+            next unless parent_obj
+
+            Lutaml::Uml::AssociationGeneralization.new.tap do |ag|
+              ag.id = normalize_guid_to_xmi_format(guid, "EAID")
+              ag.type = "uml:Generalization"
+              ag.general = normalize_guid_to_xmi_format(parent_obj.ea_guid, "EAID")
+            end
           end.compact
         end
 
         # Load associations for a class
+        # Creates Association objects from navigable association ends (ownedAttributes with association markers)
+        # This matches XMI behavior where current class is always the owner
         # @param object_id [Integer] Object ID
         # @param object_guid [String] Object GUID
         # @return [Array<Lutaml::Uml::Association>] UML associations
         def load_class_associations(object_id, object_guid)
           return [] if object_id.nil?
 
-          # Find connectors where this class participates
-          # Note: Using UNION to avoid parameter duplication issue
-          query = <<-SQL
-            SELECT * FROM t_connector
-            WHERE Connector_Type = 'Association'
-            AND (Start_Object_ID = ? OR End_Object_ID = ?)
-          SQL
+          associations = []
+          normalized_owner_xmi_id = normalize_guid_to_xmi_format(object_guid, "EAID")
 
+          # Find all association-type connectors where this class participates
+          query = "SELECT * FROM t_connector WHERE (Start_Object_ID = ? OR End_Object_ID = ?) AND Connector_Type IN ('Association', 'Aggregation', 'Composition')"
           rows = database.connection.execute(query, [object_id, object_id])
 
-          assoc_transformer = AssociationTransformer.new(database)
-          normalized_xmi_id = normalize_guid_to_xmi_format(object_guid, "EAID")
-
-          rows.map do |row|
+          rows.each do |row|
             ea_connector = Models::EaConnector.from_db_row(row)
-            assoc = assoc_transformer.transform(ea_connector)
 
-            # Only include if this class is the owner end
-            next unless assoc && assoc.owner_end_xmi_id == normalized_xmi_id
+            # Determine which end this class is on
+            is_start = ea_connector.start_object_id == object_id
 
-            assoc
-          end.compact
+            # Get role name (this is the ownedAttribute name)
+            owner_end_attribute_name = is_start ? ea_connector.destrole : ea_connector.sourcerole
+
+            # Only create association if there's a navigable role name (matches XMI ownedAttribute[@association])
+            next if owner_end_attribute_name.nil? || owner_end_attribute_name.empty?
+
+            # Get member end (the other class)
+            member_obj = is_start ? find_object_by_id(ea_connector.end_object_id) : find_object_by_id(ea_connector.start_object_id)
+            next unless member_obj
+
+            # Get member end attribute name (role at the opposite end, or class name if no role)
+            member_end_attribute_name = is_start ? ea_connector.sourcerole : ea_connector.destrole
+            member_end_attribute_name = member_obj.name if member_end_attribute_name.nil? || member_end_attribute_name.empty?
+
+            # Get cardinality for this end
+            member_cardinality_str = is_start ? ea_connector.destcard : ea_connector.sourcecard
+
+            # Create association from this class's perspective
+            associations << Lutaml::Uml::Association.new.tap do |assoc|
+              assoc.xmi_id = normalize_guid_to_xmi_format(ea_connector.ea_guid, "EAID")
+              assoc.name = ea_connector.name unless ea_connector.name.nil? || ea_connector.name.empty?
+
+              # Owner is always the current class (matches XMI)
+              assoc.owner_end = find_object_by_id(object_id)&.name
+              assoc.owner_end_xmi_id = normalized_owner_xmi_id
+              assoc.owner_end_attribute_name = owner_end_attribute_name
+
+              # Member is the other end
+              assoc.member_end = member_obj.name
+              assoc.member_end_xmi_id = normalize_guid_to_xmi_format(member_obj.ea_guid, "EAID")
+              assoc.member_end_attribute_name = member_end_attribute_name
+
+              # Set member_end_type based on connector type
+              case ea_connector.connector_type
+              when "Aggregation"
+                assoc.member_end_type = "aggregation"
+              when "Composition"
+                assoc.member_end_type = "composition"
+              end
+
+              # Set cardinality
+              if member_cardinality_str && !member_cardinality_str.empty?
+                parsed = parse_cardinality(member_cardinality_str)
+                if parsed[:min] || parsed[:max]
+                  assoc.member_end_cardinality = Lutaml::Uml::Cardinality.new.tap do |card|
+                    card.min = parsed[:min]
+                    card.max = parsed[:max]
+                  end
+                end
+              end
+
+              # Note: XMI does not include connector notes in Association definition
+            end
+          end
+
+          associations.compact
         end
 
         # Load association-based attributes (navigable association ends with role names)

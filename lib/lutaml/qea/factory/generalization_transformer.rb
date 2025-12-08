@@ -9,50 +9,48 @@ module Lutaml
       # Transforms EA connectors (Generalization type) to UML generalizations
       class GeneralizationTransformer < BaseTransformer
         # Transform EA connector to UML generalization
-        # @param ea_connector [EaConnector] EA connector model
+        # @param ea_connector [EaConnector, nil] EA connector model (nil for terminal nodes)
+        # @param current_object [EaObject] Current object that owns this generalization
         # @return [Lutaml::Uml::Generalization] UML generalization
-        def transform(ea_connector)
-          return nil if ea_connector.nil?
-          return nil unless ea_connector.generalization?
+        def transform(ea_connector, current_object)
+          return nil if current_object.nil?
+
+          # ea_connector can be nil for terminal nodes (classes with no parent)
+          if ea_connector && !ea_connector.generalization?
+            return nil
+          end
 
           Lutaml::Uml::Generalization.new.tap do |gen|
-            # Map source (subtype) and target (supertype)
-            # In generalization, start_object_id is the subtype
-            # end_object_id is the supertype
-            subtype_obj = find_object(ea_connector.start_object_id)
-            supertype_obj = find_object(ea_connector.end_object_id)
+            # Map properties from CURRENT object (not parent)
+            # This matches XMI's self-referential pattern
+            gen.general_id = normalize_guid_to_xmi_format(current_object.ea_guid, "EAID")
+            gen.general_name = current_object.name
+            gen.name = current_object.name
+            gen.type = "uml:Class"
 
-            if supertype_obj
-              gen.general_id = normalize_guid_to_xmi_format(supertype_obj.ea_guid, "EAID")
-              gen.general_name = supertype_obj.name
+            # Map definition from current object notes
+            gen.definition = normalize_line_endings(current_object.note) unless
+              current_object.note.nil? || current_object.note.empty?
 
-              # Find the package/upper class for the general
-              if supertype_obj.package_id
-                parent_package = find_package(supertype_obj.package_id)
-                if parent_package
-                  gen.general_upper_klass = extract_package_prefix(parent_package)
-                end
+            # Map stereotype from current object
+            gen.stereotype = current_object.stereotype unless
+              current_object.stereotype.nil? || current_object.stereotype.empty?
+
+            # Find the package/upper class for the current object
+            if current_object.package_id
+              current_package = find_package(current_object.package_id)
+              if current_package
+                gen.general_upper_klass = extract_package_prefix(current_package)
               end
             end
 
-            if subtype_obj
-              gen.name = subtype_obj.name
-              gen.type = "uml:Class"
-            end
+            # Set has_general flag based on whether parent exists
+            # Use false (not nil) for terminal nodes to match XMI behavior
+            gen.has_general = ea_connector ? !ea_connector.end_object_id.nil? : false
 
-            # Map definition/notes
-            gen.definition = ea_connector.notes unless
-              ea_connector.notes.nil? || ea_connector.notes.empty?
-
-            # Map stereotype
-            gen.stereotype = supertype_obj&.stereotype unless
-              supertype_obj&.stereotype.nil? || supertype_obj&.stereotype.empty?
-
-            # Set has_general flag
-            gen.has_general = !supertype_obj.nil?
-
-            # Note: owned_props, assoc_props, inherited_props, inherited_assoc_props
-            # will be populated later during post-processing phase
+            # Note: general_attributes, attributes, owned_props, assoc_props,
+            # general, inherited_props, inherited_assoc_props
+            # will be populated in ClassTransformer.load_generalization
           end
         end
 

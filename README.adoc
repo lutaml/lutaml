@@ -1,8 +1,8 @@
-= LutaML: Ruby library for accessing data models
+= LutaML: Unified data model accessor
 
 == Purpose
 
-LutaML aims to be a universal data model accessor that allows parsing
+LutaML aims to be a unified data model accessor that allows parsing
 data models in multiple languages, including:
 
 * EXPRESS (https://www.expresslang.org[EXPRESS Language Foundation], ISO 10303-11)
@@ -47,12 +47,12 @@ bundle exec jekyll serve
 # Open http://localhost:4000/lutaml/
 ----
 
-== Usages
+== Usage
 
 === Parsing
 
 The `Lutaml::Parser.parse` method provides a single point of entry for parsing
-data model files, such as:
+data model files, including:
 
 * EXPRESS files with `.exp` extension
 * YAML Compressed EXPRESS CACHE files
@@ -60,7 +60,6 @@ data model files, such as:
 * XMI files with `.xmi` extension
 * XML files with `.xml` extension
 * LutaML files with `.lutaml` extension
-* LutaML YAML files with `.yml` extension
 
 Depending on the input file type, `Lutaml::Parser.parse` returns:
 
@@ -70,7 +69,6 @@ Depending on the input file type, `Lutaml::Parser.parse` returns:
 * `Lutaml::Uml::Document` for XMI files
 * `Lutaml::Uml::Document` for XML files
 * `Lutaml::Uml::Document` for LutaML files
-* `Lutaml::Uml::Document` for LutaML YAML files
 
 Examples to use the `Lutaml::Parser.parse`:
 
@@ -102,6 +100,118 @@ model = Lutaml::Parser.parse([File.new("example.lutaml")])
 model = Lutaml::Parser.parse([File.new("example.yaml")])
 # => returns Lutaml::Uml::Document model
 ----
+
+
+== Working with UML
+
+=== General
+
+Lutaml supports various UML formats and unifies them under a common data
+model: `Lutaml::Uml::Document`.
+
+Lutaml supports the following UML formats:
+
+* Enterprise Architect QEA files (`.qea` extension)
+* Enterprise Architect exported XMI files (`.xmi` extension)
+* Enterprise Architect exported XML files (`.xml` extension)
+* LutaML UML files (`.lutaml` extension)
+
+
+=== LutaML UML
+
+LutaML UML is a simple, human-readable representation of UML models.
+
+The syntax is described in link:docs/pages/uml-syntax.adoc[LutaML UML syntax].
+
+=== Enterprise Architect
+
+Enterprise Architect is a popular UML modeling tool by Sparx Systems.
+It supports exporting UML models in XMI and XML formats.
+
+
+
+== Diagram generation
+
+=== LutaML Diagrams
+
+LutaML Diagram is a lightweight textual syntax for defining model diagrams.
+
+The syntax is described in link:docs/pages/uml-syntax.adoc[LutaML diagram
+syntax].
+
+A CLI is provided to generate diagrams from LutaML DSL files:
+
+[source,bash]
+----
+# Generate diagrams from LutaML DSL files
+$ lutaml -o . test.lutaml
+$ lutaml -o assets -t png test.lutaml
+----
+
+
+
+//=== CLI
+
+==== General
+
+LutaML provides comprehensive command-line interfaces for working with data models and UML repositories.
+
+
+**UML repository commands** (for XMI, QEA, and LUR files):
+
+The `lutaml uml` command suite provides a complete interface for working with UML models. See [CLI commands reference](#cli-commands-reference) for details.
+
+[source,bash]
+----
+# Build LUR package from XMI or QEA
+$ lutaml uml build model.xmi -o model.lur
+$ lutaml uml build project.qea -o project.lur
+
+# Explore and query
+$ lutaml uml ls model.lur
+$ lutaml uml tree model.lur --depth 2
+$ lutaml uml search model.lur "Building"
+$ lutaml uml stats model.lur
+
+# Export and document
+$ lutaml uml export model.lur --format csv -o classes.csv
+$ lutaml uml build-spa model.lur -o docs/index.html
+$ lutaml uml serve model.lur --port 8080
+
+# Interactive exploration
+$ lutaml uml repl model.lur
+----
+
+==== Thin wrapper principle
+
+The CLI is designed as a thin wrapper around the Ruby API. Every CLI command directly maps to Ruby API methods, making it easy to:
+
+* Transition from CLI to programmatic usage
+* Understand what the CLI does by reading the API documentation
+* Script complex workflows using Ruby when needed
+
+.CLI to API mapping example
+[example]
+====
+[source,bash]
+----
+# CLI command
+$ lutaml uml build model.xmi -o model.lur
+----
+
+Equivalent Ruby code:
+
+[source,ruby]
+----
+require "lutaml/xmi"
+
+repo = Lutaml::UmlRepository::Repository.from_xmi("model.xmi")
+repo.export_to_package("model.lur")
+----
+====
+
+
+== UML support
 
 === QEA Direct Database Parsing
 
@@ -264,188 +374,72 @@ tables:
 * Only reads from QEA; does not write back to EA database
 
 
+=== QEA vs XMI Comparison
 
-=== CLI
+LutaML supports both QEA (SQLite) and XMI (XML) formats from Enterprise Architect. While functionally equivalent, QEA parsing offers several advantages:
 
-==== General
+==== Performance
 
-LutaML provides comprehensive command-line interfaces for working with data models and UML repositories.
+* **QEA**: 1-2 seconds for 20MB files (direct SQLite access)
+* **XMI**: 20-40 seconds for same files (XML parsing overhead)
+* **Speedup**: 10-20x faster parsing with QEA
 
-**Legacy DSL commands** (for EXPRESS and LutaML DSL files):
+==== Data Richness
 
-[source,bash]
-----
-# Generate diagrams from LutaML DSL files
-$ lutaml -o . test.lutaml
-$ lutaml -o assets -t png test.lutaml
-----
+QEA preserves more semantic information due to direct database access:
 
-**UML repository commands** (for XMI, QEA, and LUR files):
+**Association type differentiation**::
+QEA preserves the distinction between Association, Aggregation, and Composition connector types through the `member_end_type` field. XMI export from EA hardcodes all association types as "aggregation", losing this semantic information.
 
-The [`lutaml uml`](lib/lutaml/cli/uml_commands.rb) command suite provides a complete interface for working with UML models. See [CLI commands reference](#cli-commands-reference) for details.
+**Tagged values**::
+QEA includes object properties as tagged values, capturing EA-specific metadata that may not be exported to XMI. For example, a class in QEA might have 3 tagged values while the same class in XMI has 0, representing metadata loss during XMI export.
 
-[source,bash]
-----
-# Build LUR package from XMI or QEA
-$ lutaml uml build model.xmi -o model.lur
-$ lutaml uml build project.qea -o project.lur
+**Association generalization structure**::
+QEA provides rich `AssociationGeneralization` objects with full type information, while XMI reduces these to simple string IDs, losing structural detail.
 
-# Explore and query
-$ lutaml uml ls model.lur
-$ lutaml uml tree model.lur --depth 2
-$ lutaml uml search model.lur "Building"
-$ lutaml uml stats model.lur
+==== Compatibility
 
-# Export and document
-$ lutaml uml export model.lur --format csv -o classes.csv
-$ lutaml uml docs model.lur -o docs/
-$ lutaml uml serve model.lur --port 8080
+* **99.6% parity** between formats for core UML data
+* QEA is the preferred format when working with Enterprise Architect models
+* Both formats produce equivalent Lutaml::Uml::Document structures
 
-# Interactive exploration
-$ lutaml uml repl model.lur
-----
 
-==== Thin wrapper principle
 
-The CLI is designed as a thin wrapper around the Ruby API. Every CLI command directly maps to Ruby API methods, making it easy to:
-
-* Transition from CLI to programmatic usage
-* Understand what the CLI does by reading the API documentation
-* Script complex workflows using Ruby when needed
-
-.CLI to API mapping example
-[example]
-====
-[source,bash]
-----
-# CLI command
-$ lutaml uml build model.xmi -o model.lur
-----
-
-Equivalent Ruby code:
-
-[source,ruby]
-----
-require "lutaml/xmi"
-
-repo = Lutaml::UmlRepository::Repository.from_xmi("model.xmi")
-repo.export_to_package("model.lur")
-----
-====
 
 == LutaML UML Repository (LUR)
 
-LutaML UML Repository provides a fast, queryable interface for UML models with built-in indexing and package management.
+=== General
 
-=== Features
+LutaML UML Repository provides a unified interface for UML models with
+built-in indexing and package management.
 
-==== Core features
 
+=== Package format
 
-* **Fast querying**: O(1) lookups via pre-built indexes
-* **Package management**: Save and load repositories as `.lur` packages
-* **Rich query API**: Navigate packages, classes, inheritance, associations
-* **CLI interface**: Command-line tools for all operations
-* **Statistics & validation**: Comprehensive model analysis
-* **Relative paths**: User-friendly path display for deep hierarchies
+LUR packages are ZIP archives containing:
 
-==== UX improvements (Sprint 1)
+----
+model.lur
+├── metadata.yaml          # Package info, statistics
+├── models/
+│   └── document.marshal   # Serialized UML model
+├── indexes/
+│   ├── all.marshal        # Pre-built indexes
+│   └── index_tree.yaml    # Human-readable package tree (NEW)
+└── statistics.yaml        # Detailed statistics
+----
 
-* **Smart file detection**: Automatic format detection for `.xmi` and `.lur` files
-* **Intelligent caching**: Auto-rebuild only when source changes
-* **Configuration management**: Project-level settings with `.lutaml-xmi.yaml`
-* **Better error messages**: Fuzzy matching suggestions for typos
-* **Command aliases**: Short commands (e.g., `ls`, `t`, `s`, `?`, `f`)
-* **Quick workflow**: Single command for build + validate + export + stats
-* **Auto-build**: Smart caching that only rebuilds when needed
+The `index_tree.yaml` file provides a human-readable view of the package
+hierarchy with class counts, making it easy to inspect the structure without
+loading the full repository. This is particularly useful for:
 
-==== Interactive features (Sprint 2)
+* Quick package structure inspection
+* Debugging package organization
+* Understanding model hierarchy
+* Generating documentation
 
-* **Interactive shell (REPL)**: Full-featured command-line shell for exploring repositories
-* **Watch mode**: Auto-rebuild LUR packages when XMI files change
-* **Enhanced formatting**: Tree views with Unicode icons, paginated tables, visual statistics
-* **Tab completion**: Command and path completion in interactive shell
-* **Command history**: Persistent history across sessions
-* **Bookmark system**: Save and navigate to frequently used locations
-* **Results management**: Store and export search results
 
 === Quick start
-
-==== Build repository from XMI
-
-[source,ruby]
-----
-require "lutaml/xmi"
-
-# Build from XMI file
-repo = Lutaml::UmlRepository::Repository.from_xmi("model.xmi")
-
-# Query the model
-package = repo.find_package("ModelRoot::MyPackage")
-klass = repo.find_class("ModelRoot::MyPackage::MyClass")
-classes = repo.find_classes_by_stereotype("featureType")
-
-# Get statistics
-stats = repo.statistics
-puts "Total classes: #{stats[:total_classes]}"
-----
-
-==== Save as LUR package
-
-[source,ruby]
-----
-# Export to .lur package (fast loading)
-repo.export_to_package("model.lur",
-  name: "My Model",
-  version: "1.0",
-  serialization_format: :marshal  # or :yaml
-)
-
-# Load from package (< 100ms vs 5-8s parsing XMI)
-repo = Lutaml::UmlRepository::Repository.from_package("model.lur")
-
-# Smart file detection (auto-detects format)
-repo = Lutaml::UmlRepository::Repository.from_file("model.xmi")
-repo = Lutaml::UmlRepository::Repository.from_file("model.lur")
-
-# Intelligent caching (uses cache if fresh, rebuilds if stale)
-repo = Lutaml::UmlRepository::Repository.from_file_cached("model.xmi")
-# Creates model.lur and reuses it on subsequent runs
-----
-
-==== Configuration management
-
-[source,ruby]
-----
-# Load project configuration
-config = Lutaml::Xmi::Configuration.load
-
-# Set preferences
-config.default_format = :yaml
-config.add_alias("my-model", "/path/to/model.lur")
-config.save
-
-# Use aliases
-path = config.resolve_alias("@my-model")
-repo = Lutaml::UmlRepository::Repository.from_package(path)
-----
-
-==== Better error messages
-
-[source,ruby]
-----
-# Get helpful suggestions for typos
-repo.find_class("ModelRoot::Buildng", raise_on_error: true)
-# => NameError: Class not found: ModelRoot::Buildng
-#    Did you mean one of these?
-#      - ModelRoot::Building
-#      - ModelRoot::BuildingPart
-
-repo.find_package("ModelRoot::i-UP", raise_on_error: true)
-# => NameError: Package not found: ModelRoot::i-UP
-#    Did you mean one of these?
-#      - ModelRoot::i-UR
-----
 
 ==== CLI usage
 
@@ -473,12 +467,6 @@ lutaml uml search "building" model.lur
 # Get statistics
 lutaml uml stats model.lur
 
-# Quick workflow (build + validate + export + stats in one command)
-lutaml uml quick model.xmi -o model.lur
-
-# Auto-build (only rebuilds if needed)
-lutaml uml auto-build model.xmi
-
 # Command aliases (shortcuts)
 lutaml uml ls model.lur           # alias for 'list'
 lutaml uml t model.lur            # alias for 'tree'
@@ -488,121 +476,97 @@ lutaml uml f --stereotype featureType model.lur  # alias for 'find'
 
 # Interactive shell (REPL)
 lutaml uml shell model.lur
-
-# Watch mode (auto-rebuild on changes)
-lutaml uml watch model.xmi -o model.lur
 ----
 
-==== Interactive shell (REPL)
 
-The interactive shell provides a full-featured command-line interface for exploring UML repositories:
+==== Build repository from XMI or QEA
 
-[source,shell]
+[source,ruby]
 ----
-# Start interactive shell
-lutaml uml shell model.lur
+require "lutaml/xmi"
 
-# Inside the shell:
-lutaml[/]> help                    # Show available commands
-lutaml[/]> ls                      # List packages in current location
-lutaml[/]> cd i-UR::urf            # Navigate to package
-lutaml[/i-UR::urf]> pwd            # Show current path
-lutaml[/i-UR::urf]> tree           # Show tree from current location
-lutaml[/i-UR::urf]> find Building  # Find classes
-lutaml[/i-UR::urf]> show 1         # Show first search result
-lutaml[/i-UR::urf]> bookmark add urf  # Bookmark current location
-lutaml[/i-UR::urf]> bm urf         # Jump to bookmark
-lutaml[/i-UR::urf]> stats          # Show statistics
-lutaml[/i-UR::urf]> exit           # Exit shell
-----
+# Build from XMI file
+repo = Lutaml::UmlRepository::Repository.from_xmi("model.xmi")
 
-===== Navigation commands
+# Build from QEA file
+repo = Lutaml::UmlRepository::Repository.from_qea("model.qea")
 
-* `cd PATH` - Change to package path
-* `pwd` - Print current working path
-* `ls [PATH]` - List packages at path
-* `tree [PATH]` - Show tree from path
-* `up` - Go to parent package
-* `root` - Go to ModelRoot
-* `back` - Go to previous location
+# Query the model
+package = repo.find_package("ModelRoot::MyPackage")
+klass = repo.find_class("ModelRoot::MyPackage::MyClass")
+classes = repo.find_classes_by_stereotype("featureType")
 
-===== Query commands
-
-* `find CLASS_NAME` - Find class (fuzzy search)
-* `show class QNAME` - Show class details
-* `show package PATH` - Show package details
-* `show NUMBER` - Show numbered result from last search
-* `search QUERY` - Full-text search
-* `? QUERY` - Alias for search
-
-===== Bookmark commands
-
-* `bookmark add NAME` - Bookmark current path or last result
-* `bookmark list` - List all bookmarks
-* `bookmark go NAME` - Jump to bookmark
-* `bookmark rm NAME` - Remove bookmark
-* `bm NAME` - Quick jump to bookmark
-
-===== Utility commands
-
-* `results` - Show last search results
-* `export last csv FILE` - Export last results to CSV
-* `export last json FILE` - Export to JSON
-* `export last yaml FILE` - Export to YAML
-* `help [COMMAND]` - Show help
-* `history` - Show command history
-* `clear` - Clear screen
-* `config` - Show configuration
-* `stats` - Quick statistics
-* `exit`, `quit`, `q` - Exit shell
-
-===== Features
-
-* **Tab completion** for commands and paths
-* **Command history** persisted to `~/.lutaml-xmi-history`
-* **Colorized output** with Unicode icons
-* **Contextual prompts** showing current location
-* **Error handling** with helpful messages
-
-==== Watch mode
-
-Watch mode monitors XMI files for changes and automatically rebuilds LUR packages:
-
-[source,shell]
-----
-# Start watch mode
-lutaml uml watch model.xmi -o model.lur
-
-# With options
-lutaml uml watch model.xmi \
-  --output model.lur \
-  --stats \
-  --validate \
-  --verbose
-
-# The watcher will:
-# 1. Perform initial build
-# 2. Monitor the XMI file for changes
-# 3. Auto-rebuild when changes detected
-# 4. Show build time and statistics
-# 5. Run validation if enabled
+# Get statistics
+stats = repo.statistics
+puts "Total classes: #{stats[:total_classes]}"
 ----
 
-===== Watch mode options
+==== Save as LUR package
 
-* `--output`, `-o` - Output .lur file (default: INPUT.lur)
-* `--stats` - Show statistics after rebuild (default: true)
-* `--validate` - Validate after rebuild (default: true)
-* `--verbose` - Show verbose output including warnings
+[source,ruby]
+----
+# Export to .lur package (fast loading)
+repo.export_to_package("model.lur",
+  name: "My Model",
+  version: "1.0",
+  serialization_format: :marshal  # or :yaml
+)
 
-===== Features
+# Load from package (< 100ms vs >5s parsing XMI)
+repo = Lutaml::UmlRepository::Repository.from_package("model.lur")
 
-* **File system monitoring** with debouncing
-* **Build time tracking** with formatted durations
-* **Optional validation** after each build
-* **Statistics display** showing package contents
-* **Graceful shutdown** on Ctrl+C
-* **Clear status messages** with timestamps
+# Smart file detection (auto-detects format)
+repo = Lutaml::UmlRepository::Repository.from_file("model.xmi")
+repo = Lutaml::UmlRepository::Repository.from_file("model.lur")
+
+# Intelligent caching (uses cache if fresh, rebuilds if stale)
+repo = Lutaml::UmlRepository::Repository.from_file_cached("model.xmi")
+# Creates model.lur and reuses it on subsequent runs
+----
+
+=== LUR configuration
+
+==== General
+
+A configuration file is used to describe package-specific settings for an
+LUR package, including metadata and features enabled.
+
+The configuration format is as follows:
+
+[source,yaml]
+----
+metadata:
+  name: My Model
+  version: 1.0
+  description: A sample UML model
+  license: MIT
+  author: John Doe
+package:
+  input: /path/to/model.xmi  # or .qea
+  storage_format: marshal  # or yaml
+  include_original_file: true
+----
+
+
+=== Search
+
+LUR packages allow full-text search across model elements.
+
+[source,ruby]
+----
+# Get helpful suggestions for typos
+repo.find_class("ModelRoot::Buildng", raise_on_error: true)
+# => NameError: Class not found: ModelRoot::Buildng
+#    Did you mean one of these?
+#      - ModelRoot::Building
+#      - ModelRoot::BuildingPart
+
+repo.find_package("ModelRoot::i-UP", raise_on_error: true)
+# => NameError: Package not found: ModelRoot::i-UP
+#    Did you mean one of these?
+#      - ModelRoot::i-UR
+----
+
 
 === API reference
 
@@ -718,7 +682,8 @@ puts presenter.to_json
 
 ==== Query DSL (Advanced queries)
 
-The Query DSL provides a fluent, expressive interface for building complex queries with method chaining, lazy evaluation, and composable filters.
+The Query DSL provides a fluent, expressive interface for building complex
+queries with method chaining, lazy evaluation, and composable filters.
 
 [source,ruby]
 ----
@@ -844,96 +809,42 @@ else
 end
 ----
 
-==== Presenter architecture
 
-The CLI uses a presenter pattern to format UML elements for display.
-This architecture provides:
+=== CLI commands
 
-* **Separation of concerns**: Query logic separate from presentation logic
-* **Extensibility**: New element types supported via new presenters
-* **Consistency**: All elements formatted using same pattern
-* **Multiple formats**: Single presenter produces text, table, and JSON/YAML output
-
-The presenter classes are located in [`lib/lutaml/xmi/presenters/`](lib/lutaml/xmi/presenters/):
-
-* [`ElementPresenter`](lib/lutaml/xmi/presenters/element_presenter.rb) - Abstract base class
-* [`ClassPresenter`](lib/lutaml/xmi/presenters/class_presenter.rb) - Formats classes
-* [`AttributePresenter`](lib/lutaml/xmi/presenters/attribute_presenter.rb) - Formats attributes
-* [`AssociationPresenter`](lib/lutaml/xmi/presenters/association_presenter.rb) - Formats associations
-* [`EnumPresenter`](lib/lutaml/xmi/presenters/enum_presenter.rb) - Formats enumerations
-* [`DataTypePresenter`](lib/lutaml/xmi/presenters/datatype_presenter.rb) - Formats data types
-* [`PresenterFactory`](lib/lutaml/xmi/presenters/presenter_factory.rb) - Creates appropriate presenter for any element
-
-=== LUR package format
-
-LUR packages are ZIP archives containing:
-
-----
-model.lur
-├── metadata.yaml          # Package info, statistics
-├── models/
-│   └── document.marshal   # Serialized UML model
-├── indexes/
-│   └── all.marshal        # Pre-built indexes
-└── statistics.yaml        # Detailed statistics
-----
-
-==== Performance
-
-* **Build time**: < 10s for 20MB XMI files
-* **Load time**: < 100ms from `.lur` (vs 5-8s parsing XMI)
-* **Package size**: 15-30MB for large models
-* **Query performance**: O(1) lookups via indexes
-
-=== CLI commands reference
-
-The `lutaml uml` command suite provides a comprehensive interface for working with UML repositories from XMI, QEA, and LUR files. Commands follow a consistent, Docker-like structure organized into logical categories.
-
-==== Command overview
+==== General
 
 The CLI provides 13 commands organized into 5 categories:
 
 **Resource lifecycle:**
 
-* [`build`](#build-command) - Build LUR packages from XMI/QEA files
-* [`info`](#info-command) - Show LUR package metadata
-* [`validate`](#validate-command) - Validate LUR packages
-* [`validate-qea`](#validate-qea-command) - Validate QEA files
+* `build` - Build LUR packages from XMI/QEA files
+* `info` - Show LUR package metadata
+* `validate` - Validate LUR packages
+* `validate-qea` - Validate QEA files
 
 **Viewing:**
 
-* [`ls`](#ls-command) - List elements (packages, classes, diagrams)
-* [`inspect`](#inspect-command) - Show element details
-* [`tree`](#tree-command) - Hierarchical package tree
-* [`stats`](#stats-command) - Repository statistics
+* `ls` - List elements (packages, classes, diagrams)
+* `inspect` - Show element details
+* `tree` - Hierarchical package tree
+* `stats` - Repository statistics
 
 **Querying:**
 
-* [`search`](#search-command) - Full-text search
-* [`find`](#find-command) - Criteria-based search
+* `search` - Full-text search
+* `find` - Criteria-based search
 
 **Output:**
 
-* [`export`](#export-command) - Export to CSV/JSON/Markdown
-* [`docs`](#docs-command) - Generate static documentation site
-* [`serve`](#serve-command) - Start interactive web UI
+* `export` - Export to CSV/JSON/Markdown
+* `build-spa` - Generate SPA documentation site
+* `serve` - Start interactive web UI
 
 **Development:**
 
-* [`repl`](#repl-command) - Interactive REPL shell
+* `repl` - Interactive REPL shell
 
-==== Understanding UML formats
-
-The CLI works with three UML file formats:
-
-* **XMI** (`.xmi`) - OMG XML Metadata Interchange format, standard UML export format
-* **QEA** (`.qea`) - Enterprise Architect native SQLite database format (10-20x faster parsing)
-* **LUR** (`.lur`) - LutaML UML Repository package format (optimized for fast loading and querying)
-
-All commands transparently handle these formats. The typical workflow is:
-
-1. Build a LUR package from XMI or QEA source files
-2. Query, search, and export from the LUR package
 
 [[build-command]]
 ==== `build` - Build LUR package
@@ -966,7 +877,7 @@ $ lutaml uml build model.xmi -o model.lur --name "My Model"
 Parses the XMI file, validates the model, and creates a LUR package.
 ====
 
-.Building from QEA file (10-20x faster)
+.Building from QEA file
 [example]
 ====
 [source,shell]
@@ -974,7 +885,7 @@ Parses the XMI file, validates the model, and creates a LUR package.
 $ lutaml uml build project.qea -o project.lur --validate
 ----
 
-Parses QEA directly from SQLite, much faster than XMI export+parse.
+Parses QEA directly, faster than XMI export+parse.
 ====
 
 .Build with strict validation
@@ -1021,13 +932,18 @@ Validate a LUR package for consistency and completeness.
 
 [source,shell]
 ----
-lutaml uml validate LUR
+lutaml uml validate LUR [OPTIONS]
 ----
+
+Where,
+
+`LUR`:: Path to LUR package file
+`--verbose`:: Show detailed per-attribute type resolution information
 
 Checks for:
 
 * Dangling references
-* Missing types
+* Missing types (with detailed resolution paths when `--verbose` is used)
 * External dependencies
 * Structural integrity
 
@@ -1038,6 +954,17 @@ Checks for:
 ----
 $ lutaml uml validate model.lur
 ----
+====
+
+.Verbose validation with detailed type resolution
+[example]
+====
+[source,shell]
+----
+$ lutaml uml validate model.lur --verbose
+----
+
+Shows detailed information about type resolution for each attribute, helping diagnose type reference issues.
 ====
 
 [[validate-qea-command]]
@@ -1201,611 +1128,10 @@ $ lutaml uml tree model.lur ModelRoot::Core --depth 2
 ----
 ====
 
-[[stats-command]]
-==== `stats` - Repository statistics
-
-Display statistics about the repository or a specific package.
-
-[source,shell]
-----
-lutaml uml stats LUR [OPTIONS]
-----
-
-Where,
-
-`LUR`:: Path to LUR package file
-`--type`:: Statistics type: packages, classes, diagrams, or all (default: all)
-`--detailed`:: Show detailed breakdown
-`--format`:: Output format: text, yaml, or json (default: text)
-
-.Show repository statistics
-[example]
-====
-[source,shell]
-----
-$ lutaml uml stats model.lur --detailed
-----
-
-Displays counts of packages, classes, data types, enumerations, diagrams, and stereotypes.
-====
-
-[[search-command]]
-==== `search` - Full-text search
-
-Perform full-text search across model elements.
-
-[source,shell]
-----
-lutaml uml search LUR QUERY [OPTIONS]
-----
-
-Where,
-
-`LUR`:: Path to LUR package file
-`QUERY`:: Search query text
-`--type`:: Element types to search: class, attribute, association (default: all)
-`--package`:: Filter by package path (supports wildcards: `*`, `?`, `[abc]`)
-`--regex`:: Treat query as regular expression
-`--in`:: Fields to search: name, documentation (default: name)
-`--format`:: Output format: text, table, yaml, or json (default: table)
-`--limit`:: Maximum results (default: 100)
-
-.Basic search
-[example]
-====
-[source,shell]
-----
-$ lutaml uml search model.lur "building"
-----
-
-Searches for "building" in all element names.
-====
-
-.Search with regex
-[example]
-====
-[source,shell]
-----
-$ lutaml uml search model.lur "^Building" --regex --type class
-----
-
-Finds all classes whose names start with "Building".
-====
-
-.Search in package with wildcards
-[example]
-====
-[source,shell]
-----
-$ lutaml uml search model.lur "urban" --package "*i-UR*"
-----
-
-Searches within any package containing "i-UR" in its path.
-====
-
-.Search in documentation
-[example]
-====
-[source,shell]
-----
-$ lutaml uml search model.lur "planning" --in name documentation
-----
-
-Searches both element names and their documentation text.
-====
-
-[[find-command]]
-==== `find` - Find by criteria
-
-Find elements matching specific criteria.
-
-[source,shell]
-----
-lutaml uml find LUR [OPTIONS]
-----
-
-Where,
-
-`LUR`:: Path to LUR package file
-`--stereotype`:: Filter by stereotype
-`--package`:: Filter by package path
-`--pattern`:: Match name pattern (regex)
-`--format`:: Output format: text, yaml, or json (default: text)
-
-.Find by stereotype
-[example]
-====
-[source,shell]
-----
-$ lutaml uml find model.lur --stereotype featureType
-----
-====
-
-.Find by package
-[example]
-====
-[source,shell]
-----
-$ lutaml uml find model.lur --package ModelRoot::Core
-----
-====
-
-.Find by pattern
-[example]
-====
-[source,shell]
-----
-$ lutaml uml find model.lur --pattern "^Building.*"
-----
-====
-
-[[export-command]]
-==== `export` - Export to formats
-
-Export repository data to various structured formats.
-
-[source,shell]
-----
-lutaml uml export LUR --format FORMAT -o OUTPUT [OPTIONS]
-----
-
-Where,
-
-`LUR`:: Path to LUR package file
-`--format`:: Export format: csv, json, or markdown (required)
-`-o, --output`:: Output path (required)
-`--package`:: Filter by package
-`--recursive`:: Include nested packages (default: true)
-
-.Export to CSV
-[example]
-====
-[source,shell]
-----
-$ lutaml uml export model.lur --format csv -o classes.csv
-----
-
-Exports all classes to CSV format.
-====
-
-.Export to JSON
-[example]
-====
-[source,shell]
-----
-$ lutaml uml export model.lur --format json -o model.json
-----
-
-Exports full repository structure to JSON.
-====
-
-.Export to Markdown
-[example]
-====
-[source,shell]
-----
-$ lutaml uml export model.lur --format markdown -o docs/
-----
-
-Generates Markdown documentation files.
-====
-
-[[docs-command]]
-==== `docs` - Generate documentation site
-
-Generate a static HTML documentation website.
-
-[source,shell]
-----
-lutaml uml docs LUR -o OUTPUT [OPTIONS]
-----
-
-Where,
-
-`LUR`:: Path to LUR package file
-`-o, --output`:: Output directory (required)
-`--title`:: Documentation title (default: "UML Model Documentation")
-`--theme`:: Color theme: light or dark (default: light)
-
-.Generate documentation site
-[example]
-====
-[source,shell]
-----
-$ lutaml uml docs model.lur -o docs/ --title "My UML Model"
-----
-
-Creates a browsable HTML documentation site with navigation, search, and pretty formatting.
-====
-
-[[serve-command]]
-==== `serve` - Start web UI
-
-Start a web server with an interactive UI for browsing the model.
-
-[source,shell]
-----
-lutaml uml serve LUR [OPTIONS]
-----
-
-Where,
-
-`LUR`:: Path to LUR package file
-`-p, --port`:: Port to listen on (default: 3000)
-`-h, --host`:: Host to bind to (default: localhost)
-
-.Start web UI server
-[example]
-====
-[source,shell]
-----
-$ lutaml uml serve model.lur --port 8080
-----
-
-Starts interactive web interface at http://localhost:8080.
-====
-
-[[repl-command]]
-==== `repl` - Interactive shell
-
-Start an interactive REPL for exploring the model.
-
-[source,shell]
-----
-lutaml uml repl LUR [OPTIONS]
-----
-
-Where,
-
-`LUR`:: Path to LUR package file
-`--color`:: Enable colored output (default: true)
-`--icons`:: Enable icons in output (default: true)
-
-.Start interactive shell
-[example]
-====
-[source,shell]
-----
-$ lutaml uml repl model.lur
-----
-
-Opens an interactive shell with commands like `cd`, `ls`, `tree`, `find`, `search`, bookmarks, and more.
-====
-
-==== Migration from old commands
-
-The `lutaml xmi` command structure has been replaced with `lutaml uml`. The old commands still work for backward compatibility but are deprecated.
-
-.Command mapping
-[cols="1,1"]
-|===
-| Old Command | New Command
-
-| `lutaml xmi package build`
-| `lutaml uml build`
-
-| `lutaml xmi package info`
-| `lutaml uml info`
-
-| `lutaml xmi package validate`
-| `lutaml uml validate`
-
-| `lutaml xmi list`
-| `lutaml uml ls`
-
-| `lutaml xmi show`
-| `lutaml uml inspect`
-
-| `lutaml xmi tree`
-| `lutaml uml tree`
-
-| `lutaml xmi search`
-| `lutaml uml search`
-
-| `lutaml xmi stats`
-| `lutaml uml stats`
-
-| `lutaml xmi shell`
-| `lutaml uml repl`
-|===
-
-NOTE: Update your scripts and workflows to use `lutaml uml` commands. The `lutaml xmi` commands will be removed in a future version.
-
-[[search-command]]
-==== Searching the model
-
-The `search` command performs powerful text and pattern-based search across classes, attributes, and associations with advanced filtering, export capabilities, and intelligent suggestions.
+[[element-details]]
+==== `show` - Display element details
 
 ===== General
-
-The search functionality allows you to quickly find UML elements by name or documentation.
-Results are displayed in a formatted table showing element type, name, package location, and details.
-Advanced features include wildcard package matching, regex patterns, field-specific search, result export, and search suggestions.
-
-===== Basic search
-
-[source,shell]
-----
-lutaml uml search <LUR_PATH> <QUERY>
-----
-
-Where,
-
-`<LUR_PATH>`:: Path to the LUR package file
-`<QUERY>`:: Text to search for (case-insensitive)
-
-.Searching for "building" across all element types
-[example]
-====
-[source,shell]
-----
-$ lutaml uml search plateau.lur "building"
-----
-
-This searches for "building" in class names, attribute names, and association names, displaying results in a table format:
-
-[source]
-----
-Search Results for 'building':
-
-Type         | Name                    | Package                              | Details
-──────────────────────────────────────────────────────────────────────────────────────
-Class        | Building                | ModelRoot::CityGML2.0::bldg          | <<FeatureType>>
-Class        | BuildingPart            | ModelRoot::CityGML2.0::bldg          | <<FeatureType>>
-Attribute    | buildingHeight          | ModelRoot::CityGML2.0::bldg          | Building::buildingHeight : Double
-Attribute    | buildingCoverageRate    | ModelRoot::i-UR::urf                 | Administration::buildingCoverageRate : xs::integer
-...
-
-Summary: 28 class(es), 73 attribute(s), 45 association(s)
-----
-====
-
-===== Core search options
-
-`--element-type <TYPE>`::
-Filter results by element type.
-Valid values: `class`, `attribute`, `association`.
-
-`--package <PATH>`::
-Filter results to show only elements within the specified package path.
-Supports explicit wildcards: `*`, `?`, `[abc]`.
-
-`--sort <FIELD>`::
-Sort results.
-Valid values: `type`, `name`, `package`.
-Default: `type`.
-
-`--limit <NUMBER>`::
-Limit the number of results displayed.
-Default: `100`.
-
-`--format <FORMAT>`::
-Output format.
-Valid values: `table`, `text`, `yaml`, `json`.
-Default: `table`.
-
-===== Advanced search features
-
-`--regex`::
-Treat query as a regular expression pattern.
-Enables powerful pattern-based searching.
-
-`--in <FIELDS...>`::
-Specify which fields to search in.
-Valid values: `name`, `documentation`.
-Default: `name`.
-Can specify multiple fields.
-
-`--count`::
-Show only result counts without displaying full results.
-Displays total count and breakdown by element type.
-
-`--export <FILE>`::
-Export search results to a file.
-Format auto-detected from extension (`.json` or `.yaml`/`.yml`).
-
-.Wildcard package matching
-[example]
-====
-[source,shell]
-----
-$ lutaml uml search plateau.lur "building" --package "*i-UR*"
-----
-
-Matches any package path containing "i-UR" anywhere.
-Found 95 results compared to 50 with full path `"ModelRoot::Conceptual Models::i-UR"`.
-
-Wildcard patterns supported:
-
-* `*` - Matches any characters
-* `?` - Matches single character
-* `[abc]` - Matches one character from set
-====
-
-.Regex pattern search
-[example]
-====
-[source,shell]
-----
-$ lutaml uml search plateau.lur "^Building" --regex --element-type class
-----
-
-Finds all classes whose names start with "Building" (case-sensitive regex).
-Found 17 classes: Building, BuildingPart, BuildingInstallation, etc.
-
-The `--regex` flag treats the query as a regular expression:
-
-* `^Building` - Names starting with "Building"
-* `.*Address$` - Names ending with "Address"
-* `Building|Structure` - Names containing either word
-====
-
-.Searching in documentation
-[example]
-====
-[source,shell]
-----
-$ lutaml uml search plateau.lur "urban planning" --in name documentation
-----
-
-Searches both name and documentation fields.
-Useful for finding elements by their purpose or description, not just their name.
-
-Multiple fields can be specified:
-
-* `--in name` - Search names only (default)
-* `--in documentation` - Search documentation only
-* `--in name documentation` - Search both fields
-====
-
-.Count-only mode
-[example]
-====
-[source,shell]
-----
-$ lutaml uml search plateau.lur "building" --count
-----
-
-Shows statistics without displaying full results:
-
-[source]
-----
-Search Results for 'building':
-
-Total Results: 146
-
-Breakdown by Type:
-  Association     45
-  Attribute       73
-  Class           28
-----
-
-Useful for quick analysis or when combined with filters:
-
-[source,shell]
-----
-$ lutaml uml search plateau.lur "building" --element-type attribute --count
-----
-====
-
-.Exporting search results
-[example]
-====
-[source,shell]
-----
-$ lutaml uml search plateau.lur "Building" --element-type class --export results.json
-$ lutaml uml search plateau.lur "Building" --element-type class --export results.yaml
-----
-
-Exports filtered search results to a file for further processing.
-The format is auto-detected from the file extension.
-
-Exported data includes:
-
-* `element_type` - Type of element (class, attribute, association)
-* `qualified_name` - Full qualified name
-* `package_path` - Package location
-* `match_field` - Which field matched (name or documentation)
-* `match_context` - Additional context (e.g., class name for attributes)
-====
-
-.Search suggestions
-[example]
-====
-When no results are found, the search suggests similar terms based on edit distance and substring matching:
-
-[source,shell]
-----
-$ lutaml uml search plateau.lur "Buiding" --element-type class
-----
-
-[source]
-----
-⚠ No results found for 'Buiding'
-
-Did you mean one of these?
-  • Building
-  • BuildingPart
-  • BuildingInstallation
-----
-
-Suggestions use Levenshtein distance algorithm to find close matches.
-====
-
-.Combining advanced features
-[example]
-====
-[source,shell]
-----
-$ lutaml uml search plateau.lur "^Build" \
-  --regex \
-  --package "*CityGML*" \
-  --element-type class \
-  --sort name \
-  --limit 10 \
-  --export cityg ml_buildings.json
-----
-
-This command:
-
-* Uses regex to find names starting with "Build"
-* Filters to packages containing "CityGML"
-* Shows only classes
-* Sorts by name
-* Limits to 10 results
-* Exports to JSON file
-
-Multiple filters work together seamlessly.
-====
-
-.Filtering search results by element type
-[example]
-====
-[source,shell]
-----
-$ lutaml uml search plateau.lur "building" --element-type class
-----
-
-Shows only classes matching "building", excluding attributes and associations.
-====
-
-.Searching within a specific package
-[example]
-====
-[source,shell]
-----
-$ lutaml uml search plateau.lur "urban" --package "ModelRoot::Conceptual Models::i-UR"
-----
-
-Searches for "urban" only within the i-UR package and its subpackages.
-====
-
-===== Pagination
-
-For large result sets, use pagination to view results in manageable chunks.
-
-`--per-page <NUMBER>`::
-Number of results per page.
-Default: `50`.
-
-`--page <NUMBER>`::
-Page number to display (1-based).
-Default: `1`.
-
-.Paginating through search results
-[example]
-====
-[source,shell]
-----
-$ lutaml uml search plateau.lur "class" --per-page 20 --page 1
-$ lutaml uml search plateau.lur "class" --per-page 20 --page 2
-----
-
-View results 20 at a time, navigating through pages.
-====
-
-[[element-details]]
-==== Viewing element details
 
 The `show` commands display detailed information about specific UML elements.
 
@@ -1948,73 +1274,652 @@ $ lutaml uml show class "ModelRoot::Package::MyClass" --from model.lur --format 
 Returns structured JSON data suitable for programmatic processing.
 ====
 
-==== Search & analysis
+
+[[stats-command]]
+==== `stats` - Repository statistics
+
+Display statistics about the repository or a specific package.
 
 [source,shell]
 ----
-# Find by criteria
-lutaml uml find --from MODEL.lur \
-  --stereotype featureType \
-  --package "ModelRoot::MyPackage"
-
-# Statistics
-lutaml uml stats --from MODEL.lur [--detailed]
-
-# Quick workflow
-lutaml uml quick XMI_PATH [-o OUTPUT.lur] [--no-validate] [--no-stats]
-
-# Auto-build (smart caching)
-lutaml uml auto-build XMI_PATH [-o OUTPUT.lur] [-f|--force]
-
-# Interactive shell
-lutaml uml shell MODEL.lur [--no-color] [--no-icons]
-
-# Watch mode
-lutaml uml watch XMI_PATH [-o OUTPUT.lur] [--stats] [--validate] [--verbose]
+lutaml uml stats LUR [OPTIONS]
 ----
 
-==== Configuration file
+Where,
 
-Create `.lutaml-xmi.yaml` in your project root:
+`LUR`:: Path to LUR package file
+`--type`:: Statistics type: packages, classes, diagrams, or all (default: all)
+`--detailed`:: Show detailed breakdown
+`--format`:: Output format: text, yaml, or json (default: text)
 
-[source,yaml]
+.Show repository statistics
+[example]
+====
+[source,shell]
 ----
-default_format: marshal  # or yaml
-default_base_path: /path/to/models
-package_aliases:
-  my-model: /path/to/model.lur
-  test-model: /path/to/test.lur
-recent_packages:
-  - /path/to/model1.lur
-  - /path/to/model2.lur
-ui_preferences:
-  colorize: true
-  progress_bars: true
-  verbose: false
+$ lutaml uml stats model.lur --detailed
 ----
 
-Then use aliases in commands:
+Displays counts of packages, classes, data types, enumerations, diagrams, and stereotypes.
+====
+
+[[search-command]]
+==== `search` - Full-text search
+
+The `search` command performs powerful text and pattern-based search across
+classes, attributes, and associations with advanced filtering, export
+capabilities, and intelligent suggestions.
+
+Advanced features include wildcard package matching, regex patterns,
+field-specific search, result export, and search suggestions.
 
 [source,shell]
 ----
-lutaml uml list --from @my-model
-lutaml uml show class MyClass --from @my-model
+lutaml uml search <LUR> <QUERY> [OPTIONS]
 ----
 
-=== Integration with lutaml-klin
+Where,
 
-[source,ruby]
-----
-# In lutaml-klin workflow
-uml_repo = Lutaml::UmlRepository::Repository.from_package("model.lur")
-xsd_repo = Lutaml::Xsd::SchemaRepository.from_package("schemas.lxr")
+`<LUR>`:: Path to LUR package file
+`<QUERY>`:: Search query text
+`--type`:: Element types to search: class, attribute, association (default: all)
+`--package`:: Filter by package path (supports wildcards: `*`, `?`, `[abc]`)
+`--regex`:: Treat query as regular expression
+`--in`:: Fields to search: name, documentation (default: name)
+`--format`:: Output format: text, table, yaml, or json (default: table)
+`--limit`:: Maximum results (default: 100)
 
-# Map UML classes to XSD types
-uml_repo.find_classes_by_stereotype("featureType").each do |uml_class|
-  xsd_type = xsd_repo.resolve_type("#{uml_class.name}Type")
-  # Create mapping...
-end
+.Searching for "building" across all element types
+[example]
+====
+[source,shell]
 ----
+$ lutaml uml search plateau.lur "building"
+----
+
+This searches for "building" in class names, attribute names, and association names, displaying results in a table format:
+
+[source]
+----
+Search Results for 'building':
+
+Type         | Name                    | Package                              | Details
+──────────────────────────────────────────────────────────────────────────────────────
+Class        | Building                | ModelRoot::CityGML2.0::bldg          | <<FeatureType>>
+Class        | BuildingPart            | ModelRoot::CityGML2.0::bldg          | <<FeatureType>>
+Attribute    | buildingHeight          | ModelRoot::CityGML2.0::bldg          | Building::buildingHeight : Double
+Attribute    | buildingCoverageRate    | ModelRoot::i-UR::urf                 | Administration::buildingCoverageRate : xs::integer
+...
+
+Summary: 28 class(es), 73 attribute(s), 45 association(s)
+----
+====
+
+
+**Core search options**:
+
+`--element-type <TYPE>`::
+Filter results by element type.
+Valid values: `class`, `attribute`, `association`.
+
+`--package <PATH>`::
+Filter results to show only elements within the specified package path.
+Supports explicit wildcards: `*`, `?`, `[abc]`.
+
+`--sort <FIELD>`::
+Sort results.
+Valid values: `type`, `name`, `package`.
+Default: `type`.
+
+`--limit <NUMBER>`::
+Limit the number of results displayed.
+Default: `100`.
+
+`--format <FORMAT>`::
+Output format.
+Valid values: `table`, `text`, `yaml`, `json`.
+Default: `table`.
+
+`--regex`::
+Treat query as a regular expression pattern.
+Enables powerful pattern-based searching.
+
+`--in <FIELDS...>`::
+Specify which fields to search in.
+Valid values: `name`, `documentation`.
+Default: `name`.
+Can specify multiple fields.
+
+`--count`::
+Show only result counts without displaying full results.
+Displays total count and breakdown by element type.
+
+`--export <FILE>`::
+Export search results to a file.
+Format auto-detected from extension (`.json` or `.yaml`/`.yml`).
+
+.Wildcard package matching
+[example]
+====
+[source,shell]
+----
+$ lutaml uml search plateau.lur "building" --package "*i-UR*"
+----
+
+Matches any package path containing "i-UR" anywhere.
+Found 95 results compared to 50 with full path `"ModelRoot::Conceptual Models::i-UR"`.
+
+Wildcard patterns supported:
+
+* `*` - Matches any characters
+* `?` - Matches single character
+* `[abc]` - Matches one character from set
+====
+
+
+.Regex pattern search
+[example]
+====
+[source,shell]
+----
+$ lutaml uml search plateau.lur "^Building" --regex --element-type class
+----
+
+Finds all classes whose names start with "Building" (case-sensitive regex).
+Found 17 classes: Building, BuildingPart, BuildingInstallation, etc.
+
+The `--regex` flag treats the query as a regular expression:
+
+* `^Building` - Names starting with "Building"
+* `.*Address$` - Names ending with "Address"
+* `Building|Structure` - Names containing either word
+====
+
+
+.Searching in documentation
+[example]
+====
+[source,shell]
+----
+$ lutaml uml search plateau.lur "urban planning" --in name documentation
+----
+
+Searches both name and documentation fields.
+Useful for finding elements by their purpose or description, not just their name.
+
+Multiple fields can be specified:
+
+* `--in name` - Search names only (default)
+* `--in documentation` - Search documentation only
+* `--in name documentation` - Search both fields
+====
+
+.Count-only mode
+[example]
+====
+[source,shell]
+----
+$ lutaml uml search plateau.lur "building" --count
+----
+
+Shows statistics without displaying full results:
+
+[source]
+----
+Search Results for 'building':
+
+Total Results: 146
+
+Breakdown by Type:
+  Association     45
+  Attribute       73
+  Class           28
+----
+
+Useful for quick analysis or when combined with filters:
+
+[source,shell]
+----
+$ lutaml uml search plateau.lur "building" --element-type class --count
+----
+====
+
+.Exporting search results
+[example]
+====
+[source,shell]
+----
+$ lutaml uml search plateau.lur "Building" --element-type class --export results.json
+$ lutaml uml search plateau.lur "Building" --element-type class --export results.yaml
+----
+
+Exports filtered search results to a file for further processing.
+The format is auto-detected from the file extension.
+
+Exported data includes:
+
+* `element_type` - Type of element (class, attribute, association)
+* `qualified_name` - Full qualified name
+* `package_path` - Package location
+* `match_field` - Which field matched (name or documentation)
+* `match_context` - Additional context (e.g., class name for attributes)
+====
+
+.Search suggestions
+[example]
+====
+When no results are found, the search suggests similar terms based on edit distance and substring matching:
+
+[source,shell]
+----
+$ lutaml uml search plateau.lur "Buiding"
+----
+
+[source]
+----
+⚠ No results found for 'Buiding'
+
+Did you mean one of these?
+  • Building
+  • BuildingPart
+  • BuildingInstallation
+----
+
+Suggestions use Levenshtein distance algorithm to find close matches.
+====
+
+.Combining advanced features
+[example]
+====
+[source,shell]
+----
+$ lutaml uml search plateau.lur "^Build" \
+  --regex \
+  --package "*CityGML*" \
+  --element-type class \
+  --sort name \
+  --limit 10 \
+  --export citygml_buildings.json
+----
+
+This command:
+
+* Uses regex to find names starting with "Build"
+* Filters to packages containing "CityGML"
+* Shows only classes
+* Sorts by name
+* Limits to 10 results
+* Exports to JSON file
+
+Multiple filters work together seamlessly.
+====
+
+.Filtering search results by element type
+[example]
+====
+[source,shell]
+----
+$ lutaml uml search plateau.lur "building" --element-type class
+----
+
+Shows only classes matching "building", excluding attributes and associations.
+====
+
+.Searching within a specific package
+[example]
+====
+[source,shell]
+----
+$ lutaml uml search plateau.lur "urban" --package "ModelRoot::Conceptual Models::i-UR"
+----
+
+Searches for "urban" only within the i-UR package and its subpackages.
+====
+
+
+*Pagination*::
+
+For large result sets, use pagination to view results in manageable chunks.
+
+`--per-page <NUMBER>`::
+Number of results per page.
+Default: `50`.
+
+`--page <NUMBER>`::
+Page number to display (1-based).
+Default: `1`.
+
+.Paginating through search results
+[example]
+====
+[source,shell]
+----
+$ lutaml uml search plateau.lur "class" --per-page 20 --page 1  # First page
+$ lutaml uml search plateau.lur "class" --per-page 20 --page 2  # Second page
+----
+
+View results 20 at a time, navigating through pages.
+====
+
+
+// TODO: COMBINE SEARCH AND FIND
+[[find-command]]
+==== `find` - Find by criteria
+
+Find elements matching specific criteria.
+
+[source,shell]
+----
+lutaml uml find LUR [OPTIONS]
+----
+
+Where,
+
+`LUR`:: Path to LUR package file
+`--stereotype`:: Filter by stereotype
+`--package`:: Filter by package path
+`--pattern`:: Match name pattern (regex)
+`--format`:: Output format: text, yaml, or json (default: text)
+
+.Find by stereotype
+[example]
+====
+[source,shell]
+----
+$ lutaml uml find model.lur --stereotype featureType
+----
+====
+
+.Find by package
+[example]
+====
+[source,shell]
+----
+$ lutaml uml find model.lur --package ModelRoot::Core
+----
+====
+
+.Find by pattern
+[example]
+====
+[source,shell]
+----
+$ lutaml uml find model.lur --pattern "^Building.*"
+----
+====
+
+// TODO: REMOVE THIS COMMAND
+// [[export-command]]
+// ==== `export` - Export to formats
+
+// Export repository data to various structured formats.
+
+// [source,shell]
+// ----
+// lutaml uml export LUR --format FORMAT -o OUTPUT [OPTIONS]
+// ----
+
+// Where,
+
+// `LUR`:: Path to LUR package file
+// `--format`:: Export format: csv, json, or markdown (required)
+// `-o, --output`:: Output path (required)
+// `--package`:: Filter by package
+// `--recursive`:: Include nested packages (default: true)
+
+// .Export to CSV
+// [example]
+// ====
+// [source,shell]
+// ----
+// $ lutaml uml export model.lur --format csv -o classes.csv
+// ----
+
+// Exports all classes to CSV format.
+// ====
+
+// .Export to JSON
+// [example]
+// ====
+// [source,shell]
+// ----
+// $ lutaml uml export model.lur --format json -o model.json
+// ----
+
+// Exports full repository structure to JSON.
+// ====
+
+// .Export to Markdown
+// [example]
+// ====
+// [source,shell]
+// ----
+// $ lutaml uml export model.lur --format markdown -o docs/
+// ----
+
+// Generates Markdown documentation files.
+// ====
+
+
+
+[[build-spa-command]]
+==== `build-spa` - Generate SPA documentation
+
+A LUR package can be transformed into a Single Page Application (SPA) for
+interactive browsing of the UML model.
+
+The SPA provides a user-friendly web interface with search, navigation, and
+detailed class views.
+
+Features of the generated SPA:
+
+* Vanilla JavaScript: No frameworks required, fast loading
+* Responsive design: Works on desktop and mobile
+* Offline capable: Single-file mode works without a server
+* Search: Full-text search with highlighting
+* Navigation: Package tree with counts, breadcrumbs
+
+* Detailed view: Comprehensive class information with:
+** Direct attributes and inherited attributes (in separate tables)
+** Direct associations and inherited associations (in separate tables)
+** Operations
+** Inheritance hierarchy (generalizations and specializations)
+** Stereotypes and documentation
+
+
+Syntax:
+
+[source,shell]
+----
+lutaml uml build-spa LUR -o OUTPUT [OPTIONS]
+----
+
+Where,
+
+`LUR`:: Path to LUR package file
+`-o, --output`:: Output file path (required)
+`--mode`:: Generation mode: `single_file` (default) or `multi_file`
+`--title`:: Documentation title (default: "UML Model Browser")
+`--theme`:: Color theme: `light` (default) or `dark`
+
+The `build-spa` command generates an interactive documentation site with:
+
+* **Search functionality**: Full-text search across all model elements
+* **Package navigation**: Tree-based browsing of the package hierarchy
+* **Class details**: Complete class information including attributes, associations, operations, and inheritance
+* **Inherited data**: Separate display of inherited attributes and associations
+* **Diagram integration**: Embedded diagram viewing (when available)
+
+.Generate single-file SPA (default)
+[example]
+====
+[source,shell]
+----
+$ lutaml uml build-spa model.lur -o docs/index.html --title "My UML Model"
+----
+
+Creates a single HTML file (3-4MB for large models) with all data, CSS, and JavaScript embedded. Perfect for easy distribution and offline viewing.
+====
+
+.Generate multi-file SPA
+[example]
+====
+[source,shell]
+----
+$ lutaml uml build-spa model.lur -o docs/ --mode multi_file
+----
+
+Creates a directory structure with separate HTML, CSS, and JavaScript files. Better for version control and incremental updates.
+====
+
+
+
+[[serve-command]]
+==== `serve` - Start web UI
+
+Start a web server with an interactive UI for browsing the model.
+
+[source,shell]
+----
+lutaml uml serve LUR [OPTIONS]
+----
+
+Where,
+
+`LUR`:: Path to LUR package file
+`-p, --port`:: Port to listen on (default: 3000)
+`-h, --host`:: Host to bind to (default: localhost)
+
+.Start web UI server
+[example]
+====
+[source,shell]
+----
+$ lutaml uml serve model.lur --port 8080
+----
+
+Starts interactive web interface at http://localhost:8080.
+====
+
+
+
+[[repl-command]]
+==== `repl` - Interactive shell
+
+LutaML provides an interactive command-line shell (REPL) for exploring LUR
+packages.
+
+Syntax:
+
+[source,shell]
+----
+lutaml uml repl LUR [OPTIONS]
+----
+
+Where,
+
+`LUR`:: Path to LUR package file
+`--color`:: Enable colored output (default: true)
+`--icons`:: Enable icons in output (default: true)
+
+.Start interactive shell
+[example]
+====
+[source,shell]
+----
+$ lutaml uml repl model.lur
+----
+
+Opens an interactive shell with commands like `cd`, `ls`, `tree`, `find`,
+`search`, bookmarks, and more.
+====
+
+The interactive shell provides a full-featured command-line interface for
+exploring UML repositories:
+
+[source,shell]
+----
+# Start interactive shell
+lutaml uml shell model.lur
+
+# Inside the shell:
+lutaml[/]> help                    # Show available commands
+lutaml[/]> ls                      # List packages in current location
+lutaml[/]> cd i-UR::urf            # Navigate to package
+lutaml[/i-UR::urf]> pwd            # Show current path
+lutaml[/i-UR::urf]> tree           # Show tree from current location
+lutaml[/i-UR::urf]> find Building  # Find classes
+lutaml[/i-UR::urf]> show 1         # Show first search result
+lutaml[/i-UR::urf]> bookmark add urf  # Bookmark current location
+lutaml[/i-UR::urf]> bm urf         # Jump to bookmark
+lutaml[/i-UR::urf]> stats          # Show statistics
+lutaml[/i-UR::urf]> exit           # Exit shell
+----
+
+The shell provides a number of useful features:
+
+* Tab completion for commands and paths
+* Command history persisted to `~/.lutaml-xmi-history`
+* Colorized output with Unicode icons
+* Contextual prompts showing current location
+* Error handling with helpful messages
+
+
+Navigation commands::
+
+`cd PATH`::: Change to package path
+`pwd`::: Print current working path
+`ls [PATH]`::: List packages at path
+`tree [PATH]`::: Show tree from path
+`up`::: Go to parent package
+`root`::: Go to ModelRoot
+`back`::: Go to previous location
+
+Query commands::
+
+`find CLASS_NAME`::: Find class (fuzzy search)
+`show class QNAME`::: Show class details
+`show package PATH`::: Show package details
+`show NUMBER`::: Show numbered result from last search
+`search QUERY`::: Full-text search
+`? QUERY`::: Alias for search
+
+Bookmark commands::
+
+`bookmark add NAME`::: Bookmark current path or last result
+`bookmark list`::: List all bookmarks
+`bookmark go NAME`::: Jump to bookmark
+`bookmark rm NAME`::: Remove bookmark
+`bm NAME`::: Quick jump to bookmark
+
+Utility commands::
+
+`results`::: Show last search results
+`export last csv FILE`::: Export last results to CSV
+`export last json FILE`::: Export to JSON
+`export last yaml FILE`::: Export to YAML
+`help [COMMAND]`::: Show help
+`history`::: Show command history
+`clear`::: Clear screen
+`config`::: Show configuration
+`stats`::: Quick statistics
+`exit`, `quit`, `q`::: Exit shell
+
+
+// === Integration with lutaml-klin
+
+// [source,ruby]
+// ----
+// # In lutaml-klin workflow
+// uml_repo = Lutaml::UmlRepository::Repository.from_package("model.lur")
+// xsd_repo = Lutaml::Xsd::SchemaRepository.from_package("schemas.lxr")
+
+// # Map UML classes to XSD types
+// uml_repo.find_classes_by_stereotype("featureType").each do |uml_class|
+//   xsd_type = xsd_repo.resolve_type("#{uml_class.name}Type")
+//   # Create mapping...
+// end
+// ----
 
 === Examples
 

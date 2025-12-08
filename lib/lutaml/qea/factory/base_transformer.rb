@@ -89,6 +89,15 @@ module Lutaml
           clean = ea_guid.tr('{}', '').tr('-', '_')
           "#{prefix}_#{clean}"
         end
+
+        # Normalize line endings from Windows (\r\n) to Unix (\n)
+        # EA database stores text with Windows line endings, but XMI uses Unix
+        # @param text [String, nil] Text to normalize
+        # @return [String, nil] Text with normalized line endings
+        def normalize_line_endings(text)
+          return nil if text.nil?
+          text.gsub(/\r\n/, "\n")
+        end
       end
     end
   end
