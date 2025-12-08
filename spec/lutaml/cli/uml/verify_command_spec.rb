@@ -14,14 +14,14 @@ RSpec.describe Lutaml::Cli::Uml::VerifyCommand do
     context "error handling" do
       it "handles missing XMI file" do
         expect {
-          expect { command.run("nonexistent.xmi", test_qea) }.to raise_error(SystemExit)
+          command.run("nonexistent.xmi", test_qea)
         }.to output(/XMI file not found/).to_stdout
       end
 
       it "handles missing QEA file" do
         skip "XMI file not available" unless File.exist?(test_xmi)
         expect {
-          expect { command.run(test_xmi, "nonexistent.qea") }.to raise_error(SystemExit)
+          command.run(test_xmi, "nonexistent.qea")
         }.to output(/QEA file not found/).to_stdout
       end
     end

@@ -70,7 +70,7 @@ module Lutaml
 
         def display_element_details(element, identifier, repo)
           presenter_class_name = ResourceRegistry.config_for(identifier.type)[:presenter]
-          presenter_class = Lutaml::Xmi::Presenters.const_get(presenter_class_name)
+          presenter_class = Lutaml::UmlRepository::Presenters.const_get(presenter_class_name)
           presenter = presenter_class.new(element, repo)
 
           if options[:format] == "text"

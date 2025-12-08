@@ -40,7 +40,7 @@ module Lutaml
     class UmlCommands < Thor
       # Make Thor raise errors instead of exiting
       def self.exit_on_failure?
-        true
+        false
       end
 
       # Command aliases for convenience
