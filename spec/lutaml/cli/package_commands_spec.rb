@@ -169,13 +169,12 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
         XML
         invalid_xmi.close
 
-        # This test should raise SystemExit due to validation errors in strict mode
-        # Thor::Error raised inside Thor.start() is caught by Thor and converted to SystemExit
+        # This test should show validation errors in strict mode
         expect {
           Lutaml::Cli::UmlCommands.start(["build", invalid_xmi.path,
                                         "-o", output_lur,
                                         "--strict"])
-        }.to raise_error(SystemExit)
+        }.to output(/Build failed|validation error/).to_stdout
 
         File.unlink(invalid_xmi.path)
       end
