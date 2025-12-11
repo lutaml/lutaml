@@ -144,13 +144,11 @@ module Lutaml
       def create_uml_class_attributes(klass) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength
         return [] if klass.owned_attribute.nil?
 
-        owned_attributes = klass.owned_attribute.select do |attr|
-          # Only include Property elements that are NOT association endpoints
-          # ownedAttribute with association="..." are association endpoints, not attributes
-          attr.type?("uml:Property") && !attr.association
+        all_props = klass.owned_attribute.select do |attr|
+          attr.type?("uml:Property")
         end
 
-        owned_attributes.map do |oa|
+        all_props.map do |oa|
           create_uml_attribute(oa)
         end.compact
       end
@@ -262,8 +260,7 @@ module Lutaml
         uml_general.owned_props = uml_general.attributes.select do |attr|
           attr.association.nil?
         end
-        uml_general.assoc_props = uml_general
-          .attributes.select(&:association)
+        uml_general.assoc_props = uml_general.attributes.select(&:association)
 
         [uml_general, next_general_node_id]
       end
