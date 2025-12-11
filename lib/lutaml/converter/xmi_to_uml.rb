@@ -331,10 +331,11 @@ module Lutaml
         return [] if klass.generalization.nil? || klass.generalization.empty?
 
         klass.generalization.map do |gen|
-          assoc_gen = ::Lutaml::Uml::AssociationGeneralization.new
-          assoc_gen.id = gen.id
-          assoc_gen.type = gen.type
-          assoc_gen.general = gen.general
+          ::Lutaml::Uml::AssociationGeneralization.new.tap do |assoc_gen|
+            assoc_gen.id = gen.id
+            assoc_gen.type = gen.type
+            assoc_gen.general = gen.general
+          end
         end
       end
 
