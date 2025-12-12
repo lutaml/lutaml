@@ -67,7 +67,9 @@ module Lutaml
               ea_object.note.nil? || ea_object.note.empty?
 
             # Load and transform attributes
-            klass.attributes = load_attributes(ea_object.ea_object_id)
+            attts = load_attributes(ea_object.ea_object_id)
+            assoc_attts = load_association_attributes(ea_object.ea_object_id)
+            klass.attributes = attts + assoc_attts
 
             # Load and transform operations
             klass.operations = load_operations(ea_object.ea_object_id)
@@ -247,13 +249,16 @@ module Lutaml
             # Has parent - create generalization with parent connector
             ea_connector = Models::EaConnector.from_db_row(rows.first)
             gen_transformer = GeneralizationTransformer.new(database)
-            generalization = gen_transformer.transform(ea_connector, current_obj)
+            generalization = gen_transformer
+              .transform(ea_connector, current_obj)
             return nil unless generalization
           end
 
           # 4. Load CURRENT object attributes and convert to GeneralAttribute
           current_attrs = load_attributes(object_id)
-          general_attrs = convert_to_general_attributes(current_attrs)
+          current_assoc_attrs = load_association_attributes(object_id)
+          general_attrs = convert_to_general_attributes(
+            current_attrs + current_assoc_attrs)
 
           # Set gen_name and name_ns on general_attributes (matches current class context)
           upper_klass = generalization.general_upper_klass
@@ -273,11 +278,14 @@ module Lutaml
           generalization.general_attributes = general_attrs
 
           # 5. Transform attributes (set name_ns, gen_name) - creates working copies
-          generalization.attributes = transform_general_attributes(generalization)
+          generalization.attributes = transform_general_attributes(
+            generalization)
 
           # 6. Partition into owned_props and assoc_props
-          generalization.owned_props = generalization.attributes.select { |a| !a.has_association }
-          generalization.assoc_props = generalization.attributes.select(&:has_association)
+          generalization.owned_props = generalization.attributes
+            .select { |a| !a.has_association }
+          generalization.assoc_props = generalization.attributes
+            .select(&:has_association)
 
           # 7. Recursively load PARENT generalization with circular reference detection
           # Pass is_leaf=false so parent doesn't populate inherited_props
@@ -511,6 +519,8 @@ module Lutaml
           # Find all association-type connectors (Association, Aggregation, Composition)
           query = "SELECT * FROM t_connector WHERE (Start_Object_ID = ? OR End_Object_ID = ?) AND Connector_Type IN ('Association', 'Aggregation', 'Composition')"
           rows = database.connection.execute(query, [object_id, object_id])
+          obj = find_object_by_id(object_id)
+          obj_pkg_name = find_package_name(obj.package_id)
 
           rows.each do |row|
             ea_connector = Models::EaConnector.from_db_row(row)
@@ -523,12 +533,18 @@ module Lutaml
               target_obj = find_object_by_id(ea_connector.end_object_id)
               next unless target_obj
 
+              target_obj_pkg_name = find_package_name(target_obj.package_id)
+
               attributes << create_association_attribute(
                 name: ea_connector.destrole,
                 type: target_obj.name,
                 type_xmi_id: target_obj.ea_guid,
                 association_xmi_id: ea_connector.ea_guid,
-                cardinality: ea_connector.destcard
+                cardinality: ea_connector.destcard,
+                definition: ea_connector.notes,
+                gen_name: obj.name,
+                name_ns: obj_pkg_name,
+                type_ns: target_obj_pkg_name
               )
             elsif ea_connector.end_object_id == object_id
               # This class is the target - check for source role
@@ -537,12 +553,18 @@ module Lutaml
               source_obj = find_object_by_id(ea_connector.start_object_id)
               next unless source_obj
 
+              source_obj_pkg_name = find_package_name(source_obj.package_id)
+
               attributes << create_association_attribute(
                 name: ea_connector.sourcerole,
                 type: source_obj.name,
                 type_xmi_id: source_obj.ea_guid,
                 association_xmi_id: ea_connector.ea_guid,
-                cardinality: ea_connector.sourcecard
+                cardinality: ea_connector.sourcecard,
+                definition: ea_connector.notes,
+                gen_name: obj.name,
+                name_ns: obj_pkg_name,
+                type_ns: source_obj_pkg_name
               )
             end
           end
@@ -556,13 +578,22 @@ module Lutaml
         # @param type_xmi_id [String] Type XMI ID
         # @param association_xmi_id [String] Association XMI ID
         # @param cardinality [String] Cardinality string
-        # @return [Lutaml::Uml::TopElementAttribute] Created attribute
-        def create_association_attribute(name:, type:, type_xmi_id:, association_xmi_id:, cardinality:)
-          Lutaml::Uml::TopElementAttribute.new.tap do |attr|
+        # @param gen_name [String] Name of the generalization object
+        # @return [Lutaml::Uml::GeneralAttribute] Created attribute
+        def create_association_attribute(name:, type:, type_xmi_id:, association_xmi_id:, cardinality:, definition:, gen_name:, name_ns:, type_ns:)
+          Lutaml::Uml::GeneralAttribute.new.tap do |attr|
             attr.name = name
             attr.type = type
+            attr.gen_name = gen_name
+            attr.definition = definition
             attr.xmi_id = normalize_guid_to_xmi_format(type_xmi_id, "EAID")
-            attr.association = normalize_guid_to_xmi_format(association_xmi_id, "EAID")
+            attr.association = normalize_guid_to_xmi_format(
+              association_xmi_id, "EAID")
+            attr.has_association = true
+            attr.id = normalize_guid_to_xmi_src_format(
+              association_xmi_id, "EAID")
+            attr.name_ns = name_ns
+            attr.type_ns = type_ns
 
             # Map cardinality if present
             if cardinality && !cardinality.empty?
@@ -588,6 +619,19 @@ module Lutaml
           return nil if rows.empty?
 
           Models::EaObject.from_db_row(rows.first)
+        end
+
+        # Find package name by ID
+        # @param package_id [Integer] Package ID
+        # @return [String, Nil] Package name or nil
+        def find_package_name(package_id)
+          return nil if package_id.nil?
+
+          query = "SELECT NAME FROM t_package WHERE Package_ID = ?"
+          rows = database.connection.execute(query, [package_id])
+          return nil if rows.empty?
+
+          rows.first["Name"]
         end
       end
     end

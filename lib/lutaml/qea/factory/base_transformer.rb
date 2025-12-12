@@ -90,6 +90,15 @@ module Lutaml
           "#{prefix}_#{clean}"
         end
 
+        # Convert ea_guid to XMI SRC ID format
+        def normalize_guid_to_xmi_src_format(ea_guid, prefix = "EAID")
+          xmi_id = normalize_guid_to_xmi_format(ea_guid, prefix)
+
+          # Trim prefix and add _src
+          clean = xmi_id[(prefix.length + 3), xmi_id.length]
+          "#{prefix}_src#{clean}"
+        end
+
         # Normalize line endings from Windows (\r\n) to Unix (\n)
         # EA database stores text with Windows line endings, but XMI uses Unix
         # @param text [String, nil] Text to normalize
