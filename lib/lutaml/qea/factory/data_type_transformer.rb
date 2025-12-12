@@ -41,7 +41,9 @@ module Lutaml
               ea_object.note.nil? || ea_object.note.empty?
 
             # Load and transform attributes
-            data_type.attributes = load_attributes(ea_object.ea_object_id)
+            attts = load_attributes(ea_object.ea_object_id)
+            assoc_attts = load_association_attributes(ea_object.ea_object_id)
+            data_type.attributes = attts + assoc_attts
 
             # Load and transform operations
             data_type.operations = load_operations(ea_object.ea_object_id)
