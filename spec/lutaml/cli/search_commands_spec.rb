@@ -6,7 +6,7 @@ require_relative "../../../lib/lutaml/uml_repository/repository"
 require "tempfile"
 
 RSpec.describe "Search and Find Commands (via UmlCommands)" do
-  let(:xmi_file) { File.join(__dir__, "../../../examples/xmi/test.xmi") }
+  let(:xmi_file) { File.join(__dir__, "../../../examples/xmi/basic.xmi") }
   let(:lur_file) do
     Tempfile.new(["test_search", ".lur"]).tap do |f|
       f.close
@@ -100,7 +100,7 @@ RSpec.describe "Search and Find Commands (via UmlCommands)" do
     it "handles empty search results" do
       expect {
         Lutaml::Cli::UmlCommands.start(["search", lur_file, "XyZabc123NotFound"])
-      }.to output(/No results found/).to_stdout.or output(anything).to_stdout.and not_output(/ERROR/).to_stdout
+      }.to output(/No results found/).to_stdout
     end
   end
 
@@ -125,14 +125,14 @@ RSpec.describe "Search and Find Commands (via UmlCommands)" do
 
     it "outputs in JSON format" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["find", lur_file, "--package", "Model",
+        Lutaml::Cli::UmlCommands.start(["find", lur_file, "--package", "Basic Class Diagram with Multiplicities",
                                        "--format", "json"])
       }.to output(/\[/).to_stdout
     end
 
     it "outputs in YAML format" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["find", lur_file, "--package", "Model",
+        Lutaml::Cli::UmlCommands.start(["find", lur_file, "--package", "Basic Class Diagram with Multiplicities",
                                        "--format", "yaml"])
       }.not_to output(/ERROR/).to_stdout
     end
@@ -146,7 +146,7 @@ RSpec.describe "Search and Find Commands (via UmlCommands)" do
     it "shows warning when no results found" do
       expect {
         Lutaml::Cli::UmlCommands.start(["find", lur_file, "--stereotype", "NonExistent"])
-      }.to output(/No results found/).to_stdout.or not_output(/ERROR/).to_stdout
+      }.to output(/No elements found matching stereotype: NonExistent/).to_stdout
     end
   end
 end
