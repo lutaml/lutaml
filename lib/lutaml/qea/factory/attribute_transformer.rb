@@ -26,7 +26,7 @@ module Lutaml
 
             attr.id = normalize_guid_to_xmi_format(ea_attribute.ea_guid, "EAID")
             attr.static = ea_attribute.static? ? "true" : nil
-            attr.is_derived = ea_attribute.derived == "1" ? true : nil
+            attr.is_derived = ea_attribute.derived == "1"
 
             # Map cardinality if bounds are present
             if ea_attribute.lowerbound || ea_attribute.upperbound

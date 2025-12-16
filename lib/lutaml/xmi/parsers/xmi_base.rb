@@ -683,8 +683,12 @@ module Lutaml
             source_or_target = :target
           end
 
+          connector = fetch_connector(link.id)
+          ea_type = connector&.properties&.ea_type
+          member_end_type = ea_type&.downcase
+
           member_end = member_end_name(xmi_id, source_or_target, link.name)
-          [member_end, "aggregation", xmi_id]
+          [member_end, member_end_type, xmi_id]
         end
 
         # @param xmi_id [String]
