@@ -91,12 +91,14 @@ module Lutaml
         end
 
         # Convert ea_guid to XMI SRC ID format
-        def normalize_guid_to_xmi_src_format(ea_guid, prefix = "EAID")
+        def normalize_guid_to_xmi_src_dst_format(
+            ea_guid, prefix = "EAID", is_src = true)
           xmi_id = normalize_guid_to_xmi_format(ea_guid, prefix)
 
-          # Trim prefix and add _src
+          # Trim prefix and add _src or _dst
+          src_dst = is_src ? "src" : "dst"
           clean = xmi_id[(prefix.length + 3), xmi_id.length]
-          "#{prefix}_src#{clean}"
+          "#{prefix}_#{src_dst}#{clean}"
         end
 
         # Normalize line endings from Windows (\r\n) to Unix (\n)

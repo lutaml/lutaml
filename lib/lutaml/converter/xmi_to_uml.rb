@@ -162,7 +162,7 @@ module Lutaml
           attr.name = owned_attr.name
           attr.type = lookup_entity_name(uml_type_idref) || uml_type_idref
           attr.xmi_id = uml_type_idref
-          attr.is_derived = owned_attr.is_derived
+          attr.is_derived = !!owned_attr.is_derived
           attr.cardinality = ::Lutaml::Uml::Cardinality.new.tap do |car|
             car.min = owned_attr.lower_value&.value
             car.max = owned_attr.upper_value&.value

@@ -67,9 +67,11 @@ module Lutaml
               ea_object.note.nil? || ea_object.note.empty?
 
             # Load and transform attributes
-            attts = load_attributes(ea_object.ea_object_id)
-            assoc_attts = load_association_attributes(ea_object.ea_object_id)
-            klass.attributes = attts + assoc_attts
+            attrs = load_attributes(ea_object.ea_object_id)
+            assoc_attrs = convert_to_top_element_attributes(
+              load_association_attributes(ea_object.ea_object_id)
+            )
+            klass.attributes = attrs + assoc_attrs
 
             # Load and transform operations
             klass.operations = load_operations(ea_object.ea_object_id)
@@ -325,6 +327,25 @@ module Lutaml
           end
         end
 
+        # Convert GeneralAttribute array to TopElementAttribute array
+        # @param attributes [Array<Lutaml::Uml::TopElementAttribute>]
+        # @return [Array<Lutaml::Uml::TopElementAttribute>]
+        def convert_to_top_element_attributes(attributes)
+          attributes.map do |attr|
+            Lutaml::Uml::TopElementAttribute.new.tap do |top_attr|
+              top_attr.id = attr.id
+              top_attr.name = attr.name
+              top_attr.type = attr.type
+              top_attr.xmi_id = attr.xmi_id
+              top_attr.cardinality = attr.cardinality
+              top_attr.definition = attr.definition
+              top_attr.association = attr.association
+              top_attr.type_ns = attr.type_ns
+              top_attr.is_derived = !!attr.is_derived
+            end
+          end
+        end
+
         # Transform GeneralAttributes with context (name_ns, gen_name)
         # Similar to XMI's create_uml_attributes
         # @param generalization [Lutaml::Uml::Generalization]
@@ -483,12 +504,8 @@ module Lutaml
               assoc.member_end_attribute_name = member_end_attribute_name
 
               # Set member_end_type based on connector type
-              case ea_connector.connector_type
-              when "Aggregation"
-                assoc.member_end_type = "aggregation"
-              when "Composition"
-                assoc.member_end_type = "composition"
-              end
+              ea_type = ea_connector.connector_type
+              assoc.member_end_type = ea_type&.downcase
 
               # Set cardinality
               if member_cardinality_str && !member_cardinality_str.empty?
@@ -544,7 +561,8 @@ module Lutaml
                 definition: ea_connector.notes,
                 gen_name: obj.name,
                 name_ns: obj_pkg_name,
-                type_ns: target_obj_pkg_name
+                type_ns: target_obj_pkg_name,
+                is_src: false
               )
             elsif ea_connector.end_object_id == object_id
               # This class is the target - check for source role
@@ -580,7 +598,7 @@ module Lutaml
         # @param cardinality [String] Cardinality string
         # @param gen_name [String] Name of the generalization object
         # @return [Lutaml::Uml::GeneralAttribute] Created attribute
-        def create_association_attribute(name:, type:, type_xmi_id:, association_xmi_id:, cardinality:, definition:, gen_name:, name_ns:, type_ns:)
+        def create_association_attribute(name:, type:, type_xmi_id:, association_xmi_id:, cardinality:, definition:, gen_name:, name_ns:, type_ns:, is_src: true)
           Lutaml::Uml::GeneralAttribute.new.tap do |attr|
             attr.name = name
             attr.type = type
@@ -590,8 +608,8 @@ module Lutaml
             attr.association = normalize_guid_to_xmi_format(
               association_xmi_id, "EAID")
             attr.has_association = true
-            attr.id = normalize_guid_to_xmi_src_format(
-              association_xmi_id, "EAID")
+            attr.id = normalize_guid_to_xmi_src_dst_format(
+              association_xmi_id, "EAID", is_src)
             attr.name_ns = name_ns
             attr.type_ns = type_ns
 
