@@ -76,7 +76,16 @@ module Lutaml
           end
 
           output = classes.map { |cls| cls.respond_to?(:name) ? (cls.name || cls.to_s) : cls.to_s }
-          puts output.join("\n")
+
+          # output result based on the format option
+          case options[:format]
+          when "json"
+            puts output.to_json
+          when "yaml"
+            puts output.to_yaml
+          else
+            puts output.join("\n")
+          end
         rescue Thor::Error
           raise
         rescue ArgumentError => e
