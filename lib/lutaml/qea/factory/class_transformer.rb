@@ -278,7 +278,7 @@ module Lutaml
           end
 
           generalization.general_attributes = general_attrs
-            .sort_by { |a| a.name }
+            .sort_by { |a| [a.name.to_s, a.id] }
 
           # 5. Transform attributes (set name_ns, gen_name) - creates working copies
           generalization.attributes = transform_general_attributes(

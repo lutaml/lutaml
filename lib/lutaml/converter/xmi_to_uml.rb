@@ -268,7 +268,7 @@ module Lutaml
       def get_uml_general_attributes(general_node) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
         attrs = create_uml_class_attributes(general_node)
 
-        attrs.sort_by { |a| a.name }.map do |attr|
+        attrs.sort_by { |a| [a.name.to_s, a.id] }.map do |attr|
           ::Lutaml::Uml::GeneralAttribute.new.tap do |gen_attr|
             gen_attr.id = attr.id
             gen_attr.name = attr.name
