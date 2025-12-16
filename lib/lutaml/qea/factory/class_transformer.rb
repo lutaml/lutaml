@@ -278,6 +278,7 @@ module Lutaml
           end
 
           generalization.general_attributes = general_attrs
+            .sort_by { |a| a.name }
 
           # 5. Transform attributes (set name_ns, gen_name) - creates working copies
           generalization.attributes = transform_general_attributes(
@@ -319,7 +320,7 @@ module Lutaml
               gen_attr.xmi_id = attr.xmi_id
               gen_attr.is_derived = !!attr.is_derived
               gen_attr.cardinality = attr.cardinality
-              gen_attr.definition = attr.definition
+              gen_attr.definition = attr.definition&.strip
               gen_attr.association = attr.association
               gen_attr.has_association = !!attr.association
               gen_attr.type_ns = attr.type_ns
@@ -338,7 +339,7 @@ module Lutaml
               top_attr.type = attr.type
               top_attr.xmi_id = attr.xmi_id
               top_attr.cardinality = attr.cardinality
-              top_attr.definition = attr.definition
+              top_attr.definition = attr.definition&.strip
               top_attr.association = attr.association
               top_attr.type_ns = attr.type_ns
               top_attr.is_derived = !!attr.is_derived
