@@ -627,6 +627,11 @@ fields: [:name])
         associations
       end
 
+      # Get qualified name(key) by the object from @indexes[:qualified_names]
+      def qualified_name_for(obj)
+        @indexes[:qualified_names].key(obj)
+      end
+
       # Get all diagrams as an array
       # @return [Array<Lutaml::Uml::Diagram>] All diagrams
       def diagrams_index
