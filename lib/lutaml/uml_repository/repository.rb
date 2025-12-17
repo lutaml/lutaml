@@ -69,19 +69,23 @@ module Lutaml
       # @example
       #   indexes = IndexBuilder.build_all(document)
       #   repo = Repository.new(document: document, indexes: indexes)
-      def initialize(document:, indexes: nil, metadata: nil)
+      def initialize(document:, indexes: nil, metadata: nil, options: {})
         @document = document.freeze
         @indexes = indexes || IndexBuilder.build_all(document)
         @metadata = metadata
 
         # Initialize runtime query services (not serialized to LUR)
         # These are lightweight wrappers that operate on @document and @indexes
-        @package_query = Queries::PackageQuery.new(@document, @indexes)
-        @class_query = Queries::ClassQuery.new(@document, @indexes)
-        @inheritance_query = Queries::InheritanceQuery.new(@document, @indexes)
-        @association_query = Queries::AssociationQuery.new(@document, @indexes)
-        @diagram_query = Queries::DiagramQuery.new(@document, @indexes)
-        @search_query = Queries::SearchQuery.new(@document, @indexes)
+        unless options[:skip_queries]
+          @package_query = Queries::PackageQuery.new(@document, @indexes)
+          @class_query = Queries::ClassQuery.new(@document, @indexes)
+          @inheritance_query = Queries::InheritanceQuery.new(
+            @document, @indexes)
+          @association_query = Queries::AssociationQuery.new(
+            @document, @indexes)
+          @diagram_query = Queries::DiagramQuery.new(@document, @indexes)
+          @search_query = Queries::SearchQuery.new(@document, @indexes)
+        end
 
         # Initialize statistics calculator and cache result
         @statistics_calculator = StatisticsCalculator.new(@document, @indexes)
@@ -103,7 +107,7 @@ module Lutaml
       # @example
       #   repo = Repository.from_xmi('model.xmi')
       #   repo = Repository.from_xmi('model.xmi', validate: true)
-      def self.from_xmi(xmi_path, _options = {})
+      def self.from_xmi(xmi_path, options: {})
         # Parse XMI using Lutaml::Parser
         document = Lutaml::Parser.parse([File.new(xmi_path)]).first
 
@@ -115,7 +119,7 @@ module Lutaml
         #   validate_model(document, indexes)
         # end
 
-        new(document: document, indexes: indexes)
+        new(document: document, indexes: indexes, options: options)
       end
 
       # Build a Repository from an XMI file with lazy index loading.
