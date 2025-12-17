@@ -174,7 +174,7 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
           Lutaml::Cli::UmlCommands.start(["build", invalid_xmi.path,
                                         "-o", output_lur,
                                         "--strict"])
-        }.to output(/Build failed|validation error/).to_stdout
+        }.to output(/Failed to build package/).to_stdout
 
         File.unlink(invalid_xmi.path)
       end

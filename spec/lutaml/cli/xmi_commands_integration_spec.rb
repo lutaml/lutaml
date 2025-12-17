@@ -8,7 +8,7 @@ require "json"
 require "yaml"
 
 RSpec.describe "UmlCommands Integration Tests" do
-  let(:test_xmi) { File.join(__dir__, "../../fixtures/plateau_all_packages_export.xmi") }
+  let(:test_xmi) { File.join(__dir__, "../../../examples/xmi/basic.xmi") }
   let(:test_lur) do
     Tempfile.new(["integration_test", ".lur"]).tap do |f|
       f.close
@@ -38,7 +38,9 @@ RSpec.describe "UmlCommands Integration Tests" do
       expect {
         Lutaml::Cli::UmlCommands.start(["info", temp_lur])
       }.to output(/WorkflowTest/).to_stdout
-       .and output(/Package Information/).to_stdout
+      expect {
+        Lutaml::Cli::UmlCommands.start(["info", temp_lur])
+      }.to output(/Package Information/).to_stdout
 
       File.unlink(temp_lur)
     end
@@ -85,7 +87,9 @@ RSpec.describe "UmlCommands Integration Tests" do
       expect {
         Lutaml::Cli::UmlCommands.start(["stats", test_lur])
       }.to output(/Packages:/).to_stdout
-       .and output(/Classes:/).to_stdout
+      expect {
+        Lutaml::Cli::UmlCommands.start(["stats", test_lur])
+      }.to output(/Classes:/).to_stdout
     end
   end
 

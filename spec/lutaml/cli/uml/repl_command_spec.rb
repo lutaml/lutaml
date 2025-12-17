@@ -3,10 +3,11 @@
 require "spec_helper"
 require_relative "../../../../lib/lutaml/cli/uml/repl_command"
 require_relative "../../../../lib/lutaml/uml_repository"
+require_relative "../../../../lib/lutaml/cli/uml_commands"
 require "tempfile"
 
 RSpec.describe Lutaml::Cli::Uml::ReplCommand do
-  let(:test_xmi) { File.join(__dir__, "../../../fixtures/plateau_all_packages_export.xmi") }
+  let(:test_xmi) { File.join(__dir__, "../../../../examples/xmi/basic.xmi") }
   let(:test_lur) do
     temp_lur = Tempfile.new(["repl_test", ".lur"]).path
     repo = Lutaml::UmlRepository::Repository.from_xmi(test_xmi)
@@ -29,7 +30,7 @@ RSpec.describe Lutaml::Cli::Uml::ReplCommand do
     it "handles missing LUR file" do
       expect {
         command.run("nonexistent.lur")
-      }.to output(/Package file not found/).to_stdout
+      }.to raise_error(/Package file not found/)
     end
 
     # Note: Actual REPL testing skipped as it would start interactive shell

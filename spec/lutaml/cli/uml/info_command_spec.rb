@@ -3,10 +3,11 @@
 require "spec_helper"
 require_relative "../../../../lib/lutaml/cli/uml/info_command"
 require_relative "../../../../lib/lutaml/uml_repository"
+require_relative "../../../../lib/lutaml/cli/uml_commands"
 require "tempfile"
 
 RSpec.describe Lutaml::Cli::Uml::InfoCommand do
-  let(:test_xmi) { File.join(__dir__, "../../../fixtures/plateau_all_packages_export.xmi") }
+  let(:test_xmi) { File.join(__dir__, "../../../../examples/xmi/basic.xmi") }
   let(:test_lur) do
     temp_lur = Tempfile.new(["info_test", ".lur"]).path
     repo = Lutaml::UmlRepository::Repository.from_xmi(test_xmi)
@@ -14,10 +15,6 @@ RSpec.describe Lutaml::Cli::Uml::InfoCommand do
     temp_lur
   end
   let(:command) { described_class.new(options) }
-
-  before do
-    skip "Large XMI file parsing causes hangs - needs optimization" if !File.exist?(test_xmi) || File.size(test_xmi) > 1_000_000
-  end
 
   after do
     File.unlink(test_lur) if File.exist?(test_lur)
@@ -61,7 +58,7 @@ RSpec.describe Lutaml::Cli::Uml::InfoCommand do
       let(:options) { {} }
 
       it "handles missing LUR file" do
-        expect { command.run("nonexistent.lur") }.to output(/Package file not found/).to_stdout
+        expect { command.run("nonexistent.lur") }.to raise_error(/Package file not found/)
       end
     end
   end
