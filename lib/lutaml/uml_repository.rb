@@ -37,6 +37,8 @@ module Lutaml
                "lutaml/uml_repository/presenters/element_presenter"
       autoload :PresenterFactory,
                "lutaml/uml_repository/presenters/presenter_factory"
+      autoload :PackagePresenter,
+               "lutaml/uml_repository/presenters/package_presenter"
       autoload :ClassPresenter,
                "lutaml/uml_repository/presenters/class_presenter"
       autoload :AttributePresenter,
