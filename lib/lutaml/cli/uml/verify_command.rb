@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require_relative "../output_formatter"
+require_relative "../../qea/verification/document_verifier"
+
 module Lutaml
   module Cli
     module Uml

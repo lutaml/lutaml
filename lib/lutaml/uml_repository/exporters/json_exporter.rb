@@ -266,8 +266,8 @@ module Lutaml
             )
             class_ids = classes.to_set(&:xmi_id)
             associations = associations.select do |assoc|
-              class_ids.include?(assoc.member_end&.first&.type&.xmi_id) ||
-                class_ids.include?(assoc.member_end&.last&.type&.xmi_id)
+              class_ids.include?(assoc.member_end_xmi_id) ||
+                class_ids.include?(assoc.owner_end_xmi_id)
             end
           end
 
@@ -279,32 +279,19 @@ module Lutaml
         # @param association [Lutaml::Uml::Association] The association object
         # @return [Hash] Association data
         def serialize_association(association)
-          source_end = association.member_end&.first
-          target_end = association.member_end&.last
-
           {
             id: association.xmi_id,
             name: association.name,
-            source: serialize_association_end(source_end, "source"),
-            target: serialize_association_end(target_end, "target"),
-          }
-        end
-
-        # Serialize an association end.
-        #
-        # @param end_obj [Object] The association end object
-        # @param role [String] The role name ("source" or "target")
-        # @return [Hash] Association end data
-        def serialize_association_end(end_obj, role)
-          return {} unless end_obj
-
-          {
-            role: role,
-            class: end_obj.type ? qualified_name(end_obj.type) : nil,
-            name: end_obj.name,
-            cardinality: serialize_cardinality(end_obj.cardinality),
-            navigable: end_obj.navigable?,
-            aggregation: end_obj.aggregation,
+            owner_end: association.owner_end,
+            owner_end_attribute_name: association.owner_end_attribute_name,
+            owner_end_cardinality: serialize_cardinality(association.owner_end_cardinality),
+            owner_end_type: association.owner_end_type,
+            owner_end_xmi_id: association.owner_end_xmi_id,
+            member_end: association.member_end,
+            member_end_attribute_name: association.member_end_attribute_name,
+            member_end_xmi_id: association.member_end_xmi_id,
+            member_end_cardinality: serialize_cardinality(association.member_end_cardinality),
+            member_end_type: association.member_end_type,
           }
         end
 

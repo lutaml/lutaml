@@ -3,10 +3,11 @@
 require "spec_helper"
 require_relative "../../../../lib/lutaml/cli/uml/find_command"
 require_relative "../../../../lib/lutaml/uml_repository"
+require_relative "../../../../lib/lutaml/cli/uml_commands"
 require "tempfile"
 
 RSpec.describe Lutaml::Cli::Uml::FindCommand do
-  let(:test_xmi) { File.join(__dir__, "../../../fixtures/plateau_all_packages_export.xmi") }
+  let(:test_xmi) { File.join(__dir__, "../../../../examples/xmi/basic.xmi") }
   let(:test_lur) do
     temp_lur = Tempfile.new(["find_test", ".lur"]).path
     repo = Lutaml::UmlRepository::Repository.from_xmi(test_xmi)
@@ -48,7 +49,7 @@ RSpec.describe Lutaml::Cli::Uml::FindCommand do
       let(:options) { { format: "text" } }
 
       it "requires at least one filter" do
-        expect { command.run(test_lur) }.to output(/Please specify at least one filter/).to_stdout
+        expect { command.run(test_lur) }.to raise_error(/Please specify at least one filter/)
       end
     end
   end

@@ -3,12 +3,11 @@
 require "spec_helper"
 require_relative "../../../../lib/lutaml/cli/uml/build_command"
 require_relative "../../../../lib/lutaml/uml_repository"
+require_relative "../../../../lib/lutaml/cli/uml_commands"
 require "tempfile"
 
 RSpec.describe Lutaml::Cli::Uml::BuildCommand do
-  let(:test_xmi) {
-    File.join(__dir__, "../../../fixtures/plateau_all_packages_export.xmi")
-  }
+  let(:test_xmi) { File.join(__dir__, "../../../../examples/xmi/basic.xmi") }
   let(:output_lur) { Tempfile.new(["build_test", ".lur"]).path }
   let(:command) { described_class.new(options) }
 
@@ -52,7 +51,7 @@ RSpec.describe Lutaml::Cli::Uml::BuildCommand do
       let(:options) { { output: output_lur } }
 
       it "handles missing input file" do
-        expect { command.run("nonexistent.xmi") }.to output(/Model file not found/).to_stdout
+        expect { command.run("nonexistent.xmi") }.to raise_error(/Model file not found/)
       end
     end
   end

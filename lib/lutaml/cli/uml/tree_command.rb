@@ -37,13 +37,18 @@ module Lutaml
         end
 
         def run(lur_path, path = nil)
+          unless File.exist?(lur_path)
+            puts OutputFormatter.error("Package file not found: #{lur_path}")
+            raise Thor::Error, "Package file not found: #{lur_path}"
+          end
+
           path = normalize_path(path)
           repo = load_repository(lur_path, lazy: options[:lazy])
           tree_data = repo.package_tree(path, max_depth: options[:depth])
 
           unless tree_data
             puts OutputFormatter.error("Package not found: #{path}")
-            return
+            raise Thor::Error, "Package not found: #{path}"
           end
 
           if options[:format] == "text"

@@ -1,11 +1,13 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require_relative "../../../../lib/lutaml/qea/parser"
 require_relative "../../../../lib/lutaml/cli/uml/verify_command"
+require_relative "../../../../lib/lutaml/cli/uml_commands"
 
 RSpec.describe Lutaml::Cli::Uml::VerifyCommand do
-  let(:test_xmi) { File.join(__dir__, "../../../examples/qea/test.xmi") }
-  let(:test_qea) { File.join(__dir__, "../../../examples/qea/test.qea") }
+  let(:test_xmi) { File.join(__dir__, "../../../../examples/xmi/test.xmi") }
+  let(:test_qea) { File.join(__dir__, "../../../../examples/qea/test.qea") }
   let(:command) { described_class.new(options) }
 
   describe "#run" do
@@ -15,14 +17,13 @@ RSpec.describe Lutaml::Cli::Uml::VerifyCommand do
       it "handles missing XMI file" do
         expect {
           command.run("nonexistent.xmi", test_qea)
-        }.to output(/XMI file not found/).to_stdout
+        }.to raise_error(/XMI file not found/)
       end
 
       it "handles missing QEA file" do
-        skip "XMI file not available" unless File.exist?(test_xmi)
         expect {
           command.run(test_xmi, "nonexistent.qea")
-        }.to output(/QEA file not found/).to_stdout
+        }.to raise_error(/QEA file not found/)
       end
     end
 

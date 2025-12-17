@@ -3,10 +3,11 @@
 require "spec_helper"
 require_relative "../../../../lib/lutaml/cli/uml/tree_command"
 require_relative "../../../../lib/lutaml/uml_repository"
+require_relative "../../../../lib/lutaml/cli/uml_commands"
 require "tempfile"
 
 RSpec.describe Lutaml::Cli::Uml::TreeCommand do
-  let(:test_xmi) { File.join(__dir__, "../../../fixtures/plateau_all_packages_export.xmi") }
+  let(:test_xmi) { File.join(__dir__, "../../../../examples/xmi/basic.xmi") }
   let(:test_lur) do
     temp_lur = Tempfile.new(["tree_test", ".lur"]).path
     repo = Lutaml::UmlRepository::Repository.from_xmi(test_xmi)
@@ -48,7 +49,7 @@ RSpec.describe Lutaml::Cli::Uml::TreeCommand do
       let(:options) { {} }
 
       it "handles non-existent package" do
-        expect { command.run(test_lur, "NonExistent::Package") }.to output(/Package not found/).to_stdout
+        expect { command.run(test_lur, "NonExistent::Package") }.to raise_error(/Package not found/)
       end
     end
   end
