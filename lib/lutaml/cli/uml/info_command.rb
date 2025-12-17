@@ -44,7 +44,20 @@ module Lutaml
                 raise Thor::Error, "Invalid package: missing metadata"
               end
 
-              metadata = YAML.safe_load(metadata_entry.get_input_stream.read)
+              # Permit all Lutaml::Uml classes for safe loading
+              uml_constants = Lutaml::Uml.constants
+              uml_classes = uml_constants.map do |const_name|
+                constant_value = Lutaml::Uml.const_get(const_name)
+                constant_value if constant_value.is_a?(Class)
+              end.compact
+              permitted_classes = [Symbol, Time, Date, DateTime, uml_classes]
+                .flatten
+
+              metadata = YAML.safe_load(
+                metadata_entry.get_input_stream.read,
+                permitted_classes: permitted_classes,
+                aliases: true
+              )
 
               if options[:format] == "text"
                 display_package_info(metadata)
