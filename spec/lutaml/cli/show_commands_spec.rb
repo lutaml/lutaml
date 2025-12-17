@@ -7,7 +7,7 @@ require "tempfile"
 require "json"
 
 RSpec.describe "Inspect/Show Commands (via UmlCommands)" do
-  let(:test_xmi) { File.join(__dir__, "../../fixtures/plateau_all_packages_export.xmi") }
+  let(:test_xmi) { File.join(__dir__, "../../../examples/xmi/basic.xmi") }
   let(:test_lur) do
     Tempfile.new(["show_test", ".lur"]).tap do |f|
       f.close
