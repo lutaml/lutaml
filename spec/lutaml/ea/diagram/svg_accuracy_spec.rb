@@ -7,9 +7,9 @@ require_relative "../../../../lib/lutaml/ea/diagram"
 
 RSpec.describe "EA Diagram SVG Accuracy" do
   # Path to test repository
-  LUR_PATH = "spec/fixtures/basic_test.lur"
+  LUR_PATH = File.expand_path("../../../../examples/lur/basic.lur", __dir__)
 
-  # Diagrams to test from basic_test.lur
+  # Diagrams to test from basic.lur
   # These diagrams have complete rendering data and EA reference SVGs
   DIAGRAMS_TO_TEST = [
     {
@@ -98,7 +98,7 @@ RSpec.describe "EA Diagram SVG Accuracy" do
   end
 
   describe "Test fixture availability" do
-    it "has basic_test.lur repository" do
+    it "has basic.lur repository" do
       expect(File.exist?(LUR_PATH)).to be true
     end
 

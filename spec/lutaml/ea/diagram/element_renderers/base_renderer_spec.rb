@@ -2,10 +2,10 @@
 
 require "spec_helper"
 require "lutaml/ea/diagram/element_renderers/base_renderer"
-require "lutaml/ea/diagram/style_resolver"
+require "lutaml/ea/diagram/style_parser"
 
 RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::BaseRenderer do
-  let(:style_resolver) { Lutaml::Ea::Diagram::StyleResolver.new }
+  let(:style_parser) { Lutaml::Ea::Diagram::StyleParser.new }
   let(:element_data) do
     {
       id: "test-1",
@@ -23,7 +23,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::BaseRenderer do
       diagram_object: nil
     }
   end
-  let(:renderer) { described_class.new(element_data, style_resolver) }
+  let(:renderer) { described_class.new(element_data, style_parser) }
 
   describe "#initialize" do
     it "stores element data" do
@@ -31,7 +31,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::BaseRenderer do
     end
 
     it "stores style resolver" do
-      expect(renderer.style_resolver).to eq(style_resolver)
+      expect(renderer.style_parser).to eq(style_parser)
     end
   end
 
