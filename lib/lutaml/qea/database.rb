@@ -260,7 +260,7 @@ module Lutaml
       # @param id [Integer] Object ID
       # @return [Models::EaObject, nil] The object or nil if not found
       def find_object(id)
-        objects.find(id)
+        objects.find_by_key(:ea_object_id, id)
       end
 
       # Find a package by ID

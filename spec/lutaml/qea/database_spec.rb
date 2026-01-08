@@ -12,7 +12,7 @@ RSpec.describe Lutaml::Qea::Database do
 
   let(:sample_object) do
     Lutaml::Qea::Models::EaObject.new(
-      object_id: 1,
+      ea_object_id: 1,
       name: "TestClass",
       object_type: "Class",
       package_id: 10
