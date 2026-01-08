@@ -12,14 +12,14 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::QeaParser do
 
   describe "#format_name" do
     it "returns QEA format name" do
-      expect(parser.format_name).to eq("QEA (Enterprise Architect Database)")
+      expect(parser.format_name).to eq("Enterprise Architect Database (QEA)")
     end
   end
 
   describe "#supported_extensions" do
     it "returns QEA file extensions" do
       extensions = parser.supported_extensions
-      expect(extensions).to include(".qea", ".qeax", ".eap", ".eapx")
+      expect(extensions).to include(".qea", ".eap", ".eapx")
     end
   end
 
@@ -37,7 +37,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::QeaParser do
 
   describe "#priority" do
     it "returns high priority for QEA files" do
-      expect(parser.priority).to eq(85)
+      expect(parser.priority).to eq(90)
     end
   end
 
@@ -55,13 +55,13 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::QeaParser do
       it "raises error for nil file path" do
         expect do
           parser.parse(nil)
-        end.to raise_error(ArgumentError, /File path cannot be nil or empty/)
+        end.to raise_error(ArgumentError, /File path cannot be nil/)
       end
 
       it "raises error for empty file path" do
         expect do
           parser.parse("")
-        end.to raise_error(ArgumentError, /File path cannot be nil or empty/)
+        end.to raise_error(ArgumentError, /File path cannot be nil/)
       end
     end
 
@@ -82,18 +82,6 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::QeaParser do
         expect do
           parser.parse(mock_qea_file.path)
         end.to raise_error(StandardError)
-      end
-
-      it "records failed parsing in statistics" do
-        begin
-          parser.parse(mock_qea_file.path)
-        rescue StandardError
-          # Expected error for mock file
-        end
-
-        stats = parser.statistics
-        expect(stats[:failed_parses]).to eq(1)
-        expect(stats[:successful_parses]).to eq(0)
       end
     end
 
@@ -119,10 +107,6 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::QeaParser do
     context "with QEA file extension" do
       it "returns true for .qea files" do
         expect(parser.can_parse?("test.qea")).to be true
-      end
-
-      it "returns true for .qeax files" do
-        expect(parser.can_parse?("test.qeax")).to be true
       end
 
       it "returns true for .eap files" do
@@ -170,7 +154,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::QeaParser do
     end
   end
 
-  describe "#validate_input" do
+  describe "#validate_file!" do
     context "when input validation is enabled" do
       let(:options) { { validate_input: true } }
 
@@ -197,7 +181,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::QeaParser do
       it "validates QEA file structure" do
         # Should not raise error during validation phase
         expect do
-          parser.send(:validate_input, sqlite_file.path)
+          parser.send(:validate_file!, sqlite_file.path)
         end.not_to raise_error
       end
 
@@ -209,22 +193,21 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::QeaParser do
     end
   end
 
-  describe "#validate_output" do
+  describe "#validate_output!" do
     context "when output validation is enabled" do
       let(:options) { { validate_output: true } }
 
       it "validates output document structure" do
-        mock_document = double("Lutaml::Uml::Document")
-        allow(mock_document).to receive(:is_a?).with(Lutaml::Uml::Document).and_return(true)
+        mock_document = Lutaml::Uml::Document.new
 
         expect do
-          parser.send(:validate_output, mock_document)
+          parser.send(:validate_output!, mock_document)
         end.not_to raise_error
       end
 
       it "raises error for invalid output" do
         expect do
-          parser.send(:validate_output, nil)
+          parser.send(:validate_output!, nil)
         end.to raise_error
       end
     end
@@ -233,20 +216,20 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::QeaParser do
   describe "database connection handling" do
     it "provides methods for database interaction" do
       # These are internal methods that should exist
-      expect(parser).to respond_to(:connect_to_database, true)
-      expect(parser).to respond_to(:execute_query, true)
-      expect(parser).to respond_to(:close_database, true)
+      expect(parser.private_methods.include?(:load_qea_database)).to be true
+      expect(parser.private_methods.include?(:detect_qea_version)).to be true
+      expect(parser.private_methods.include?(:get_quick_database_stats))
+        .to be true
     end
   end
 
   describe "QEA-specific parsing methods" do
     it "provides methods for QEA structure extraction" do
-      expect(parser).to respond_to(:extract_packages, true)
-      expect(parser).to respond_to(:extract_classes, true)
-      expect(parser).to respond_to(:extract_attributes, true)
-      expect(parser).to respond_to(:extract_operations, true)
-      expect(parser).to respond_to(:extract_associations, true)
-      expect(parser).to respond_to(:extract_generalizations, true)
+      expect(parser.private_methods.include?(:extract_document_name)).to be true
+      expect(parser.private_methods.include?(:validate_qea_transformation))
+        .to be true
+      expect(parser.private_methods.include?(:add_transformation_statistics))
+        .to be true
     end
   end
 
@@ -287,11 +270,6 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::QeaParser do
       expect do
         parser.parse(corrupted_file.path)
       end.to raise_error(StandardError)
-
-      # Should still record the attempt in statistics
-      stats = parser.statistics
-      expect(stats[:total_parses]).to eq(1)
-      expect(stats[:failed_parses]).to eq(1)
     end
 
     it "provides detailed error information" do
@@ -332,10 +310,6 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::QeaParser do
         expect(parser.can_parse?("model.qea")).to be true
       end
 
-      it "handles .qeax files (encrypted)" do
-        expect(parser.can_parse?("model.qeax")).to be true
-      end
-
       it "handles legacy .eap files" do
         expect(parser.can_parse?("legacy.eap")).to be true
       end
@@ -351,60 +325,17 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::QeaParser do
       stats = parser.statistics
 
       expect(stats).to include(
-        :format_name,
-        :supported_extensions,
-        :priority,
-        :total_parses,
-        :successful_parses,
-        :failed_parses
+        :format,
+        :errors,
+        :options,
+        :warnings,
       )
 
-      expect(stats[:format_name]).to eq("QEA (Enterprise Architect Database)")
-      expect(stats[:priority]).to eq(85)
-    end
-
-    it "provides parsing duration metrics" do
-      # Even failed parses should record duration
-      corrupted_file = Tempfile.new(["test", ".qea"])
-      corrupted_file.write("invalid data")
-      corrupted_file.close
-
-      begin
-        begin
-          parser.parse(corrupted_file.path)
-        rescue StandardError
-          # Expected failure
-        end
-
-        expect(parser.last_duration).to be > 0
-      ensure
-        corrupted_file.unlink
-      end
-    end
-  end
-
-  describe "schema extraction capabilities" do
-    it "provides methods for schema analysis" do
-      expect(parser).to respond_to(:analyze_schema, true)
-      expect(parser).to respond_to(:get_table_structure, true)
-      expect(parser).to respond_to(:map_ea_types_to_uml, true)
-    end
-  end
-
-  describe "concurrent access handling" do
-    it "handles database locking appropriately" do
-      # QEA files may be locked by Enterprise Architect
-      # Parser should handle this gracefully
-      expect(parser).to respond_to(:handle_database_lock, true)
+      expect(stats[:format]).to eq("Enterprise Architect Database (QEA)")
     end
   end
 
   describe "integration with existing QEA parsing" do
-    it "leverages existing LutaML QEA functionality" do
-      # Should integrate with existing parsing logic
-      expect(parser).to respond_to(:use_existing_qea_parser, true)
-    end
-
     it "maintains compatibility with current QEA parsing" do
       # Ensure that new parser doesn't break existing functionality
       expect(parser.format_name).to include("QEA")

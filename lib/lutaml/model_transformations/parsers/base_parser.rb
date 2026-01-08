@@ -43,7 +43,7 @@ module Lutaml
         # @return [Lutaml::Uml::Document] Parsed UML document
         # @raise [ParseError] if parsing fails
         def parse(file_path)
-          validate_file!(file_path)
+          validate_file!(file_path) if should_validate_input?
           clear_errors_and_warnings
 
           begin
@@ -71,7 +71,20 @@ module Lutaml
         # @return [Boolean] true if parser can handle the file
         def can_parse?(file_path)
           extension = File.extname(file_path).downcase
-          supported_extensions.include?(extension)
+          return true if supported_extensions.include?(extension)
+
+          if respond_to?(:content_patterns) && File.exist?(file_path)
+            File.open(file_path, "rb") do |file|
+              header = file.read(1024) # Read first 1KB
+              return false if header.nil? || header.empty?
+
+              content_patterns.each do |pattern|
+                return true if header.match?(pattern)
+              end
+            end
+          end
+
+          false
         end
 
         # Get parser format name
@@ -89,6 +102,11 @@ module Lutaml
         def supported_extensions
           raise NotImplementedError,
                 "Subclasses must implement #supported_extensions"
+        end
+
+        # Default parser priority
+        def priority
+          100
         end
 
         # Check if parser has any errors
@@ -167,6 +185,7 @@ module Lutaml
         # @return [Hash] Default options hash
         def default_options
           {
+            validate_input: true,
             validate_output: false,
             include_diagrams: true,
             preserve_ids: true,
@@ -209,6 +228,13 @@ module Lutaml
           log_warning(warning_entry) if should_log_errors?
         end
 
+        # Check if input validation is enabled
+        #
+        # @return [Boolean] true if input should be validated
+        def should_validate_input?
+          @options[:validate_input]
+        end
+
         # Check if output validation is enabled
         #
         # @return [Boolean] true if output should be validated
@@ -238,15 +264,16 @@ module Lutaml
         # @param file_path [String] Path to validate
         # @raise [ArgumentError] if file is invalid
         def validate_file!(file_path)
-          raise ArgumentError, "File path cannot be nil" if file_path.nil?
+          if file_path.nil? || file_path.empty?
+            raise ArgumentError, "File path cannot be nil" 
+          end
 
           unless File.exist?(file_path)
-            raise ArgumentError,
-                  "File does not exist: #{file_path}"
+            raise ArgumentError, "File does not exist: #{file_path}"
           end
+
           unless File.readable?(file_path)
-            raise ArgumentError,
-                  "File is not readable: #{file_path}"
+            raise ArgumentError, "File is not readable: #{file_path}"
           end
         end
 
