@@ -43,7 +43,7 @@ module Lutaml
             line_style_attrs << "stroke-linejoin:#{style[:stroke_linejoin] || 'bevel'}"
             line_style_attrs << "fill:#000000"
             line_style_attrs << "fill-opacity:0.00"
-            line_style_attrs << "stroke:#{style[:stroke]}"
+            line_style_attrs << "stroke:#{style[:stroke] || '#000000' }"
             line_style_attrs << "stroke-opacity:#{style[:stroke_opacity] || '1.00'}"
 
             <<~SVG
@@ -52,7 +52,7 @@ module Lutaml
                     y="#{y}"
                     width="#{width}"
                     height="#{height}"
-                    rx="#{style[:rx] || 0.00}"
+                    rx="#{style[:corner_radius] || 0.00}"
                     shape-rendering="#{style[:shape_rendering] || 'auto'}"  />
               </g>
               <g style="#{line_style_attrs.join(';')}">
@@ -220,6 +220,8 @@ module Lutaml
             <<~SVG
               <text x="#{x}.00"
                     y="#{y}.00"
+                    text-anchor="#{text_anchor}"
+                    class="#{css_class}"
                     #{text_length > 0 ? "textLength=\"#{text_length}\"" : ""}
                     style="font-family:#{font_family}; font-weight:#{font_weight}; font-style:#{font_style}; font-size:#{font_size}; fill:#{fill_color};fill-opacity:1.00; stroke:#{text_stroke}; stroke-opacity:#{text_stroke_opacity} stroke-width:#{text_stroke_width}; white-space: pre;"
                     xml:space="preserve"
