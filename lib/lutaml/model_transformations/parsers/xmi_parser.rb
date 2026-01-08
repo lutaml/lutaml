@@ -26,6 +26,14 @@ module Lutaml
           [".xmi", ".xml"]
         end
 
+        def content_patterns
+          [/xmi:version/]
+        end
+
+        def priority
+          80
+        end
+
         protected
 
         # Core parsing implementation for XMI files
@@ -36,19 +44,13 @@ module Lutaml
           # Validate XMI file format
           validate_xmi_format!(file_path)
 
-          # Use existing Lutaml::Parser for XMI parsing
-          documents = Lutaml::Parser.parse([File.new(file_path)])
+          # Use existing Lutaml::Xmi::Parsers::Xml for XMI parsing
+          document = Lutaml::Xmi::Parsers::Xml.parse(File.new(file_path))
 
-          if documents.empty?
-            add_error("No documents found in XMI file")
+          if document.nil?
+            add_error("No document found in XMI file")
             raise Parsers::ParseError.new("Empty XMI file or parsing failed")
           end
-
-          if documents.size > 1
-            add_warning("Multiple documents found in XMI file, using first one")
-          end
-
-          document = documents.first
 
           # Post-process document if needed
           post_process_xmi_document(document, file_path)

@@ -32,6 +32,14 @@ module Lutaml
           [".qea", ".eap", ".eapx"]
         end
 
+        def content_patterns
+          [/^SQLite format/]
+        end
+
+        def priority
+          90
+        end
+
         protected
 
         # Core parsing implementation for QEA files
