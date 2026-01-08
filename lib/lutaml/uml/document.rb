@@ -30,6 +30,7 @@ module Lutaml
       attribute :primitives, PrimitiveType, collection: true, default: -> { [] }
       attribute :instances, Instance, collection: true, default: -> { [] }
       attribute :associations, Association, collection: true, default: -> { [] }
+      attribute :diagrams, Diagram, collection: true, default: -> { [] }
 
       yaml do
         map "name", to: :name
@@ -46,6 +47,7 @@ module Lutaml
         map "packages", to: :packages
         map "primitives", to: :primitives
         map "instances", to: :instances
+        map "diagrams", to: :diagrams
 
         map "associations", to: :associations, with: {
           to: :associations_to_yaml, from: :associations_from_yaml
