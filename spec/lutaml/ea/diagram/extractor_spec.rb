@@ -84,11 +84,11 @@ RSpec.describe Lutaml::Ea::Diagram::Extractor do
     end
 
     context "with valid LUR file", :requires_fixtures do
-      let(:diagram_id) { "{B58D1A53-E860-41a3-8352-11C274093E83}" }
+      let(:diagram_name) { "TestSchema" }
       let(:output_path) { File.join(temp_dir, "output.svg") }
 
       it "extracts diagram successfully" do
-        result = extractor.extract_one(lur_path, diagram_id, output: output_path)
+        result = extractor.extract_one(lur_path, diagram_name, output: output_path)
 
         expect(result[:success]).to be true
         expect(result[:path]).to eq(output_path)
@@ -97,15 +97,11 @@ RSpec.describe Lutaml::Ea::Diagram::Extractor do
         expect(File.exist?(output_path)).to be true
       end
 
-      it "uses default output path if not specified" do
-        result = extractor.extract_one(lur_path, diagram_id)
+      it "outputs SVG content if output path not specified" do
+        result = extractor.extract_one(lur_path, diagram_name)
 
         expect(result[:success]).to be true
-        expect(result[:path]).to match(/\.svg$/)
-        expect(File.exist?(result[:path])).to be true
-
-        # Cleanup
-        File.delete(result[:path]) if File.exist?(result[:path])
+        expect(!!result[:svg_content]).to be true
       end
     end
 
