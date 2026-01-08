@@ -21,6 +21,7 @@ module Lutaml
 
       def initialize
         @parsers = {}
+        @extensions = []
         @default_parsers_loaded = false
       end
 
@@ -30,11 +31,19 @@ module Lutaml
       # @param parser_class [Class] Parser class implementing BaseParser interface
       # @raise [ArgumentError] if extension or parser_class is invalid
       def register(extension, parser_class)
+        if extension.is_a?(Array)
+          extension.each { |ext| register(ext, parser_class) }
+          return
+        end
+
         validate_extension!(extension)
         validate_parser_class!(parser_class)
 
         normalized_ext = normalize_extension(extension)
         @parsers[normalized_ext] = parser_class
+        unless @extensions.include?(normalized_ext)
+          @extensions << normalized_ext
+        end
       end
 
       # Unregister a parser for a file extension
@@ -43,7 +52,20 @@ module Lutaml
       # @return [Class, nil] The unregistered parser class, or nil if not found
       def unregister(extension)
         normalized_ext = normalize_extension(extension)
+        @extensions.delete(normalized_ext)
         @parsers.delete(normalized_ext)
+      end
+
+      # Auto-register a parser class based on its supported extensions
+      #
+      # @param parser_class [Class] Parser class inherited from BaseParser
+      # @return [void]
+      def auto_register_from_parser(parser_class)
+        supported_extensions = ""
+        if parser_class.new.respond_to?(:supported_extensions)
+          supported_extensions = parser_class.new.supported_extensions
+        end
+        register(supported_extensions, parser_class)
       end
 
       # Get parser class for a file extension
@@ -51,7 +73,7 @@ module Lutaml
       # @param extension [String] File extension (e.g., ".xmi", ".qea")
       # @return [Class, nil] Parser class, or nil if not found
       def parser_for_extension(extension)
-        ensure_default_parsers_loaded!
+        # ensure_default_parsers_loaded!
         normalized_ext = normalize_extension(extension)
         @parsers[normalized_ext]
       end
@@ -85,7 +107,7 @@ module Lutaml
       #
       # @return [Array<String>] List of supported file extensions
       def supported_extensions
-        ensure_default_parsers_loaded!
+        # ensure_default_parsers_loaded!
         @parsers.keys.sort
       end
 
@@ -93,14 +115,74 @@ module Lutaml
       #
       # @return [Hash<String, Class>] Map of extensions to parser classes
       def all_parsers
-        ensure_default_parsers_loaded!
+        # ensure_default_parsers_loaded!
         @parsers.dup
+      end
+
+      # Get parsers sorted by priority (highest first)
+      #
+      # @return [Array<Array(String, Class)>] List of [extension, parser_class]
+      def parsers_by_priority
+        @parsers.sort_by do |ext, parser_class|
+          if parser_class.instance_methods.include?(:priority)
+            parser_class.new.priority
+          else
+            100
+          end
+        end.reverse
+      end
+
+      # Get all registered extensions
+      #
+      # @return [Array<String>] List of registered extensions
+      def all_extensions
+        @extensions.dup
+      end
+
+      # Get statistics about registered parsers
+      #
+      # @return [Hash] Statistics hash
+      def statistics
+        parsers = @parsers.values.uniq
+        total_parsers = parsers.size
+        ext_size = @extensions.size
+
+        {
+          total_parsers: total_parsers,
+          total_extensions: ext_size,
+          extensions_per_parser: (ext_size.to_f / total_parsers).round(2),
+          parser_details: parsers.map do |parser_class|
+            {
+              parser: parser_class,
+              extensions: parser_class.new.supported_extensions,
+              priority: parser_class.new.priority,
+              format_name: parser_class.new.format_name,
+            }
+          end,
+        }
+      end
+
+      def export_configuration
+        {
+          exported_at: Time.now,
+          parsers: @parsers.map do |parser|
+            _ext, parser_class = parser
+
+            {
+              parser_class: parser_class,
+              extensions: parser_class.new.supported_extensions,
+              priority: parser_class.new.priority,
+              format: parser_class.new.format_name,
+            }
+          end,
+        }
       end
 
       # Clear all registered parsers
       #
       # @return [void]
       def clear
+        @extensions.clear
         @parsers.clear
         @default_parsers_loaded = false
       end
@@ -157,28 +239,42 @@ module Lutaml
       # @param file_path [String] Path to the file
       # @return [Class, nil] Parser class based on content detection
       def detect_by_content(file_path)
-        ensure_default_parsers_loaded!
-
-        return nil unless File.exist?(file_path)
+        # ensure_default_parsers_loaded!
+        unless File.exist?(file_path)
+          raise ArgumentError, "#{file_path} does not exist!"
+        end
 
         # Read first few bytes to detect format
         File.open(file_path, "rb") do |file|
           header = file.read(1024) # Read first 1KB
+
           return nil if header.nil? || header.empty?
+
+          # Check header match for content patterns
+          @parsers.each do |ext, parser_class|
+            if parser_class.new.respond_to? :content_patterns
+              parser_klass = parser_class.new
+              parser_klass.content_patterns.each do |pattern|
+                if header.match?(pattern)
+                  return parser_for_extension(ext)
+                end
+              end
+            end
+          end
 
           # Check for XML/XMI signatures
           if header.include?("<?xml") && header.include?("xmi:")
+            ensure_default_parsers_loaded!
             return parser_for_extension(".xmi")
           end
 
           # Check for SQLite database signature (QEA files)
           if header[0..15] == "SQLite format 3\0"
+            ensure_default_parsers_loaded!
             return parser_for_extension(".qea")
           end
         end
 
-        nil
-      rescue StandardError
         nil
       end
 
@@ -230,7 +326,7 @@ module Lutaml
         end
 
         normalized = normalize_extension(extension)
-        unless normalized.match?(/^\.[a-z0-9]+$/)
+        unless normalized.match?(/^\.[a-z0-9]+(.[a-z0-9]+)?/)
           raise ArgumentError, "Invalid extension format: #{extension}"
         end
       end
@@ -240,8 +336,20 @@ module Lutaml
       # @param parser_class [Class] Parser class to validate
       # @raise [ArgumentError] if parser class is invalid
       def validate_parser_class!(parser_class)
+        # Check if nil
+        if parser_class.nil?
+          raise ArgumentError, "Parser class cannot be nil"
+        end
+
+        # Check if it's a class
         unless parser_class.is_a?(Class)
           raise ArgumentError, "Parser must be a class"
+        end
+
+        # Check if class is a subclass of BaseParser
+        unless parser_class < Parsers::BaseParser
+          raise ArgumentError,
+                "Parser class must inherit from BaseParser"
         end
 
         # Check if class responds to required methods
@@ -251,9 +359,11 @@ module Lutaml
             parser_class.private_method_defined?(method)
         end
 
+        # Check if any methods are missing
         unless missing_methods.empty?
           raise ArgumentError,
-                "Parser class must implement methods: #{missing_methods.join(', ')}"
+                "Parser class must implement methods: " \
+                "#{missing_methods.join(', ')}"
         end
       end
 

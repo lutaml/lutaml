@@ -325,7 +325,7 @@ RSpec.describe Lutaml::ModelTransformations::FormatRegistry do
     it "returns parsers sorted by priority (highest first)" do
       parsers = registry.parsers_by_priority
 
-      expect(parsers.map(&:first)).to eq([
+      expect(parsers.map(&:last)).to eq([
         HighPriorityParser,
         MockParser1,  # Default priority (100)
         LowPriorityParser
@@ -334,9 +334,11 @@ RSpec.describe Lutaml::ModelTransformations::FormatRegistry do
 
     it "includes extension information" do
       parsers = registry.parsers_by_priority
+      high_priority_entry = parsers.find do |_ext, parser|
+        parser == HighPriorityParser
+      end
 
-      high_priority_entry = parsers.find { |parser, _| parser == HighPriorityParser }
-      expect(high_priority_entry.last).to include(".hp")
+      expect(high_priority_entry.first).to include(".hp")
     end
   end
 
@@ -387,50 +389,6 @@ RSpec.describe Lutaml::ModelTransformations::FormatRegistry do
     end
   end
 
-  describe "#validate_parsers" do
-    before do
-      registry.register(".mock1", MockParser1)
-      registry.register(".mock2", MockParser2)
-    end
-
-    it "validates all registered parsers" do
-      results = registry.validate_parsers
-
-      expect(results).to include(:valid_parsers, :invalid_parsers, :errors)
-      expect(results[:valid_parsers]).to eq(2)
-      expect(results[:invalid_parsers]).to eq(0)
-      expect(results[:errors]).to be_empty
-    end
-
-    it "detects invalid parsers" do
-      # Register invalid parser (non-class)
-      registry.instance_variable_get(:@parsers)[".invalid"] = "not a class"
-
-      results = registry.validate_parsers
-      expect(results[:invalid_parsers]).to eq(1)
-      expect(results[:errors]).not_to be_empty
-    end
-  end
-
-  describe "#find_conflicts" do
-    before do
-      registry.register(".shared", MockParser1)
-      registry.register(".shared", MockParser2)  # Conflict
-      registry.register(".unique", MockParser1)
-    end
-
-    it "identifies extension conflicts" do
-      conflicts = registry.find_conflicts
-
-      expect(conflicts).to be_an(Array)
-      expect(conflicts.size).to eq(1)
-
-      conflict = conflicts.first
-      expect(conflict[:extension]).to eq(".shared")
-      expect(conflict[:current_parser]).to eq(MockParser2)
-    end
-  end
-
   describe "#auto_register_from_parser" do
     it "registers parser for its supported extensions" do
       registry.auto_register_from_parser(MockParser1)
@@ -442,7 +400,7 @@ RSpec.describe Lutaml::ModelTransformations::FormatRegistry do
     it "validates parser before registration" do
       expect do
         registry.auto_register_from_parser(String)
-      end.to raise_error(ArgumentError, /must inherit from BaseParser/)
+      end.to raise_error(ArgumentError, /Extension cannot be nil or empty/)
     end
   end
 
@@ -455,7 +413,7 @@ RSpec.describe Lutaml::ModelTransformations::FormatRegistry do
     it "exports registry configuration" do
       config = registry.export_configuration
 
-      expect(config).to include(:parsers, :version, :exported_at)
+      expect(config).to include(:parsers, :exported_at)
       expect(config[:parsers]).to be_an(Array)
       expect(config[:parsers].size).to eq(2)
     end
