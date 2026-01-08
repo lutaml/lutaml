@@ -309,7 +309,10 @@ module Lutaml
         return other_parsers unless parsers
 
         # Create a hash of this config's parsers by format
-        our_parsers = parsers.index_by(&:format)
+        our_parsers = {}
+        parsers.each do |parser|
+          our_parsers[parser.format] = parser
+        end
 
         # Add other parsers that we don't have
         merged = parsers.dup
