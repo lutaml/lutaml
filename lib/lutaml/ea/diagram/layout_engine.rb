@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "util"
+
 module Lutaml
   module Ea
     module Diagram
@@ -9,7 +11,10 @@ module Lutaml
       # based on their relationships and EA diagram data. It handles
       # automatic layout for elements that don't have explicit positions.
       class LayoutEngine
+        include Util
+
         DEFAULT_SPACING = 50
+        DEFAULT_PADDING = 20
         ELEMENT_WIDTH = 120
         ELEMENT_HEIGHT = 80
 
@@ -30,15 +35,35 @@ module Lutaml
 
           # Find min/max coordinates
           min_x = elements.map { |e| e[:x] || 0 }.min
-          max_x = elements.map { |e| (e[:x] || 0) + element_width_for(e) }.max
           min_y = elements.map { |e| e[:y] || 0 }.min
-          max_y = elements.map { |e| (e[:y] || 0) + element_height_for(e) }.max
+          max_x = elements.map do |e|
+            (e[:x] || 0) + element_width_for(e)
+          end.max
+          max_y = elements.map do |e|
+            (e[:y] || 0) + element_height_for(e)
+          end.max
 
+          apply_padding_to_bounds(
+            {
+              x: min_x,
+              y: min_y,
+              width: max_x - min_x,
+              height: max_y - min_y
+            }
+          )
+        end
+
+        # Apply padding to bounds
+        # @param bounds [Hash] Bounds with x, y, width, height
+        # @return [Hash] Padded bounds
+        def apply_padding_to_bounds(bounds)
+          padding_x = [bounds[:width] * 0.05, DEFAULT_PADDING].max
+          padding_y = [bounds[:height] * 0.05, DEFAULT_PADDING].max
           {
-            x: min_x,
-            y: min_y,
-            width: max_x - min_x,
-            height: max_y - min_y
+            x: bounds[:x] - padding_x,
+            y: bounds[:y] - padding_y,
+            width: bounds[:width] + padding_x * 2,
+            height: bounds[:height] + padding_y * 2
           }
         end
 
@@ -89,31 +114,50 @@ module Lutaml
         # Convert EA coordinates (deprecated - now handled by DiagramPresenter)
         # @deprecated Use DiagramPresenter coordinate handling instead
         def convert_ea_coordinates(diagram_object)
+          left = diagram_object.left || 0
+          top = diagram_object.top || 0
+          right = diagram_object.right || 100
+          bottom = diagram_object.bottom || 100
+
           {
-            left: diagram_object.left || 0,
-            top: diagram_object.top || 0,
-            right: diagram_object.right || 100,
-            bottom: diagram_object.bottom || 100
+            x: left,
+            y: top,
+            width: right - left,
+            height: bottom - top
           }
         end
 
         # Normalize coordinates (deprecated)
         # @deprecated No longer needed in current architecture
         def normalize_coordinates(elements)
-          elements
-        end
+          return elements if elements.empty?
 
-        # Parse geometry offsets (deprecated)
-        # @deprecated Use PathBuilder geometry parsing instead
-        def parse_geometry_offsets(geometry_string)
-          return [] unless geometry_string
-          
-          geometry_string.scan(/EDGE=(\d+);/).flatten.map(&:to_i)
+          largest_negative_x = elements.map { |e| e[:x] || 0 }.min
+          largest_negative_y = elements.map { |e| e[:y] || 0 }.min
+          offset_x = largest_negative_x.negative? ? -largest_negative_x : 0
+          offset_y = largest_negative_y.negative? ? -largest_negative_y : 0
+
+          return elements if offset_x == 0 && offset_y == 0
+
+          elements.each do |e|
+            e[:x] = 0 if e[:x].nil?
+            e[:y] = 0 if e[:y].nil?
+            e[:width] = 0 if e[:width].nil?
+            e[:height] = 0 if e[:height].nil?
+            e[:x] = e[:x].to_i + offset_x
+            e[:y] = e[:y].to_i + offset_y
+            e[:width] = -e[:width] if e[:width].negative?
+            e[:height] = -e[:height] if e[:height].negative?
+          end
         end
 
         private
 
         def element_width_for(element)
+          if element[:width]
+            return element[:width] == 0 ? ELEMENT_WIDTH : element[:width]
+          end
+
           # Could be customized based on element content
           case element[:type]
           when "class" then element[:attributes]&.size.to_i * 10 + ELEMENT_WIDTH
@@ -123,6 +167,10 @@ module Lutaml
         end
 
         def element_height_for(element)
+          if element[:height]
+            return element[:height] == 0 ? ELEMENT_HEIGHT : element[:height]
+          end
+
           # Could be customized based on element content
           case element[:type]
           when "class" then element[:operations]&.size.to_i * 15 + ELEMENT_HEIGHT
