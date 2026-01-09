@@ -109,6 +109,19 @@ module Lutaml
           return nil if text.nil?
           text.gsub(/\r\n/, "\n")
         end
+
+        # Find object by ID
+        # @param object_id [Integer] Object ID
+        # @return [Models::EaObject, nil] EA object or nil
+        def find_object_by_id(object_id)
+          return nil if object_id.nil?
+
+          query = "SELECT * FROM t_object WHERE Object_ID = ?"
+          rows = database.connection.execute(query, object_id)
+          return nil if rows.empty?
+
+          Models::EaObject.from_db_row(rows.first)
+        end
       end
     end
   end

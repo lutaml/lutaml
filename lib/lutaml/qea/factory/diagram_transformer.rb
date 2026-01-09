@@ -144,19 +144,6 @@ module Lutaml
           end
         end
 
-        # Find object by ID
-        # @param object_id [Integer] Object ID
-        # @return [Models::EaObject, nil] EA object or nil if not found
-        def find_object_by_id(object_id)
-          return nil if object_id.nil?
-
-          query = "SELECT * FROM t_object WHERE Object_ID = ?"
-          rows = database.connection.execute(query, object_id)
-          return nil if rows.empty?
-
-          Models::EaObject.from_db_row(rows.first)
-        end
-
         # Find connector by ID
         # @param connector_id [Integer] Connector ID
         # @return [Models::EaConnector, nil] EA connector or nil if not found
