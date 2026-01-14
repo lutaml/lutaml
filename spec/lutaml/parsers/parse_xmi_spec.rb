@@ -320,7 +320,7 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
           [{
             xmi_id: "EAID_2CA98919_831B_4182_BBC2_C2EAF17FEF60",
             member_end: "RequirementType",
-            member_end_type: "aggregation",
+            member_end_type: "association",
             member_end_cardinality: { min: nil, max: nil },
             member_end_attribute_name: "RequirementType",
             member_end_xmi_id: "EAID_C1155D80_E68B_46d5_ADE5_F5639486163D",
@@ -395,7 +395,7 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
         )
         expect(val).to eq([
                             "RequirementType",
-                            "aggregation",
+                            "association",
                             "EAID_C1155D80_E68B_46d5_ADE5_F5639486163D",
                           ])
       end
@@ -415,7 +415,7 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
         )
         expect(val).to eq([
                             "RequirementType",
-                            "aggregation",
+                            "association",
                             { max: nil, min: nil },
                             "RequirementType",
                             "EAID_C1155D80_E68B_46d5_ADE5_F5639486163D",
