@@ -92,9 +92,9 @@ module Lutaml
       #   suggestions = handler.suggest_similar_classes("ModelRoot::Buildng")
       #   # => ["ModelRoot::Building", "ModelRoot::BuildingPart"]
       def suggest_similar_classes(attempted)
-        return [] unless repository.indexes[:classes_by_qname]
+        return [] unless repository.indexes[:class_to_qname]
 
-        all_qnames = repository.indexes[:classes_by_qname].keys
+        all_qnames = repository.indexes[:class_to_qname].values
         find_similar_names(attempted, all_qnames)
       end
 
@@ -107,9 +107,9 @@ module Lutaml
       #   suggestions = handler.suggest_similar_packages("ModelRoot::i-UR")
       #   # => ["ModelRoot::i-UR::urf", "ModelRoot::i-UR::core"]
       def suggest_similar_packages(attempted)
-        return [] unless repository.indexes[:packages_by_path]
+        return [] unless repository.indexes[:package_to_path]
 
-        all_paths = repository.indexes[:packages_by_path].keys
+        all_paths = repository.indexes[:package_to_path].values
         find_similar_names(attempted, all_paths)
       end
 

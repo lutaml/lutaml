@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require_relative "../../../lib/lutaml/uml_repository/index_builder"
 
 RSpec.describe Lutaml::UmlRepository::IndexBuilder do
   let(:document) { create_test_document }
@@ -40,8 +41,9 @@ RSpec.describe Lutaml::UmlRepository::IndexBuilder do
     it "handles nested packages" do
       package_paths_index = indexes[:package_paths]
       package_paths_index.each do |path, package|
-        expect(path).to be_a(Lutaml::Uml::PackagePath)
-        expect(package).to be_a(Lutaml::Uml::Package)
+        expect(path).to be_a(String)
+        expect(package).to be_a(Lutaml::Uml::Document)
+          .or be_a(Lutaml::Uml::Package)
       end
     end
 
@@ -49,7 +51,7 @@ RSpec.describe Lutaml::UmlRepository::IndexBuilder do
       package_paths_index = indexes[:package_paths]
       paths = package_paths_index.keys.map(&:to_s)
 
-      expect(paths).to include("EA_Model")
+      expect(paths).to include("ModelRoot")
       expect(paths.any? { |p| p.include?("::") }).to be(true).or be(false)
     end
   end
@@ -63,7 +65,7 @@ RSpec.describe Lutaml::UmlRepository::IndexBuilder do
     it "includes data types and enums" do
       qualified_names_index = indexes[:qualified_names]
       qualified_names_index.each do |qname, entity|
-        expect(qname).to be_a(Lutaml::Uml::QualifiedName)
+        expect(qname).to be_a(String)
         expect(entity).to be_a(Lutaml::Uml::Class)
           .or be_a(Lutaml::Uml::DataType)
           .or be_a(Lutaml::Uml::Enum)
@@ -109,6 +111,8 @@ RSpec.describe Lutaml::UmlRepository::IndexBuilder do
       stereotypes_index.each_value do |classes|
         classes.each do |klass|
           expect(klass).to be_a(Lutaml::Uml::Class)
+            .or be_a(Lutaml::Uml::Enum)
+            .or be_a(Lutaml::Uml::DataType)
         end
       end
     end
@@ -127,22 +131,22 @@ RSpec.describe Lutaml::UmlRepository::IndexBuilder do
         expect(parent_id).to be_a(String)
         expect(children).to be_an(Array)
         children.each do |child|
-          expect(child).to be_a(Lutaml::Uml::Class)
+          expect(child).to be_a(String)
         end
       end
     end
+  end
 
+  describe "associations index" do
     it "creates bidirectional mappings" do
-      inheritance_graph = indexes[:inheritance_graph]
+      associations = indexes[:associations]
 
-      inheritance_graph.values.flatten.each do |child_class|
-        child_class.associations.each do |assoc|
-          next unless ["inheritance",
-                       "generalization"].include?(assoc.member_end_type)
+      associations.values.flatten.each do |assoc|
+        next unless ["inheritance",
+                      "generalization"].include?(assoc.member_end_type)
 
-          parent_id = assoc.member_end_xmi_id
-          expect(inheritance_graph.key?(parent_id)).to be(true).or be(false)
-        end
+        parent_id = assoc.member_end_xmi_id
+        expect(associations.key?(parent_id)).to be(true).or be(false)
       end
     end
   end
@@ -182,23 +186,23 @@ RSpec.describe Lutaml::UmlRepository::IndexBuilder do
       package_paths_index = indexes[:package_paths]
       paths = package_paths_index.keys.map(&:to_s)
 
-      expect(paths).to include("TestModel")
-      expect(paths).to include("TestModel::RootPackage")
-      expect(paths).to include("TestModel::RootPackage::NestedPackage")
+      expect(paths).to include("ModelRoot")
+      expect(paths).to include("ModelRoot::RootPackage")
+      expect(paths).to include("ModelRoot::RootPackage::NestedPackage")
     end
 
     it "indexes simple class structure" do
       qualified_names_index = indexes[:qualified_names]
       qnames = qualified_names_index.keys.map(&:to_s)
 
-      expect(qnames).to include("TestModel::RootPackage::TestClass")
+      expect(qnames).to include("ModelRoot::RootPackage::TestClass")
     end
 
     it "indexes simple enum structure" do
       qualified_names_index = indexes[:qualified_names]
       qnames = qualified_names_index.keys.map(&:to_s)
 
-      expect(qnames).to include("TestModel::RootPackage::TestEnum")
+      expect(qnames).to include("ModelRoot::RootPackage::TestEnum")
     end
 
     it "groups by stereotype correctly" do

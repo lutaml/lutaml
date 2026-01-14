@@ -10,7 +10,7 @@ module Lutaml
       #
       # Subclasses must implement: to_text, to_table_row, to_hash
       class ElementPresenter
-        attr_reader :element, :repository
+        attr_reader :element, :repository, :context
 
         # @param element [Object] The UML element to present
         # @param repository [UmlRepository, nil] Optional repository for
@@ -23,8 +23,6 @@ module Lutaml
         end
 
         protected
-
-        attr_reader :context
 
         # Generate detailed text view of the element.
         #

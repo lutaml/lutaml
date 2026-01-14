@@ -23,7 +23,7 @@ RSpec.describe Lutaml::UmlRepository::Presenters::ElementPresenter do
 
   describe "#to_text" do
     it "raises NotImplementedError" do
-      expect { presenter.to_text }
+      expect { presenter.send(:to_text) }
         .to raise_error(NotImplementedError,
                         /must implement #to_text/)
     end
@@ -31,7 +31,7 @@ RSpec.describe Lutaml::UmlRepository::Presenters::ElementPresenter do
 
   describe "#to_table_row" do
     it "raises NotImplementedError" do
-      expect { presenter.to_table_row }
+      expect { presenter.send(:to_table_row) }
         .to raise_error(NotImplementedError,
                         /must implement #to_table_row/)
     end
@@ -39,7 +39,7 @@ RSpec.describe Lutaml::UmlRepository::Presenters::ElementPresenter do
 
   describe "#to_hash" do
     it "raises NotImplementedError" do
-      expect { presenter.to_hash }
+      expect { presenter.send(:to_hash) }
         .to raise_error(NotImplementedError,
                         /must implement #to_hash/)
     end

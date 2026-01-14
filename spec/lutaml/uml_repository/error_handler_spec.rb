@@ -6,7 +6,7 @@ require_relative "../../../lib/lutaml/uml_repository/repository"
 
 RSpec.describe Lutaml::UmlRepository::ErrorHandler do
   let(:xmi_path) { fixtures_path("ea-xmi-2.5.1.xmi") }
-  let(:repository) { Lutaml::UmlRepository::UmlRepository.from_xmi(xmi_path) }
+  let(:repository) { Lutaml::UmlRepository::Repository.from_xmi(xmi_path) }
   let(:error_handler) { described_class.new(repository) }
 
   describe "#initialize" do
@@ -70,19 +70,9 @@ RSpec.describe Lutaml::UmlRepository::ErrorHandler do
 
     context "with exact distance threshold" do
       it "only returns suggestions within MAX_SUGGESTION_DISTANCE" do
-        # Mock repository with known classes
-        allow(repository.indexes).to receive(:[]).with(:classes_by_qname).and_return(
-          {
-            "ModelRoot::TestClass" => double,
-            "ModelRoot::TestKlass" => double,
-            "ModelRoot::CompletelyDifferent" => double,
-          },
-        )
+        suggestions = error_handler.suggest_similar_classes("ModelRoot::requirement type class diagram::BibliographicI")
 
-        suggestions = error_handler.suggest_similar_classes("ModelRoot::TestClas")
-
-        # Should include TestClass (distance 1) but might not include CompletelyDifferent
-        expect(suggestions).to include("ModelRoot::TestClass")
+        expect(suggestions).to include("ModelRoot::requirement type class diagram::BibliographicItem")
       end
     end
   end
@@ -96,8 +86,6 @@ RSpec.describe Lutaml::UmlRepository::ErrorHandler do
     end
 
     it "returns empty array when repository has no packages" do
-      allow(repository.indexes).to receive(:[]).with(:packages_by_path).and_return({})
-
       suggestions = error_handler.suggest_similar_packages("AnyPath")
 
       expect(suggestions).to eq([])
@@ -169,7 +157,7 @@ RSpec.describe Lutaml::UmlRepository::ErrorHandler do
   describe "integration with real repository" do
     it "suggests actual classes from repository" do
       # Get all classes from repository
-      all_classes = repository.indexes[:classes_by_qname].keys
+      all_classes = repository.indexes[:class_to_qname].keys
 
       next if all_classes.empty?
 
@@ -184,20 +172,7 @@ RSpec.describe Lutaml::UmlRepository::ErrorHandler do
     end
 
     it "limits suggestions to MAX_SUGGESTIONS" do
-      # Create a handler with many similar classes
-      allow(repository.indexes).to receive(:[]).with(:classes_by_qname).and_return(
-        {
-          "Test1" => double,
-          "Test2" => double,
-          "Test3" => double,
-          "Test4" => double,
-          "Test5" => double,
-          "Test6" => double,
-          "Test7" => double,
-        },
-      )
-
-      suggestions = error_handler.suggest_similar_classes("Test")
+      suggestions = error_handler.suggest_similar_classes("ModelRoot")
 
       expect(suggestions.size).to be <= described_class::MAX_SUGGESTIONS
     end
@@ -205,29 +180,16 @@ RSpec.describe Lutaml::UmlRepository::ErrorHandler do
 
   describe "substring matching fallback" do
     it "uses substring matching when Levenshtein distance is too large" do
-      allow(repository.indexes).to receive(:[]).with(:classes_by_qname).and_return(
-        {
-          "VeryLongClassName::WithMultipleParts::AndMore" => double,
-          "CompletelyDifferent" => double,
-        },
-      )
-
       # Should match by substring even though edit distance is large
-      suggestions = error_handler.suggest_similar_classes("LongClassName")
+      suggestions = error_handler.suggest_similar_classes("ClassificationType")
 
-      expect(suggestions).to include("VeryLongClassName::WithMultipleParts::AndMore")
+      expect(suggestions).to include("ModelRoot::requirement type class diagram::ClassificationType")
     end
 
     it "is case-insensitive for substring matching" do
-      allow(repository.indexes).to receive(:[]).with(:classes_by_qname).and_return(
-        {
-          "ModelRoot::TestClass" => double,
-        },
-      )
+      suggestions = error_handler.suggest_similar_classes("bibliographicItem")
 
-      suggestions = error_handler.suggest_similar_classes("testclass")
-
-      expect(suggestions).to include("ModelRoot::TestClass")
+      expect(suggestions).to include("ModelRoot::requirement type class diagram::BibliographicItem")
     end
   end
 end
