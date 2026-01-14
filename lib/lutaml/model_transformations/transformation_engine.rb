@@ -33,6 +33,9 @@ module Lutaml
       # @return [Array<Hash>] Transformation history
       attr_reader :transformation_history
 
+      # @return [Parser] Parser instance
+      attr_reader :current_parser
+
       # Initialize transformation engine
       #
       # @param configuration [Configuration, nil] Configuration to use
@@ -66,19 +69,19 @@ module Lutaml
 
         # Create parser instance with merged options
         merged_options = merge_options(options)
-        parser = get_parser_instance(parser_class, merged_options)
+        @current_parser = get_parser_instance(parser_class, merged_options)
 
         # Record transformation start
         transformation_start = Time.now
 
         begin
           # Perform parsing
-          document = parser.parse(file_path)
+          document = @current_parser.parse(file_path)
 
           # Record successful transformation
           record_transformation(
             file_path: file_path,
-            parser: parser,
+            parser: @current_parser,
             duration: Time.now - transformation_start,
             success: true,
             document: document,
@@ -89,7 +92,7 @@ module Lutaml
           # Record failed transformation
           record_transformation(
             file_path: file_path,
-            parser: parser,
+            parser: @current_parser,
             duration: Time.now - transformation_start,
             success: false,
             error: e,

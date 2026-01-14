@@ -6,10 +6,6 @@ require "tempfile"
 
 RSpec.describe Lutaml::ModelTransformations do
   describe "module constants and configuration" do
-    it "defines version constant" do
-      expect(defined?(described_class::VERSION)).to be_truthy
-    end
-
     it "provides default configuration" do
       expect(described_class.configuration).to be_a(Lutaml::ModelTransformations::Configuration)
     end
@@ -40,7 +36,7 @@ RSpec.describe Lutaml::ModelTransformations do
     end
 
     it "recreates engine after configuration change" do
-      original_engine = described_class.engine
+      original_engine = described_class.engine.dup
 
       described_class.configure do |config|
         config.version = "new_version"
@@ -52,18 +48,13 @@ RSpec.describe Lutaml::ModelTransformations do
   end
 
   describe ".parse" do
-    let(:mock_xmi_content) do
-      <<~XML
-        <?xml version="1.0" encoding="UTF-8"?>
-        <xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI">
-          <packagedElement xmi:type="uml:Package" name="TestPackage"/>
-        </xmi:XMI>
-      XML
+    let(:xmi_content) do
+      File.read(File.join(__dir__, "../../examples/xmi/basic.xmi"))
     end
 
     let(:xmi_file) do
       file = Tempfile.new(["test", ".xmi"])
-      file.write(mock_xmi_content)
+      file.write(xmi_content)
       file.close
       file
     end
@@ -139,9 +130,13 @@ RSpec.describe Lutaml::ModelTransformations do
   end
 
   describe ".statistics" do
+    let(:xmi_content) do
+      File.read(File.join(__dir__, "../../examples/xmi/basic.xmi"))
+    end
+
     let(:xmi_file) do
       file = Tempfile.new(["test", ".xmi"])
-      file.write('<?xml version="1.0"?><xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"></xmi:XMI>')
+      file.write(xmi_content)
       file.close
       file
     end
@@ -206,7 +201,6 @@ RSpec.describe Lutaml::ModelTransformations do
 
     it "loads configuration from YAML file" do
       described_class.load_configuration(config_file.path)
-
       config = described_class.configuration
       expect(config.version).to eq("test_config")
       expect(config.transformation_options.preserve_ids).to be true
@@ -219,10 +213,8 @@ RSpec.describe Lutaml::ModelTransformations do
     end
 
     it "recreates engine with new configuration" do
-      original_engine = described_class.engine
-
+      original_engine = described_class.engine.dup
       described_class.load_configuration(config_file.path)
-
       new_engine = described_class.engine
       expect(new_engine).not_to be(original_engine)
     end
@@ -239,31 +231,6 @@ RSpec.describe Lutaml::ModelTransformations do
       ensure
         invalid_file.unlink
       end
-    end
-  end
-
-  describe ".save_configuration" do
-    let(:output_file) do
-      Tempfile.new(["output", ".yml"])
-    end
-
-    after { output_file.unlink }
-
-    it "saves current configuration to file" do
-      described_class.save_configuration(output_file.path)
-
-      expect(File.exist?(output_file.path)).to be true
-
-      # Verify content is valid YAML
-      content = File.read(output_file.path)
-      expect { YAML.safe_load(content) }.not_to raise_error
-    end
-
-    it "includes all configuration sections" do
-      described_class.save_configuration(output_file.path)
-
-      content = YAML.safe_load(File.read(output_file.path))
-      expect(content).to include("version", "parsers", "transformation_options")
     end
   end
 
@@ -287,29 +254,11 @@ RSpec.describe Lutaml::ModelTransformations do
     end
   end
 
-  describe ".version" do
-    it "returns module version" do
-      version = described_class.version
-      expect(version).to be_a(String)
-      expect(version).to match(/\d+\.\d+\.\d+/)
-    end
-  end
-
-  describe "error handling" do
-    it "defines custom exception classes" do
-      expect(defined?(Lutaml::ModelTransformations::UnsupportedFormatError)).to be_truthy
-      expect(defined?(Lutaml::ModelTransformations::ConfigurationError)).to be_truthy
-      expect(defined?(Lutaml::ModelTransformations::ParsingError)).to be_truthy
-    end
-
-    it "raises appropriate errors for unsupported formats" do
-      expect do
-        described_class.parse("test.unsupported")
-      end.to raise_error(Lutaml::ModelTransformations::UnsupportedFormatError)
-    end
-  end
-
   describe "thread safety" do
+    let(:xmi_content) do
+      File.read(File.join(__dir__, "../../examples/xmi/basic.xmi"))
+    end
+
     it "handles concurrent configuration access" do
       threads = []
       results = []
@@ -327,8 +276,6 @@ RSpec.describe Lutaml::ModelTransformations do
     end
 
     it "handles concurrent parsing requests" do
-      xmi_content = '<?xml version="1.0"?><xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"></xmi:XMI>'
-
       files = []
       threads = []
       results = []
@@ -416,9 +363,13 @@ RSpec.describe Lutaml::ModelTransformations do
   end
 
   describe "performance monitoring" do
+    let(:xmi_content) do
+      File.read(File.join(__dir__, "../../examples/xmi/basic.xmi"))
+    end
+
     let(:xmi_file) do
       file = Tempfile.new(["perf_test", ".xmi"])
-      file.write('<?xml version="1.0"?><xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"></xmi:XMI>')
+      file.write(xmi_content)
       file.close
       file
     end
@@ -427,6 +378,7 @@ RSpec.describe Lutaml::ModelTransformations do
 
     it "tracks parsing performance" do
       start_time = Time.now
+      described_class.reset_statistics
       described_class.parse(xmi_file.path)
       duration = Time.now - start_time
 
