@@ -52,6 +52,12 @@ module Lutaml
             # Load and transform diagram links (visual routing)
             diagram_links = load_diagram_links(ea_diagram.diagram_id)
             diagram.diagram_links.concat(diagram_links) if diagram_links.any?
+
+            # Load diagram type
+            diagram.diagram_type = ea_diagram.diagram_type
+
+            # Load diagram id
+            diagram.package_id = ea_diagram.package_id
           end
         end
 

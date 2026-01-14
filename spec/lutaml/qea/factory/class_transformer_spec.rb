@@ -27,7 +27,7 @@ RSpec.describe Lutaml::Qea::Factory::ClassTransformer do
 
     it "transforms EA class object to UML class" do
       ea_obj = Lutaml::Qea::Models::EaObject.new(
-        object_id: 1,
+        ea_object_id: 1,
         object_type: "Class",
         name: "Building",
         ea_guid: "{CLASS-GUID}",
@@ -37,12 +37,26 @@ RSpec.describe Lutaml::Qea::Factory::ClassTransformer do
       )
 
       allow(connection).to receive(:execute).and_return([])
+      allow(database).to receive(:xrefs).and_return(nil)
+      allow(database).to receive(:tagged_values).and_return([])
+      allow(connection).to receive(:execute)
+        .with("SELECT * FROM t_connector WHERE (Start_Object_ID = ? OR End_Object_ID = ?) AND Connector_Type IN ('Association', 'Aggregation', 'Composition')", [1, 1])
+        .and_return([])
+      allow(connection).to receive(:execute)
+        .with("SELECT * FROM t_object WHERE Object_ID = ?", 1)
+        .and_return([])
+      allow(connection).to receive(:execute)
+        .with("SELECT ea_guid, End_Object_ID FROM t_connector WHERE Start_Object_ID = ? AND Connector_Type = 'Generalization'", 1)
+        .and_return([])
+      allow(database).to receive(:attribute_tags).and_return([])
+      allow(database).to receive(:object_constraints).and_return([])
+      allow(database).to receive(:object_properties).and_return([])
 
       result = transformer.transform(ea_obj)
 
       expect(result).to be_a(Lutaml::Uml::Class)
       expect(result.name).to eq("Building")
-      expect(result.xmi_id).to eq("{CLASS-GUID}")
+      expect(result.xmi_id).to eq("EAID_CLASS_GUID")
       expect(result.is_abstract).to be false
       expect(result.visibility).to eq("public")
       expect(result.definition).to eq("Represents a building")
@@ -65,12 +79,26 @@ RSpec.describe Lutaml::Qea::Factory::ClassTransformer do
 
     it "adds interface stereotype for interfaces" do
       ea_obj = Lutaml::Qea::Models::EaObject.new(
-        object_id: 1,
+        ea_object_id: 1,
         object_type: "Interface",
         name: "IDrawable"
       )
 
       allow(connection).to receive(:execute).and_return([])
+      allow(database).to receive(:xrefs).and_return(nil)
+      allow(database).to receive(:tagged_values).and_return([])
+      allow(connection).to receive(:execute)
+        .with("SELECT * FROM t_connector WHERE (Start_Object_ID = ? OR End_Object_ID = ?) AND Connector_Type IN ('Association', 'Aggregation', 'Composition')", [1, 1])
+        .and_return([])
+      allow(connection).to receive(:execute)
+        .with("SELECT * FROM t_object WHERE Object_ID = ?", 1)
+        .and_return([])
+      allow(connection).to receive(:execute)
+        .with("SELECT ea_guid, End_Object_ID FROM t_connector WHERE Start_Object_ID = ? AND Connector_Type = 'Generalization'", 1)
+        .and_return([])
+      allow(database).to receive(:attribute_tags).and_return([])
+      allow(database).to receive(:object_constraints).and_return([])
+      allow(database).to receive(:object_properties).and_return([])
 
       result = transformer.transform(ea_obj)
 
@@ -79,7 +107,7 @@ RSpec.describe Lutaml::Qea::Factory::ClassTransformer do
 
     it "loads and transforms attributes" do
       ea_obj = Lutaml::Qea::Models::EaObject.new(
-        object_id: 1,
+        ea_object_id: 1,
         object_type: "Class",
         name: "Person"
       )
@@ -99,6 +127,18 @@ RSpec.describe Lutaml::Qea::Factory::ClassTransformer do
       allow(connection).to receive(:execute)
         .with(/SELECT.*t_operation/, 1)
         .and_return([])
+      allow(connection).to receive(:execute)
+        .with("SELECT * FROM t_connector WHERE (Start_Object_ID = ? OR End_Object_ID = ?) AND Connector_Type IN ('Association', 'Aggregation', 'Composition')", [1, 1])
+        .and_return([])
+      allow(connection).to receive(:execute)
+        .with("SELECT * FROM t_object WHERE Object_ID = ?", 1)
+        .and_return([])
+      allow(connection).to receive(:execute)
+        .with("SELECT ea_guid, End_Object_ID FROM t_connector WHERE Start_Object_ID = ? AND Connector_Type = 'Generalization'", 1)
+        .and_return([])
+      allow(database).to receive(:attribute_tags).and_return([])
+      allow(database).to receive(:object_constraints).and_return([])
+      allow(database).to receive(:object_properties).and_return([])
 
       result = transformer.transform(ea_obj)
 
@@ -108,7 +148,7 @@ RSpec.describe Lutaml::Qea::Factory::ClassTransformer do
 
     it "loads and transforms operations" do
       ea_obj = Lutaml::Qea::Models::EaObject.new(
-        object_id: 1,
+        ea_object_id: 1,
         object_type: "Class",
         name: "Calculator"
       )
@@ -131,6 +171,18 @@ RSpec.describe Lutaml::Qea::Factory::ClassTransformer do
       allow(connection).to receive(:execute)
         .with(/SELECT.*t_operationparams/, 1)
         .and_return([])
+      allow(connection).to receive(:execute)
+        .with("SELECT * FROM t_connector WHERE (Start_Object_ID = ? OR End_Object_ID = ?) AND Connector_Type IN ('Association', 'Aggregation', 'Composition')", [1, 1])
+        .and_return([])
+      allow(connection).to receive(:execute)
+        .with("SELECT * FROM t_object WHERE Object_ID = ?", 1)
+        .and_return([])
+      allow(connection).to receive(:execute)
+        .with("SELECT ea_guid, End_Object_ID FROM t_connector WHERE Start_Object_ID = ? AND Connector_Type = 'Generalization'", 1)
+        .and_return([])
+      allow(database).to receive(:attribute_tags).and_return([])
+      allow(database).to receive(:object_constraints).and_return([])
+      allow(database).to receive(:object_properties).and_return([])
 
       result = transformer.transform(ea_obj)
 
@@ -150,7 +202,7 @@ RSpec.describe Lutaml::Qea::Factory::ClassTransformer do
 
       result = transformer.transform(ea_obj)
 
-      expect(result.stereotype).to eq(["entity"])
+      expect(result.stereotype).to eq("entity")
     end
   end
 end

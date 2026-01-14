@@ -19,7 +19,7 @@ RSpec.describe Lutaml::Qea::Models::EaObjectConstraint do
       constraint = described_class.from_db_row(row)
 
       expect(constraint.constraint_id).to eq(1)
-      expect(constraint.object_id).to eq(4)
+      expect(constraint.ea_object_id).to eq(4)
       expect(constraint.constraint).to include("legalConstraints")
       expect(constraint.constraint_type).to eq("Invariant")
       expect(constraint.weight).to eq(0.0)
@@ -41,7 +41,7 @@ RSpec.describe Lutaml::Qea::Models::EaObjectConstraint do
       constraint = described_class.from_db_row(row)
 
       expect(constraint.constraint_id).to eq(2)
-      expect(constraint.object_id).to eq(5)
+      expect(constraint.ea_object_id).to eq(5)
       expect(constraint.constraint).to include("crs")
       expect(constraint.weight).to eq(10000.0)
       expect(constraint.notes).to be_nil

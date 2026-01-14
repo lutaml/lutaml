@@ -538,7 +538,7 @@ module Lutaml
           query = "SELECT * FROM t_connector WHERE (Start_Object_ID = ? OR End_Object_ID = ?) AND Connector_Type IN ('Association', 'Aggregation', 'Composition')"
           rows = database.connection.execute(query, [object_id, object_id])
           obj = find_object_by_id(object_id)
-          obj_pkg_name = find_package_name(obj.package_id)
+          obj_pkg_name = find_package_name(obj&.package_id)
 
           rows.each do |row|
             ea_connector = Models::EaConnector.from_db_row(row)

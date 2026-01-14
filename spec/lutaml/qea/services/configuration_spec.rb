@@ -306,7 +306,11 @@ RSpec.describe Lutaml::Qea::Services::Configuration do
       # Verify each enabled table has required attributes
       config.enabled_tables.each do |table|
         expect(table.table_name).not_to be_empty
-        expect(table.primary_key).not_to be_nil
+        if table.table_name == "t_stereotypes"
+          expect(table.primary_key).to be_nil
+        else
+          expect(table.primary_key).not_to be_nil
+        end
         expect(table.collection_name).not_to be_nil
         expect(table.columns).not_to be_empty
       end

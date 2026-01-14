@@ -23,11 +23,12 @@ RSpec.describe Lutaml::Qea::Factory::PackageTransformer do
         notes: "Domain model package"
       )
 
+      allow(database).to receive(:xrefs).and_return(nil)
       result = transformer.transform(ea_pkg)
 
       expect(result).to be_a(Lutaml::Uml::Package)
       expect(result.name).to eq("Domain")
-      expect(result.xmi_id).to eq("{PKG-GUID}")
+      expect(result.xmi_id).to eq("EAPK_PKG_GUID")
       expect(result.definition).to eq("Domain model package")
       expect(result.packages).to eq([])
       expect(result.classes).to eq([])
@@ -72,6 +73,7 @@ RSpec.describe Lutaml::Qea::Factory::PackageTransformer do
       allow(connection).to receive(:execute)
         .with(/SELECT.*t_diagram/, anything)
         .and_return([])
+      allow(database).to receive(:xrefs).and_return(nil)
 
       result = transformer.transform_with_hierarchy(ea_pkg)
 
@@ -107,6 +109,26 @@ RSpec.describe Lutaml::Qea::Factory::PackageTransformer do
       allow(connection).to receive(:execute)
         .with(/SELECT.*t_diagram/, 1)
         .and_return([])
+      allow(connection).to receive(:execute)
+        .with(/SELECT.*t_connector/, [10, 10])
+        .and_return([])
+      allow(connection).to receive(:execute)
+        .with("SELECT * FROM t_object WHERE Object_ID = ?", 10)
+        .and_return([class_row])
+      allow(connection).to receive(:execute)
+        .with("SELECT NAME FROM t_package WHERE Package_ID = ?", [1])
+        .and_return([])
+      allow(connection).to receive(:execute)
+        .with("SELECT * FROM t_connector WHERE Start_Object_ID = ? AND Connector_Type = 'Generalization' LIMIT 1", 10)
+        .and_return([])
+      allow(connection).to receive(:execute)
+        .with("SELECT ea_guid, End_Object_ID FROM t_connector WHERE Start_Object_ID = ? AND Connector_Type = 'Generalization'", 10)
+        .and_return([])
+
+      allow(database).to receive(:object_constraints).and_return([])
+      allow(database).to receive(:object_properties).and_return([])
+      allow(database).to receive(:packages).and_return([])
+      allow(database).to receive(:xrefs).and_return(nil)
 
       result = transformer.transform_with_hierarchy(ea_pkg)
 
@@ -138,6 +160,16 @@ RSpec.describe Lutaml::Qea::Factory::PackageTransformer do
       allow(connection).to receive(:execute)
         .with(/SELECT.*t_package.*Package_ID/, 1)
         .and_return([])
+      allow(connection).to receive(:execute)
+        .with("SELECT * FROM t_diagramobjects WHERE Diagram_ID = ?", 5)
+        .and_return([])
+      allow(connection).to receive(:execute)
+        .with("SELECT * FROM t_diagramlinks WHERE DiagramID = ?", 5)
+        .and_return([])
+      allow(database).to receive(:object_constraints).and_return([])
+      allow(database).to receive(:object_properties).and_return([])
+      allow(database).to receive(:packages).and_return([])
+      allow(database).to receive(:xrefs).and_return(nil)
 
       result = transformer.transform_with_hierarchy(ea_pkg)
 

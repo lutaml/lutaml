@@ -122,7 +122,7 @@ RSpec.describe Lutaml::Qea::Validation::Formatters::TextFormatter do
         formatter = described_class.new(result: result, color: false)
         output = formatter.format
 
-        expect(output).to include("⚠ WARNINGS")
+        expect(output).to include("⚠ class:UndocumentedClass")
         expect(output).to include("Errors:   0")
         expect(output).to include("Warnings: 1")
       end

@@ -22,7 +22,7 @@ module Lutaml
         end
 
         def validate_start_object(connector)
-          return if reference_exists?("t_object", "object_id",
+          return if reference_exists?("t_object", "ea_object_id",
                                       connector.start_object_id)
 
           result.add_error(
@@ -37,7 +37,7 @@ module Lutaml
         end
 
         def validate_end_object(connector)
-          return if reference_exists?("t_object", "object_id",
+          return if reference_exists?("t_object", "ea_object_id",
                                       connector.end_object_id)
 
           result.add_error(

@@ -58,12 +58,13 @@ RSpec.describe Lutaml::Qea::Factory::AssociationTransformer do
       allow(connection).to receive(:execute)
         .with(/SELECT.*t_object.*Object_ID = \?/, 20)
         .and_return([dest_obj_row])
+      allow(database).to receive(:tagged_values).and_return([])
 
       result = transformer.transform(ea_conn)
 
       expect(result).to be_a(Lutaml::Uml::Association)
       expect(result.name).to eq("owns")
-      expect(result.xmi_id).to eq("{ASSOC-GUID}")
+      expect(result.xmi_id).to eq("EAID_ASSOC_GUID")
       expect(result.owner_end).to eq("Person")
       expect(result.member_end).to eq("Building")
       expect(result.owner_end_attribute_name).to eq("owner")

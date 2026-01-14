@@ -42,6 +42,9 @@ module Lutaml
           associations = transform_associations
 
           # Collect class-level associations from packages
+          # class-level associations contain associations with both directions
+          # and it may include associations in connector level
+          # i.e. owner_end -> member_end and member_end -> owner_end
           class_associations = collect_class_associations(packages)
 
           # Build document with both connector-level and class-level associations

@@ -26,11 +26,12 @@ module Lutaml
             gen.general_id = normalize_guid_to_xmi_format(current_object.ea_guid, "EAID")
             gen.general_name = current_object.name
             gen.name = current_object.name
-            gen.type = "uml:Class"
+            gen.type = "uml:Generalization"
 
-            # Map definition from current object notes
-            gen.definition = normalize_line_endings(current_object.note) unless
-              current_object.note.nil? || current_object.note.empty?
+            # Map definition from ea_connector notes
+            if !ea_connector&.notes.nil? && !ea_connector&.notes&.empty?
+              gen.definition = normalize_line_endings(ea_connector.notes)
+            end
 
             # Map stereotype from current object
             gen.stereotype = current_object.stereotype unless

@@ -35,7 +35,7 @@ RSpec.describe "QEA Cross-Reference Support" do
     end
 
     it "has required attributes" do
-      expect(stereotype_xref.xrefid).to be_a(String)
+      expect(stereotype_xref.xref_id).to be_a(String)
       expect(stereotype_xref.name).to eq("Stereotypes")
       expect(stereotype_xref.type).to be_a(String)
       expect(stereotype_xref.client).to be_a(String)
@@ -43,15 +43,17 @@ RSpec.describe "QEA Cross-Reference Support" do
     end
 
     it "parses stereotype information" do
-      parsed = stereotype_xref.parse_stereotype
+      parsed = stereotype_xref.parsed_description
       expect(parsed).to be_a(Hash)
-      expect(parsed).to have_key(:name)
+      expect(parsed).to have_key(:format)
+      expect(parsed[:format]).to eq(:stereotype)
+      expect(parsed).to have_key(:data)
     end
 
     it "parses custom property information" do
-      parsed = custom_prop_xref.parse_custom_property
+      parsed = custom_prop_xref.parsed_description
       expect(parsed).to be_a(Hash)
-      expect(parsed).to have_key(:name) if parsed
+      expect(parsed).to have_key(:format)
     end
 
     it "identifies stereotype xrefs" do
@@ -103,10 +105,11 @@ RSpec.describe "QEA Cross-Reference Support" do
 
     it "parses stereotype description format" do
       xref = stereotype_xrefs.first
-      parsed = xref.parse_stereotype
+      parsed = xref.parsed_description
 
-      expect(parsed).to have_key(:name)
-      # May also have :fqname and :guid
+      expect(parsed).to have_key(:data)
+      expect(parsed[:data]).to have_key(:name)
+      expect(parsed[:data]).to have_key(:fqname)
     end
 
     it "handles element stereotypes" do
@@ -139,10 +142,11 @@ RSpec.describe "QEA Cross-Reference Support" do
 
     it "parses custom property description format" do
       xref = custom_prop_xrefs.first
-      parsed = xref.parse_custom_property
+      parsed = xref.parsed_description
 
-      # Should have at least some of these keys
-      expect(parsed.keys).to include(:name) if parsed
+      expect(parsed).to have_key(:data)
+      expect(parsed).to have_key(:format)
+      expect(parsed[:data]).to be_a(Hash)
     end
 
     it "handles element custom properties" do

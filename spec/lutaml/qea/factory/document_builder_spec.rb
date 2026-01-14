@@ -9,7 +9,7 @@ RSpec.describe Lutaml::Qea::Factory::DocumentBuilder do
   # Mock UML elements
   let(:mock_package) do
     double("Package", xmi_id: "PKG-001", name: "TestPackage",
-           classes: [], enums: [], data_types: [], packages: [])
+           classes: [], enums: [], data_types: [], packages: [], instances: [])
   end
 
   let(:mock_class) do
@@ -213,10 +213,14 @@ RSpec.describe Lutaml::Qea::Factory::DocumentBuilder do
 
     context "with duplicate xmi_ids" do
       it "raises validation error" do
-        pkg1 = double("Pkg1", xmi_id: "SAME-ID",
-                     classes: [], enums: [], data_types: [], packages: [])
-        pkg2 = double("Pkg2", xmi_id: "SAME-ID",
-                     classes: [], enums: [], data_types: [], packages: [])
+        pkg1 = double(
+          "Pkg1", xmi_id: "SAME-ID",
+          classes: [], enums: [], data_types: [], packages: [], instances: []
+        )
+        pkg2 = double(
+          "Pkg2", xmi_id: "SAME-ID",
+          classes: [], enums: [], data_types: [], packages: [], instances: []
+        )
 
         builder.add_packages([pkg1, pkg2])
 
@@ -232,10 +236,10 @@ RSpec.describe Lutaml::Qea::Factory::DocumentBuilder do
                             name: "InnerClass")
         inner_package = double("InnerPackage", xmi_id: "INNER-PKG-001",
                               classes: [inner_class], enums: [],
-                              data_types: [], packages: [])
+                              data_types: [], packages: [], instances: [])
         outer_package = double("OuterPackage", xmi_id: "OUTER-PKG-001",
                               classes: [], enums: [], data_types: [],
-                              packages: [inner_package])
+                              packages: [inner_package], instances: [])
 
         # Create association referencing class in nested package
         assoc = double("Assoc",
@@ -260,13 +264,13 @@ RSpec.describe Lutaml::Qea::Factory::DocumentBuilder do
         deep_class = double("DeepClass", xmi_id: "DEEP-CLASS-001")
         level3_pkg = double("Level3", xmi_id: "PKG-L3",
                            classes: [deep_class], enums: [],
-                           data_types: [], packages: [])
+                           data_types: [], packages: [], instances: [])
         level2_pkg = double("Level2", xmi_id: "PKG-L2",
                            classes: [], enums: [], data_types: [],
-                           packages: [level3_pkg])
+                           packages: [level3_pkg], instances: [])
         level1_pkg = double("Level1", xmi_id: "PKG-L1",
                            classes: [], enums: [], data_types: [],
-                           packages: [level2_pkg])
+                           packages: [level2_pkg], instances: [])
 
         assoc = double("Assoc",
                       xmi_id: "ASSOC-DEEP",

@@ -60,6 +60,12 @@ module Lutaml
           name == "Stereotypes" || description&.include?("@STEREO")
         end
 
+        # Check if this xref is for custom properties
+        # @return [Boolean]
+        def custom_property?
+          !description&.include?("@STEREO") && !description&.include?("@TAG")
+        end
+
         # Check if this xref is for element properties
         # @return [Boolean]
         def element_property?

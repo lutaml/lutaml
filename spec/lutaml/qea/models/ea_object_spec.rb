@@ -5,8 +5,8 @@ require_relative "../../../../lib/lutaml/qea/models/ea_object"
 
 RSpec.describe Lutaml::Qea::Models::EaObject do
   describe ".primary_key_column" do
-    it "returns :object_id" do
-      expect(described_class.primary_key_column).to eq(:object_id)
+    it "returns :ea_object_id" do
+      expect(described_class.primary_key_column).to eq(:ea_object_id)
     end
   end
 
@@ -17,16 +17,16 @@ RSpec.describe Lutaml::Qea::Models::EaObject do
   end
 
   describe "#primary_key" do
-    it "returns object_id value" do
-      obj = described_class.new(object_id: 123)
+    it "returns ea_object_id value" do
+      obj = described_class.new(ea_object_id: 123)
       expect(obj.primary_key).to eq(123)
     end
   end
 
   describe "attribute access" do
-    it "allows reading and writing object_id" do
-      obj = described_class.new(object_id: 456)
-      expect(obj.object_id).to eq(456)
+    it "allows reading and writing ea_object_id" do
+      obj = described_class.new(ea_object_id: 456)
+      expect(obj.ea_object_id).to eq(456)
     end
 
     it "allows reading and writing object_type" do
@@ -191,7 +191,7 @@ RSpec.describe Lutaml::Qea::Models::EaObject do
 
       obj = described_class.from_db_row(row)
 
-      expect(obj.object_id).to eq(123)
+      expect(obj.ea_object_id).to eq(123)
       expect(obj.object_type).to eq("Class")
       expect(obj.name).to eq("MyClass")
       expect(obj.package_id).to eq(456)

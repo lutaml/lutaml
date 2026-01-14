@@ -31,7 +31,7 @@ RSpec.describe Lutaml::Qea::Factory::AttributeTransformer do
       expect(result.name).to eq("firstName")
       expect(result.type).to eq("String")
       expect(result.visibility).to eq("public")
-      expect(result.xmi_id).to eq("{ATTR-GUID}")
+      expect(result.xmi_id).to eq("EAID_ATTR_GUID")
       expect(result.static).to be_nil
       expect(result.is_derived).to be false
       expect(result.definition).to eq("Person's first name")

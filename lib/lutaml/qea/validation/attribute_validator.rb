@@ -16,7 +16,8 @@ module Lutaml
 
         def validate_parent_object_references
           attributes.each do |attr|
-            unless reference_exists?("t_object", "object_id", attr.ea_object_id)
+            unless reference_exists?("t_object", "ea_object_id",
+                                     attr.ea_object_id)
               parent = database&.objects&.all&.find do |o|
                 o.ea_object_id == attr.ea_object_id
               end
@@ -31,7 +32,7 @@ module Lutaml
                 entity_type: :attribute,
                 entity_id: attr.id.to_s,
                 entity_name: attr.name,
-                field: "object_id",
+                field: "ea_object_id",
                 reference: attr.ea_object_id.to_s,
                 message: "Parent object #{attr.ea_object_id} does not exist",
                 location: attr_location,
