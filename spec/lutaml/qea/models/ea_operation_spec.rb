@@ -29,9 +29,9 @@ RSpec.describe Lutaml::Qea::Models::EaOperation do
       expect(op.operationid).to eq(456)
     end
 
-    it "allows reading and writing object_id" do
-      op = described_class.new(object_id: 789)
-      expect(op.object_id).to eq(789)
+    it "allows reading and writing ea_object_id" do
+      op = described_class.new(ea_object_id: 789)
+      expect(op.ea_object_id).to eq(789)
     end
 
     it "allows reading and writing name" do
@@ -226,7 +226,7 @@ RSpec.describe Lutaml::Qea::Models::EaOperation do
       op = described_class.from_db_row(row)
 
       expect(op.operationid).to eq(123)
-      expect(op.object_id).to eq(456)
+      expect(op.ea_object_id).to eq(456)
       expect(op.name).to eq("myMethod")
       expect(op.type).to eq("String")
       expect(op.scope).to eq("public")

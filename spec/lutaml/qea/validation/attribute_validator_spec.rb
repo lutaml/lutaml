@@ -262,7 +262,7 @@ RSpec.describe Lutaml::Qea::Validation::AttributeValidator do
         error = result.errors.first
         expect(error.category).to eq(:missing_reference)
         expect(error.entity_type).to eq(:attribute)
-        expect(error.field).to eq("object_id")
+        expect(error.field).to eq("ea_object_id")
         expect(error.message).to include("Parent object 999 does not exist")
       end
     end

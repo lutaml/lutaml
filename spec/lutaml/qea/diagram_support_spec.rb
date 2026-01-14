@@ -107,7 +107,8 @@ RSpec.describe "Comprehensive Diagram Support" do
     it "transforms EA diagram to UML diagram" do
       expect(uml_diagram).to be_a(Lutaml::Uml::Diagram)
       expect(uml_diagram.name).to eq(ea_diagram.name)
-      expect(uml_diagram.xmi_id).to eq(ea_diagram.ea_guid)
+      expect(uml_diagram.xmi_id)
+        .to eq("EAID_#{ea_diagram.ea_guid.tr('{}', '').tr('-', '_')}")
     end
 
     it "includes diagram type in transformation" do
@@ -119,7 +120,7 @@ RSpec.describe "Comprehensive Diagram Support" do
       expect(uml_diagram.diagram_objects).not_to be_empty
 
       obj = uml_diagram.diagram_objects.first
-      expect(obj).to be_a(Lutaml::Uml::Diagram::DiagramObject)
+      expect(obj).to be_a(Lutaml::Uml::DiagramObject)
     end
 
     it "loads diagram links for the diagram" do
@@ -127,12 +128,12 @@ RSpec.describe "Comprehensive Diagram Support" do
       expect(uml_diagram.diagram_links).not_to be_empty
 
       link = uml_diagram.diagram_links.first
-      expect(link).to be_a(Lutaml::Uml::Diagram::DiagramLink)
+      expect(link).to be_a(Lutaml::Uml::DiagramLink)
     end
 
     it "preserves diagram object properties" do
       obj = uml_diagram.diagram_objects.first
-      expect(obj.object_id).to be_a(String)
+      expect(obj.object_id).to be_a(Integer)
       expect(obj.left).to be_a(Integer)
       expect(obj.top).to be_a(Integer)
       expect(obj.right).to be_a(Integer)
@@ -173,7 +174,7 @@ RSpec.describe "Comprehensive Diagram Support" do
       diagram = database.find_diagram(diagram_object.diagram_id)
       expect(diagram).to be_a(Lutaml::Qea::Models::EaDiagram)
 
-      object = database.find_object(diagram_object.object_id)
+      object = database.find_object(diagram_object.ea_object_id)
       expect(object).to be_a(Lutaml::Qea::Models::EaObject)
     end
 

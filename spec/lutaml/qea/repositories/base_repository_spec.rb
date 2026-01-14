@@ -7,7 +7,7 @@ require_relative "../../../../lib/lutaml/qea/models/ea_object"
 RSpec.describe Lutaml::Qea::Repositories::BaseRepository do
   let(:object1) do
     Lutaml::Qea::Models::EaObject.new(
-      object_id: 1,
+      ea_object_id: 1,
       name: "ClassA",
       object_type: "Class",
       visibility: "Public"
@@ -16,7 +16,7 @@ RSpec.describe Lutaml::Qea::Repositories::BaseRepository do
 
   let(:object2) do
     Lutaml::Qea::Models::EaObject.new(
-      object_id: 2,
+      ea_object_id: 2,
       name: "ClassB",
       object_type: "Interface",
       visibility: "Public"
@@ -25,7 +25,7 @@ RSpec.describe Lutaml::Qea::Repositories::BaseRepository do
 
   let(:object3) do
     Lutaml::Qea::Models::EaObject.new(
-      object_id: 3,
+      ea_object_id: 3,
       name: "ClassC",
       object_type: "Class",
       visibility: "Private"
@@ -173,11 +173,11 @@ RSpec.describe Lutaml::Qea::Repositories::BaseRepository do
     end
 
     it "extracts multiple attributes" do
-      result = repository.pluck(:object_id, :name)
+      result = repository.pluck(:ea_object_id, :name)
       expect(result).to eq([
-        { object_id: 1, name: "ClassA" },
-        { object_id: 2, name: "ClassB" },
-        { object_id: 3, name: "ClassC" }
+        { ea_object_id: 1, name: "ClassA" },
+        { ea_object_id: 2, name: "ClassB" },
+        { ea_object_id: 3, name: "ClassC" }
       ])
     end
   end

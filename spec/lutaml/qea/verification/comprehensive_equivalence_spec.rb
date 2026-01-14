@@ -5,9 +5,12 @@ require_relative "../../../../lib/lutaml/uml_repository/repository"
 require_relative "../../../../lib/lutaml/qea/parser"
 
 RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
-  # Test file pairs - each QEA should contain all information from corresponding XMI
-  let(:test_files) do
-    [
+
+  # Skip tests if files don't exist
+  before(:all) do
+    # Test file pairs - each QEA should contain all information from
+    # corresponding XMI
+    test_files = [
       {
         name: "UmlModel Template",
         xmi: File.join(__dir__, "../../../examples/qea/UmlModel_template.xmi"),
@@ -29,10 +32,7 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
         qea: File.join(__dir__, "../../../examples/qea/20251010_current_plateau_v5.1.qea")
       }
     ]
-  end
 
-  # Skip tests if files don't exist
-  before(:all) do
     @available_files = test_files.select do |file_pair|
       File.exist?(file_pair[:xmi]) && File.exist?(file_pair[:qea])
     end

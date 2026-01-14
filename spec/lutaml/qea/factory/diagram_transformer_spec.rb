@@ -32,12 +32,18 @@ RSpec.describe Lutaml::Qea::Factory::DiagramTransformer do
       allow(connection).to receive(:execute)
         .with(/SELECT.*t_package.*Package_ID/, 5)
         .and_return([package_row])
+      allow(connection).to receive(:execute)
+        .with("SELECT * FROM t_diagramobjects WHERE Diagram_ID = ?", 1)
+        .and_return([])
+      allow(connection).to receive(:execute)
+        .with("SELECT * FROM t_diagramlinks WHERE DiagramID = ?", 1)
+        .and_return([])
 
       result = transformer.transform(ea_diagram)
 
       expect(result).to be_a(Lutaml::Uml::Diagram)
       expect(result.name).to eq("Class Diagram")
-      expect(result.xmi_id).to eq("{DIAG-GUID}")
+      expect(result.xmi_id).to eq("EAID_DIAG_GUID")
       expect(result.package_id).to eq("5")
       expect(result.package_name).to eq("Domain")
       expect(result.definition).to eq("Main class diagram")
@@ -49,6 +55,13 @@ RSpec.describe Lutaml::Qea::Factory::DiagramTransformer do
         name: "Diagram",
         package_id: nil
       )
+
+      allow(connection).to receive(:execute)
+        .with("SELECT * FROM t_diagramobjects WHERE Diagram_ID = ?", 1)
+        .and_return([])
+      allow(connection).to receive(:execute)
+        .with("SELECT * FROM t_diagramlinks WHERE DiagramID = ?", 1)
+        .and_return([])
 
       result = transformer.transform(ea_diagram)
 

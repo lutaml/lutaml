@@ -51,6 +51,15 @@ module Lutaml
           @records.find { |record| record.primary_key == id }
         end
 
+        # Find a record by key and id
+        #
+        # @param key [Symbol] key attribute name
+        # @param id [Object] key value
+        # @return [Object, nil] The record or nil if not found
+        def find_by_key(key, id)
+          @records.find { |record| record.send(key) == id }
+        end
+
         # Filter records by conditions
         #
         # @param conditions [Hash] Hash of attribute/value pairs

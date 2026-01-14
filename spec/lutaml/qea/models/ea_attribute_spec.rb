@@ -29,9 +29,9 @@ RSpec.describe Lutaml::Qea::Models::EaAttribute do
       expect(attr.id).to eq(456)
     end
 
-    it "allows reading and writing object_id" do
-      attr = described_class.new(object_id: 789)
-      expect(attr.object_id).to eq(789)
+    it "allows reading and writing ea_object_id" do
+      attr = described_class.new(ea_object_id: 789)
+      expect(attr.ea_object_id).to eq(789)
     end
 
     it "allows reading and writing name" do
@@ -185,7 +185,7 @@ RSpec.describe Lutaml::Qea::Models::EaAttribute do
       attr = described_class.from_db_row(row)
 
       expect(attr.id).to eq(123)
-      expect(attr.object_id).to eq(456)
+      expect(attr.ea_object_id).to eq(456)
       expect(attr.name).to eq("myAttribute")
       expect(attr.type).to eq("Integer")
       expect(attr.scope).to eq("private")

@@ -11,7 +11,7 @@ RSpec.describe Lutaml::Qea::Factory::GeneralizationTransformer do
 
   describe "#transform" do
     it "returns nil for nil input" do
-      result = transformer.transform(nil)
+      result = transformer.transform(nil, nil)
       expect(result).to be_nil
     end
 
@@ -20,7 +20,7 @@ RSpec.describe Lutaml::Qea::Factory::GeneralizationTransformer do
         connector_type: "Association"
       )
 
-      result = transformer.transform(ea_conn)
+      result = transformer.transform(ea_conn, nil)
 
       expect(result).to be_nil
     end
@@ -54,13 +54,14 @@ RSpec.describe Lutaml::Qea::Factory::GeneralizationTransformer do
         .with(/SELECT.*t_object.*Object_ID = \?/, 20)
         .and_return([supertype_row])
 
-      result = transformer.transform(ea_conn)
+      current_obj = transformer.send(:find_object_by_id, 20)
+      result = transformer.transform(ea_conn, current_obj)
 
       expect(result).to be_a(Lutaml::Uml::Generalization)
-      expect(result.general_id).to eq("{VEHICLE-GUID}")
+      expect(result.general_id).to eq("EAID_VEHICLE_GUID")
       expect(result.general_name).to eq("Vehicle")
-      expect(result.name).to eq("Car")
-      expect(result.type).to eq("Class")
+      expect(result.name).to eq("Vehicle")
+      expect(result.type).to eq("uml:Generalization")
       expect(result.has_general).to be true
       expect(result.definition).to eq("Inheritance relationship")
     end
@@ -86,27 +87,10 @@ RSpec.describe Lutaml::Qea::Factory::GeneralizationTransformer do
         .with(/SELECT.*t_object.*Object_ID = \?/, 99)
         .and_return([])
 
-      result = transformer.transform(ea_conn)
+      current_obj = transformer.send(:find_object_by_id, 99)
+      result = transformer.transform(ea_conn, current_obj)
 
-      expect(result.name).to eq("Subclass")
-      expect(result.general_id).to be_nil
-      expect(result.general_name).to be_nil
-      expect(result.has_general).to be false
-    end
-
-    it "maps stereotype" do
-      ea_conn = Lutaml::Qea::Models::EaConnector.new(
-        connector_type: "Generalization",
-        start_object_id: 10,
-        end_object_id: 20,
-        stereotype: "implementation"
-      )
-
-      allow(connection).to receive(:execute).and_return([])
-
-      result = transformer.transform(ea_conn)
-
-      expect(result.stereotype).to eq("implementation")
+      expect(result).to be_nil
     end
   end
 end

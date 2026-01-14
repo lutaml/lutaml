@@ -23,7 +23,7 @@ RSpec.describe "Object Properties Support" do
         property = described_class.from_db_row(row)
 
         expect(property.property_id).to eq(1)
-        expect(property.object_id).to eq(684)
+        expect(property.ea_object_id).to eq(684)
         expect(property.property).to eq("isCollection")
         expect(property.value).to eq("false")
         expect(property.notes).to include("Identifies the class")

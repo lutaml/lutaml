@@ -16,13 +16,14 @@ module Lutaml
 
         def validate_parent_object_references
           operations.each do |op|
-            unless reference_exists?("t_object", "object_id", op.ea_object_id)
+            unless reference_exists?("t_object", "ea_object_id",
+                                     op.ea_object_id)
               result.add_error(
                 category: :missing_reference,
                 entity_type: :operation,
                 entity_id: op.operationid.to_s,
                 entity_name: op.name,
-                field: "object_id",
+                field: "ea_object_id",
                 reference: op.ea_object_id.to_s,
                 message: "Parent object #{op.ea_object_id} does not exist",
               )
