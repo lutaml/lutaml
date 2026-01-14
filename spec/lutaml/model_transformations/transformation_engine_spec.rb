@@ -24,11 +24,7 @@ RSpec.describe Lutaml::ModelTransformations::TransformationEngine do
     def parse_internal(file_path)
       @parse_called_with = file_path
 
-      # Create a mock UML document
-      doc = double("Lutaml::Uml::Document")
-      allow(doc).to receive(:packages).and_return([])
-      allow(doc).to receive(:classes).and_return([])
-      allow(doc).to receive(:is_a?).with(Lutaml::Uml::Document).and_return(true)
+      doc = Lutaml::Uml::Document.new
       doc
     end
   end
@@ -111,14 +107,8 @@ RSpec.describe Lutaml::ModelTransformations::TransformationEngine do
     end
 
     it "calls the appropriate parser" do
-      parser_instance = nil
-      allow(MockParser).to receive(:new) do |*args|
-        parser_instance = MockParser.new(*args)
-        parser_instance
-      end
-
       engine.parse(test_file.path)
-      expect(parser_instance.parse_called_with).to eq(test_file.path)
+      expect(engine.current_parser.parse_called_with).to eq(test_file.path)
     end
 
     it "records successful transformation in history" do
@@ -132,15 +122,8 @@ RSpec.describe Lutaml::ModelTransformations::TransformationEngine do
 
     it "merges parsing options with configuration" do
       options = { validate_output: true }
-
-      parser_instance = nil
-      allow(MockParser).to receive(:new) do |configuration:, options:|
-        parser_instance = MockParser.new(configuration: configuration, options: options)
-        parser_instance
-      end
-
       engine.parse(test_file.path, options)
-      expect(parser_instance.options[:validate_output]).to be true
+      expect(engine.current_parser.options[:validate_output]).to be true
     end
 
     context "with unsupported file format" do
@@ -540,15 +523,8 @@ RSpec.describe Lutaml::ModelTransformations::TransformationEngine do
     end
 
     it "respects error handling configuration" do
-      # Verify that error handling settings are passed to parsers
-      parser_instance = nil
-      allow(MockParser).to receive(:new) do |configuration:, options:|
-        parser_instance = MockParser.new(configuration: configuration, options: options)
-        parser_instance
-      end
-
       engine.parse(test_file.path)
-      expect(parser_instance.configuration.error_handling).to eq(mock_config.error_handling)
+      expect(engine.current_parser.configuration.error_handling).to eq(mock_config.error_handling)
     end
   end
 end

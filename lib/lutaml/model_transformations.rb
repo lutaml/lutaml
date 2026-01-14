@@ -76,6 +76,30 @@ module Lutaml
         engine.supported_extensions
       end
 
+      # Check if a file is supported
+      #
+      # @param file_path [String] Path to the model file
+      def supports_file?(file_path)
+        engine.supports_file?(file_path)
+      end
+
+      # Get transformation statistics
+      #
+      # @return [Hash] Statistics data
+      def statistics
+        engine.statistics
+      end
+
+      # Reset transformation statistics
+      def reset_statistics
+        engine.clear_history
+      end
+
+      # Validate setup of the transformation engine
+      def validate_setup
+        engine.validate_setup
+      end
+
       # Register a custom parser for a file extension
       #
       # @param extension [String] File extension (e.g., ".custom")
@@ -89,7 +113,7 @@ module Lutaml
       # @param config_path [String] Path to configuration file
       # @return [Configuration] The loaded configuration
       def load_configuration(config_path)
-        Configuration.load(config_path)
+        engine.configuration = Configuration.load(config_path)
       end
 
       # Get current configuration
@@ -104,6 +128,12 @@ module Lutaml
       # @param config [Configuration] The configuration to use
       def configuration=(config)
         engine.configuration = config
+      end
+
+      # Configure using a block
+      # @yieldparam config [Configuration] The configuration to modify
+      def configure
+        yield(configuration) if block_given?
       end
     end
   end
