@@ -203,7 +203,7 @@ RSpec.describe Lutaml::UmlRepository::LazyRepository do
   describe "factory methods" do
     describe ".from_xmi_lazy" do
       it "creates a lazy repository from XMI file" do
-        lazy_repo = Lutaml::UmlRepository::UmlRepository.from_xmi_lazy(xmi_path)
+        lazy_repo = Lutaml::UmlRepository::Repository.from_xmi_lazy(xmi_path)
 
         expect(lazy_repo).to be_a(described_class)
         expect(lazy_repo.pending_indexes).not_to be_empty
@@ -212,7 +212,7 @@ RSpec.describe Lutaml::UmlRepository::LazyRepository do
 
     describe ".from_file_lazy" do
       it "creates a lazy repository from XMI file" do
-        lazy_repo = Lutaml::UmlRepository::UmlRepository.from_file_lazy(xmi_path)
+        lazy_repo = Lutaml::UmlRepository::Repository.from_file_lazy(xmi_path)
 
         expect(lazy_repo).to be_a(described_class)
         expect(lazy_repo.pending_indexes).not_to be_empty
@@ -221,8 +221,8 @@ RSpec.describe Lutaml::UmlRepository::LazyRepository do
   end
 
   describe "functional equivalence to UmlRepository" do
-    let(:normal_repo) { Lutaml::UmlRepository::UmlRepository.from_xmi(xmi_path) }
-    let(:lazy_repo) { Lutaml::UmlRepository::UmlRepository.from_xmi_lazy(xmi_path) }
+    let(:normal_repo) { Lutaml::UmlRepository::Repository.from_xmi(xmi_path) }
+    let(:lazy_repo) { Lutaml::UmlRepository::Repository.from_xmi_lazy(xmi_path) }
 
     it "provides same find_class results" do
       # Build all indexes first
@@ -276,12 +276,15 @@ RSpec.describe Lutaml::UmlRepository::LazyRepository do
 
   describe "performance characteristics" do
     it "has faster initial load than normal repository" do
+      # load document first
+      document
+
       start_time = Time.now
       described_class.new(document: document, lazy: true)
       lazy_time = Time.now - start_time
 
       start_time = Time.now
-      Lutaml::UmlRepository::UmlRepository.new(document: document)
+      Lutaml::UmlRepository::Repository.new(document: document)
       normal_time = Time.now - start_time
 
       # Lazy loading should be significantly faster

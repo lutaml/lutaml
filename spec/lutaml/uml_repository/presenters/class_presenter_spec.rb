@@ -29,31 +29,16 @@ RSpec.describe Lutaml::UmlRepository::Presenters::ClassPresenter do
       expect(text).to include("Abstract:    false")
     end
 
-    it "handles class without xmi_id" do
-      allow(mock_class).to receive(:respond_to?)
-        .with(:xmi_id).and_return(false)
+    it "handles class with nil xmi_id" do
+      allow(mock_class).to receive(:xmi_id).and_return(nil)
       text = presenter.to_text
       expect(text).not_to include("XMI ID:")
-    end
-
-    it "handles class without stereotype" do
-      allow(mock_class).to receive(:respond_to?)
-        .with(:stereotype).and_return(false)
-      text = presenter.to_text
-      expect(text).not_to include("Stereotype:")
     end
 
     it "handles class with nil stereotype" do
       allow(mock_class).to receive(:stereotype).and_return(nil)
       text = presenter.to_text
       expect(text).not_to include("Stereotype:")
-    end
-
-    it "handles class without is_abstract" do
-      allow(mock_class).to receive(:respond_to?)
-        .with(:is_abstract).and_return(false)
-      text = presenter.to_text
-      expect(text).not_to include("Abstract:")
     end
   end
 
@@ -98,24 +83,22 @@ RSpec.describe Lutaml::UmlRepository::Presenters::ClassPresenter do
     end
 
     it "excludes xmi_id if not available" do
-      allow(mock_class).to receive(:respond_to?)
-        .with(:xmi_id).and_return(false)
+      allow(mock_class).to receive(:xmi_id).and_return(nil)
       hash = presenter.to_hash
       expect(hash).not_to have_key(:xmi_id)
     end
 
     it "excludes stereotype if not available" do
-      allow(mock_class).to receive(:respond_to?)
-        .with(:stereotype).and_return(false)
+      allow(mock_class).to receive(:stereotype).and_return(nil)
       hash = presenter.to_hash
       expect(hash).not_to have_key(:stereotype)
     end
 
     it "excludes is_abstract if not available" do
-      allow(mock_class).to receive(:respond_to?)
-        .with(:is_abstract).and_return(false)
+      allow(mock_class).to receive(:is_abstract).and_return(nil)
       hash = presenter.to_hash
-      expect(hash).not_to have_key(:is_abstract)
+      expect(hash).to have_key(:is_abstract)
+      expect(hash[:is_abstract]).to eq(false)
     end
 
     it "includes all available fields" do

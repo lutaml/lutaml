@@ -16,7 +16,7 @@ RSpec.describe Lutaml::UmlRepository::Exporters::MarkdownExporter do
       xmi_id: "class1",
       name: "Building",
       class: Lutaml::Uml::Class,
-      stereotypes: ["featureType"],
+      stereotype: ["featureType"],
       attributes: [],
       operations: nil,
       definition: "A building structure",

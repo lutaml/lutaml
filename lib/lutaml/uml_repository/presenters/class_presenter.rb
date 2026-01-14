@@ -21,11 +21,10 @@ module Lutaml
           lines << ""
           lines << "Name:        #{element.name}"
           lines << "XMI ID:      #{element.xmi_id}" if
-            element.respond_to?(:xmi_id)
+            element.xmi_id
           lines << "Stereotype:  #{element.stereotype}" if
-            element.respond_to?(:stereotype) && element.stereotype
-          lines << "Abstract:    #{element.is_abstract}" if
-            element.respond_to?(:is_abstract)
+            element.stereotype
+          lines << "Abstract:    #{element.is_abstract}"
           lines.join("\n")
         end
 
@@ -47,13 +46,13 @@ module Lutaml
           data = {
             type: "Class",
             name: element.name,
+            is_abstract: !!element.is_abstract
           }
 
-          data[:xmi_id] = element.xmi_id if element.respond_to?(:xmi_id)
-          data[:stereotype] = element.stereotype if
-            element.respond_to?(:stereotype)
-          data[:is_abstract] = element.is_abstract if
-            element.respond_to?(:is_abstract)
+          data[:xmi_id] = element.xmi_id if element.xmi_id
+          if element.stereotype
+            data[:stereotype] = element.stereotype
+          end
 
           data
         end
