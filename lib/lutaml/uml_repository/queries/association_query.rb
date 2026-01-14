@@ -75,7 +75,58 @@ module Lutaml
           results.uniq
         end
 
+        # Find associations by their type.
+        #
+        # @param association_type [String] The type of association
+        #   (e.g., "aggregation", "composition", "association")
+        # @return [Array<Lutaml::Uml::Association>] Array of association objects
+        def find_by_type(association_type)
+          resolve_all_associations.select do |assoc|
+            assoc.member_end_type == association_type
+          end
+        end
+
+        def find_aggregations
+          find_by_type("aggregation")
+        end
+
+        def find_compositions
+          find_by_type("composition")
+        end
+
+        # Find associations between two classes
+        #
+        # @param owner_end_xmi_id [String] XMI ID of the owner end class
+        # @param member_end_xmi_id [String] XMI ID of the member end class
+        # @return [Array<Lutaml::Uml::Association>] Array of association objects
+        def find_between_classes(owner_end_xmi_id, member_end_xmi_id)
+          resolve_all_associations.select do |assoc|
+            (assoc.owner_end_xmi_id == owner_end_xmi_id &&
+             assoc.member_end_xmi_id == member_end_xmi_id)
+          end
+        end
+
+        # Retrieve all associations in the document
+        #
+        # @return [Array<Lutaml::Uml::Association>] Array of all associations
+        def all
+          resolve_all_associations
+        end
+
         private
+
+        # Resolve all associations in the document
+        #
+        # @return [Array<Lutaml::Uml::Association>] Array of all associations
+        def resolve_all_associations
+          indexes[:qualified_names].values.map do |entity|
+            if entity.is_a?(Lutaml::Uml::Association)
+              entity
+            elsif entity.is_a?(Lutaml::Uml::Class) && entity.associations
+              entity.associations
+            end
+          end.compact.flatten
+        end
 
         # Resolve a class or qualified name to a class object
         #

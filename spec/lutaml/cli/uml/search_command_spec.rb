@@ -29,15 +29,14 @@ RSpec.describe Lutaml::Cli::Uml::SearchCommand do
       end
 
       it "shows results or no results message" do
-        output = nil
         expect {
-          output = capture(:stdout) { command.run(test_lur, "NonExistent12345") }
+          capture(:stdout) { command.run(test_lur, "NonExistent12345") }
         }.not_to raise_error
       end
     end
 
-    context "with regex option" do
-      let(:options) { { format: "table", regex: true, type: ["class"], in: ["name"] } }
+    context "with regex" do
+      let(:options) { { format: "table", type: ["class"], in: ["name"] } }
 
       it "treats query as regex" do
         expect { command.run(test_lur, "^Building") }.not_to output(/ERROR/).to_stdout

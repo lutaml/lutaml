@@ -40,6 +40,8 @@ module Lutaml
 
           parent_name = extract_parent_name(klass.generalization)
           return nil unless parent_name
+          # avoid self-references
+          return nil if parent_name == klass.name
 
           # Try to find in qualified_names index
           qname_string = resolve_qname(class_or_qname)
@@ -55,6 +57,7 @@ module Lutaml
 
           indexes[:qualified_names][parent_qname]
         end
+        alias_method :find_parent, :supertype
 
         # Get direct child classes (subtypes).
         #
@@ -78,6 +81,7 @@ module Lutaml
             direct_subtypes(qname_string)
           end
         end
+        alias_method :find_children, :subtypes
 
         # Get all ancestor classes up to the root.
         #
@@ -103,6 +107,17 @@ module Lutaml
           end
 
           result
+        end
+
+        # Get all ancestor classes up to the root by class XMI ID.
+        #
+        # @param class_xmi_id [String] The XMI ID of the class
+        # @return [Array] Array of ancestor class objects
+        def find_ancestors(class_xmi_id)
+          qualified_name, _klass = find_class_by_id(class_xmi_id)
+          return [] unless qualified_name
+
+          ancestors(qualified_name)
         end
 
         # Get all descendant classes.
@@ -140,18 +155,17 @@ module Lutaml
         #   or qualified name string
         # @return [String, nil] The qualified name string, or nil if not found
         def resolve_qname(class_or_qname)
-          if class_or_qname.is_a?(String)
-            return class_or_qname if indexes[:qualified_names].key?(class_or_qname)
-
-            return nil
+          if class_or_qname.is_a?(String) &&
+            indexes[:qualified_names].key?(class_or_qname)
+            return class_or_qname 
           end
 
           # Search for the class in the index
-          indexes[:qualified_names].each do |qname, klass|
-            return qname if klass == class_or_qname
+          qname, _klass = indexes[:qualified_names].find do |name, entity|
+            entity == class_or_qname
           end
 
-          nil
+          qname.nil? ? nil : qname
         end
 
         private

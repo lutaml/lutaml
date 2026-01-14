@@ -17,7 +17,7 @@ module Lutaml
       #   # => { classes: [...], attributes: [...], associations: [...], total: 15 }
       #
       # @example Pattern matching
-      #   results = query.by_pattern(/^Urban/, type: :class)
+      #   results = query.search("^Urban", type: :class)
       class SearchQuery < BaseQuery
         # Perform a fuzzy text search across the model.
         #
@@ -36,10 +36,9 @@ module Lutaml
         #   results = query.search("building")
         #   results = query.search("urban", fields: [:name, :documentation])
         def search(query_string, types: %i[class attribute association],
-fields: [:name])
+                                 fields: [:name], case_sensitive: false)
           return empty_result if query_string.nil? || query_string.empty?
 
-          query_lower = query_string.downcase
           results = {
             classes: [],
             attributes: [],
@@ -49,19 +48,20 @@ fields: [:name])
 
           # Search classes
           if types.include?(:class)
-            results[:classes] = search_classes(query_lower, fields: fields)
+            results[:classes] = search_classes(
+              query_string, fields: fields, case_sensitive: case_sensitive)
           end
 
           # Search attributes
           if types.include?(:attribute)
-            results[:attributes] =
-              search_attributes(query_lower, fields: fields)
+            results[:attributes] = search_attributes(
+              query_string, fields: fields, case_sensitive: case_sensitive)
           end
 
           # Search associations
           if types.include?(:association)
-            results[:associations] =
-              search_associations(query_lower, fields: fields)
+            results[:associations] = search_associations(
+              query_string, fields: fields, case_sensitive: case_sensitive)
           end
 
           results[:total] = results[:classes].size +
@@ -71,425 +71,223 @@ fields: [:name])
           results
         end
 
-        # Search using a regex pattern returning SearchResult objects.
+        # Perform a full-text search across all text fields.
+        # Searches for the query string in all relevant text fields of classes
+        # and packages.
         #
-        # Similar to search but uses regex pattern matching. Returns results
-        # in the same SearchResult format for consistency with text search.
-        #
-        # @param pattern [String, Regexp] The regex pattern to match
-        # @param types [Array<Symbol>] Types to search in - :class, :attribute,
-        #   :association (default: [:class, :attribute, :association])
-        # @param fields [Array<Symbol>] Fields to search in (:name, :documentation)
-        #   (default: [:name])
-        # @return [Hash] Search results with keys :classes, :attributes,
-        #   :associations, :total
-        # @example
-        #   results = query.search_by_pattern("^Building.*")
-        #   results = query.search_by_pattern("urban", fields: [:documentation])
-        def search_by_pattern(pattern,
-types: %i[class attribute association], fields: [:name])
-          regex = pattern.is_a?(Regexp) ? pattern : Regexp.new(pattern)
-          results = {
-            classes: [],
-            attributes: [],
-            associations: [],
-            total: 0,
-          }
+        # @param query_string [String] The text to search for
+        # @param fields [Array<Symbol>] Fields to search in - :name, :
+        def full_text_search(
+          query_string,
+          fields: [:name], case_sensitive: false
+        )
+          results = empty_full_text_search_result
+          if query_string.nil? || query_string.empty?
+            return results
+          end
 
           # Search classes
-          if types.include?(:class)
-            results[:classes] = pattern_search_classes(regex, fields: fields)
-          end
+          results[:classes] = search_classes(
+            query_string, fields: fields, case_sensitive: case_sensitive)
 
-          # Search attributes
-          if types.include?(:attribute)
-            results[:attributes] =
-              pattern_search_attributes(regex, fields: fields)
-          end
+          # Search packages
+          results[:packages] = search_packages(
+            query_string, case_sensitive: case_sensitive)
 
-          # Search associations
-          if types.include?(:association)
-            results[:associations] =
-              pattern_search_associations(regex, fields: fields)
-          end
-
-          results[:total] = results[:classes].size +
-            results[:attributes].size +
-            results[:associations].size
+          results[:total] = results[:classes].size + results[:packages].size
 
           results
         end
-
-        # Search using a regex pattern.
-        #
-        # @param pattern [Regexp, String] The regex pattern to match. If a
-        #   string is provided, it will be converted to a regex.
-        # @param type [Symbol] Type to search - :class, :attribute, or :association
-        # @return [Hash] Search results with keys :classes, :attributes,
-        #   :associations, :total
-        # @example
-        #   results = query.by_pattern(/^Urban/, type: :class)
-        #   # => {
-        #   #   classes: [Class{name: "UrbanArea"}, Class{name: "UrbanPlan"}, ...],
-        #   #   attributes: [],
-        #   #   associations: [],
-        #   #   total: 2
-        #   # }
-        def by_pattern(pattern, type: :class)
-          regex = pattern.is_a?(Regexp) ? pattern : Regexp.new(pattern)
-          results = {
-            classes: [],
-            attributes: [],
-            associations: [],
-            total: 0,
-          }
-
-          case type
-          when :class
-            results[:classes] = pattern_match_classes(regex)
-          when :attribute
-            results[:attributes] = pattern_match_attributes(regex)
-          when :association
-            results[:associations] = pattern_match_associations(regex)
-          end
-
-          results[:total] = results[:classes].size +
-            results[:attributes].size +
-            results[:associations].size
-
-          results
-        end
-
-        private
 
         # Search for classes matching the query
         #
-        # @param query_lower [String] Lowercase query string
+        # @param query [String] Query string
         # @param fields [Array<Symbol>] Fields to search in
         # @return [Array<SearchResult>] Matching search result objects
-        def search_classes(query_lower, fields: [:name])
-          indexes[:qualified_names].map do |qname, klass|
+        def search_classes(query, fields: [:name, :documentation], case_sensitive: false)
+          pattern = regex_pattern_from_query(
+            query, case_sensitive: case_sensitive)
+
+          indexes[:qualified_names].map do |qname, entity|
             match_field = nil
+            qualified_name = nil
 
-            # Check name field
-            if fields.include?(:name) && klass.name&.downcase&.include?(query_lower)
-              match_field = :name
+            next unless entity.is_a?(Lutaml::Uml::Class)
+
+            # Check fields for match
+            fields.each do |field|
+              if entity.respond_to?(field) &&
+                entity.send(field)&.match?(pattern)
+              
+                match_field = field
+                qualified_name = qname
+              end
             end
 
-            # Check documentation field
-            if !match_field && fields.include?(:documentation) && klass.respond_to?(:documentation) &&
-                klass.documentation&.downcase&.include?(query_lower)
-              match_field = :documentation
+            if match_field
+              SearchResult.new(
+                element: entity,
+                element_type: :class,
+                qualified_name: qualified_name,
+                package_path: extract_package_path(qualified_name),
+                match_field: match_field,
+              )
             end
+          end.compact.uniq
+        end
 
-            next unless match_field
+        def search_by_stereotype(query, case_sensitive: false)
+          pattern = regex_pattern_from_query(
+            query, case_sensitive: case_sensitive)
 
+          matched_entities = indexes[:stereotypes].map do |stereotype, entities|
+            entities.map do |entity|
+              # Check stereotype for match
+              if entity.respond_to?(:stereotype) &&
+                entity.stereotype&.match?(pattern)
+
+                entity
+              end
+            end.compact.uniq
+          end.compact.uniq.flatten
+
+          matched_entities.map do |entity|
             SearchResult.new(
-              element: klass,
-              element_type: :class,
-              qualified_name: qname,
-              package_path: extract_package_path(qname),
-              match_field: match_field,
+              element: entity,
+              element_type: entity.class.name.split("::").last.downcase,
+              qualified_name: "",
+              package_path: "",
+              match_field: :stereotype,
             )
-          end.compact.uniq { |r| r.element.object_id }
+          end
+        end
+
+        # Search for packages matching the query
+        #
+        # @param query [String] Query string
+        # @param case_sensitive [Boolean] Whether the search is case-sensitive
+        # @return [Array<Lutaml::Uml::Package>] Matching package objects
+        def search_packages(query, case_sensitive: false)
+          pattern = regex_pattern_from_query(
+            query, case_sensitive: case_sensitive)
+
+          indexes[:package_paths].map do |path_string, package|
+            if path_string.to_s.match?(pattern)
+              SearchResult.new(
+                element: package,
+                element_type: :package,
+                qualified_name: path_string,
+                package_path: path_string,
+                match_field: :package_path,
+              )
+            end
+          end.compact
+        end
+
+        def regex_pattern_from_query(query, case_sensitive: false)
+          # handle wildcard '*' and glob patterns
+          query = query.include?(".*") ? query : query.gsub("*", ".*")
+
+          if case_sensitive
+            Regexp.new(query)
+          else
+            Regexp.new(query, Regexp::IGNORECASE)
+          end
         end
 
         # Search for attributes matching the query
         #
-        # @param query_lower [String] Lowercase query string
+        # @param query [String] Query string
         # @param fields [Array<Symbol>] Fields to search in
-        # @return [Array<SearchResult>] Matching search result objects
-        def search_attributes(query_lower, fields: [:name])
-          results = []
+        # @return [Array<Lutaml::Uml::Class>] Matching search result objects
+        def search_attributes(query, fields: [:name], case_sensitive: false)
+          pattern = regex_pattern_from_query(
+            query, case_sensitive: case_sensitive)
 
-          indexes[:qualified_names].each do |class_qname, klass|
-            next unless klass.respond_to?(:attributes) && klass.attributes
+          indexes[:qualified_names].map do |class_qname, entity|
+            next unless entity.respond_to?(:attributes) && entity.attributes
 
-            klass.attributes.each do |attr|
-              match_field = nil
+            match_field = nil
+            match_attr = nil
+            qualified_name = nil
 
-              # Check name field
-              if fields.include?(:name) && attr.name&.downcase&.include?(query_lower)
-                match_field = :name
+            entity.attributes.each do |attr|
+              # Check attribute for match
+              fields.each do |field|
+                if attr.respond_to?(field) &&
+                  attr.send(field)&.match?(pattern)
+                
+                  match_attr = attr
+                  match_field = field
+                  qualified_name = class_qname
+                end
               end
+            end
 
-              # Check documentation field
-              if !match_field && fields.include?(:documentation) && attr.respond_to?(:documentation) &&
-                  attr.documentation&.downcase&.include?(query_lower)
-                match_field = :documentation
-              end
-
-              next unless match_field
-
-              results << SearchResult.new(
-                element: attr,
+            if match_field
+              SearchResult.new(
+                element: match_attr,
                 element_type: :attribute,
-                qualified_name: "#{class_qname}::#{attr.name}",
-                package_path: extract_package_path(class_qname),
+                qualified_name: "#{qualified_name}::#{match_attr.name}",
+                package_path: extract_package_path(qualified_name),
                 match_field: match_field,
                 match_context: {
-                  "class_name" => klass.name,
-                  "class_qname" => class_qname,
+                  "class_name" => entity&.name,
+                  "class_qname" => qualified_name,
                 },
               )
             end
+          end.compact.uniq
+        end
+
+        # Get all associations in the model
+        # 
+        # @return [Array<Lutaml::Uml::Association>] All association objects
+        def get_all_associations
+          all_associations = []
+
+          # Get all associations defined at document level and
+          if document.respond_to?(:associations) && document.associations
+            all_associations << document.associations
           end
 
-          results
+          # Get all associations defined within classes
+          indexes[:qualified_names].values.each do |entity|
+            next unless entity.respond_to?(:associations) && entity.associations
+
+            all_associations << entity.associations
+          end
+
+          all_associations.flatten.uniq
         end
 
         # Search for associations matching the query
         #
-        # @param query_lower [String] Lowercase query string
+        # @param query [String] Query string
         # @param fields [Array<Symbol>] Fields to search in
         # @return [Array<SearchResult>] Matching search result objects
-        def search_associations(query_lower, fields: [:name])
-          results = []
+        def search_associations(query,
+          fields: [
+            :name, :owner_end, :member_end, :owner_end_attribute_name,
+            :member_end_attribute_name, :documentation
+          ],
+          case_sensitive: false
+        )
+          all_associations = get_all_associations
+          pattern = regex_pattern_from_query(
+            query, case_sensitive: case_sensitive)
 
-          # Search in document-level associations
-          if document.respond_to?(:associations) && document.associations
-            document.associations.each do |assoc|
-              match_field = match_association_fields?(assoc, query_lower,
-                                                      fields)
-              next unless match_field
-
-              results << SearchResult.new(
-                element: assoc,
-                element_type: :association,
-                qualified_name: assoc.name || "(unnamed)",
-                package_path: "",
-                match_field: match_field,
-                match_context: {
-                  "source" => assoc.owner_end,
-                  "target" => assoc.member_end,
-                },
-              )
-            end
-          end
-
-          # Search in class-level associations
-          indexes[:qualified_names].each_value do |klass|
-            next unless klass.respond_to?(:associations) && klass.associations
-
-            klass.associations.each do |assoc|
-              match_field = match_association_fields?(assoc, query_lower,
-                                                      fields)
-              next unless match_field
-
-              results << SearchResult.new(
-                element: assoc,
-                element_type: :association,
-                qualified_name: assoc.name || "(unnamed)",
-                package_path: "",
-                match_field: match_field,
-                match_context: {
-                  "source" => assoc.owner_end,
-                  "target" => assoc.member_end,
-                },
-              )
-            end
-          end
-
-          results.uniq { |r| r.element.object_id }
-        end
-
-        # Pattern match for classes
-        #
-        # @param regex [Regexp] Regular expression pattern
-        # @return [Array] Matching class objects
-        def pattern_match_classes(regex)
-          indexes[:qualified_names].values.select do |klass|
-            klass.name&.match?(regex)
-          end.uniq
-        end
-
-        # Pattern match for attributes
-        #
-        # @param regex [Regexp] Regular expression pattern
-        # @return [Array] Matching attribute objects
-        def pattern_match_attributes(regex)
-          results = []
-
-          indexes[:qualified_names].each_value do |klass|
-            next unless klass.respond_to?(:attributes) && klass.attributes
-
-            klass.attributes.each do |attr|
-              if attr.name&.match?(regex)
-                results << attr
-              end
-            end
-          end
-
-          results
-        end
-
-        # Pattern match for associations
-        #
-        # @param regex [Regexp] Regular expression pattern
-        # @return [Array] Matching association objects
-        def pattern_match_associations(regex)
-          results = []
-
-          # Search in document-level associations
-          if document.respond_to?(:associations) && document.associations
-            document.associations.each do |assoc|
-              if match_association_pattern?(assoc, regex)
-                results << assoc
-              end
-            end
-          end
-
-          # Search in class-level associations
-          indexes[:qualified_names].each_value do |klass|
-            next unless klass.respond_to?(:associations) && klass.associations
-
-            klass.associations.each do |assoc|
-              if match_association_pattern?(assoc, regex)
-                results << assoc
-              end
-            end
-          end
-
-          results.uniq
-        end
-
-        # Check if association matches text query in specified fields
-        #
-        # @param assoc [Lutaml::Uml::Association] Association object
-        # @param query_lower [String] Lowercase query string
-        # @param fields [Array<Symbol>] Fields to search in
-        # @return [Symbol, nil] Matched field or nil
-        def match_association_fields?(assoc, query_lower, fields)
-          # Check name fields (includes owner_end and member_end)
-          if fields.include?(:name) && (assoc.owner_end&.downcase&.include?(query_lower) ||
-                assoc.member_end&.downcase&.include?(query_lower) ||
-                assoc.owner_end_attribute_name&.downcase&.include?(query_lower) ||
-                assoc.member_end_attribute_name&.downcase&.include?(query_lower))
-            return :name
-          end
-
-          # Check documentation field
-          if fields.include?(:documentation) && assoc.respond_to?(:documentation) &&
-              assoc.documentation&.downcase&.include?(query_lower)
-            return :documentation
-          end
-
-          false
-        end
-
-        # Check if association matches pattern in specified fields
-        #
-        # @param assoc [Lutaml::Uml::Association] Association object
-        # @param regex [Regexp] Regular expression pattern
-        # @param fields [Array<Symbol>] Fields to search in
-        # @return [Symbol, nil] Matched field or nil
-        def match_association_pattern_fields?(assoc, regex, fields)
-          # Check name fields
-          if fields.include?(:name) && (assoc.owner_end&.match?(regex) ||
-                assoc.member_end&.match?(regex) ||
-                assoc.owner_end_attribute_name&.match?(regex) ||
-                assoc.member_end_attribute_name&.match?(regex))
-            return :name
-          end
-
-          # Check documentation field
-          if fields.include?(:documentation) && assoc.respond_to?(:documentation) && assoc.documentation&.match?(regex)
-            return :documentation
-          end
-
-          false
-        end
-
-        # Pattern search for classes returning SearchResult objects
-        #
-        # @param regex [Regexp] Regular expression pattern
-        # @param fields [Array<Symbol>] Fields to search in
-        # @return [Array<SearchResult>] Matching search result objects
-        def pattern_search_classes(regex, fields: [:name])
-          indexes[:qualified_names].map do |qname, klass|
+          all_associations.map do |assoc|
             match_field = nil
 
-            # Check name field
-            if fields.include?(:name) && klass.name&.match?(regex)
-              match_field = :name
-            end
-
-            # Check documentation field
-            if !match_field && fields.include?(:documentation) && klass.respond_to?(:documentation) && klass.documentation&.match?(regex)
-              match_field = :documentation
-            end
-
-            next unless match_field
-
-            SearchResult.new(
-              element: klass,
-              element_type: :class,
-              qualified_name: qname,
-              package_path: extract_package_path(qname),
-              match_field: match_field,
-            )
-          end.compact.uniq { |r| r.element.object_id }
-        end
-
-        # Pattern search for attributes returning SearchResult objects
-        #
-        # @param regex [Regexp] Regular expression pattern
-        # @param fields [Array<Symbol>] Fields to search in
-        # @return [Array<SearchResult>] Matching search result objects
-        def pattern_search_attributes(regex, fields: [:name])
-          results = []
-
-          indexes[:qualified_names].each do |class_qname, klass|
-            next unless klass.respond_to?(:attributes) && klass.attributes
-
-            klass.attributes.each do |attr|
-              match_field = nil
-
-              # Check name field
-              if fields.include?(:name) && attr.name&.match?(regex)
-                match_field = :name
+            fields.each do |field|
+              if assoc.respond_to?(field) && assoc.send(field)&.match?(pattern)
+                match_field = field
               end
-
-              # Check documentation field
-              if !match_field && fields.include?(:documentation) && attr.respond_to?(:documentation) && attr.documentation&.match?(regex)
-                match_field = :documentation
-              end
-
-              next unless match_field
-
-              results << SearchResult.new(
-                element: attr,
-                element_type: :attribute,
-                qualified_name: "#{class_qname}::#{attr.name}",
-                package_path: extract_package_path(class_qname),
-                match_field: match_field,
-                match_context: {
-                  "class_name" => klass.name,
-                  "class_qname" => class_qname,
-                },
-              )
             end
-          end
 
-          results
-        end
-
-        # Pattern search for associations returning SearchResult objects
-        #
-        # @param regex [Regexp] Regular expression pattern
-        # @param fields [Array<Symbol>] Fields to search in
-        # @return [Array<SearchResult>] Matching search result objects
-        def pattern_search_associations(regex, fields: [:name])
-          results = []
-
-          # Search in document-level associations
-          if document.respond_to?(:associations) && document.associations
-            document.associations.each do |assoc|
-              match_field = match_association_pattern_fields?(assoc, regex,
-                                                              fields)
-              next unless match_field
-
-              results << SearchResult.new(
+            if match_field
+              SearchResult.new(
                 element: assoc,
                 element_type: :association,
                 qualified_name: assoc.name || "(unnamed)",
@@ -501,33 +299,10 @@ types: %i[class attribute association], fields: [:name])
                 },
               )
             end
-          end
-
-          # Search in class-level associations
-          indexes[:qualified_names].each_value do |klass|
-            next unless klass.respond_to?(:associations) && klass.associations
-
-            klass.associations.each do |assoc|
-              match_field = match_association_pattern_fields?(assoc, regex,
-                                                              fields)
-              next unless match_field
-
-              results << SearchResult.new(
-                element: assoc,
-                element_type: :association,
-                qualified_name: assoc.name || "(unnamed)",
-                package_path: "",
-                match_field: match_field,
-                match_context: {
-                  "source" => assoc.owner_end,
-                  "target" => assoc.member_end,
-                },
-              )
-            end
-          end
-
-          results.uniq { |r| r.element.object_id }
+          end.compact.uniq
         end
+
+        private
 
         # Extract package path from qualified name
         #
@@ -548,6 +323,17 @@ types: %i[class attribute association], fields: [:name])
             classes: [],
             attributes: [],
             associations: [],
+            total: 0,
+          }
+        end
+
+        # Return empty full text search result
+        #
+        # @return [Hash] Empty result hash
+        def empty_full_text_search_result
+          {
+            classes: [],
+            packages: [],
             total: 0,
           }
         end

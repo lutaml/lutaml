@@ -23,7 +23,6 @@ module Lutaml
           Examples:
             lutaml uml search model.lur "building"
             lutaml uml search model.lur "building" --type class
-            lutaml uml search model.lur "^Building" --regex
             lutaml uml search model.lur "urban" --in name documentation
           DESC
 
@@ -32,8 +31,6 @@ module Lutaml
                                    desc: "Types to search"
           thor_class.option :package, type: :string,
                                       desc: "Filter by package path"
-          thor_class.option :regex, type: :boolean, default: false,
-                                    desc: "Treat query as regex"
           thor_class.option :in, type: :array, default: ["name"],
                                  desc: "Search in fields (name, documentation)"
           thor_class.option :format, type: :string, default: "table",
@@ -49,12 +46,7 @@ module Lutaml
           types = options[:type].map(&:to_sym)
           search_fields = options[:in].map(&:to_sym)
 
-          results = if options[:regex]
-                      repo.search_by_pattern(query, types: types,
-                                                    fields: search_fields)
-                    else
-                      repo.search(query, types: types, fields: search_fields)
-                    end
+          results = repo.search(query, types: types, fields: search_fields)
 
           display_search_results(results, query, repo)
         end
