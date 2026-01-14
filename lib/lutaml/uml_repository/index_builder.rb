@@ -394,8 +394,11 @@ module Lutaml
           parent_qname = resolve_qualified_name(parent_name, package_path)
           next unless parent_qname
 
-          @inheritance_graph[parent_qname] ||= []
-          @inheritance_graph[parent_qname] << child_qname
+          # Avoid self-references
+          if child_qname != parent_qname
+            @inheritance_graph[parent_qname] ||= []
+            @inheritance_graph[parent_qname] << child_qname
+          end
         end
       end
 

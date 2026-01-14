@@ -107,7 +107,7 @@ module Lutaml
       # @example
       #   repo = Repository.from_xmi('model.xmi')
       #   repo = Repository.from_xmi('model.xmi', validate: true)
-      def self.from_xmi(xmi_path, options: {})
+      def self.from_xmi(xmi_path, options = {})
         # Parse XMI using Lutaml::Parser
         document = Lutaml::Parser.parse([File.new(xmi_path)]).first
 
@@ -491,25 +491,15 @@ fields: [:name])
       #   (default: [:name])
       # @return [Hash] Search results grouped by type (same format as search)
       # @example
-      #   results = repo.search_by_pattern("^Building.*", types:[:class])
-      #   results = repo.search_by_pattern(/address$/i, types: [:attribute])
-      #   results = repo.search_by_pattern("urban", fields: [:documentation])
-      def search_by_pattern(pattern, types: %i[class attribute association],
-fields: [:name])
-        search_query.search_by_pattern(pattern, types: types, fields: fields)
-      end
-
-      # Find model elements by pattern.
-      #
-      # @param pattern [String, Regexp] The pattern to match
-      # @param type [Symbol] Type to search (:class, :attribute, :association)
-      #   (default: :class)
-      # @return [Array] Array of matching elements
-      # @example
-      #   classes = repo.find_by_pattern(/^Building/, type: :class)
-      #   attrs = repo.find_by_pattern("address", type: :attribute)
-      def find_by_pattern(pattern, type: :class)
-        search_query.by_pattern(pattern, type: type)
+      #   results = repo.search("^Building.*", types:[:class])
+      #   results = repo.search("address$", types: [:attribute])
+      #   results = repo.search("urban", fields: [:documentation])
+      def search(
+        pattern,
+        types: %i[class attribute association],
+        fields: [:name]
+      )
+        search_query.search(pattern, types: types, fields: fields)
       end
 
       # Get comprehensive statistics about the repository.

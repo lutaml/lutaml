@@ -43,8 +43,8 @@ module Lutaml
           repo = load_repository(lur_path, lazy: options[:lazy])
 
           # Get results based on the filter type
-          results = if options[:pattern]
-                      repo.find_by_pattern(options[:pattern], type: options[:type] || :class)
+          results = if options[:pattern] # e.g. "^Building.*"
+                      repo.search(options[:pattern], type: options[:type] || :class)
                     elsif options[:stereotype]
                       repo.find_classes_by_stereotype(options[:stereotype])
                     elsif options[:package]

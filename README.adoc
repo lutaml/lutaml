@@ -671,7 +671,7 @@ results = repo.search("urban planning", types: [:class, :attribute])
 puts "Found #{results[:total]} matches"
 
 # Pattern search
-classes = repo.find_by_pattern(/^Urban.*Area$/, type: :class)
+classes = repo.search("^Urban.*Area$", types: [:class])
 
 # Display element details using presenters
 presenter = Lutaml::Xmi::Presenters::PresenterFactory.create(klass)

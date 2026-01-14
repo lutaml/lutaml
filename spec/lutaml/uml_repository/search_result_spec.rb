@@ -23,10 +23,10 @@ RSpec.describe Lutaml::UmlRepository::SearchResult do
 
     it "sets all attributes correctly" do
       expect(result.element).to eq(mock_element)
-      expect(result.element_type).to eq(:class)
+      expect(result.element_type).to eq("class")
       expect(result.qualified_name).to eq("ModelRoot::Package::TestClass")
       expect(result.package_path).to eq("ModelRoot::Package")
-      expect(result.match_field).to eq(:name)
+      expect(result.match_field).to eq("name")
       expect(result.match_context).to eq({ query: "Test" })
     end
 
@@ -38,25 +38,25 @@ RSpec.describe Lutaml::UmlRepository::SearchResult do
         package_path: "",
         match_field: :name,
       )
-      expect(result_without_context.match_context).to be_nil
+      expect(result_without_context.match_context).to eq({})
     end
   end
 
-  describe "#to_h" do
+  describe "#to_yaml_hash" do
     it "returns hash representation" do
-      hash = result.to_h
+      hash = result.to_yaml_hash
       expect(hash).to be_a(Hash)
-      expect(hash[:element_type]).to eq("class")
-      expect(hash[:qualified_name]).to eq("ModelRoot::Package::TestClass")
-      expect(hash[:package_path]).to eq("ModelRoot::Package")
-      expect(hash[:match_field]).to eq("name")
-      expect(hash[:match_context]).to eq({ query: "Test" })
+      expect(hash["element_type"]).to eq("class")
+      expect(hash["qualified_name"]).to eq("ModelRoot::Package::TestClass")
+      expect(hash["package_path"]).to eq("ModelRoot::Package")
+      expect(hash["match_field"]).to eq("name")
+      expect(hash["match_context"]).to eq({ query: "Test" })
     end
 
     it "converts symbols to strings" do
-      hash = result.to_h
-      expect(hash[:element_type]).to be_a(String)
-      expect(hash[:match_field]).to be_a(String)
+      hash = result.to_yaml_hash
+      expect(hash["element_type"]).to be_a(String)
+      expect(hash["match_field"]).to be_a(String)
     end
   end
 

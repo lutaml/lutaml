@@ -43,15 +43,15 @@ module Lutaml
           return nil if path_string.nil? || path_string.empty?
 
           # Strategy 1: Try exact match first (most common case)
-          exact_match = indexes[:package_paths][path_string]
+          exact_match = indexes[:package_paths][path_string.to_s]
           return exact_match if exact_match
 
           # Strategy 2 & 3: Search for simple name or partial path match
-          search_segments = path_string.split("::")
+          search_segments = path_string.to_s.split("::")
           matches = []
 
           indexes[:package_paths].each do |full_path, package|
-            full_segments = full_path.split("::")
+            full_segments = full_path.to_s.split("::")
 
             # Simple name match: last segment matches
             if search_segments.length == 1
@@ -82,7 +82,7 @@ module Lutaml
         def list(parent_path_string, recursive: false)
           return [] if parent_path_string.nil? || parent_path_string.empty?
 
-          parent_path = Lutaml::Uml::PackagePath.new(parent_path_string)
+          parent_path = Lutaml::Uml::PackagePath.new(parent_path_string.to_s)
           results = []
 
           indexes[:package_paths].each do |path_string, package|
@@ -133,10 +133,10 @@ module Lutaml
         def tree(root_path_string, max_depth: nil)
           return nil if root_path_string.nil? || root_path_string.empty?
 
-          root_package = find_by_path(root_path_string)
+          root_package = find_by_path(root_path_string.to_s)
           return nil unless root_package
 
-          build_tree_node(root_path_string, root_package, max_depth, 0)
+          build_tree_node(root_path_string.to_s, root_package, max_depth, 0)
         end
 
         private

@@ -50,20 +50,46 @@ module Lutaml
         # Returns the first match found.
         #
         # @param diagram_name [String] The diagram name to search for
-        # @return [Diagram, nil] The diagram object, or nil if not found
+        # @return [Diagram] The diagram object, or empty array if not found
         # @example
         #   diagram = query.find_by_name("Building Class Diagram")
         def find_by_name(diagram_name)
-          return nil if diagram_name.nil? || diagram_name.empty?
+          indexes[:diagram_index].values.map do |diagrams|
+            diagrams.select { |diagram| diagram.name == diagram_name }
+          end.compact.flatten
+        end
 
-          # Search through all diagrams in the index
-          indexes[:diagram_index].each_value do |diagrams|
-            diagrams.each do |diagram|
-              return diagram if diagram.name == diagram_name
-            end
-          end
+        # Find diagrams containing a specific package by its XMI ID.
+        #
+        # @param package_id [String] The XMI ID of the package
+        # @return [Array<Diagram>] Array of diagram objects
+        def find_by_package(package_id)
+          indexes[:diagram_index].values.map do |diagrams|
+            diagrams.select { |diagram| diagram.package_id == package_id }
+          end.compact.flatten
+        end
 
-          nil
+        # Find diagrams containing a specific class by its XMI ID.
+        #
+        # @param class_xmi_id [String] The XMI ID of the class
+        # @return [Array<Diagram>] Array of diagram objects
+        def find_containing_class(class_xmi_id)
+          package = find_package_containing_class(class_xmi_id)
+          return [] unless package
+
+          find_by_package(package.xmi_id)
+        end
+
+        # Find the package containing a specific class by its XMI ID.
+        #
+        # @param class_xmi_id [String] The XMI ID of the class
+        # @return [Lutaml::Uml::Package, nil] The package object
+        def find_package_containing_class(class_xmi_id)
+          qualified_name, _klass = find_class_by_id(class_xmi_id)
+          return nil unless qualified_name
+
+          package_path = qualified_name.split("::")[0..-2].join("::")
+          indexes[:package_paths][package_path]
         end
 
         # Get all diagrams from all packages.

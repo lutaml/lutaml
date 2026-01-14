@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require_relative "../../../../lib/lutaml/uml_repository/index_builder"
 
 RSpec.describe Lutaml::UmlRepository::Queries::AssociationQuery do
   let(:document) { create_test_document }

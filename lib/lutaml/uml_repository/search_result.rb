@@ -60,6 +60,8 @@ match_field:, element: nil, match_context: nil)
           match_field: match_field.to_s,
           match_context: match_context || {}
         )
+
+        freeze
       end
 
       json do
