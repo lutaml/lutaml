@@ -24,8 +24,13 @@ module Lutaml
 
           # Use the same multi_file.liquid template as static generator
           # but with apiMode: true to use JSON endpoints
-          template_path = File.join(__dir__, "..", "..", "..", "templates",
-                                    "static_site")
+          template_path = File.expand_path(
+            File.join(
+              __dir__,
+              "..", "..", "..", "..", "templates", "static_site"
+            )
+          )
+
           Liquid::Template.file_system = Liquid::LocalFileSystem.new(template_path)
 
           template_content = File.read(File.join(template_path,
@@ -94,9 +99,9 @@ module Lutaml
         # Start the web server
         def self.serve(lur_path, port: 3000, host: "localhost")
           repo = if File.extname(lur_path) == ".lur"
-                   UmlRepository.from_package(lur_path)
+                   UmlRepository::Repository.from_package(lur_path)
                  else
-                   UmlRepository.from_xmi(lur_path)
+                   UmlRepository::Repository.from_xmi(lur_path)
                  end
 
           set :repository, repo
