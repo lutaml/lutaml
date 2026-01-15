@@ -108,6 +108,8 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Generator do
       allow(repository).to receive(:subtypes_of).and_return([])
       allow(repository).to receive(:diagrams_in_package).and_return([])
       allow(repository).to receive(:diagrams_index).and_return([])
+      allow(repository).to receive(:document).and_return([])
+      allow(repository).to receive(:packages_index).and_return([])
     end
 
     context "with single-file mode" do

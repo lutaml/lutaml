@@ -13,7 +13,7 @@ RSpec.describe Lutaml::UmlRepository::QueryDSL::QueryBuilder do
       doc.name = "Test Model"
       doc.packages = create_test_packages
     end
-    Lutaml::UmlRepository::UmlRepository.new(document: document)
+    Lutaml::UmlRepository::Repository.new(document: document)
   end
 
   def create_test_packages
