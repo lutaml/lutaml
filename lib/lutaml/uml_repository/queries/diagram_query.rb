@@ -46,17 +46,15 @@ module Lutaml
 
         # Find a diagram by its name.
         #
-        # Searches all diagrams across all packages for a matching name.
-        # Returns the first match found.
         #
         # @param diagram_name [String] The diagram name to search for
-        # @return [Diagram] The diagram object, or empty array if not found
+        # @return Diagram The diagram object, or nil if not found
         # @example
         #   diagram = query.find_by_name("Building Class Diagram")
         def find_by_name(diagram_name)
           indexes[:diagram_index].values.map do |diagrams|
             diagrams.select { |diagram| diagram.name == diagram_name }
-          end.compact.flatten
+          end.compact.flatten.first
         end
 
         # Find diagrams containing a specific package by its XMI ID.
