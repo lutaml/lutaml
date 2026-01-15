@@ -35,19 +35,19 @@ RSpec.describe Lutaml::UmlRepository::Queries::DiagramQuery do
   end
 
   describe "#find_by_name" do
-    it "finds diagram by name" do
+    it "finds a diagram by name" do
       all_diagrams = query.all
 
       all_diagrams.each do |diagram|
         found = query.find_by_name(diagram.name)
-        expect(found).to be_an(Array)
-        expect(found.map(&:name)).to include(diagram.name)
+        expect(found).to be_an(Lutaml::Uml::Diagram)
+        expect(found.name).to eq(diagram.name)
       end
     end
 
     it "returns empty array for non-existent diagram name" do
       diagrams = query.find_by_name("NonExistentDiagram")
-      expect(diagrams).to eq([])
+      expect(diagrams).to eq(nil)
     end
 
     it "handles diagrams with same name in different packages" do
@@ -56,7 +56,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::DiagramQuery do
 
       diagram_names.each do |name|
         found = query.find_by_name(name)
-        expect(found).to be_an(Array)
+        expect(found).to be_an(Lutaml::Uml::Diagram)
       end
     end
   end
