@@ -27,7 +27,8 @@ module Lutaml
 
         def values
           @owned_literals.map do |owned_literal|
-            ::Lutaml::Xmi::LiquidDrops::EnumOwnedLiteralDrop.new(owned_literal, @options)
+            ::Lutaml::Xmi::LiquidDrops::EnumOwnedLiteralDrop.new(owned_literal,
+                                                                 @options)
           end
         end
 

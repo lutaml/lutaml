@@ -32,15 +32,17 @@ module Lutaml
       # @param document [Lutaml::Uml::Document] The UML document to index
       # @return [Hash] A frozen hash containing all indexes with keys:
       #   - :package_paths - Maps package paths to Package objects
-      #   - :qualified_names - Maps qualified names to Class/DataType/Enum objects
+      #   - :qualified_names - Maps qualified names to
+      #     Class/DataType/Enum objects
       #   - :stereotypes - Groups classes by stereotype
-      #   - :inheritance_graph - Maps parent qualified names to child qualified names
+      #   - :inheritance_graph - Maps parent qualified names to child
+      #     qualified names
       #   - :diagram_index - Maps package IDs/paths to Diagram objects
       #   - :package_to_path - Maps package XMI IDs to paths
       #   - :class_to_qname - Maps class XMI IDs to qualified names
       #   - :classes - Maps class XMI IDs to Class objects
       #   - :associations - Maps association XMI IDs to Association objects
-      def self.build_all(document)
+      def self.build_all(document) # rubocop:disable Metrics/MethodLength
         {
           package_paths: build_package_paths(document),
           qualified_names: build_qualified_names(document),
@@ -94,7 +96,8 @@ module Lutaml
 
       def self.build_associations(document)
         builder = new(document)
-        # build_association_index needs @qualified_names to collect class-level associations
+        # build_association_index needs @qualified_names to collect
+        # class-level associations
         builder.build_qualified_name_index
         builder.build_association_index
         builder.instance_variable_get(:@associations).freeze
@@ -162,7 +165,7 @@ module Lutaml
       # Build all indexes and return them as a frozen hash
       #
       # @return [Hash] Frozen hash containing all indexes
-      def build_all
+      def build_all # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
         build_package_path_index
         build_qualified_name_index
         build_stereotype_index
@@ -207,7 +210,7 @@ module Lutaml
       # Creates a hash mapping qualified names to Class/DataType/Enum objects:
       #   "ModelRoot::i-UR::urf::Building" => Class{}
       # @api public
-      def build_qualified_name_index
+      def build_qualified_name_index # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength
         # Index top-level classes, data_types, and enums from document
         if @document.classes
           index_classifiers(@document.classes,
@@ -228,23 +231,22 @@ module Lutaml
         end
       end
 
-      def build_association_index
+      def build_association_index # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
         # Collect document-level associations (XMI format)
-        if @document.associations
-          @document.associations.each do |assoc|
-            next unless assoc.xmi_id
+        @document.associations&.each do |assoc|
+          next unless assoc.xmi_id
 
-            @associations[assoc.xmi_id] = assoc
-          end
+          @associations[assoc.xmi_id] = assoc
         end
 
         # Collect class-level associations (QEA/EA format)
         # Note: This requires qualified_names index to be built first
-        @qualified_names.values.each do |klass|
+        @qualified_names.each_value do |klass|
           next unless klass.respond_to?(:associations) && klass.associations
 
           klass.associations.each do |assoc|
             next unless assoc.xmi_id
+
             # Avoid duplicates - only add if not already present
             @associations[assoc.xmi_id] ||= assoc
           end
@@ -257,7 +259,7 @@ module Lutaml
       #   "featureType" => [Class{}, Class{}],
       #   "dataType" => [Class{}]
       # @api public
-      def build_stereotype_index
+      def build_stereotype_index # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity
         # Process top-level classes
         index_by_stereotype(@document.classes) if @document.classes
         index_by_stereotype(@document.data_types) if @document.data_types
@@ -273,7 +275,8 @@ module Lutaml
 
       # Build the inheritance graph index
       #
-      # Creates a hash mapping parent qualified names to arrays of child qualified names:
+      # Creates a hash mapping parent qualified names to arrays of
+      # child qualified names:
       #   "ModelRoot::Parent" => ["ModelRoot::Child1", "ModelRoot::Child2"]
       # @api public
       def build_inheritance_graph_index
@@ -342,7 +345,7 @@ module Lutaml
       #
       # @param classifiers [Array] Array of classifier objects
       # @param package_path [String] Package path for these classifiers
-      def index_classifiers(classifiers, package_path)
+      def index_classifiers(classifiers, package_path) # rubocop:disable Metrics/MethodLength
         return unless classifiers
 
         classifiers.each do |classifier|
@@ -350,7 +353,10 @@ module Lutaml
 
           qualified_name = "#{package_path}::#{classifier.name}"
           @qualified_names[qualified_name] = classifier
-          @class_to_qname[classifier.xmi_id] = qualified_name if classifier.xmi_id
+          if classifier.xmi_id
+            @class_to_qname[classifier.xmi_id] =
+              qualified_name
+          end
           @classes[classifier.xmi_id] = classifier if classifier.xmi_id
         end
       end
@@ -358,7 +364,7 @@ module Lutaml
       # Index classifiers by their stereotypes
       #
       # @param classifiers [Array] Array of classifier objects
-      def index_by_stereotype(classifiers)
+      def index_by_stereotype(classifiers) # rubocop:disable Metrics/CyclomaticComplexity
         return unless classifiers
 
         classifiers.each do |classifier|
@@ -377,7 +383,7 @@ module Lutaml
       #
       # @param classes [Array<Lutaml::Uml::Class>] Classes to process
       # @param package_path [String] Package path for these classes
-      def process_generalizations(classes, package_path)
+      def process_generalizations(classes, package_path) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
         return unless classes
 
         classes.each do |klass|
@@ -404,9 +410,10 @@ module Lutaml
 
       # Extract parent name from generalization object
       #
-      # @param generalization [Lutaml::Uml::Generalization] Generalization object
+      # @param generalization [Lutaml::Uml::Generalization]
+      # Generalization object
       # @return [String, nil] Parent class name
-      def extract_parent_name(generalization)
+      def extract_parent_name(generalization) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/MethodLength
         return nil unless generalization
 
         # Check for general attribute (could be a string or object)
@@ -417,7 +424,9 @@ module Lutaml
         end
 
         # Check for name attribute directly
-        return generalization.name if generalization.respond_to?(:name) && generalization.name
+        if generalization.respond_to?(:name) && generalization.name
+          return generalization.name
+        end
 
         nil
       end

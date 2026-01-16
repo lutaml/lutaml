@@ -141,7 +141,8 @@ module Lutaml
         # Get table configuration by table name
         #
         # @param table_name [String] The table name
-        # @return [TableDefinition, nil] The table definition or nil if not found
+        # @return [TableDefinition, nil] The table definition
+        # or nil if not found
         def table_config_for(table_name)
           tables&.find { |t| t.table_name == table_name }
         end

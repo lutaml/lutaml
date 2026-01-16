@@ -68,7 +68,8 @@ RSpec.describe "UmlCommands Integration Tests" do
     it "builds a package and searches it" do
       # Search in pre-built package
       expect {
-        Lutaml::Cli::UmlCommands.start(["search", test_lur, "building", "--limit", "5"])
+        Lutaml::Cli::UmlCommands.start(["search", test_lur, "building",
+"--limit", "5"])
       }.not_to output(/ERROR/).to_stdout
     end
   end
@@ -77,7 +78,8 @@ RSpec.describe "UmlCommands Integration Tests" do
     it "builds a package and inspects elements" do
       # Inspect package
       expect {
-        Lutaml::Cli::UmlCommands.start(["inspect", test_lur, "package:ModelRoot"])
+        Lutaml::Cli::UmlCommands.start(["inspect", test_lur,
+"package:ModelRoot"])
       }.not_to output(/ERROR/).to_stdout
     end
   end
@@ -145,19 +147,22 @@ RSpec.describe "UmlCommands Integration Tests" do
   describe "find command variations" do
     it "finds by stereotype" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["find", test_lur, "--stereotype", "interface"])
+        Lutaml::Cli::UmlCommands.start(["find", test_lur, "--stereotype",
+"interface"])
       }.not_to output(/ERROR/).to_stdout
     end
 
     it "finds by package" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["find", test_lur, "--package", "ModelRoot"])
+        Lutaml::Cli::UmlCommands.start(["find", test_lur, "--package",
+"ModelRoot"])
       }.not_to output(/ERROR/).to_stdout
     end
 
     it "finds by pattern" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["find", test_lur, "--pattern", "^Building"])
+        Lutaml::Cli::UmlCommands.start(["find", test_lur, "--pattern",
+"^Building"])
       }.not_to output(/ERROR/).to_stdout
     end
   end
@@ -237,7 +242,8 @@ RSpec.describe "UmlCommands Integration Tests" do
 
       # Search
       expect {
-        Lutaml::Cli::UmlCommands.start(["search", temp_lur, "building", "--limit", "3"])
+        Lutaml::Cli::UmlCommands.start(["search", temp_lur, "building",
+"--limit", "3"])
       }.not_to output(/ERROR/).to_stdout
 
       # Export

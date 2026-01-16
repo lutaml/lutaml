@@ -47,8 +47,10 @@ module Lutaml
       # @param package_path [String] Package path
       # @param match_field [Symbol, String] Field that matched
       # @param match_context [Hash, nil] Optional context
-      def initialize(element_type:, qualified_name:, package_path:,
-match_field:, element: nil, match_context: nil)
+      def initialize( # rubocop:disable Metrics/ParameterLists
+        element_type:, qualified_name:, package_path:,
+        match_field:, element: nil, match_context: nil
+      )
         # Store element before calling super (not for serialization)
         @element = element
 

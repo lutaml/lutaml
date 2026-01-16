@@ -70,9 +70,13 @@ RSpec.describe Lutaml::UmlRepository::ErrorHandler do
 
     context "with exact distance threshold" do
       it "only returns suggestions within MAX_SUGGESTION_DISTANCE" do
-        suggestions = error_handler.suggest_similar_classes("ModelRoot::requirement type class diagram::BibliographicI")
+        suggestions = error_handler.suggest_similar_classes(
+          "ModelRoot::requirement type class diagram::BibliographicI",
+        )
 
-        expect(suggestions).to include("ModelRoot::requirement type class diagram::BibliographicItem")
+        expect(suggestions).to include(
+          "ModelRoot::requirement type class diagram::BibliographicItem",
+        )
       end
     end
   end
@@ -117,7 +121,8 @@ RSpec.describe Lutaml::UmlRepository::ErrorHandler do
           error_handler.class_not_found_error("CompletelyInvalid")
         end.to raise_error(NameError) do |error|
           expect(error.message).to include("Class not found: CompletelyInvalid")
-          expect(error.message).to include("Tip: Use the 'search' or 'find' commands")
+          expect(error.message)
+            .to include("Tip: Use the 'search' or 'find' commands")
         end
       end
     end
@@ -142,13 +147,15 @@ RSpec.describe Lutaml::UmlRepository::ErrorHandler do
 
     context "without suggestions" do
       it "raises NameError with helpful tip" do
-        allow(error_handler).to receive(:suggest_similar_packages).and_return([])
+        allow(error_handler)
+          .to receive(:suggest_similar_packages).and_return([])
 
         expect do
           error_handler.package_not_found_error("Invalid::Path")
         end.to raise_error(NameError) do |error|
           expect(error.message).to include("Package not found: Invalid::Path")
-          expect(error.message).to include("Tip: Use the 'list' or 'tree' commands")
+          expect(error.message)
+            .to include("Tip: Use the 'list' or 'tree' commands")
         end
       end
     end
@@ -183,13 +190,17 @@ RSpec.describe Lutaml::UmlRepository::ErrorHandler do
       # Should match by substring even though edit distance is large
       suggestions = error_handler.suggest_similar_classes("ClassificationType")
 
-      expect(suggestions).to include("ModelRoot::requirement type class diagram::ClassificationType")
+      expect(suggestions).to include(
+        "ModelRoot::requirement type class diagram::ClassificationType",
+      )
     end
 
     it "is case-insensitive for substring matching" do
       suggestions = error_handler.suggest_similar_classes("bibliographicItem")
 
-      expect(suggestions).to include("ModelRoot::requirement type class diagram::BibliographicItem")
+      expect(suggestions).to include(
+        "ModelRoot::requirement type class diagram::BibliographicItem",
+      )
     end
   end
 end

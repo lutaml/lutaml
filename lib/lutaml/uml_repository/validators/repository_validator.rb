@@ -3,7 +3,8 @@
 module Lutaml
   module UmlRepository
     module Validators
-      # RepositoryValidator validates the consistency and integrity of a UML repository
+      # RepositoryValidator validates the consistency and integrity of a
+      # UML repository
       #
       # Performs comprehensive validation checks including:
       # - Type reference validation (checking all attribute types exist)
@@ -41,10 +42,10 @@ module Lutaml
         #
         # @param verbose [Boolean] Collect detailed validation information
         # @return [ValidationResult] Validation results with errors and warnings
-        def validate(verbose: false)
+        def validate(verbose: false) # rubocop:disable Metrics/MethodLength
           @verbose = verbose
           @validation_details = [] if verbose
-          
+
           check_type_references
           check_generalization_references
           # DISABLED: check_circular_inheritance - has bugs with name resolution
@@ -62,11 +63,12 @@ module Lutaml
 
         private
 
-        # Check that all attribute types reference existing classes or are primitives
-        def check_type_references
+        # Check that all attribute types reference existing classes or are
+        # primitives
+        def check_type_references # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           @external_references = []
 
-          @indexes[:qualified_names].each do |qname, klass|
+          @indexes[:qualified_names].each do |qname, klass| # rubocop:disable Metrics/BlockLength
             next unless klass.is_a?(Lutaml::Uml::Class)
             next unless klass.attributes
 
@@ -76,13 +78,18 @@ module Lutaml
             # Collect detailed validation info for this class if verbose
             class_details = { class_name: qname, attributes: [] } if @verbose
 
-            klass.attributes.each do |attr|
+            klass.attributes.each do |attr| # rubocop:disable Metrics/BlockLength
               next unless attr.type
-              
+
               is_primitive = primitive_type?(attr.type)
-              
+
               # Try to resolve the type name
-              resolved_type = is_primitive ? nil : resolve_type_name(attr.type, current_package_path)
+              resolved_type = if is_primitive
+                                nil
+                              else
+                                resolve_type_name(attr.type,
+                                                  current_package_path)
+                              end
               is_valid = is_primitive || !resolved_type.nil?
 
               # Collect verbose info
@@ -106,10 +113,13 @@ module Lutaml
                 context: "attribute type",
               }
 
-              @errors << "Unresolved type reference: '#{attr.type}' in #{qname}.#{attr.name}"
+              @errors << "Unresolved type reference: '#{attr.type}' in " \
+                         "#{qname}.#{attr.name}"
             end
 
-            @validation_details << class_details if @verbose && class_details[:attributes].any?
+            if @verbose && class_details[:attributes].any?
+              @validation_details << class_details
+            end
           end
         end
 
@@ -119,7 +129,8 @@ module Lutaml
             # Check if parent exists
             unless @indexes[:qualified_names].key?(parent_qname)
               children.each do |child_qname|
-                @errors << "Generalization references non-existent parent: '#{parent_qname}' from #{child_qname}"
+                @errors << "Generalization references non-existent parent: " \
+                           "#{parent_qname} from #{child_qname}"
               end
             end
           end
@@ -138,7 +149,7 @@ module Lutaml
         end
 
         # Check that all association ends reference existing classes
-        def check_association_references
+        def check_association_references # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           @indexes[:qualified_names].each do |qname, klass|
             next unless klass.is_a?(Lutaml::Uml::Class)
             next unless klass.associations
@@ -161,7 +172,7 @@ module Lutaml
         #
         # @param ends [Array, Object] Association ends to check
         # @param source_qname [String] Source class qualified name
-        def check_association_end_type(ends, source_qname)
+        def check_association_end_type(ends, source_qname) # rubocop:disable Metrics/CyclomaticComplexity
           ends_array = ends.is_a?(Array) ? ends : [ends]
 
           ends_array.each do |end_obj|
@@ -173,12 +184,13 @@ module Lutaml
 
             next if @indexes[:qualified_names].key?(type_name)
 
-            @warnings << "Association end references potentially unresolved type: '#{type_name}' from #{source_qname}"
+            @warnings << "Association end references potentially " \
+                         "unresolved type: '#{type_name}' from #{source_qname}"
           end
         end
 
         # Check multiplicity values are valid
-        def check_multiplicities
+        def check_multiplicities # rubocop:disable Metrics/CyclomaticComplexity
           @indexes[:qualified_names].each do |qname, klass|
             next unless klass.is_a?(Lutaml::Uml::Class)
             next unless klass.attributes
@@ -198,7 +210,7 @@ module Lutaml
         # @param cardinality [Object] Cardinality object
         # @param class_qname [String] Class qualified name
         # @param attr_name [String] Attribute name
-        def check_cardinality_value(cardinality, class_qname, attr_name)
+        def check_cardinality_value(cardinality, class_qname, attr_name) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           min_val = extract_min_value(cardinality)
           max_val = extract_max_value(cardinality)
 
@@ -206,12 +218,14 @@ module Lutaml
 
           # Check min is not negative
           if min_val.is_a?(Integer) && min_val.negative?
-            @errors << "Invalid multiplicity: min value #{min_val} is negative in #{class_qname}.#{attr_name}"
+            @errors << "Invalid multiplicity: min value #{min_val} is " \
+                       "negative in #{class_qname}.#{attr_name}"
           end
 
           # Check max is not less than min (unless it's unlimited)
           if min_val && max_val.is_a?(Integer) && (max_val < min_val)
-            @errors << "Invalid multiplicity: max (#{max_val}) < min (#{min_val}) in #{class_qname}.#{attr_name}"
+            @errors << "Invalid multiplicity: max (#{max_val}) < min " \
+                       "(#{min_val}) in #{class_qname}.#{attr_name}"
           end
         end
 
@@ -247,7 +261,7 @@ module Lutaml
         # @param visited [Hash] Visited nodes state
         # @param path [Array] Current path
         # @return [Array, nil] Cycle path if found, nil otherwise
-        def find_cycle(qname, visited, path)
+        def find_cycle(qname, visited, path) # rubocop:disable Metrics/MethodLength
           return nil if visited[qname] == :permanent
           return path + [qname] if path.include?(qname)
 
@@ -282,16 +296,16 @@ module Lutaml
         def resolve_type_name(type_name, current_package_path)
           # Already qualified and exists?
           return type_name if @indexes[:qualified_names].key?(type_name)
-          
+
           # Try in current package
           local_qname = "#{current_package_path}::#{type_name}"
           return local_qname if @indexes[:qualified_names].key?(local_qname)
-          
+
           # Try to find in all qualified names (simple name match)
           @indexes[:qualified_names].each_key do |qname|
             return qname if qname.end_with?("::#{type_name}")
           end
-          
+
           nil
         end
 
@@ -329,8 +343,12 @@ module Lutaml
         # @param errors [Array<String>] Validation errors
         # @param warnings [Array<String>] Validation warnings
         # @param external_references [Array<Hash>] External type references
-        # @param validation_details [Array<Hash>, nil] Detailed validation information
-        def initialize(valid:, errors:, warnings:, external_references: [], validation_details: nil)
+        # @param validation_details [Array<Hash>, nil] Detailed validation
+        # information
+        def initialize(
+          valid:, errors:, warnings:, external_references: [],
+          validation_details: nil
+        )
           @valid = valid
           @errors = errors.freeze
           @warnings = warnings.freeze
@@ -376,7 +394,8 @@ module Lutaml
           elsif valid?
             "Validation passed with #{@warnings.size} warning(s)"
           else
-            "Validation failed with #{@errors.size} error(s) and #{@warnings.size} warning(s)"
+            "Validation failed with #{@errors.size} error(s) and " \
+              "#{@warnings.size} warning(s)"
           end
         end
       end

@@ -1,14 +1,15 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require_relative "../../../../lib/lutaml/uml_repository/static_site/search_index_builder"
+require_relative "../../../../lib/lutaml/uml_repository/" \
+                 "static_site/search_index_builder"
 
 RSpec.describe Lutaml::UmlRepository::StaticSite::SearchIndexBuilder do
   let(:repository) do
     double("UmlRepository",
       packages_index: [test_package],
       classes_index: [test_class],
-      associations_index: [test_association]
+      associations_index: [test_association],
     )
   end
 
@@ -18,7 +19,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::SearchIndexBuilder do
       name: "TestPackage",
       definition: "Test package for search indexing",
       stereotypes: ["ApplicationSchema"],
-      owner: nil
+      owner: nil,
     )
   end
 
@@ -31,7 +32,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::SearchIndexBuilder do
       owner: test_package,
       attributes: [test_attribute],
       operations: [],
-      class: Lutaml::Uml::TopElement
+      class: Lutaml::Uml::TopElement,
     )
   end
 
@@ -40,7 +41,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::SearchIndexBuilder do
       name: "buildingID",
       type: "String",
       definition: "Unique identifier for building",
-      stereotypes: []
+      stereotypes: [],
     )
   end
 
@@ -49,7 +50,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::SearchIndexBuilder do
       xmi_id: "assoc_001",
       name: "contains",
       owner_end: "Building",
-      member_end: "BuildingPart"
+      member_end: "BuildingPart",
     )
   end
 
@@ -71,7 +72,9 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::SearchIndexBuilder do
       index = builder.build
 
       expect(index).to be_a(Hash)
-      expect(index).to include(:version, :fields, :ref, :documentStore, :pipeline)
+      expect(index).to include(
+        :version, :fields, :ref, :documentStore, :pipeline
+      )
     end
 
     it "includes version information" do
@@ -127,7 +130,10 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::SearchIndexBuilder do
       expect(class_docs).not_to be_empty
 
       doc = class_docs.first
-      expect(doc).to include(:id, :type, :entityType, :entityId, :name, :qualifiedName, :package, :content, :boost)
+      expect(doc).to include(
+        :id, :type, :entityType, :entityId, :name,
+        :qualifiedName, :package, :content, :boost
+      )
       expect(doc[:type]).to eq("class")
       expect(doc[:boost]).to eq(1.5)  # Classes have higher boost
     end
@@ -167,7 +173,8 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::SearchIndexBuilder do
 
       expect(doc[:content]).to be_a(String)
       expect(doc[:content]).not_to be_empty
-      expect(doc[:content]).to eq(doc[:content].downcase)  # Normalized to lowercase
+      # Normalized to lowercase
+      expect(doc[:content]).to eq(doc[:content].downcase)
     end
 
     it "includes entity metadata in documents" do
@@ -181,8 +188,11 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::SearchIndexBuilder do
 
   describe "content normalization" do
     it "normalizes content to lowercase" do
-      # Use send to test private method if needed, or test through public interface
-      class_docs = builder.build[:documentStore].select { |d| d[:type] == "class" }
+      # Use send to test private method if needed, or test through public
+      # interface
+      class_docs = builder.build[:documentStore].select do |d|
+        d[:type] == "class"
+      end
 
       class_docs.each do |doc|
         expect(doc[:content]).to eq(doc[:content].downcase)
@@ -190,10 +200,12 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::SearchIndexBuilder do
     end
 
     it "removes extra whitespace from content" do
-      class_docs = builder.build[:documentStore].select { |d| d[:type] == "class" }
+      class_docs = builder.build[:documentStore].select do |d|
+        d[:type] == "class"
+      end
 
       class_docs.each do |doc|
-        expect(doc[:content]).not_to match(/\s{2,}/)  # No multiple spaces
+        expect(doc[:content]).not_to match(/\s{2,}/) # No multiple spaces
       end
     end
   end
@@ -216,13 +228,13 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::SearchIndexBuilder do
         owner: test_package,
         attributes: nil,
         operations: nil,
-        class: Lutaml::Uml::TopElement
+        class: Lutaml::Uml::TopElement,
       )
 
       repo_with_minimal = double("Repository",
         packages_index: [],
         classes_index: [class_without_attrs],
-        associations_index: []
+        associations_index: [],
       )
 
       minimal_builder = described_class.new(repo_with_minimal)
@@ -247,14 +259,14 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::SearchIndexBuilder do
           owner: test_package,
           attributes: [],
           operations: nil,
-          class: Lutaml::Uml::TopElement
+          class: Lutaml::Uml::TopElement,
         )
       end
 
       large_repo = double("LargeRepository",
         packages_index: [test_package],
         classes_index: large_classes,
-        associations_index: []
+        associations_index: [],
       )
 
       large_builder = described_class.new(large_repo)
@@ -263,7 +275,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::SearchIndexBuilder do
       index = large_builder.build
       duration = Time.now - start_time
 
-      expect(duration).to be < 1.0  # Should complete in under 1 second
+      expect(duration).to be < 1.0 # Should complete in under 1 second
       expect(index[:documentStore].size).to be >= 100
     end
   end

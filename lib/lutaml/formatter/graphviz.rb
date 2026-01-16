@@ -228,7 +228,7 @@ module Lutaml
         field_table
       end
 
-      def format_class(node, hide_members) # rubocop:disable Metrics/AbcSize
+      def format_class(node, hide_members) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
         name = ["<B>#{node.name}</B>"]
         name.unshift("«#{node.keyword}»") if node.keyword
         name_html = <<~HEREDOC

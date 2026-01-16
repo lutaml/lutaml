@@ -24,8 +24,10 @@ module Lutaml
         #
         # @param repository [UmlRepository] The repository to transform
         # @param options [Hash] Transformation options
-        # @option options [Boolean] :include_diagrams Include diagram information
-        # @option options [Boolean] :format_definitions Format definitions as markdown
+        # @option options [Boolean] :include_diagrams Include diagram
+        # information
+        # @option options [Boolean] :format_definitions Format definitions
+        # as markdown
         def initialize(repository, options = {})
           @repository = repository
           @options = default_options.merge(options)
@@ -60,15 +62,19 @@ module Lutaml
         end
 
         # Build generalization map for multiple inheritance
-        def build_generalization_map
+        def build_generalization_map # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           map = Hash.new { |h, k| h[k] = [] }
 
           # Scan all classes for generalization relationships
           repository.classes_index.each do |klass|
             next unless klass.respond_to?(:association_generalization)
-            next unless klass.association_generalization && !klass.association_generalization.empty?
+            unless klass.association_generalization &&
+                !klass.association_generalization.empty?
+               next
+            end
 
-            # Each class has an association_generalization array with AssociationGeneralization objects
+            # Each class has an association_generalization array with
+            # AssociationGeneralization objects
             klass.association_generalization.each do |assoc_gen|
               # Access lutaml-model object attributes directly
               next unless assoc_gen.respond_to?(:parent_object_id)
@@ -78,11 +84,14 @@ module Lutaml
 
               # Find the parent class by object_id and get its XMI ID
               parent_class = find_class_by_object_id(parent_object_id)
-              if parent_class && parent_class.xmi_id
-                # Skip self-referential generalization (class can't be its own parent)
+              if parent_class&.xmi_id
+                # Skip self-referential generalization
+                # (class can't be its own parent)
                 next if parent_class.xmi_id == klass.xmi_id
-                
-                map[klass.xmi_id] << parent_class.xmi_id unless map[klass.xmi_id].include?(parent_class.xmi_id)
+
+                unless map[klass.xmi_id].include?(parent_class.xmi_id)
+                  map[klass.xmi_id] << parent_class.xmi_id
+                end
               end
             end
           end
@@ -124,14 +133,17 @@ module Lutaml
         end
 
         # Build hierarchical package tree
-        def build_package_tree
+        def build_package_tree # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           # Get root packages from document.packages (not from index)
-          root_packages = if repository.document.respond_to?(:packages) && repository.document.packages
+          root_packages = if repository.document.respond_to?(:packages) &&
+              repository.document.packages
                            repository.document.packages
                          else
                            # Fallback: find packages without parent namespace
                            repository.packages_index.select do |pkg|
-                             !pkg.respond_to?(:namespace) || pkg.namespace.nil? || !pkg.namespace.is_a?(Lutaml::Uml::Package)
+                             !pkg.respond_to?(:namespace) ||
+                               pkg.namespace.nil? ||
+                               !pkg.namespace.is_a?(Lutaml::Uml::Package)
                            end
                          end
 
@@ -149,17 +161,20 @@ module Lutaml
           end
         end
 
-        def build_tree_node(package)
+        def build_tree_node(package) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           pkg_id = @id_generator.package_id(package)
 
           # Sort child packages by name
-          sorted_children = (package.packages || []).sort_by { |p| p.name || '' }
+          sorted_children = (package.packages || []).sort_by do |p|
+            p.name || ''
+          end
 
           # Sort classes by name, filtering out unnamed classes
-          # This prevents unnamed classes from appearing in the tree or being counted
+          # This prevents unnamed classes from appearing in the tree or being
+          # counted
           sorted_classes = (package.classes || [])
-                          .reject { |c| c.name.nil? || c.name.empty? }
-                          .sort_by { |c| c.name }
+            .reject { |c| c.name.nil? || c.name.empty? }
+            .sort_by { |c| c.name }
 
           # Build child nodes first to get their counts
           child_nodes = sorted_children.map do |child|
@@ -168,21 +183,27 @@ module Lutaml
 
           # Calculate total count including nested packages
           # Only counts named classes (unnamed classes are already filtered out)
-          total_class_count = sorted_classes.size + child_nodes.sum { |child| child[:classCount] || 0 }
+          total_class_count = sorted_classes.size + child_nodes.sum do |child|
+            child[:classCount] || 0
+          end
 
           {
             id: pkg_id,
             name: package.name,
             path: package_path(package),
-            stereotypes: normalize_stereotypes(package.respond_to?(:stereotype) ? package.stereotype : nil),
+            stereotypes: normalize_stereotypes(
+              package.respond_to?(:stereotype) ? package.stereotype : nil,
+            ),
             classCount: total_class_count,
-            classes: sorted_classes.map { |c|
+            classes: sorted_classes.map do |c|
               {
                 id: @id_generator.class_id(c),
                 name: c.name,
-                stereotypes: normalize_stereotypes(c.respond_to?(:stereotype) ? c.stereotype : nil)
+                stereotypes: normalize_stereotypes(
+                  c.respond_to?(:stereotype) ? c.stereotype : nil,
+                ),
               }
-            },
+            end,
             children: child_nodes,
           }
         end
@@ -199,14 +220,18 @@ module Lutaml
           packages
         end
 
-        def serialize_package(package, id)
+        def serialize_package(package, id) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           {
             id: id,
             xmiId: package.respond_to?(:xmi_id) ? package.xmi_id : nil,
             name: package.name,
             path: package_path(package),
-            definition: format_definition(package.respond_to?(:definition) ? package.definition : nil),
-            stereotypes: normalize_stereotypes(package.respond_to?(:stereotype) ? package.stereotype : nil),
+            definition: format_definition(
+              package.respond_to?(:definition) ? package.definition : nil,
+            ),
+            stereotypes: normalize_stereotypes(
+              package.respond_to?(:stereotype) ? package.stereotype : nil,
+            ),
             classes: (package.classes || []).map do |c|
               @id_generator.class_id(c)
             end,
@@ -216,7 +241,10 @@ module Lutaml
             diagrams: package_diagrams(package).map do |d|
               @id_generator.diagram_id(d)
             end,
-            parent: (package.respond_to?(:namespace) && package.namespace.is_a?(Lutaml::Uml::Package)) ? @id_generator.package_id(package.namespace) : nil,
+            parent: if package.respond_to?(:namespace) &&
+                package.namespace.is_a?(Lutaml::Uml::Package)
+              @id_generator.package_id(package.namespace)
+            end,
           }
         end
 
@@ -232,11 +260,13 @@ module Lutaml
           classes
         end
 
-        def serialize_class(klass, id)
+        def serialize_class(klass, id) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           # Get associations and sort by local role
           class_associations = find_class_associations(klass)
           sorted_associations = class_associations.sort_by do |assoc_id|
-            assoc = repository.associations_index.find { |a| @id_generator.association_id(a) == assoc_id }
+            assoc = repository.associations_index.find do |a|
+              @id_generator.association_id(a) == assoc_id
+            end
             next '' unless assoc
 
             # Determine local role for this class
@@ -256,16 +286,26 @@ module Lutaml
             qualifiedName: qualified_name(klass),
             type: class_type(klass),
             package: package_id_for_class(klass),
-            stereotypes: normalize_stereotypes(klass.respond_to?(:stereotype) ? klass.stereotype : nil),
+            stereotypes: normalize_stereotypes(
+              if klass.respond_to?(:stereotype)
+                klass.stereotype
+              end,
+            ),
             definition: format_definition(klass.definition),
-            attributes: (klass.attributes || []).sort_by { |a| a.name || '' }.map do |attr|
+            attributes: (klass.attributes || []).sort_by do |a|
+              a.name || ''
+            end.map do |attr|
               @id_generator.attribute_id(attr, klass)
             end,
             operations: serialize_class_operations(klass),
             associations: sorted_associations,
             generalizations: find_generalizations(klass),
             specializations: find_specializations(klass),
-            isAbstract: klass.respond_to?(:is_abstract) ? klass.is_abstract : false,
+            isAbstract: if klass.respond_to?(:is_abstract)
+                          klass.is_abstract
+                        else
+                          false
+                        end,
             literals: serialize_literals(klass),
             inheritedAttributes: compute_inherited_attributes(klass),
             inheritedAssociations: compute_inherited_associations(klass),
@@ -288,7 +328,7 @@ module Lutaml
           attributes
         end
 
-        def serialize_attribute(attribute, owner, id)
+        def serialize_attribute(attribute, owner, id) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           {
             id: id,
             name: attribute.name,
@@ -298,15 +338,28 @@ module Lutaml
             ownerName: owner.name,
             cardinality: serialize_cardinality(attribute.cardinality),
             definition: format_definition(attribute.definition),
-            stereotypes: normalize_stereotypes(attribute.respond_to?(:stereotype) ? attribute.stereotype : nil),
-            isStatic: attribute.respond_to?(:is_static) ? attribute.is_static : false,
-            isReadOnly: attribute.respond_to?(:is_read_only) ? attribute.is_read_only : false,
-            defaultValue: attribute.respond_to?(:default) ? attribute.default : nil,
+            stereotypes: normalize_stereotypes(
+              attribute.respond_to?(:stereotype) ? attribute.stereotype : nil,
+            ),
+            isStatic: if attribute.respond_to?(:is_static)
+                        attribute.is_static
+                      else
+                        false
+                      end,
+            isReadOnly: if attribute.respond_to?(:is_read_only)
+                            attribute.is_read_only
+                          else
+                            false
+                          end,
+            defaultValue: if attribute.respond_to?(:default)
+                            attribute.default
+                          end,
           }
         end
 
         # Build associations map
-        # Uses repository.associations_index which handles both XMI and QEA formats
+        # Uses repository.associations_index which handles both XMI
+        # and QEA formats
         def build_associations_map
           associations = {}
 
@@ -321,28 +374,38 @@ module Lutaml
           associations
         end
 
-        def serialize_association(association, id)
+        def serialize_association(association, id) # rubocop:disable Metrics/MethodLength
           # Association model has member_end/owner_end as strings (class names)
           # Use member_end_xmi_id, member_end_type etc for more details
           # IMPORTANT: Do NOT generate synthetic names - use actual data only
-          
+
           # If association.name is nil, use the role name as fallback
-          # In EA models, the association name is often stored in the role fields
-          # IMPORTANT: Prioritize owner_end_attribute_name which has the actual role name
+          # In EA models, the association name is often stored in the role
+          # fields
+          # IMPORTANT: Prioritize owner_end_attribute_name which has the
+          # actual role name
           assoc_name = association.name
           if assoc_name.nil? || assoc_name.empty?
-            # Try owner_end_attribute_name first (this is the role from owner's perspective)
+            # Try owner_end_attribute_name first (this is the role from owner's
+            # perspective)
             assoc_name = association.owner_end_attribute_name
-            # Fallback to member_end_attribute_name (but this often contains class name, not role)
-            assoc_name = association.member_end_attribute_name if assoc_name.nil? || assoc_name.empty?
+            # Fallback to member_end_attribute_name (but this often contains
+            # class name, not role)
+            assoc_name = if assoc_name.nil? || assoc_name.empty?
+                           association.member_end_attribute_name
+                         end
           end
-          
+
           {
             id: id,
             xmiId: association.xmi_id,
             name: assoc_name,
             type: "Association",
-            definition: format_definition(association.respond_to?(:definition) ? association.definition : nil),
+            definition: format_definition(
+              if association.respond_to?(:definition)
+                association.definition
+              end,
+            ),
             source: build_association_source(association),
             target: build_association_target(association),
           }
@@ -355,7 +418,9 @@ module Lutaml
             class: association.owner_end_xmi_id,
             className: association.owner_end,
             role: association.owner_end_attribute_name,
-            cardinality: serialize_cardinality(association.owner_end_cardinality),
+            cardinality: serialize_cardinality(
+              association.owner_end_cardinality,
+            ),
             aggregation: association.owner_end_type,
           }
         end
@@ -367,12 +432,14 @@ module Lutaml
             class: association.member_end_xmi_id,
             className: association.member_end,
             role: association.member_end_attribute_name,
-            cardinality: serialize_cardinality(association.member_end_cardinality),
+            cardinality: serialize_cardinality(
+              association.member_end_cardinality,
+            ),
             aggregation: association.member_end_type,
           }
         end
 
-        def serialize_association_end(end_obj)
+        def serialize_association_end(end_obj) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           return nil unless end_obj
           return nil unless end_obj.respond_to?(:type) && end_obj.type
 
@@ -385,21 +452,49 @@ module Lutaml
               class: nil, # Can't generate ID without class object
               className: type_value,
               role: end_obj.respond_to?(:name) ? end_obj.name : nil,
-              cardinality: serialize_cardinality(end_obj.respond_to?(:cardinality) ? end_obj.cardinality : nil),
-              navigable: end_obj.respond_to?(:navigable?) ? end_obj.navigable? : false,
-              aggregation: end_obj.respond_to?(:aggregation) ? end_obj.aggregation : nil,
-              visibility: end_obj.respond_to?(:visibility) ? end_obj.visibility : nil,
+              cardinality: serialize_cardinality(
+                if end_obj.respond_to?(:cardinality)
+                  end_obj.cardinality
+                end,
+              ),
+              navigable: if end_obj.respond_to?(:navigable?)
+                           end_obj.navigable?
+                         else
+                           false
+                         end,
+              aggregation: if end_obj.respond_to?(:aggregation)
+                             end_obj.aggregation
+                           end,
+              visibility: if end_obj.respond_to?(:visibility)
+                            end_obj.visibility
+                          end,
             }
           else
             # Type is a class object
             {
               class: @id_generator.class_id(type_value),
-              className: type_value.respond_to?(:name) ? type_value.name : type_value.to_s,
+              className: if type_value.respond_to?(:name)
+                           type_value.name
+                         else
+                           type_value.to_s
+                         end,
               role: end_obj.respond_to?(:name) ? end_obj.name : nil,
-              cardinality: serialize_cardinality(end_obj.respond_to?(:cardinality) ? end_obj.cardinality : nil),
-              navigable: end_obj.respond_to?(:navigable?) ? end_obj.navigable? : false,
-              aggregation: end_obj.respond_to?(:aggregation) ? end_obj.aggregation : nil,
-              visibility: end_obj.respond_to?(:visibility) ? end_obj.visibility : nil,
+              cardinality: serialize_cardinality(
+                if end_obj.respond_to?(:cardinality)
+                  end_obj.cardinality
+                end,
+              ),
+              navigable: if end_obj.respond_to?(:navigable?)
+                           end_obj.navigable?
+                         else
+                           false
+                         end,
+              aggregation: if end_obj.respond_to?(:aggregation)
+                             end_obj.aggregation
+                           end,
+              visibility: if end_obj.respond_to?(:visibility)
+                            end_obj.visibility
+                          end,
             }
           end
         end
@@ -420,7 +515,7 @@ module Lutaml
           operations
         end
 
-        def serialize_operation(operation, owner, id)
+        def serialize_operation(operation, owner, id) # rubocop:disable Metrics/MethodLength
           {
             id: id,
             name: operation.name,
@@ -429,13 +524,24 @@ module Lutaml
             owner: @id_generator.class_id(owner),
             ownerName: owner.name,
             parameters: serialize_parameters(operation),
-            isStatic: operation.respond_to?(:is_static) ? operation.is_static : false,
-            isAbstract: operation.respond_to?(:is_abstract) ? operation.is_abstract : false,
+            isStatic: if operation.respond_to?(:is_static)
+                        operation.is_static
+                      else
+                        false
+                      end,
+            isAbstract: if operation.respond_to?(:is_abstract)
+                          operation.is_abstract
+                        else
+                          false
+                        end,
           }
         end
 
-        def serialize_parameters(operation)
-          return [] unless operation.respond_to?(:owned_parameter) && operation.owned_parameter
+        def serialize_parameters(operation) # rubocop:disable Metrics/MethodLength
+          unless operation.respond_to?(:owned_parameter) &&
+              operation.owned_parameter
+            return []
+          end
 
           operation.owned_parameter.map do |param|
             {
@@ -474,13 +580,15 @@ module Lutaml
         # Helper methods
 
         def package_path(package)
-          return package.name unless package.respond_to?(:namespace) && package.namespace
+          unless package.respond_to?(:namespace) && package.namespace
+            return package.name
+          end
           return package.name unless package.namespace.is_a?(Lutaml::Uml::Package)
 
           "#{package_path(package.namespace)}::#{package.name}"
         end
 
-        def qualified_name(klass)
+        def qualified_name(klass) # rubocop:disable Metrics/MethodLength
           path_parts = []
           current = klass
 
@@ -488,7 +596,7 @@ module Lutaml
           while current
             if current.is_a?(Lutaml::Uml::TopElement)
               path_parts.unshift(current.name)
-              current = current.respond_to?(:namespace) ? current.namespace : nil
+              current = current.namespace if current.respond_to?(:namespace)
             elsif current.is_a?(Lutaml::Uml::Package)
               path_parts.unshift(current.name)
               current = current.namespace
@@ -543,13 +651,14 @@ module Lutaml
           }
         end
 
-        def format_definition(definition)
+        def format_definition(definition) # rubocop:disable Metrics/MethodLength
           return nil if definition.nil? || definition.empty?
 
           formatted = definition.strip
 
           # Optionally truncate
-          if @options[:max_definition_length] && formatted.length > @options[:max_definition_length]
+          if @options[:max_definition_length] &&
+              formatted.length > @options[:max_definition_length]
             formatted = "#{formatted[0...@options[:max_definition_length]]}..."
           end
 
@@ -581,7 +690,7 @@ module Lutaml
           []
         end
 
-        def find_generalizations(klass)
+        def find_generalizations(klass) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           # Use the pre-built generalization map for multiple inheritance
           parent_xmi_ids = @generalization_map[klass.xmi_id]
 
@@ -590,7 +699,7 @@ module Lutaml
             parents = parent_xmi_ids.map do |parent_xmi_id|
               # Skip self-referential generalization
               next if parent_xmi_id == klass.xmi_id
-              
+
               parent = find_class_by_xmi_id(parent_xmi_id)
               parent ? @id_generator.class_id(parent) : nil
             end.compact
@@ -602,7 +711,7 @@ module Lutaml
           parent = repository.supertype_of(klass)
           # Skip if parent is self (self-referential generalization)
           return [] if parent && parent.xmi_id == klass.xmi_id
-          
+
           parent ? [@id_generator.class_id(parent)] : []
         rescue StandardError => e
           warn "Error finding generalizations for #{klass.name}: #{e.message}"
@@ -612,7 +721,9 @@ module Lutaml
         def find_specializations(klass)
           children = repository.subtypes_of(klass)
           # Filter out self if somehow included
-          children.reject { |child| child.xmi_id == klass.xmi_id }.map { |child| @id_generator.class_id(child) }
+          children.reject do |child|
+            child.xmi_id == klass.xmi_id
+          end.map { |child| @id_generator.class_id(child) }
         rescue StandardError
           []
         end
@@ -630,9 +741,11 @@ module Lutaml
           []
         end
 
-        def serialize_generalization(klass, visited = Set.new)
-          return nil unless klass.respond_to?(:generalization) && klass.generalization
-          return nil if visited.include?(klass.xmi_id)  # Prevent infinite loops
+        def serialize_generalization(klass, visited = Set.new) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+          unless klass.respond_to?(:generalization) && klass.generalization
+            return nil
+          end
+          return nil if visited.include?(klass.xmi_id) # Prevent infinite loops
 
           visited.add(klass.xmi_id)
           gen = klass.generalization
@@ -640,16 +753,28 @@ module Lutaml
           {
             generalId: gen.general_id,
             generalName: gen.general_name,
-            generalUpperKlass: gen.respond_to?(:general_upper_klass) ? gen.general_upper_klass : nil,
+            generalUpperKlass: if gen.respond_to?(:general_upper_klass)
+                                 gen.general_upper_klass
+                               end,
             hasGeneral: gen.respond_to?(:has_general) ? gen.has_general : false,
             name: gen.name,
             type: gen.type,
             definition: format_definition(gen.definition),
             stereotype: gen.respond_to?(:stereotype) ? gen.stereotype : nil,
-            ownedProps: (gen.respond_to?(:owned_props) ? gen.owned_props : []).map { |attr| serialize_general_attribute(attr) },
-            assocProps: (gen.respond_to?(:assoc_props) ? gen.assoc_props : []).map { |attr| serialize_general_attribute(attr) },
-            inheritedProps: (gen.respond_to?(:inherited_props) ? gen.inherited_props : []).map { |attr| serialize_general_attribute(attr) },
-            inheritedAssocProps: (gen.respond_to?(:inherited_assoc_props) ? gen.inherited_assoc_props : []).map { |attr| serialize_general_attribute(attr) },
+            ownedProps: (gen.respond_to?(:owned_props) ? gen.owned_props : [])
+              .map { |attr| serialize_general_attribute(attr) },
+            assocProps: (gen.respond_to?(:assoc_props) ? gen.assoc_props : [])
+              .map { |attr| serialize_general_attribute(attr) },
+            inheritedProps: (
+              gen.respond_to?(:inherited_props) ? gen.inherited_props : []
+            ).map { |attr| serialize_general_attribute(attr) },
+            inheritedAssocProps: (
+              if gen.respond_to?(:inherited_assoc_props)
+                gen.inherited_assoc_props
+              else
+                []
+              end
+            ).map { |attr| serialize_general_attribute(attr) },
           }
         rescue StandardError => e
           warn "Error serializing generalization: #{e.message}"
@@ -675,8 +800,7 @@ module Lutaml
           return nil unless parent
 
           # Recursively find all ancestors
-          ancestors = find_all_ancestors(parent, []) || []
-          ancestors
+          find_all_ancestors(parent, []) || []
         end
 
         def find_all_ancestors(klass, ancestors = [])
@@ -684,15 +808,20 @@ module Lutaml
 
           unless ancestors.include?(klass.xmi_id)
             ancestors << klass.xmi_id
-            find_all_ancestors(klass.generalization&.general_class, ancestors) if klass.generalization&.general_classierarchy
+            if klass.generalization&.general_classierarchy
+              find_all_ancestors(klass.generalization&.general_class,
+                                 ancestors)
+            end
           end
           ancestors
         end
 
         # Compute inherited attributes from generalization chain
-        def compute_inherited_attributes(klass, visited = Set.new)
-          return [] unless klass.respond_to?(:generalization) && klass.generalization
-          return [] if visited.include?(klass.xmi_id)  # Prevent infinite loops
+        def compute_inherited_attributes(klass, visited = Set.new) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+          unless klass.respond_to?(:generalization) && klass.generalization
+            return []
+          end
+          return [] if visited.include?(klass.xmi_id) # Prevent infinite loops
 
           visited.add(klass.xmi_id)
           inherited = []
@@ -702,13 +831,15 @@ module Lutaml
           while current_gen
             parent_class = find_class_by_xmi_id(current_gen.general_id)
             break unless parent_class
-            break if visited.include?(parent_class.xmi_id)  # Prevent cycles
+            break if visited.include?(parent_class.xmi_id) # Prevent cycles
 
             visited.add(parent_class.xmi_id)
 
             if parent_class.attributes
               # Sort attributes by name within this parent
-              sorted_attrs = parent_class.attributes.sort_by { |a| a.name || '' }
+              sorted_attrs = parent_class.attributes.sort_by do |a|
+                a.name || ''
+              end
               sorted_attrs.each do |attr|
                 attr_id = @id_generator.attribute_id(attr, parent_class)
                 inherited << {
@@ -716,14 +847,16 @@ module Lutaml
                   attribute: serialize_attribute(attr, parent_class, attr_id),
                   inheritedFrom: @id_generator.class_id(parent_class),
                   inheritedFromName: parent_class.name,
-                  parentOrder: parent_order,  # Track hierarchy order
+                  parentOrder: parent_order, # Track hierarchy order
                 }
               end
             end
 
             # Move to parent's parent
             parent_order += 1
-            current_gen = current_gen.respond_to?(:general) ? current_gen.general : nil
+            current_gen = if current_gen.respond_to?(:general)
+              current_gen.general
+            end
           end
 
           # Already sorted by parent hierarchy, then by name within parent
@@ -734,9 +867,11 @@ module Lutaml
         end
 
         # Compute inherited associations from generalization chain
-        def compute_inherited_associations(klass, visited = Set.new)
-          return [] unless klass.respond_to?(:generalization) && klass.generalization
-          return [] if visited.include?(klass.xmi_id)  # Prevent infinite loops
+        def compute_inherited_associations(klass, visited = Set.new) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+          unless klass.respond_to?(:generalization) && klass.generalization
+            return []
+          end
+          return [] if visited.include?(klass.xmi_id) # Prevent infinite loops
 
           visited.add(klass.xmi_id)
           inherited = []
@@ -746,15 +881,18 @@ module Lutaml
           while current_gen
             parent_class = find_class_by_xmi_id(current_gen.general_id)
             break unless parent_class
-            break if visited.include?(parent_class.xmi_id)  # Prevent cycles
+            break if visited.include?(parent_class.xmi_id) # Prevent cycles
 
             visited.add(parent_class.xmi_id)
 
             parent_associations = find_class_associations(parent_class)
 
-            # Get association details and determine local role from parent's perspective
+            # Get association details and determine local role from parent's
+            # perspective
             assoc_with_roles = parent_associations.map do |assoc_id|
-              assoc = repository.associations_index.find { |a| @id_generator.association_id(a) == assoc_id }
+              assoc = repository.associations_index.find do |a|
+                @id_generator.association_id(a) == assoc_id
+              end
               next unless assoc
 
               # Determine which role is the "local" one for the parent class
@@ -777,13 +915,15 @@ module Lutaml
                 inheritedFrom: @id_generator.class_id(parent_class),
                 inheritedFromName: parent_class.name,
                 parentOrder: parent_order,
-                localRole: item[:role],  # Include for template use
+                localRole: item[:role], # Include for template use
               }
             end
 
             # Move to parent's parent
             parent_order += 1
-            current_gen = current_gen.respond_to?(:general) ? current_gen.general : nil
+            current_gen = if current_gen.respond_to?(:general)
+              current_gen.general
+            end
           end
 
           inherited
@@ -803,7 +943,9 @@ module Lutaml
         # Find class by object ID (EA object ID)
         def find_class_by_object_id(object_id)
           return nil unless object_id
-          repository.classes_index.find { |c| c.respond_to?(:ea_object_id) && c.ea_object_id == object_id }
+          repository.classes_index.find do |c|
+            c.respond_to?(:ea_object_id) && c.ea_object_id == object_id
+          end
         rescue StandardError
           nil
         end

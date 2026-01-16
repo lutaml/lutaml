@@ -4,7 +4,9 @@ require "spec_helper"
 require_relative "../../../../lib/lutaml/qea/services/configuration"
 
 RSpec.describe Lutaml::Qea::Services::Configuration do
-  let(:config_path) { File.expand_path("../../../../config/qea_schema.yml", __dir__) }
+  let(:config_path) do
+    File.expand_path("../../../../config/qea_schema.yml", __dir__)
+  end
 
   describe ".load" do
     it "loads configuration from YAML file" do

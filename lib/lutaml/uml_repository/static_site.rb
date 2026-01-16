@@ -38,7 +38,8 @@ module Lutaml
         # @param repository [UmlRepository] The repository to generate from
         # @param options [Hash] Generation options
         # @option options [Configuration] :config Configuration instance
-        # @option options [Symbol] :mode Output mode (:single_file or :multi_file)
+        # @option options [Symbol] :mode Output mode
+        # (:single_file or :multi_file)
         # @option options [String] :output Output path
         # @return [String] Path to generated output
         def generate(repository, options = {})

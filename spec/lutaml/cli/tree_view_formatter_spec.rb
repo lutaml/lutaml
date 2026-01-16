@@ -19,7 +19,7 @@ RSpec.describe Lutaml::Cli::TreeViewFormatter do
             total_packages: 5,
             total_classes: 20,
             total_diagrams: 3,
-          }
+          },
         )
       end
 
@@ -47,7 +47,7 @@ RSpec.describe Lutaml::Cli::TreeViewFormatter do
             total_packages: 1,
             total_classes: 1,
             total_diagrams: 1,
-          }
+          },
         )
       end
 
@@ -68,7 +68,7 @@ RSpec.describe Lutaml::Cli::TreeViewFormatter do
             total_packages: 0,
             total_classes: 0,
             total_diagrams: 0,
-          }
+          },
         )
       end
 
@@ -88,7 +88,7 @@ RSpec.describe Lutaml::Cli::TreeViewFormatter do
             total_packages: 0,
             total_classes: 0,
             total_diagrams: 0,
-          }
+          },
         )
       end
 
@@ -108,7 +108,7 @@ RSpec.describe Lutaml::Cli::TreeViewFormatter do
             total_packages: 0,
             total_classes: 0,
             total_diagrams: 0,
-          }
+          },
         )
       end
 
@@ -128,7 +128,7 @@ RSpec.describe Lutaml::Cli::TreeViewFormatter do
             total_packages: 0,
             total_classes: 0,
             total_diagrams: 0,
-          }
+          },
         )
       end
 
@@ -150,7 +150,7 @@ RSpec.describe Lutaml::Cli::TreeViewFormatter do
         operation: "#87CEEB",
         association: :white,
         diagram: "#DDA0DD",
-        statistics: "#ADD8E6"
+        statistics: "#ADD8E6",
       )
     end
   end
@@ -165,7 +165,7 @@ RSpec.describe Lutaml::Cli::TreeViewFormatter do
         attribute: "🔹",
         operation: "🔧",
         association: "🔗",
-        diagram: "📊"
+        diagram: "📊",
       )
     end
   end
@@ -177,7 +177,7 @@ RSpec.describe Lutaml::Cli::TreeViewFormatter do
         branch: "├──",
         last_branch: "└──",
         space: "   ",
-        continuation: "│  "
+        continuation: "│  ",
       )
     end
   end

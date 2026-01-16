@@ -24,9 +24,13 @@ module Lutaml
         # @param packages [Array<Lutaml::Uml::Package>] Packages to validate
         # @param parent_path [String] Parent package path for context
         # @return [void]
-        def validate_package_hierarchy(packages, parent_path = "")
+        def validate_package_hierarchy(packages, parent_path = "") # rubocop:disable Metrics/MethodLength
           packages.each do |package|
-            current_path = parent_path.empty? ? package.name : "#{parent_path}::#{package.name}"
+            current_path = if parent_path.empty?
+                             package.name
+                           else
+                             "#{parent_path}::#{package.name}"
+                           end
 
             # Validate package structure
             validate_package_structure(package, current_path)
@@ -43,7 +47,7 @@ module Lutaml
         # @param package [Lutaml::Uml::Package] Package to validate
         # @param path [String] Package path for error reporting
         # @return [void]
-        def validate_package_structure(package, path)
+        def validate_package_structure(package, path) # rubocop:disable Metrics/MethodLength
           # Check for required fields
           unless present?(package.name)
             result.add_error(
@@ -70,7 +74,7 @@ module Lutaml
         # @param attribute [Symbol] Attribute name
         # @param path [String] Package path for error reporting
         # @return [void]
-        def validate_collection(package, attribute, path)
+        def validate_collection(package, attribute, path) # rubocop:disable Metrics/MethodLength
           value = package.send(attribute)
           unless value.nil? || value.is_a?(Array)
             result.add_error(
@@ -88,7 +92,7 @@ module Lutaml
         # Validates no duplicate names within same parent
         #
         # @return [void]
-        def validate_no_duplicate_names
+        def validate_no_duplicate_names # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           return unless document
 
           # Check top-level entities
@@ -124,8 +128,12 @@ module Lutaml
         # @param package [Lutaml::Uml::Package] Package to validate
         # @param parent_path [String] Parent path for context
         # @return [void]
-        def validate_package_duplicates(package, parent_path)
-          current_path = parent_path.empty? ? package.name : "#{parent_path}::#{package.name}"
+        def validate_package_duplicates(package, parent_path) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+          current_path = if parent_path.empty?
+                           package.name
+                         else
+                           "#{parent_path}::#{package.name}"
+                         end
 
           # Check for duplicates within this package
           check_duplicate_names_in_collection(
@@ -161,8 +169,9 @@ module Lutaml
         # @param entity_type [Symbol] Type of entities
         # @param context_path [String] Context path for error reporting
         # @return [void]
-        def check_duplicate_names_in_collection(collection, entity_type,
-context_path)
+        def check_duplicate_names_in_collection( # rubocop:disable Metrics/MethodLength
+          collection, entity_type, context_path
+        )
           name_counts = Hash.new(0)
 
           collection.each do |entity|
@@ -188,18 +197,18 @@ context_path)
         # Validates type references in attributes
         #
         # @return [void]
-        def validate_type_references
+        def validate_type_references # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           return unless document
 
-          all_classes = extract_all_classes_with_path(document)
-          all_data_types = extract_all_data_types_with_path(document)
-          all_enums = extract_all_enums_with_path(document)
+          all_classes = extract_all_classes(document)
+          all_data_types = extract_all_data_types(document)
+          all_enums = extract_all_enums(document)
 
           # Build a set of all valid type names
           valid_types = Set.new
-          all_classes.each { |cls, _path| valid_types << cls.name if cls.name }
-          all_data_types.each { |dt, _path| valid_types << dt.name if dt.name }
-          all_enums.each { |enum, _path| valid_types << enum.name if enum.name }
+          all_classes.each { |cls| valid_types << cls.name if cls.name }
+          all_data_types.each { |dt| valid_types << dt.name if dt.name }
+          all_enums.each { |enum| valid_types << enum.name if enum.name }
 
           # Check attribute type references
           all_classes.each do |cls, path|
@@ -224,22 +233,23 @@ context_path)
           end
         end
 
-        # Extracts all classes with their paths
+        # Extracts all classes
         #
         # @param doc [Lutaml::Uml::Document] Document to extract from
-        # @return [Array<Array>] Array of [class, path] pairs
-        def extract_all_classes_with_path(doc)
+        # @return [Array<Array>] Array of [class]
+        def extract_all_classes(doc) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/MethodLength
           # Top-level classes
-          classes = (doc.classes || []).map do |cls|
-            [cls, cls.name || "Unnamed"]
-          end
+          classes = doc.classes || []
 
           # Classes in packages
           (doc.packages || []).each do |pkg|
-            classes.concat(extract_classes_from_package_with_path(pkg, ""))
+            cls_with_paths = extract_classes_from_package_with_path(pkg, "")
+            cls_with_paths.each do |cls_with_path|
+              classes << cls_with_path[0]
+            end
           end
 
-          classes
+          classes.flatten
         end
 
         # Extracts classes from package with path
@@ -247,9 +257,13 @@ context_path)
         # @param package [Lutaml::Uml::Package] Package to extract from
         # @param parent_path [String] Parent path
         # @return [Array<Array>] Array of [class, path] pairs
-        def extract_classes_from_package_with_path(package, parent_path)
+        def extract_classes_from_package_with_path(package, parent_path) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           classes = []
-          current_path = parent_path.empty? ? package.name : "#{parent_path}::#{package.name}"
+          current_path = if parent_path.empty?
+                           package.name
+                         else
+                           "#{parent_path}::#{package.name}"
+                         end
 
           (package.classes || []).each do |cls|
             full_path = "#{current_path}::#{cls.name || 'Unnamed'}"
@@ -257,28 +271,29 @@ context_path)
           end
 
           (package.packages || []).each do |child|
-            classes.concat(extract_classes_from_package_with_path(child,
-                                                                  current_path))
+            classes.concat(
+              extract_classes_from_package_with_path(child, current_path),
+            )
           end
 
           classes
         end
 
-        # Extracts all data types with their paths
+        # Extracts all data types
         #
         # @param doc [Lutaml::Uml::Document] Document to extract from
-        # @return [Array<Array>] Array of [data_type, path] pairs
-        def extract_all_data_types_with_path(doc)
-          data_types = (doc.data_types || []).map do |dt|
-            [dt, dt.name || "Unnamed"]
-          end
+        # @return [Array<Array>] Array of [data_type]
+        def extract_all_data_types(doc)
+          data_types = doc.data_types || []
 
           (doc.packages || []).each do |pkg|
-            data_types.concat(extract_data_types_from_package_with_path(pkg,
-                                                                        ""))
+            dts_with_paths = extract_data_types_from_package_with_path(pkg, "")
+            dts_with_paths.each do |dt_with_path|
+              data_types << dt_with_path[0]
+            end
           end
 
-          data_types
+          data_types.flatten
         end
 
         # Extracts data types from package with path
@@ -286,9 +301,13 @@ context_path)
         # @param package [Lutaml::Uml::Package] Package to extract from
         # @param parent_path [String] Parent path
         # @return [Array<Array>] Array of [data_type, path] pairs
-        def extract_data_types_from_package_with_path(package, parent_path)
+        def extract_data_types_from_package_with_path(package, parent_path) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           data_types = []
-          current_path = parent_path.empty? ? package.name : "#{parent_path}::#{package.name}"
+          current_path = if parent_path.empty?
+                           package.name
+                         else
+                           "#{parent_path}::#{package.name}"
+                         end
 
           (package.data_types || []).each do |dt|
             full_path = "#{current_path}::#{dt.name || 'Unnamed'}"
@@ -296,8 +315,9 @@ context_path)
           end
 
           (package.packages || []).each do |child|
-            data_types.concat(extract_data_types_from_package_with_path(child,
-                                                                        current_path))
+            data_types.concat(
+              extract_data_types_from_package_with_path(child, current_path),
+            )
           end
 
           data_types
@@ -307,16 +327,17 @@ context_path)
         #
         # @param doc [Lutaml::Uml::Document] Document to extract from
         # @return [Array<Array>] Array of [enum, path] pairs
-        def extract_all_enums_with_path(doc)
-          enums = (doc.enums || []).map do |enum|
-            [enum, enum.name || "Unnamed"]
-          end
+        def extract_all_enums(doc)
+          enums = doc.enums || []
 
           (doc.packages || []).each do |pkg|
-            enums.concat(extract_enums_from_package_with_path(pkg, ""))
+            enums_with_paths = extract_enums_from_package_with_path(pkg, "")
+            enums_with_paths.each do |enum_with_path|
+              enums << enum_with_path[0]
+            end
           end
 
-          enums
+          enums.flatten
         end
 
         # Extracts enums from package with path
@@ -324,9 +345,13 @@ context_path)
         # @param package [Lutaml::Uml::Package] Package to extract from
         # @param parent_path [String] Parent path
         # @return [Array<Array>] Array of [enum, path] pairs
-        def extract_enums_from_package_with_path(package, parent_path)
+        def extract_enums_from_package_with_path(package, parent_path) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           enums = []
-          current_path = parent_path.empty? ? package.name : "#{parent_path}::#{package.name}"
+          current_path = if parent_path.empty?
+                           package.name
+                         else
+                           "#{parent_path}::#{package.name}"
+                         end
 
           (package.enums || []).each do |enum|
             full_path = "#{current_path}::#{enum.name || 'Unnamed'}"
@@ -334,8 +359,9 @@ context_path)
           end
 
           (package.packages || []).each do |child|
-            enums.concat(extract_enums_from_package_with_path(child,
-                                                              current_path))
+            enums.concat(
+              extract_enums_from_package_with_path(child, current_path),
+            )
           end
 
           enums

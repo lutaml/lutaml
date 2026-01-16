@@ -7,15 +7,17 @@ module Lutaml
     module Uml
       # SharedHelpers provides common utility methods for UML commands
       #
-      # This module is included in command classes to provide shared functionality
-      # like repository loading and path normalization, following the DRY principle.
+      # This module is included in command classes to provide shared
+      # functionality
+      # like repository loading and path normalization, following the
+      # DRY principle.
       module SharedHelpers
         # Load repository from LUR file
         #
         # @param lur_path [String] Path to LUR package file
         # @param lazy [Boolean] Whether to use lazy loading
         # @return [Lutaml::UmlRepository::Repository] Loaded repository
-        def load_repository(lur_path, lazy: false)
+        def load_repository(lur_path, lazy: false) # rubocop:disable Metrics/MethodLength
           OutputFormatter.progress("Loading repository from #{lur_path}")
           repo = if lazy
                    Lutaml::UmlRepository::Repository.from_package_lazy(lur_path)

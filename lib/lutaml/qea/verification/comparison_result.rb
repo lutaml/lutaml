@@ -8,7 +8,7 @@ module Lutaml
         attr_reader :matches, :differences, :xmi_only, :qea_only,
                     :property_differences
 
-        def initialize
+        def initialize # rubocop:disable Metrics/MethodLength
           @matches = {
             packages: 0,
             classes: 0,
@@ -100,7 +100,7 @@ module Lutaml
         # Generate human-readable summary
         #
         # @return [String] Summary text
-        def summary
+        def summary # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           lines = []
           lines << "=== Verification Summary ==="
           lines << ""
@@ -124,7 +124,9 @@ module Lutaml
               elements.first(5).each do |elem|
                 lines << "    - #{elem}"
               end
-              lines << "    ... and #{elements.size - 5} more" if elements.size > 5
+              if elements.size > 5
+                lines << "    ... and #{elements.size - 5} more"
+              end
             end
             lines << ""
           end
@@ -156,13 +158,15 @@ module Lutaml
           end
 
           # Result
-          lines << "Result: #{equivalent? ? '✓ EQUIVALENT' : '✗ NOT EQUIVALENT'}"
+          lines << "Result: " \
+                   "#{equivalent? ? '✓ EQUIVALENT' : '✗ NOT EQUIVALENT'}"
           lines << ""
 
           lines << if equivalent?
                      "QEA contains all XMI information (possibly more)."
                    else
-                     "Information loss detected - QEA missing critical elements."
+                     "Information loss detected - " \
+                       "QEA missing critical elements."
                    end
 
           lines.join("\n")
@@ -205,7 +209,7 @@ module Lutaml
         # Get critical issues (information loss)
         #
         # @return [Array<String>] List of critical issues
-        def critical_issues
+        def critical_issues # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           issues = []
 
           # Missing packages
@@ -233,7 +237,7 @@ module Lutaml
         # Get acceptable differences (QEA has more)
         #
         # @return [Array<String>] List of acceptable differences
-        def acceptable_differences
+        def acceptable_differences # rubocop:disable Metrics/MethodLength
           acceptable = []
 
           # QEA-only elements

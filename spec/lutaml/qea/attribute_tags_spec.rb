@@ -94,7 +94,7 @@ RSpec.describe "Attribute Tags Support" do
           property_id: 1,
           element_id: 367,
           property: "isMetadata",
-          value: "false"
+          value: "false",
         )
 
         uml_tag = transformer.transform(ea_tag)
@@ -114,7 +114,7 @@ RSpec.describe "Attribute Tags Support" do
           property_id: 1,
           element_id: 367,
           property: nil,
-          value: "false"
+          value: "false",
         )
 
         uml_tag = transformer.transform(ea_tag)

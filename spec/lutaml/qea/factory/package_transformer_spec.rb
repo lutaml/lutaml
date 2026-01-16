@@ -20,7 +20,7 @@ RSpec.describe Lutaml::Qea::Factory::PackageTransformer do
         package_id: 1,
         name: "Domain",
         ea_guid: "{PKG-GUID}",
-        notes: "Domain model package"
+        notes: "Domain model package",
       )
 
       allow(database).to receive(:xrefs).and_return(nil)
@@ -38,7 +38,7 @@ RSpec.describe Lutaml::Qea::Factory::PackageTransformer do
       ea_pkg = Lutaml::Qea::Models::EaPackage.new(
         package_id: 1,
         name: "Package",
-        notes: ""
+        notes: "",
       )
 
       result = transformer.transform(ea_pkg)
@@ -51,7 +51,7 @@ RSpec.describe Lutaml::Qea::Factory::PackageTransformer do
     it "loads child packages" do
       ea_pkg = Lutaml::Qea::Models::EaPackage.new(
         package_id: 1,
-        name: "Root"
+        name: "Root",
       )
 
       child_row = {
@@ -84,7 +84,7 @@ RSpec.describe Lutaml::Qea::Factory::PackageTransformer do
     it "loads package objects as classes" do
       ea_pkg = Lutaml::Qea::Models::EaPackage.new(
         package_id: 1,
-        name: "Models"
+        name: "Models",
       )
 
       class_row = {
@@ -119,11 +119,16 @@ RSpec.describe Lutaml::Qea::Factory::PackageTransformer do
         .with("SELECT NAME FROM t_package WHERE Package_ID = ?", [1])
         .and_return([])
       allow(connection).to receive(:execute)
-        .with("SELECT * FROM t_connector WHERE Start_Object_ID = ? AND Connector_Type = 'Generalization' LIMIT 1", 10)
-        .and_return([])
-      allow(connection).to receive(:execute)
-        .with("SELECT ea_guid, End_Object_ID FROM t_connector WHERE Start_Object_ID = ? AND Connector_Type = 'Generalization'", 10)
-        .and_return([])
+        .with(
+          "SELECT * FROM t_connector WHERE Start_Object_ID = ? " \
+          "AND Connector_Type = 'Generalization' LIMIT 1", 10
+        ).and_return([])
+      allow(connection)
+        .to receive(:execute)
+        .with(
+          "SELECT ea_guid, End_Object_ID FROM t_connector " \
+          "WHERE Start_Object_ID = ? AND Connector_Type = 'Generalization'", 10
+        ).and_return([])
 
       allow(database).to receive(:object_constraints).and_return([])
       allow(database).to receive(:object_properties).and_return([])
@@ -139,7 +144,7 @@ RSpec.describe Lutaml::Qea::Factory::PackageTransformer do
     it "loads package diagrams" do
       ea_pkg = Lutaml::Qea::Models::EaPackage.new(
         package_id: 1,
-        name: "Views"
+        name: "Views",
       )
 
       diagram_row = {

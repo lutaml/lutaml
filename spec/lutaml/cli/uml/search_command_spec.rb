@@ -25,7 +25,9 @@ RSpec.describe Lutaml::Cli::Uml::SearchCommand do
       let(:options) { { format: "table", type: ["class"], in: ["name"] } }
 
       it "performs search" do
-        expect { command.run(test_lur, "Building") }.not_to output(/ERROR/).to_stdout
+        expect {
+          command.run(test_lur, "Building")
+        }.not_to output(/ERROR/).to_stdout
       end
 
       it "shows results or no results message" do
@@ -39,7 +41,9 @@ RSpec.describe Lutaml::Cli::Uml::SearchCommand do
       let(:options) { { format: "table", type: ["class"], in: ["name"] } }
 
       it "treats query as regex" do
-        expect { command.run(test_lur, "^Building") }.not_to output(/ERROR/).to_stdout
+        expect {
+          command.run(test_lur, "^Building")
+        }.not_to output(/ERROR/).to_stdout
       end
     end
 

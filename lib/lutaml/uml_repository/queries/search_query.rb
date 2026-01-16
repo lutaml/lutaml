@@ -14,7 +14,8 @@ module Lutaml
       # @example Searching for text
       #   query = SearchQuery.new(document, indexes)
       #   results = query.search("Building")
-      #   # => { classes: [...], attributes: [...], associations: [...], total: 15 }
+      #   # => { classes: [...], attributes: [...], associations: [...],
+      #   total: 15 }
       #
       # @example Pattern matching
       #   results = query.search("^Urban", type: :class)
@@ -28,15 +29,18 @@ module Lutaml
         # @param query_string [String] The text to search for
         # @param types [Array<Symbol>] Types to search in - :class, :attribute,
         #   :association (default: [:class, :attribute, :association])
-        # @param fields [Array<Symbol>] Fields to search in - :name, :documentation
+        # @param fields [Array<Symbol>] Fields to search in
+        # - :name, :documentation
         #   (default: [:name])
         # @return [Hash] Search results with keys :classes, :attributes,
         #   :associations, :total
         # @example
         #   results = query.search("building")
         #   results = query.search("urban", fields: [:name, :documentation])
-        def search(query_string, types: %i[class attribute association],
-                                 fields: [:name], case_sensitive: false)
+        def search( # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+          query_string, types: %i[class attribute association],
+                        fields: [:name], case_sensitive: false
+        )
           return empty_result if query_string.nil? || query_string.empty?
 
           results = {
@@ -49,19 +53,22 @@ module Lutaml
           # Search classes
           if types.include?(:class)
             results[:classes] = search_classes(
-              query_string, fields: fields, case_sensitive: case_sensitive)
+              query_string, fields: fields, case_sensitive: case_sensitive
+            )
           end
 
           # Search attributes
           if types.include?(:attribute)
             results[:attributes] = search_attributes(
-              query_string, fields: fields, case_sensitive: case_sensitive)
+              query_string, fields: fields, case_sensitive: case_sensitive
+            )
           end
 
           # Search associations
           if types.include?(:association)
             results[:associations] = search_associations(
-              query_string, fields: fields, case_sensitive: case_sensitive)
+              query_string, fields: fields, case_sensitive: case_sensitive
+            )
           end
 
           results[:total] = results[:classes].size +
@@ -77,7 +84,7 @@ module Lutaml
         #
         # @param query_string [String] The text to search for
         # @param fields [Array<Symbol>] Fields to search in - :name, :
-        def full_text_search(
+        def full_text_search( # rubocop:disable Metrics/MethodLength
           query_string,
           fields: [:name], case_sensitive: false
         )
@@ -88,11 +95,13 @@ module Lutaml
 
           # Search classes
           results[:classes] = search_classes(
-            query_string, fields: fields, case_sensitive: case_sensitive)
+            query_string, fields: fields, case_sensitive: case_sensitive
+          )
 
           # Search packages
           results[:packages] = search_packages(
-            query_string, case_sensitive: case_sensitive)
+            query_string, case_sensitive: case_sensitive
+          )
 
           results[:total] = results[:classes].size + results[:packages].size
 
@@ -104,9 +113,13 @@ module Lutaml
         # @param query [String] Query string
         # @param fields [Array<Symbol>] Fields to search in
         # @return [Array<SearchResult>] Matching search result objects
-        def search_classes(query, fields: [:name, :documentation], case_sensitive: false)
+        def search_classes( # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+          query, fields: [:name, :documentation],
+          case_sensitive: false
+        )
           pattern = regex_pattern_from_query(
-            query, case_sensitive: case_sensitive)
+            query, case_sensitive: case_sensitive
+          )
 
           indexes[:qualified_names].map do |qname, entity|
             match_field = nil
@@ -117,8 +130,8 @@ module Lutaml
             # Check fields for match
             fields.each do |field|
               if entity.respond_to?(field) &&
-                entity.send(field)&.match?(pattern)
-              
+                  entity.send(field)&.match?(pattern)
+
                 match_field = field
                 qualified_name = qname
               end
@@ -136,19 +149,17 @@ module Lutaml
           end.compact.uniq
         end
 
-        def search_by_stereotype(query, case_sensitive: false)
+        def search_by_stereotype(query, case_sensitive: false) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           pattern = regex_pattern_from_query(
-            query, case_sensitive: case_sensitive)
+            query, case_sensitive: case_sensitive
+          )
 
-          matched_entities = indexes[:stereotypes].map do |stereotype, entities|
-            entities.map do |entity|
-              # Check stereotype for match
-              if entity.respond_to?(:stereotype) &&
-                entity.stereotype&.match?(pattern)
-
-                entity
-              end
-            end.compact.uniq
+          matched_entities = indexes[:stereotypes]
+            .map do |_stereotype, entities|
+              entities.select do |entity|
+                entity.respond_to?(:stereotype) &&
+                  entity.stereotype&.match?(pattern)
+              end.uniq
           end.compact.uniq.flatten
 
           matched_entities.map do |entity|
@@ -167,9 +178,10 @@ module Lutaml
         # @param query [String] Query string
         # @param case_sensitive [Boolean] Whether the search is case-sensitive
         # @return [Array<Lutaml::Uml::Package>] Matching package objects
-        def search_packages(query, case_sensitive: false)
+        def search_packages(query, case_sensitive: false) # rubocop:disable Metrics/MethodLength
           pattern = regex_pattern_from_query(
-            query, case_sensitive: case_sensitive)
+            query, case_sensitive: case_sensitive
+          )
 
           indexes[:package_paths].map do |path_string, package|
             if path_string.to_s.match?(pattern)
@@ -186,7 +198,7 @@ module Lutaml
 
         def regex_pattern_from_query(query, case_sensitive: false)
           # handle wildcard '*' and glob patterns
-          query = query.include?(".*") ? query : query.gsub("*", ".*")
+          query = query.gsub("*", ".*") unless query.include?(".*")
 
           if case_sensitive
             Regexp.new(query)
@@ -200,11 +212,12 @@ module Lutaml
         # @param query [String] Query string
         # @param fields [Array<Symbol>] Fields to search in
         # @return [Array<Lutaml::Uml::Class>] Matching search result objects
-        def search_attributes(query, fields: [:name], case_sensitive: false)
+        def search_attributes(query, fields: [:name], case_sensitive: false) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           pattern = regex_pattern_from_query(
-            query, case_sensitive: case_sensitive)
+            query, case_sensitive: case_sensitive
+          )
 
-          indexes[:qualified_names].map do |class_qname, entity|
+          indexes[:qualified_names].map do |class_qname, entity| # rubocop:disable Metrics/BlockLength
             next unless entity.respond_to?(:attributes) && entity.attributes
 
             match_field = nil
@@ -215,8 +228,8 @@ module Lutaml
               # Check attribute for match
               fields.each do |field|
                 if attr.respond_to?(field) &&
-                  attr.send(field)&.match?(pattern)
-                
+                    attr.send(field)&.match?(pattern)
+
                   match_attr = attr
                   match_field = field
                   qualified_name = class_qname
@@ -241,9 +254,9 @@ module Lutaml
         end
 
         # Get all associations in the model
-        # 
+        #
         # @return [Array<Lutaml::Uml::Association>] All association objects
-        def get_all_associations
+        def get_all_associations # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           all_associations = []
 
           # Get all associations defined at document level and
@@ -252,7 +265,7 @@ module Lutaml
           end
 
           # Get all associations defined within classes
-          indexes[:qualified_names].values.each do |entity|
+          indexes[:qualified_names].each_value do |entity|
             next unless entity.respond_to?(:associations) && entity.associations
 
             all_associations << entity.associations
@@ -266,16 +279,16 @@ module Lutaml
         # @param query [String] Query string
         # @param fields [Array<Symbol>] Fields to search in
         # @return [Array<SearchResult>] Matching search result objects
-        def search_associations(query,
-          fields: [
-            :name, :owner_end, :member_end, :owner_end_attribute_name,
-            :member_end_attribute_name, :documentation
+        def search_associations(query, # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+          fields: %i[
+            name owner_end member_end owner_end_attribute_name
+            member_end_attribute_name documentation
           ],
-          case_sensitive: false
-        )
+          case_sensitive: false)
           all_associations = get_all_associations
           pattern = regex_pattern_from_query(
-            query, case_sensitive: case_sensitive)
+            query, case_sensitive: case_sensitive
+          )
 
           all_associations.map do |assoc|
             match_field = nil
@@ -306,7 +319,8 @@ module Lutaml
 
         # Extract package path from qualified name
         #
-        # @param qualified_name [String] Qualified name (e.g., "pkg1::pkg2::Class")
+        # @param qualified_name [String] Qualified name
+        # (e.g., "pkg1::pkg2::Class")
         # @return [String] Package path (e.g., "pkg1::pkg2")
         def extract_package_path(qualified_name)
           parts = qualified_name.to_s.split("::")

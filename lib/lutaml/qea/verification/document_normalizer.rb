@@ -22,7 +22,7 @@ module Lutaml
         #
         # @param document [Lutaml::Uml::Document] The document to process
         # @return [void]
-        def remove_xmi_ids(document)
+        def remove_xmi_ids(document) # rubocop:disable Metrics/AbcSize
           # Remove XMI IDs from packages recursively
           process_packages(document.packages) if document.packages
 
@@ -43,7 +43,7 @@ module Lutaml
         #
         # @param document [Lutaml::Uml::Document] The document to process
         # @return [void]
-        def sort_collections(document)
+        def sort_collections(document) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
           # Sort top-level collections by name
           document.packages&.sort_by! { |p| p.name || "" }
           document.classes&.sort_by! { |c| c.name || "" }
@@ -79,7 +79,7 @@ module Lutaml
         end
 
         # Process packages recursively to remove XMI IDs
-        def process_packages(packages)
+        def process_packages(packages) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity
           packages.each do |package|
             package.xmi_id = nil if package.respond_to?(:xmi_id=)
             process_classes(package.classes) if package.classes
@@ -90,7 +90,7 @@ module Lutaml
         end
 
         # Process classes to remove XMI IDs
-        def process_classes(classes)
+        def process_classes(classes) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           classes.each do |klass|
             klass.xmi_id = nil if klass.respond_to?(:xmi_id=)
 
@@ -108,7 +108,9 @@ module Lutaml
             end
 
             # Process nested classes
-            process_classes(klass.classes) if klass.respond_to?(:classes) && klass.classes
+            if klass.respond_to?(:classes) && klass.classes
+              process_classes(klass.classes)
+            end
           end
         end
 
@@ -116,8 +118,12 @@ module Lutaml
         def process_associations(associations)
           associations.each do |assoc|
             assoc.xmi_id = nil if assoc.respond_to?(:xmi_id=)
-            assoc.owner_end_xmi_id = nil if assoc.respond_to?(:owner_end_xmi_id=)
-            assoc.member_end_xmi_id = nil if assoc.respond_to?(:member_end_xmi_id=)
+            if assoc.respond_to?(:owner_end_xmi_id=)
+              assoc.owner_end_xmi_id = nil
+            end
+            if assoc.respond_to?(:member_end_xmi_id=)
+              assoc.member_end_xmi_id = nil
+            end
           end
         end
 
@@ -139,7 +145,7 @@ module Lutaml
         end
 
         # Sort collections within packages
-        def sort_package_collections(packages)
+        def sort_package_collections(packages) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
           packages.each do |package|
             package.classes&.sort_by! { |c| c.name || "" }
             package.enums&.sort_by! { |e| e.name || "" }
@@ -152,7 +158,7 @@ module Lutaml
         end
 
         # Sort collections within classes
-        def sort_class_collections(classes)
+        def sort_class_collections(classes) # rubocop:disable Metrics/CyclomaticComplexity
           classes.each do |klass|
             klass.attributes&.sort_by! { |a| a.name || "" }
             klass.operations&.sort_by! { |o| o.name || "" }

@@ -319,7 +319,7 @@ RSpec.describe Lutaml::ModelTransformations::FormatRegistry do
     before do
       registry.register(".hp", HighPriorityParser)
       registry.register(".lp", LowPriorityParser)
-      registry.register(".mock", MockParser1)  # Default priority
+      registry.register(".mock", MockParser1) # Default priority
     end
 
     it "returns parsers sorted by priority (highest first)" do
@@ -327,7 +327,7 @@ RSpec.describe Lutaml::ModelTransformations::FormatRegistry do
 
       expect(parsers.map(&:last)).to eq([
         HighPriorityParser,
-        MockParser1,  # Default priority (100)
+        MockParser1, # Default priority (100)
         LowPriorityParser
       ])
     end
@@ -369,7 +369,7 @@ RSpec.describe Lutaml::ModelTransformations::FormatRegistry do
         :total_parsers,
         :total_extensions,
         :extensions_per_parser,
-        :parser_details
+        :parser_details,
       )
 
       expect(stats[:total_parsers]).to eq(2)
@@ -421,12 +421,14 @@ RSpec.describe Lutaml::ModelTransformations::FormatRegistry do
     it "includes parser metadata in export" do
       config = registry.export_configuration
 
-      parser_config = config[:parsers].find { |p| p[:format] == "Mock Format 1" }
+      parser_config = config[:parsers].find do |p|
+        p[:format] == "Mock Format 1"
+      end
       expect(parser_config).to include(
         :format,
         :parser_class,
         :extensions,
-        :priority
+        :priority,
       )
     end
   end

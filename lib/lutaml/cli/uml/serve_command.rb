@@ -25,19 +25,22 @@ module Lutaml
 
           thor_class.option :port, aliases: "-p", type: :numeric, default: 3000,
                                    desc: "Port to listen on"
-          thor_class.option :host, aliases: "-h", type: :string, default: "localhost",
+          thor_class.option :host, aliases: "-h",
+                                   type: :string, default: "localhost",
                                    desc: "Host to bind to"
         end
 
-        def run(lur_path)
+        def run(lur_path) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           unless File.exist?(lur_path)
             puts OutputFormatter.error("Package file not found: #{lur_path}")
             raise Thor::Error, "Package file not found: #{lur_path}"
           end
 
-          puts OutputFormatter.colorize("\n=== Starting Web UI Server ===\n", :cyan)
+          puts OutputFormatter.colorize("\n=== Starting Web UI Server ===\n",
+                                        :cyan)
           puts "Loading repository from: #{lur_path}"
-          puts "Server will be available at: http://#{options[:host]}:#{options[:port]}"
+          puts "Server will be available at: " \
+               "http://#{options[:host]}:#{options[:port]}"
           puts "\nPress Ctrl+C to stop the server\n\n"
 
           Lutaml::Xmi::WebUi::App.serve(lur_path,

@@ -46,7 +46,7 @@ module Lutaml
 
         # Parse the Geometry string to extract routing points
         # @return [Hash] Parsed geometry data
-        def parsed_geometry
+        def parsed_geometry # rubocop:disable Metrics/MethodLength
           return {} unless geometry
 
           parts = geometry.split(",")

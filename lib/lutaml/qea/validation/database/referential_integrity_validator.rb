@@ -15,7 +15,7 @@ module Lutaml
 
         private
 
-        def validate_all_package_references
+        def validate_all_package_references # rubocop:disable Metrics/MethodLength
           # Check all parent_id references in packages
           packages.each do |pkg|
             next if pkg.root?
@@ -35,9 +35,9 @@ module Lutaml
           end
         end
 
-        def validate_all_object_references
+        def validate_all_object_references # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength
           # Check all package_id references in objects
-          objects.each do |obj|
+          objects.each do |obj| # rubocop:disable Metrics/BlockLength
             next unless obj.package_id
 
             unless package_exists?(obj.package_id)
@@ -70,7 +70,7 @@ module Lutaml
           end
         end
 
-        def validate_all_connector_references
+        def validate_all_connector_references # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           # Check all object references in connectors
           connectors.each do |conn|
             unless object_exists?(conn.start_object_id)

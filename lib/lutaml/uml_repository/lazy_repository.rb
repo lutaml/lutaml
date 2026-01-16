@@ -4,7 +4,8 @@ require_relative "repository"
 
 module Lutaml
   module UmlRepository
-    # LazyRepository provides lazy loading optimization for very large UML models
+    # LazyRepository provides lazy loading optimization for very large
+    # UML models
     #
     # For extremely large models (1000+ classes), LazyRepository optimizes
     # memory usage and initial load time by building indexes on-demand rather
@@ -29,7 +30,7 @@ module Lutaml
       # @param indexes [Hash, nil] Pre-built indexes, or nil to build lazily
       # @param lazy [Boolean] Whether to enable lazy loading (default: true)
       # @return [LazyRepository] A new repository instance (not frozen)
-      def initialize(document:, indexes: nil, lazy: true)
+      def initialize(document:, indexes: nil, lazy: true) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
         @document = document
         @indexes = indexes || {}
         @lazy_mode = lazy
@@ -65,7 +66,8 @@ module Lutaml
       #
       # @param qualified_name [String] The qualified name
       # @param raise_on_error [Boolean] Whether to raise an error if not found
-      # @return [Lutaml::Uml::Class, Lutaml::Uml::DataType, Lutaml::Uml::Enum, nil]
+      # @return [Lutaml::Uml::Class, Lutaml::Uml::DataType,
+      # Lutaml::Uml::Enum, nil]
       def find_class(qualified_name, raise_on_error: false)
         ensure_index(:qualified_names)
         super
@@ -204,7 +206,7 @@ module Lutaml
       #
       # @param index_name [Symbol] The name of the index to ensure
       # @return [void]
-      def ensure_index(index_name)
+      def ensure_index(index_name) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength
         return if index_built?(index_name)
 
         puts "Building #{index_name} index..." if $VERBOSE

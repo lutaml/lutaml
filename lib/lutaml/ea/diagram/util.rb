@@ -6,38 +6,36 @@ module Lutaml
       module Util
         # Parse geometry offsets
         def parse_geometry_offsets(geometry_string)
-          begin
-            geometry = parse_ea_geometry(geometry_string)
+          geometry = parse_ea_geometry(geometry_string)
 
-            [
-              geometry[:source_offset_x]&.to_i || 0,
-              geometry[:source_offset_y]&.to_i || 0,
-              geometry[:target_offset_x]&.to_i || 0,
-              geometry[:target_offset_y]&.to_i || 0
-            ]
-          rescue
-            # handles malformed geometry gracefully
-            [0, 0, 0, 0]
-          end
+          [
+            geometry[:source_offset_x].to_i,
+            geometry[:source_offset_y].to_i,
+            geometry[:target_offset_x].to_i,
+            geometry[:target_offset_y].to_i,
+          ]
+        rescue StandardError
+          # handles malformed geometry gracefully
+          [0, 0, 0, 0]
         end
 
-        def parse_ea_geometry(geometry_string)
+        def parse_ea_geometry(geometry_string) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           return nil if geometry_string.nil? || geometry_string.strip.empty?
 
           data = {}
           begin
             geometry = geometry_string
-                        .gsub(/\s/, "")
-                        .downcase
-                        .split(";")
-                        .map { |pair| pair.split("=") }.to_h
+              .gsub(/\s/, "")
+              .downcase
+              .split(";")
+              .to_h { |pair| pair.split("=") }
 
             geometry.each do |k, v|
               if v.include?(",")
                 # waypoints
                 data[:waypoints] ||= []
                 x_str, y_str = v.split(",")
-                data[:waypoints] << {x: x_str.to_i, y: y_str.to_i}
+                data[:waypoints] << { x: x_str.to_i, y: y_str.to_i }
               else
                 key = case k
                       when "sx"
@@ -56,10 +54,10 @@ module Lutaml
                         k
                       end
 
-                data[key.to_sym] = v&.to_i || 0
+                data[key.to_sym] = v.to_i
               end
             end
-          rescue
+          rescue StandardError
             # handles malformed geometry gracefully
             data = {}
           end

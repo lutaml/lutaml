@@ -14,7 +14,7 @@ module Lutaml
 
         private
 
-        def validate_parent_object_references
+        def validate_parent_object_references # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           attributes.each do |attr|
             unless reference_exists?("t_object", "ea_object_id",
                                      attr.ea_object_id)
@@ -22,10 +22,13 @@ module Lutaml
                 o.ea_object_id == attr.ea_object_id
               end
               attr_location = if parent
-                                "#{resolve_class_path(parent.ea_object_id,
-                                                      parent.name)}::#{attr.name}"
+                                "#{resolve_class_path(
+                                  parent.ea_object_id,
+                                  parent.name,
+                                )}::#{attr.name}"
                               else
-                                "Unknown::#{attr.name} (attribute_id: #{attr.id})"
+                                "Unknown::#{attr.name} " \
+                                  "(attribute_id: #{attr.id})"
                               end
               result.add_error(
                 category: :missing_reference,
@@ -41,7 +44,7 @@ module Lutaml
           end
         end
 
-        def validate_type_references
+        def validate_type_references # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           attributes.each do |attr|
             next unless attr.classifier && !attr.classifier.empty?
 

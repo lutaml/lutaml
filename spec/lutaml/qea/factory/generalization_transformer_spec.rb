@@ -17,7 +17,7 @@ RSpec.describe Lutaml::Qea::Factory::GeneralizationTransformer do
 
     it "returns nil for non-generalization connectors" do
       ea_conn = Lutaml::Qea::Models::EaConnector.new(
-        connector_type: "Association"
+        connector_type: "Association",
       )
 
       result = transformer.transform(ea_conn, nil)
@@ -31,7 +31,7 @@ RSpec.describe Lutaml::Qea::Factory::GeneralizationTransformer do
         connector_type: "Generalization",
         start_object_id: 10,  # subtype
         end_object_id: 20,    # supertype
-        notes: "Inheritance relationship"
+        notes: "Inheritance relationship",
       )
 
       subtype_row = {
@@ -70,7 +70,7 @@ RSpec.describe Lutaml::Qea::Factory::GeneralizationTransformer do
       ea_conn = Lutaml::Qea::Models::EaConnector.new(
         connector_type: "Generalization",
         start_object_id: 10,
-        end_object_id: 99
+        end_object_id: 99,
       )
 
       subtype_row = {

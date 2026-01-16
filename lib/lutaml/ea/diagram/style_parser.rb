@@ -3,7 +3,8 @@
 module Lutaml
   module Ea
     module Diagram
-      # Style parser for EA diagram formats - matches Enterprise Architect's exact visual style
+      # Style parser for EA diagram formats
+      # - matches Enterprise Architect's exact visual style
       #
       # This parser converts EA-specific style information into
       # CSS-compatible properties that exactly match EA's visual output.
@@ -22,19 +23,21 @@ module Lutaml
           text_normal: "#000000",          # Black for normal text
           text_italic: "#000000",          # Black for italic text
           text_bold: "#000000",            # Black for bold text
-          text_small: "#003060",           # Dark blue for small text (like in legend)
+          # Dark blue for small text (like in legend)
+          text_small: "#003060",
 
           # Border colors
           border_normal: "#000000",        # Black borders
           border_compartment: "#000000",   # Black compartment lines
 
           # Background
-          diagram_background: "#FFFFFF",   # Pure white background
+          diagram_background: "#FFFFFF", # Pure white background
 
           # Special colors for different element types
           legend_gml: "#A0FFC0",           # Light green for GML legend
           legend_citygml: "#FFFFCC",       # Light yellow for CityGML legend
-          legend_text_background: "#003060" # Dark blue background for legend text
+          # Dark blue background for legend text
+          legend_text_background: "#003060",
         }.freeze
 
         # EA's exact typography from real SVG analysis
@@ -56,7 +59,7 @@ module Lutaml
 
           # Font styles
           normal_style: "normal",
-          italic_style: "italic"
+          italic_style: "italic",
         }.freeze
 
         # EA's exact stroke styling
@@ -68,13 +71,13 @@ module Lutaml
           # Line styling
           linecap: "round",
           linejoin: "bevel",
-          shape_rendering: "auto"
+          shape_rendering: "auto",
         }.freeze
 
         # Parse element style from EA data to match EA's exact visual output
         # @param element [Hash] EA element data
         # @return [Hash] CSS-compatible style properties that match EA exactly
-        def parse_element_style(element)
+        def parse_element_style(element) # rubocop:disable Metrics/MethodLength
           base_style = get_base_element_style(element[:type])
 
           # Apply EA-specific style overrides based on element analysis
@@ -86,7 +89,8 @@ module Lutaml
             style.merge!(ea_style)
           end
 
-          # Apply stereotype-specific styling (EA has specific colors for stereotypes)
+          # Apply stereotype-specific styling
+          # (EA has specific colors for stereotypes)
           if element[:stereotype]
             style.merge!(stereotype_style(element[:stereotype]))
           end
@@ -100,17 +104,18 @@ module Lutaml
         # Parse connector style from EA data to match EA's exact visual output
         # @param connector [Hash] EA connector data
         # @return [Hash] CSS-compatible style properties that match EA exactly
-        def parse_connector_style(connector)
+        def parse_connector_style(connector) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           base_style = {
             stroke: EA_COLORS[:border_normal],
             stroke_width: EA_STROKES[:connector_width],
             stroke_linecap: EA_STROKES[:linecap],
             stroke_linejoin: EA_STROKES[:linejoin],
             fill: "none",
-            shape_rendering: EA_STROKES[:shape_rendering]
+            shape_rendering: EA_STROKES[:shape_rendering],
           }
 
-          # Apply connector type specific styling (EA has different styles for different connectors)
+          # Apply connector type specific styling (EA has different styles for
+          # different connectors)
           case connector[:type]
           when "generalization"
             base_style[:stroke_dasharray] = "5,5"
@@ -136,20 +141,8 @@ module Lutaml
 
         private
 
-        def get_base_element_style(element_type)
+        def get_base_element_style(element_type) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           case element_type&.to_s
-          when "class"
-            {
-              fill: EA_COLORS[:class_fill],
-              stroke: EA_COLORS[:border_normal],
-              stroke_width: EA_STROKES[:border_width],
-              stroke_linecap: EA_STROKES[:linecap],
-              stroke_linejoin: EA_STROKES[:linejoin],
-              shape_rendering: EA_STROKES[:shape_rendering],
-              rx: "0.00",  # EA uses sharp corners, not rounded
-              fill_opacity: "1.00",
-              stroke_opacity: "1.00"
-            }
           when "package"
             {
               fill: EA_COLORS[:package_fill],
@@ -160,7 +153,7 @@ module Lutaml
               shape_rendering: EA_STROKES[:shape_rendering],
               rx: "0.00",
               fill_opacity: "1.00",
-              stroke_opacity: "1.00"
+              stroke_opacity: "1.00",
             }
           when "datatype"
             {
@@ -172,7 +165,7 @@ module Lutaml
               shape_rendering: EA_STROKES[:shape_rendering],
               rx: "0.00",
               fill_opacity: "1.00",
-              stroke_opacity: "1.00"
+              stroke_opacity: "1.00",
             }
           when "enumeration"
             {
@@ -184,7 +177,7 @@ module Lutaml
               shape_rendering: EA_STROKES[:shape_rendering],
               rx: "0.00",
               fill_opacity: "1.00",
-              stroke_opacity: "1.00"
+              stroke_opacity: "1.00",
             }
           else
             {
@@ -194,26 +187,25 @@ module Lutaml
               stroke_linecap: EA_STROKES[:linecap],
               stroke_linejoin: EA_STROKES[:linejoin],
               shape_rendering: EA_STROKES[:shape_rendering],
-              rx: "0.00",
+              rx: "0.00", # EA uses sharp corners, not rounded
               fill_opacity: "1.00",
-              stroke_opacity: "1.00"
+              stroke_opacity: "1.00",
             }
           end
         end
 
-        def element_specific_style(element)
+        def element_specific_style(element) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           style = {}
 
           # EA uses specific text styling based on element content
           if element[:name]
             # Class names are typically bold and italic in EA
+            style[:font_family] = EA_TYPOGRAPHY[:primary_font]
             if element[:type] == "class"
-              style[:font_family] = EA_TYPOGRAPHY[:primary_font]
               style[:font_size] = EA_TYPOGRAPHY[:class_name_size]
               style[:font_weight] = EA_TYPOGRAPHY[:bold_weight]
               style[:font_style] = EA_TYPOGRAPHY[:italic_style]
             else
-              style[:font_family] = EA_TYPOGRAPHY[:primary_font]
               style[:font_size] = EA_TYPOGRAPHY[:normal_size]
               style[:font_weight] = EA_TYPOGRAPHY[:normal_weight]
               style[:font_style] = EA_TYPOGRAPHY[:normal_style]
@@ -247,7 +239,7 @@ module Lutaml
         # Parse EA style string into style properties (EA uses specific format)
         # @param style_string [String] EA style string
         # @return [Hash] Parsed style properties
-        def parse_ea_style_string(style_string)
+        def parse_ea_style_string(style_string) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           return {} unless style_string
 
           style = {}
@@ -268,44 +260,51 @@ module Lutaml
             when "fontsize"
               style[:font_size] = "#{value}pt"
             when "bold"
-              style[:font_weight] = value == "1" ? EA_TYPOGRAPHY[:bold_weight] : EA_TYPOGRAPHY[:normal_weight]
+              style[:font_weight] = if value == "1"
+                                      EA_TYPOGRAPHY[:bold_weight]
+                                    else
+                                      EA_TYPOGRAPHY[:normal_weight]
+                                    end
             when "italic"
-              style[:font_style] = value == "1" ? EA_TYPOGRAPHY[:italic_style] : EA_TYPOGRAPHY[:normal_style]
+              style[:font_style] = if value == "1"
+                                     EA_TYPOGRAPHY[:italic_style]
+                                   else
+                                     EA_TYPOGRAPHY[:normal_style]
+                                   end
             end
           end
 
           style
         end
 
-        # Convert EA color integer to hex color (EA stores colors as BGR integers)
+        # Convert EA color integer to hex color
+        # (EA stores colors as BGR integers)
         # @param ea_color [Integer] EA color value
         # @return [String] Hex color string
         def color_from_ea_color(ea_color)
-          return EA_COLORS[:class_fill] if ea_color == 0
+          return EA_COLORS[:class_fill] if ea_color.zero?
 
           # EA colors are stored as BGR, convert to RGB
           b = (ea_color & 0xFF0000) >> 16
           g = (ea_color & 0x00FF00) >> 8
           r = ea_color & 0x0000FF
 
-          format("#%02x%02x%02x", r, g, b).upcase
+          format("#%02x%02x%02x", r, g, b).upcase # rubocop:disable Style/FormatStringToken
         end
 
-        # Get stereotype-specific styling (EA has specific colors for stereotypes)
+        # Get stereotype-specific styling
+        # (EA has specific colors for stereotypes)
         # @param stereotype [String] Stereotype name
         # @return [Hash] Style overrides
-        def stereotype_style(stereotype)
+        def stereotype_style(stereotype) # rubocop:disable Metrics/MethodLength
           case stereotype.to_s.downcase
-          when "featuretype"
-            { fill: "#FFFFCC" }  # Light yellow for FeatureType
+          when "featuretype", "enumeration", "interface"
+            # Light yellow for FeatureType, Enumeration, Interface
+            { fill: "#FFFFCC" }
           when "datatype"
             { fill: "#FFCCFF" }  # Light pink for DataType
           when "type"
             { fill: "#CCFFCC" }  # Light green for Type
-          when "enumeration"
-            { fill: "#FFFFCC" }  # Light yellow for Enumeration
-          when "interface"
-            { fill: "#FFFFCC" }  # Light yellow for Interface
           else
             {}
           end

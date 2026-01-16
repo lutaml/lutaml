@@ -5,7 +5,6 @@ require_relative "../../../../lib/lutaml/uml_repository/repository"
 require_relative "../../../../lib/lutaml/qea/parser"
 
 RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
-
   # Skip tests if files don't exist
   before(:all) do
     # Test file pairs - each QEA should contain all information from
@@ -23,13 +22,17 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
       },
       {
         name: "ArcGIS Workspace Template",
-        xmi: File.join(__dir__, "../../../examples/qea/ArcGISWorkspace_template.xmi"),
-        qea: File.join(__dir__, "../../../examples/qea/ArcGISWorkspace_template.qea")
+        xmi: File.join(__dir__,
+          "../../../examples/qea/ArcGISWorkspace_template.xmi"),
+        qea: File.join(__dir__,
+          "../../../examples/qea/ArcGISWorkspace_template.qea")
       },
       {
         name: "Plateau v5.1",
-        xmi: File.join(__dir__, "../../../examples/qea/20251010_current_plateau_v5.1.xmi"),
-        qea: File.join(__dir__, "../../../examples/qea/20251010_current_plateau_v5.1.qea")
+        xmi: File.join(__dir__,
+          "../../../examples/qea/20251010_current_plateau_v5.1.xmi"),
+        qea: File.join(__dir__,
+          "../../../examples/qea/20251010_current_plateau_v5.1.qea")
       }
     ]
 
@@ -56,7 +59,8 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
             matching_qea = find_matching_package(qea_packages, xmi_package)
 
             expect(matching_qea).not_to be_nil,
-              "Package '#{xmi_package.name}' (#{xmi_package.qualified_name}) from XMI not found in QEA"
+              "Package '#{xmi_package.name}' (#{xmi_package.qualified_name}) " \
+              "from XMI not found in QEA"
 
             # Verify package properties match
             expect(matching_qea.name).to eq(xmi_package.name)
@@ -71,7 +75,8 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
           qea_count = count_packages(qea_repo)
 
           expect(qea_count).to be >= xmi_count,
-            "QEA has #{qea_count} packages, XMI has #{xmi_count}. QEA should have >= XMI packages."
+            "QEA has #{qea_count} packages, XMI has #{xmi_count}. " \
+            "QEA should have >= XMI packages."
         end
       end
     end
@@ -91,7 +96,8 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
             matching_qea = find_matching_class(qea_classes, xmi_class)
 
             expect(matching_qea).not_to be_nil,
-              "Class '#{xmi_class.name}' from package '#{xmi_class.package_name}' not found in QEA"
+              "Class '#{xmi_class.name}' from " \
+              "package '#{xmi_class.package_name}' not found in QEA"
 
             # Verify class properties
             expect(matching_qea.name).to eq(xmi_class.name)
@@ -108,7 +114,8 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
           qea_count = count_classes(qea_repo)
 
           expect(qea_count).to be >= xmi_count,
-            "QEA has #{qea_count} classes, XMI has #{xmi_count}. QEA should have >= XMI classes."
+            "QEA has #{qea_count} classes, XMI has #{xmi_count}. " \
+            "QEA should have >= XMI classes."
         end
       end
     end
@@ -128,7 +135,8 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
             matching_qea = find_matching_attribute(qea_attributes, xmi_attr)
 
             expect(matching_qea).not_to be_nil,
-              "Attribute '#{xmi_attr.name}' in class '#{xmi_attr.owner_name}' not found in QEA"
+              "Attribute '#{xmi_attr.name}' in " \
+              "class '#{xmi_attr.owner_name}' not found in QEA"
 
             # Verify attribute properties
             expect(matching_qea.name).to eq(xmi_attr.name)
@@ -145,7 +153,8 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
           qea_count = count_attributes(qea_repo)
 
           expect(qea_count).to be >= xmi_count,
-            "QEA has #{qea_count} attributes, XMI has #{xmi_count}. QEA should have >= XMI attributes."
+            "QEA has #{qea_count} attributes, XMI has #{xmi_count}. " \
+            "QEA should have >= XMI attributes."
         end
       end
     end
@@ -162,10 +171,13 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
           qea_associations = extract_all_associations(qea_repo)
 
           xmi_associations.each do |xmi_assoc|
-            matching_qea = find_matching_association(qea_associations, xmi_assoc)
+            matching_qea = find_matching_association(
+              qea_associations, xmi_assoc
+            )
 
             expect(matching_qea).not_to be_nil,
-              "Association between '#{xmi_assoc.source_type}' and '#{xmi_assoc.target_type}' not found in QEA"
+              "Association between '#{xmi_assoc.source_type}' " \
+              "and '#{xmi_assoc.target_type}' not found in QEA"
 
             # Verify association properties
             expect(matching_qea.source_type).to eq(xmi_assoc.source_type)
@@ -182,7 +194,8 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
           qea_count = count_associations(qea_repo)
 
           expect(qea_count).to be >= xmi_count,
-            "QEA has #{qea_count} associations, XMI has #{xmi_count}. QEA should have >= XMI associations."
+            "QEA has #{qea_count} associations, XMI has #{xmi_count}. " \
+            "QEA should have >= XMI associations."
         end
       end
     end
@@ -202,7 +215,8 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
             matching_qea = find_matching_enum(qea_enums, xmi_enum)
 
             expect(matching_qea).not_to be_nil,
-              "Enumeration '#{xmi_enum.name}' from package '#{xmi_enum.package_name}' not found in QEA"
+              "Enumeration '#{xmi_enum.name}' from " \
+              "package '#{xmi_enum.package_name}' not found in QEA"
 
             # Verify enum properties
             expect(matching_qea.name).to eq(xmi_enum.name)
@@ -215,7 +229,8 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
           qea_count = count_enums(qea_repo)
 
           expect(qea_count).to be >= xmi_count,
-            "QEA has #{qea_count} enums, XMI has #{xmi_count}. QEA should have >= XMI enums."
+            "QEA has #{qea_count} enums, XMI has #{xmi_count}. " \
+            "QEA should have >= XMI enums."
         end
       end
     end
@@ -235,7 +250,8 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
             matching_qea = find_matching_datatype(qea_datatypes, xmi_dt)
 
             expect(matching_qea).not_to be_nil,
-              "Data type '#{xmi_dt.name}' from package '#{xmi_dt.package_name}' not found in QEA"
+              "Data type '#{xmi_dt.name}' from " \
+              "package '#{xmi_dt.package_name}' not found in QEA"
 
             # Verify data type properties
             expect(matching_qea.name).to eq(xmi_dt.name)
@@ -248,7 +264,8 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
           qea_count = count_datatypes(qea_repo)
 
           expect(qea_count).to be >= xmi_count,
-            "QEA has #{qea_count} data types, XMI has #{xmi_count}. QEA should have >= XMI data types."
+            "QEA has #{qea_count} data types, XMI has #{xmi_count}. " \
+            "QEA should have >= XMI data types."
         end
       end
     end
@@ -268,7 +285,8 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
             matching_qea = find_matching_operation(qea_operations, xmi_op)
 
             expect(matching_qea).not_to be_nil,
-              "Operation '#{xmi_op.name}' in class '#{xmi_op.owner_name}' not found in QEA"
+              "Operation '#{xmi_op.name}' in class '#{xmi_op.owner_name}' " \
+              "not found in QEA"
 
             # Verify operation properties
             expect(matching_qea.name).to eq(xmi_op.name)
@@ -281,7 +299,8 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
           qea_count = count_operations(qea_repo)
 
           expect(qea_count).to be >= xmi_count,
-            "QEA has #{qea_count} operations, XMI has #{xmi_count}. QEA should have >= XMI operations."
+            "QEA has #{qea_count} operations, XMI has #{xmi_count}. " \
+            "QEA should have >= XMI operations."
         end
       end
     end
@@ -298,7 +317,8 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
           qea_count = count_diagrams(qea_repo)
 
           expect(qea_count).to be >= xmi_count,
-            "QEA has #{qea_count} diagrams, XMI has #{xmi_count}. QEA should have >= XMI diagrams."
+            "QEA has #{qea_count} diagrams, XMI has #{xmi_count}. " \
+            "QEA should have >= XMI diagrams."
         end
       end
     end
@@ -337,15 +357,21 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
 
         it "supports the same query operations on both repositories" do
           # Test package queries
-          xmi_root_packages = xmi_repo.packages.select { |p| p.parent_package.nil? }
-          qea_root_packages = qea_repo.packages.select { |p| p.parent_package.nil? }
+          xmi_root_packages = xmi_repo.packages.select do |p|
+            p.parent_package.nil?
+          end
+          qea_root_packages = qea_repo.packages.select do |p|
+            p.parent_package.nil?
+          end
 
           expect(qea_root_packages.size).to be >= xmi_root_packages.size
 
           # Test class queries
           if xmi_repo.classes.any?
             sample_class_name = xmi_repo.classes.first.name
-            qea_matching_classes = qea_repo.classes.select { |c| c.name == sample_class_name }
+            qea_matching_classes = qea_repo.classes.select do |c|
+              c.name == sample_class_name
+            end
             expect(qea_matching_classes).not_to be_empty
           end
 
@@ -365,11 +391,14 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
             klass.attributes.each do |attr|
               if attr.type && !attr.type.empty?
                 # The type should be resolvable in the repository
-                type_found = xmi_repo.classes.any? { |c| c.name == attr.type } ||
-                           xmi_repo.data_types.any? { |dt| dt.name == attr.type } ||
-                           xmi_repo.enums.any? { |e| e.name == attr.type }
+                xmi_repo.classes.any? { |c| c.name == attr.type } ||
+                  xmi_repo.data_types.any? do |dt|
+                    dt.name == attr.type
+                  end ||
+                  xmi_repo.enums.any? { |e| e.name == attr.type }
 
-                # We don't require strict resolution for all types (primitives, external refs)
+                # We don't require strict resolution for all types
+                # (primitives, external refs)
                 # This is just a consistency check
               end
             end
@@ -379,8 +408,12 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
           qea_repo.classes.each do |klass|
             klass.attributes.each do |attr|
               if attr.type && !attr.type.empty?
-                type_found = qea_repo.classes.any? { |c| c.name == attr.type } ||
-                           qea_repo.data_types.any? { |dt| dt.name == attr.type } ||
+                type_found = qea_repo.classes.any? do |c|
+                  c.name == attr.type
+                end ||
+                           qea_repo.data_types.any? do |dt|
+                             dt.name == attr.type
+                           end ||
                            qea_repo.enums.any? { |e| e.name == attr.type }
               end
             end
@@ -395,7 +428,8 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
       context "#{file_pair[:name]}" do
         it "loads QEA files in reasonable time" do
           start_time = Time.now
-          qea_repo = Lutaml::Qea::Parser.parse(file_pair[:qea]).to_uml_repository
+          Lutaml::Qea::Parser
+            .parse(file_pair[:qea]).to_uml_repository
           load_time = Time.now - start_time
 
           # Large files should load within 30 seconds
@@ -414,7 +448,8 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
           # Search should complete within 5 seconds even for large models
           expect(search_time).to be < 5.0
 
-          puts "  Search time: #{search_time.round(3)}s (#{results.size} results)"
+          puts "  Search time: #{search_time.round(3)}s " \
+               "(#{results.size} results)"
         end
       end
     end

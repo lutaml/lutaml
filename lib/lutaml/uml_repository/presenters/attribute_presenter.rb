@@ -15,7 +15,7 @@ module Lutaml
           super
         end
 
-        def to_text
+        def to_text # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength
           lines = []
           lines << "Attribute: #{qualified_name}"
           lines << ("=" * 50)
@@ -44,7 +44,7 @@ module Lutaml
           }
         end
 
-        def to_hash
+        def to_hash # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           data = {
             type: "Attribute",
             name: element.name,
@@ -69,11 +69,13 @@ module Lutaml
         private
 
         def class_name
-          @context["class_name"] || @context[:class_name] || extract_class_from_qname
+          @context["class_name"] ||
+            @context[:class_name] || extract_class_from_qname
         end
 
         def qualified_name
-          @context["qualified_name"] || @context[:qualified_name] || "#{class_name}::#{element.name}"
+          @context["qualified_name"] ||
+            @context[:qualified_name] || "#{class_name}::#{element.name}"
         end
 
         def extract_class_from_qname

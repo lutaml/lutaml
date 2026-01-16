@@ -212,7 +212,9 @@ RSpec.describe Lutaml::UmlRepository::Repository do
 
         it "returns package when found" do
           # Find a package that actually exists in the test fixture
-          available_package = repo.indexes[:package_paths].keys.find { |k| k != "ModelRoot" }
+          available_package = repo.indexes[:package_paths].keys.find do |k|
+            k != "ModelRoot"
+          end
           skip "No packages in test fixture" unless available_package
 
           result = repo.find_package(available_package, raise_on_error: true)

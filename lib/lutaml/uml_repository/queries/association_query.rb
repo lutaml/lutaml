@@ -39,11 +39,13 @@ module Lutaml
         #   all = query.find_for_class("ModelRoot::Building")
         #
         #   # Get only owned associations
-        #   owned = query.find_for_class("ModelRoot::Building", owned_only: true)
+        #   owned = query.find_for_class(
+        #   "ModelRoot::Building", owned_only: true)
         #
         #   # Get associations where class is the source
-        #   sources = query.find_for_class("ModelRoot::Building", direction: :source)
-        def find_for_class(class_or_qname, options = {})
+        #   sources = query.find_for_class(
+        #   "ModelRoot::Building", direction: :source)
+        def find_for_class(class_or_qname, options = {}) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           owned_only = options[:owned_only] || false
           navigable_only = options[:navigable_only] || false
           direction = options[:direction] || :both
@@ -60,7 +62,8 @@ module Lutaml
           end
 
           # Get associations from document level unless owned_only
-          if !owned_only && document.respond_to?(:associations) && document.associations
+          if !owned_only &&
+              document.respond_to?(:associations) && document.associations
             document_associations = document.associations.select do |assoc|
               match_association?(assoc, class_name, direction)
             end
@@ -101,8 +104,8 @@ module Lutaml
         # @return [Array<Lutaml::Uml::Association>] Array of association objects
         def find_between_classes(owner_end_xmi_id, member_end_xmi_id)
           resolve_all_associations.select do |assoc|
-            (assoc.owner_end_xmi_id == owner_end_xmi_id &&
-             assoc.member_end_xmi_id == member_end_xmi_id)
+            assoc.owner_end_xmi_id == owner_end_xmi_id &&
+              assoc.member_end_xmi_id == member_end_xmi_id
           end
         end
 
@@ -132,7 +135,8 @@ module Lutaml
         #
         # @param class_or_qname [Lutaml::Uml::Class, String] The class object
         #   or qualified name string
-        # @return [Lutaml::Uml::Class, nil] The class object, or nil if not found
+        # @return [Lutaml::Uml::Class, nil] The class object,
+        # or nil if not found
         def resolve_class(class_or_qname)
           if class_or_qname.is_a?(String)
             indexes[:qualified_names][class_or_qname]
@@ -145,9 +149,10 @@ module Lutaml
         #
         # @param assoc [Lutaml::Uml::Association] The association to check
         # @param class_name [String] The class name to match
-        # @param direction [Symbol] The direction filter (:source, :target, :both)
+        # @param direction [Symbol] The direction filter
+        # (:source, :target, :both)
         # @return [Boolean] true if the association matches
-        def match_association?(assoc, class_name, direction)
+        def match_association?(assoc, class_name, direction) # rubocop:disable Metrics/MethodLength
           case direction
           when :source
             # Class is the owner_end (source)
@@ -173,7 +178,8 @@ module Lutaml
         def navigable?(assoc)
           # An association is navigable if it has member_end_attribute_name
           # or owner_end_attribute_name defined
-          !assoc.member_end_attribute_name.nil? || !assoc.owner_end_attribute_name.nil?
+          !assoc.member_end_attribute_name.nil? ||
+            !assoc.owner_end_attribute_name.nil?
         end
       end
     end

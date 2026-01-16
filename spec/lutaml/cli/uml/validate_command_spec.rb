@@ -26,7 +26,7 @@ RSpec.describe "CLI UML Validate Command" do
 
         engine = Lutaml::Qea::Validation::ValidationEngine.new(
           result[:document],
-          database: result[:database]
+          database: result[:database],
         )
 
         validation_result = engine.validate
@@ -70,7 +70,7 @@ RSpec.describe "CLI UML Validate Command" do
 
       engine = Lutaml::Qea::Validation::ValidationEngine.new(
         result[:document],
-        database: result[:database]
+        database: result[:database],
       )
 
       context = engine.send(:build_context)
@@ -96,7 +96,7 @@ RSpec.describe "CLI UML Validate Command" do
 
       engine = Lutaml::Qea::Validation::ValidationEngine.new(
         result[:document],
-        database: result[:database]
+        database: result[:database],
       )
 
       # Should not raise NoMethodError
@@ -109,7 +109,7 @@ RSpec.describe "CLI UML Validate Command" do
 
       engine = Lutaml::Qea::Validation::ValidationEngine.new(
         result[:document],
-        database: result[:database]
+        database: result[:database],
       )
 
       context = engine.send(:build_context)
@@ -126,7 +126,7 @@ RSpec.describe "CLI UML Validate Command" do
 
       engine = Lutaml::Qea::Validation::ValidationEngine.new(
         result[:document],
-        database: result[:database]
+        database: result[:database],
       )
 
       context = engine.send(:build_context)
@@ -145,7 +145,7 @@ RSpec.describe "CLI UML Validate Command" do
 
       engine = Lutaml::Qea::Validation::ValidationEngine.new(
         result[:document],
-        database: result[:database]
+        database: result[:database],
       )
 
       validation_result = engine.validate
@@ -162,7 +162,7 @@ RSpec.describe "CLI UML Validate Command" do
 
       engine = Lutaml::Qea::Validation::ValidationEngine.new(
         result[:document],
-        database: result[:database]
+        database: result[:database],
       )
 
       validation_result = engine.validate

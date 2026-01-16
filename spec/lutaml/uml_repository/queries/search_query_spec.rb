@@ -19,8 +19,10 @@ RSpec.describe Lutaml::UmlRepository::Queries::SearchQuery do
         expect(result).to be_a(Lutaml::UmlRepository::SearchResult)
         expect(result.element).to be_a(Lutaml::Uml::Class)
         expect(result.element_type).to eq("class")
-        expect(result.qualified_name).to eq("ModelRoot::requirement type class diagram::RequirementType")
-        expect(result.package_path).to eq("ModelRoot::requirement type class diagram")
+        expect(result.qualified_name)
+          .to eq("ModelRoot::requirement type class diagram::RequirementType")
+        expect(result.package_path)
+          .to eq("ModelRoot::requirement type class diagram")
         expect(result.match_field).to eq("name")
       end
     end
@@ -92,8 +94,10 @@ RSpec.describe Lutaml::UmlRepository::Queries::SearchQuery do
       end
       expect(results.count).to eq(2)
 
-      expect(results[1].qualified_name).to eq("ModelRoot::requirement type class diagram")
-       expect(results[1].package_path).to eq("ModelRoot::requirement type class diagram")
+      expect(results[1].qualified_name)
+        .to eq("ModelRoot::requirement type class diagram")
+      expect(results[1].package_path)
+        .to eq("ModelRoot::requirement type class diagram")
     end
 
     it "searches with glob patterns" do
@@ -164,16 +168,17 @@ RSpec.describe Lutaml::UmlRepository::Queries::SearchQuery do
       expect(results[0].match_context).to eq(
         {
           "class_name" => "ClassificationType",
-          "class_qname" => "ModelRoot::requirement type class diagram::ClassificationType"
-        }
+          "class_qname" => "ModelRoot::requirement type class " \
+                           "diagram::ClassificationType",
+        },
       )
       expect(results[0].match_field).to eq("name")
       expect(results[0].package_path)
         .to eq("ModelRoot::requirement type class diagram")
       expect(results[0].qualified_name)
-      .to eq(
-        "ModelRoot::requirement type class diagram::ClassificationType::value"
-      )
+        .to eq(
+          "ModelRoot::requirement type class diagram::ClassificationType::value",
+        )
     end
 
     it "finds attributes by name pattern" do
@@ -209,7 +214,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::SearchQuery do
         {
           "source" => "BibliographicItem",
           "target" => "RequirementType",
-        }
+        },
       )
     end
 

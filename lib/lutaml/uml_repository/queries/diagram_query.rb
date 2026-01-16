@@ -27,7 +27,7 @@ module Lutaml
         # @return [Array<Diagram>] Array of diagram objects in the package
         # @example
         #   diagrams = query.in_package("ModelRoot::i-UR::urf")
-        def in_package(package_path_string)
+        def in_package(package_path_string) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
           return [] if package_path_string.nil? || package_path_string.empty?
 
           # Try to find diagrams by path

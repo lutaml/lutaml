@@ -7,10 +7,12 @@ module Lutaml
   #
   # This module follows SOLID principles and implements:
   # - Single Responsibility: Each component has one clear purpose
-  # - Open/Closed: Easy to extend with new formats without modifying existing code
+  # - Open/Closed: Easy to extend with new formats without modifying existing
+  # code
   # - Liskov Substitution: All parsers implement the same interface
   # - Interface Segregation: Clients depend only on methods they use
-  # - Dependency Inversion: Depends on abstractions, not concrete implementations
+  # - Dependency Inversion: Depends on abstractions, not concrete
+  # implementations
   #
   # @example Parse any supported format
   #   engine = Lutaml::ModelTransformations::TransformationEngine.new
@@ -103,7 +105,8 @@ module Lutaml
       # Register a custom parser for a file extension
       #
       # @param extension [String] File extension (e.g., ".custom")
-      # @param parser_class [Class] Parser class implementing BaseParser interface
+      # @param parser_class [Class] Parser class implementing BaseParser
+      # interface
       def register_parser(extension, parser_class)
         engine.register_parser(extension, parser_class)
       end

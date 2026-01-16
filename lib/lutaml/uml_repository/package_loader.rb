@@ -25,7 +25,7 @@ module Lutaml
       # @raise [RuntimeError] If the package is invalid or corrupted
       # @example
       #   repo = PackageLoader.load("model.lur")
-      def self.load(lur_path)
+      def self.load(lur_path) # rubocop:disable Metrics/MethodLength
         unless File.exist?(lur_path)
           raise ArgumentError, "Package file not found: #{lur_path}"
         end
@@ -66,7 +66,7 @@ module Lutaml
       # @raise [RuntimeError] If the package is invalid or corrupted
       # @example
       #   repo = PackageLoader.load_document_only("model.lur")
-      def self.load_document_only(lur_path)
+      def self.load_document_only(lur_path) # rubocop:disable Metrics/MethodLength
         unless File.exist?(lur_path)
           raise ArgumentError, "Package file not found: #{lur_path}"
         end
@@ -98,7 +98,7 @@ module Lutaml
       # @param zip [Zip::File] The ZIP archive
       # @return [PackageMetadata] The package metadata object
       # @raise [RuntimeError] If metadata is missing or invalid
-      def self.load_metadata(zip)
+      def self.load_metadata(zip) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength
         metadata_entry = zip.find_entry("metadata.yaml")
         unless metadata_entry
           raise "Invalid LUR package: missing metadata.yaml"
@@ -116,7 +116,7 @@ module Lutaml
         metadata_hash = YAML.safe_load(
           metadata_entry.get_input_stream.read,
           permitted_classes: permitted_classes,
-          aliases: true
+          aliases: true,
         )
 
         # Extract only PackageMetadata fields and normalize to symbols
@@ -127,7 +127,10 @@ module Lutaml
 
         metadata_attrs = {}
         package_fields.each do |field|
-          metadata_attrs[field.to_sym] = metadata_hash[field] if metadata_hash.key?(field)
+          if metadata_hash.key?(field)
+            metadata_attrs[field.to_sym] =
+              metadata_hash[field]
+          end
         end
 
         # Create PackageMetadata using lutaml-model constructor
@@ -142,12 +145,13 @@ module Lutaml
       # @param metadata [PackageMetadata] The package metadata
       # @return [Lutaml::Uml::Document] The loaded document
       # @raise [RuntimeError] If document is missing or format is unknown
-      def self.load_document(zip, metadata)
+      def self.load_document(zip, metadata) # rubocop:disable Metrics/MethodLength
         # Handle both PackageMetadata object and Hash (backward compatibility)
         format = if metadata.respond_to?(:serialization_format)
                    metadata.serialization_format
                  else
-                   metadata["serialization_format"] || metadata[:serialization_format]
+                   metadata["serialization_format"] ||
+                     metadata[:serialization_format]
                  end
 
         case format.to_s

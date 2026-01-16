@@ -112,7 +112,7 @@ module Lutaml
       #
       # @param options [Hash] Export options
       # @return [PackageMetadata] Package metadata
-      def build_metadata(options)
+      def build_metadata(options) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
         # Case 1: metadata is already a PackageMetadata object
         if options[:metadata].is_a?(PackageMetadata)
           return options[:metadata]
@@ -122,7 +122,8 @@ module Lutaml
         if options[:metadata].is_a?(Hash)
           metadata_hash = options[:metadata].dup
           # Ensure serialization_format is set
-          metadata_hash[:serialization_format] ||= options[:serialization_format]
+          metadata_hash[:serialization_format] ||=
+            options[:serialization_format]
           # Normalize keys to symbols and create directly
           normalized = metadata_hash.transform_keys(&:to_sym)
           return PackageMetadata.new(**normalized)
@@ -132,7 +133,7 @@ module Lutaml
         PackageMetadata.new(
           name: options[:name],
           version: options[:version],
-          serialization_format: options[:serialization_format].to_s
+          serialization_format: options[:serialization_format].to_s,
         )
       end
 
@@ -156,9 +157,9 @@ module Lutaml
       #
       # @param zip [Zip::File] The ZIP archive
       # @return [void]
-      def write_metadata(zip)
+      def write_metadata(zip) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
         # Convert PackageMetadata to hash via YAML round-trip
-        metadata_hash = YAML.load(@metadata.to_yaml)
+        metadata_hash = YAML.safe_load(@metadata.to_yaml)
 
         # Add operational metadata (not in PackageMetadata model)
         metadata_hash["created_at"] = Time.now.utc.iso8601
@@ -167,7 +168,8 @@ module Lutaml
         metadata_hash["statistics"] = @repository.statistics
 
         # Ensure serialization_format is set
-        metadata_hash["serialization_format"] ||= @options[:serialization_format].to_s
+        metadata_hash["serialization_format"] ||=
+          @options[:serialization_format].to_s
 
         zip.get_output_stream("metadata.yaml") do |io|
           io.write(YAML.dump(metadata_hash))
@@ -178,7 +180,7 @@ module Lutaml
       #
       # @param zip [Zip::File] The ZIP archive
       # @return [void]
-      def write_document(zip)
+      def write_document(zip) # rubocop:disable Metrics/MethodLength
         format = @options[:serialization_format]
 
         case format
@@ -218,7 +220,7 @@ module Lutaml
       # Build a complete index tree of all model elements
       #
       # @return [Hash] Index tree structure
-      def build_index_tree
+      def build_index_tree # rubocop:disable Metrics/MethodLength
         {
           "format" => "lutaml_index_tree_v1",
           "generated_at" => Time.now.utc.iso8601,
@@ -228,14 +230,14 @@ module Lutaml
             "total_packages" => @repository.indexes[:package_paths].size,
             "total_classes" => @repository.indexes[:qualified_names].size,
             "total_attributes" => count_all_attributes,
-          }
+          },
         }
       end
 
       # Build packages index
       #
       # @return [Hash] Packages indexed by path
-      def build_packages_index
+      def build_packages_index # rubocop:disable Metrics/MethodLength
         packages = {}
         @repository.indexes[:package_paths].each do |path, package|
           next unless package.is_a?(Lutaml::Uml::Package)
@@ -243,7 +245,8 @@ module Lutaml
           packages[path] = {
             "name" => package.name,
             "xmi_id" => package.xmi_id,
-            "classes_count" => @repository.classes_in_package(path, recursive: false).size,
+            "classes_count" => @repository
+              .classes_in_package(path, recursive: false).size,
             "diagrams_count" => package.diagrams&.size || 0,
           }
         end
@@ -253,7 +256,7 @@ module Lutaml
       # Build classes index
       #
       # @return [Hash] Classes indexed by qualified name
-      def build_classes_index
+      def build_classes_index # rubocop:disable Metrics/MethodLength
         classes = {}
         @repository.indexes[:qualified_names].each do |qname, klass|
           classes[qname] = {
@@ -279,7 +282,9 @@ module Lutaml
           {
             "name" => attr.name,
             "type" => attr.type,
-            "visibility" => attr.respond_to?(:visibility) ? attr.visibility : nil,
+            "visibility" => if attr.respond_to?(:visibility)
+                              attr.visibility
+                            end,
           }.compact
         end
       end
@@ -291,6 +296,7 @@ module Lutaml
       def format_stereotype(stereotype)
         return nil if stereotype.nil?
         return stereotype if stereotype.is_a?(String)
+
         stereotype.is_a?(Array) && stereotype.empty? ? nil : stereotype
       end
 
@@ -309,7 +315,9 @@ module Lutaml
       def count_all_attributes
         total = 0
         @repository.indexes[:qualified_names].each_value do |klass|
-          total += klass.attributes.size if klass.respond_to?(:attributes) && klass.attributes
+          if klass.respond_to?(:attributes) && klass.attributes
+            total += klass.attributes.size
+          end
         end
         total
       end

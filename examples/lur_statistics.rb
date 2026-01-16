@@ -116,7 +116,9 @@ if stats[:classes_by_stereotype]
   puts "Unique stereotypes: #{stereotype_count}"
   puts "\nStereotype distribution:"
 
-  stats[:classes_by_stereotype].sort_by { |_, count| -count }.first(10).each do |stereotype, count|
+  stats[:classes_by_stereotype].sort_by do |_, count|
+    -count
+  end.first(10).each do |stereotype, count|
     percentage = (count.to_f / stats[:total_classes] * 100).round(1)
     puts "  #{stereotype.ljust(30)} #{count.to_s.rjust(5)} (#{percentage}%)"
   end
@@ -178,7 +180,8 @@ if all_classes.any?
   puts "Inheritance statistics:"
   puts "  Classes with parent: #{classes_with_parent.size}"
   puts "  Root classes: #{all_classes.size - classes_with_parent.size}"
-  puts "  Inheritance usage: #{(classes_with_parent.size.to_f / all_classes.size * 100).round(1)}%"
+  puts "  Inheritance usage: " \
+       "#{(classes_with_parent.size.to_f / all_classes.size * 100).round(1)}%"
 
   # Find deepest hierarchies
   max_depth = 0
@@ -250,25 +253,32 @@ puts "  Warnings: #{validation.warnings.size}"
 
 if all_classes.any?
   # Calculate documentation coverage
-  documented_classes = all_classes.count { |c| c.respond_to?(:documentation) && c.documentation && !c.documentation.empty? }
+  documented_classes = all_classes.count do |c|
+    c.respond_to?(:documentation) && c.documentation && !c.documentation.empty?
+  end
   doc_coverage = (documented_classes.to_f / all_classes.size * 100).round(1)
 
   puts "\nDocumentation coverage:"
-  puts "  Documented classes: #{documented_classes}/#{all_classes.size} (#{doc_coverage}%)"
+  puts "  Documented classes: #{documented_classes}/#{all_classes.size} " \
+       "(#{doc_coverage}%)"
 
   # Naming conventions
   camel_case = all_classes.count { |c| c.name =~ /^[A-Z][a-zA-Z0-9]*$/ }
   naming_compliance = (camel_case.to_f / all_classes.size * 100).round(1)
 
   puts "\nNaming conventions:"
-  puts "  CamelCase classes: #{camel_case}/#{all_classes.size} (#{naming_compliance}%)"
+  puts "  CamelCase classes: #{camel_case}/#{all_classes.size} " \
+       "(#{naming_compliance}%)"
 
   # Abstract classes
-  abstract_classes = all_classes.count { |c| c.respond_to?(:is_abstract) && c.is_abstract }
+  abstract_classes = all_classes.count do |c|
+    c.respond_to?(:is_abstract) && c.is_abstract
+  end
   abstract_ratio = (abstract_classes.to_f / all_classes.size * 100).round(1)
 
   puts "\nAbstraction:"
-  puts "  Abstract classes: #{abstract_classes}/#{all_classes.size} (#{abstract_ratio}%)"
+  puts "  Abstract classes: #{abstract_classes}/#{all_classes.size} " \
+       "(#{abstract_ratio}%)"
 end
 puts
 

@@ -108,12 +108,14 @@ module Lutaml
         # @param node [Hash] The tree node
         # @param depth [Integer] Current depth
         # @return [String] Markdown representation
-        def build_tree_node(node, depth)
+        def build_tree_node(node, depth) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           indent = "  " * depth
           path = node[:path]
           link = package_link(path)
           result = "#{indent}- [#{node[:name]}](#{link})"
-          result += " (#{node[:classes_count]} classes)" if node[:classes_count].positive?
+          if node[:classes_count].positive?
+            result += " (#{node[:classes_count]} classes)"
+          end
           result += "\n"
 
           if node[:children]&.any?
@@ -211,8 +213,10 @@ module Lutaml
           return "## Classes\n\nNo classes in this package.\n" if classes.empty?
 
           content = "## Classes\n\n"
-          content += "| Name | Type | Stereotypes | Attributes | Associations |\n"
-          content += "|------|------|-------------|------------|---------------|\n"
+          content += "| Name | Type | Stereotypes | Attributes | " \
+                     "Associations |\n"
+          content += "|------|------|-------------|------------|-" \
+                     "-------------|\n"
 
           classes.sort_by(&:name).each do |klass|
             content += format_class_table_row(klass)
@@ -233,7 +237,8 @@ module Lutaml
           attrs_count = klass.attributes&.size || 0
           assocs_count = count_associations(klass)
 
-          "| [#{klass.name}](#{link}) | #{type} | #{stereotypes} | #{attrs_count} | #{assocs_count} |\n"
+          "| [#{klass.name}](#{link}) | #{type} | #{stereotypes} | " \
+            "#{attrs_count} | #{assocs_count} |\n"
         end
 
         # Format stereotypes (can be string or array).
@@ -273,7 +278,7 @@ module Lutaml
         # Generate class pages.
         #
         # @return [void]
-        def generate_class_pages
+        def generate_class_pages # rubocop:disable Metrics/MethodLength
           classes = if options[:package]
                       repository.classes_in_package(
                         options[:package],
@@ -304,7 +309,7 @@ module Lutaml
         # @param klass [Object] The class object
         # @param qname [String] The qualified name
         # @return [String] The class page content
-        def build_class_content(klass, qname)
+        def build_class_content(klass, qname) # rubocop:disable Metrics/AbcSize
           type = klass.class.name.split("::").last
           pkg_path = extract_package_path(qname)
 
@@ -379,7 +384,7 @@ module Lutaml
         #
         # @param klass [Object] The class object
         # @return [String] Markdown content
-        def build_inheritance_section(klass)
+        def build_inheritance_section(klass) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength
           parent = repository.supertype_of(klass)
           children = repository.subtypes_of(klass)
 
@@ -389,7 +394,8 @@ module Lutaml
 
           if parent
             parent_qname = qualified_name(parent)
-            content += "**Extends**: [#{parent.name}](#{class_link(parent_qname)})\n\n"
+            content += "**Extends**: [#{parent.name}]" \
+                       "(#{class_link(parent_qname)})\n\n"
           end
 
           if children.any?
@@ -410,7 +416,7 @@ module Lutaml
         #
         # @param klass [Object] The class object
         # @return [String] Markdown content
-        def build_attributes_section(klass)
+        def build_attributes_section(klass) # rubocop:disable Metrics/MethodLength
           return "" unless klass.attributes&.any?
 
           content = "## Attributes\n\n"
@@ -420,7 +426,8 @@ module Lutaml
           klass.attributes.each do |attr|
             visibility = attr.visibility || ""
             cardinality = format_cardinality(attr.cardinality)
-            content += "| #{attr.name} | `#{attr.type}` | #{visibility} | #{cardinality} |\n"
+            content += "| #{attr.name} | `#{attr.type}` | #{visibility} | " \
+                       "#{cardinality} |\n"
           end
 
           "#{content}\n"
@@ -430,8 +437,10 @@ module Lutaml
         #
         # @param klass [Object] The class object
         # @return [String] Markdown content
-        def build_operations_section(klass)
-          return "" unless klass.respond_to?(:operations) && klass.operations&.any?
+        def build_operations_section(klass) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/MethodLength
+          unless klass.respond_to?(:operations) && klass.operations&.any?
+            return ""
+          end
 
           content = "## Operations\n\n"
           content += "| Name | Return Type | Visibility |\n"
@@ -450,13 +459,13 @@ module Lutaml
         #
         # @param klass [Object] The class object
         # @return [String] Markdown content
-        def build_associations_section(klass)
+        def build_associations_section(klass) # rubocop:disable Metrics/MethodLength
           associations = repository.associations_of(klass)
           return "" if associations.empty?
 
           content = "## Associations\n\n"
           content += "| Name | Target Class | Cardinality | Navigable |\n"
-          content += "|------|--------------|-------------|----------|\n"
+          content += "|------|--------------|-------------|-----------|\n"
 
           associations.each do |assoc|
             content += format_association_row(assoc, klass)
@@ -472,7 +481,7 @@ module Lutaml
         # @param association [Object] The association object
         # @param klass [Object] The source class
         # @return [String] Markdown table row
-        def format_association_row(association, klass)
+        def format_association_row(association, klass) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           source_end = association.member_end&.first
           target_end = association.member_end&.last
 
@@ -490,7 +499,8 @@ module Lutaml
           cardinality = format_cardinality(end_obj.cardinality)
           navigable = end_obj.navigable? ? "Yes" : "No"
 
-          "| #{name} | [#{end_obj.type.name}](#{class_link(target_qname)}) | #{cardinality} | #{navigable} |\n"
+          "| #{name} | [#{end_obj.type.name}](#{class_link(target_qname)}) | " \
+            "#{cardinality} | #{navigable} |\n"
         end
 
         # Build enum literals section.
@@ -498,7 +508,9 @@ module Lutaml
         # @param klass [Object] The class object
         # @return [String] Markdown content
         def build_enum_literals_section(klass)
-          return "" unless klass.is_a?(Lutaml::Uml::Enum) && klass.owned_literal&.any?
+          unless klass.is_a?(Lutaml::Uml::Enum) && klass.owned_literal&.any?
+            return ""
+          end
 
           content = "## Literals\n\n"
           klass.owned_literal.each do |literal|

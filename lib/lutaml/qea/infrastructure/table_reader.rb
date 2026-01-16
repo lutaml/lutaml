@@ -37,7 +37,8 @@ module Lutaml
 
         # Read all records from the table
         #
-        # @param limit [Integer, nil] Maximum number of records to return (optional)
+        # @param limit [Integer, nil] Maximum number of records to return
+        # (optional)
         # @param offset [Integer, nil] Number of records to skip (optional)
         # @return [Array<Hash>] Array of record hashes
         #
@@ -48,7 +49,7 @@ module Lutaml
         # @example With limit
         #   reader.all(limit: 10)
         #   # => Returns first 10 records
-        def all(limit: nil, offset: nil)
+        def all(limit: nil, offset: nil) # rubocop:disable Metrics/MethodLength
           query = "SELECT * FROM #{@table_name}"
           params = []
 
@@ -67,9 +68,11 @@ module Lutaml
 
         # Read records matching a WHERE clause
         #
-        # @param conditions [String] The WHERE clause (without the WHERE keyword)
+        # @param conditions [String] The WHERE clause
+        # (without the WHERE keyword)
         # @param values [Array] Values for parameterized query placeholders
-        # @param limit [Integer, nil] Maximum number of records to return (optional)
+        # @param limit [Integer, nil] Maximum number of records
+        # to return (optional)
         # @param offset [Integer, nil] Number of records to skip (optional)
         # @return [Array<Hash>] Array of matching record hashes
         #
@@ -81,7 +84,7 @@ module Lutaml
         #
         # @example With limit
         #   reader.where("Object_Type = ?", "Class", limit: 10)
-        def where(conditions, *values, limit: nil, offset: nil)
+        def where(conditions, *values, limit: nil, offset: nil) # rubocop:disable Metrics/MethodLength
           query = "SELECT * FROM #{@table_name} WHERE #{conditions}"
           params = values.flatten
 
@@ -102,13 +105,16 @@ module Lutaml
         #
         # @return [Integer] Total number of records
         def count
-          result = @database.execute("SELECT COUNT(*) as count FROM #{@table_name}")
+          result = @database.execute(
+            "SELECT COUNT(*) as count FROM #{@table_name}",
+          )
           result.first["count"]
         end
 
         # Count records matching a WHERE clause
         #
-        # @param conditions [String] The WHERE clause (without the WHERE keyword)
+        # @param conditions [String] The WHERE clause
+        # (without the WHERE keyword)
         # @param values [Array] Values for parameterized query placeholders
         # @return [Integer] Number of matching records
         #
@@ -116,7 +122,8 @@ module Lutaml
         #   reader.count_where("Object_Type = ?", "Class")
         #   # => 42
         def count_where(conditions, *values)
-          query = "SELECT COUNT(*) as count FROM #{@table_name} WHERE #{conditions}"
+          query = "SELECT COUNT(*) as count FROM #{@table_name} " \
+                  "WHERE #{conditions}"
           result = @database.execute(query, values.flatten)
           result.first["count"]
         end
@@ -131,16 +138,19 @@ module Lutaml
         #   reader.find_by_pk("Object_ID", 123)
         #   # => {"Object_ID"=>123, "Name"=>"MyClass", ...}
         def find_by_pk(primary_key_column, value)
-          query = "SELECT * FROM #{@table_name} WHERE #{primary_key_column} = ? LIMIT 1"
+          query = "SELECT * FROM #{@table_name} " \
+                  "WHERE #{primary_key_column} = ? LIMIT 1"
           result = @database.execute(query, [value])
           result.first
         end
 
         # Find first record matching a WHERE clause
         #
-        # @param conditions [String] The WHERE clause (without the WHERE keyword)
+        # @param conditions [String] The WHERE clause
+        # (without the WHERE keyword)
         # @param values [Array] Values for parameterized query placeholders
-        # @return [Hash, nil] The first matching record hash, or nil if not found
+        # @return [Hash, nil] The first matching record hash,
+        # or nil if not found
         #
         # @example
         #   reader.find_first("Name = ?", "MyClass")
@@ -159,7 +169,8 @@ module Lutaml
         #
         # @example
         #   reader.execute_query(
-        #     "SELECT Name, COUNT(*) as count FROM #{reader.table_name} GROUP BY Name"
+        #     "SELECT Name, COUNT(*) as count FROM #{reader.table_name}
+        #      GROUP BY Name"
         #   )
         def execute_query(sql, params = [])
           @database.execute(sql, params)
@@ -167,7 +178,8 @@ module Lutaml
 
         # Check if any records match the given conditions
         #
-        # @param conditions [String] The WHERE clause (without the WHERE keyword)
+        # @param conditions [String] The WHERE clause
+        # (without the WHERE keyword)
         # @param values [Array] Values for parameterized query placeholders
         # @return [Boolean] true if at least one record matches
         #
@@ -189,7 +201,7 @@ module Lutaml
         # @example
         #   reader.select(["Object_ID", "Name"], "Object_Type = ?", "Class")
         #   # => [{"Object_ID"=>1, "Name"=>"Class1"}, ...]
-        def select(columns, conditions = nil, *values, limit: nil)
+        def select(columns, conditions = nil, *values, limit: nil) # rubocop:disable Metrics/MethodLength
           column_list = columns.join(", ")
           query = "SELECT #{column_list} FROM #{@table_name}"
 

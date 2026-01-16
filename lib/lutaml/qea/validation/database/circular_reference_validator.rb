@@ -14,7 +14,7 @@ module Lutaml
 
         private
 
-        def detect_circular_packages
+        def detect_circular_packages # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity,Metrics/MethodLength
           packages.each do |package|
             next if package.root?
 
@@ -44,7 +44,7 @@ module Lutaml
           end
         end
 
-        def detect_circular_generalizations
+        def detect_circular_generalizations # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           # Build generalization graph
           generalizations = connectors.select(&:generalization?)
 
@@ -82,7 +82,7 @@ module Lutaml
           end
         end
 
-        def format_inheritance_path(visited_ids, circular_id)
+        def format_inheritance_path(visited_ids, circular_id) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
           path = visited_ids.map do |id|
             obj = objects.find { |o| o.ea_object_id == id }
             obj&.name || id.to_s

@@ -30,12 +30,12 @@ module Lutaml
 
           protected
 
-          def render_shape(style)
+          def render_shape(_style)
             # Default implementation - override in subclasses
             ""
           end
 
-          def render_label(style)
+          def render_label(style) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
             return "" unless element[:name]
 
             x = element[:x] || 0
@@ -44,8 +44,9 @@ module Lutaml
             height = element[:height] || 80
 
             # Center the label
-            text_x = x + width / 2
-            text_y = y + height / 2 + 5 # Slight vertical offset for better centering
+            text_x = x + (width / 2)
+            # Slight vertical offset for better centering
+            text_y = y + (height / 2) + 5
 
             <<~SVG
               <text x="#{text_x}"
@@ -67,11 +68,11 @@ module Lutaml
 
             # Basic XML/HTML text escaping
             text.to_s
-                .gsub("&", "&amp;")
-                .gsub("<", "&lt;")
-                .gsub(">", "&gt;")
-                .gsub('"', "&quot;")
-                .gsub("'", "&apos;")
+              .gsub("&", "&amp;")
+              .gsub("<", "&lt;")
+              .gsub(">", "&gt;")
+              .gsub('"', "&quot;")
+              .gsub("'", "&apos;")
           end
         end
       end

@@ -5,7 +5,9 @@ require_relative "../../../../lib/lutaml/qea/infrastructure/database_connection"
 require_relative "../../../../lib/lutaml/qea/infrastructure/table_reader"
 
 RSpec.describe Lutaml::Qea::Infrastructure::TableReader do
-  let(:test_qea_file) { File.expand_path("../../../../examples/qea/test.qea", __dir__) }
+  let(:test_qea_file) do
+    File.expand_path("../../../../examples/qea/test.qea", __dir__)
+  end
   let(:connection) { Lutaml::Qea::Infrastructure::DatabaseConnection.new(test_qea_file) }
   let(:database) { connection.connect }
   let(:table_name) { "t_object" }
@@ -96,7 +98,7 @@ RSpec.describe Lutaml::Qea::Infrastructure::TableReader do
         results = reader.where(
           "Object_Type = ? AND Package_ID = ?",
           obj_type,
-          pkg_id
+          pkg_id,
         )
         results.each do |record|
           expect(record["Object_Type"]).to eq(obj_type)
@@ -242,7 +244,7 @@ RSpec.describe Lutaml::Qea::Infrastructure::TableReader do
         results = reader.select(
           ["Object_ID", "Name"],
           "Object_Type = ?",
-          obj_type
+          obj_type,
         )
         results.each do |record|
           expect(record.keys.sort).to eq(["Name", "Object_ID"].sort)

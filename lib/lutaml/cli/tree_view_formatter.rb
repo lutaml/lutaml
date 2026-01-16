@@ -51,9 +51,10 @@ module Lutaml
 
       # Format the entire repository as a tree
       #
-      # @param repository [Lutaml::UmlRepository::Repository] The repository to format
+      # @param repository [Lutaml::UmlRepository::Repository]
+      # The repository to format
       # @return [String] Formatted tree output
-      def format(repository)
+      def format(repository) # rubocop:disable Metrics/MethodLength
         output = []
 
         # Start with ModelRoot
@@ -77,7 +78,7 @@ module Lutaml
       private
 
       # Format a package node
-      def format_package(package, repository, depth, is_last, prefix)
+      def format_package(package, repository, depth, is_last, prefix) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
         return "" if @max_depth && depth >= @max_depth
 
         output = []
@@ -90,7 +91,9 @@ module Lutaml
                                                             :package)}"
 
         # Update prefix for children
-        child_prefix = prefix + (is_last ? TREE_CHARS[:space] : TREE_CHARS[:continuation])
+        child_prefix = prefix + (
+          is_last ? TREE_CHARS[:space] : TREE_CHARS[:continuation]
+        )
 
         # Get package path for this package
         pkg_path = find_package_path(repository, package)
@@ -134,7 +137,7 @@ module Lutaml
       end
 
       # Format a class node
-      def format_class(klass, repository, depth, is_last, prefix, package_path)
+      def format_class(klass, repository, depth, is_last, prefix, package_path) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity,Metrics/ParameterLists
         return "" if @max_depth && depth >= @max_depth
 
         output = []
@@ -148,24 +151,28 @@ module Lutaml
         # Class line
         connector = is_last ? TREE_CHARS[:last_branch] : TREE_CHARS[:branch]
         type_label = type == :class ? "Class" : type.to_s.capitalize
-        output << "#{prefix}#{connector} #{icon} #{colorize(class_name,
-                                                            color)} (#{type_label})"
+        output << "#{prefix}#{connector} #{icon} " \
+                  "#{colorize(class_name, color)} (#{type_label})"
 
         # Update prefix for children
-        child_prefix = prefix + (is_last ? TREE_CHARS[:space] : TREE_CHARS[:continuation])
+        child_prefix = prefix + (
+          is_last ? TREE_CHARS[:space] : TREE_CHARS[:continuation]
+        )
 
         # Collect children
         children = []
 
         # Add attributes
-        if @show_attributes && klass.respond_to?(:attributes) && klass.attributes
+        if @show_attributes && klass.respond_to?(:attributes) &&
+            klass.attributes
           children.concat(klass.attributes.map do |a|
             { type: :attribute, obj: a }
           end)
         end
 
         # Add operations
-        if @show_operations && klass.respond_to?(:operations) && klass.operations
+        if @show_operations && klass.respond_to?(:operations) &&
+            klass.operations
           children.concat(klass.operations.map do |o|
             { type: :operation, obj: o }
           end)
@@ -228,7 +235,7 @@ module Lutaml
       end
 
       # Format an association node
-      def format_association(assoc, depth, is_last, prefix)
+      def format_association(assoc, depth, is_last, prefix) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
         return "" if @max_depth && depth >= @max_depth
 
         assoc_name = assoc.name || "(unnamed)"
@@ -261,9 +268,12 @@ module Lutaml
       def format_statistics(stats)
         output = []
         output << colorize("📊 Statistics", :statistics)
-        output << "#{TREE_CHARS[:branch]} Total Packages: #{stats[:total_packages]}"
-        output << "#{TREE_CHARS[:branch]} Total Classes: #{stats[:total_classes]}"
-        output << "#{TREE_CHARS[:last_branch]} Total Diagrams: #{stats[:total_diagrams]}"
+        output << "#{TREE_CHARS[:branch]} Total Packages: " \
+                  "#{stats[:total_packages]}"
+        output << "#{TREE_CHARS[:branch]} Total Classes: " \
+                  "#{stats[:total_classes]}"
+        output << "#{TREE_CHARS[:last_branch]} Total Diagrams: " \
+                  "#{stats[:total_diagrams]}"
         output.join("\n")
       end
 

@@ -14,7 +14,7 @@ module Lutaml
           super
         end
 
-        def to_text
+        def to_text # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           lines = []
           lines << "Enumeration: #{element.name}"
           lines << ("=" * 50)
@@ -52,7 +52,7 @@ module Lutaml
           }
         end
 
-        def to_hash
+        def to_hash # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           data = {
             type: "Enumeration",
             name: element.name,

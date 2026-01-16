@@ -45,7 +45,7 @@ RSpec.describe Lutaml::Qea::Factory::TransformerRegistry do
   describe ".transformer_for" do
     it "returns registered transformer" do
       expect(described_class.transformer_for(:class)).to eq(
-        Lutaml::Qea::Factory::ClassTransformer
+        Lutaml::Qea::Factory::ClassTransformer,
       )
     end
 
@@ -72,7 +72,7 @@ RSpec.describe Lutaml::Qea::Factory::TransformerRegistry do
       expect(transformers).to include(
         class: Lutaml::Qea::Factory::ClassTransformer,
         association: Lutaml::Qea::Factory::AssociationTransformer,
-        generalization: Lutaml::Qea::Factory::GeneralizationTransformer
+        generalization: Lutaml::Qea::Factory::GeneralizationTransformer,
       )
     end
 
@@ -100,7 +100,7 @@ RSpec.describe Lutaml::Qea::Factory::TransformerRegistry do
       described_class.reset_defaults
 
       expect(described_class.transformer_for(:class)).to eq(
-        Lutaml::Qea::Factory::ClassTransformer
+        Lutaml::Qea::Factory::ClassTransformer,
       )
     end
   end
@@ -108,49 +108,49 @@ RSpec.describe Lutaml::Qea::Factory::TransformerRegistry do
   describe "default registrations" do
     it "registers class transformer" do
       expect(described_class.transformer_for(:class)).to eq(
-        Lutaml::Qea::Factory::ClassTransformer
+        Lutaml::Qea::Factory::ClassTransformer,
       )
     end
 
     it "registers interface transformer" do
       expect(described_class.transformer_for(:interface)).to eq(
-        Lutaml::Qea::Factory::ClassTransformer
+        Lutaml::Qea::Factory::ClassTransformer,
       )
     end
 
     it "registers package transformer" do
       expect(described_class.transformer_for(:package)).to eq(
-        Lutaml::Qea::Factory::PackageTransformer
+        Lutaml::Qea::Factory::PackageTransformer,
       )
     end
 
     it "registers association transformer" do
       expect(described_class.transformer_for(:association)).to eq(
-        Lutaml::Qea::Factory::AssociationTransformer
+        Lutaml::Qea::Factory::AssociationTransformer,
       )
     end
 
     it "registers generalization transformer" do
       expect(described_class.transformer_for(:generalization)).to eq(
-        Lutaml::Qea::Factory::GeneralizationTransformer
+        Lutaml::Qea::Factory::GeneralizationTransformer,
       )
     end
 
     it "registers attribute transformer" do
       expect(described_class.transformer_for(:attribute)).to eq(
-        Lutaml::Qea::Factory::AttributeTransformer
+        Lutaml::Qea::Factory::AttributeTransformer,
       )
     end
 
     it "registers operation transformer" do
       expect(described_class.transformer_for(:operation)).to eq(
-        Lutaml::Qea::Factory::OperationTransformer
+        Lutaml::Qea::Factory::OperationTransformer,
       )
     end
 
     it "registers diagram transformer" do
       expect(described_class.transformer_for(:diagram)).to eq(
-        Lutaml::Qea::Factory::DiagramTransformer
+        Lutaml::Qea::Factory::DiagramTransformer,
       )
     end
   end

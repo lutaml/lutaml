@@ -27,7 +27,8 @@ module Lutaml
           DESC
 
           thor_class.option :type, type: :string, default: "all",
-                                   desc: "Statistics type (packages|classes|diagrams|all)"
+                                   desc: "Statistics type " \
+                                         "(packages|classes|diagrams|all)"
           thor_class.option :detailed, type: :boolean, default: false,
                                        desc: "Show detailed statistics"
           thor_class.option :format, type: :string, default: "text",
@@ -36,7 +37,7 @@ module Lutaml
                                    desc: "Use lazy loading"
         end
 
-        def run(lur_path, _path = nil)
+        def run(lur_path, _path = nil) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           repo = load_repository(lur_path, lazy: options[:lazy])
           statistics = repo.statistics
 

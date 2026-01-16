@@ -49,7 +49,9 @@ RSpec.describe Lutaml::Cli::Uml::FindCommand do
       let(:options) { { format: "text" } }
 
       it "requires at least one filter" do
-        expect { command.run(test_lur) }.to raise_error(/Please specify at least one filter/)
+        expect do
+          command.run(test_lur)
+        end.to raise_error(/Please specify at least one filter/)
       end
     end
   end

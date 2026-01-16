@@ -81,7 +81,7 @@ module Lutaml
         # @param id_column [String] ID column name in the reference table
         # @param category [Symbol] Validation category
         # @return [Boolean] True if reference exists, false otherwise
-        def check_reference_exists(
+        def check_reference_exists( # rubocop:disable Metrics/MethodLength,Metrics/ParameterLists
           entity_id:,
           entity_name:,
           entity_type:,
@@ -129,7 +129,7 @@ module Lutaml
         #
         # @param table [String] Table name (e.g., "t_package", "t_object")
         # @return [Array, nil] Collection array or nil if table not mapped
-        def get_collection_for_table(table)
+        def get_collection_for_table(table) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength
           case table
           when "t_package"
             database.packages
@@ -240,8 +240,9 @@ module Lutaml
         # Resolves package ID to full qualified path
         #
         # @param package_id [Integer] Package ID to resolve
-        # @return [String] Qualified path like "Root::ModelA::PackageB (package_id: 123)"
-        def resolve_package_path(package_id)
+        # @return [String] Qualified path like
+        # "Root::ModelA::PackageB (package_id: 123)"
+        def resolve_package_path(package_id) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           return "Root" if package_id.nil? || package_id.zero?
 
           path_parts = []
@@ -273,8 +274,9 @@ module Lutaml
         #
         # @param object_id [Integer] Object ID to resolve
         # @param object_name [String, nil] Object name if already known
-        # @return [String] Qualified name like "Package::ClassName (object_id: 456)"
-        def resolve_class_path(object_id, object_name = nil)
+        # @return [String] Qualified name like "Package::ClassName
+        # (object_id: 456)"
+        def resolve_class_path(object_id, object_name = nil) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           return "Unknown (object_id: #{object_id})" if object_id.nil?
 
           # Get object from collection directly
@@ -291,7 +293,8 @@ module Lutaml
             package_path = resolve_package_path(package_id)
             # Remove the package_id suffix from package path and add class
             base_package_path = package_path.sub(/ \(package_id: \d+\)$/, "")
-            "#{base_package_path}::#{class_name || 'Unknown'} (object_id: #{object_id})"
+            "#{base_package_path}::" \
+              "#{class_name || 'Unknown'} (object_id: #{object_id})"
           else
             "#{class_name || 'Unknown'} (object_id: #{object_id})"
           end

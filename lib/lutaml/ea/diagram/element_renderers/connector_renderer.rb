@@ -10,7 +10,10 @@ module Lutaml
         class ConnectorRenderer < BaseRenderer
           attr_reader :source_element, :target_element
 
-          def initialize(connector, style_parser, source_element = nil, target_element = nil)
+          def initialize( # rubocop:disable Lint/MissingSuper
+            connector, style_parser, source_element = nil,
+            target_element = nil
+          )
             @element = connector
             @style_parser = style_parser
             @source_element = source_element
@@ -20,13 +23,15 @@ module Lutaml
           # Render the connector as SVG path
           # @return [String] SVG content for the connector
           def render
-            path_builder = PathBuilder.new(@element, source_element, target_element)
+            path_builder = PathBuilder.new(@element, source_element,
+                                           target_element)
             path_data = path_builder.build_path
 
             style = style_parser.parse_connector_style(@element)
 
             # Add connector type class
-            css_classes = ["lutaml-diagram-connector", "lutaml-diagram-connector-#{@element[:type]}"]
+            css_classes = ["lutaml-diagram-connector",
+                           "lutaml-diagram-connector-#{@element[:type]}"]
 
             <<~SVG
               <path d="#{path_data}"

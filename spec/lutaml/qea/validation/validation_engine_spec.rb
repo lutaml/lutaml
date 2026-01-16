@@ -53,7 +53,9 @@ RSpec.describe Lutaml::Qea::Validation::ValidationEngine do
 
       # Mock database collections
       allow(database).to receive(:packages).and_return([])
-      allow(database).to receive(:objects).and_return(double("ObjectRepository", all: []))
+      allow(database)
+        .to receive(:objects)
+        .and_return(double("ObjectRepository", all: []))
       allow(database).to receive(:attributes).and_return([])
       allow(database).to receive(:operations).and_return([])
       allow(database).to receive(:connectors).and_return([])
@@ -85,7 +87,7 @@ RSpec.describe Lutaml::Qea::Validation::ValidationEngine do
       engine_with_filter = described_class.new(
         document,
         database: database,
-        min_severity: :error
+        min_severity: :error,
       )
 
       result = engine_with_filter.validate
@@ -100,7 +102,7 @@ RSpec.describe Lutaml::Qea::Validation::ValidationEngine do
       engine_with_filter = described_class.new(
         document,
         database: database,
-        categories: [:missing_reference]
+        categories: [:missing_reference],
       )
 
       result = engine_with_filter.validate
@@ -168,7 +170,9 @@ RSpec.describe Lutaml::Qea::Validation::ValidationEngine do
 
       # Mock database collections
       allow(database).to receive(:packages).and_return([])
-      allow(database).to receive(:objects).and_return(double("ObjectRepository", all: []))
+      allow(database)
+        .to receive(:objects)
+        .and_return(double("ObjectRepository", all: []))
       allow(database).to receive(:attributes).and_return([])
       allow(database).to receive(:operations).and_return([])
       allow(database).to receive(:connectors).and_return([])

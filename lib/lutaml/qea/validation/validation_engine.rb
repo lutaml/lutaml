@@ -65,7 +65,7 @@ module Lutaml
         # @param validators [Array<Symbol>, nil] List of validators to run,
         #   or nil to run all
         # @return [ValidationResult]
-        def validate(validators: nil)
+        def validate(validators: nil) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           result = ValidationResult.new
           context = build_context
           context[:result] = result
@@ -88,7 +88,7 @@ module Lutaml
         # @param context [Hash] Validation context
         # @param validators [Array<Symbol>, nil] Optional validator filter
         # @return [ValidationResult]
-        def validate_qea_database(context, validators = nil)
+        def validate_qea_database(context, validators = nil) # rubocop:disable Metrics/MethodLength
           result = ValidationResult.new
           db_context = context.merge(result: result)
 
@@ -119,7 +119,7 @@ module Lutaml
         # @param context [Hash] Validation context
         # @param validators [Array<Symbol>, nil] Optional validator filter
         # @return [ValidationResult]
-        def validate_uml_tree(context, validators = nil)
+        def validate_uml_tree(context, validators = nil) # rubocop:disable Metrics/MethodLength
           result = ValidationResult.new
           uml_context = context.merge(result: result)
 
@@ -181,7 +181,7 @@ module Lutaml
         # Sets up default validators
         #
         # @return [void]
-        def setup_default_validators
+        def setup_default_validators # rubocop:disable Metrics/MethodLength
           # Phase 1: QEA Database Integrity Validators
           @registry.register(:referential_integrity,
                              ReferentialIntegrityValidator)
@@ -203,7 +203,7 @@ module Lutaml
         # Builds validation context
         #
         # @return [Hash]
-        def build_context
+        def build_context # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           context = {
             document: @document,
             database: @database,
@@ -223,8 +223,11 @@ module Lutaml
           # Note: Use document entities for primary validation
           if @database
             context[:db_packages] = @database.packages || []
-            context[:db_objects] =
-              @database.objects.respond_to?(:all) ? @database.objects.all : (@database.objects || [])
+            context[:db_objects] = if @database.objects.respond_to?(:all)
+                                     @database.objects.all
+                                   else
+                                     @database.objects || []
+                                   end
             context[:attributes] = @database.attributes || []
             context[:operations] = @database.operations || []
             context[:connectors] = @database.connectors || []
@@ -443,7 +446,7 @@ module Lutaml
         #
         # @param result [ValidationResult]
         # @return [void]
-        def display_text_result(result)
+        def display_text_result(result) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           puts "=" * 80
           puts "VALIDATION REPORT"
           puts "=" * 80
@@ -480,7 +483,8 @@ module Lutaml
         # @return [void]
         def display_messages_by_category(messages)
           messages.group_by(&:category).each do |category, msgs|
-            puts "  #{category.to_s.split('_').map(&:capitalize).join(' ')} (#{msgs.size}):"
+            puts "  #{category.to_s.split('_').map(&:capitalize).join(' ')} " \
+                 "(#{msgs.size}):"
             msgs.each do |msg|
               puts "    #{msg}"
               puts

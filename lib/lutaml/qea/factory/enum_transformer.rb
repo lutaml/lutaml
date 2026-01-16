@@ -13,14 +13,15 @@ module Lutaml
         # Transform EA object to UML enum
         # @param ea_object [EaObject] EA object model
         # @return [Lutaml::Uml::Enum] UML enum
-        def transform(ea_object)
+        def transform(ea_object) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength
           return nil if ea_object.nil?
           return nil unless ea_object.enumeration?
 
           Lutaml::Uml::Enum.new.tap do |enum|
             # Map basic properties
             enum.name = ea_object.name
-            enum.xmi_id = normalize_guid_to_xmi_format(ea_object.ea_guid, "EAID")
+            enum.xmi_id = normalize_guid_to_xmi_format(ea_object.ea_guid,
+                                                       "EAID")
             enum.visibility = map_visibility(ea_object.visibility)
 
             # Set package path
@@ -48,7 +49,7 @@ module Lutaml
         # Load enum values (literals) from attributes
         # @param object_id [Integer] Object ID
         # @return [Array<Lutaml::Uml::Value>] Enum values
-        def load_enum_values(object_id)
+        def load_enum_values(object_id) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           return [] if object_id.nil?
 
           query = "SELECT * FROM t_attribute WHERE Object_ID = ? ORDER BY Pos"

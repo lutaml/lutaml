@@ -16,7 +16,7 @@ module Lutaml
           @options = options.transform_keys(&:to_sym)
         end
 
-        def self.add_options_to(thor_class, _method_name)
+        def self.add_options_to(thor_class, _method_name) # rubocop:disable Metrics/MethodLength
           thor_class.long_desc <<-DESC
           Perform full-text search across model elements.
 
@@ -27,14 +27,18 @@ module Lutaml
           DESC
 
           thor_class.option :type, type: :array,
-                                   default: ["class", "attribute", "association"],
+                                   default: [
+                                     "class", "attribute",
+                                     "association"
+                                   ],
                                    desc: "Types to search"
           thor_class.option :package, type: :string,
                                       desc: "Filter by package path"
           thor_class.option :in, type: :array, default: ["name"],
                                  desc: "Search in fields (name, documentation)"
           thor_class.option :format, type: :string, default: "table",
-                                     desc: "Output format (text|table|yaml|json)"
+                                     desc: "Output format " \
+                                           "(text|table|yaml|json)"
           thor_class.option :limit, type: :numeric, default: 100,
                                     desc: "Maximum results"
           thor_class.option :lazy, type: :boolean, default: false,
@@ -53,7 +57,7 @@ module Lutaml
 
         private
 
-        def display_search_results(results, query, _repo)
+        def display_search_results(results, query, _repo) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           all_results = []
           all_results.concat(results[:classes] || [])
           all_results.concat(results[:attributes] || [])

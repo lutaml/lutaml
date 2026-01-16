@@ -28,10 +28,12 @@ module Lutaml
 
       # Parse an element identifier string
       #
-      # @param identifier [String] Element identifier in format "type:path" or just "path"
+      # @param identifier [String] Element identifier in format "type:path"
+      # or just "path"
       # @return [ElementIdentifier] Parsed identifier
-      # @raise [ArgumentError] If identifier is invalid or type is not registered
-      def self.parse(identifier)
+      # @raise [ArgumentError] If identifier is invalid or type is not
+      # registered
+      def self.parse(identifier) # rubocop:disable Metrics/MethodLength
         if identifier.nil? || identifier.empty?
           raise ArgumentError,
                 "Identifier cannot be nil or empty"
@@ -43,7 +45,8 @@ module Lutaml
 
           unless ResourceRegistry.type_registered?(type_sym)
             raise ArgumentError, "Unknown element type: #{type}. " \
-                                 "Valid types: #{ResourceRegistry.types.join(', ')}"
+                                 "Valid types: " \
+                                 "#{ResourceRegistry.types.join(', ')}"
           end
 
           new(type_sym, path)
@@ -90,7 +93,7 @@ module Lutaml
       #
       # @param identifier [String] Identifier without type prefix
       # @return [Symbol] Detected type
-      def self.detect_type(identifier)
+      def self.detect_type(identifier) # rubocop:disable Metrics/MethodLength
         # Check for diagram patterns
         return :diagram if identifier.match?(/diagram/i)
 

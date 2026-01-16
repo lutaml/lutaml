@@ -15,7 +15,7 @@ RSpec.describe Lutaml::Qea::Database do
       ea_object_id: 1,
       name: "TestClass",
       object_type: "Class",
-      package_id: 10
+      package_id: 10,
     )
   end
 
@@ -23,7 +23,7 @@ RSpec.describe Lutaml::Qea::Database do
     Lutaml::Qea::Models::EaPackage.new(
       package_id: 10,
       name: "TestPackage",
-      parent_id: 0
+      parent_id: 0,
     )
   end
 
@@ -32,7 +32,7 @@ RSpec.describe Lutaml::Qea::Database do
       id: 100,
       object_id: 1,
       name: "testAttr",
-      type: "String"
+      type: "String",
     )
   end
 
@@ -121,7 +121,9 @@ RSpec.describe Lutaml::Qea::Database do
     it "returns counts for each collection" do
       database.add_collection(:objects, [sample_object, sample_object])
       database.add_collection(:packages, [sample_package])
-      database.add_collection(:attributes, [sample_attribute, sample_attribute, sample_attribute])
+      database.add_collection(:attributes,
+                              [sample_attribute, sample_attribute,
+                               sample_attribute])
 
       stats = database.stats
       expect(stats).to eq({

@@ -1,14 +1,16 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require_relative "../../../../lib/lutaml/model_transformations/parsers/base_parser"
+require_relative "../../../../lib/lutaml/model_transformations/parsers/" \
+                 "base_parser"
 require_relative "../../../../lib/lutaml/model_transformations/configuration"
 require "tempfile"
 
 RSpec.describe Lutaml::ModelTransformations::Parsers::BaseParser do
   # Concrete test parser for testing abstract base
   class TestParser < described_class
-    attr_reader :parse_internal_called_with, :validate_input_called, :validate_output_called
+    attr_reader :parse_internal_called_with, :validate_input_called,
+                :validate_output_called
 
     def format_name
       "Test Format"
@@ -92,7 +94,9 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::BaseParser do
 
   let(:configuration) { Lutaml::ModelTransformations::Configuration.new }
   let(:options) { {} }
-  let(:parser) { TestParser.new(configuration: configuration, options: options) }
+  let(:parser) do
+    TestParser.new(configuration: configuration, options: options)
+  end
 
   describe "#initialize" do
     it "initializes with configuration and options" do
@@ -102,10 +106,11 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::BaseParser do
 
     it "merges options with defaults" do
       custom_options = { validate_input: false }
-      parser = TestParser.new(configuration: configuration, options: custom_options)
+      parser = TestParser.new(configuration: configuration,
+                              options: custom_options)
 
       expect(parser.options[:validate_input]).to be false
-      expect(parser.options).to include(:validate_output)  # Default option
+      expect(parser.options).to include(:validate_output) # Default option
     end
   end
 
@@ -158,7 +163,10 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::BaseParser do
     end
 
     context "with input validation failure" do
-      let(:parser) { ValidatingTestParser.new(configuration: configuration, options: { validate_input: true }) }
+      let(:parser) do
+        ValidatingTestParser.new(configuration: configuration,
+                                 options: { validate_input: true })
+      end
 
       let(:invalid_file) do
         file = Tempfile.new(["invalid", ".validate"])
@@ -189,7 +197,9 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::BaseParser do
     end
 
     context "with parsing failure" do
-      let(:parser) { FailingTestParser.new(configuration: configuration, options: options) }
+      let(:parser) do
+        FailingTestParser.new(configuration: configuration, options: options)
+      end
 
       let(:test_file) do
         file = Tempfile.new(["test", ".fail"])
@@ -204,7 +214,8 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::BaseParser do
         expect do
           parser.parse(test_file.path)
         end.to raise_error(
-          Lutaml::ModelTransformations::Parsers::ParseError, /Parsing failed/)
+          Lutaml::ModelTransformations::Parsers::ParseError, /Parsing failed/
+        )
       end
 
       xit "records failed parse in statistics" do
@@ -318,7 +329,8 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::BaseParser do
       parser.parse(test_file.path)
 
       # One failure
-      failing_parser = FailingTestParser.new(configuration: configuration, options: options)
+      failing_parser = FailingTestParser.new(configuration: configuration,
+                                             options: options)
       begin
         failing_parser.parse(test_file.path)
       rescue StandardError
@@ -373,7 +385,9 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::BaseParser do
     class AbstractTestParser < described_class
     end
 
-    let(:abstract_parser) { AbstractTestParser.new(configuration: configuration, options: options) }
+    let(:abstract_parser) do
+      AbstractTestParser.new(configuration: configuration, options: options)
+    end
 
     it "raises NotImplementedError for format_name" do
       expect do
@@ -466,7 +480,8 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::BaseParser do
         custom_option: "value"
       }
 
-      custom_parser = TestParser.new(configuration: configuration, options: custom_options)
+      custom_parser = TestParser.new(configuration: configuration,
+                                     options: custom_options)
       expect(custom_parser.options[:validate_input]).to be false
       expect(custom_parser.options[:timeout]).to eq(30)
       expect(custom_parser.options[:custom_option]).to eq("value")
@@ -485,7 +500,8 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::BaseParser do
 
     it "handles file reading errors gracefully" do
       # Mock File.read to raise an error
-      allow(File).to receive(:read).with(test_file.path).and_raise(IOError, "Read error")
+      allow(File).to receive(:read).with(test_file.path).and_raise(IOError,
+                                                                   "Read error")
 
       expect do
         parser.can_parse?(test_file.path)
@@ -496,12 +512,14 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::BaseParser do
     end
 
     it "preserves original errors from parse_internal" do
-      failing_parser = FailingTestParser.new(configuration: configuration, options: options)
+      failing_parser = FailingTestParser.new(configuration: configuration,
+                                             options: options)
 
       expect do
         failing_parser.parse(test_file.path)
       end.to raise_error(
-        Lutaml::ModelTransformations::Parsers::ParseError, /Parsing failed/)
+        Lutaml::ModelTransformations::Parsers::ParseError, /Parsing failed/
+      )
     end
   end
 

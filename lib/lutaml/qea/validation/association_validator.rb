@@ -21,7 +21,7 @@ module Lutaml
           end
         end
 
-        def validate_start_object(connector)
+        def validate_start_object(connector) # rubocop:disable Metrics/MethodLength
           return if reference_exists?("t_object", "ea_object_id",
                                       connector.start_object_id)
 
@@ -36,7 +36,7 @@ module Lutaml
           )
         end
 
-        def validate_end_object(connector)
+        def validate_end_object(connector) # rubocop:disable Metrics/MethodLength
           return if reference_exists?("t_object", "ea_object_id",
                                       connector.end_object_id)
 
@@ -51,7 +51,7 @@ module Lutaml
           )
         end
 
-        def validate_connector_endpoints
+        def validate_connector_endpoints # rubocop:disable Metrics/MethodLength
           connectors.each do |conn|
             # Validate both endpoints exist
             unless conn.start_object_id && conn.end_object_id

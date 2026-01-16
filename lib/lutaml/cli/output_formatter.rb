@@ -31,7 +31,7 @@ module Lutaml
       # @param data [Object] Data to format
       # @param format [String] Output format (text, yaml, json, table)
       # @return [String] Formatted output
-      def self.format(data, format: "text")
+      def self.format(data, format: "text") # rubocop:disable Metrics/MethodLength
         case format.to_s.downcase
         when "yaml"
           # Convert to plain hash if needed for proper YAML serialization
@@ -54,14 +54,14 @@ module Lutaml
       #
       # @param data [Object] Data to convert
       # @return [Hash] Plain Ruby hash
-      def self.convert_to_plain_hash(data)
+      def self.convert_to_plain_hash(data) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/MethodLength
         return data unless data
 
         case data
         when Hash
           # Deep convert to plain hash
-          data.each_with_object({}) do |(key, value), result|
-            result[key] = convert_to_plain_hash(value)
+          data.transform_values do |value|
+            convert_to_plain_hash(value)
           end
         when Array
           data.map { |item| convert_to_plain_hash(item) }
@@ -93,7 +93,7 @@ module Lutaml
       #
       # @param hash [Hash] Hash to format
       # @return [String] Formatted table
-      def self.format_hash_table(hash)
+      def self.format_hash_table(hash) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
         max_key_length = hash.keys.map(&:to_s).map(&:length).max || 0
         lines = []
 
@@ -114,7 +114,7 @@ module Lutaml
       # @param array [Array<Hash>] Array to format
       # @param options [Hash] TableTennis options
       # @return [String] Formatted table
-      def self.format_array_table(array, options: {})
+      def self.format_array_table(array, options: {}) # rubocop:disable Metrics/MethodLength
         return "" if array.empty?
 
         # Default TableTennis options for lutaml
@@ -148,12 +148,13 @@ module Lutaml
 
       # Format a tree structure with optional metadata
       #
-      # @param node [Hash] Tree node with :name, :children, :classes_count, :diagrams_count keys
+      # @param node [Hash] Tree node with :name, :children, :classes_count,
+      # :diagrams_count keys
       # @param prefix [String] Prefix for indentation
       # @param is_last [Boolean] Whether this is the last child
       # @param show_counts [Boolean] Whether to show class/diagram counts
       # @return [String] Formatted tree
-      def self.format_tree(node, prefix: "", is_last: true, show_counts: true)
+      def self.format_tree(node, prefix: "", is_last: true, show_counts: true) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
         return "" if node.nil?
 
         lines = []
@@ -170,7 +171,9 @@ module Lutaml
             metadata_parts << "#{node[:diagrams_count]} diagrams"
           end
 
-          node_text += " (#{metadata_parts.join(', ')})" unless metadata_parts.empty?
+          unless metadata_parts.empty?
+            node_text += " (#{metadata_parts.join(', ')})"
+          end
         end
 
         lines << "#{prefix}#{connector}#{node_text}"
@@ -193,7 +196,7 @@ module Lutaml
       # @param stats [Hash] Statistics hash
       # @param detailed [Boolean] Whether to show detailed stats
       # @return [String] Formatted statistics
-      def self.format_stats(stats, detailed: false)
+      def self.format_stats(stats, detailed: false) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
         return "No statistics available" unless stats
 
         lines = []
@@ -214,7 +217,8 @@ module Lutaml
         # Package statistics
         lines << colorize("Package Statistics:", :yellow)
         lines << "  Max Depth:         #{stats[:max_package_depth] || 0}"
-        lines << "  Avg Depth:         #{'%.2f' % (stats[:avg_package_depth] || 0)}"
+        lines << "  Avg Depth:         " \
+                 "#{'%.2f' % (stats[:avg_package_depth] || 0)}"
 
         if detailed && stats[:packages_by_depth]
           lines << "  Depth Distribution:"
@@ -226,9 +230,10 @@ module Lutaml
 
         # Class statistics
         lines << colorize("Class Statistics:", :yellow)
-        lines << "  Total Attributes:  #{stats[:total_attributes] || 0}"
+        lines << "  Total Attributes:   #{stats[:total_attributes] || 0}"
         lines << "  Total Associations: #{stats[:total_associations] || 0}"
-        lines << "  Avg Complexity:    #{'%.2f' % (stats[:avg_class_complexity] || 0)}"
+        lines << "  Avg Complexity:     " \
+                 "#{'%.2f' % (stats[:avg_class_complexity] || 0)}"
 
         if detailed && stats[:classes_by_stereotype] &&
             !stats[:classes_by_stereotype].empty?
@@ -242,7 +247,8 @@ module Lutaml
         # Inheritance statistics
         if stats[:total_inheritance_relationships]
           lines << colorize("Inheritance:", :yellow)
-          lines << "  Relationships:     #{stats[:total_inheritance_relationships]}"
+          lines << "  Relationships:     " \
+                   "#{stats[:total_inheritance_relationships]}"
           lines << "  Max Depth:         #{stats[:max_inheritance_depth]}"
           lines << ""
         end
@@ -251,8 +257,10 @@ module Lutaml
         if detailed
           lines << colorize("Quality Metrics:", :yellow)
           lines << "  Abstract Classes:  #{stats[:abstract_class_count] || 0}"
-          lines << "  Undocumented:      #{stats[:classes_without_documentation] || 0}"
-          lines << "  Without Attrs:     #{stats[:classes_without_attributes] || 0}"
+          lines << "  Undocumented:      " \
+                   "#{stats[:classes_without_documentation] || 0}"
+          lines << "  Without Attrs:     " \
+                   "#{stats[:classes_without_attributes] || 0}"
           lines << ""
         end
 
@@ -264,7 +272,7 @@ module Lutaml
             klass = item[:class]
             complexity = item[:complexity]
             class_name = klass.respond_to?(:name) ? klass.name : klass.to_s
-            
+
             lines << "  #{class_name} (complexity: #{complexity})"
           end
         end

@@ -4,7 +4,9 @@ require "spec_helper"
 require_relative "../../lib/lutaml/qea"
 
 RSpec.describe Lutaml::Qea do
-  let(:test_qea_file) { File.expand_path("../../examples/qea/test.qea", __dir__) }
+  let(:test_qea_file) do
+    File.expand_path("../../examples/qea/test.qea", __dir__)
+  end
 
   describe "VERSION" do
     it "has a version number" do
@@ -83,7 +85,8 @@ RSpec.describe Lutaml::Qea do
       result = nil
       described_class.open(test_qea_file) do |conn|
         conn.with_connection do |db|
-          result = db.execute("SELECT COUNT(*) as count FROM t_object").first["count"]
+          result = db
+            .execute("SELECT COUNT(*) as count FROM t_object").first["count"]
         end
       end
       expect(result).to be_an(Integer)
@@ -223,7 +226,8 @@ RSpec.describe Lutaml::Qea do
           expect(tables).not_to be_empty
 
           # Can read table data
-          table_reader = Lutaml::Qea::Infrastructure::TableReader.new(db, "t_object")
+          table_reader = Lutaml::Qea::Infrastructure::TableReader
+            .new(db, "t_object")
           count = table_reader.count
           expect(count).to be >= 0
         end

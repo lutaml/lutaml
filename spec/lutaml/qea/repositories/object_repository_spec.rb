@@ -13,7 +13,7 @@ RSpec.describe Lutaml::Qea::Repositories::ObjectRepository do
       package_id: 10,
       visibility: "Public",
       abstract: "0",
-      stereotype: "entity"
+      stereotype: "entity",
     )
   end
 
@@ -24,7 +24,7 @@ RSpec.describe Lutaml::Qea::Repositories::ObjectRepository do
       object_type: "Class",
       package_id: 10,
       visibility: "Public",
-      abstract: "1"
+      abstract: "1",
     )
   end
 
@@ -34,7 +34,7 @@ RSpec.describe Lutaml::Qea::Repositories::ObjectRepository do
       name: "IService",
       object_type: "Interface",
       package_id: 10,
-      visibility: "Public"
+      visibility: "Public",
     )
   end
 
@@ -44,7 +44,7 @@ RSpec.describe Lutaml::Qea::Repositories::ObjectRepository do
       name: "Status",
       object_type: "Enumeration",
       package_id: 20,
-      visibility: "Public"
+      visibility: "Public",
     )
   end
 
@@ -53,7 +53,7 @@ RSpec.describe Lutaml::Qea::Repositories::ObjectRepository do
       object_id: 5,
       name: "ServiceComponent",
       object_type: "Component",
-      package_id: 20
+      package_id: 20,
     )
   end
 
@@ -194,7 +194,8 @@ RSpec.describe Lutaml::Qea::Repositories::ObjectRepository do
   describe "#object_types" do
     it "returns unique object types" do
       types = repository.object_types
-      expect(types).to contain_exactly("Class", "Interface", "Enumeration", "Component")
+      expect(types).to contain_exactly("Class", "Interface", "Enumeration",
+                                       "Component")
     end
   end
 
@@ -251,7 +252,7 @@ RSpec.describe Lutaml::Qea::Repositories::ObjectRepository do
         object_id: 6,
         name: "Test",
         alias: "SearchMe",
-        object_type: "Class"
+        object_type: "Class",
       )
       repo_with_alias = described_class.new([obj_with_alias])
 

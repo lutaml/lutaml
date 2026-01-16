@@ -14,7 +14,7 @@ module Lutaml
           @options = options.transform_keys(&:to_sym)
         end
 
-        def self.add_options_to(thor_class, _method_name)
+        def self.add_options_to(thor_class, _method_name) # rubocop:disable Metrics/MethodLength
           thor_class.long_desc <<-DESC
           Generate a modern, interactive Single Page Application (SPA) for browsing
           UML models. Supports both single-file (all-in-one HTML) and multi-file
@@ -35,9 +35,12 @@ module Lutaml
           DESC
 
           thor_class.option :output, aliases: "-o", required: true,
-                                     desc: "Output path (file for single-file, directory for multi-file)"
+                                     desc: "Output path (file for " \
+                                           "single-file, directory for " \
+                                           "multi-file)"
           thor_class.option :mode, aliases: "-m", default: "single-file",
-                                   desc: "Output mode: 'single-file' or 'multi-file'"
+                                   desc: "Output mode: 'single-file' or " \
+                                         "'multi-file'"
           thor_class.option :title, type: :string, default: "UML Model Browser",
                                     desc: "Site title"
           thor_class.option :minify, type: :boolean, default: false,
@@ -46,7 +49,7 @@ module Lutaml
                                     desc: "Default theme: 'light' or 'dark'"
         end
 
-        def run(input_path)
+        def run(input_path) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           validate_input(input_path)
 
           mode = determine_mode
@@ -78,7 +81,7 @@ module Lutaml
           raise Thor::Error, "Input file not found: #{input_path}"
         end
 
-        def detect_mode
+        def detect_mode # rubocop:disable Metrics/MethodLength
           mode_value = options[:mode] || options["mode"] || "single-file"
 
           case mode_value.downcase
@@ -87,12 +90,15 @@ module Lutaml
           when "multi-file", "multi_file", "multi"
             :multi_file
           else
-            puts OutputFormatter.error("Invalid mode: #{mode_value}. Use 'single-file' or 'multi-file'")
-            raise Thor::Error, "Invalid mode: #{mode_value}. Use 'single-file' or 'multi-file'"
+            puts OutputFormatter.error("Invalid mode: #{mode_value}. " \
+                                       "Use 'single-file' or 'multi-file'")
+            raise Thor::Error,
+                  "Invalid mode: #{mode_value}. " \
+                  "Use 'single-file' or 'multi-file'"
           end
         end
 
-        def determine_mode
+        def determine_mode # rubocop:disable Metrics/MethodLength
           mode_value = options[:mode] || "single-file"
 
           case mode_value.to_s.downcase
@@ -101,17 +107,22 @@ module Lutaml
           when "single-file", "single_file", "singlefile", ""
             :single_file
           else
-            puts OutputFormatter.error("Invalid mode: #{mode_value}. Use 'single-file' or 'multi-file'")
-            raise Thor::Error, "Invalid mode: #{mode_value}. Use 'single-file' or 'multi-file'"
+            puts OutputFormatter.error("Invalid mode: #{mode_value}. " \
+                                       "Use 'single-file' or 'multi-file'")
+            raise Thor::Error,
+                  "Invalid mode: #{mode_value}. " \
+                  "Use 'single-file' or 'multi-file'"
           end
         end
 
-        def validate_output_path(mode)
+        def validate_output_path(mode) # rubocop:disable Metrics/MethodLength
           output = options[:output]
 
           # For multi-file mode, ensure output is a directory
           if mode == :multi_file && File.extname(output) != ""
-            puts OutputFormatter.colorize("Warning: Multi-file mode requires directory output", :yellow)
+            puts OutputFormatter.colorize(
+              "Warning: Multi-file mode requires directory output", :yellow
+            )
             output_dir = File.dirname(output)
             puts "Using directory: #{output_dir}"
             output_dir
@@ -160,20 +171,22 @@ module Lutaml
             theme: options[:theme] || "light"
           }
 
-          Lutaml::UmlRepository::StaticSite.generate(repository, generation_options)
+          Lutaml::UmlRepository::StaticSite.generate(repository,
+                                                     generation_options)
         end
 
-        def display_success_message(mode, output_path)
+        def display_success_message(mode, output_path) # rubocop:disable Metrics/MethodLength
           puts ""
           if mode == :single_file
             size_mb = File.size(output_path) / 1024.0 / 1024.0
             puts OutputFormatter.success(
-              "Generated single-file SPA: #{output_path} (#{'%.2f' % size_mb} MB)"
+              "Generated single-file SPA: #{output_path} " \
+              "(#{'%.2f' % size_mb} MB)",
             )
             puts OutputFormatter.colorize("Open in browser to view", :cyan)
           else
             puts OutputFormatter.success(
-              "Generated multi-file site in: #{output_path}"
+              "Generated multi-file site in: #{output_path}",
             )
             puts OutputFormatter.colorize(
               "Open #{output_path}/index.html in browser", :cyan

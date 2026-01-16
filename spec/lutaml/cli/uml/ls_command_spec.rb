@@ -25,7 +25,9 @@ RSpec.describe Lutaml::Cli::Uml::LsCommand do
       let(:options) { { type: "packages", format: "text" } }
 
       it "lists packages successfully" do
-        expect { command.run(test_lur) }.to output(/Loading repository/).to_stdout
+        expect do
+          command.run(test_lur)
+        end.to output(/Loading repository/).to_stdout
       end
     end
 

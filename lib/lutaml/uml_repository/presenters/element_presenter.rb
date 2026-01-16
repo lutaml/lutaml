@@ -55,13 +55,14 @@ module Lutaml
         #
         # @param attr [Object] Attribute or property with cardinality
         # @return [String] Formatted cardinality like "[1..1]" or "[0..*]"
-        def format_cardinality(attr)
+        def format_cardinality(attr) # rubocop:disable Metrics/CyclomaticComplexity
           return "" unless attr.respond_to?(:cardinality) &&
             attr.cardinality
 
           card = attr.cardinality
           min = card.respond_to?(:min) ? (card.min || "0") : "0"
           max = card.respond_to?(:max) ? (card.max || "*") : "*"
+
           "[#{min}..#{max}]"
         end
 

@@ -8,7 +8,7 @@ RSpec.describe Lutaml::UmlRepository::PackageMetadata do
     it "creates metadata with required fields" do
       metadata = described_class.new(
         name: "Test Model",
-        version: "1.0.0"
+        version: "1.0.0",
       )
 
       expect(metadata.name).to eq("Test Model")
@@ -26,7 +26,7 @@ RSpec.describe Lutaml::UmlRepository::PackageMetadata do
         homepage: "https://example.com",
         authors: ["Jane Doe", "John Smith"],
         maintainers: "team@example.com",
-        serialization_format: "marshal"
+        serialization_format: "marshal",
       )
 
       expect(metadata.name).to eq("Urban Planning")
@@ -44,7 +44,7 @@ RSpec.describe Lutaml::UmlRepository::PackageMetadata do
     it "initializes authors as empty array by default" do
       metadata = described_class.new(
         name: "Test",
-        version: "1.0"
+        version: "1.0",
       )
 
       expect(metadata.authors).to eq([])
@@ -110,7 +110,7 @@ RSpec.describe Lutaml::UmlRepository::PackageMetadata do
       expect(errors.size).to eq(2)
       expect(errors.map(&:message)).to include(
         match(/name is required/),
-        match(/version is required/)
+        match(/version is required/),
       )
     end
   end
@@ -137,7 +137,8 @@ RSpec.describe Lutaml::UmlRepository::PackageMetadata do
     it "raises with multiple errors when both fields missing" do
       expect do
         described_class.new(publisher: "ACME").validate!
-      end.to raise_error(Lutaml::Model::ValidationError, /name is required.*version is required/)
+      end.to raise_error(Lutaml::Model::ValidationError,
+                         /name is required.*version is required/)
     end
   end
 
@@ -153,7 +154,7 @@ RSpec.describe Lutaml::UmlRepository::PackageMetadata do
         homepage: "https://example.com",
         authors: ["Jane Doe", "John Smith"],
         maintainers: "team@example.com",
-        serialization_format: "marshal"
+        serialization_format: "marshal",
       )
 
       yaml = original.to_yaml
@@ -174,7 +175,7 @@ RSpec.describe Lutaml::UmlRepository::PackageMetadata do
     it "round-trips through YAML with minimal metadata" do
       original = described_class.new(
         name: "Simple",
-        version: "1.0"
+        version: "1.0",
       )
 
       yaml = original.to_yaml

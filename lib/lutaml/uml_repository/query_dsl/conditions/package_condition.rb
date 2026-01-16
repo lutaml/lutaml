@@ -13,7 +13,8 @@ module Lutaml
         # recursive (descendant) matching.
         #
         # @example Filter by exact package
-        #   condition = PackageCondition.new("ModelRoot::i-UR", recursive: false)
+        #   condition = PackageCondition.new(
+        #   "ModelRoot::i-UR", recursive: false)
         #   filtered = condition.apply(classes)
         #
         # @example Filter by package and descendants
@@ -22,7 +23,8 @@ module Lutaml
         class PackageCondition < BaseCondition
           # Initialize with package path and recursion setting
           #
-          # @param package_path [String, PackagePath] The package path to filter by
+          # @param package_path [String, PackagePath]
+          # The package path to filter by
           # @param recursive [Boolean] Whether to include descendants
           def initialize(package_path, recursive: false)
             super()

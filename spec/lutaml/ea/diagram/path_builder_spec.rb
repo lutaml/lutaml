@@ -7,7 +7,9 @@ RSpec.describe Lutaml::Ea::Diagram::PathBuilder do
   let(:connector) { { id: "test", type: "association" } }
   let(:source_element) { { id: "1", x: 100, y: 50, width: 120, height: 80 } }
   let(:target_element) { { id: "2", x: 400, y: 200, width: 150, height: 100 } }
-  let(:builder) { described_class.new(connector, source_element, target_element) }
+  let(:builder) do
+    described_class.new(connector, source_element, target_element)
+  end
 
   describe "#initialize" do
     it "stores connector reference" do
@@ -77,7 +79,9 @@ RSpec.describe Lutaml::Ea::Diagram::PathBuilder do
       end
 
       xit "handles multiple waypoints" do
-        connector[:geometry] = "SX=0;SY=0;EX=0;EY=0;EDGE=1;EDGE1=200,100;EDGE2=300,150;EDGE3=400,200;"
+        connector[:geometry] =
+          "SX=0;SY=0;EX=0;EY=0;EDGE=1;EDGE1=200,100;" \
+          "EDGE2=300,150;EDGE3=400,200;"
 
         path = builder.build_path
 
@@ -132,7 +136,7 @@ RSpec.describe Lutaml::Ea::Diagram::PathBuilder do
 
         path = builder.build_path
 
-        expect(path).to include(" C ")  # Cubic bezier command
+        expect(path).to include(" C ") # Cubic bezier command
       end
     end
 
@@ -183,7 +187,8 @@ RSpec.describe Lutaml::Ea::Diagram::PathBuilder do
       end
 
       it "parses waypoints from EDGE1, EDGE2, etc." do
-        connector[:geometry] = "SX=0;SY=0;EX=0;EY=0;EDGE=1;EDGE1=100,50;EDGE2=200,100;"
+        connector[:geometry] =
+          "SX=0;SY=0;EX=0;EY=0;EDGE=1;EDGE1=100,50;EDGE2=200,100;"
 
         geometry_data = builder.send(:parse_ea_geometry, connector[:geometry])
 
@@ -248,7 +253,8 @@ RSpec.describe Lutaml::Ea::Diagram::PathBuilder do
 
     describe "#calculate_start_point" do
       it "calculates absolute start point from source center + offset" do
-        geometry_data = { source_offset_x: 20, source_offset_y: 10, has_relative_coords: true }
+        geometry_data = { source_offset_x: 20, source_offset_y: 10,
+                          has_relative_coords: true }
 
         start_point = builder.send(:calculate_start_point, geometry_data)
 
@@ -258,7 +264,8 @@ RSpec.describe Lutaml::Ea::Diagram::PathBuilder do
       end
 
       it "handles zero offsets" do
-        geometry_data = { source_offset_x: 0, source_offset_y: 0, has_relative_coords: true }
+        geometry_data = { source_offset_x: 0, source_offset_y: 0,
+                          has_relative_coords: true }
 
         start_point = builder.send(:calculate_start_point, geometry_data)
 
@@ -267,7 +274,8 @@ RSpec.describe Lutaml::Ea::Diagram::PathBuilder do
       end
 
       it "handles negative offsets" do
-        geometry_data = { source_offset_x: -20, source_offset_y: -10, has_relative_coords: true }
+        geometry_data = { source_offset_x: -20, source_offset_y: -10,
+                          has_relative_coords: true }
 
         start_point = builder.send(:calculate_start_point, geometry_data)
 
@@ -277,7 +285,8 @@ RSpec.describe Lutaml::Ea::Diagram::PathBuilder do
 
       it "returns nil when source element is missing" do
         builder_no_source = described_class.new(connector, nil, target_element)
-        geometry_data = { source_offset_x: 10, source_offset_y: 5, has_relative_coords: true }
+        geometry_data = { source_offset_x: 10, source_offset_y: 5,
+                          has_relative_coords: true }
 
         result = builder_no_source.send(:calculate_start_point, geometry_data)
 
@@ -285,7 +294,8 @@ RSpec.describe Lutaml::Ea::Diagram::PathBuilder do
       end
 
       it "returns nil when has_relative_coords is false" do
-        geometry_data = { source_offset_x: 10, source_offset_y: 5, has_relative_coords: false }
+        geometry_data = { source_offset_x: 10, source_offset_y: 5,
+                          has_relative_coords: false }
 
         result = builder.send(:calculate_start_point, geometry_data)
 
@@ -303,7 +313,8 @@ RSpec.describe Lutaml::Ea::Diagram::PathBuilder do
 
     describe "#calculate_end_point" do
       it "calculates absolute end point from target center + offset" do
-        geometry_data = { target_offset_x: -15, target_offset_y: 25, has_relative_coords: true }
+        geometry_data = { target_offset_x: -15, target_offset_y: 25,
+                          has_relative_coords: true }
 
         end_point = builder.send(:calculate_end_point, geometry_data)
 
@@ -313,7 +324,8 @@ RSpec.describe Lutaml::Ea::Diagram::PathBuilder do
       end
 
       it "handles zero offsets" do
-        geometry_data = { target_offset_x: 0, target_offset_y: 0, has_relative_coords: true }
+        geometry_data = { target_offset_x: 0, target_offset_y: 0,
+                          has_relative_coords: true }
 
         end_point = builder.send(:calculate_end_point, geometry_data)
 
@@ -323,7 +335,8 @@ RSpec.describe Lutaml::Ea::Diagram::PathBuilder do
 
       it "returns nil when target element is missing" do
         builder_no_target = described_class.new(connector, source_element, nil)
-        geometry_data = { target_offset_x: 10, target_offset_y: 5, has_relative_coords: true }
+        geometry_data = { target_offset_x: 10, target_offset_y: 5,
+                          has_relative_coords: true }
 
         result = builder_no_target.send(:calculate_end_point, geometry_data)
 
@@ -331,7 +344,8 @@ RSpec.describe Lutaml::Ea::Diagram::PathBuilder do
       end
 
       it "returns nil when has_relative_coords is false" do
-        geometry_data = { target_offset_x: 10, target_offset_y: 5, has_relative_coords: false }
+        geometry_data = { target_offset_x: 10, target_offset_y: 5,
+                          has_relative_coords: false }
 
         result = builder.send(:calculate_end_point, geometry_data)
 
@@ -399,8 +413,8 @@ RSpec.describe Lutaml::Ea::Diagram::PathBuilder do
         path = builder.send(:bezier_path)
 
         expect(path).to start_with("M ")
-        expect(path).to include(" C ")  # Cubic bezier
-        expect(path).not_to include(" L ")  # No straight lines
+        expect(path).to include(" C ") # Cubic bezier
+        expect(path).not_to include(" L ") # No straight lines
       end
 
       it "includes control points for curve" do
@@ -408,7 +422,7 @@ RSpec.describe Lutaml::Ea::Diagram::PathBuilder do
 
         # Format: M x1,y1 C cp1x,cp1y cp2x,cp2y x2,y2
         # Splits into: ["M", "x1,y1", "C", "cp1x,cp1y", "cp2x,cp2y", "x2,y2"]
-        parts = path.split(" ")
+        parts = path.split
         expect(parts.size).to eq(6)
         expect(parts[0]).to eq("M")
         expect(parts[2]).to eq("C")
@@ -430,7 +444,7 @@ RSpec.describe Lutaml::Ea::Diagram::PathBuilder do
         points = builder.send(:calculate_orthogonal_points)
 
         expect(points).to be_an(Array)
-        expect(points.size).to eq(4)  # start, 2 intermediate, end
+        expect(points.size).to eq(4) # start, 2 intermediate, end
         expect(points[0]).to be_an(Array)
         expect(points[0].size).to eq(2)
       end
@@ -508,33 +522,37 @@ RSpec.describe Lutaml::Ea::Diagram::PathBuilder do
       end
 
       it "calculates right-side connection for source" do
-        point = builder.send(:calculate_element_connection_point, source_element, :source)
+        point = builder.send(:calculate_element_connection_point,
+                             source_element, :source)
 
         # Right side: x + width, center height: y + height/2
-        expect(point).to eq([220, 90])  # (100 + 120, 50 + 80/2)
+        expect(point).to eq([220, 90]) # (100 + 120, 50 + 80/2)
       end
 
       it "calculates left-side connection for target" do
-        point = builder.send(:calculate_element_connection_point, target_element, :target)
+        point = builder.send(:calculate_element_connection_point,
+                             target_element, :target)
 
         # Left side: x, center height: y + height/2
-        expect(point).to eq([400, 250])  # (400, 200 + 100/2)
+        expect(point).to eq([400, 250]) # (400, 200 + 100/2)
       end
 
       it "calculates center connection for other types" do
-        point = builder.send(:calculate_element_connection_point, source_element, :other)
+        point = builder.send(:calculate_element_connection_point,
+                             source_element, :other)
 
         # Center: x + width/2, y + height/2
-        expect(point).to eq([160, 90])  # (100 + 120/2, 50 + 80/2)
+        expect(point).to eq([160, 90]) # (100 + 120/2, 50 + 80/2)
       end
 
       it "uses default dimensions when missing" do
         element_no_dims = { id: "1", x: 100, y: 50 }
 
-        point = builder.send(:calculate_element_connection_point, element_no_dims, :source)
+        point = builder.send(:calculate_element_connection_point,
+                             element_no_dims, :source)
 
         # Should use defaults (120, 80)
-        expect(point).to eq([220, 90])  # (100 + 120, 50 + 80/2)
+        expect(point).to eq([220, 90]) # (100 + 120, 50 + 80/2)
       end
     end
 

@@ -17,7 +17,7 @@ RSpec.describe Lutaml::Qea::Factory::BaseTransformer do
     it "raises NotImplementedError" do
       expect { transformer.transform(nil) }.to raise_error(
         NotImplementedError,
-        /must implement #transform/
+        /must implement #transform/,
       )
     end
   end

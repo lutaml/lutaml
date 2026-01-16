@@ -18,7 +18,7 @@ RSpec.describe Lutaml::Qea::Factory::ConstraintTransformer do
         constraint_type: "Invariant",
         weight: 0.0,
         notes: nil,
-        status: "Approved"
+        status: "Approved",
       )
 
       uml_constraint = transformer.transform(ea_constraint)
@@ -38,7 +38,7 @@ RSpec.describe Lutaml::Qea::Factory::ConstraintTransformer do
         constraint: "count(self.version) >= 1",
         constraint_type: "Invariant",
         weight: 0.0,
-        status: "Approved"
+        status: "Approved",
       )
 
       uml_constraint = transformer.transform(ea_constraint)
@@ -53,7 +53,7 @@ RSpec.describe Lutaml::Qea::Factory::ConstraintTransformer do
         constraint: "crs -> size() = 1 implies fixed = true",
         constraint_type: "Invariant",
         weight: 10000.0,
-        status: "Approved"
+        status: "Approved",
       )
 
       uml_constraint = transformer.transform(ea_constraint)
@@ -73,7 +73,7 @@ RSpec.describe Lutaml::Qea::Factory::ConstraintTransformer do
         constraint: "count(self.dateOfLastChange) >= 1",
         constraint_type: "Invariant",
         weight: nil,
-        status: "Approved"
+        status: "Approved",
       )
 
       uml_constraint = transformer.transform(ea_constraint)
@@ -88,7 +88,7 @@ RSpec.describe Lutaml::Qea::Factory::ConstraintTransformer do
         constraint: "",
         constraint_type: "Invariant",
         weight: 0.0,
-        status: "Approved"
+        status: "Approved",
       )
 
       uml_constraint = transformer.transform(ea_constraint)
@@ -106,7 +106,7 @@ RSpec.describe Lutaml::Qea::Factory::ConstraintTransformer do
           constraint: "count(self.legalConstraints) >= 1",
           constraint_type: "Invariant",
           weight: 0.0,
-          status: "Approved"
+          status: "Approved",
         ),
         Lutaml::Qea::Models::EaObjectConstraint.new(
           constraint_id: 2,
@@ -114,7 +114,7 @@ RSpec.describe Lutaml::Qea::Factory::ConstraintTransformer do
           constraint: "crs -> size() = 1",
           constraint_type: "Invariant",
           weight: 10000.0,
-          status: "Approved"
+          status: "Approved",
         )
       ]
 

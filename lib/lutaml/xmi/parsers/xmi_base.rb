@@ -667,7 +667,7 @@ module Lutaml
         # @param owner_xmi_id [String]
         # @param link [Lutaml::Model::Serializable]
         # @return [Array<String, String>]
-        def serialize_member_end(owner_xmi_id, link) # rubocop:disable Metrics/MethodLength
+        def serialize_member_end(owner_xmi_id, link) # rubocop:disable Metrics/MethodLength,Metrics/AbcSize,Metrics/CyclomaticComplexity
           case link.name
           when "NoteLink"
             return

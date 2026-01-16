@@ -28,7 +28,8 @@ module Lutaml
 
         def packages
           @packages.map do |package|
-            ::Lutaml::Xmi::LiquidDrops::PackageDrop.new(package, @guidance, @options)
+            ::Lutaml::Xmi::LiquidDrops::PackageDrop.new(package, @guidance,
+                                                        @options)
           end
         end
 

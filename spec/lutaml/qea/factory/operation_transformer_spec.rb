@@ -23,7 +23,7 @@ RSpec.describe Lutaml::Qea::Factory::OperationTransformer do
         type: "String",
         scope: "Public",
         ea_guid: "{OP-GUID}",
-        notes: "Returns the name"
+        notes: "Returns the name",
       )
 
       allow(connection).to receive(:execute).and_return([])
@@ -41,7 +41,7 @@ RSpec.describe Lutaml::Qea::Factory::OperationTransformer do
     it "builds parameter type from operation parameters" do
       ea_op = Lutaml::Qea::Models::EaOperation.new(
         operationid: 1,
-        name: "setName"
+        name: "setName",
       )
 
       param_row = {
@@ -64,7 +64,7 @@ RSpec.describe Lutaml::Qea::Factory::OperationTransformer do
     it "handles multiple parameters" do
       ea_op = Lutaml::Qea::Models::EaOperation.new(
         operationid: 1,
-        name: "calculate"
+        name: "calculate",
       )
 
       param_rows = [
@@ -94,7 +94,7 @@ RSpec.describe Lutaml::Qea::Factory::OperationTransformer do
     it "filters out return parameters" do
       ea_op = Lutaml::Qea::Models::EaOperation.new(
         operationid: 1,
-        name: "getValue"
+        name: "getValue",
       )
 
       param_rows = [
@@ -118,7 +118,7 @@ RSpec.describe Lutaml::Qea::Factory::OperationTransformer do
       ea_op = Lutaml::Qea::Models::EaOperation.new(
         operationid: 1,
         name: "create",
-        stereotype: "constructor"
+        stereotype: "constructor",
       )
 
       allow(connection).to receive(:execute).and_return([])

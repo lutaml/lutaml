@@ -6,7 +6,8 @@ module Lutaml
   module Qea
     module Models
       # Represents an object from the t_object table in EA database
-      # This is the core entity representing classes, interfaces, components, etc.
+      # This is the core entity representing classes, interfaces,
+      # components, etc.
       class EaObject < BaseModel
         attribute :ea_object_id, Lutaml::Model::Type::Integer
         attribute :object_type, Lutaml::Model::Type::String
@@ -78,7 +79,7 @@ module Lutaml
         #
         # @param row [Hash] Database row with string keys
         # @return [EaObject, nil] New instance or nil if row is nil
-        def self.from_db_row(row)
+        def self.from_db_row(row) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           return nil if row.nil?
 
           new(

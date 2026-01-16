@@ -51,8 +51,8 @@ module Lutaml
           message += "\n\nDid you mean one of these?"
           suggestions.each { |s| message += "\n  - #{s}" }
         else
-          message += "\n\nTip: Use the 'search' or 'find' commands to explore " \
-                     "available classes."
+          message += "\n\nTip: Use the 'search' or 'find' commands to " \
+                     "explore available classes."
         end
 
         raise NameError, message
@@ -125,7 +125,7 @@ module Lutaml
       # @example
       #   distance = handler.levenshtein_distance("kitten", "sitting")
       #   # => 3
-      def levenshtein_distance(str1, str2)
+      def levenshtein_distance(str1, str2) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
         return str2.length if str1.empty?
         return str1.length if str2.empty?
 
@@ -162,7 +162,7 @@ module Lutaml
       # @param attempted [String] The attempted name
       # @param candidates [Array<String>] List of candidate names
       # @return [Array<String>] Sorted array of similar names
-      def find_similar_names(attempted, candidates)
+      def find_similar_names(attempted, candidates) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
         # Calculate distances for all candidates
         distances = candidates.map do |candidate|
           distance = levenshtein_distance(

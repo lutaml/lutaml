@@ -17,7 +17,7 @@ RSpec.describe Lutaml::Qea::Factory::AssociationTransformer do
 
     it "returns nil for non-association connectors" do
       ea_conn = Lutaml::Qea::Models::EaConnector.new(
-        connector_type: "Generalization"
+        connector_type: "Generalization",
       )
 
       result = transformer.transform(ea_conn)
@@ -37,7 +37,7 @@ RSpec.describe Lutaml::Qea::Factory::AssociationTransformer do
         destrole: "property",
         sourcecard: "1",
         destcard: "0..*",
-        notes: "Ownership relationship"
+        notes: "Ownership relationship",
       )
 
       source_obj_row = {
@@ -77,7 +77,7 @@ RSpec.describe Lutaml::Qea::Factory::AssociationTransformer do
         connector_type: "Association",
         start_object_id: 10,
         end_object_id: 20,
-        sourcecard: "1..*"
+        sourcecard: "1..*",
       )
 
       source_obj_row = {
@@ -110,7 +110,7 @@ RSpec.describe Lutaml::Qea::Factory::AssociationTransformer do
       ea_conn = Lutaml::Qea::Models::EaConnector.new(
         connector_type: "Association",
         start_object_id: 99,
-        end_object_id: nil
+        end_object_id: nil,
       )
 
       allow(connection).to receive(:execute).and_return([])
@@ -127,7 +127,7 @@ RSpec.describe Lutaml::Qea::Factory::AssociationTransformer do
         connector_type: "Association",
         start_object_id: 10,
         end_object_id: 20,
-        stereotype: "create"
+        stereotype: "create",
       )
 
       allow(connection).to receive(:execute).and_return([])

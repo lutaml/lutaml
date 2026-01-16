@@ -45,14 +45,13 @@ module Lutaml
         #
         # @param options [Hash] Export options
         # @return [Hash] The complete data structure
-        def build_export_data(options)
+        def build_export_data(options) # rubocop:disable Metrics/MethodLength
           {
             metadata: build_metadata,
             packages: build_packages(options),
             classes: build_classes(options),
             associations: build_associations(options),
-            diagrams: if options.fetch(:include_diagrams,
-                                       true)
+            diagrams: if options.fetch(:include_diagrams, true)
                         build_diagrams(options)
                       else
                         []
@@ -118,7 +117,7 @@ module Lutaml
         #
         # @param options [Hash] Export options
         # @return [Array<Hash>] Array of class hashes
-        def build_classes(options)
+        def build_classes(options) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
           classes = if options[:package]
                       repository.classes_in_package(
                         options[:package],
@@ -136,7 +135,7 @@ module Lutaml
         # @param klass [Lutaml::Uml::Class, Lutaml::Uml::DataType,
         #   Lutaml::Uml::Enum] The class object
         # @return [Hash] Class data
-        def serialize_class(klass)
+        def serialize_class(klass) # rubocop:disable Metrics/MethodLength
           qname = qualified_name(klass)
 
           {
@@ -255,7 +254,7 @@ module Lutaml
         #
         # @param options [Hash] Export options
         # @return [Array<Hash>] Array of association hashes
-        def build_associations(options)
+        def build_associations(options) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           associations = indexes[:associations]&.values || []
 
           # Filter by package if specified
@@ -278,19 +277,23 @@ module Lutaml
         #
         # @param association [Lutaml::Uml::Association] The association object
         # @return [Hash] Association data
-        def serialize_association(association)
+        def serialize_association(association) # rubocop:disable Metrics/MethodLength
           {
             id: association.xmi_id,
             name: association.name,
             owner_end: association.owner_end,
             owner_end_attribute_name: association.owner_end_attribute_name,
-            owner_end_cardinality: serialize_cardinality(association.owner_end_cardinality),
+            owner_end_cardinality: serialize_cardinality(
+              association.owner_end_cardinality,
+            ),
             owner_end_type: association.owner_end_type,
             owner_end_xmi_id: association.owner_end_xmi_id,
             member_end: association.member_end,
             member_end_attribute_name: association.member_end_attribute_name,
             member_end_xmi_id: association.member_end_xmi_id,
-            member_end_cardinality: serialize_cardinality(association.member_end_cardinality),
+            member_end_cardinality: serialize_cardinality(
+              association.member_end_cardinality,
+            ),
             member_end_type: association.member_end_type,
           }
         end

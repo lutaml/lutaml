@@ -25,7 +25,9 @@ RSpec.describe Lutaml::Cli::Uml::InfoCommand do
       let(:options) { { format: "text" } }
 
       it "displays package information" do
-        expect { command.run(test_lur) }.to output(/Package Information/).to_stdout
+        expect do
+          command.run(test_lur)
+        end.to output(/Package Information/).to_stdout
       end
 
       it "shows package name and version" do
@@ -58,7 +60,9 @@ RSpec.describe Lutaml::Cli::Uml::InfoCommand do
       let(:options) { {} }
 
       it "handles missing LUR file" do
-        expect { command.run("nonexistent.lur") }.to raise_error(/Package file not found/)
+        expect do
+          command.run("nonexistent.lur")
+        end.to raise_error(/Package file not found/)
       end
     end
   end

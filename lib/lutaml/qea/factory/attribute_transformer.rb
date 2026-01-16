@@ -12,7 +12,7 @@ module Lutaml
         # Transform EA attribute to UML attribute
         # @param ea_attribute [EaAttribute] EA attribute model
         # @return [Lutaml::Uml::TopElementAttribute] UML attribute
-        def transform(ea_attribute)
+        def transform(ea_attribute) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           return nil if ea_attribute.nil?
 
           Lutaml::Uml::TopElementAttribute.new.tap do |attr|
@@ -22,7 +22,9 @@ module Lutaml
 
             # XMI uses the TYPE's XMI ID, not the attribute's ID
             type_xmi_id = lookup_type_xmi_id(ea_attribute.classifier)
-            attr.xmi_id = type_xmi_id || normalize_guid_to_xmi_format(ea_attribute.ea_guid, "EAID")
+            attr.xmi_id = type_xmi_id || normalize_guid_to_xmi_format(
+              ea_attribute.ea_guid, "EAID"
+            )
 
             attr.id = normalize_guid_to_xmi_format(ea_attribute.ea_guid, "EAID")
             attr.static = ea_attribute.static? ? "true" : nil
@@ -50,14 +52,18 @@ module Lutaml
         # Look up the type object's XMI ID from classifier
         # @param classifier_id [Integer] Classifier ID
         # @return [String, nil] Type's XMI ID
-        def lookup_type_xmi_id(classifier_id)
-          return nil if classifier_id.nil? || classifier_id.to_i == 0
+        def lookup_type_xmi_id(classifier_id) # rubocop:disable Metrics/AbcSize
+          return nil if classifier_id.nil? || classifier_id.to_i.zero?
 
           query = "SELECT ea_guid FROM t_object WHERE Object_ID = ?"
           rows = database.connection.execute(query, [classifier_id])
           return nil if rows.empty?
 
-          ea_guid = rows.first.is_a?(Hash) ? (rows.first['ea_guid'] || rows.first[:ea_guid]) : rows.first[0]
+          ea_guid = if rows.first.is_a?(Hash)
+                      rows.first["ea_guid"] || rows.first[:ea_guid]
+                    else
+                      rows.first[0]
+                    end
           normalize_guid_to_xmi_format(ea_guid, "EAID")
         end
 

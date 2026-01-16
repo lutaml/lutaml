@@ -40,16 +40,16 @@ module Lutaml
       # @param qea_path [String] Path to the .qea file
       # @param options [Hash] Transformation options
       # @return [Hash] Hash with :database and :document keys
-      def parse(qea_path, options = {})
+      def parse(qea_path, options = {}) # rubocop:disable Metrics/MethodLength
         # Load database
         config = options[:config]
         loader = Services::DatabaseLoader.new(qea_path, config)
         database = loader.load
-    
+
         # Create document
         factory = Factory::EaToUmlFactory.new(database, options)
         document = factory.create_document
-    
+
         # Return both for validation support
         {
           database: database,

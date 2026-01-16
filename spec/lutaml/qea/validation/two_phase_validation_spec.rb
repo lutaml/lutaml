@@ -114,7 +114,8 @@ RSpec.describe "Two-Phase Validation System" do
 
       expect(result).to be_a(Lutaml::Qea::Validation::ValidationResult)
       expect(result.messages).to be_an(Array)
-      expect(result.errors.size + result.warnings.size + result.info.size).to eq(result.messages.size)
+      expect(result.errors.size + result.warnings.size + result.info.size)
+        .to eq(result.messages.size)
     end
 
     it "reports validation summary" do

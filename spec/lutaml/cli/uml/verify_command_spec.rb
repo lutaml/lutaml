@@ -15,22 +15,26 @@ RSpec.describe Lutaml::Cli::Uml::VerifyCommand do
 
     context "error handling" do
       it "handles missing XMI file" do
-        expect {
+        expect do
           command.run("nonexistent.xmi", test_qea)
-        }.to raise_error(/XMI file not found/)
+        end.to raise_error(/XMI file not found/)
       end
 
       it "handles missing QEA file" do
-        expect {
+        expect do
           command.run(test_xmi, "nonexistent.qea")
-        }.to raise_error(/QEA file not found/)
+        end.to raise_error(/QEA file not found/)
       end
     end
 
     context "with valid files" do
       it "performs verification when files exist" do
-        skip "Test files not available" unless File.exist?(test_xmi) && File.exist?(test_qea)
-        expect { command.run(test_xmi, test_qea) }.to output(/Verification/).to_stdout
+        unless File.exist?(test_xmi) && File.exist?(test_qea)
+          skip "Test files not available"
+        end
+        expect do
+          command.run(test_xmi, test_qea)
+        end.to output(/Verification/).to_stdout
       end
     end
   end

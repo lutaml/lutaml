@@ -70,7 +70,7 @@ module Lutaml
         private
 
         # Build package index with qualified paths
-        def build_package_index(packages, parent_path = "")
+        def build_package_index(packages, parent_path = "") # rubocop:disable Metrics/MethodLength
           index = {}
           return index unless packages
 
@@ -89,7 +89,7 @@ module Lutaml
         end
 
         # Build class index from document and packages
-        def build_class_index(document)
+        def build_class_index(document) # rubocop:disable Metrics/MethodLength
           index = {}
 
           # Index top-level classes
@@ -109,7 +109,7 @@ module Lutaml
         end
 
         # Recursively index classes in packages
-        def index_classes_in_packages(packages, parent_path, index)
+        def index_classes_in_packages(packages, parent_path, index) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/MethodLength
           return unless packages
 
           packages.each do |package|
@@ -130,7 +130,7 @@ module Lutaml
         end
 
         # Build enum index from document and packages
-        def build_enum_index(document)
+        def build_enum_index(document) # rubocop:disable Metrics/MethodLength
           index = {}
 
           # Index top-level enums
@@ -150,7 +150,7 @@ module Lutaml
         end
 
         # Recursively index enums in packages
-        def index_enums_in_packages(packages, parent_path, index)
+        def index_enums_in_packages(packages, parent_path, index) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/MethodLength
           return unless packages
 
           packages.each do |package|
@@ -171,7 +171,7 @@ module Lutaml
         end
 
         # Build data type index from document and packages
-        def build_data_type_index(document)
+        def build_data_type_index(document) # rubocop:disable Metrics/MethodLength
           index = {}
 
           # Index top-level data types
@@ -191,7 +191,7 @@ module Lutaml
         end
 
         # Recursively index data types in packages
-        def index_data_types_in_packages(packages, parent_path, index)
+        def index_data_types_in_packages(packages, parent_path, index) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/MethodLength
           return unless packages
 
           packages.each do |package|
@@ -253,7 +253,7 @@ module Lutaml
         end
 
         # Match elements between two indexes
-        def match_elements(xmi_index, qea_index)
+        def match_elements(xmi_index, qea_index) # rubocop:disable Metrics/MethodLength
           matches = {}
           xmi_only = []
           qea_only = []

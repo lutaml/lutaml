@@ -61,7 +61,7 @@ module Lutaml
 
           private
 
-          def parse_mode_config(config_hash)
+          def parse_mode_config(config_hash) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
             return nil unless config_hash
 
             OutputMode.new.tap do |mode|
@@ -230,7 +230,7 @@ module Lutaml
 
         private
 
-        def parse_hash_attribute(attr)
+        def parse_hash_attribute(attr) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           case attr
           when Hash
             attr
@@ -243,10 +243,12 @@ module Lutaml
               # Fall through to eval if YAML parsing fails
             end
 
-            # If the string looks like a Ruby hash (contains =>), try to evaluate it safely
+            # If the string looks like a Ruby hash (contains =>),
+            # try to evaluate it safely
             if attr.include?('=>')
               begin
-                # Use eval in a controlled way - this is safe because we control the input
+                # Use eval in a controlled way - this is safe because we
+                # control the input
                 # The string comes from our own YAML config file
                 parsed = eval(attr) # rubocop:disable Security/Eval
                 return parsed if parsed.is_a?(Hash)

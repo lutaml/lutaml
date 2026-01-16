@@ -152,7 +152,7 @@ module Lutaml
         .on("-f",
             "--formatter VALUE",
             format_desc) do |value|
-        @formatter = value
+          @formatter = value
       end
       @option_parser
         .on("-t", "--type VALUE", "The output format type") do |value|
@@ -168,8 +168,8 @@ module Lutaml
         end
       @option_parser
         .on("-h", "--help", "Prints this help") do
-        print_help
-        exit
+          print_help
+          exit
       end
       @option_parser.on("-g", "--graph VALUE") do |value|
         Parsers::Attribute.parse(value).each do |key, attr_value|

@@ -48,7 +48,7 @@ module Lutaml
         #
         # @param row [Hash] Database row with string keys
         # @return [EaOperation, nil] New instance or nil if row is nil
-        def self.from_db_row(row)
+        def self.from_db_row(row) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           return nil if row.nil?
 
           new(

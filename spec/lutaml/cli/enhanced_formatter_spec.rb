@@ -33,7 +33,7 @@ RSpec.describe Lutaml::Cli::EnhancedFormatter do
 
       result = described_class.format_tree_with_icons(
         tree,
-        { show_icons: false }
+        { show_icons: false },
       )
 
       expect(result).to include("Root")
@@ -50,7 +50,7 @@ RSpec.describe Lutaml::Cli::EnhancedFormatter do
 
       result = described_class.format_tree_with_icons(
         tree,
-        { show_counts: true }
+        { show_counts: true },
       )
 
       expect(result).to include("10 classes")
@@ -90,7 +90,7 @@ RSpec.describe Lutaml::Cli::EnhancedFormatter do
       result = described_class.format_table_with_pagination(
         headers,
         small_rows,
-        interactive: false
+        interactive: false,
       )
 
       expect(result).to include("Name")
@@ -105,7 +105,7 @@ RSpec.describe Lutaml::Cli::EnhancedFormatter do
         headers,
         rows,
         interactive: false,
-        page_size: 50
+        page_size: 50,
       )
 
       expect(result).to include("Page 1/2")
@@ -118,7 +118,7 @@ RSpec.describe Lutaml::Cli::EnhancedFormatter do
         rows,
         interactive: false,
         page_size: 50,
-        current_page: 2
+        current_page: 2,
       )
 
       expect(result).to include("Page 2/2")
@@ -140,10 +140,10 @@ RSpec.describe Lutaml::Cli::EnhancedFormatter do
             "Attribute",
             name: "id",
             type: "Integer",
-            cardinality: double("Cardinality", min: 1, max: 1)
+            cardinality: double("Cardinality", min: 1, max: 1),
           ),
         ],
-        operations: []
+        operations: [],
       )
     end
 
@@ -170,7 +170,7 @@ RSpec.describe Lutaml::Cli::EnhancedFormatter do
         "Class",
         name: "EmptyClass",
         attributes: [],
-        operations: []
+        operations: [],
       )
 
       result = described_class.format_class_details_enhanced(empty_class)
@@ -232,12 +232,12 @@ RSpec.describe Lutaml::Cli::EnhancedFormatter do
       stats_with_complexity = stats.merge(
         most_complex_classes: [
           { name: "Complex1", total_complexity: 15 },
-        ]
+        ],
       )
 
       result = described_class.format_stats_enhanced(
         stats_with_complexity,
-        show_complexity: true
+        show_complexity: true,
       )
 
       expect(result).to include("Complexity Metrics")
@@ -258,7 +258,7 @@ RSpec.describe Lutaml::Cli::EnhancedFormatter do
     it "formats cardinality with min and max" do
       attr = double(
         "Attribute",
-        cardinality: double("Cardinality", min: 0, max: "*")
+        cardinality: double("Cardinality", min: 0, max: "*"),
       )
 
       result = described_class.send(:format_cardinality, attr)

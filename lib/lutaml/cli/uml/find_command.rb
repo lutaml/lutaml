@@ -36,7 +36,7 @@ module Lutaml
                                    desc: "Use lazy loading"
         end
 
-        def run(lur_path)
+        def run(lur_path) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           validate_options!
 
           # Load the repository from the LUR file
@@ -44,12 +44,13 @@ module Lutaml
 
           # Get results based on the filter type
           results = if options[:pattern] # e.g. "^Building.*"
-                      types = [ options[:type] || :class ]
+                      types = [options[:type] || :class]
                       repo.search(options[:pattern], types: types)
                     elsif options[:stereotype]
                       repo.find_classes_by_stereotype(options[:stereotype])
                     elsif options[:package]
-                      repo.classes_in_package(options[:package], recursive: false)
+                      repo.classes_in_package(options[:package],
+                                              recursive: false)
                     else
                       []
                     end
@@ -69,14 +70,22 @@ module Lutaml
                     end
 
           if classes.nil? || classes.empty?
-            filter_desc = options[:pattern] ? "pattern: #{options[:pattern]}" :
-                          options[:stereotype] ? "stereotype: #{options[:stereotype]}" :
-                          options[:package] ? "package: #{options[:package]}" : "criteria"
+            filter_desc = if options[:pattern]
+                            "pattern: #{options[:pattern]}"
+                          elsif options[:stereotype]
+                            "stereotype: #{options[:stereotype]}"
+                          elsif options[:package]
+                            "package: #{options[:package]}"
+                          else
+                            "criteria"
+                          end
             puts "No elements found matching #{filter_desc}"
             return
           end
 
-          output = classes.map { |cls| cls.respond_to?(:name) ? (cls.name || cls.to_s) : cls.to_s }
+          output = classes.map do |cls|
+            cls.respond_to?(:name) ? (cls.name || cls.to_s) : cls.to_s
+          end
 
           # output result based on the format option
           case options[:format]
@@ -100,8 +109,11 @@ module Lutaml
         def validate_options!
           # At least one filter option must be specified
           unless options[:pattern] || options[:stereotype] || options[:package]
-            puts "Please specify at least one filter: --pattern, --stereotype, or --package"
-            raise Thor::Error, "Please specify at least one filter: --pattern, --stereotype, or --package"
+            puts "Please specify at least one filter: " \
+                 "--pattern, --stereotype, or --package"
+            raise Thor::Error,
+                  "Please specify at least one filter: " \
+                  "--pattern, --stereotype, or --package"
           end
         end
       end

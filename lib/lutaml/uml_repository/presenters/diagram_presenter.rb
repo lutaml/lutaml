@@ -33,24 +33,28 @@ module Lutaml
         #
         # @param options [Hash] Rendering options
         # @option options [Integer] :padding (20) Padding around diagram
-        # @option options [String] :background_color ("#ffffff") Background color
+        # @option options [String] :background_color ("#ffffff")
+        # Background color
         # @option options [Boolean] :grid_visible (false) Show grid
-        # @option options [Boolean] :interactive (false) Enable interactive features
+        # @option options [Boolean] :interactive (false)
+        # Enable interactive features
         # @return [String] Complete SVG content
-        def svg_output(options = {})
+        def svg_output(options = {}) # rubocop:disable Metrics/MethodLength
           # Build diagram data structure
           diagram_data = {
             name: element.name,
             elements: build_elements_data,
-            connectors: build_connectors_data
+            connectors: build_connectors_data,
           }
 
           # Create diagram renderer wrapper
-          diagram_renderer = DiagramRendererWrapper.new(diagram_data, @layout_engine)
+          diagram_renderer = DiagramRendererWrapper.new(diagram_data,
+                                                        @layout_engine)
 
           # Create SVG renderer with configuration
           renderer_options = options.merge(config_path: config_path)
-          svg_renderer = Ea::Diagram::SvgRenderer.new(diagram_renderer, renderer_options)
+          svg_renderer = Ea::Diagram::SvgRenderer.new(diagram_renderer,
+                                                      renderer_options)
 
           # Generate and return SVG
           svg_renderer.render
@@ -71,7 +75,7 @@ module Lutaml
         end
 
         # Text output for diagram
-        def to_text
+        def to_text # rubocop:disable Metrics/AbcSize
           lines = []
           lines << "Diagram: #{element.name}"
           lines << ("=" * 50)
@@ -88,7 +92,8 @@ module Lutaml
           {
             type: "Diagram",
             name: element.name || "(unnamed)",
-            details: "#{element.diagram_type} - #{(element.diagram_objects || []).count} elements"
+            details: "#{element.diagram_type} " \
+                     "- #{(element.diagram_objects || []).count} elements",
           }
         end
 
@@ -100,7 +105,7 @@ module Lutaml
             diagram_type: element.diagram_type,
             package_name: element.package_name,
             elements_count: (element.diagram_objects || []).count,
-            connectors_count: (element.diagram_links || []).count
+            connectors_count: (element.diagram_links || []).count,
           }
         end
 
@@ -109,7 +114,7 @@ module Lutaml
         # Build element data from diagram_objects
         #
         # @return [Array<Hash>] Array of element data for rendering
-        def build_elements_data
+        def build_elements_data # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           return [] unless element.diagram_objects
 
           element.diagram_objects.map do |diagram_object|
@@ -132,8 +137,8 @@ module Lutaml
               stereotype: extract_stereotype(uml_element),
               attributes: extract_attributes(uml_element),
               operations: extract_operations(uml_element),
-              element: uml_element,           # Original UML element
-              diagram_object: diagram_object  # Original diagram placement data
+              element: uml_element, # Original UML element
+              diagram_object: diagram_object, # Original diagram placement data
             }
           end.compact
         end
@@ -141,39 +146,41 @@ module Lutaml
         # Build connector data from diagram_links
         #
         # @return [Array<Hash>] Array of connector data for rendering
-        def build_connectors_data
+        def build_connectors_data # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           return [] unless element.diagram_links
 
           # Build elements index for quick lookup by XMI ID
-          elements_map = build_elements_data.each_with_object({}) do |elem, hash|
-            hash[elem[:id]] = elem
-          end
+          elements_map = build_elements_data
+            .each_with_object({}) do |elem, hash|
+              hash[elem[:id]] = elem
+            end
 
           # Build diagram objects map for EA internal ID lookup
           diagram_objects_map = {}
-          if element.diagram_objects
-            element.diagram_objects.each do |dobj|
-              diagram_objects_map[extract_ea_id(dobj)] = dobj.object_xmi_id
-            end
+          element.diagram_objects&.each do |dobj|
+            diagram_objects_map[extract_ea_id(dobj)] = dobj.object_xmi_id
           end
 
-          element.diagram_links.map do |diagram_link|
+          element.diagram_links.map do |diagram_link| # rubocop:disable Metrics/BlockLength
             # Skip hidden connectors
             next nil if diagram_link.hidden
 
             # Look up the actual connector in the repository
             connector = find_connector_by_xmi_id(diagram_link.connector_xmi_id)
 
-            # Even if connector object not found, we can still render using geometry
+            # Even if connector object not found, we can still render
+            # Original diagram routing datausing geometry
             # The diagram_link contains all visual information needed
             connector_type = if connector
-              determine_connector_type(connector)
-            else
-              # Default to association if connector object not found
-              "association"
-            end
+                               determine_connector_type(connector)
+                             else
+                               # Default to association if connector object
+                               # not found
+                               "association"
+                             end
 
-            # Parse source and target from diagram_link style (contains SOID/EOID)
+            # Parse source and target from diagram_link style
+            # (contains SOID/EOID)
             style_data = parse_diagram_link_style(diagram_link.style)
 
             source_elem = nil
@@ -190,12 +197,11 @@ module Lutaml
               target_elem = elements_map[target_xmi_id] if target_xmi_id
             end
 
-            # Fallback: try to find from connector object if style parsing failed
-            if !source_elem || !target_elem
-              if connector
-                source_elem ||= find_connector_source(connector, elements_map)
-                target_elem ||= find_connector_target(connector, elements_map)
-              end
+            # Fallback: try to find from connector object
+            # if style parsing failed
+            if (!source_elem || !target_elem) && connector
+              source_elem ||= find_connector_source(connector, elements_map)
+              target_elem ||= find_connector_target(connector, elements_map)
             end
 
             # Build connector data hash
@@ -204,28 +210,34 @@ module Lutaml
               type: connector_type,
               geometry: diagram_link.geometry,
               style: diagram_link.style,
-              source_element: source_elem,    # Source element for geometry calculation
-              target_element: target_elem,    # Target element for geometry calculation
-              element: connector,             # May be nil if not found
-              diagram_link: diagram_link      # Original diagram routing data
+              # Source element for geometry calculation
+              source_element: source_elem,
+              # Target element for geometry calculation
+              target_element: target_elem,
+              # May be nil if not found
+              element: connector,
+              # Original diagram routing data
+              diagram_link: diagram_link,
             }
           end.compact
         end
 
         # Parse EA diagram link style string
         #
-        # Style format: "Mode=3;EOID=82C649C4;SOID=21096985;Color=-1;LWidth=2;TREE=V;"
+        # Style format: "Mode=3;EOID=82C649C4;SOID=21096985;
+        # Color=-1;LWidth=2;TREE=V;"
         # SOID = Source Object ID (EA internal ID)
         # EOID = End Object ID (EA internal ID)
         #
         # @param style_string [String] EA style string
         # @return [Hash] Parsed style data
-        def parse_diagram_link_style(style_string)
+        def parse_diagram_link_style(style_string) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/MethodLength
           return {} unless style_string
 
           data = {}
           style_string.split(";").each do |pair|
             next if pair.empty?
+
             key, value = pair.split("=", 2)
             next unless key && value
 
@@ -245,7 +257,9 @@ module Lutaml
         # @return [String, nil] EA internal ID (DUID from style)
         def extract_ea_id(diagram_object)
           # EA stores the internal ID as DUID in the style string
-          return nil unless diagram_object.respond_to?(:style) && diagram_object.style
+          unless diagram_object.respond_to?(:style) && diagram_object.style
+            return nil
+          end
 
           # Parse DUID from style string
           # Style format: "NSL=0;LCol=-1;...;DUID=82C649C4;BCol=16764159;..."
@@ -275,32 +289,34 @@ module Lutaml
         #
         # @param xmi_id [String] XMI identifier
         # @return [Object, nil] UML connector or nil if not found
-        def find_connector_by_xmi_id(xmi_id)
+        def find_connector_by_xmi_id(xmi_id) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           return nil unless xmi_id && repository
 
           # Look in document-level associations index
-          connector = repository.associations_index.find { |assoc| assoc.xmi_id == xmi_id }
-          return connector if connector
-
-          # Look in class-level generalizations
-          repository.classes_index.each do |klass|
-            next unless klass.respond_to?(:generalization) && klass.generalization
-
-            gen = klass.generalization
-            # Handle both single generalization and array of generalizations
-            generalizations = gen.is_a?(Array) ? gen : [gen]
-
-            generalizations.each do |g|
-              return g if g.respond_to?(:xmi_id) && g.xmi_id == xmi_id
-            end
+          connector = repository.associations_index.find do |assoc|
+            assoc.xmi_id == xmi_id
           end
 
-          # Look in class-level associations
-          repository.classes_index.each do |klass|
-            next unless klass.respond_to?(:associations) && klass.associations
+          return connector if connector
 
-            assoc = klass.associations.find { |a| a.respond_to?(:xmi_id) && a.xmi_id == xmi_id }
-            return assoc if assoc
+          repository.classes_index.each do |klass|
+            if klass.respond_to?(:generalization) && klass.generalization
+              # Look in class-level generalizations
+              gen = klass.generalization
+
+              # Handle both single generalization and array of generalizations
+              generalizations = gen.is_a?(Array) ? gen : [gen]
+
+              generalizations.each do |g|
+                return g if g.respond_to?(:xmi_id) && g.xmi_id == xmi_id
+              end
+            elsif klass.respond_to?(:associations) && klass.associations
+              # Look in class-level associations
+              assoc = klass.associations.find do |a|
+                a.respond_to?(:xmi_id) && a.xmi_id == xmi_id
+              end
+              return assoc if assoc
+            end
           end
 
           nil
@@ -311,7 +327,7 @@ module Lutaml
         # @param connector [Object] UML connector
         # @param elements_map [Hash] Map of element ID to element data
         # @return [Hash, nil] Target element data
-        def find_connector_target(connector, elements_map)
+        def find_connector_target(connector, elements_map) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           target_id = nil
 
           if connector.respond_to?(:target) && connector.target
@@ -322,7 +338,11 @@ module Lutaml
             target_id = connector.general
           elsif connector.respond_to?(:member_end) && connector.member_end
             # For associations, use the second member_end
-            ends = connector.member_end.is_a?(Array) ? connector.member_end : [connector.member_end]
+            ends = if connector.member_end.is_a?(Array)
+                     connector.member_end
+                   else
+                     [connector.member_end]
+                   end
             if ends.size > 1
               target_id = ends[1]
             end
@@ -336,7 +356,7 @@ module Lutaml
         # @param connector [Object] UML connector
         # @param elements_map [Hash] Map of element ID to element data
         # @return [Hash, nil] Source element data
-        def find_connector_source(connector, elements_map)
+        def find_connector_source(connector, elements_map) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           source_id = nil
 
           if connector.respond_to?(:source) && connector.source
@@ -349,7 +369,11 @@ module Lutaml
             source_id = connector.owner_end
           elsif connector.respond_to?(:member_end) && connector.member_end
             # For associations, use the first member_end
-            ends = connector.member_end.is_a?(Array) ? connector.member_end : [connector.member_end]
+            ends = if connector.member_end.is_a?(Array)
+                     connector.member_end
+                   else
+                     [connector.member_end]
+                   end
             if ends.any?
               source_id = ends[0]
             end
@@ -368,8 +392,6 @@ module Lutaml
             "datatype"
           when /Enum/
             "enum"
-          when /Class/
-            "class"
           when /Package/
             "package"
           else
@@ -385,8 +407,6 @@ module Lutaml
           case connector.class.name
           when /Generalization/
             "generalization"
-          when /Association/
-            "association"
           when /Dependency/
             "dependency"
           when /Realization/
@@ -426,7 +446,7 @@ module Lutaml
             {
               name: attr.name,
               type: attr.type,
-              visibility: attr.respond_to?(:visibility) ? attr.visibility : nil
+              visibility: attr.respond_to?(:visibility) ? attr.visibility : nil,
             }
           end
         end
@@ -444,7 +464,7 @@ module Lutaml
               name: op.name,
               visibility: op.respond_to?(:visibility) ? op.visibility : nil,
               return_type: op.respond_to?(:return_type) ? op.return_type : nil,
-              parameters: extract_parameters(op)
+              parameters: extract_parameters(op),
             }
           end
         end
@@ -460,7 +480,7 @@ module Lutaml
           operation.owned_parameter.map do |param|
             {
               name: param.name,
-              type: param.type
+              type: param.type,
             }
           end
         end

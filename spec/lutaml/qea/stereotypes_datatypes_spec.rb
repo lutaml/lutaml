@@ -41,7 +41,7 @@ RSpec.describe "Stereotypes and DataTypes Loading" do
       # Check that grouping works
       expect(by_type).not_to be_empty
       expect(by_type["Class"]).not_to be_nil
-      expect(by_type["Class"].size).to be >= 5  # At least some Class stereotypes
+      expect(by_type["Class"].size).to be >= 5 # At least some Class stereotypes
       # Check for common meta-types
       all_types = by_type.keys
       expect(all_types).to include("Class")
@@ -108,7 +108,7 @@ RSpec.describe "Stereotypes and DataTypes Loading" do
 
     it "includes them in total records" do
       total = database.total_records
-      expect(total).to be > 785  # At least stereotypes + datatypes
+      expect(total).to be > 785 # At least stereotypes + datatypes
     end
   end
 

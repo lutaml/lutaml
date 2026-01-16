@@ -27,12 +27,13 @@ module Lutaml
         #
         # @param class_or_qname [Lutaml::Uml::Class, String] The class object
         #   or qualified name string
-        # @return [Lutaml::Uml::Class, nil] The parent class, or nil if no parent
+        # @return [Lutaml::Uml::Class, nil] The parent class,
+        # or nil if no parent
         # @example
         #   parent = query.supertype("ModelRoot::Child")
         #   # Or
         #   parent = query.supertype(child_class)
-        def supertype(class_or_qname)
+        def supertype(class_or_qname) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           klass = resolve_class(class_or_qname)
           return nil unless klass
           return nil unless klass.respond_to?(:generalization)
@@ -70,7 +71,8 @@ module Lutaml
         #   children = query.subtypes("ModelRoot::Parent", recursive: false)
         #
         # @example All descendants
-        #   all_descendants = query.subtypes("ModelRoot::Parent", recursive: true)
+        #   all_descendants = query.subtypes(
+        #   "ModelRoot::Parent", recursive: true)
         def subtypes(class_or_qname, recursive: false)
           qname_string = resolve_qname(class_or_qname)
           return [] unless qname_string
@@ -140,7 +142,8 @@ module Lutaml
         #
         # @param class_or_qname [Lutaml::Uml::Class, String] The class object
         #   or qualified name string
-        # @return [Lutaml::Uml::Class, nil] The class object, or nil if not found
+        # @return [Lutaml::Uml::Class, nil] The class object,
+        # or nil if not found
         def resolve_class(class_or_qname)
           if class_or_qname.is_a?(String)
             indexes[:qualified_names][class_or_qname]
@@ -156,12 +159,12 @@ module Lutaml
         # @return [String, nil] The qualified name string, or nil if not found
         def resolve_qname(class_or_qname)
           if class_or_qname.is_a?(String) &&
-            indexes[:qualified_names].key?(class_or_qname)
-            return class_or_qname 
+              indexes[:qualified_names].key?(class_or_qname)
+            return class_or_qname
           end
 
           # Search for the class in the index
-          qname, _klass = indexes[:qualified_names].find do |name, entity|
+          qname, _klass = indexes[:qualified_names].find do |_name, entity|
             entity == class_or_qname
           end
 
@@ -189,7 +192,7 @@ module Lutaml
         # @param max_depth [Integer, nil] Maximum depth to traverse
         # @param current_depth [Integer] Current depth
         # @return [Array] Array of descendant class objects
-        def collect_descendants(qname_string, max_depth, current_depth)
+        def collect_descendants(qname_string, max_depth, current_depth) # rubocop:disable Metrics/MethodLength
           return [] if max_depth && current_depth >= max_depth
 
           children = direct_subtypes(qname_string)
@@ -209,9 +212,10 @@ module Lutaml
 
         # Extract parent name from generalization object
         #
-        # @param generalization [Lutaml::Uml::Generalization] Generalization object
+        # @param generalization [Lutaml::Uml::Generalization]
+        # Generalization object
         # @return [String, nil] Parent class name
-        def extract_parent_name(generalization)
+        def extract_parent_name(generalization) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/MethodLength
           return nil unless generalization
 
           # Check for general attribute (could be a string or object)
@@ -222,7 +226,9 @@ module Lutaml
           end
 
           # Check for name attribute directly
-          return generalization.name if generalization.respond_to?(:name) && generalization.name
+          if generalization.respond_to?(:name) && generalization.name
+            return generalization.name
+          end
 
           nil
         end

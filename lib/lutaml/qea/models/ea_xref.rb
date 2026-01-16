@@ -101,7 +101,7 @@ module Lutaml
         #
         # @param desc [String] Description field content
         # @return [Hash] Parsed data
-        def parse_description_field(desc)
+        def parse_description_field(desc) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           return {} if desc.nil? || desc.empty?
 
           result = { raw: desc }

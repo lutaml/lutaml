@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require_relative "../../../../lib/lutaml/uml_repository/static_site/id_generator"
+require_relative "../../../../lib/lutaml/uml_repository/" \
+                 "static_site/id_generator"
 
 RSpec.describe Lutaml::UmlRepository::StaticSite::IDGenerator do
   let(:generator) { described_class.new }
@@ -25,7 +26,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::IDGenerator do
     it "generates stable ID for package" do
       id = generator.package_id(package)
       expect(id).to start_with("pkg_")
-      expect(id.length).to eq(12)  # "pkg_" + 8 char hash
+      expect(id.length).to eq(12) # "pkg_" + 8 char hash
     end
 
     it "generates same ID for same package across calls" do
@@ -82,7 +83,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::IDGenerator do
     it "generates stable ID for attribute" do
       id = generator.attribute_id(attribute, owner)
       expect(id).to start_with("attr_")
-      expect(id.length).to eq(13)  # "attr_" + 8 char hash
+      expect(id.length).to eq(13) # "attr_" + 8 char hash
     end
 
     it "uses combination of owner and attribute name" do
@@ -228,7 +229,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::IDGenerator do
       cached_time = Time.now - start_time
 
       # Cached calls should be much faster than generation
-      expect(cached_time).to be < 0.1  # Should complete in under 100ms
+      expect(cached_time).to be < 0.1 # Should complete in under 100ms
     end
   end
 
@@ -254,7 +255,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::IDGenerator do
       package_long = double("PackageLong", xmi_id: long_id)
 
       id = generator.package_id(package_long)
-      expect(id.length).to eq(12)  # Still short despite long input
+      expect(id.length).to eq(12) # Still short despite long input
     end
 
     it "handles special characters in XMI IDs" do

@@ -30,7 +30,7 @@ RSpec.describe Lutaml::UmlRepository::QueryDSL::QueryBuilder do
     ]
   end
 
-  def create_test_classes
+  def create_test_classes # rubocop:disable Metrics/AbcSize
     [
       Lutaml::Uml::Class.new.tap do |klass|
         klass.name = "Building"

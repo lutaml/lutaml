@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-ENV['APP_ENV'] = 'test'
+ENV["APP_ENV"] = "test"
 
 require "spec_helper"
 require "rack/test"
@@ -15,7 +15,7 @@ RSpec.describe Lutaml::Xmi::WebUi::App do
 
   before do
     lur_path = File.expand_path(
-      File.join(__dir__, "../../../../examples/lur/basic.lur")
+      File.join(__dir__, "../../../../examples/lur/basic.lur"),
     )
     repo = Lutaml::UmlRepository::Repository.from_file(lur_path)
     app.send(:set, :repository, repo)

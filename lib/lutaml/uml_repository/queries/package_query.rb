@@ -39,7 +39,7 @@ module Lutaml
         #
         # @example Partial path
         #   package = query.find_by_path("i-UR::urf")
-        def find_by_path(path_string)
+        def find_by_path(path_string) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           return nil if path_string.nil? || path_string.empty?
 
           # Strategy 1: Try exact match first (most common case)
@@ -79,7 +79,7 @@ module Lutaml
         # @example Recursive listing
         #   packages = query.list("ModelRoot", recursive: true)
         #   # Returns all packages under ModelRoot
-        def list(parent_path_string, recursive: false)
+        def list(parent_path_string, recursive: false) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           return [] if parent_path_string.nil? || parent_path_string.empty?
 
           parent_path = Lutaml::Uml::PackagePath.new(parent_path_string.to_s)
@@ -149,7 +149,7 @@ module Lutaml
         # @param max_depth [Integer, nil] Maximum depth to traverse
         # @param current_depth [Integer] Current depth in the tree
         # @return [Hash] Tree node structure
-        def build_tree_node(path_string, package, max_depth, current_depth)
+        def build_tree_node(path_string, package, max_depth, current_depth) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           path = Lutaml::Uml::PackagePath.new(path_string)
 
           node = {
@@ -183,19 +183,27 @@ module Lutaml
 
         # Count classes in a package
         #
-        # @param package [Lutaml::Uml::Package, Lutaml::Uml::Document] The package
+        # @param package [Lutaml::Uml::Package, Lutaml::Uml::Document]
+        # The package
         # @return [Integer] Number of classes
-        def count_classes(package)
+        def count_classes(package) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/MethodLength
           count = 0
-          count += package.classes.size if package.respond_to?(:classes) && package.classes
-          count += package.data_types.size if package.respond_to?(:data_types) && package.data_types
-          count += package.enums.size if package.respond_to?(:enums) && package.enums
+          count += if package.respond_to?(:classes) && package.classes
+                     package.classes.size
+                   end
+          count += if package.respond_to?(:data_types) && package.data_types
+                     package.data_types.size
+                   end
+          count += if package.respond_to?(:enums) && package.enums
+                     package.enums.size
+                   end
           count
         end
 
         # Count diagrams in a package
         #
-        # @param package [Lutaml::Uml::Package, Lutaml::Uml::Document] The package
+        # @param package [Lutaml::Uml::Package, Lutaml::Uml::Document]
+        # The package
         # @return [Integer] Number of diagrams
         def count_diagrams(package)
           return 0 unless package.respond_to?(:diagrams) && package.diagrams
@@ -208,7 +216,7 @@ module Lutaml
         # @param package [Lutaml::Uml::Package] The package to find
         # @param parent_path_string [String] The parent package path
         # @return [String, nil] The package path, or nil if not found
-        def find_package_path(package, parent_path_string)
+        def find_package_path(package, parent_path_string) # rubocop:disable Metrics/MethodLength
           parent_path = Lutaml::Uml::PackagePath.new(parent_path_string)
 
           # Search for this package in the index
@@ -217,7 +225,8 @@ module Lutaml
 
             path = Lutaml::Uml::PackagePath.new(path_string)
             # Check if it's a direct child of parent_path
-            if path.starts_with?(parent_path) && path.depth == parent_path.depth + 1
+            if path.starts_with?(parent_path) &&
+                path.depth == parent_path.depth + 1
               return path_string
             end
           end

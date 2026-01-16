@@ -10,7 +10,8 @@ module Lutaml
     module WebUi
       # Sinatra web application for browsing UML models.
       #
-      # Serves the modern SPA interface with JSON API endpoints and lunr.js search.
+      # Serves the modern SPA interface with JSON API endpoints and lunr.js
+      # search.
       # Uses shared Liquid templates with the static site generator.
       #
       # @example Starting the server
@@ -19,7 +20,7 @@ module Lutaml
         enable :logging
 
         # Serve the SPA (using shared Liquid template)
-        get "/" do
+        get "/" do # rubocop:disable Metrics/BlockLength
           content_type :html
 
           # Use the same multi_file.liquid template as static generator
@@ -28,7 +29,7 @@ module Lutaml
             File.join(
               __dir__,
               "..", "..", "..", "..", "templates", "static_site"
-            )
+            ),
           )
 
           Liquid::Template.file_system = Liquid::LocalFileSystem.new(template_path)
@@ -80,8 +81,8 @@ module Lutaml
           # Find package by generated ID
           # This would require reverse lookup from ID to package
           # For now, use the full data endpoint
-          halt 501,
-               { error: "On-demand package loading not yet implemented. Use /api/data" }.to_json
+          halt 501, { error: "On-demand package loading not yet implemented. " \
+                             "Use /api/data" }.to_json
         end
 
         # API: Class details (on-demand, optional optimization)
@@ -92,12 +93,12 @@ module Lutaml
           # Find class by generated ID
           # This would require reverse lookup from ID to class
           # For now, use the full data endpoint
-          halt 501,
-               { error: "On-demand class loading not yet implemented. Use /api/data" }.to_json
+          halt 501, { error: "On-demand class loading not yet implemented. " \
+                             "Use /api/data" }.to_json
         end
 
         # Start the web server
-        def self.serve(lur_path, port: 3000, host: "localhost")
+        def self.serve(lur_path, port: 3000, host: "localhost") # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           repo = if File.extname(lur_path) == ".lur"
                    UmlRepository::Repository.from_package(lur_path)
                  else

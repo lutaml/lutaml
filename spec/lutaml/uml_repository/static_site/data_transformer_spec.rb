@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require_relative "../../../../lib/lutaml/uml_repository/static_site/data_transformer"
+require_relative "../../../../lib/lutaml/uml_repository/" \
+                 "static_site/data_transformer"
 
 RSpec.describe Lutaml::UmlRepository::StaticSite::DataTransformer do
   let(:document) { create_simple_test_document }
@@ -41,7 +42,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::DataTransformer do
         :attributes,
         :associations,
         :operations,
-        :diagrams
+        :diagrams,
       )
     end
 
@@ -51,7 +52,8 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::DataTransformer do
       expect(result[:metadata]).to include(:generated, :generator, :version,
                                            :statistics)
       expect(result[:metadata][:generated]).to be_a(String)
-      expect(result[:metadata][:generator]).to eq("LutaML Static Site Generator")
+      expect(result[:metadata][:generator])
+        .to eq("LutaML Static Site Generator")
     end
 
     it "builds statistics" do
@@ -93,8 +95,8 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::DataTransformer do
 
       # Check first class structure
       cls = classes.values.first
-      expect(cls).to include(:id, :xmiId, :name, :qualifiedName, :type,
-                             :package)
+      expect(cls)
+        .to include(:id, :xmiId, :name, :qualifiedName, :type, :package)
     end
 
     it "builds attributes map" do

@@ -18,7 +18,8 @@ module Lutaml
         # Initialize factory with EA database
         # @param database [Lutaml::Qea::Database] Loaded EA database
         # @param options [Hash] Transformation options
-        # @option options [Boolean] :include_diagrams Include diagrams (default: true)
+        # @option options [Boolean] :include_diagrams Include diagrams
+        # (default: true)
         # @option options [Boolean] :validate Validate output (default: true)
         # @option options [String] :document_name Document name
         def initialize(database, options = {})
@@ -30,7 +31,7 @@ module Lutaml
 
         # Create complete UML document from EA database
         # @return [Lutaml::Uml::Document] Complete UML document
-        def create_document
+        def create_document # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           builder = DocumentBuilder.new(
             name: options[:document_name] || "EA Model",
           )
@@ -47,7 +48,8 @@ module Lutaml
           # i.e. owner_end -> member_end and member_end -> owner_end
           class_associations = collect_class_associations(packages)
 
-          # Build document with both connector-level and class-level associations
+          # Build document with both connector-level and
+          # class-level associations
           builder.add_packages(packages)
             .add_associations(associations)
             .add_associations(class_associations)
@@ -63,7 +65,7 @@ module Lutaml
 
         # Transform all packages with hierarchy
         # @return [Array<Lutaml::Uml::Package>] Root packages
-        def transform_packages
+        def transform_packages # rubocop:disable Metrics/MethodLength
           # Get root packages (those without parent)
           root_packages = database.packages.select do |pkg|
             pkg.parent_id.nil? || pkg.parent_id.zero?
@@ -86,7 +88,7 @@ module Lutaml
 
         # Transform all classes
         # @return [Array<Lutaml::Uml::Class>] All UML classes
-        def transform_classes
+        def transform_classes # rubocop:disable Metrics/MethodLength
           class_transformer = get_transformer(:class)
 
           # Get all class-type objects
@@ -108,7 +110,7 @@ module Lutaml
 
         # Transform all associations
         # @return [Array<Lutaml::Uml::Association>] All UML associations
-        def transform_associations
+        def transform_associations # rubocop:disable Metrics/MethodLength
           association_transformer = get_transformer(:association)
 
           # Get all association-type connectors
@@ -160,7 +162,7 @@ module Lutaml
         # Get or create transformer by type
         # @param type [Symbol] Transformer type
         # @return [BaseTransformer] Transformer instance
-        def get_transformer(type)
+        def get_transformer(type) # rubocop:disable Metrics/MethodLength
           return @transformers[type] if @transformers.key?(type)
 
           @transformers[type] = case type
@@ -181,7 +183,7 @@ module Lutaml
         # Register package and all its descendants in resolver
         # @param package [Lutaml::Uml::Package] Package to register
         # @return [void]
-        def register_package_hierarchy(package)
+        def register_package_hierarchy(package) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           return if package.nil?
 
           # Register the package itself
@@ -227,11 +229,11 @@ module Lutaml
         # @return [Array<Lutaml::Uml::Association>] All class-level associations
         def collect_class_associations(packages)
           associations = []
-          
+
           packages.each do |package|
             collect_package_associations(package, associations)
           end
-          
+
           associations
         end
 
@@ -239,21 +241,17 @@ module Lutaml
         # @param package [Lutaml::Uml::Package] Package to collect from
         # @param associations [Array] Accumulator for associations
         # @return [void]
-        def collect_package_associations(package, associations)
+        def collect_package_associations(package, associations) # rubocop:disable Metrics/CyclomaticComplexity
           # Collect from classes in this package
-          if package.classes
-            package.classes.each do |klass|
-              if klass.respond_to?(:associations) && klass.associations
-                associations.concat(klass.associations)
-              end
+          package.classes&.each do |klass|
+            if klass.respond_to?(:associations) && klass.associations
+              associations.concat(klass.associations)
             end
           end
 
           # Recursively collect from child packages
-          if package.packages
-            package.packages.each do |child_package|
-              collect_package_associations(child_package, associations)
-            end
+          package.packages&.each do |child_package|
+            collect_package_associations(child_package, associations)
           end
         end
       end

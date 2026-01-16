@@ -73,7 +73,7 @@ module Lutaml
           # Builds the messages array
           #
           # @return [Array<Hash>]
-          def build_messages
+          def build_messages # rubocop:disable Metrics/MethodLength
             result.messages.map do |message|
               {
                 severity: message.severity,
@@ -114,19 +114,20 @@ module Lutaml
           #
           # @param messages [Array<ValidationMessage>]
           # @return [Hash]
-          def format_severity_group(messages)
+          def format_severity_group(messages) # rubocop:disable Metrics/MethodLength
             {
               count: messages.size,
-              by_category: messages.group_by(&:category).transform_values do |msgs|
-                msgs.map do |msg|
-                  {
-                    entity_type: msg.entity_type,
-                    entity_id: msg.entity_id,
-                    entity_name: msg.entity_name,
-                    message: msg.message,
-                  }
-                end
-              end,
+              by_category: messages
+                .group_by(&:category).transform_values do |msgs|
+                  msgs.map do |msg|
+                    {
+                      entity_type: msg.entity_type,
+                      entity_id: msg.entity_id,
+                      entity_name: msg.entity_name,
+                      message: msg.message,
+                    }
+                  end
+                end,
             }
           end
         end

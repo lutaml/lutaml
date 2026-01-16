@@ -16,11 +16,10 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::PackageRenderer do
       width: 120,
       height: 80,
       element: double("Element",
-        name: "CoreModel",
-        package_name: nil,
-        stereotype: nil
-      ),
-      diagram_object: nil
+                      name: "CoreModel",
+                      package_name: nil,
+                      stereotype: nil),
+      diagram_object: nil,
     }
   end
   let(:renderer) { described_class.new(element_data, style_resolver) }
@@ -36,7 +35,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::PackageRenderer do
       {
         fill: "#E0E0E0",
         stroke: "#000000",
-        stroke_width: 2
+        stroke_width: 2,
       }
     end
 
@@ -57,14 +56,14 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::PackageRenderer do
       shape = renderer.send(:render_shape, style)
 
       # Should appear twice, once for body and once for tab
-      expect(shape.scan(/fill="#E0E0E0"/).count).to eq(2)
+      expect(shape.scan('fill="#E0E0E0"').count).to eq(2)
     end
 
     it "applies stroke color to both body and tab" do
       shape = renderer.send(:render_shape, style)
 
       # Should appear twice
-      expect(shape.scan(/stroke="#000000"/).count).to eq(2)
+      expect(shape.scan('stroke="#000000"').count).to eq(2)
     end
 
     it "applies stroke width from style" do
@@ -90,7 +89,8 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::PackageRenderer do
       shape = renderer.send(:render_shape, style)
 
       # Tab should be positioned with correct coordinates
-      # Tab goes from (x+10, y+tab_height) to (x+50, y+tab_height) to (x+50, y) to (x+10, y)
+      # Tab goes from (x+10, y+tab_height) to (x+50, y+tab_height) to
+      # (x+50, y) to (x+10, y)
       # = (110, 70) to (150, 70) to (150, 50) to (110, 50)
       expect(shape).to include("110,70 150,70 150,50 110,50")
     end
@@ -116,7 +116,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::PackageRenderer do
         font_family: "Arial, sans-serif",
         font_size: 9,
         font_weight: "bold",
-        text_color: "#000000"
+        text_color: "#000000",
       }
     end
 

@@ -60,10 +60,11 @@ module Lutaml
                            desc: "Node attributes (key=value,key2=value2)"
       method_option :all, type: :string, aliases: "-a",
                           desc: "Set attributes for graph, edge, and node"
-      def generate(*paths)
+      def generate(*paths) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
         if paths.empty?
           raise Thor::Error,
-                "No input files provided. Please specify at least one .lutaml file."
+                "No input files provided. Please specify at least " \
+                "one .lutaml file."
         end
 
         setup_options
@@ -71,7 +72,8 @@ module Lutaml
 
         if @output_path&.file? && @paths.length > 1
           raise Thor::Error,
-                "Output path must be a directory if multiple input files are given"
+                "Output path must be a directory if multiple input files " \
+                "are given"
         end
 
         @paths.each do |input_path|
@@ -112,10 +114,11 @@ module Lutaml
 
           lutaml lml validate model.lutaml project.lutaml
       DESC
-      def validate(*paths)
+      def validate(*paths) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
         if paths.empty?
           raise Thor::Error,
-                "No input files provided. Please specify at least one .lutaml file."
+                "No input files provided. Please specify at least " \
+                "one .lutaml file."
         end
 
         errors = []
@@ -147,8 +150,8 @@ module Lutaml
         end
       end
 
-      no_commands do
-        def setup_options
+      no_commands do # rubocop:disable Metrics/BlockLength
+        def setup_options # rubocop:disable Metrics/AbcSize
           @formatter = options[:formatter] if options[:formatter]
           @type = options[:type] if options[:type]
           @output_path = Pathname.new(options[:output]) if options[:output]
@@ -157,7 +160,7 @@ module Lutaml
           setup_formatter_options
         end
 
-        def setup_formatter_options
+        def setup_formatter_options # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           return unless @formatter
 
           @formatter.type = @type if @type

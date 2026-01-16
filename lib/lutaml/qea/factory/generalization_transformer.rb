@@ -9,10 +9,12 @@ module Lutaml
       # Transforms EA connectors (Generalization type) to UML generalizations
       class GeneralizationTransformer < BaseTransformer
         # Transform EA connector to UML generalization
-        # @param ea_connector [EaConnector, nil] EA connector model (nil for terminal nodes)
-        # @param current_object [EaObject] Current object that owns this generalization
+        # @param ea_connector [EaConnector, nil]
+        # EA connector model (nil for terminal nodes)
+        # @param current_object [EaObject]
+        # Current object that owns this generalization
         # @return [Lutaml::Uml::Generalization] UML generalization
-        def transform(ea_connector, current_object)
+        def transform(ea_connector, current_object) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           return nil if current_object.nil?
 
           # ea_connector can be nil for terminal nodes (classes with no parent)
@@ -20,10 +22,12 @@ module Lutaml
             return nil
           end
 
-          Lutaml::Uml::Generalization.new.tap do |gen|
+          Lutaml::Uml::Generalization.new.tap do |gen| # rubocop:disable Metrics/BlockLength
             # Map properties from CURRENT object (not parent)
             # This matches XMI's self-referential pattern
-            gen.general_id = normalize_guid_to_xmi_format(current_object.ea_guid, "EAID")
+            gen.general_id = normalize_guid_to_xmi_format(
+              current_object.ea_guid, "EAID"
+            )
             gen.general_name = current_object.name
             gen.name = current_object.name
             gen.type = "uml:Generalization"
@@ -41,13 +45,18 @@ module Lutaml
             if current_object.package_id
               current_package = find_package(current_object.package_id)
               if current_package
-                gen.general_upper_klass = extract_package_prefix(current_package)
+                gen.general_upper_klass =
+                  extract_package_prefix(current_package)
               end
             end
 
             # Set has_general flag based on whether parent exists
             # Use false (not nil) for terminal nodes to match XMI behavior
-            gen.has_general = ea_connector ? !ea_connector.end_object_id.nil? : false
+            gen.has_general = if ea_connector
+                                !ea_connector.end_object_id.nil?
+                              else
+                                false
+                              end
 
             # Note: general_attributes, attributes, owned_props, assoc_props,
             # general, inherited_props, inherited_assoc_props

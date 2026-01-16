@@ -21,7 +21,7 @@ RSpec.describe Lutaml::Ea::Diagram::Extractor do
         padding: 20,
         background_color: "#ffffff",
         grid_visible: false,
-        interactive: false
+        interactive: false,
       )
     end
 
@@ -29,13 +29,13 @@ RSpec.describe Lutaml::Ea::Diagram::Extractor do
       custom_extractor = described_class.new(
         padding: 30,
         background_color: "#f0f0f0",
-        interactive: true
+        interactive: true,
       )
 
       expect(custom_extractor.options).to include(
         padding: 30,
         background_color: "#f0f0f0",
-        interactive: true
+        interactive: true,
       )
     end
 
@@ -61,7 +61,7 @@ RSpec.describe Lutaml::Ea::Diagram::Extractor do
           background_color: "#eeeeee",
           grid_visible: true,
           interactive: true,
-          config_path: "/path/to/config.yml"
+          config_path: "/path/to/config.yml",
         )
       end
 
@@ -88,7 +88,8 @@ RSpec.describe Lutaml::Ea::Diagram::Extractor do
       let(:output_path) { File.join(temp_dir, "output.svg") }
 
       it "extracts diagram successfully" do
-        result = extractor.extract_one(lur_path, diagram_name, output: output_path)
+        result = extractor.extract_one(lur_path, diagram_name,
+                                       output: output_path)
 
         expect(result[:success]).to be true
         expect(result[:path]).to eq(output_path)
@@ -146,7 +147,7 @@ RSpec.describe Lutaml::Ea::Diagram::Extractor do
             :type,
             :package,
             :objects,
-            :links
+            :links,
           )
         end
       end
@@ -175,7 +176,8 @@ RSpec.describe Lutaml::Ea::Diagram::Extractor do
       end
 
       it "extracts multiple diagrams" do
-        result = extractor.extract_batch(lur_path, diagram_ids, output_dir: output_dir)
+        result = extractor.extract_batch(lur_path, diagram_ids,
+                                         output_dir: output_dir)
 
         expect(result[:results]).to be_an(Array)
         expect(result[:results].size).to eq(diagram_ids.size)

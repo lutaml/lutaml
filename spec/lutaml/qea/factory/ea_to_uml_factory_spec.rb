@@ -9,7 +9,9 @@ RSpec.describe Lutaml::Qea::Factory::EaToUmlFactory do
   let(:factory) { described_class.new(database) }
 
   after do
-    database.connection&.close if database.connection && !database.connection.closed?
+    if database.connection && !database.connection.closed?
+      database.connection&.close
+    end
   end
 
   describe "#create_document" do
@@ -47,12 +49,16 @@ RSpec.describe Lutaml::Qea::Factory::EaToUmlFactory do
 
           # Check classes in this package
           pkg.classes.each do |klass|
-            return { class: klass, path: current_path } if klass.name == class_name
+            if klass.name == class_name
+              return { class: klass,
+                       path: current_path }
+            end
           end
 
           # Recursively check child packages
           if pkg.packages
-            result = find_class_in_packages(pkg.packages, class_name, current_path)
+            result = find_class_in_packages(pkg.packages, class_name,
+                                            current_path)
             return result if result
           end
         end
@@ -65,7 +71,7 @@ RSpec.describe Lutaml::Qea::Factory::EaToUmlFactory do
       expect(result).not_to be_nil
       expect(result[:class].name).to eq("_CityObject")
       expect(result[:path]).to include("core")
-      expect(result[:path].size).to be > 1  # Should have parent packages
+      expect(result[:path].size).to be > 1 # Should have parent packages
     end
 
     it "creates associations that reference classes by xmi_id" do

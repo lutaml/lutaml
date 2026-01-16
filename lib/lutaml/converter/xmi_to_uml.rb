@@ -324,7 +324,7 @@ module Lutaml
         end
       end
 
-      def create_uml_assoc_generalizations(klass)
+      def create_uml_assoc_generalizations(klass) # rubocop:disable Metrics/AbcSize
         return [] if klass.generalization.nil? || klass.generalization.empty?
 
         klass.generalization.map do |gen|
@@ -358,8 +358,9 @@ module Lutaml
           owner_end = serialize_owned_type(xmi_id, assoc, link_owner)
           doc_node = link_member == "start" ? "source" : "target"
           definition = fetch_definition_node_value(assoc.id, doc_node)
-          
-          # Get owner_end_attribute_name from the ownedAttribute that references this association
+
+          # Get owner_end_attribute_name from the ownedAttribute that
+          # references this association
           owner_end_attribute_name = find_owner_attribute_name(xmi_id, assoc.id)
 
           if member_end &&
