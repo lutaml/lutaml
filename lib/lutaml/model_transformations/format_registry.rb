@@ -28,9 +28,10 @@ module Lutaml
       # Register a parser for a file extension
       #
       # @param extension [String] File extension (e.g., ".xmi", ".qea")
-      # @param parser_class [Class] Parser class implementing BaseParser interface
+      # @param parser_class [Class] Parser class implementing BaseParser
+      # interface
       # @raise [ArgumentError] if extension or parser_class is invalid
-      def register(extension, parser_class)
+      def register(extension, parser_class) # rubocop:disable Metrics/MethodLength
         if extension.is_a?(Array)
           extension.each { |ext| register(ext, parser_class) }
           return
@@ -123,8 +124,8 @@ module Lutaml
       #
       # @return [Array<Array(String, Class)>] List of [extension, parser_class]
       def parsers_by_priority
-        @parsers.sort_by do |ext, parser_class|
-          if parser_class.instance_methods.include?(:priority)
+        @parsers.sort_by do |_ext, parser_class|
+          if parser_class.method_defined?(:priority)
             parser_class.new.priority
           else
             100
@@ -142,7 +143,7 @@ module Lutaml
       # Get statistics about registered parsers
       #
       # @return [Hash] Statistics hash
-      def statistics
+      def statistics # rubocop:disable Metrics/MethodLength
         parsers = @parsers.values.uniq
         total_parsers = parsers.size
         ext_size = @extensions.size
@@ -162,7 +163,7 @@ module Lutaml
         }
       end
 
-      def export_configuration
+      def export_configuration # rubocop:disable Metrics/MethodLength
         {
           exported_at: Time.now,
           parsers: @parsers.map do |parser|
@@ -189,14 +190,16 @@ module Lutaml
 
       # Load parsers from configuration
       #
-      # @param configuration [Configuration] Configuration with parser definitions
+      # @param configuration [Configuration] Configuration with parser
+      # definitions
       # @return [void]
       def load_from_configuration(configuration)
         configuration.enabled_parsers.each do |parser_config|
           parser_class = constantize_parser_class(parser_config.parser_class)
           register(parser_config.extension, parser_class)
         rescue NameError => e
-          warn "Warning: Could not load parser #{parser_config.parser_class}: #{e.message}"
+          warn "Warning: Could not load parser " \
+               "#{parser_config.parser_class}: #{e.message}"
         end
       end
 
@@ -212,7 +215,7 @@ module Lutaml
       # Load default parsers (called automatically when needed)
       #
       # @return [void]
-      def load_default_parsers
+      def load_default_parsers # rubocop:disable Metrics/MethodLength
         return if @default_parsers_loaded
 
         # Load XMI parser if available
@@ -238,7 +241,7 @@ module Lutaml
       #
       # @param file_path [String] Path to the file
       # @return [Class, nil] Parser class based on content detection
-      def detect_by_content(file_path)
+      def detect_by_content(file_path) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
         # ensure_default_parsers_loaded!
         unless File.exist?(file_path)
           raise ArgumentError, "#{file_path} does not exist!"
@@ -335,7 +338,7 @@ module Lutaml
       #
       # @param parser_class [Class] Parser class to validate
       # @raise [ArgumentError] if parser class is invalid
-      def validate_parser_class!(parser_class)
+      def validate_parser_class!(parser_class) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/MethodLength
         # Check if nil
         if parser_class.nil?
           raise ArgumentError, "Parser class cannot be nil"

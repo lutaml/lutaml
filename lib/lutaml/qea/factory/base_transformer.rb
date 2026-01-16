@@ -37,7 +37,7 @@ module Lutaml
         # Map EA visibility to UML visibility
         # @param ea_visibility [String] EA visibility value
         # @return [String] UML visibility value
-        def map_visibility(ea_visibility)
+        def map_visibility(ea_visibility) # rubocop:disable Metrics/CyclomaticComplexity
           return "public" if ea_visibility.nil? || ea_visibility.empty?
 
           case ea_visibility.downcase
@@ -79,9 +79,11 @@ module Lutaml
 
         # Normalize EA GUID to XMI ID format
         # Converts {GUID-WITH-HYPHENS} to PREFIX_GUID_WITH_UNDERSCORES
-        # @param ea_guid [String] EA GUID in format "{XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX}"
+        # @param ea_guid [String] EA GUID in format
+        # "{XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX}"
         # @param prefix [String] Prefix to add (e.g., "EAID", "EAPK")
-        # @return [String, nil] XMI ID in format "PREFIX_XXXXXXXX_XXXX_XXXX_XXXX_XXXXXXXXXXXX"
+        # @return [String, nil] XMI ID in format
+        # "PREFIX_XXXXXXXX_XXXX_XXXX_XXXX_XXXXXXXXXXXX"
         def normalize_guid_to_xmi_format(ea_guid, prefix = "EAID")
           return nil if ea_guid.nil? || ea_guid.empty?
 
@@ -92,7 +94,8 @@ module Lutaml
 
         # Convert ea_guid to XMI SRC ID format
         def normalize_guid_to_xmi_src_dst_format(
-            ea_guid, prefix = "EAID", is_src = true)
+          ea_guid, prefix = "EAID", is_src = true # rubocop:disable Style/OptionalBooleanParameter
+        )
           xmi_id = normalize_guid_to_xmi_format(ea_guid, prefix)
 
           # Trim prefix and add _src or _dst
@@ -107,7 +110,8 @@ module Lutaml
         # @return [String, nil] Text with normalized line endings
         def normalize_line_endings(text)
           return nil if text.nil?
-          text.gsub(/\r\n/, "\n")
+
+          text.gsub("\r\n", "\n")
         end
 
         # Find object by ID

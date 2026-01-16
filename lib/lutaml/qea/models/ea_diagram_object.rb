@@ -32,7 +32,7 @@ module Lutaml
         #
         # @param row [Hash] Database row with string keys
         # @return [EaDiagramObject, nil] New instance or nil if row is nil
-        def self.from_db_row(row)
+        def self.from_db_row(row) # rubocop:disable Metrics/MethodLength
           return nil if row.nil?
 
           new(

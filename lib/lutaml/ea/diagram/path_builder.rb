@@ -38,7 +38,7 @@ module Lutaml
         def simple_connector?
           # Use straight line if both elements have direct coordinates
           connector[:source_x] && connector[:source_y] &&
-          connector[:target_x] && connector[:target_y]
+            connector[:target_x] && connector[:target_y]
         end
 
         def straight_path
@@ -56,7 +56,7 @@ module Lutaml
           path_from_points(points)
         end
 
-        def manhattan_path
+        def manhattan_path # rubocop:disable Metrics/MethodLength
           # Manhattan distance routing with one bend
           x1, y1 = source_point
           x2, y2 = target_point
@@ -81,15 +81,15 @@ module Lutaml
           x2, y2 = target_point
 
           # Control points for smooth curve
-          cp1x = x1 + (x2 - x1) * 0.3
+          cp1x = x1 + ((x2 - x1) * 0.3)
           cp1y = y1
-          cp2x = x2 - (x2 - x1) * 0.3
+          cp2x = x2 - ((x2 - x1) * 0.3)
           cp2y = y2
 
           "M #{x1},#{y1} C #{cp1x},#{cp1y} #{cp2x},#{cp2y} #{x2},#{y2}"
         end
 
-        def calculate_orthogonal_points
+        def calculate_orthogonal_points # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           x1, y1 = source_point
           x2, y2 = target_point
 
@@ -98,12 +98,12 @@ module Lutaml
           # Determine direction based on relative positions
           if (x2 - x1).abs > (y2 - y1).abs
             # Horizontal first, then vertical
-            points << [x1 + (x2 - x1) / 2, y1]
-            points << [x1 + (x2 - x1) / 2, y2]
+            points << [x1 + ((x2 - x1) / 2), y1]
+            points << [x1 + ((x2 - x1) / 2), y2]
           else
             # Vertical first, then horizontal
-            points << [x1, y1 + (y2 - y1) / 2]
-            points << [x2, y1 + (y2 - y1) / 2]
+            points << [x1, y1 + ((y2 - y1) / 2)]
+            points << [x2, y1 + ((y2 - y1) / 2)]
           end
 
           points << [x2, y2]
@@ -136,10 +136,10 @@ module Lutaml
           end
         end
 
-        def calculate_element_connection_point(element, type)
+        def calculate_element_connection_point(element, type) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           return [0, 0] unless element
 
-          # Calculate connection point based on element bounds and 
+          # Calculate connection point based on element bounds and
           # connector type
           x = element[:x] || 0
           y = element[:y] || 0
@@ -149,12 +149,12 @@ module Lutaml
           point = case type
                   when :source
                     # Connect from right side for outgoing connectors
-                    [x + width, y + height / 2]
+                    [x + width, y + (height / 2)]
                   when :target
                     # Connect to left side for incoming connectors
-                    [x, y + height / 2]
+                    [x, y + (height / 2)]
                   else
-                    [x + width / 2, y + height / 2]
+                    [x + (width / 2), y + (height / 2)]
                   end
 
           return point unless connector[:geometry]
@@ -171,7 +171,7 @@ module Lutaml
                                when :target
                                  [offsets[2], offsets[3]]
                                else
-                                 [0, 0] 
+                                 [0, 0]
                                end
 
           [point[0] + offset_x, point[1] + offset_y]
@@ -196,10 +196,10 @@ module Lutaml
           width = element[:width] || 120
           height = element[:height] || 80
 
-          [x + width / 2, y + height / 2]
+          [x + (width / 2), y + (height / 2)]
         end
 
-        def calculate_start_end_point(geometry_data, type)
+        def calculate_start_end_point(geometry_data, type) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
           point = if type == :source
                     start_point
                   else
@@ -214,9 +214,9 @@ module Lutaml
             geometry_data[:source_offset_x] || 0,
             geometry_data[:source_offset_y] || 0,
             geometry_data[:target_offset_x] || 0,
-            geometry_data[:target_offset_y] || 0
+            geometry_data[:target_offset_y] || 0,
           ]
-          
+
           apply_offset(point, offsets, type)
         end
 

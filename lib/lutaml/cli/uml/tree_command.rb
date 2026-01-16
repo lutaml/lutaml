@@ -36,7 +36,7 @@ module Lutaml
                                    desc: "Use lazy loading"
         end
 
-        def run(lur_path, path = nil)
+        def run(lur_path, path = nil) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           unless File.exist?(lur_path)
             puts OutputFormatter.error("Package file not found: #{lur_path}")
             raise Thor::Error, "Package file not found: #{lur_path}"
@@ -61,8 +61,10 @@ module Lutaml
 
         private
 
-        def display_tree_without_root(tree_data, show_counts: true)
-          name = tree_data.is_a?(Hash) ? (tree_data["name"] || tree_data[:name]) : nil
+        def display_tree_without_root(tree_data, show_counts: true) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+          name = if tree_data.is_a?(Hash)
+                   tree_data["name"] || tree_data[:name]
+                 end
 
           if name == "ModelRoot"
             children = tree_data["children"] || tree_data[:children]

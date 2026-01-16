@@ -23,7 +23,7 @@ module Lutaml
         #   puts "QEA: #{results[:qea][:time]}s"
         #   puts "XMI: #{results[:xmi][:time]}s"
         #   puts "Speedup: #{results[:speedup]}x"
-        def compare(qea_path, xmi_path)
+        def compare(qea_path, xmi_path) # rubocop:disable Metrics/MethodLength
           qea_result = measure_qea(qea_path)
           xmi_result = measure_xmi(xmi_path)
 
@@ -50,7 +50,7 @@ module Lutaml
         #   result = Lutaml::Qea::Benchmark.measure_qea("model.qea")
         #   puts "Time: #{result[:time]}s"
         #   puts "Packages: #{result[:stats][:packages]}"
-        def measure_qea(path)
+        def measure_qea(path) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           unless File.exist?(path)
             return { error: "File not found: #{path}" }
           end
@@ -98,7 +98,7 @@ module Lutaml
         # @example
         #   result = Lutaml::Qea::Benchmark.measure_xmi("model.xmi")
         #   puts "Time: #{result[:time]}s"
-        def measure_xmi(path)
+        def measure_xmi(path) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           unless File.exist?(path)
             return { error: "File not found: #{path}" }
           end
@@ -144,7 +144,7 @@ module Lutaml
         #
         # @param results [Hash] Results from compare method
         # @return [String] Formatted text
-        def format_results(results)
+        def format_results(results) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           return results[:error] if results[:error]
 
           output = []
@@ -160,7 +160,10 @@ module Lutaml
             output << "  Path:       #{results[:qea][:file]}"
             output << "  Size:       #{results[:qea][:file_size_mb]} MB"
             output << "  Parse Time: #{results[:qea][:time]}s"
-            output << "  Throughput: #{results[:qea][:throughput_mb_per_sec]} MB/s" if results[:qea][:throughput_mb_per_sec]
+            if results[:qea][:throughput_mb_per_sec]
+              output << "  Throughput: " \
+                        "#{results[:qea][:throughput_mb_per_sec]} MB/s"
+            end
             output << "  Packages:   #{results[:qea][:stats][:packages]}"
             output << "  Classes:    #{results[:qea][:stats][:classes]}"
           end
@@ -174,7 +177,10 @@ module Lutaml
             output << "  Path:       #{results[:xmi][:file]}"
             output << "  Size:       #{results[:xmi][:file_size_mb]} MB"
             output << "  Parse Time: #{results[:xmi][:time]}s"
-            output << "  Throughput: #{results[:xmi][:throughput_mb_per_sec]} MB/s" if results[:xmi][:throughput_mb_per_sec]
+            if results[:xmi][:throughput_mb_per_sec]
+              output << "  Throughput: " \
+                        "#{results[:xmi][:throughput_mb_per_sec]} MB/s"
+            end
             output << "  Packages:   #{results[:xmi][:stats][:packages]}"
             output << "  Classes:    #{results[:xmi][:stats][:classes]}"
           end

@@ -143,7 +143,7 @@ RSpec.describe Lutaml::UmlRepository::IndexBuilder do
 
       associations.values.flatten.each do |assoc|
         next unless ["inheritance",
-                      "generalization"].include?(assoc.member_end_type)
+                     "generalization"].include?(assoc.member_end_type)
 
         parent_id = assoc.member_end_xmi_id
         expect(associations.key?(parent_id)).to be(true).or be(false)

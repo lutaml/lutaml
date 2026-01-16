@@ -18,24 +18,24 @@ module Lutaml
 
       # Create a new PackagePath from a string or array.
       #
-      # @param path [String, Array<String>] The package path string or array of segments
+      # @param path [String, Array<String>]
+      # The package path string or array of segments
       # @raise [ArgumentError] if path is nil
-      def initialize(path)
+      def initialize(path) # rubocop:disable Metrics/MethodLength
         if path.nil?
           raise ArgumentError, "Path cannot be nil"
         end
 
         # Handle both string and array inputs
-        if path.is_a?(Array)
-          @segments = path.reject { |s| s.nil? || s.empty? }.freeze
-          @path = @segments.join(SEPARATOR).freeze
-        else
-          # String input - allow empty string
-          # Filter out empty segments from string paths
-          @segments = path.split(SEPARATOR).reject(&:empty?).freeze
-          @path = @segments.join(SEPARATOR).freeze
-        end
-        
+        @segments = if path.is_a?(Array)
+                      path.reject { |s| s.nil? || s.empty? }.freeze
+                    else
+                      # String input - allow empty string
+                      # Filter out empty segments from string paths
+                      path.split(SEPARATOR).reject(&:empty?).freeze
+                    end
+        @path = @segments.join(SEPARATOR).freeze
+
         freeze
       end
 
@@ -74,6 +74,7 @@ module Lutaml
       #   PackagePath.new("ModelRoot::i-UR::urf").depth # => 2
       def depth
         return 0 if segments.empty?
+
         segments.size - 1
       end
 
@@ -102,14 +103,19 @@ module Lutaml
 
       # Get the relative path from a base path.
       #
-      # @param base_path_string [String, PackagePath] The base path to calculate relative to
+      # @param base_path_string [String, PackagePath]
+      # The base path to calculate relative to
       # @return [PackagePath] The relative path, or self if not relative
       # @example
       #   path = PackagePath.new("ModelRoot::i-UR::urf")
       #   path.relative_to("ModelRoot::i-UR")
       #   # => PackagePath("urf")
       def relative_to(base_path_string)
-        base = base_path_string.is_a?(PackagePath) ? base_path_string : self.class.new(base_path_string)
+        base = if base_path_string.is_a?(PackagePath)
+                 base_path_string
+               else
+                 self.class.new(base_path_string)
+               end
         return self unless starts_with?(base)
 
         remaining = segments[base.segments.size..]
@@ -189,7 +195,7 @@ module Lutaml
       # @param path_segs [Array<String>] Remaining path segments
       # @param pattern_segs [Array<String>] Remaining pattern segments
       # @return [Boolean] true if segments match pattern
-      def match_segments(path_segs, pattern_segs)
+      def match_segments(path_segs, pattern_segs) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
         return path_segs.empty? if pattern_segs.empty?
         return false if path_segs.empty? && !pattern_segs.all? { |s| s == "**" }
 
@@ -212,10 +218,10 @@ module Lutaml
         else
           # Match segment - support string wildcards like "Class*"
           return false if path_segs.empty?
-          
+
           if pattern_seg.include?("*")
             # Convert glob pattern to regex
-            regex_pattern = Regexp.escape(pattern_seg).gsub('\*', '.*')
+            regex_pattern = Regexp.escape(pattern_seg).gsub('\*', ".*")
             return false unless path_segs.first.match?(/\A#{regex_pattern}\z/)
           else
             return false unless path_segs.first == pattern_seg

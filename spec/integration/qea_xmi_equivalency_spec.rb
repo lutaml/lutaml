@@ -36,7 +36,8 @@ RSpec.describe "QEA and XMI Equivalency", :integration do
       qea_class_count = count_all_classes(qea_document)
 
       expect(xmi_class_count).to be <= qea_class_count,
-        "XMI should have <= classes than QEA (XMI: #{xmi_class_count}, QEA: #{qea_class_count})"
+        "XMI should have <= classes than QEA (XMI: #{xmi_class_count}, " \
+        "QEA: #{qea_class_count})"
     end
 
     it "XMI classes are subset of QEA classes" do
@@ -57,7 +58,8 @@ RSpec.describe "QEA and XMI Equivalency", :integration do
       puts "  QEA class names: #{qea_class_names.size}"
       puts "  XMI class names: #{xmi_class_names.size}"
 
-      # All XMI classes should exist in QEA (some may be missing if export was filtered)
+      # All XMI classes should exist in QEA (some may be missing if export was
+      # filtered)
       missing_in_qea = xmi_class_names - qea_class_names
       extra_in_qea = qea_class_names - xmi_class_names
 
@@ -91,7 +93,8 @@ RSpec.describe "QEA and XMI Equivalency", :integration do
       expect(xmi_document.packages).not_to be_nil
 
       # QEA should have >= packages (may have more)
-      expect(qea_document.packages.size).to be >= (xmi_document.packages&.size || 0)
+      expect(qea_document.packages.size)
+        .to be >= (xmi_document.packages&.size || 0)
     end
 
     it "has compatible association structure" do
@@ -113,7 +116,8 @@ RSpec.describe "QEA and XMI Equivalency", :integration do
 
       # QEA should have >= associations
       expect(qea_assoc_count).to be >= xmi_assoc_count,
-        "QEA should have >= associations (QEA: #{qea_assoc_count}, XMI: #{xmi_assoc_count})"
+        "QEA should have >= associations (QEA: #{qea_assoc_count}, " \
+        "XMI: #{xmi_assoc_count})"
     end
   end
 

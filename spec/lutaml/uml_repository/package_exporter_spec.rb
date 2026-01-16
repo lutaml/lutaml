@@ -36,7 +36,7 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
     it "accepts PackageMetadata object" do
       metadata = Lutaml::UmlRepository::PackageMetadata.new(
         name: "Test Model",
-        version: "1.0"
+        version: "1.0",
       )
       exporter = described_class.new(repository, metadata: metadata)
       expect(exporter.metadata).to eq(metadata)
@@ -44,15 +44,15 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
 
     it "accepts metadata as hash" do
       exporter = described_class.new(repository,
-        metadata: { name: "Test", version: "1.0" })
+                                     metadata: { name: "Test", version: "1.0" })
       expect(exporter.metadata).to be_a(Lutaml::UmlRepository::PackageMetadata)
       expect(exporter.metadata.name).to eq("Test")
     end
 
     it "accepts old-style name/version options (backward compatible)" do
       exporter = described_class.new(repository,
-        name: "Legacy Model",
-        version: "2.0")
+                                     name: "Legacy Model",
+                                     version: "2.0")
       expect(exporter.metadata.name).to eq("Legacy Model")
       expect(exporter.metadata.version).to eq("2.0")
     end
@@ -85,8 +85,8 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
 
     it "includes metadata.yaml" do
       exporter = described_class.new(repository,
-        name: "Test Model",
-        version: "1.2.3")
+                                     name: "Test Model",
+                                     version: "1.2.3")
       exporter.export(output_path)
 
       Zip::File.open(output_path) do |zip_file|
@@ -96,7 +96,7 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
         metadata = YAML.safe_load(
           metadata_entry.get_input_stream.read,
           permitted_classes: yaml_permitted_classes,
-          aliases: true
+          aliases: true,
         )
         expect(metadata["name"]).to eq("Test Model")
         expect(metadata["version"]).to eq("1.2.3")
@@ -112,7 +112,7 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
         version: "2.0",
         publisher: "City Planning",
         license: "MIT",
-        description: "Urban planning model"
+        description: "Urban planning model",
       )
       exporter = described_class.new(repository, metadata: metadata)
       exporter.export(output_path)
@@ -122,7 +122,7 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
         loaded_metadata = YAML.safe_load(
           metadata_entry.get_input_stream.read,
           permitted_classes: yaml_permitted_classes,
-          aliases: true
+          aliases: true,
         )
 
         expect(loaded_metadata["name"]).to eq("Urban Model")
@@ -156,7 +156,10 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
         expect(doc_entry).not_to be_nil
 
         yaml_content = doc_entry.get_input_stream.read
-        expect { YAML.safe_load(yaml_content, permitted_classes: yaml_permitted_classes) }
+        expect do
+          YAML.safe_load(yaml_content,
+                         permitted_classes: yaml_permitted_classes)
+        end
           .not_to raise_error
       end
     end
@@ -185,7 +188,7 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
         tree = YAML.safe_load(
           tree_entry.get_input_stream.read,
           permitted_classes: yaml_permitted_classes,
-          aliases: true
+          aliases: true,
         )
         expect(tree).to have_key("format")
         expect(tree).to have_key("packages")
@@ -204,7 +207,7 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
         stats = YAML.safe_load(
           stats_entry.get_input_stream.read,
           permitted_classes: yaml_permitted_classes,
-          aliases: true
+          aliases: true,
         )
         # Statistics use symbol keys
         expect(stats).to have_key(:total_packages)
@@ -229,7 +232,7 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
       exporter = described_class.new(repository)
       exporter.export(output_path)
 
-      original_size = File.size(output_path)
+      File.size(output_path)
       exporter.export(output_path)
 
       expect(File.exist?(output_path)).to be true
@@ -242,9 +245,9 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
     # Skip YAML backward compat test - has known issues unrelated to metadata
     xit "works with old-style options" do
       exporter = described_class.new(repository,
-        name: "Legacy",
-        version: "1.0",
-        serialization_format: :yaml)
+                                     name: "Legacy",
+                                     version: "1.0",
+                                     serialization_format: :yaml)
       exporter.export(output_path)
 
       Zip::File.open(output_path) do |zip_file|
@@ -253,7 +256,7 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
         metadata = YAML.safe_load(
           metadata_entry.get_input_stream.read,
           permitted_classes: yaml_permitted_classes,
-          aliases: true
+          aliases: true,
         )
         expect(metadata["name"]).to eq("Legacy")
         expect(metadata["version"]).to eq("1.0")
@@ -266,9 +269,9 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
 
     it "works with old-style options (marshal format)" do
       exporter = described_class.new(repository,
-        name: "Legacy",
-        version: "1.0",
-        serialization_format: :marshal)
+                                     name: "Legacy",
+                                     version: "1.0",
+                                     serialization_format: :marshal)
       exporter.export(output_path)
 
       Zip::File.open(output_path) do |zip_file|
@@ -277,7 +280,7 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
         metadata = YAML.safe_load(
           metadata_entry.get_input_stream.read,
           permitted_classes: yaml_permitted_classes,
-          aliases: true
+          aliases: true,
         )
         expect(metadata["name"]).to eq("Legacy")
         expect(metadata["version"]).to eq("1.0")
@@ -290,9 +293,9 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
 
     it "metadata hash takes precedence over old-style options" do
       exporter = described_class.new(repository,
-        name: "Old",
-        version: "1.0",
-        metadata: { name: "New", version: "2.0" })
+                                     name: "Old",
+                                     version: "1.0",
+                                     metadata: { name: "New", version: "2.0" })
 
       expect(exporter.metadata.name).to eq("New")
       expect(exporter.metadata.version).to eq("2.0")
@@ -303,12 +306,12 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
     it "PackageMetadata object has highest priority" do
       metadata_obj = Lutaml::UmlRepository::PackageMetadata.new(
         name: "Object",
-        version: "3.0"
+        version: "3.0",
       )
       exporter = described_class.new(repository,
-        metadata: metadata_obj,
-        name: "Hash",
-        version: "2.0")
+                                     metadata: metadata_obj,
+                                     name: "Hash",
+                                     version: "2.0")
 
       expect(exporter.metadata.name).to eq("Object")
       expect(exporter.metadata.version).to eq("3.0")
@@ -316,9 +319,9 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
 
     it "metadata hash has second priority" do
       exporter = described_class.new(repository,
-        metadata: { name: "Hash", version: "2.0" },
-        name: "Options",
-        version: "1.0")
+                                     metadata: { name: "Hash", version: "2.0" },
+                                     name: "Options",
+                                     version: "1.0")
 
       expect(exporter.metadata.name).to eq("Hash")
       expect(exporter.metadata.version).to eq("2.0")
@@ -326,8 +329,8 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
 
     it "old-style options have lowest priority" do
       exporter = described_class.new(repository,
-        name: "Options",
-        version: "1.0")
+                                     name: "Options",
+                                     version: "1.0")
 
       expect(exporter.metadata.name).to eq("Options")
       expect(exporter.metadata.version).to eq("1.0")

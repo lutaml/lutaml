@@ -7,7 +7,8 @@ require_relative "../uml_repository/repository"
 
 module Lutaml
   module Cli
-    # InteractiveShell provides a full-featured REPL for exploring UML repositories
+    # InteractiveShell provides a full-featured REPL for
+    # exploring UML repositories
     #
     # Features:
     # - Readline integration with history
@@ -27,11 +28,12 @@ module Lutaml
 
       # Initialize the interactive shell
       #
-      # @param lur_path_or_repo [String, UmlRepository] Path to LUR file or repository
+      # @param lur_path_or_repo [String, UmlRepository] Path to LUR file or
+      # repository
       # @param config [Hash] Configuration options
       # @option config [Boolean] :color Enable colored output
       # @option config [Boolean] :icons Enable icons in output
-      def initialize(lur_path_or_repo, config: nil)
+      def initialize(lur_path_or_repo, config: nil) # rubocop:disable Metrics/MethodLength
         @config = {
           color: true,
           icons: true,
@@ -62,7 +64,7 @@ module Lutaml
       # Start the REPL loop
       #
       # @return [void]
-      def start
+      def start # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
         @running = true
         display_welcome
 
@@ -150,10 +152,16 @@ module Lutaml
       # Display welcome message
       #
       # @return [void]
-      def display_welcome
-        puts OutputFormatter.colorize("╔═══════════════════════════════════════╗", :cyan)
-        puts OutputFormatter.colorize("║  LutaML Interactive Shell (REPL)     ║", :cyan)
-        puts OutputFormatter.colorize("╚═══════════════════════════════════════╝", :cyan)
+      def display_welcome # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+        puts OutputFormatter.colorize(
+          "╔═══════════════════════════════════════╗", :cyan
+        )
+        puts OutputFormatter.colorize(
+          "║  LutaML Interactive Shell (REPL)     ║", :cyan
+        )
+        puts OutputFormatter.colorize(
+          "╚═══════════════════════════════════════╝", :cyan
+        )
         puts ""
         puts "Type 'help' for available commands, 'exit' to quit"
         puts ""
@@ -161,7 +169,8 @@ module Lutaml
         # Show quick stats
         stats = @repository.statistics
         puts "Repository loaded:"
-        puts "  #{stats[:total_packages]} packages, #{stats[:total_classes]} classes"
+        puts "  #{stats[:total_packages]} packages, " \
+             "#{stats[:total_classes]} classes"
         puts ""
       end
 
@@ -169,7 +178,7 @@ module Lutaml
       #
       # @param input [String] User input
       # @return [void]
-      def execute_command(input)
+      def execute_command(input) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength
         parts = input.split(/\s+/)
         command = parts[0].downcase
         args = parts[1..]
@@ -249,7 +258,7 @@ module Lutaml
       #
       # @param args [Array<String>] Command arguments
       # @return [void]
-      def cmd_cd(args)
+      def cmd_cd(args) # rubocop:disable Metrics/MethodLength
         if args.empty?
           puts OutputFormatter.warning("Usage: cd PATH")
           return
@@ -259,7 +268,9 @@ module Lutaml
         pkg = @repository.find_package(path)
 
         if pkg
-          @path_history << @current_path unless @path_history.last == @current_path
+          unless @path_history.last == @current_path
+            @path_history << @current_path
+          end
           @current_path = path
           puts "Changed to: #{path}"
         else
@@ -279,7 +290,7 @@ module Lutaml
       #
       # @param args [Array<String>] Command arguments
       # @return [void]
-      def cmd_ls(args)
+      def cmd_ls(args) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength,Metrics/PerceivedComplexity
         path = args.empty? ? @current_path : resolve_path(args[0])
         recursive = args.include?("-r") || args.include?("--recursive")
 
@@ -289,7 +300,11 @@ module Lutaml
           puts OutputFormatter.warning("No packages found at #{path}")
         else
           packages.each do |pkg|
-            icon = @config[:icons] ? "#{EnhancedFormatter::ICONS[:package]} " : ""
+            icon = if @config[:icons]
+                     "#{EnhancedFormatter::ICONS[:package]} "
+                   else
+                     ""
+                   end
             puts "#{icon}#{pkg.name}"
           end
           puts ""
@@ -301,7 +316,7 @@ module Lutaml
       #
       # @param args [Array<String>] Command arguments
       # @return [void]
-      def cmd_tree(args)
+      def cmd_tree(args) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
         path = args.empty? ? @current_path : resolve_path(args[0])
 
         # Parse depth option
@@ -330,7 +345,7 @@ module Lutaml
       #
       # @param _args [Array<String>] Command arguments (unused)
       # @return [void]
-      def cmd_up(_args)
+      def cmd_up(_args) # rubocop:disable Metrics/MethodLength
         if @current_path == "ModelRoot"
           puts OutputFormatter.warning("Already at root")
           return
@@ -340,7 +355,9 @@ module Lutaml
         parts.pop
         new_path = parts.empty? ? "ModelRoot" : parts.join("::")
 
-        @path_history << @current_path unless @path_history.last == @current_path
+        unless @path_history.last == @current_path
+          @path_history << @current_path
+        end
         @current_path = new_path
         puts "Changed to: #{@current_path}"
       end
@@ -351,7 +368,9 @@ module Lutaml
       # @return [void]
       def cmd_root(_args)
         if @current_path != "ModelRoot"
-          @path_history << @current_path unless @path_history.last == @current_path
+          unless @path_history.last == @current_path
+            @path_history << @current_path
+          end
           @current_path = "ModelRoot"
           puts "Changed to: ModelRoot"
         else
@@ -377,7 +396,7 @@ module Lutaml
       #
       # @param args [Array<String>] Command arguments
       # @return [void]
-      def cmd_find(args)
+      def cmd_find(args) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
         if args.empty?
           puts OutputFormatter.warning("Usage: find CLASS_NAME")
           return
@@ -391,7 +410,9 @@ module Lutaml
         else
           @last_results = results[:class]
 
-          puts OutputFormatter.colorize("Found #{@last_results.size} class(es):", :cyan)
+          puts OutputFormatter.colorize(
+            "Found #{@last_results.size} class(es):", :cyan
+          )
           @last_results.each_with_index do |qname, i|
             puts "  #{i + 1}. #{qname}"
           end
@@ -404,9 +425,11 @@ module Lutaml
       #
       # @param args [Array<String>] Command arguments
       # @return [void]
-      def cmd_show(args)
+      def cmd_show(args) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
         if args.empty?
-          puts OutputFormatter.warning("Usage: show class QNAME | show package PATH | show NUMBER")
+          puts OutputFormatter.warning(
+            "Usage: show class QNAME | show package PATH | show NUMBER",
+          )
           return
         end
 
@@ -429,7 +452,7 @@ module Lutaml
       #
       # @param args [Array<String>] Command arguments
       # @return [void]
-      def cmd_search(args)
+      def cmd_search(args) # rubocop:disable Metrics/MethodLength
         if args.empty?
           puts OutputFormatter.warning("Usage: search QUERY")
           return
@@ -449,7 +472,7 @@ module Lutaml
       #
       # @param args [Array<String>] Command arguments
       # @return [void]
-      def cmd_bookmark(args)
+      def cmd_bookmark(args) # rubocop:disable Metrics/MethodLength
         return bookmark_list if args.empty?
 
         subcommand = args[0].downcase
@@ -477,7 +500,9 @@ module Lutaml
         if @last_results.nil? || @last_results.empty?
           puts OutputFormatter.warning("No previous results")
         else
-          puts OutputFormatter.colorize("Last results (#{@last_results.size}):", :cyan)
+          puts OutputFormatter.colorize(
+            "Last results (#{@last_results.size}):", :cyan
+          )
           @last_results.each_with_index do |item, i|
             puts "  #{i + 1}. #{item}"
           end
@@ -488,7 +513,7 @@ module Lutaml
       #
       # @param args [Array<String>] Command arguments
       # @return [void]
-      def cmd_export(args)
+      def cmd_export(args) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength
         if @last_results.nil? || @last_results.empty?
           puts OutputFormatter.warning("No results to export")
           return
@@ -574,7 +599,7 @@ module Lutaml
       #
       # @param qname [String] Qualified class name
       # @return [void]
-      def show_class(qname)
+      def show_class(qname) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
         cls = @repository.find_class(qname)
 
         unless cls
@@ -590,7 +615,8 @@ module Lutaml
           puts ""
           puts "Name: #{cls.name}"
 
-          if cls.respond_to?(:attributes) && cls.attributes && !cls.attributes.empty?
+          if cls.respond_to?(:attributes) && cls.attributes &&
+              !cls.attributes.empty?
             puts ""
             puts OutputFormatter.colorize("Attributes:", :yellow)
             cls.attributes.each do |attr|
@@ -604,7 +630,7 @@ module Lutaml
       #
       # @param path [String] Package path
       # @return [void]
-      def show_package(path)
+      def show_package(path) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
         path = resolve_path(path)
         pkg = @repository.find_package(path)
 
@@ -631,7 +657,7 @@ module Lutaml
       #
       # @param number [Integer] Result number (1-indexed)
       # @return [void]
-      def show_numbered_result(number)
+      def show_numbered_result(number) # rubocop:disable Metrics/MethodLength
         if @last_results.nil? || @last_results.empty?
           puts OutputFormatter.warning("No previous results")
           return
@@ -651,29 +677,40 @@ module Lutaml
       #
       # @param results [Hash] Search results by type
       # @return [void]
-      def display_search_results(results)
-        results.each do |type, items|
+      def display_search_results(results) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+        results.each do |type, items| # rubocop:disable Metrics/BlockLength
           next if items.empty?
 
           puts ""
-          puts OutputFormatter.colorize("#{type.to_s.capitalize} Results (#{items.size}):", :cyan)
+          puts OutputFormatter.colorize(
+            "#{type.to_s.capitalize} Results (#{items.size}):", :cyan
+          )
 
           case type
           when :class
             @last_results = items
             items.each_with_index do |qname, i|
-              icon = @config[:icons] ? "#{EnhancedFormatter::ICONS[:class]} " : ""
+              icon = if @config[:icons]
+                       "#{EnhancedFormatter::ICONS[:class]} "
+                     else
+                       ""
+                     end
               puts "  #{i + 1}. #{icon}#{qname}"
             end
             puts ""
             puts "Use 'show NUMBER' to view details"
           when :attribute
             items.each do |item|
-              puts "  - #{item[:class_name]}::#{item[:attribute_name]} : #{item[:type]}"
+              puts "  - #{item[:class_name]}::#{item[:attribute_name]} : " \
+                   "#{item[:type]}"
             end
           when :association
             items.each do |item|
-              icon = @config[:icons] ? "#{EnhancedFormatter::ICONS[:association]} " : ""
+              icon = if @config[:icons]
+                       "#{EnhancedFormatter::ICONS[:association]} "
+                     else
+                       ""
+                     end
               puts "  #{icon}#{item[:source]} → #{item[:target]}"
             end
           end
@@ -698,13 +735,17 @@ module Lutaml
       # List bookmarks
       #
       # @return [void]
-      def bookmark_list
+      def bookmark_list # rubocop:disable Metrics/MethodLength
         if @bookmarks.empty?
           puts "No bookmarks"
         else
           puts OutputFormatter.colorize("Bookmarks:", :cyan)
           @bookmarks.each do |name, target|
-            icon = @config[:icons] ? "#{EnhancedFormatter::ICONS[:favorite]} " : ""
+            icon = if @config[:icons]
+                     "#{EnhancedFormatter::ICONS[:favorite]} "
+                   else
+                     ""
+                   end
             puts "  #{icon}#{name} → #{target}"
           end
         end
@@ -714,7 +755,7 @@ module Lutaml
       #
       # @param name [String] Bookmark name
       # @return [void]
-      def bookmark_go(name)
+      def bookmark_go(name) # rubocop:disable Metrics/MethodLength
         unless @bookmarks.key?(name)
           puts OutputFormatter.error("Bookmark not found: #{name}")
           return
@@ -722,11 +763,15 @@ module Lutaml
 
         target = @bookmarks[name]
         if @repository.find_package(target)
-          @path_history << @current_path unless @path_history.last == @current_path
+          unless @path_history.last == @current_path
+            @path_history << @current_path
+          end
           @current_path = target
           puts "Changed to: #{target}"
         else
-          puts OutputFormatter.warning("Bookmark target no longer exists: #{target}")
+          puts OutputFormatter.warning(
+            "Bookmark target no longer exists: #{target}",
+          )
         end
       end
 
@@ -756,7 +801,8 @@ module Lutaml
           end
         end
 
-        puts OutputFormatter.success("Exported #{@last_results.size} results to #{file_path}")
+        puts OutputFormatter.success("Exported #{@last_results.size} " \
+                                     "results to #{file_path}")
       end
 
       # Export results to JSON
@@ -767,7 +813,8 @@ module Lutaml
         require "json"
 
         File.write(file_path, JSON.pretty_generate(@last_results))
-        puts OutputFormatter.success("Exported #{@last_results.size} results to #{file_path}")
+        puts OutputFormatter.success("Exported #{@last_results.size} " \
+                                     "results to #{file_path}")
       end
 
       # Export results to YAML
@@ -778,13 +825,14 @@ module Lutaml
         require "yaml"
 
         File.write(file_path, @last_results.to_yaml)
-        puts OutputFormatter.success("Exported #{@last_results.size} results to #{file_path}")
+        puts OutputFormatter.success("Exported #{@last_results.size} " \
+                                     "results to #{file_path}")
       end
 
       # Display general help
       #
       # @return [void]
-      def display_general_help
+      def display_general_help # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
         puts OutputFormatter.colorize("Available Commands:", :cyan)
         puts ""
 
@@ -838,7 +886,7 @@ module Lutaml
       #
       # @param path [String] Path to resolve
       # @return [String] Resolved path
-      def resolve_path(path)
+      def resolve_path(path) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
         return path if path.start_with?("ModelRoot")
         return @current_path if path == "."
         return "ModelRoot" if path == "/"

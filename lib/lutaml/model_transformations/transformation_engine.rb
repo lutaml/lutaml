@@ -6,7 +6,8 @@ require_relative "parsers/base_parser"
 
 module Lutaml
   module ModelTransformations
-    # Transformation Engine orchestrates the entire model transformation process.
+    # Transformation Engine orchestrates the entire model transformation
+    # process.
     #
     # This class implements the Facade pattern to provide a simple interface
     # for complex model transformation operations. It coordinates between
@@ -60,7 +61,7 @@ module Lutaml
       # @return [Lutaml::Uml::Document] Parsed UML document
       # @raise [UnsupportedFormatError] if file format is not supported
       # @raise [ParseError] if parsing fails
-      def parse(file_path, options = {})
+      def parse(file_path, options = {}) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
         validate_file_path!(file_path)
 
         # Detect format and get parser
@@ -112,7 +113,7 @@ module Lutaml
       #
       # @param file_path [String] Path to the model file
       # @return [Class, nil] Parser class, or nil if format cannot be detected
-      def detect_parser(file_path)
+      def detect_parser(file_path) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/MethodLength
         # Strategy 1: File extension detection
         if @configuration.file_extension_detection_enabled?
           parser_class = @format_registry.parser_for_file(file_path)
@@ -154,7 +155,8 @@ module Lutaml
       # Register a custom parser for a file extension
       #
       # @param extension [String] File extension (e.g., ".custom")
-      # @param parser_class [Class] Parser class implementing BaseParser interface
+      # @param parser_class [Class] Parser class implementing BaseParser
+      # interface
       # @return [void]
       def register_parser(extension, parser_class)
         @format_registry.register(extension, parser_class)
@@ -181,7 +183,7 @@ module Lutaml
       # Get comprehensive transformation statistics
       #
       # @return [Hash] Statistics about transformations
-      def statistics
+      def statistics # rubocop:disable Metrics/MethodLength
         successful_transformations = @transformation_history.count do |t|
           t[:success]
         end
@@ -231,7 +233,7 @@ module Lutaml
       # Validate configuration and parsers
       #
       # @return [Hash] Validation results
-      def validate_setup
+      def validate_setup # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
         results = {
           configuration_valid: false,
           parsers_loaded: 0,
@@ -257,10 +259,12 @@ module Lutaml
           if parser.respond_to?(:parse)
             results[:parsers_loaded] += 1
           else
-            results[:parser_errors] << "Parser #{parser_class} does not implement parse method"
+            results[:parser_errors] << "Parser #{parser_class} does not " \
+                                       "implement parse method"
           end
         rescue StandardError => e
-          results[:parser_errors] << "Failed to instantiate #{parser_class}: #{e.message}"
+          results[:parser_errors] << "Failed to instantiate #{parser_class}: " \
+                                     "#{e.message}"
         end
 
         results
@@ -302,15 +306,18 @@ module Lutaml
       #
       # @param options [Hash] User-provided options
       # @return [Hash] Merged options
-      def merge_options(options)
+      def merge_options(options) # rubocop:disable Metrics/MethodLength
         default_options = {}
 
         if @configuration.transformation_options
           default_options = {
-            validate_output: @configuration.transformation_options.validate_output,
-            include_diagrams: @configuration.transformation_options.include_diagrams,
+            validate_output: @configuration
+              .transformation_options.validate_output,
+            include_diagrams: @configuration
+              .transformation_options.include_diagrams,
             preserve_ids: @configuration.transformation_options.preserve_ids,
-            resolve_references: @configuration.transformation_options.resolve_references,
+            resolve_references: @configuration
+              .transformation_options.resolve_references,
             strict_mode: @configuration.transformation_options.strict_mode,
           }
         end

@@ -25,10 +25,9 @@ RSpec.describe Lutaml::Ea::Diagram::StyleResolver do
   describe "#resolve_element_style" do
     let(:element) do
       double("Element",
-        name: "TestClass",
-        package_name: nil,
-        stereotype: nil
-      )
+             name: "TestClass",
+             package_name: nil,
+             stereotype: nil)
     end
 
     context "without diagram object" do
@@ -67,8 +66,7 @@ RSpec.describe Lutaml::Ea::Diagram::StyleResolver do
     context "with diagram object containing EA style" do
       let(:diagram_object) do
         double("DiagramObject",
-          style: "BCol=16764159;LCol=0;LWth=2;"
-        )
+               style: "BCol=16764159;LCol=0;LWth=2;")
       end
 
       it "merges EA style with configuration defaults" do
@@ -96,10 +94,9 @@ RSpec.describe Lutaml::Ea::Diagram::StyleResolver do
     context "with element having stereotype" do
       let(:stereotyped_element) do
         double("Element",
-          name: "MyType",
-          package_name: nil,
-          stereotype: ["DataType"]
-        )
+               name: "MyType",
+               package_name: nil,
+               stereotype: ["DataType"])
       end
 
       it "applies stereotype-specific fill color" do
@@ -112,10 +109,9 @@ RSpec.describe Lutaml::Ea::Diagram::StyleResolver do
     context "with element in specific package" do
       let(:packaged_element) do
         double("Element",
-          name: "Feature",
-          package_name: "CityGML::Core",
-          stereotype: nil
-        )
+               name: "Feature",
+               package_name: "CityGML::Core",
+               stereotype: nil)
       end
 
       it "applies package-specific styles when configured" do
@@ -131,8 +127,7 @@ RSpec.describe Lutaml::Ea::Diagram::StyleResolver do
     context "with generalization connector" do
       let(:connector) do
         double("Generalization",
-          class: double(name: "Lutaml::Uml::Generalization")
-        )
+               class: double(name: "Lutaml::Uml::Generalization"))
       end
 
       it "returns generalization style" do
@@ -159,9 +154,8 @@ RSpec.describe Lutaml::Ea::Diagram::StyleResolver do
     context "with association connector" do
       let(:connector) do
         double("Association",
-          class: double(name: "Lutaml::Uml::Association"),
-          member_end: []
-        )
+               class: double(name: "Lutaml::Uml::Association"),
+               member_end: [])
       end
 
       it "returns association style" do
@@ -175,15 +169,13 @@ RSpec.describe Lutaml::Ea::Diagram::StyleResolver do
     context "with diagram link containing EA style" do
       let(:connector) do
         double("Association",
-          class: double(name: "Lutaml::Uml::Association"),
-          member_end: []
-        )
+               class: double(name: "Lutaml::Uml::Association"),
+               member_end: [])
       end
 
       let(:diagram_link) do
         double("DiagramLink",
-          style: "LCol=255;LWth=3;LStyle=1;"
-        )
+               style: "LCol=255;LWth=3;LStyle=1;")
       end
 
       it "merges EA style with defaults" do
@@ -207,10 +199,9 @@ RSpec.describe Lutaml::Ea::Diagram::StyleResolver do
   describe "#resolve_fill_color" do
     let(:element) do
       double("Element",
-        name: "TestClass",
-        package_name: nil,
-        stereotype: nil
-      )
+             name: "TestClass",
+             package_name: nil,
+             stereotype: nil)
     end
 
     it "returns configuration fill color" do
@@ -223,8 +214,7 @@ RSpec.describe Lutaml::Ea::Diagram::StyleResolver do
     context "with EA data" do
       let(:diagram_object) do
         double("DiagramObject",
-          style: "BCol=16764159;"
-        )
+               style: "BCol=16764159;")
       end
 
       it "prioritizes EA fill color over config" do
@@ -247,10 +237,9 @@ RSpec.describe Lutaml::Ea::Diagram::StyleResolver do
   describe "#resolve_stroke_color" do
     let(:element) do
       double("Element",
-        name: "TestClass",
-        package_name: nil,
-        stereotype: nil
-      )
+             name: "TestClass",
+             package_name: nil,
+             stereotype: nil)
     end
 
     it "returns configuration stroke color" do
@@ -263,8 +252,7 @@ RSpec.describe Lutaml::Ea::Diagram::StyleResolver do
     context "with EA data" do
       let(:diagram_object) do
         double("DiagramObject",
-          style: "LCol=255;"
-        )
+               style: "LCol=255;")
       end
 
       it "prioritizes EA stroke color over config" do
@@ -278,10 +266,9 @@ RSpec.describe Lutaml::Ea::Diagram::StyleResolver do
   describe "#resolve_font" do
     let(:element) do
       double("Element",
-        name: "TestClass",
-        package_name: nil,
-        stereotype: nil
-      )
+             name: "TestClass",
+             package_name: nil,
+             stereotype: nil)
     end
 
     it "returns font properties hash" do
@@ -456,9 +443,8 @@ RSpec.describe Lutaml::Ea::Diagram::StyleResolver do
 
       it "returns 'association' for Association class" do
         connector = double("Connector",
-          class: double(name: "Lutaml::Uml::Association"),
-          member_end: []
-        )
+                           class: double(name: "Lutaml::Uml::Association"),
+                           member_end: [])
         type = resolver.send(:determine_connector_type, connector)
 
         expect(type).to eq("association")
@@ -548,7 +534,8 @@ RSpec.describe Lutaml::Ea::Diagram::StyleResolver do
       it "checks all member ends for aggregation" do
         normal_end = double("MemberEnd", aggregation: nil)
         composite_end = double("MemberEnd", aggregation: "composite")
-        connector = double("Association", member_end: [normal_end, composite_end])
+        connector = double("Association",
+                           member_end: [normal_end, composite_end])
 
         type = resolver.send(:determine_association_type, connector)
 

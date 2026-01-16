@@ -3,7 +3,8 @@
 module Lutaml
   module ModelTransformations
     module Parsers
-      # Base parser interface defining the contract for all model format parsers.
+      # Base parser interface defining the contract for all model format
+      # parsers.
       #
       # This abstract base class implements the Template Method pattern and
       # follows the Liskov Substitution Principle - all concrete parsers
@@ -42,7 +43,7 @@ module Lutaml
         # @param file_path [String] Path to the model file
         # @return [Lutaml::Uml::Document] Parsed UML document
         # @raise [ParseError] if parsing fails
-        def parse(file_path)
+        def parse(file_path) # rubocop:disable Metrics/MethodLength
           validate_file!(file_path) if should_validate_input?
           clear_errors_and_warnings
 
@@ -69,7 +70,7 @@ module Lutaml
         #
         # @param file_path [String] Path to the file
         # @return [Boolean] true if parser can handle the file
-        def can_parse?(file_path)
+        def can_parse?(file_path) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           extension = File.extname(file_path).downcase
           return true if supported_extensions.include?(extension)
 
@@ -265,7 +266,7 @@ module Lutaml
         # @raise [ArgumentError] if file is invalid
         def validate_file!(file_path)
           if file_path.nil? || file_path.empty?
-            raise ArgumentError, "File path cannot be nil" 
+            raise ArgumentError, "File path cannot be nil"
           end
 
           unless File.exist?(file_path)
@@ -294,7 +295,8 @@ module Lutaml
             raise ArgumentError, "Parser must return a Lutaml::Uml::Document"
           end
 
-          # Basic validation - subclasses can override for format-specific validation
+          # Basic validation - subclasses can override for format-specific
+          # validation
           if document.packages.nil? && document.classes.nil?
             add_warning("Document contains no packages or classes")
           end
@@ -305,7 +307,7 @@ module Lutaml
         # @param error [StandardError] The error that occurred
         # @param file_path [String] Path to the file being parsed
         # @raise [ParseError] Wrapped parsing error
-        def handle_parsing_error(error, file_path)
+        def handle_parsing_error(error, file_path) # rubocop:disable Metrics/MethodLength
           error_context = {
             file_path: file_path,
             parser: self.class.name,
@@ -358,8 +360,10 @@ module Lutaml
         # @param original_error [StandardError] Original error
         # @param parser [BaseParser] Parser that failed
         # @param file_path [String] File that failed to parse
-        def initialize(message, original_error: nil, parser: nil,
-file_path: nil)
+        def initialize(
+          message, original_error: nil, parser: nil,
+          file_path: nil
+        )
           super(message)
           @original_error = original_error
           @parser = parser
@@ -369,7 +373,7 @@ file_path: nil)
         # Get detailed error information
         #
         # @return [Hash] Error details
-        def details
+        def details # rubocop:disable Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
           {
             message: message,
             file_path: @file_path,

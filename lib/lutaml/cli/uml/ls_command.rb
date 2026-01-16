@@ -16,7 +16,7 @@ module Lutaml
           @options = options.transform_keys(&:to_sym)
         end
 
-        def self.add_options_to(thor_class, _method_name)
+        def self.add_options_to(thor_class, _method_name) # rubocop:disable Metrics/MethodLength
           thor_class.long_desc <<-DESC
           List elements at the specified path in the repository.
 
@@ -28,17 +28,20 @@ module Lutaml
           DESC
 
           thor_class.option :type, type: :string, default: "packages",
-                                   desc: "Element type (packages|classes|diagrams|all)"
+                                   desc: "Element type " \
+                                         "(packages|classes|diagrams|all)"
           thor_class.option :format, type: :string, default: "text",
-                                     desc: "Output format (text|table|yaml|json)"
+                                     desc: "Output format " \
+                                           "(text|table|yaml|json)"
           thor_class.option :filter, type: :string, desc: "Filter pattern"
           thor_class.option :recursive, aliases: "-r", type: :boolean,
-                                        default: false, desc: "Include nested elements"
+                                        default: false,
+                                        desc: "Include nested elements"
           thor_class.option :lazy, type: :boolean, default: false,
                                    desc: "Use lazy loading"
         end
 
-        def run(lur_path, path = nil)
+        def run(lur_path, path = nil) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           path = normalize_path(path)
           repo = load_repository(lur_path, lazy: options[:lazy])
 
@@ -62,7 +65,9 @@ module Lutaml
                      when "all"
                        list_all_elements(repo, path)
                      else
-                       puts OutputFormatter.error("Unknown type: #{options[:type]}")
+                       puts OutputFormatter.error(
+                         "Unknown type: #{options[:type]}",
+                       )
                        raise Thor::Error, "Unknown type: #{options[:type]}"
                      end
 

@@ -17,17 +17,21 @@ RSpec.describe Lutaml::Cli::Uml::BuildCommand do
 
   describe "#run" do
     context "with XMI input" do
-      let(:options) { { output: output_lur, name: "TestPackage", version: "1.0" } }
+      let(:options) do
+        { output: output_lur, name: "TestPackage", version: "1.0" }
+      end
 
       it "builds LUR package successfully" do
-        expect {
+        expect do
           command.run(test_xmi)
-        }.to output(/Package built successfully/).to_stdout
+        end.to output(/Package built successfully/).to_stdout
         expect(File.exist?(output_lur)).to be true
       end
 
       it "displays package statistics" do
-        expect { command.run(test_xmi) }.to output(/Package Contents:/).to_stdout
+        expect do
+          command.run(test_xmi)
+        end.to output(/Package Contents:/).to_stdout
       end
     end
 
@@ -35,7 +39,9 @@ RSpec.describe Lutaml::Cli::Uml::BuildCommand do
       let(:options) { { output: output_lur, validate: true } }
 
       it "validates before building" do
-        expect { command.run(test_xmi) }.to output(/Validating repository/).to_stdout
+        expect do
+          command.run(test_xmi)
+        end.to output(/Validating repository/).to_stdout
       end
     end
 
@@ -43,7 +49,9 @@ RSpec.describe Lutaml::Cli::Uml::BuildCommand do
       let(:options) { { output: output_lur, validate: false } }
 
       it "skips validation" do
-        expect { command.run(test_xmi) }.not_to output(/Validating repository/).to_stdout
+        expect do
+          command.run(test_xmi)
+        end.not_to output(/Validating repository/).to_stdout
       end
     end
 
@@ -51,7 +59,9 @@ RSpec.describe Lutaml::Cli::Uml::BuildCommand do
       let(:options) { { output: output_lur } }
 
       it "handles missing input file" do
-        expect { command.run("nonexistent.xmi") }.to raise_error(/Model file not found/)
+        expect do
+          command.run("nonexistent.xmi")
+        end.to raise_error(/Model file not found/)
       end
     end
   end

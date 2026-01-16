@@ -110,8 +110,9 @@ RSpec.describe Lutaml::ModelTransformations::Configuration do
         config = described_class.load("nonexistent.yml")
 
         expect(config.version).to eq("1.0")
-        expect(config.description).to eq("Default Model Transformations Configuration")
-        expect(config.parsers.size).to be >= 2  # Should have XMI and QEA parsers
+        expect(config.description)
+          .to eq("Default Model Transformations Configuration")
+        expect(config.parsers.size).to be >= 2 # Should have XMI and QEA parsers
       end
     end
 
@@ -139,7 +140,8 @@ RSpec.describe Lutaml::ModelTransformations::Configuration do
     it "creates valid default configuration" do
       expect(config.version).to eq("1.0")
       expect(config.parsers.size).to eq(2)
-      expect(config.transformation_options).to be_a(described_class::TransformationOptions)
+      expect(config.transformation_options)
+        .to be_a(described_class::TransformationOptions)
       expect(config.format_detection).to be_a(described_class::FormatDetection)
       expect(config.error_handling).to be_a(described_class::ErrorHandling)
     end
@@ -172,7 +174,8 @@ RSpec.describe Lutaml::ModelTransformations::Configuration do
 
     it "sorts parsers by priority (highest first)" do
       # Add another enabled parser with higher priority
-      high_priority_yaml = sample_config_yaml.gsub("enabled: false", "enabled: true")
+      high_priority_yaml = sample_config_yaml
+        .gsub("enabled: false", "enabled: true")
         .gsub("priority: 90", "priority: 150")
 
       config = described_class.from_yaml(high_priority_yaml)
@@ -227,7 +230,7 @@ RSpec.describe Lutaml::ModelTransformations::Configuration do
 
     it "only returns enabled parsers" do
       parser = config.parser_config_for_extension(".qea")
-      expect(parser).to be_nil  # QEA parser is disabled in test config
+      expect(parser).to be_nil # QEA parser is disabled in test config
     end
   end
 
@@ -283,8 +286,8 @@ RSpec.describe Lutaml::ModelTransformations::Configuration do
     it "merges configurations with precedence" do
       merged = base_config.merge(other_config)
 
-      expect(merged.version).to eq("1.0")  # base takes precedence
-      expect(merged.parsers.size).to eq(3)  # Should have all parsers
+      expect(merged.version).to eq("1.0") # base takes precedence
+      expect(merged.parsers.size).to eq(3) # Should have all parsers
 
       # Check that custom parser was added
       custom_parser = merged.parser_config_for("custom")
@@ -320,25 +323,36 @@ RSpec.describe Lutaml::ModelTransformations::Configuration do
 
     it "provides sensible defaults for transformation options" do
       options = config.transformation_options
-      expect(options.validate_output).to be false  # Don't validate by default for performance
-      expect(options.include_diagrams).to be true  # Include diagrams by default
-      expect(options.preserve_ids).to be true      # Preserve IDs for reference integrity
-      expect(options.resolve_references).to be true # Resolve references by default
-      expect(options.strict_mode).to be false      # Don't use strict mode by default
+      expect(options.validate_output)
+        .to be false # Don't validate by default for performance
+      expect(options.include_diagrams)
+        .to be true # Include diagrams by default
+      expect(options.preserve_ids)
+        .to be true # Preserve IDs for reference integrity
+      expect(options.resolve_references)
+        .to be true # Resolve references by default
+      expect(options.strict_mode)
+        .to be false # Don't use strict mode by default
     end
 
     it "provides sensible defaults for format detection" do
       detection = config.format_detection
-      expect(detection.use_file_extension).to be true  # Use extension-based detection
-      expect(detection.use_content_sniffing).to be true # Use content detection as fallback
+      expect(detection.use_file_extension)
+        .to be true # Use extension-based detection
+      expect(detection.use_content_sniffing)
+        .to be true # Use content detection as fallback
     end
 
     it "provides sensible defaults for error handling" do
       error_handling = config.error_handling
-      expect(error_handling.strategy).to eq("continue")  # Continue on errors by default
-      expect(error_handling.log_errors).to be true       # Log errors by default
-      expect(error_handling.max_errors).to eq(10)        # Reasonable error limit
-      expect(error_handling.fail_fast).to be false       # Don't fail fast by default
+      expect(error_handling.strategy)
+        .to eq("continue") # Continue on errors by default
+      expect(error_handling.log_errors)
+        .to be true       # Log errors by default
+      expect(error_handling.max_errors)
+        .to eq(10)        # Reasonable error limit
+      expect(error_handling.fail_fast)
+        .to be false # Don't fail fast by default
     end
   end
 end

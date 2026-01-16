@@ -98,11 +98,11 @@ RSpec.describe Lutaml::UmlRepository::PackageLoader do
         name: "Test Model",
         version: "2.0",
         publisher: "Test Publisher",
-        license: "MIT"
+        license: "MIT",
       )
       exporter = Lutaml::UmlRepository::PackageExporter.new(
         repository,
-        metadata: metadata
+        metadata: metadata,
       )
       exporter.export(lur_path)
 
@@ -124,11 +124,11 @@ RSpec.describe Lutaml::UmlRepository::PackageLoader do
         keywords: "test, model, uml",
         homepage: "https://example.com",
         authors: ["Alice", "Bob"],
-        maintainers: "team@example.com"
+        maintainers: "team@example.com",
       )
       exporter = Lutaml::UmlRepository::PackageExporter.new(
         repository,
-        metadata: metadata
+        metadata: metadata,
       )
       exporter.export(lur_path)
 
@@ -180,11 +180,11 @@ RSpec.describe Lutaml::UmlRepository::PackageLoader do
       metadata = Lutaml::UmlRepository::PackageMetadata.new(
         name: "Round Trip Test",
         version: "1.5",
-        publisher: "Test Suite"
+        publisher: "Test Suite",
       )
       exporter = Lutaml::UmlRepository::PackageExporter.new(
         repository,
-        metadata: metadata
+        metadata: metadata,
       )
       exporter.export(lur_path)
 

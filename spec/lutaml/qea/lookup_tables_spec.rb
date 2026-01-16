@@ -4,7 +4,10 @@ require "spec_helper"
 require_relative "../../../lib/lutaml/qea"
 
 RSpec.describe "Priority 3 Lookup Tables" do
-  let(:qea_file) { File.join(__dir__, "../../../examples/qea/20251010_current_plateau_v5.1.qea") }
+  let(:qea_file) do
+    File.join(__dir__,
+              "../../../examples/qea/20251010_current_plateau_v5.1.qea")
+  end
   let(:loader) { Lutaml::Qea::Services::DatabaseLoader.new(qea_file) }
   let(:database) { loader.load }
 
@@ -32,13 +35,17 @@ RSpec.describe "Priority 3 Lookup Tables" do
     end
 
     it "includes Pre-condition type" do
-      precondition = constraint_types.find { |ct| ct.constraint == "Pre-condition" }
+      precondition = constraint_types.find do |ct|
+        ct.constraint == "Pre-condition"
+      end
       expect(precondition).not_to be_nil
       expect(precondition.precondition?).to be true
     end
 
     it "includes Post-condition type" do
-      postcondition = constraint_types.find { |ct| ct.constraint == "Post-condition" }
+      postcondition = constraint_types.find do |ct|
+        ct.constraint == "Post-condition"
+      end
       expect(postcondition).not_to be_nil
       expect(postcondition.postcondition?).to be true
     end
@@ -71,25 +78,33 @@ RSpec.describe "Priority 3 Lookup Tables" do
     end
 
     it "includes Association type" do
-      association = connector_types.find { |ct| ct.connector_type == "Association" }
+      association = connector_types.find do |ct|
+        ct.connector_type == "Association"
+      end
       expect(association).not_to be_nil
       expect(association.association?).to be true
     end
 
     it "includes Generalization type" do
-      generalization = connector_types.find { |ct| ct.connector_type == "Generalization" }
+      generalization = connector_types.find do |ct|
+        ct.connector_type == "Generalization"
+      end
       expect(generalization).not_to be_nil
       expect(generalization.generalization?).to be true
     end
 
     it "includes Aggregation type" do
-      aggregation = connector_types.find { |ct| ct.connector_type == "Aggregation" }
+      aggregation = connector_types.find do |ct|
+        ct.connector_type == "Aggregation"
+      end
       expect(aggregation).not_to be_nil
       expect(aggregation.aggregation?).to be true
     end
 
     it "includes Dependency type" do
-      dependency = connector_types.find { |ct| ct.connector_type == "Dependency" }
+      dependency = connector_types.find do |ct|
+        ct.connector_type == "Dependency"
+      end
       expect(dependency).not_to be_nil
       expect(dependency.dependency?).to be true
     end
@@ -267,7 +282,8 @@ RSpec.describe "Priority 3 Lookup Tables" do
 
     it "includes all complexity levels" do
       names = complexity_types.map(&:complexity)
-      expect(names).to include("V.Low", "Low", "Medium", "High", "V.High", "Extreme")
+      expect(names).to include("V.Low", "Low", "Medium", "High", "V.High",
+                               "Extreme")
     end
 
     it "has correct numeric weights" do
@@ -316,7 +332,8 @@ RSpec.describe "Priority 3 Lookup Tables" do
 
     it "provides readable alias" do
       complexity_type = complexity_types.first
-      expect(complexity_type.numeric_weight).to eq(complexity_type.numericweight)
+      expect(complexity_type.numeric_weight)
+        .to eq(complexity_type.numericweight)
     end
 
     it "supports comparison by weight" do

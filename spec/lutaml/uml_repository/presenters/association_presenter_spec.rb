@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require_relative "../../../../lib/lutaml/uml_repository/presenters/association_presenter"
+require_relative "../../../../lib/lutaml/uml_repository/" \
+                 "presenters/association_presenter"
 require_relative "../../../../lib/lutaml/uml/association"
 
 RSpec.describe Lutaml::UmlRepository::Presenters::AssociationPresenter do

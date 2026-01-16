@@ -27,7 +27,7 @@ module Lutaml
         #
         # @param ea_constraint [Models::EaObjectConstraint] EA constraint model
         # @return [Lutaml::Uml::Constraint, nil] UML constraint or nil
-        def transform(ea_constraint)
+        def transform(ea_constraint) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           return nil unless ea_constraint
 
           Lutaml::Uml::Constraint.new.tap do |constraint|
@@ -56,7 +56,7 @@ module Lutaml
         #
         # @param ea_constraint [Models::EaObjectConstraint] EA constraint
         # @return [String] Constraint name
-        def constraint_name(ea_constraint)
+        def constraint_name(ea_constraint) # rubocop:disable Metrics/MethodLength
           return "constraint_#{ea_constraint.constraint_id}" unless
             ea_constraint.constraint
 

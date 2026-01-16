@@ -25,7 +25,8 @@ module Lutaml
     #   config = ModelTransformations::Configuration.load("my_config.yml")
     #   repo = RepositoryEnhanced.from_model("model.qea", config: config)
     class RepositoryEnhanced < Repository
-      # @return [ModelTransformations::TransformationEngine] The transformation engine
+      # @return [ModelTransformations::TransformationEngine]
+      # The transformation engine
       attr_reader :transformation_engine
 
       # @return [Hash] Transformation metadata
@@ -35,13 +36,18 @@ module Lutaml
       #
       # @param document [Lutaml::Uml::Document] The UML document
       # @param indexes [Hash, nil] Pre-built indexes
-      # @param transformation_engine [ModelTransformations::TransformationEngine, nil] Custom engine
-      # @param transformation_metadata [Hash] Metadata from transformation process
-      def initialize(document:, indexes: nil, transformation_engine: nil,
-transformation_metadata: {})
+      # @param transformation_engine
+      # [ModelTransformations::TransformationEngine, nil] Custom engine
+      # @param transformation_metadata [Hash]
+      # Metadata from transformation process
+      def initialize(
+        document:, indexes: nil, transformation_engine: nil,
+        transformation_metadata: {}
+      )
         super(document: document, indexes: indexes)
 
-        @transformation_engine = transformation_engine || ModelTransformations.engine
+        @transformation_engine = transformation_engine ||
+          ModelTransformations.engine
         @transformation_metadata = transformation_metadata.freeze
       end
 
@@ -52,12 +58,14 @@ transformation_metadata: {})
       #
       # @param model_path [String] Path to the model file
       # @param options [Hash] Parsing and repository options
-      # @option options [ModelTransformations::Configuration] :config Custom configuration
+      # @option options [ModelTransformations::Configuration] :config
+      # Custom configuration
       # @option options [Boolean] :validate Validate model after parsing
       # @option options [Boolean] :lazy Enable lazy loading
-      # @option options [Symbol] :preset Use configuration preset (:fast, :comprehensive, :production)
+      # @option options [Symbol] :preset Use configuration preset
+      # (:fast, :comprehensive, :production)
       # @return [RepositoryEnhanced] Enhanced repository instance
-      def self.from_model(model_path, options = {})
+      def self.from_model(model_path, options = {}) # rubocop:disable Metrics/MethodLength
         # Setup transformation engine with custom config if provided
         engine = setup_transformation_engine(options)
 
@@ -120,7 +128,7 @@ transformation_metadata: {})
       # @param lur_path [String] Path to LUR package
       # @param options [Hash] Loading options
       # @return [RepositoryEnhanced] Enhanced repository instance
-      def self.from_package_enhanced(lur_path, _options = {})
+      def self.from_package_enhanced(lur_path, _options = {}) # rubocop:disable Metrics/MethodLength
         # Load using original method but wrap in enhanced repository
         original_repo = from_package(lur_path)
 
@@ -139,7 +147,7 @@ transformation_metadata: {})
       # Get transformation statistics and metadata
       #
       # @return [Hash] Comprehensive transformation information
-      def transformation_info
+      def transformation_info # rubocop:disable Metrics/MethodLength
         base_info = {
           source_file: @transformation_metadata[:source_file],
           source_format: @transformation_metadata[:source_format],
@@ -218,7 +226,7 @@ transformation_metadata: {})
       # Validate with enhanced error reporting
       #
       # @return [Hash] Enhanced validation results
-      def validate_enhanced
+      def validate_enhanced # rubocop:disable Metrics/MethodLength
         base_validation = validate
 
         # Add transformation-specific validation
@@ -227,7 +235,8 @@ transformation_metadata: {})
         {
           base_validation: base_validation,
           transformation_validation: transformation_validation,
-          overall_valid: base_validation.valid? && transformation_validation[:valid],
+          overall_valid: base_validation.valid? &&
+            transformation_validation[:valid],
           recommendations: generate_recommendations(base_validation,
                                                     transformation_validation),
         }
@@ -243,7 +252,8 @@ transformation_metadata: {})
           source_format: @transformation_metadata[:source_format],
           parsing_duration: @transformation_metadata[:parsing_duration],
           parser_used: @transformation_metadata[:parser],
-          transformation_warnings: @transformation_metadata[:warnings]&.size || 0,
+          transformation_warnings: @transformation_metadata[:warnings]&.size ||
+            0,
           transformation_errors: @transformation_metadata[:errors]&.size || 0,
         }
 
@@ -283,7 +293,8 @@ transformation_metadata: {})
 
       # Apply configuration preset
       #
-      # @param engine [ModelTransformations::TransformationEngine] Engine to configure
+      # @param engine [ModelTransformations::TransformationEngine]
+      # Engine to configure
       # @param preset [Symbol] Preset name
       # @return [void]
       def self.apply_preset(_engine, preset)
@@ -303,7 +314,7 @@ transformation_metadata: {})
       #
       # @param options [Hash] Repository options
       # @return [Hash] Parsing options
-      def self.extract_parsing_options(options)
+      def self.extract_parsing_options(options) # rubocop:disable Metrics/MethodLength
         parsing_options = {}
 
         # Map repository options to parsing options
@@ -325,10 +336,11 @@ transformation_metadata: {})
 
       # Extract transformation metadata from engine
       #
-      # @param engine [ModelTransformations::TransformationEngine] Transformation engine
+      # @param engine [ModelTransformations::TransformationEngine]
+      # Transformation engine
       # @param file_path [String] Source file path
       # @return [Hash] Transformation metadata
-      def self.extract_transformation_metadata(engine, file_path)
+      def self.extract_transformation_metadata(engine, file_path) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
         # Get the most recent transformation for this file
         history = engine.history_for_file(file_path)
         latest = history.last
@@ -355,7 +367,7 @@ transformation_metadata: {})
       # Validate transformation quality
       #
       # @return [Hash] Transformation validation results
-      def validate_transformation_quality
+      def validate_transformation_quality # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
         results = {
           valid: true,
           warnings: [],
@@ -366,7 +378,8 @@ transformation_metadata: {})
         # Check for transformation warnings
         if @transformation_metadata[:warnings]&.any?
           results[:warnings].concat(@transformation_metadata[:warnings])
-          results[:quality_score] -= @transformation_metadata[:warnings].size * 5
+          results[:quality_score] -= @transformation_metadata[:warnings]
+            .size * 5
         end
 
         # Check for transformation errors
@@ -377,8 +390,10 @@ transformation_metadata: {})
         end
 
         # Check parsing duration
-        if @transformation_metadata[:parsing_duration] && (@transformation_metadata[:parsing_duration] > 60) # More than 1 minute
-          results[:warnings] << "Long parsing duration (#{@transformation_metadata[:parsing_duration].round(2)}s)"
+        if @transformation_metadata[:parsing_duration] &&
+            (@transformation_metadata[:parsing_duration] > 60) # > 1 minute
+          duration = @transformation_metadata[:parsing_duration].round(2)
+          results[:warnings] << "Long parsing duration (#{duration}s)"
           results[:quality_score] -= 5
         end
 
@@ -389,27 +404,32 @@ transformation_metadata: {})
       # Generate recommendations based on validation results
       #
       # @param base_validation [Object] Base validation results
-      # @param transformation_validation [Hash] Transformation validation results
+      # @param transformation_validation [Hash] Transformation validation
+      # results
       # @return [Array<String>] Recommendations
-      def generate_recommendations(base_validation, transformation_validation)
+      def generate_recommendations(base_validation, transformation_validation) # rubocop:disable Metrics/MethodLength
         recommendations = []
 
         # Base validation recommendations
         unless base_validation.valid?
-          recommendations << "Address model validation errors for better reliability"
+          recommendations << "Address model validation errors for better " \
+                             "reliability"
         end
 
         # Transformation-specific recommendations
         if transformation_validation[:errors].any?
-          recommendations << "Review transformation errors to ensure data completeness"
+          recommendations << "Review transformation errors to ensure data " \
+                             "completeness"
         end
 
         if transformation_validation[:warnings].size > 10
-          recommendations << "Consider using a different parser or format for better results"
+          recommendations << "Consider using a different parser or format " \
+                             "for better results"
         end
 
         if transformation_validation[:quality_score] < 80
-          recommendations << "Model quality is below recommended threshold, review source file"
+          recommendations << "Model quality is below recommended threshold, " \
+                             "review source file"
         end
 
         recommendations

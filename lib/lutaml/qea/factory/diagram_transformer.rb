@@ -17,21 +17,25 @@ module Lutaml
         # Transform EA diagram to UML diagram
         # @param ea_diagram [EaDiagram] EA diagram model
         # @return [Lutaml::Uml::Diagram] UML diagram
-        def transform(ea_diagram)
+        def transform(ea_diagram) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity,Metrics/MethodLength
           return nil if ea_diagram.nil?
 
-          Lutaml::Uml::Diagram.new.tap do |diagram|
+          Lutaml::Uml::Diagram.new.tap do |diagram| # rubocop:disable Metrics/BlockLength
             # Map basic properties
             diagram.name = ea_diagram.name
-            diagram.xmi_id = normalize_guid_to_xmi_format(ea_diagram.ea_guid, "EAID")
-            # TODO: Fix diagram_type assignment - lutaml-model compatibility issue
+            diagram.xmi_id = normalize_guid_to_xmi_format(ea_diagram.ea_guid,
+                                                          "EAID")
+            # TODO: Fix diagram_type assignment -
+            # lutaml-model compatibility issue
             # diagram.diagram_type = ea_diagram.diagram_type
 
             # Map package relationship - use GUID not numeric ID
             if ea_diagram.package_id
               package = find_package(ea_diagram.package_id)
               if package
-                diagram.package_id = normalize_guid_to_xmi_format(package.ea_guid, "EAPK")
+                diagram.package_id = normalize_guid_to_xmi_format(
+                  package.ea_guid, "EAPK"
+                )
                 diagram.package_name = package.name
               end
             end
@@ -47,7 +51,9 @@ module Lutaml
 
             # Load and transform diagram objects (visual placement)
             diagram_objects = load_diagram_objects(ea_diagram.diagram_id)
-            diagram.diagram_objects.concat(diagram_objects) if diagram_objects.any?
+            if diagram_objects.any?
+              diagram.diagram_objects.concat(diagram_objects)
+            end
 
             # Load and transform diagram links (visual routing)
             diagram_links = load_diagram_links(ea_diagram.diagram_id)
@@ -94,7 +100,7 @@ module Lutaml
         # Transform EA diagram object to UML diagram object
         # @param ea_obj [Models::EaDiagramObject] EA diagram object
         # @return [Lutaml::Uml::DiagramObject] UML diagram object
-        def transform_diagram_object(ea_obj)
+        def transform_diagram_object(ea_obj) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           return nil if ea_obj.nil?
 
           Lutaml::Uml::DiagramObject.new.tap do |obj|
@@ -109,7 +115,11 @@ module Lutaml
             # Try to find and set xmi_id from the referenced object
             if ea_obj.ea_object_id
               uml_object = find_object_by_id(ea_obj.ea_object_id)
-              obj.object_xmi_id = normalize_guid_to_xmi_format(uml_object.ea_guid, "EAID") if uml_object
+              if uml_object
+                obj.object_xmi_id = normalize_guid_to_xmi_format(
+                  uml_object.ea_guid, "EAID"
+                )
+              end
             end
           end
         end
@@ -132,7 +142,7 @@ module Lutaml
         # Transform EA diagram link to UML diagram link
         # @param ea_link [Models::EaDiagramLink] EA diagram link
         # @return [Lutaml::Uml::DiagramLink] UML diagram link
-        def transform_diagram_link(ea_link)
+        def transform_diagram_link(ea_link) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           return nil if ea_link.nil?
 
           Lutaml::Uml::DiagramLink.new.tap do |link|
@@ -145,7 +155,11 @@ module Lutaml
             # Try to find and set xmi_id from the referenced connector
             if ea_link.connectorid
               connector = find_connector_by_id(ea_link.connectorid)
-              link.connector_xmi_id = normalize_guid_to_xmi_format(connector.ea_guid, "EAID") if connector
+              if connector
+                link.connector_xmi_id = normalize_guid_to_xmi_format(
+                  connector.ea_guid, "EAID"
+                )
+              end
             end
           end
         end

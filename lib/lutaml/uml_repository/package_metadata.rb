@@ -64,8 +64,12 @@ module Lutaml
       # @return [Array<Lutaml::Model::Error>] Array of validation errors
       def validate(*)
         errors = []
-        errors << Lutaml::Model::Error.new("name is required") if name.nil? || name.empty?
-        errors << Lutaml::Model::Error.new("version is required") if version.nil? || version.empty?
+        if name.nil? || name.empty?
+          errors << Lutaml::Model::Error.new("name is required")
+        end
+        if version.nil? || version.empty?
+          errors << Lutaml::Model::Error.new("version is required")
+        end
         errors
       end
     end

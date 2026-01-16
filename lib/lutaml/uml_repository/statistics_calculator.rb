@@ -4,7 +4,8 @@ require_relative "index_builder"
 
 module Lutaml
   module UmlRepository
-    # StatisticsCalculator provides comprehensive statistics about a UML repository
+    # StatisticsCalculator provides comprehensive statistics about a
+    # UML repository
     #
     # Calculates detailed metrics including:
     # - Package statistics (depth distribution, sizes)
@@ -30,7 +31,7 @@ module Lutaml
       # Calculate comprehensive statistics for the repository
       #
       # @return [Hash] Statistics hash with detailed metrics
-      def calculate
+      def calculate # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
         {
           # Basic counts
           total_packages: package_count,
@@ -148,10 +149,12 @@ module Lutaml
 
       # Get most complex classes by total element count
       #
-      # Complexity is measured by the sum of attributes, associations, and operations.
+      # Complexity is measured by the sum of attributes, associations,
+      # and operations.
       #
       # @param limit [Integer] Maximum number of classes to return
-      # @return [Array<Hash>] Array of complexity information hashes with :class and :complexity keys
+      # @return [Array<Hash>] Array of complexity information hashes with
+      # :class and :complexity keys
       def most_complex_classes(limit: 10)
         classes = @indexes[:qualified_names].select { |_, obj| obj.is_a?(Lutaml::Uml::Class) }
 
@@ -182,7 +185,7 @@ module Lutaml
       #
       # @param klass [Lutaml::Uml::Class] The class to calculate complexity for
       # @return [Integer] Complexity score
-      def class_complexity(klass)
+      def class_complexity(klass) # rubocop:disable Metrics/CyclomaticComplexity
         (klass.attributes&.size || 0) +
           (klass.associations&.size || 0) +
           (klass.operations&.size || 0)
@@ -218,7 +221,7 @@ module Lutaml
       # Get attribute type distribution
       #
       # @return [Hash] Hash mapping type names to counts
-      def attribute_type_distribution
+      def attribute_type_distribution # rubocop:disable Metrics/CyclomaticComplexity
         types = Hash.new(0)
 
         @indexes[:qualified_names].each_value do |obj|
@@ -272,7 +275,7 @@ module Lutaml
       # @param qname [String] Qualified name of the class
       # @param visited [Set] Set of visited classes (to detect cycles)
       # @return [Integer] Depth of inheritance chain
-      def calculate_inheritance_depth(qname, visited = Set.new)
+      def calculate_inheritance_depth(qname, visited = Set.new) # rubocop:disable Metrics/MethodLength
         return 0 if visited.include?(qname)
 
         visited.add(qname)
@@ -309,7 +312,9 @@ module Lutaml
         @indexes[:qualified_names].count do |_, obj|
           next false unless obj.is_a?(Lutaml::Uml::Class)
 
-          documentation = obj.respond_to?(:documentation) ? obj.documentation : nil
+          documentation = if obj.respond_to?(:documentation)
+                            obj.documentation
+                          end
           documentation.nil? || documentation.to_s.strip.empty?
         end
       end

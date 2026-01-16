@@ -14,7 +14,7 @@ module Lutaml
 
         private
 
-        def validate_parent_object_references
+        def validate_parent_object_references # rubocop:disable Metrics/MethodLength
           operations.each do |op|
             unless reference_exists?("t_object", "ea_object_id",
                                      op.ea_object_id)
@@ -31,7 +31,7 @@ module Lutaml
           end
         end
 
-        def validate_return_types
+        def validate_return_types # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           operations.each do |op|
             next unless op.classifier && !op.classifier.empty?
 

@@ -17,7 +17,9 @@ RSpec.describe Lutaml::Cli::Uml::ReplCommand do
   let(:command) { described_class.new(options) }
 
   before do
-    skip "Large XMI file parsing causes hangs - needs optimization" if !File.exist?(test_xmi) || File.size(test_xmi) > 1_000_000
+    if !File.exist?(test_xmi) || File.size(test_xmi) > 1_000_000
+      skip "Large XMI file parsing causes hangs - needs optimization"
+    end
   end
 
   after do
@@ -28,9 +30,9 @@ RSpec.describe Lutaml::Cli::Uml::ReplCommand do
     let(:options) { { color: true, icons: true } }
 
     it "handles missing LUR file" do
-      expect {
+      expect do
         command.run("nonexistent.lur")
-      }.to raise_error(/Package file not found/)
+      end.to raise_error(/Package file not found/)
     end
 
     # Note: Actual REPL testing skipped as it would start interactive shell

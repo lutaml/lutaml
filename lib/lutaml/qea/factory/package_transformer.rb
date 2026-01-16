@@ -13,13 +13,14 @@ module Lutaml
         # Transform EA package to UML package
         # @param ea_package [EaPackage] EA package model
         # @return [Lutaml::Uml::Package] UML package
-        def transform(ea_package)
+        def transform(ea_package) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           return nil if ea_package.nil?
 
           Lutaml::Uml::Package.new.tap do |pkg|
             # Map basic properties
             pkg.name = ea_package.name
-            pkg.xmi_id = normalize_guid_to_xmi_format(ea_package.ea_guid, "EAPK")
+            pkg.xmi_id = normalize_guid_to_xmi_format(ea_package.ea_guid,
+                                                      "EAPK")
 
             # Map definition/notes
             pkg.definition = ea_package.notes unless
@@ -90,18 +91,21 @@ module Lutaml
         # Load objects for a package
         # @param pkg [Lutaml::Uml::Package] UML package
         # @param package_id [Integer] Package ID
-        def load_package_objects(pkg, package_id)
+        def load_package_objects(pkg, package_id) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           query = "SELECT * FROM t_object WHERE Package_ID = ?"
           rows = database.connection.execute(query, package_id)
 
           ea_objects = rows.map { |row| Models::EaObject.from_db_row(row) }
 
-          # Transform classes - include ALL class-type objects, even without names
-          # Also include Text objects that appear on diagrams (EA exports these as classes in XMI)
+          # Transform classes - include ALL class-type objects,
+          # even without names
+          # Also include Text objects that appear on diagrams
+          # (EA exports these as classes in XMI)
           class_transformer = ClassTransformer.new(database)
           ea_objects.each do |ea_obj|
             is_class_type = ea_obj.uml_class? || ea_obj.interface?
-            is_text_on_diagram = ea_obj.object_type == 'Text' && appears_on_diagram?(ea_obj.ea_object_id)
+            is_text_on_diagram = ea_obj.object_type == 'Text' &&
+              appears_on_diagram?(ea_obj.ea_object_id)
 
             next unless is_class_type || is_text_on_diagram
 
@@ -152,13 +156,14 @@ module Lutaml
         # Load stereotype from t_xref table
         # @param ea_guid [String] Element GUID
         # @return [String, nil] Stereotype value (as string to match XMI format)
-        def load_stereotype(ea_guid)
+        def load_stereotype(ea_guid) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           return nil if ea_guid.nil?
           return nil unless database.xrefs
 
           # Find stereotype xref from the in-memory collection
           xref = database.xrefs.find do |x|
-            x.client == ea_guid && x.name == 'Stereotypes' && x.type == 'element property'
+            x.client == ea_guid &&
+              x.name == 'Stereotypes' && x.type == 'element property'
           end
 
           return nil unless xref
@@ -184,7 +189,9 @@ module Lutaml
           return false unless database.diagram_objects
 
           # Check if object appears in any diagram's objects
-          database.diagram_objects.any? { |dobj| dobj.ea_object_id == object_id }
+          database.diagram_objects.any? do |dobj|
+            dobj.ea_object_id == object_id
+          end
         end
       end
     end

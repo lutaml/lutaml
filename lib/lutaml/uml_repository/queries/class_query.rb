@@ -26,12 +26,15 @@ module Lutaml
           #
           # @param qualified_name_string [String] The qualified name
           #   (e.g., "ModelRoot::i-UR::urf::Building")
-          # @return [Lutaml::Uml::Class, Lutaml::Uml::DataType, Lutaml::Uml::Enum, nil]
+          # @return [Lutaml::Uml::Class, Lutaml::Uml::DataType,
+          # Lutaml::Uml::Enum, nil]
           #   The class object, or nil if not found
           # @example
           #   klass = query.find_by_qname("ModelRoot::i-UR::urf::Building")
           def find_by_qname(qualified_name_string)
-            return nil if qualified_name_string.nil? || qualified_name_string.empty?
+            if qualified_name_string.nil? || qualified_name_string.empty?
+              return nil
+            end
 
             indexes[:qualified_names][qualified_name_string]
           end
@@ -56,13 +59,14 @@ module Lutaml
           #   packages (default: false)
           # @return [Array] Array of class objects in the package
           # @example Non-recursive query
-          #   classes = query.in_package("ModelRoot::i-UR::urf", recursive: false)
+          #   classes = query.in_package(
+          #   "ModelRoot::i-UR::urf", recursive: false)
           #   # Returns only classes directly in the urf package
           #
           # @example Recursive query
           #   classes = query.in_package("ModelRoot::i-UR", recursive: true)
           #   # Returns classes in i-UR and all nested packages
-          def in_package(package_path_string, recursive: false)
+          def in_package(package_path_string, recursive: false) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
             return [] if package_path_string.nil? || package_path_string.empty?
 
             package_path = Lutaml::Uml::PackagePath.new(package_path_string)
@@ -71,7 +75,7 @@ module Lutaml
             # Check if the path is absolute (starts with ModelRoot)
             is_absolute = package_path.absolute?
 
-            indexes[:qualified_names].each do |qname_string, klass|
+            indexes[:qualified_names].each do |qname_string, klass| # rubocop:disable Metrics/BlockLength
               qname = Lutaml::Uml::QualifiedName.new(qname_string)
 
               matched = if is_absolute
@@ -84,20 +88,21 @@ module Lutaml
               else
                 # Relative path - match if the class's package path ends with
                 # the given path
-                class_pkg_segments = qname.package_path.segments
-                search_segments = package_path.segments
+                class_pkg_segs = qname.package_path.segments
+                search_segs = package_path.segments
 
                 if recursive
                   # For recursive, check if any suffix of the class path
-                  # starts with search_segments
-                  (0..class_pkg_segments.size - search_segments.size).any? do |i|
-                    class_pkg_segments[i, search_segments.size] == search_segments
+                  # starts with search_segs
+                  (0..class_pkg_segs.size - search_segs.size)
+                    .any? do |i|
+                      class_pkg_segs[i, search_segs.size] == search_segs
                   end
                 else
                   # For non-recursive, check if class path ends with
-                  # search_segments
-                  class_pkg_segments.size >= search_segments.size &&
-                    class_pkg_segments[-search_segments.size..] == search_segments
+                  # search_segs
+                  class_pkg_segs.size >= search_segs.size &&
+                    class_pkg_segs[-search_segs.size..] == search_segs
                 end
               end
 

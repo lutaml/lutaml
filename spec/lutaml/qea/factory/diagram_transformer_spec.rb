@@ -21,7 +21,7 @@ RSpec.describe Lutaml::Qea::Factory::DiagramTransformer do
         name: "Class Diagram",
         ea_guid: "{DIAG-GUID}",
         package_id: 5,
-        notes: "Main class diagram"
+        notes: "Main class diagram",
       )
 
       package_row = {
@@ -53,7 +53,7 @@ RSpec.describe Lutaml::Qea::Factory::DiagramTransformer do
       ea_diagram = Lutaml::Qea::Models::EaDiagram.new(
         diagram_id: 1,
         name: "Diagram",
-        package_id: nil
+        package_id: nil,
       )
 
       allow(connection).to receive(:execute)
@@ -73,7 +73,7 @@ RSpec.describe Lutaml::Qea::Factory::DiagramTransformer do
       ea_diagram = Lutaml::Qea::Models::EaDiagram.new(
         diagram_id: 1,
         name: "Diagram",
-        package_id: 99
+        package_id: 99,
       )
 
       allow(connection).to receive(:execute).and_return([])
@@ -88,7 +88,7 @@ RSpec.describe Lutaml::Qea::Factory::DiagramTransformer do
       ea_diagram = Lutaml::Qea::Models::EaDiagram.new(
         diagram_id: 1,
         name: "Diagram",
-        stereotype: "logical"
+        stereotype: "logical",
       )
 
       allow(connection).to receive(:execute).and_return([])
@@ -102,7 +102,7 @@ RSpec.describe Lutaml::Qea::Factory::DiagramTransformer do
       ea_diagram = Lutaml::Qea::Models::EaDiagram.new(
         diagram_id: 1,
         name: "Diagram",
-        notes: ""
+        notes: "",
       )
 
       allow(connection).to receive(:execute).and_return([])

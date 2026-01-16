@@ -116,7 +116,7 @@ export_start = Time.now
 repo.export_to_package(lur_output,
   name: "Test Model",
   version: "1.0",
-  serialization_format: :marshal
+  serialization_format: :marshal,
 )
 export_time = Time.now - export_start
 puts "Exported in #{export_time.round(2)}s"

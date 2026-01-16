@@ -69,7 +69,7 @@ module Lutaml
         end
 
         # Build the document store
-        def build_document_store
+        def build_document_store # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           documents = []
 
           # Index classes and their attributes
@@ -98,7 +98,7 @@ module Lutaml
         end
 
         # Build search document for a class
-        def build_class_document(klass)
+        def build_class_document(klass) # rubocop:disable Metrics/MethodLength
           {
             id: @id_generator.document_id("class", klass.xmi_id),
             type: "class",
@@ -113,7 +113,7 @@ module Lutaml
         end
 
         # Build search document for an attribute
-        def build_attribute_document(attribute, owner)
+        def build_attribute_document(attribute, owner) # rubocop:disable Metrics/MethodLength
           {
             id: @id_generator.document_id("attribute",
                                           "#{owner.xmi_id}::#{attribute.name}"),
@@ -132,10 +132,10 @@ module Lutaml
         end
 
         # Build search document for an association
-        def build_association_document(association)
+        def build_association_document(association) # rubocop:disable Metrics/MethodLength
           # Association model has simple string attributes, not arrays
-          source_name = association.owner_end  # String: class name
-          target_name = association.member_end  # String: class name
+          source_name = association.owner_end # String: class name
+          target_name = association.member_end # String: class name
 
           {
             id: @id_generator.document_id("association", association.xmi_id),
@@ -145,13 +145,14 @@ module Lutaml
             name: association.name || "unnamed",
             qualifiedName: association.name || "unnamed",
             package: "", # Associations are document-level
-            content: build_association_content(association, source_name, target_name),
+            content: build_association_content(association, source_name,
+                                               target_name),
             boost: 0.8,
           }
         end
 
         # Build search document for a package
-        def build_package_document(package)
+        def build_package_document(package) # rubocop:disable Metrics/MethodLength
           {
             id: @id_generator.document_id("package", package.xmi_id),
             type: "package",
@@ -166,15 +167,23 @@ module Lutaml
         end
 
         # Build searchable content for a class
-        def build_class_content(klass)
+        def build_class_content(klass) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
           parts = [
             klass.name,
             qualified_name(klass),
             class_type(klass),
-            (klass.respond_to?(:stereotype) && klass.stereotype ? Array(klass.stereotype).join(" ") : nil),
+            (
+              if klass.respond_to?(:stereotype) && klass.stereotype
+                Array(klass.stereotype).join(" ")
+              end
+            ),
             klass.definition,
             klass.attributes&.map(&:name)&.join(" "),
-            (klass.respond_to?(:operations) ? klass.operations&.map(&:name)&.join(" ") : nil),
+            (
+              if klass.respond_to?(:operations)
+                klass.operations&.map(&:name)&.join(" ")
+              end
+            ),
           ].compact
 
           normalize_content(parts.join(" "))
@@ -188,7 +197,11 @@ module Lutaml
             owner.name,
             qualified_name(owner),
             attribute.definition,
-            (attribute.respond_to?(:stereotype) && attribute.stereotype ? Array(attribute.stereotype).join(" ") : nil),
+            (
+              if attribute.respond_to?(:stereotype) && attribute.stereotype
+                Array(attribute.stereotype).join(" ")
+              end
+            ),
           ].compact
 
           normalize_content(parts.join(" "))
@@ -214,20 +227,26 @@ module Lutaml
             package.name,
             package_path(package),
             package.definition,
-            (package.respond_to?(:stereotype) && package.stereotype ? Array(package.stereotype).join(" ") : nil),
+            (
+              if package.respond_to?(:stereotype) && package.stereotype
+                Array(package.stereotype).join(" ")
+              end
+            ),
           ].compact
 
           normalize_content(parts.join(" "))
         end
 
         # Normalize content for consistent search
-        def normalize_content(text)
+        def normalize_content(text) # rubocop:disable Metrics/MethodLength
           # Convert to lowercase first
           text = text.downcase
 
-          # Split on spaces, colons, and other delimiters to create searchable tokens
+          # Split on spaces, colons, and other delimiters to create
+          # searchable tokens
           # This allows "xs:date" to match "date" and "xs" separately
-          # Also allows "urbanplanning" to match "urban" and "planning" as separate tokens
+          # Also allows "urbanplanning" to match "urban" and "planning" as
+          # separate tokens
           tokens = text.split(/[\s:]+/)
 
           # Also keep the original compound words
@@ -235,7 +254,9 @@ module Lutaml
           all_content = [text] + tokens
 
           # Remove stop words and duplicates
-          all_content = all_content.uniq.reject { |word| STOP_WORDS.include?(word) }
+          all_content = all_content.uniq.reject do |word|
+            STOP_WORDS.include?(word)
+          end
 
           # Join back together with spaces
           all_content.join(" ").gsub(/\s+/, " ").strip
@@ -243,23 +264,21 @@ module Lutaml
 
         # Helper methods
 
-        def
-
- class_type(klass)
+        def class_type(klass)
           klass.class.name.split("::").last
         end
 
-        def qualified_name(klass)
+        def qualified_name(klass) # rubocop:disable Metrics/MethodLength
           path_parts = []
           current = klass
 
           while current
             if current.is_a?(Lutaml::Uml::TopElement)
               path_parts.unshift(current.name)
-              current = current.respond_to?(:namespace) ? current.namespace : nil
+              current = current.namespace if current.respond_to?(:namespace)
             elsif current.is_a?(Lutaml::Uml::Package)
               path_parts.unshift(current.name)
-              current = current.respond_to?(:namespace) ? current.namespace : nil
+              current = current.namespace if current.respond_to?(:namespace)
             else
               break
             end

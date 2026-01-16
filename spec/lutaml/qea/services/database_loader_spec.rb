@@ -30,7 +30,6 @@ RSpec.describe Lutaml::Qea::Services::DatabaseLoader do
     it "sets progress callback" do
       callback_called = false
       loader.on_progress { |_table, _current, _total| callback_called = true }
-
       expect(loader.instance_variable_get(:@progress_callback)).to be_a(Proc)
     end
 
@@ -49,7 +48,7 @@ RSpec.describe Lutaml::Qea::Services::DatabaseLoader do
         "t_operationparams" => Lutaml::Qea::Models::EaOperationParam,
         "t_connector" => Lutaml::Qea::Models::EaConnector,
         "t_package" => Lutaml::Qea::Models::EaPackage,
-        "t_diagram" => Lutaml::Qea::Models::EaDiagram
+        "t_diagram" => Lutaml::Qea::Models::EaDiagram,
       )
     end
   end
@@ -76,12 +75,14 @@ RSpec.describe Lutaml::Qea::Services::DatabaseLoader do
 
       # Insert test data
       db.execute(
-        "INSERT INTO t_object (Object_ID, Name, Object_Type, Package_ID) VALUES (?, ?, ?, ?)",
-        [1, "TestClass", "Class", 10]
+        "INSERT INTO t_object (Object_ID, Name, Object_Type, Package_ID) " \
+        "VALUES (?, ?, ?, ?)",
+        [1, "TestClass", "Class", 10],
       )
       db.execute(
-        "INSERT INTO t_object (Object_ID, Name, Object_Type, Package_ID) VALUES (?, ?, ?, ?)",
-        [2, "TestInterface", "Interface", 10]
+        "INSERT INTO t_object (Object_ID, Name, Object_Type, Package_ID) " \
+        "VALUES (?, ?, ?, ?)",
+        [2, "TestInterface", "Interface", 10],
       )
 
       # Create t_package table
@@ -95,32 +96,99 @@ RSpec.describe Lutaml::Qea::Services::DatabaseLoader do
 
       db.execute(
         "INSERT INTO t_package (Package_ID, Name, Parent_ID) VALUES (?, ?, ?)",
-        [10, "TestPackage", 0]
+        [10, "TestPackage", 0],
       )
 
       # Create other required tables (empty)
-      db.execute("CREATE TABLE t_attribute (ID INTEGER PRIMARY KEY, Name TEXT)")
-      db.execute("CREATE TABLE t_operation (OperationID INTEGER PRIMARY KEY, Name TEXT)")
-      db.execute("CREATE TABLE t_operationparams (OperationID INTEGER, Name TEXT)")
-      db.execute("CREATE TABLE t_connector (Connector_ID INTEGER PRIMARY KEY, Name TEXT)")
-      db.execute("CREATE TABLE t_diagram (Diagram_ID INTEGER PRIMARY KEY, Name TEXT)")
-      db.execute("CREATE TABLE t_objectconstraint (ConstraintID INTEGER, Constraint TEXT)")
-      db.execute("CREATE TABLE t_objectproperties (PropertyID INTEGER, Object_ID INTEGER)")
-      db.execute("CREATE TABLE t_connectortypes (Connector_Type TEXT PRIMARY KEY, Description TEXT)")
-      db.execute("CREATE TABLE t_diagramobjects (Instance_ID INTEGER PRIMARY KEY, Object_ID INTEGER)")
-      db.execute("CREATE TABLE t_diagramlinks (Instance_ID INTEGER PRIMARY KEY, Path TEXT)")
-      db.execute("CREATE TABLE t_diagramtypes (Diagram_Type TEXT PRIMARY KEY, Name TEXT)")
-      db.execute("CREATE TABLE t_taggedvalue (PropertyID INTEGER PRIMARY KEY, TagValue TEXT)")
-      db.execute("CREATE TABLE t_attributetag (PropertyID INTEGER PRIMARY KEY, Property TEXT)")
-      db.execute("CREATE TABLE t_xref (XrefID TEXT PRIMARY KEY, Name TEXT)")
-      db.execute("CREATE TABLE t_stereotypes (Stereotype TEXT)")
-      db.execute("CREATE TABLE t_datatypes (DatatypeID INTEGER PRIMARY KEY, DataType TEXT)")
-      db.execute("CREATE TABLE t_constrainttypes ('Constraint' TEXT PRIMARY KEY, Description TEXT)")
-      db.execute("CREATE TABLE t_objecttypes (Object_Type TEXT PRIMARY KEY, Description TEXT)")
-      db.execute("CREATE TABLE t_statustypes (Status TEXT PRIMARY KEY, Description TEXT)")
-      db.execute("CREATE TABLE t_complexitytypes (Complexity TEXT PRIMARY KEY, NumericWeight INTEGER)")
-      db.execute("CREATE TABLE t_document (DocID TEXT PRIMARY KEY, DocName TEXT)")
-      db.execute("CREATE TABLE t_script (ScriptID INTEGER PRIMARY KEY, ScriptName TEXT)")
+      db.execute(
+        "CREATE TABLE " \
+        "t_attribute (ID INTEGER PRIMARY KEY, Name TEXT)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_operation (OperationID INTEGER PRIMARY KEY, Name TEXT)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_operationparams (OperationID INTEGER, Name TEXT)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_connector (Connector_ID INTEGER PRIMARY KEY, Name TEXT)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_diagram (Diagram_ID INTEGER PRIMARY KEY, Name TEXT)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_objectconstraint (ConstraintID INTEGER, Constraint TEXT)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_objectproperties (PropertyID INTEGER, Object_ID INTEGER)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_connectortypes (Connector_Type TEXT PRIMARY KEY, Description TEXT)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_diagramobjects (Instance_ID INTEGER PRIMARY KEY, Object_ID INTEGER)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_diagramlinks (Instance_ID INTEGER PRIMARY KEY, Path TEXT)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_diagramtypes (Diagram_Type TEXT PRIMARY KEY, Name TEXT)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_taggedvalue (PropertyID INTEGER PRIMARY KEY, TagValue TEXT)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_attributetag (PropertyID INTEGER PRIMARY KEY, Property TEXT)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_xref (XrefID TEXT PRIMARY KEY, Name TEXT)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_stereotypes (Stereotype TEXT)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_datatypes (DatatypeID INTEGER PRIMARY KEY, DataType TEXT)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_constrainttypes ('Constraint' TEXT PRIMARY KEY, Description TEXT)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_objecttypes (Object_Type TEXT PRIMARY KEY, Description TEXT)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_statustypes (Status TEXT PRIMARY KEY, Description TEXT)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_complexitytypes (Complexity TEXT PRIMARY KEY, " \
+        "NumericWeight INTEGER)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_document (DocID TEXT PRIMARY KEY, DocName TEXT)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_script (ScriptID INTEGER PRIMARY KEY, ScriptName TEXT)",
+      )
 
       db.close
     end
@@ -195,9 +263,9 @@ RSpec.describe Lutaml::Qea::Services::DatabaseLoader do
 
       it "raises error for disabled table" do
         # Mock a disabled table in config
-        allow(test_loader.config).to receive(:table_config_for).with("t_object").and_return(
-          double(enabled: false)
-        )
+        allow(test_loader.config)
+          .to receive(:table_config_for).with("t_object")
+          .and_return(double(enabled: false))
 
         expect {
           test_loader.load_table("t_object")
@@ -246,30 +314,103 @@ RSpec.describe Lutaml::Qea::Services::DatabaseLoader do
       db.results_as_hash = true
 
       # Create all required tables
-      db.execute("CREATE TABLE t_object (Object_ID INTEGER PRIMARY KEY, Name TEXT)")
-      db.execute("CREATE TABLE t_attribute (ID INTEGER PRIMARY KEY, Name TEXT)")
-      db.execute("CREATE TABLE t_operation (OperationID INTEGER PRIMARY KEY, Name TEXT)")
-      db.execute("CREATE TABLE t_operationparams (OperationID INTEGER, Name TEXT)")
-      db.execute("CREATE TABLE t_connector (Connector_ID INTEGER PRIMARY KEY, Name TEXT)")
-      db.execute("CREATE TABLE t_package (Package_ID INTEGER PRIMARY KEY, Name TEXT)")
-      db.execute("CREATE TABLE t_diagram (Diagram_ID INTEGER PRIMARY KEY, Name TEXT)")
-      db.execute("CREATE TABLE t_objectconstraint (ConstraintID INTEGER, Constraint TEXT)")
-      db.execute("CREATE TABLE t_objectproperties (PropertyID INTEGER, Object_ID INTEGER)")
-      db.execute("CREATE TABLE t_connectortypes (Connector_Type TEXT PRIMARY KEY, Description TEXT)")
-      db.execute("CREATE TABLE t_diagramobjects (Instance_ID INTEGER PRIMARY KEY, Object_ID INTEGER)")
-      db.execute("CREATE TABLE t_diagramlinks (Instance_ID INTEGER PRIMARY KEY, Path TEXT)")
-      db.execute("CREATE TABLE t_diagramtypes (Diagram_Type TEXT PRIMARY KEY, Name TEXT)")
-      db.execute("CREATE TABLE t_taggedvalue (PropertyID INTEGER PRIMARY KEY, TagValue TEXT)")
-      db.execute("CREATE TABLE t_attributetag (PropertyID INTEGER PRIMARY KEY, Property TEXT)")
-      db.execute("CREATE TABLE t_xref (XrefID TEXT PRIMARY KEY, Name TEXT)")
-      db.execute("CREATE TABLE t_stereotypes (Stereotype TEXT)")
-      db.execute("CREATE TABLE t_datatypes (DatatypeID INTEGER PRIMARY KEY, DataType TEXT)")
-      db.execute("CREATE TABLE t_constrainttypes ('Constraint' TEXT PRIMARY KEY, Description TEXT)")
-      db.execute("CREATE TABLE t_objecttypes (Object_Type TEXT PRIMARY KEY, Description TEXT)")
-      db.execute("CREATE TABLE t_statustypes (Status TEXT PRIMARY KEY, Description TEXT)")
-      db.execute("CREATE TABLE t_complexitytypes (Complexity TEXT PRIMARY KEY, NumericWeight INTEGER)")
-      db.execute("CREATE TABLE t_document (DocID TEXT PRIMARY KEY, DocName TEXT)")
-      db.execute("CREATE TABLE t_script (ScriptID INTEGER PRIMARY KEY, ScriptName TEXT)")
+      db.execute(
+        "CREATE TABLE " \
+        "t_object (Object_ID INTEGER PRIMARY KEY, Name TEXT)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_attribute (ID INTEGER PRIMARY KEY, Name TEXT)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_operation (OperationID INTEGER PRIMARY KEY, Name TEXT)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_operationparams (OperationID INTEGER, Name TEXT)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_connector (Connector_ID INTEGER PRIMARY KEY, Name TEXT)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_package (Package_ID INTEGER PRIMARY KEY, Name TEXT)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_diagram (Diagram_ID INTEGER PRIMARY KEY, Name TEXT)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_objectconstraint (ConstraintID INTEGER, Constraint TEXT)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_objectproperties (PropertyID INTEGER, Object_ID INTEGER)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_connectortypes (Connector_Type TEXT PRIMARY KEY, Description TEXT)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_diagramobjects (Instance_ID INTEGER PRIMARY KEY, Object_ID INTEGER)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_diagramlinks (Instance_ID INTEGER PRIMARY KEY, Path TEXT)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_diagramtypes (Diagram_Type TEXT PRIMARY KEY, Name TEXT)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_taggedvalue (PropertyID INTEGER PRIMARY KEY, TagValue TEXT)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_attributetag (PropertyID INTEGER PRIMARY KEY, Property TEXT)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_xref (XrefID TEXT PRIMARY KEY, Name TEXT)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_stereotypes (Stereotype TEXT)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_datatypes (DatatypeID INTEGER PRIMARY KEY, DataType TEXT)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_constrainttypes ('Constraint' TEXT PRIMARY KEY, Description TEXT)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_objecttypes (Object_Type TEXT PRIMARY KEY, Description TEXT)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_statustypes (Status TEXT PRIMARY KEY, Description TEXT)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_complexitytypes (Complexity TEXT PRIMARY KEY, " \
+        "NumericWeight INTEGER)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_document (DocID TEXT PRIMARY KEY, DocName TEXT)",
+      )
+      db.execute(
+        "CREATE TABLE " \
+        "t_script (ScriptID INTEGER PRIMARY KEY, ScriptName TEXT)",
+      )
 
       db.execute("INSERT INTO t_object (Object_ID, Name) VALUES (1, 'Test')")
       db.close
@@ -277,7 +418,8 @@ RSpec.describe Lutaml::Qea::Services::DatabaseLoader do
       loader = described_class.new(temp_db.path)
 
       # Mock from_db_row to fail for one call
-      allow(Lutaml::Qea::Models::EaObject).to receive(:from_db_row).and_raise(StandardError.new("Test error"))
+      allow(Lutaml::Qea::Models::EaObject)
+        .to receive(:from_db_row).and_raise(StandardError.new("Test error"))
 
       # Should not raise error, just warn
       expect { loader.load }.not_to raise_error

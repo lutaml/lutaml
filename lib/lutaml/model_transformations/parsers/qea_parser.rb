@@ -6,7 +6,8 @@ require_relative "../../qea"
 module Lutaml
   module ModelTransformations
     module Parsers
-      # QEA Parser implements the BaseParser interface for Enterprise Architect database files.
+      # QEA Parser implements the BaseParser interface for Enterprise Architect
+      # database files.
       #
       # This parser wraps the existing Lutaml::Qea functionality and adapts it
       # to the new unified transformation architecture. It provides enhanced
@@ -69,7 +70,7 @@ module Lutaml
         #
         # @param file_path [String] Path to the file being parsed
         # @return [void]
-        def before_parse(file_path)
+        def before_parse(file_path) # rubocop:disable Metrics/MethodLength
           add_info("Starting QEA parsing for: #{file_path}")
 
           # Check file size and provide estimates
@@ -77,13 +78,15 @@ module Lutaml
           add_info("QEA file size: #{format_file_size(file_size)}")
 
           if file_size > 500 * 1024 * 1024 # 500MB
-            add_warning("Very large QEA file detected, parsing may take significant time")
+            add_warning("Very large QEA file detected, " \
+                        "parsing may take significant time")
           end
 
           # Quick database info check
           begin
             quick_stats = get_quick_database_stats(file_path)
-            add_info("Database contains approximately: #{format_database_stats(quick_stats)}")
+            add_info("Database contains approximately: " \
+                     "#{format_database_stats(quick_stats)}")
           rescue StandardError => e
             add_warning("Could not get quick database stats: #{e.message}")
           end
@@ -99,7 +102,9 @@ module Lutaml
           add_qea_metadata(document, file_path)
 
           # Validate QEA-specific aspects
-          validate_qea_transformation(document) if @options[:validate_transformation]
+          if @options[:validate_transformation]
+            validate_qea_transformation(document)
+          end
 
           # Add comprehensive statistics
           add_transformation_statistics(document)
@@ -126,14 +131,15 @@ module Lutaml
         #
         # @param file_path [String] Path to validate
         # @raise [ParseError] if file is not valid QEA
-        def validate_qea_format!(file_path)
+        def validate_qea_format!(file_path) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           # Check if it's a SQLite database (QEA files are SQLite)
           File.open(file_path, "rb") do |file|
             header = file.read(16)
 
             unless header == "SQLite format 3\0"
               add_error("File does not appear to be a SQLite database")
-              raise Parsers::ParseError.new("Invalid QEA format - not a SQLite database")
+              raise Parsers::ParseError.new("Invalid QEA format - " \
+                                            "not a SQLite database")
             end
           end
 
@@ -144,12 +150,14 @@ module Lutaml
               required_tables = %w[t_object t_package t_connector t_attribute]
               missing_tables = required_tables.reject do |table|
                 db.execute(
-                  "SELECT name FROM sqlite_master WHERE type='table' AND name=?", table
+                  "SELECT name FROM sqlite_master " \
+                  "WHERE type='table' AND name=?", table
                 ).any?
               end
 
               if missing_tables.any?
-                add_warning("Missing expected EA tables: #{missing_tables.join(', ')}")
+                add_warning("Missing expected EA tables: " \
+                            "#{missing_tables.join(', ')}")
               end
             end
           rescue StandardError => e
@@ -163,7 +171,7 @@ module Lutaml
         #
         # @param file_path [String] Path to QEA file
         # @return [Lutaml::Qea::Database] Loaded database
-        def load_qea_database(file_path)
+        def load_qea_database(file_path) # rubocop:disable Metrics/MethodLength
           progress_callback = nil
 
           if @options[:load_progress_callback]
@@ -188,11 +196,13 @@ module Lutaml
         def create_progress_callback
           proc do |table_name, current, total|
             percentage = (current.to_f / total * 100).round(1)
-            add_info("Loading #{table_name}: #{current}/#{total} (#{percentage}%)")
+            add_info("Loading #{table_name}: #{current}/#{total} " \
+                     "(#{percentage}%)")
 
             # Check if we should fail fast on too many errors
             if should_fail_fast? && has_errors?
-              raise Parsers::ParseError.new("Failing fast due to errors during loading")
+              raise Parsers::ParseError.new("Failing fast due to errors " \
+                                            "during loading")
             end
           end
         end
@@ -202,7 +212,7 @@ module Lutaml
         # @param database [Lutaml::Qea::Database] QEA database
         # @param file_path [String] Source file path
         # @return [Lutaml::Uml::Document] UML document
-        def transform_qea_to_uml(database, file_path)
+        def transform_qea_to_uml(database, file_path) # rubocop:disable Metrics/MethodLength
           # Prepare transformation options
           transform_options = prepare_transformation_options(file_path)
 
@@ -243,7 +253,8 @@ module Lutaml
 
         # Apply custom transformers to factory
         #
-        # @param factory [Lutaml::Qea::Factory::EaToUmlFactory] Factory to enhance
+        # @param factory [Lutaml::Qea::Factory::EaToUmlFactory]
+        # Factory to enhance
         # @return [void]
         def apply_custom_transformers(_factory)
           # This is a placeholder for future custom transformer support
@@ -277,7 +288,7 @@ module Lutaml
         # @param document [Lutaml::Uml::Document] Document to enhance
         # @param file_path [String] Source file path
         # @return [void]
-        def add_qea_metadata(document, file_path)
+        def add_qea_metadata(document, file_path) # rubocop:disable Metrics/MethodLength
           metadata = {
             source_file: file_path,
             source_format: "Enterprise Architect Database",
@@ -314,21 +325,23 @@ module Lutaml
         #
         # @param document [Lutaml::Uml::Document] Document to validate
         # @return [void]
-        def validate_qea_transformation(document)
+        def validate_qea_transformation(document) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           # Compare document stats with database stats
           if @database_stats
             doc_packages = document.packages&.size || 0
             db_packages = @database_stats["packages"] || 0
 
             if doc_packages < db_packages
-              add_warning("Document has fewer packages (#{doc_packages}) than database (#{db_packages})")
+              add_warning("Document has fewer packages (#{doc_packages}) " \
+                          "than database (#{db_packages})")
             end
 
             doc_classes = document.classes&.size || 0
             db_objects = @database_stats["objects"] || 0
 
             if doc_classes < db_objects * 0.8 # Allow some variance
-              add_warning("Document classes (#{doc_classes}) significantly fewer than database objects (#{db_objects})")
+              add_warning("Document classes (#{doc_classes}) significantly " \
+                          "fewer than database objects (#{db_objects})")
             end
           end
         end
@@ -337,7 +350,7 @@ module Lutaml
         #
         # @param document [Lutaml::Uml::Document] Document to analyze
         # @return [void]
-        def add_transformation_statistics(document)
+        def add_transformation_statistics(document) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           doc_stats = {
             packages: document.packages&.size || 0,
             classes: document.classes&.size || 0,
@@ -349,7 +362,8 @@ module Lutaml
 
           comparison = compare_stats_with_database(doc_stats)
 
-          add_info("QEA transformation completed: #{format_statistics(doc_stats)}")
+          add_info("QEA transformation completed: " \
+                   "#{format_statistics(doc_stats)}")
           if comparison.any?
             add_info("Database comparison: #{comparison.join(', ')}")
           end
@@ -359,7 +373,7 @@ module Lutaml
         #
         # @param doc_stats [Hash] Document statistics
         # @return [Array<String>] Comparison notes
-        def compare_stats_with_database(doc_stats)
+        def compare_stats_with_database(doc_stats) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           return [] unless @database_stats
 
           comparisons = []

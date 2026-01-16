@@ -15,7 +15,7 @@ module Lutaml
 
         private
 
-        def validate_package_references
+        def validate_package_references # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           objects.each do |obj|
             next unless obj.package_id
 
@@ -35,7 +35,7 @@ module Lutaml
           end
         end
 
-        def validate_duplicate_names
+        def validate_duplicate_names # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           objects_by_package = objects.group_by(&:package_id)
 
           objects_by_package.each do |package_id, package_objects|
@@ -46,14 +46,19 @@ module Lutaml
               dup_objects = package_objects.select { |o| o.name == dup_name }
               dup_objects.each do |obj|
                 class_path = resolve_class_path(obj.ea_object_id, obj.name)
-                package_path = package_id ? resolve_package_path(package_id) : "Root"
+                package_path = if package_id
+                                 resolve_package_path(package_id)
+                               else
+                                 "Root"
+                               end
                 result.add_warning(
                   category: :duplicate,
                   entity_type: :class,
                   entity_id: obj.ea_object_id.to_s,
                   entity_name: obj.name,
                   field: "name",
-                  message: "Duplicate class name '#{dup_name}' in #{package_path}",
+                  message: "Duplicate class name '#{dup_name}' " \
+                           "in #{package_path}",
                   location: class_path,
                 )
               end
@@ -61,7 +66,7 @@ module Lutaml
           end
         end
 
-        def validate_generalization_parents
+        def validate_generalization_parents # rubocop:disable Metrics/AbcSize,Metrics/MethodLength,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
           connectors.select(&:generalization?).each do |gen|
             parent_id = gen.end_object_id
 

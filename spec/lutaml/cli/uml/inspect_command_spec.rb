@@ -25,7 +25,9 @@ RSpec.describe Lutaml::Cli::Uml::InspectCommand do
       let(:options) { { format: "text" } }
 
       it "displays package details" do
-        expect { command.run(test_lur, "package:ModelRoot") }.not_to output(/ERROR/).to_stdout
+        expect do
+          command.run(test_lur, "package:ModelRoot")
+        end.not_to output(/ERROR/).to_stdout
       end
     end
 
@@ -33,7 +35,9 @@ RSpec.describe Lutaml::Cli::Uml::InspectCommand do
       let(:options) { { format: "json" } }
 
       it "outputs JSON format" do
-        expect { command.run(test_lur, "package:ModelRoot") }.to output(/{/).to_stdout
+        expect do
+          command.run(test_lur, "package:ModelRoot")
+        end.to output(/{/).to_stdout
       end
     end
 
@@ -41,7 +45,10 @@ RSpec.describe Lutaml::Cli::Uml::InspectCommand do
       let(:options) { {} }
 
       it "handles non-existent element" do
-        expect { command.run(test_lur, "class:NonExistent") }.to raise_error(/Element not found/)
+        expect do
+          command.run(test_lur,
+                      "class:NonExistent")
+        end.to raise_error(/Element not found/)
       end
     end
   end

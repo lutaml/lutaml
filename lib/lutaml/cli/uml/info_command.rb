@@ -27,7 +27,7 @@ module Lutaml
                                      desc: "Output format (text|yaml|json)"
         end
 
-        def run(lur_path)
+        def run(lur_path) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           unless File.exist?(lur_path)
             puts OutputFormatter.error("Package file not found: #{lur_path}")
             raise Thor::Error, "Package file not found: #{lur_path}"
@@ -56,7 +56,7 @@ module Lutaml
               metadata = YAML.safe_load(
                 metadata_entry.get_input_stream.read,
                 permitted_classes: permitted_classes,
-                aliases: true
+                aliases: true,
               )
 
               if options[:format] == "text"
@@ -68,14 +68,15 @@ module Lutaml
           rescue Thor::Error
             raise
           rescue StandardError => e
-            puts OutputFormatter.error("Failed to read package info: #{e.message}")
+            puts OutputFormatter.error("Failed to read package info: " \
+                                       "#{e.message}")
             raise Thor::Error, "Failed to read package info: #{e.message}"
           end
         end
 
         private
 
-        def display_package_info(metadata)
+        def display_package_info(metadata) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           puts OutputFormatter.colorize("Package Information", :cyan)
           puts "=" * 50
           puts ""

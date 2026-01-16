@@ -6,10 +6,13 @@ require_relative "../../parser"
 module Lutaml
   module ModelTransformations
     module Parsers
-      # XMI Parser implements the BaseParser interface for XML Metadata Interchange files.
+      # XMI Parser implements the BaseParser interface for XML Metadata
+      # Interchange files.
       #
-      # This parser wraps the existing Lutaml::Parser functionality and adapts it
-      # to the new unified transformation architecture. It follows the Adapter pattern
+      # This parser wraps the existing Lutaml::Parser functionality and adapts
+      # it
+      # to the new unified transformation architecture. It follows the Adapter
+      # pattern
       # to integrate legacy XMI parsing with the new system.
       class XmiParser < BaseParser
         # Get parser format name
@@ -68,7 +71,9 @@ module Lutaml
           # Check file size and warn if very large
           file_size = File.size(file_path)
           if file_size > 100 * 1024 * 1024 # 100MB
-            add_warning("Large XMI file detected (#{format_file_size(file_size)}), parsing may take time")
+            add_warning("Large XMI file detected " \
+                        "(#{format_file_size(file_size)}), " \
+                        "parsing may take time")
           end
         end
 
@@ -108,7 +113,7 @@ module Lutaml
         #
         # @param file_path [String] Path to validate
         # @raise [ParseError] if file is not valid XMI
-        def validate_xmi_format!(file_path)
+        def validate_xmi_format!(file_path) # rubocop:disable Metrics/MethodLength
           # Quick validation by reading first few lines
           File.open(file_path, "r") do |file|
             header = file.read(1024)
@@ -120,7 +125,8 @@ module Lutaml
 
             # Check for XMI-specific elements
             unless header.include?("xmi:") || header.include?("uml:")
-              add_warning("File may not be a valid XMI file (no XMI namespace found)")
+              add_warning("File may not be a valid XMI file " \
+                          "(no XMI namespace found)")
             end
           end
         end
@@ -150,7 +156,7 @@ module Lutaml
         # @param document [Lutaml::Uml::Document] Document to enhance
         # @param file_path [String] Source file path
         # @return [void]
-        def add_parsing_metadata(document, file_path)
+        def add_parsing_metadata(document, file_path) # rubocop:disable Metrics/MethodLength
           metadata = {
             source_file: file_path,
             parsed_at: Time.now,
@@ -189,7 +195,7 @@ module Lutaml
         #
         # @param document [Lutaml::Uml::Document] Document to check
         # @return [Array<String>] List of unresolved reference IDs
-        def find_unresolved_references(document)
+        def find_unresolved_references(document) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/MethodLength
           unresolved = []
 
           # This is a simplified implementation
@@ -230,7 +236,7 @@ module Lutaml
         #
         # @param document [Lutaml::Uml::Document] Document to analyze
         # @return [void]
-        def add_parsing_statistics(document)
+        def add_parsing_statistics(document) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
           stats = {
             packages: document.packages&.size || 0,
             classes: document.classes&.size || 0,

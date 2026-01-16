@@ -12,14 +12,15 @@ module Lutaml
         # Transform EA object to UML instance
         # @param ea_object [EaObject] EA object model
         # @return [Lutaml::Uml::Instance] UML instance
-        def transform(ea_object)
+        def transform(ea_object) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           return nil if ea_object.nil?
           return nil unless ea_object.instance?
 
           Lutaml::Uml::Instance.new.tap do |instance|
             # Map basic properties
             instance.name = ea_object.name
-            instance.xmi_id = normalize_guid_to_xmi_format(ea_object.ea_guid, "EAID")
+            instance.xmi_id = normalize_guid_to_xmi_format(ea_object.ea_guid,
+                                                           "EAID")
 
             # Map classifier (the class this is an instance of)
             if ea_object.classifier && ea_object.classifier > 0
@@ -28,7 +29,9 @@ module Lutaml
                 instance.classifier = classifier_obj.name
               end
             elsif ea_object.classifier_guid && !ea_object.classifier_guid.empty?
-              classifier_obj = find_classifier_by_guid(ea_object.classifier_guid)
+              classifier_obj = find_classifier_by_guid(
+                ea_object.classifier_guid,
+              )
               if classifier_obj
                 instance.classifier = classifier_obj.name
               end

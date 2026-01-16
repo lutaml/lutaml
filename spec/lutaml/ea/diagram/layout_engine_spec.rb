@@ -9,7 +9,7 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
     described_class.new(
       spacing: 100,
       element_width: 200,
-      element_height: 150
+      element_height: 150,
     )
   end
 
@@ -37,17 +37,17 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
           left: 100,
           top: 50,
           right: 300,
-          bottom: 150
+          bottom: 150,
         )
 
         result = engine.convert_ea_coordinates(diagram_object)
 
         expect(result).to eq({
-          x: 100,
-          y: 50,
-          width: 200,
-          height: 100
-        })
+                               x: 100,
+                               y: 50,
+                               width: 200,
+                               height: 100,
+                             })
       end
     end
 
@@ -57,17 +57,17 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
           left: -100,
           top: -50,
           right: 100,
-          bottom: 50
+          bottom: 50,
         )
 
         result = engine.convert_ea_coordinates(diagram_object)
 
         expect(result).to eq({
-          x: -100,
-          y: -50,
-          width: 200,
-          height: 100
-        })
+                               x: -100,
+                               y: -50,
+                               width: 200,
+                               height: 100,
+                             })
       end
     end
 
@@ -77,17 +77,17 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
           left: 0,
           top: 0,
           right: 0,
-          bottom: 0
+          bottom: 0,
         )
 
         result = engine.convert_ea_coordinates(diagram_object)
 
         expect(result).to eq({
-          x: 0,
-          y: 0,
-          width: 0,
-          height: 0
-        })
+                               x: 0,
+                               y: 0,
+                               width: 0,
+                               height: 0,
+                             })
       end
     end
 
@@ -97,17 +97,17 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
           left: nil,
           top: nil,
           right: 100,
-          bottom: 50
+          bottom: 50,
         )
 
         result = engine.convert_ea_coordinates(diagram_object)
 
         expect(result).to eq({
-          x: 0,
-          y: 0,
-          width: 100,
-          height: 50
-        })
+                               x: 0,
+                               y: 0,
+                               width: 100,
+                               height: 50,
+                             })
       end
     end
 
@@ -117,7 +117,7 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
           left: 100,
           top: 50,
           right: 50,
-          bottom: 150
+          bottom: 150,
         )
 
         result = engine.convert_ea_coordinates(diagram_object)
@@ -130,7 +130,7 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
           left: 100,
           top: 150,
           right: 300,
-          bottom: 50
+          bottom: 50,
         )
 
         result = engine.convert_ea_coordinates(diagram_object)
@@ -145,7 +145,7 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
       it "returns elements unchanged" do
         elements = [
           { x: 100, y: 50, width: 200, height: 100 },
-          { x: 400, y: 200, width: 150, height: 80 }
+          { x: 400, y: 200, width: 150, height: 80 },
         ]
 
         result = engine.normalize_coordinates(elements)
@@ -158,7 +158,7 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
       it "shifts all elements to make x coordinates positive" do
         elements = [
           { x: -100, y: 50, width: 200, height: 100 },
-          { x: 0, y: 200, width: 150, height: 80 }
+          { x: 0, y: 200, width: 150, height: 80 },
         ]
 
         result = engine.normalize_coordinates(elements)
@@ -174,7 +174,7 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
       it "shifts all elements to make y coordinates positive" do
         elements = [
           { x: 100, y: -50, width: 200, height: 100 },
-          { x: 400, y: 100, width: 150, height: 80 }
+          { x: 400, y: 100, width: 150, height: 80 },
         ]
 
         result = engine.normalize_coordinates(elements)
@@ -190,7 +190,7 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
       it "shifts all elements to make both coordinates positive" do
         elements = [
           { x: -100, y: -50, width: 200, height: 100 },
-          { x: 50, y: 30, width: 150, height: 80 }
+          { x: 50, y: 30, width: 150, height: 80 },
         ]
 
         result = engine.normalize_coordinates(elements)
@@ -203,7 +203,7 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
     context "with negative width/height" do
       it "converts negative width to absolute value during normalization" do
         elements = [
-          { x: -10, y: 50, width: -200, height: 100 }
+          { x: -10, y: 50, width: -200, height: 100 },
         ]
 
         result = engine.normalize_coordinates(elements)
@@ -213,7 +213,7 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
 
       it "converts negative height to absolute value during normalization" do
         elements = [
-          { x: 100, y: -10, width: 200, height: -100 }
+          { x: 100, y: -10, width: 200, height: -100 },
         ]
 
         result = engine.normalize_coordinates(elements)
@@ -223,7 +223,7 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
 
       it "converts nil width/height to zero during normalization" do
         elements = [
-          { x: -10, y: 50, width: nil, height: nil }
+          { x: -10, y: 50, width: nil, height: nil },
         ]
 
         result = engine.normalize_coordinates(elements)
@@ -242,12 +242,13 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
     context "with missing x/y values" do
       it "treats missing values as zero during normalization" do
         elements = [
-          { width: 200, height: 100 }
+          { width: 200, height: 100 },
         ]
 
         result = engine.normalize_coordinates(elements)
 
-        # When x/y are missing, they're treated as 0, so no negative coords to normalize
+        # When x/y are missing, they're treated as 0, so no negative coords to
+        # normalize
         # The method returns elements unchanged unless there are negative coords
         expect(result[0][:x]).to be_nil
         expect(result[0][:y]).to be_nil
@@ -256,7 +257,7 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
       it "normalizes when one element has negative coords" do
         elements = [
           { width: 200, height: 100 },
-          { x: -50, y: 10, width: 150, height: 80 }
+          { x: -50, y: 10, width: 150, height: 80 },
         ]
 
         result = engine.normalize_coordinates(elements)
@@ -278,11 +279,11 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
         result = engine.calculate_bounds(diagram_data)
 
         expect(result).to eq({
-          x: 0,
-          y: 0,
-          width: 400,
-          height: 300
-        })
+                               x: 0,
+                               y: 0,
+                               width: 400,
+                               height: 300,
+                             })
       end
     end
 
@@ -290,9 +291,9 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
       it "calculates bounds including padding" do
         diagram_data = {
           elements: [
-            { id: "1", x: 100, y: 50, width: 200, height: 100 }
+            { id: "1", x: 100, y: 50, width: 200, height: 100 },
           ],
-          connectors: []
+          connectors: [],
         }
 
         result = engine.calculate_bounds(diagram_data)
@@ -310,9 +311,9 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
         diagram_data = {
           elements: [
             { id: "1", x: 100, y: 50, width: 200, height: 100 },
-            { id: "2", x: 400, y: 200, width: 150, height: 80 }
+            { id: "2", x: 400, y: 200, width: 150, height: 80 },
           ],
-          connectors: []
+          connectors: [],
         }
 
         result = engine.calculate_bounds(diagram_data)
@@ -337,9 +338,9 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
               id: "c1",
               geometry: "SX=50;SY=25;EX=-30;EY=20;EDGE=1;",
               source_element: source_element,
-              target_element: target_element
-            }
-          ]
+              target_element: target_element,
+            },
+          ],
         }
 
         result = engine.calculate_bounds(diagram_data)
@@ -357,11 +358,11 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
       it "handles connectors without geometry gracefully" do
         diagram_data = {
           elements: [
-            { id: "1", x: 100, y: 50, width: 200, height: 100 }
+            { id: "1", x: 100, y: 50, width: 200, height: 100 },
           ],
           connectors: [
-            { id: "c1", geometry: nil }
-          ]
+            { id: "c1", geometry: nil },
+          ],
         }
 
         expect { engine.calculate_bounds(diagram_data) }.not_to raise_error
@@ -373,9 +374,9 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
         diagram_data = {
           elements: [
             { id: "1", x: -100, y: -50, width: 200, height: 100 },
-            { id: "2", x: 50, y: 30, width: 150, height: 80 }
+            { id: "2", x: 50, y: 30, width: 150, height: 80 },
           ],
-          connectors: []
+          connectors: [],
         }
 
         result = engine.calculate_bounds(diagram_data)
@@ -391,9 +392,9 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
       it "uses 5% padding for large diagrams" do
         diagram_data = {
           elements: [
-            { id: "1", x: 0, y: 0, width: 1000, height: 800 }
+            { id: "1", x: 0, y: 0, width: 1000, height: 800 },
           ],
-          connectors: []
+          connectors: [],
         }
 
         result = engine.calculate_bounds(diagram_data)
@@ -406,9 +407,9 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
       it "uses minimum 20px padding for small diagrams" do
         diagram_data = {
           elements: [
-            { id: "1", x: 0, y: 0, width: 100, height: 80 }
+            { id: "1", x: 0, y: 0, width: 100, height: 80 },
           ],
-          connectors: []
+          connectors: [],
         }
 
         result = engine.calculate_bounds(diagram_data)
@@ -425,7 +426,7 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
       it "returns elements unchanged" do
         elements = [
           { id: "1", x: 100, y: 50 },
-          { id: "2", x: 300, y: 150 }
+          { id: "2", x: 300, y: 150 },
         ]
 
         result = engine.apply_layout(elements, [])
@@ -438,7 +439,7 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
       it "calculates positions for elements without x/y" do
         elements = [
           { id: "1", x: 100, y: 50 },
-          { id: "2" } # No position
+          { id: "2" }, # No position
         ]
 
         result = engine.apply_layout(elements, [])
@@ -455,7 +456,7 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
           { id: "1" },
           { id: "2" },
           { id: "3" },
-          { id: "4" }
+          { id: "4" },
         ]
 
         result = engine.apply_layout(elements, [])
@@ -591,7 +592,7 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
 
       it "returns nil when no valid connectors" do
         connectors = [
-          { id: "c1", geometry: "SX=0;SY=0;EX=0;EY=0;" }
+          { id: "c1", geometry: "SX=0;SY=0;EX=0;EY=0;" },
           # Missing source_element and target_element
         ]
         result = engine.send(:calculate_connector_bounds, connectors, [])
@@ -607,8 +608,8 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
             id: "c1",
             geometry: "SX=10;SY=5;EX=-10;EY=-5;",
             source_element: source,
-            target_element: target
-          }
+            target_element: target,
+          },
         ]
 
         result = engine.send(:calculate_connector_bounds, connectors, [])

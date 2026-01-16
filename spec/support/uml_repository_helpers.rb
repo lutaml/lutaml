@@ -10,7 +10,7 @@ module UmlRepositoryHelpers
     Lutaml::UmlRepository::Repository.new(document: document)
   end
 
-  def create_simple_test_document
+  def create_simple_test_document # rubocop:disable Metrics/AbcSize
     doc = Lutaml::Uml::Document.new
     doc.name = "TestModel"
 

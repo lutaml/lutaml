@@ -38,11 +38,13 @@ module Lutaml
         end
 
         def source
-          ::Lutaml::Xmi::LiquidDrops::SourceTargetDrop.new(@model.source, @options)
+          ::Lutaml::Xmi::LiquidDrops::SourceTargetDrop.new(@model.source,
+                                                           @options)
         end
 
         def target
-          ::Lutaml::Xmi::LiquidDrops::SourceTargetDrop.new(@model.target, @options)
+          ::Lutaml::Xmi::LiquidDrops::SourceTargetDrop.new(@model.target,
+                                                           @options)
         end
 
         def recognized?

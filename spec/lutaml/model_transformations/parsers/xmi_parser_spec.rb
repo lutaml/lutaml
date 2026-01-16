@@ -1,14 +1,17 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require_relative "../../../../lib/lutaml/model_transformations/parsers/xmi_parser"
+require_relative "../../../../lib/lutaml/model_transformations/parsers/" \
+                 "xmi_parser"
 require_relative "../../../../lib/lutaml/model_transformations/configuration"
 require "tempfile"
 
 RSpec.describe Lutaml::ModelTransformations::Parsers::XmiParser do
   let(:configuration) { Lutaml::ModelTransformations::Configuration.new }
   let(:options) { {} }
-  let(:parser) { described_class.new(configuration: configuration, options: options) }
+  let(:parser) do
+    described_class.new(configuration: configuration, options: options)
+  end
 
   describe "#format_name" do
     it "returns XMI format name" do
@@ -326,7 +329,8 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::XmiParser do
       configuration.transformation_options.preserve_ids = true
 
       # Parser should have access to these options through configuration
-      expect(parser.configuration.transformation_options.preserve_ids).to be true
+      expect(parser.configuration.transformation_options.preserve_ids)
+        .to be true
     end
   end
 
@@ -335,8 +339,8 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::XmiParser do
       File.read(
         File.join(
           __dir__,
-          "../../../../examples/xmi/20251010_current_plateau_v5.1.xmi"
-        )
+          "../../../../examples/xmi/20251010_current_plateau_v5.1.xmi",
+        ),
       )
     end
 
@@ -358,7 +362,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::XmiParser do
     xit "respects memory limits from options" do
       parser_with_limits = described_class.new(
         configuration: configuration,
-        options: { memory_limit: 1 } # Very low limit
+        options: { memory_limit: 1 }, # Very low limit
       )
 
       # Should still parse but may take longer or use different strategy

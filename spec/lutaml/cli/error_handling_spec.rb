@@ -71,7 +71,8 @@ RSpec.describe "CLI Error Handling and Edge Cases (via UmlCommands)" do
     it "handles very large result sets" do
       # Search for something that might return many results
       expect {
-        Lutaml::Cli::UmlCommands.start(["search", test_lur, "a", "--limit", "10000"])
+        Lutaml::Cli::UmlCommands.start(["search", test_lur, "a", "--limit",
+"10000"])
       }.not_to output(/ERROR/).to_stdout
     end
   end
@@ -79,7 +80,8 @@ RSpec.describe "CLI Error Handling and Edge Cases (via UmlCommands)" do
   describe "inspect command edge cases" do
     it "handles non-existent elements" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["inspect", test_lur, "class:NonExistentClass"])
+        Lutaml::Cli::UmlCommands.start(["inspect", test_lur,
+"class:NonExistentClass"])
       }.to output(/Failed to load/).to_stdout
     end
 
@@ -120,7 +122,7 @@ RSpec.describe "CLI Error Handling and Edge Cases (via UmlCommands)" do
                                         "--format", "json",
                                         "-o", output_file])
         }.to output(/Exported to|Failed to load|Export failed/).to_stdout
-      rescue Thor::Error => e
+      rescue Thor::Error
         # If error is raised, the file should not exist
         expect(File.exist?(output_file)).to be false
       end
@@ -174,7 +176,8 @@ RSpec.describe "CLI Error Handling and Edge Cases (via UmlCommands)" do
 
     it "shows warning when no results found" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["find", test_lur, "--stereotype", "NonExistent"])
+        Lutaml::Cli::UmlCommands.start(["find", test_lur, "--stereotype",
+"NonExistent"])
       }.not_to raise_error
     end
   end
@@ -198,7 +201,8 @@ RSpec.describe "CLI Error Handling and Edge Cases (via UmlCommands)" do
   describe "ls command edge cases" do
     it "handles unknown element type" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["ls", test_lur, "--type", "invalid_type"])
+        Lutaml::Cli::UmlCommands.start(["ls", test_lur, "--type",
+"invalid_type"])
       }.to output(/Invalid element type|Failed to load/).to_stdout
     end
 
@@ -242,7 +246,7 @@ RSpec.describe "CLI Error Handling and Edge Cases (via UmlCommands)" do
       }.not_to output(/ERROR/).to_stdout
 
       duration = Time.now - start_time
-      expect(duration).to be < 30.0  # Should complete within 30 seconds
+      expect(duration).to be < 30.0 # Should complete within 30 seconds
     end
   end
 

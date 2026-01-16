@@ -10,7 +10,7 @@ module Lutaml
         class PackageRenderer < BaseRenderer
           protected
 
-          def render_shape(style)
+          def render_shape(style) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity
             x = element[:x] || 0
             y = element[:y] || 0
             width = element[:width] || 120
@@ -37,16 +37,16 @@ module Lutaml
             SVG
           end
 
-          def render_label(style)
+          def render_label(style) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity
             x = element[:x] || 0
             y = element[:y] || 0
-            width = element[:width] || 120
-            height = element[:height] || 80
+            element[:width] || 120
+            element[:height] || 80
 
             # Package name positioned in the tab area
             tab_height = 20
-            text_x = x + 30  # Center in the tab
-            text_y = y + tab_height / 2 + 5
+            text_x = x + 30 # Center in the tab
+            text_y = y + (tab_height / 2) + 5
 
             <<~SVG
               <text x="#{text_x}"

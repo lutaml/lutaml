@@ -35,7 +35,7 @@ module Lutaml
         #
         # @return [Array<Lutaml::Uml::Association>] Array of all associations
         def find_class_by_id(class_id)
-          indexes[:qualified_names].find do |qualified_name, entity|
+          indexes[:qualified_names].find do |_qualified_name, entity|
             entity.is_a?(Lutaml::Uml::Class) && entity.xmi_id == class_id
           end
         end

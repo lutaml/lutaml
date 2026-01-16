@@ -16,7 +16,8 @@ RSpec.describe "Object Properties Support" do
           "Object_ID" => 684,
           "Property" => "isCollection",
           "Value" => "false",
-          "Notes" => "Values: true,false\nDefault: false\nDescription: Identifies the class as a collection",
+          "Notes" => "Values: true,false\nDefault: false\nDescription: " \
+                     "Identifies the class as a collection",
           "ea_guid" => "{26B33348-88EC-9d88-8810-4D66A3769CC7}"
         }
 
@@ -101,7 +102,7 @@ RSpec.describe "Object Properties Support" do
           object_id: 684,
           property: "isCollection",
           value: "false",
-          notes: "Description: Identifies the class as a collection"
+          notes: "Description: Identifies the class as a collection",
         )
 
         uml_tag = transformer.transform(ea_prop)
@@ -122,7 +123,7 @@ RSpec.describe "Object Properties Support" do
           property_id: 1,
           object_id: 684,
           property: nil,
-          value: "false"
+          value: "false",
         )
 
         uml_tag = transformer.transform(ea_prop)

@@ -62,7 +62,7 @@ module Lutaml
           # @param actual [Object] The actual value from object
           # @param expected [Object] The expected value
           # @return [Boolean] true if values match
-          def compare_values(actual, expected)
+          def compare_values(actual, expected) # rubocop:disable Metrics/MethodLength
             case expected
             when Regexp
               expected.match?(actual.to_s)

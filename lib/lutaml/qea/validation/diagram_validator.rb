@@ -15,7 +15,7 @@ module Lutaml
 
         private
 
-        def validate_package_references
+        def validate_package_references # rubocop:disable Metrics/MethodLength
           diagrams.each do |diagram|
             next unless diagram.package_id
 
@@ -33,7 +33,7 @@ module Lutaml
           end
         end
 
-        def validate_diagram_objects
+        def validate_diagram_objects # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           diagram_objects.each do |diag_obj|
             unless object_exists?(diag_obj.ea_object_id)
               diagram = diagrams.find do |d|
@@ -53,7 +53,7 @@ module Lutaml
           end
         end
 
-        def validate_diagram_links
+        def validate_diagram_links # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           diagram_links.each do |diag_link|
             unless connector_exists?(diag_link.connectorid)
               diagram = diagrams.find do |d|

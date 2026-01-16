@@ -91,7 +91,7 @@ module Lutaml
         # Extract ea_notes if present in TagValue
         #
         # @return [String, nil] Extracted notes
-        def parsed_notes
+        def parsed_notes # rubocop:disable Metrics/CyclomaticComplexity
           return notes if notes && !notes.empty?
           return nil unless tag_value&.include?("$ea_notes=")
 

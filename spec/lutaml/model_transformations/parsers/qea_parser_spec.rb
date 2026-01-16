@@ -1,14 +1,17 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require_relative "../../../../lib/lutaml/model_transformations/parsers/qea_parser"
+require_relative "../../../../lib/lutaml/model_transformations/parsers/" \
+                 "qea_parser"
 require_relative "../../../../lib/lutaml/model_transformations/configuration"
 require "tempfile"
 
 RSpec.describe Lutaml::ModelTransformations::Parsers::QeaParser do
   let(:configuration) { Lutaml::ModelTransformations::Configuration.new }
   let(:options) { {} }
-  let(:parser) { described_class.new(configuration: configuration, options: options) }
+  let(:parser) do
+    described_class.new(configuration: configuration, options: options)
+  end
 
   describe "#format_name" do
     it "returns QEA format name" do
@@ -70,7 +73,8 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::QeaParser do
         file = Tempfile.new(["mock", ".qea"])
         # Write SQLite header to make it look like a database file
         file.write("SQLite format 3\x00")
-        file.write("\x00" * 100)  # Padding to make it look like a real SQLite file
+        # Padding to make it look like a real SQLite file
+        file.write("\x00" * 100)
         file.close
         file
       end
@@ -78,7 +82,8 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::QeaParser do
       after { mock_qea_file.unlink }
 
       it "attempts to parse QEA file" do
-        # This will likely fail since it's not a real QEA file, but should not crash
+        # This will likely fail since it's not a real QEA file,
+        # but should not crash
         expect do
           parser.parse(mock_qea_file.path)
         end.to raise_error(StandardError)
@@ -250,7 +255,8 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::QeaParser do
       configuration.transformation_options = Lutaml::ModelTransformations::Configuration::TransformationOptions.new
       configuration.transformation_options.preserve_ids = true
 
-      expect(parser.configuration.transformation_options.preserve_ids).to be true
+      expect(parser.configuration.transformation_options.preserve_ids)
+        .to be true
     end
   end
 
@@ -287,7 +293,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::QeaParser do
     it "respects timeout settings" do
       parser_with_timeout = described_class.new(
         configuration: configuration,
-        options: { timeout: 1 }  # Very short timeout
+        options: { timeout: 1 }, # Very short timeout
       )
 
       # Should use timeout during database operations
@@ -297,7 +303,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::QeaParser do
     it "respects memory limit settings" do
       parser_with_limits = described_class.new(
         configuration: configuration,
-        options: { memory_limit: 100 }  # Low memory limit
+        options: { memory_limit: 100 }, # Low memory limit
       )
 
       expect(parser_with_limits.options[:memory_limit]).to eq(100)

@@ -28,7 +28,7 @@ module Lutaml
                                      desc: "Output format (text|json|yaml)"
         end
 
-        def run(xmi_path, qea_path)
+        def run(xmi_path, qea_path) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/AbcSize,Metrics/MethodLength,Metrics/PerceivedComplexity
           unless File.exist?(xmi_path)
             puts OutputFormatter.error("XMI file not found: #{xmi_path}")
             raise Thor::Error, "XMI file not found: #{xmi_path}"

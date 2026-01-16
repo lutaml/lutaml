@@ -16,7 +16,7 @@ module Lutaml
 
         private
 
-        def find_orphaned_objects
+        def find_orphaned_objects # rubocop:disable Metrics/MethodLength
           objects.each do |obj|
             next unless obj.package_id
             next if package_exists?(obj.package_id)
@@ -34,7 +34,7 @@ module Lutaml
           end
         end
 
-        def find_orphaned_attributes
+        def find_orphaned_attributes # rubocop:disable Metrics/MethodLength
           attributes.each do |attr|
             next if object_exists?(attr.ea_object_id)
 
@@ -51,7 +51,7 @@ module Lutaml
           end
         end
 
-        def find_orphaned_operations
+        def find_orphaned_operations # rubocop:disable Metrics/MethodLength
           operations.each do |op|
             next if object_exists?(op.ea_object_id)
 
@@ -68,7 +68,7 @@ module Lutaml
           end
         end
 
-        def find_unreferenced_objects
+        def find_unreferenced_objects # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           # Find objects that are not referenced by any connector,
           # attribute, or diagram
           object_ids = objects.to_set(&:ea_object_id)
@@ -99,7 +99,8 @@ module Lutaml
             referenced_ids << diag_obj.ea_object_id
           end
 
-          # Unreferenced objects (except root packages which may be unreferenced)
+          # Unreferenced objects (except root packages which
+          # may be unreferenced)
           unreferenced = object_ids - referenced_ids
           unreferenced.each do |obj_id|
             obj = objects.find { |o| o.ea_object_id == obj_id }

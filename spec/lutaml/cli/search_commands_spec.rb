@@ -23,7 +23,8 @@ RSpec.describe "Search and Find Commands (via UmlCommands)" do
   describe "search command" do
     it "searches and returns results" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["search", lur_file, "Class", "--limit", "5"])
+        Lutaml::Cli::UmlCommands
+          .start(["search", lur_file, "Class", "--limit", "5"])
       }.not_to output(/ERROR/).to_stdout
     end
 
@@ -87,7 +88,8 @@ RSpec.describe "Search and Find Commands (via UmlCommands)" do
 
     it "respects limit parameter" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["search", lur_file, "building", "--limit", "3"])
+        Lutaml::Cli::UmlCommands.start(["search", lur_file, "building",
+"--limit", "3"])
       }.not_to output(/ERROR/).to_stdout
     end
 
@@ -99,7 +101,8 @@ RSpec.describe "Search and Find Commands (via UmlCommands)" do
 
     it "handles empty search results" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["search", lur_file, "XyZabc123NotFound"])
+        Lutaml::Cli::UmlCommands.start(["search", lur_file,
+"XyZabc123NotFound"])
       }.to output(/No results found/).to_stdout
     end
   end
@@ -107,7 +110,8 @@ RSpec.describe "Search and Find Commands (via UmlCommands)" do
   describe "find command" do
     it "finds by stereotype" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["find", lur_file, "--stereotype", "interface"])
+        Lutaml::Cli::UmlCommands.start(["find", lur_file, "--stereotype",
+"interface"])
       }.not_to output(/ERROR/).to_stdout
     end
 
@@ -119,21 +123,37 @@ RSpec.describe "Search and Find Commands (via UmlCommands)" do
 
     it "finds by pattern" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["find", lur_file, "--pattern", "^Building.*"])
+        Lutaml::Cli::UmlCommands
+          .start(["find", lur_file, "--pattern", "^Building.*"])
       }.not_to output(/ERROR/).to_stdout
     end
 
     it "outputs in JSON format" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["find", lur_file, "--package", "Basic Class Diagram with Multiplicities",
-                                       "--format", "json"])
+        Lutaml::Cli::UmlCommands
+          .start(
+            [
+              "find", lur_file, "--package",
+              "Basic Class Diagram with Multiplicities",
+              "--format", "json"
+            ],
+          )
       }.to output(/\[/).to_stdout
     end
 
     it "outputs in YAML format" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["find", lur_file, "--package", "Basic Class Diagram with Multiplicities",
-                                       "--format", "yaml"])
+        Lutaml::Cli::UmlCommands
+          .start(
+            [
+              "find",
+              lur_file,
+              "--package",
+              "Basic Class Diagram with Multiplicities",
+              "--format",
+              "yaml",
+            ],
+          )
       }.not_to output(/ERROR/).to_stdout
     end
 
@@ -145,8 +165,12 @@ RSpec.describe "Search and Find Commands (via UmlCommands)" do
 
     it "shows warning when no results found" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["find", lur_file, "--stereotype", "NonExistent"])
-      }.to output(/No elements found matching stereotype: NonExistent/).to_stdout
+        Lutaml::Cli::UmlCommands
+          .start(
+            ["find", lur_file, "--stereotype", "NonExistent"],
+          )
+      }.to output(/No elements found matching stereotype: NonExistent/)
+        .to_stdout
     end
   end
 end

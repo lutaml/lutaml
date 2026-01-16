@@ -18,7 +18,8 @@ module Lutaml
       #
       # @example Single-file generation
       #   config = Configuration.load
-      #   generator = Generator.new(repository, config: config, mode: :single_file)
+      #   generator = Generator.new(repository, config: config,
+      #     mode: :single_file)
       #   generator.generate
       #
       # @example With dependency injection
@@ -34,16 +35,21 @@ module Lutaml
         #
         # @param repository [UmlRepository] The repository to generate site for
         # @param options [Hash] Generation options
-        # @option options [Configuration] :config Configuration instance (default: auto-loaded)
+        # @option options [Configuration] :config Configuration instance
+        # (default: auto-loaded)
         # @option options [IDGenerator] :id_generator ID generator instance
-        # @option options [DataTransformer] :data_transformer Data transformer instance
-        # @option options [SearchIndexBuilder] :search_builder Search index builder instance
-        # @option options [Symbol] :mode Output mode (:single_file or :multi_file)
+        # @option options [DataTransformer] :data_transformer Data
+        # transformer instance
+        # @option options [SearchIndexBuilder] :search_builder Search index
+        # builder instance
+        # @option options [Symbol] :mode Output mode
+        # (:single_file or :multi_file)
         # @option options [String] :output Output path
         # @option options [Boolean] :minify Minify output (overrides config)
-        def initialize(repository, options = {})
+        def initialize(repository, options = {}) # rubocop:disable Metrics/MethodLength
           @repository = repository
-          @config = options[:config] || Configuration.load(options[:config_path])
+          @config = options[:config] ||
+            Configuration.load(options[:config_path])
           @options = build_options(options)
 
           # Dependency injection for testability
@@ -67,14 +73,15 @@ module Lutaml
             generate_multi_file
           else
             raise ArgumentError,
-                  "Invalid mode: #{@options[:mode]}. Use :single_file or :multi_file"
+                  "Invalid mode: #{@options[:mode]}. " \
+                  "Use :single_file or :multi_file"
           end
         end
 
         private
 
         # Build final options merging user options with configuration
-        def build_options(user_options)
+        def build_options(user_options) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           # Priority: user_options > config > defaults
           defaults = {
             mode: :single_file,
@@ -95,7 +102,7 @@ module Lutaml
           defaults.merge(config_options).merge(user_options)
         end
 
-        def parse_template_path
+        def parse_template_path # rubocop:disable Metrics/MethodLength
           return nil unless @config.templates
 
           templates_hash = case @config.templates
@@ -114,7 +121,7 @@ module Lutaml
           templates_hash&.dig("base_path")
         end
 
-        def determine_default_output
+        def determine_default_output # rubocop:disable Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
           if @config.output&.single_file&.enabled
             @config.output.single_file.default_filename || "browser.html"
           elsif @config.output&.multi_file&.enabled
@@ -152,7 +159,8 @@ module Lutaml
 
         def default_template_path
           # From lib/lutaml/uml_repository/static_site/generator.rb
-          # Up 4 levels: static_site/ → uml_repository/ → lutaml/ → lib/ → (root)
+          # Up 4 levels: static_site/ → uml_repository/ → lutaml/ → lib/ →
+          # (root)
           File.expand_path("../../../../templates/static_site", __dir__)
         end
 
@@ -160,12 +168,13 @@ module Lutaml
           # Use environment instead of deprecated class-level setters
           environment = Liquid::Environment.new
           environment.file_system = Liquid::LocalFileSystem.new(@options[:template_path])
-          environment.error_mode = :lax  # Changed from :strict to handle missing includes
+          # Changed from :strict to handle missing includes
+          environment.error_mode = :lax
           @liquid_environment = environment
         end
 
         # Generate single-file SPA
-        def generate_single_file
+        def generate_single_file # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           puts "Generating single-file SPA..."
 
           # Transform data
@@ -189,7 +198,8 @@ module Lutaml
           context.merge!(rendered_components)
 
           # Render template
-          template_path = File.join(@options[:template_path], "single_file.liquid")
+          template_path = File.join(@options[:template_path],
+                                    "single_file.liquid")
           template_content = File.read(template_path)
           template = Liquid::Template.parse(template_content)
 
@@ -197,7 +207,11 @@ module Lutaml
 
           # Check for rendering errors
           if html.nil? || html.empty?
-            errors = template.errors.any? ? template.errors.join(", ") : "No specific errors, but output is empty"
+            errors = if template.errors.any?
+                       template.errors.join(", ")
+                     else
+                       "No specific errors, but output is empty"
+                     end
             raise "Template rendering failed. Errors: #{errors}"
           end
 
@@ -206,23 +220,26 @@ module Lutaml
 
           # Write output
           File.write(@options[:output], html)
-          puts "✓ Generated: #{@options[:output]} (#{File.size(@options[:output]) / 1024}KB)"
+          puts "✓ Generated: #{@options[:output]} " \
+               "(#{File.size(@options[:output]) / 1024}KB)"
 
           @options[:output]
         end
 
-        def render_components
+        def render_components # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           # Set up Liquid file system for recursive includes
           temp_file_system = Liquid::LocalFileSystem.new(@options[:template_path])
 
-          component_names = ["header", "sidebar", "content", "package_details", "class_details"]
+          component_names = ["header", "sidebar", "content", "package_details",
+                             "class_details"]
           components = {}
 
           # We need the context to render components, so we'll return a lambda
           # that will be called with the context
           lambda do |context|
             component_names.each do |name|
-              component_path = File.join(@options[:template_path], "components", "#{name}.liquid")
+              component_path = File.join(@options[:template_path],
+                                         "components", "#{name}.liquid")
               if File.exist?(component_path)
                 component_template = Liquid::Template.parse(File.read(component_path))
                 component_template.registers[:file_system] = temp_file_system
@@ -236,7 +253,7 @@ module Lutaml
         end
 
         # Generate multi-file static site
-        def generate_multi_file
+        def generate_multi_file # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           puts "Generating multi-file static site..."
 
           output_dir = @options[:output]
@@ -271,7 +288,7 @@ module Lutaml
           output_dir
         end
 
-        def build_liquid_context(data, search_index, mode)
+        def build_liquid_context(data, search_index, mode) # rubocop:disable Metrics/MethodLength
           config_hash = {
             "mode" => mode.to_s,
             "title" => @options[:title],
@@ -297,7 +314,7 @@ module Lutaml
           puts "  ✓ #{File.basename(path)} (#{File.size(path) / 1024}KB)"
         end
 
-        def generate_assets(output_dir)
+        def generate_assets(output_dir) # rubocop:disable Metrics/MethodLength
           assets_dir = File.join(output_dir, "assets")
 
           # Generate CSS

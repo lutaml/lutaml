@@ -8,14 +8,19 @@ RSpec.describe Lutaml::Ea::Diagram::Configuration do
   let(:config) { described_class.new(config_path) }
 
   # Helper to create a mock element with specified properties
-  def mock_element(name: nil, stereotype: nil, package_name: nil)
+  def mock_element(name: nil, stereotype: nil, package_name: nil) # rubocop:disable Metrics/AbcSize
     element = double("Element")
     allow(element).to receive(:name).and_return(name) if name
     allow(element).to receive(:stereotype).and_return(stereotype) if stereotype
-    allow(element).to receive(:package_name).and_return(package_name) if package_name
+    if package_name
+      allow(element).to receive(:package_name).and_return(package_name)
+    end
     allow(element).to receive(:respond_to?).with(:name).and_return(!name.nil?)
-    allow(element).to receive(:respond_to?).with(:stereotype).and_return(!stereotype.nil?)
-    allow(element).to receive(:respond_to?).with(:package_name).and_return(!package_name.nil?)
+    allow(element)
+      .to receive(:respond_to?).with(:stereotype).and_return(!stereotype.nil?)
+    allow(element)
+      .to receive(:respond_to?).with(:package_name)
+      .and_return(!package_name.nil?)
     element
   end
 
@@ -96,12 +101,15 @@ RSpec.describe Lutaml::Ea::Diagram::Configuration do
     it "uses built-in defaults when no file exists" do
       config_no_file = described_class.new("nonexistent.yml")
       expect(config_no_file.config_data["defaults"]).to be_a(Hash)
-      expect(config_no_file.config_data["defaults"]["colors"]["background"]).to eq("#FFFFFF")
+      expect(config_no_file.config_data["defaults"]["colors"]["background"])
+        .to eq("#FFFFFF")
     end
 
     it "merges configuration with defaults" do
-      expect(config.config_data["defaults"]["colors"]["background"]).to eq("#FFFFFF")
-      expect(config.config_data["stereotypes"]["DataType"]["colors"]["fill"]).to eq("#FFCCFF")
+      expect(config.config_data["defaults"]["colors"]["background"])
+        .to eq("#FFFFFF")
+      expect(config.config_data["stereotypes"]["DataType"]["colors"]["fill"])
+        .to eq("#FFCCFF")
     end
   end
 
@@ -142,7 +150,10 @@ RSpec.describe Lutaml::Ea::Diagram::Configuration do
       end
 
       it "handles multiple stereotypes" do
-        element = mock_element(name: "MyClass", stereotype: ["DataType", "Abstract"])
+        element = mock_element(name: "MyClass",
+                               stereotype: [
+                                 "DataType", "Abstract"
+                               ])
         fill_color = config.style_for(element, "colors.fill")
         expect(fill_color).to eq("#FFCCFF") # First matching stereotype
       end
@@ -174,7 +185,7 @@ RSpec.describe Lutaml::Ea::Diagram::Configuration do
         element = mock_element(
           name: "SpecialClass",
           stereotype: ["DataType"],
-          package_name: "CityGML::Core"
+          package_name: "CityGML::Core",
         )
         fill_color = config.style_for(element, "colors.fill")
         expect(fill_color).to eq("#FF0000") # Class-specific, not DataType pink
@@ -184,7 +195,7 @@ RSpec.describe Lutaml::Ea::Diagram::Configuration do
         element = mock_element(
           name: "RegularClass",
           stereotype: ["DataType"],
-          package_name: "CityGML::Core"
+          package_name: "CityGML::Core",
         )
         fill_color = config.style_for(element, "colors.fill")
         expect(fill_color).to eq("#FFFFCC") # Package yellow, not DataType pink
@@ -222,7 +233,8 @@ RSpec.describe Lutaml::Ea::Diagram::Configuration do
     end
 
     it "returns nested connector properties" do
-      stroke_width = config.connector_style("generalization", "line.stroke_width")
+      stroke_width = config.connector_style("generalization",
+                                            "line.stroke_width")
       expect(stroke_width).to eq(1)
     end
 
@@ -284,7 +296,8 @@ RSpec.describe Lutaml::Ea::Diagram::Configuration do
       end
 
       it "handles complex wildcard patterns" do
-        result = config.send(:matches_package?, "CityGML::Core::Feature", "CityGML::*")
+        result = config.send(:matches_package?, "CityGML::Core::Feature",
+                             "CityGML::*")
         expect(result).to be true
       end
     end
@@ -357,7 +370,8 @@ RSpec.describe Lutaml::Ea::Diagram::Configuration do
     end
 
     it "prioritizes user config over defaults" do
-      expect(config.config_data["defaults"]["colors"]["background"]).to eq("#FFFFFF")
+      expect(config.config_data["defaults"]["colors"]["background"])
+        .to eq("#FFFFFF")
     end
   end
 

@@ -5,7 +5,9 @@ require_relative "../../../../lib/lutaml/qea/infrastructure/database_connection"
 require_relative "../../../../lib/lutaml/qea/infrastructure/schema_reader"
 
 RSpec.describe Lutaml::Qea::Infrastructure::SchemaReader do
-  let(:test_qea_file) { File.expand_path("../../../../examples/qea/test.qea", __dir__) }
+  let(:test_qea_file) do
+    File.expand_path("../../../../examples/qea/test.qea", __dir__)
+  end
   let(:connection) { Lutaml::Qea::Infrastructure::DatabaseConnection.new(test_qea_file) }
   let(:database) { connection.connect }
   let(:reader) { described_class.new(database) }
@@ -21,7 +23,10 @@ RSpec.describe Lutaml::Qea::Infrastructure::SchemaReader do
     end
 
     it "raises ArgumentError when database is nil" do
-      expect { described_class.new(nil) }.to raise_error(ArgumentError, /database cannot be nil/)
+      expect do
+        described_class.new(nil)
+      end.to raise_error(ArgumentError,
+                         /database cannot be nil/)
     end
   end
 
@@ -34,7 +39,8 @@ RSpec.describe Lutaml::Qea::Infrastructure::SchemaReader do
 
     it "includes expected EA tables" do
       tables = reader.tables
-      expect(tables).to include("t_object", "t_package", "t_attribute", "t_connector")
+      expect(tables).to include("t_object", "t_package", "t_attribute",
+                                "t_connector")
     end
 
     it "excludes SQLite system tables by default" do
@@ -86,7 +92,7 @@ RSpec.describe Lutaml::Qea::Infrastructure::SchemaReader do
         "Object_Type",
         "Name",
         "Package_ID",
-        "ea_guid"
+        "ea_guid",
       )
     end
 
@@ -97,7 +103,7 @@ RSpec.describe Lutaml::Qea::Infrastructure::SchemaReader do
         "Package_ID",
         "Name",
         "Parent_ID",
-        "ea_guid"
+        "ea_guid",
       )
     end
   end

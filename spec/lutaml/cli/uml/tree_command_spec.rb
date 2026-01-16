@@ -49,7 +49,10 @@ RSpec.describe Lutaml::Cli::Uml::TreeCommand do
       let(:options) { {} }
 
       it "handles non-existent package" do
-        expect { command.run(test_lur, "NonExistent::Package") }.to raise_error(/Package not found/)
+        expect do
+          command.run(test_lur,
+                      "NonExistent::Package")
+        end.to raise_error(/Package not found/)
       end
     end
   end

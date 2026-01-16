@@ -118,7 +118,8 @@ module Lutaml
       # Load complete database with all tables and models
       #
       # @param qea_path [String] Path to the .qea file
-      # @param config [Services::Configuration, nil] Optional custom configuration
+      # @param config [Services::Configuration, nil]
+      # Optional custom configuration
       # @return [Database] Loaded database with all collections
       #
       # @example Load database
@@ -139,7 +140,8 @@ module Lutaml
       # Get quick database statistics without full loading
       #
       # @param qea_path [String] Path to the .qea file
-      # @param config [Services::Configuration, nil] Optional custom configuration
+      # @param config [Services::Configuration, nil]
+      # Optional custom configuration
       # @return [Hash<String, Integer>] Collection names to record counts
       #
       # @example
@@ -155,11 +157,14 @@ module Lutaml
       #
       # @param qea_path [String] Path to the .qea file
       # @param options [Hash] Transformation options
-      # @option options [Boolean] :include_diagrams Include diagrams (default: true)
-      # @option options [Boolean] :validate Validate during parsing (default: false)
+      # @option options [Boolean] :include_diagrams Include diagrams
+      # (default: true)
+      # @option options [Boolean] :validate Validate during parsing
+      # (default: false)
       # @option options [String] :document_name Document name
       # @option options [Services::Configuration] :config Custom configuration
-      # @return [Lutaml::Uml::Document, Hash] Document, or hash with :document and :validation_result
+      # @return [Lutaml::Uml::Document, Hash] Document, or hash with
+      # :document and :validation_result
       #
       # @example Parse QEA file
       #   document = Lutaml::Qea.parse("model.qea")
@@ -178,7 +183,7 @@ module Lutaml
       #   repo = Lutaml::UmlRepository::Repository.new(document: document)
       #   results = repo.search("Building")
       #   puts "Found #{results[:total]} matches"
-      def parse(qea_path, options = {})
+      def parse(qea_path, options = {}) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
         # Extract config and validation options
         config = options.delete(:config)
         validate = options.delete(:validate)
@@ -210,7 +215,8 @@ module Lutaml
           end
         ensure
           # Close the connection when done (unless validation needs it)
-          if !validate && ea_database.connection && !ea_database.connection.closed?
+          if !validate &&
+              ea_database.connection && !ea_database.connection.closed?
             ea_database.connection&.close
           end
         end

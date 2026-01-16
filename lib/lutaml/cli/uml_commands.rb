@@ -35,7 +35,8 @@ module Lutaml
     # - Output: export, docs, serve
     # - Development: repl, verify
     #
-    # This class serves as a thin delegation layer to individual command classes,
+    # This class serves as a thin delegation layer to individual
+    # command classes,
     # keeping the Thor integration separate from business logic.
     class UmlCommands < Thor
       # Make Thor raise errors instead of exiting
@@ -123,7 +124,8 @@ module Lutaml
         Uml::ExportCommand.new(options.to_h).run(lur_path)
       end
 
-      desc "build-spa INPUT", "Generate interactive SPA browser (single-file or multi-file)"
+      desc "build-spa INPUT",
+           "Generate interactive SPA browser (single-file or multi-file)"
       Uml::SpaCommand.add_options_to(self, :build_spa)
       def build_spa(input_path)
         Uml::SpaCommand.new(options.to_h).run(input_path)
@@ -155,12 +157,6 @@ module Lutaml
       Uml::VerifyCommand.add_options_to(self, :verify)
       def verify(xmi_path, qea_path)
         Uml::VerifyCommand.new(options.to_h).run(xmi_path, qea_path)
-      end
-
-      desc "diagram ACTION", "Diagram rendering commands"
-      Uml::DiagramCommand.add_options_to(self, :diagram)
-      def diagram(action, *args)
-        Uml::DiagramCommand.new(options.to_h).run(action, *args)
       end
     end
   end

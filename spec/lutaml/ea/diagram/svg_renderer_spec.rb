@@ -17,8 +17,9 @@ RSpec.describe Lutaml::Ea::Diagram::SvgRenderer do
           y: 50,
           width: 120,
           height: 80,
-          element: double("Element", name: "TestClass", stereotype: nil, package_name: nil),
-          diagram_object: nil
+          element: double("Element", name: "TestClass", stereotype: nil,
+                                     package_name: nil),
+          diagram_object: nil,
         },
         {
           id: "2",
@@ -28,9 +29,10 @@ RSpec.describe Lutaml::Ea::Diagram::SvgRenderer do
           y: 150,
           width: 120,
           height: 80,
-          element: double("Element", name: "TestPackage", stereotype: nil, package_name: nil),
-          diagram_object: nil
-        }
+          element: double("Element", name: "TestPackage", stereotype: nil,
+                                     package_name: nil),
+          diagram_object: nil,
+        },
       ],
       connectors: [
         {
@@ -40,9 +42,9 @@ RSpec.describe Lutaml::Ea::Diagram::SvgRenderer do
           source_element: { id: "1", x: 100, y: 50, width: 120, height: 80 },
           target_element: { id: "2", x: 300, y: 150, width: 120, height: 80 },
           element: nil,
-          diagram_link: nil
-        }
-      ]
+          diagram_link: nil,
+        },
+      ],
     }
   end
 
@@ -50,11 +52,10 @@ RSpec.describe Lutaml::Ea::Diagram::SvgRenderer do
   let(:bounds) { layout_engine.calculate_bounds(diagram_data) }
   let(:diagram_renderer) do
     double("DiagramRenderer",
-      diagram_data: diagram_data,
-      bounds: bounds,
-      elements: diagram_data[:elements],
-      connectors: diagram_data[:connectors]
-    )
+           diagram_data: diagram_data,
+           bounds: bounds,
+           elements: diagram_data[:elements],
+           connectors: diagram_data[:connectors])
   end
 
   describe "#initialize" do
@@ -84,12 +85,14 @@ RSpec.describe Lutaml::Ea::Diagram::SvgRenderer do
     end
 
     it "creates style resolver with custom config path" do
-      renderer = described_class.new(diagram_renderer, config_path: "custom/config.yml")
+      renderer = described_class.new(diagram_renderer,
+                                     config_path: "custom/config.yml")
       expect(renderer.style_resolver).to be_a(Lutaml::Ea::Diagram::StyleResolver)
     end
 
     it "accepts custom background color option" do
-      renderer = described_class.new(diagram_renderer, background_color: "#f0f0f0")
+      renderer = described_class.new(diagram_renderer,
+                                     background_color: "#f0f0f0")
       expect(renderer.options[:background_color]).to eq("#f0f0f0")
     end
 
@@ -104,7 +107,8 @@ RSpec.describe Lutaml::Ea::Diagram::SvgRenderer do
     end
 
     it "accepts custom CSS classes" do
-      renderer = described_class.new(diagram_renderer, css_classes: ["custom-class"])
+      renderer = described_class.new(diagram_renderer,
+                                     css_classes: ["custom-class"])
       expect(renderer.options[:css_classes]).to eq(["custom-class"])
     end
   end
@@ -123,25 +127,25 @@ RSpec.describe Lutaml::Ea::Diagram::SvgRenderer do
     end
 
     it "includes DOCTYPE declaration" do
-      expect(svg_output).to include('<!DOCTYPE svg')
+      expect(svg_output).to include("<!DOCTYPE svg")
     end
 
     it "includes svg root element" do
-      expect(svg_output).to include('<svg')
+      expect(svg_output).to include("<svg")
     end
 
     it "includes title element" do
-      expect(svg_output).to include('<title>')
-      expect(svg_output).to include('Test Diagram')
+      expect(svg_output).to include("<title>")
+      expect(svg_output).to include("Test Diagram")
     end
 
     it "includes description element" do
-      expect(svg_output).to include('<desc>')
-      expect(svg_output).to include('Created with LutaML EA Diagram Renderer')
+      expect(svg_output).to include("<desc>")
+      expect(svg_output).to include("Created with LutaML EA Diagram Renderer")
     end
 
     it "includes defs section" do
-      expect(svg_output).to include('<defs>')
+      expect(svg_output).to include("<defs>")
     end
 
     it "includes background layer" do
@@ -169,7 +173,9 @@ RSpec.describe Lutaml::Ea::Diagram::SvgRenderer do
     end
 
     context "with grid visible" do
-      let(:renderer) { described_class.new(diagram_renderer, grid_visible: true) }
+      let(:renderer) do
+        described_class.new(diagram_renderer, grid_visible: true)
+      end
 
       it "includes grid layer" do
         expect(svg_output).to include('id="grid-layer"')
@@ -177,18 +183,20 @@ RSpec.describe Lutaml::Ea::Diagram::SvgRenderer do
     end
 
     context "with interactive mode" do
-      let(:renderer) { described_class.new(diagram_renderer, interactive: true) }
+      let(:renderer) do
+        described_class.new(diagram_renderer, interactive: true)
+      end
 
       it "includes interactive layer" do
         expect(svg_output).to include('<script type="text/javascript">')
       end
 
       it "includes click event handlers" do
-        expect(svg_output).to include('addEventListener')
+        expect(svg_output).to include("addEventListener")
       end
 
       it "dispatches custom events" do
-        expect(svg_output).to include('CustomEvent')
+        expect(svg_output).to include("CustomEvent")
       end
     end
   end
@@ -198,17 +206,17 @@ RSpec.describe Lutaml::Ea::Diagram::SvgRenderer do
     let(:svg_output) { renderer.render }
 
     it "includes correct width attribute" do
-      expected_width = bounds[:width] + 40  # padding * 2
+      expected_width = bounds[:width] + 40 # padding * 2
       expect(svg_output).to match(/width="#{expected_width}"/)
     end
 
     it "includes correct height attribute" do
-      expected_height = bounds[:height] + 40  # padding * 2
+      expected_height = bounds[:height] + 40 # padding * 2
       expect(svg_output).to match(/height="#{expected_height}"/)
     end
 
     it "includes viewBox with padding" do
-      expect(svg_output).to include('viewBox=')
+      expect(svg_output).to include("viewBox=")
     end
 
     it "includes xmlns attributes" do
@@ -225,11 +233,14 @@ RSpec.describe Lutaml::Ea::Diagram::SvgRenderer do
     end
 
     context "with custom CSS classes" do
-      let(:renderer) { described_class.new(diagram_renderer, css_classes: ["custom1", "custom2"]) }
+      let(:renderer) do
+        described_class.new(diagram_renderer,
+                            css_classes: ["custom1", "custom2"])
+      end
 
       it "includes custom CSS classes" do
-        expect(svg_output).to include('custom1')
-        expect(svg_output).to include('custom2')
+        expect(svg_output).to include("custom1")
+        expect(svg_output).to include("custom2")
       end
     end
 
@@ -257,32 +268,32 @@ RSpec.describe Lutaml::Ea::Diagram::SvgRenderer do
     end
 
     it "wraps CSS in CDATA" do
-      expect(svg_output).to include('<![CDATA[')
-      expect(svg_output).to include(']]>')
+      expect(svg_output).to include("<![CDATA[")
+      expect(svg_output).to include("]]>")
     end
 
     it "includes element hover styles" do
-      expect(svg_output).to include('.lutaml-diagram-element:hover')
+      expect(svg_output).to include(".lutaml-diagram-element:hover")
     end
 
     it "includes connector styles" do
-      expect(svg_output).to include('.lutaml-diagram-connector')
+      expect(svg_output).to include(".lutaml-diagram-connector")
     end
 
     it "includes text styles" do
-      expect(svg_output).to include('.lutaml-diagram-text')
+      expect(svg_output).to include(".lutaml-diagram-text")
     end
 
     it "includes stereotype styles" do
-      expect(svg_output).to include('.lutaml-diagram-stereotype')
+      expect(svg_output).to include(".lutaml-diagram-stereotype")
     end
 
     it "includes class name styles" do
-      expect(svg_output).to include('.lutaml-diagram-class-name')
+      expect(svg_output).to include(".lutaml-diagram-class-name")
     end
 
     it "includes arrow markers section" do
-      expect(svg_output).to include('<!-- EA-style arrow markers -->')
+      expect(svg_output).to include("<!-- EA-style arrow markers -->")
     end
   end
 
@@ -350,17 +361,21 @@ RSpec.describe Lutaml::Ea::Diagram::SvgRenderer do
     end
 
     context "with custom background color" do
-      let(:renderer) { described_class.new(diagram_renderer, background_color: "#f5f5f5") }
+      let(:renderer) do
+        described_class.new(diagram_renderer, background_color: "#f5f5f5")
+      end
 
       it "applies custom background color" do
-        expect(svg_output).to include('fill:#f5f5f5')
+        expect(svg_output).to include("fill:#f5f5f5")
       end
     end
   end
 
   describe "grid layer generation" do
     context "when grid_visible is false" do
-      let(:renderer) { described_class.new(diagram_renderer, grid_visible: false) }
+      let(:renderer) do
+        described_class.new(diagram_renderer, grid_visible: false)
+      end
 
       it "does not include grid layer" do
         expect(renderer.render).not_to include('id="grid-layer"')
@@ -368,7 +383,9 @@ RSpec.describe Lutaml::Ea::Diagram::SvgRenderer do
     end
 
     context "when grid_visible is true" do
-      let(:renderer) { described_class.new(diagram_renderer, grid_visible: true) }
+      let(:renderer) do
+        described_class.new(diagram_renderer, grid_visible: true)
+      end
       let(:svg_output) { renderer.render }
 
       it "includes grid layer" do
@@ -376,7 +393,8 @@ RSpec.describe Lutaml::Ea::Diagram::SvgRenderer do
       end
 
       it "generates vertical grid lines" do
-        expect(svg_output).to match(/<line x1="[^"]+" y1="[^"]+" x2="[^"]+" y2="[^"]+"/)
+        expect(svg_output)
+          .to match(/<line x1="[^"]+" y1="[^"]+" x2="[^"]+" y2="[^"]+"/)
       end
 
       it "uses 20px grid size" do
@@ -427,25 +445,29 @@ RSpec.describe Lutaml::Ea::Diagram::SvgRenderer do
     end
 
     it "calls appropriate renderer for class type" do
-      expect(svg_output).to include('TestClass')
+      expect(svg_output).to include("TestClass")
     end
 
     it "calls appropriate renderer for package type" do
-      expect(svg_output).to include('TestPackage')
+      expect(svg_output).to include("TestPackage")
     end
   end
 
   describe "interactive layer generation" do
     context "when interactive is false" do
-      let(:renderer) { described_class.new(diagram_renderer, interactive: false) }
+      let(:renderer) do
+        described_class.new(diagram_renderer, interactive: false)
+      end
 
       it "does not include JavaScript" do
-        expect(renderer.render).not_to include('<script')
+        expect(renderer.render).not_to include("<script")
       end
     end
 
     context "when interactive is true" do
-      let(:renderer) { described_class.new(diagram_renderer, interactive: true) }
+      let(:renderer) do
+        described_class.new(diagram_renderer, interactive: true)
+      end
       let(:svg_output) { renderer.render }
 
       it "includes JavaScript for click handlers" do
@@ -461,7 +483,8 @@ RSpec.describe Lutaml::Ea::Diagram::SvgRenderer do
       end
 
       it "queries diagram elements" do
-        expect(svg_output).to include("querySelectorAll('.lutaml-diagram-element')")
+        expect(svg_output)
+          .to include("querySelectorAll('.lutaml-diagram-element')")
       end
     end
   end
@@ -471,12 +494,12 @@ RSpec.describe Lutaml::Ea::Diagram::SvgRenderer do
     let(:svg_output) { renderer.render }
 
     it "includes path element for connector" do
-      expect(svg_output).to include('<path d=')
+      expect(svg_output).to include("<path d=")
     end
 
     it "includes connector CSS classes" do
       expect(svg_output).to include('class="lutaml-diagram-connector')
-      expect(svg_output).to include('lutaml-diagram-connector-association')
+      expect(svg_output).to include("lutaml-diagram-connector-association")
     end
 
     it "includes data attributes" do
@@ -493,7 +516,7 @@ RSpec.describe Lutaml::Ea::Diagram::SvgRenderer do
     end
 
     it "sets fill to none for connectors" do
-      expect(svg_output).to include('fill:none')
+      expect(svg_output).to include("fill:none")
     end
   end
 
@@ -505,59 +528,68 @@ RSpec.describe Lutaml::Ea::Diagram::SvgRenderer do
           {
             id: "class1", type: "class", name: "MyClass",
             x: 0, y: 0, width: 100, height: 80,
-            element: double("Element", name: "MyClass", stereotype: nil, package_name: nil)
+            element: double(
+              "Element", name: "MyClass", stereotype: nil, package_name: nil
+            )
           },
           {
             id: "datatype1", type: "datatype", name: "MyDataType",
             x: 150, y: 0, width: 100, height: 60,
-            element: double("Element", name: "MyDataType", stereotype: nil, package_name: nil)
+            element: double(
+              "Element", name: "MyDataType", stereotype: nil, package_name: nil
+            )
           },
           {
             id: "package1", type: "package", name: "MyPackage",
             x: 300, y: 0, width: 120, height: 100,
-            element: double("Element", name: "MyPackage", stereotype: nil, package_name: nil)
+            element: double(
+              "Element", name: "MyPackage", stereotype: nil, package_name: nil
+            )
           },
           {
             id: "unknown1", type: "unknown", name: "Unknown",
             x: 450, y: 0, width: 80, height: 60,
-            element: double("Element", name: "Unknown", stereotype: nil, package_name: nil)
-          }
+            element: double(
+              "Element", name: "Unknown", stereotype: nil, package_name: nil
+            )
+          },
         ],
-        connectors: []
+        connectors: [],
       }
     end
 
     let(:layout_engine) { Lutaml::Ea::Diagram::LayoutEngine.new }
-    let(:bounds_for_types) { layout_engine.calculate_bounds(diagram_data_with_types) }
+    let(:bounds_for_types) do
+      layout_engine.calculate_bounds(diagram_data_with_types)
+    end
     let(:renderer_for_types) do
       renderer = double("DiagramRenderer",
-        diagram_data: diagram_data_with_types,
-        bounds: bounds_for_types,
-        elements: diagram_data_with_types[:elements],
-        connectors: []
-      )
+                        diagram_data: diagram_data_with_types,
+                        bounds: bounds_for_types,
+                        elements: diagram_data_with_types[:elements],
+                        connectors: [])
       described_class.new(renderer)
     end
 
     let(:svg_for_types) { renderer_for_types.render }
 
     it "selects ClassRenderer for class type" do
-      expect(svg_for_types).to include('MyClass')
+      expect(svg_for_types).to include("MyClass")
       expect(svg_for_types).to include('data-element-id="class1"')
     end
 
     it "selects ClassRenderer for datatype type" do
-      expect(svg_for_types).to include('MyDataType')
+      expect(svg_for_types).to include("MyDataType")
       expect(svg_for_types).to include('data-element-id="datatype1"')
     end
 
     it "selects PackageRenderer for package type" do
-      expect(svg_for_types).to include('MyPackage')
+      expect(svg_for_types).to include("MyPackage")
       expect(svg_for_types).to include('data-element-id="package1"')
     end
 
     it "selects BaseRenderer for unknown types" do
-      expect(svg_for_types).to include('Unknown')
+      expect(svg_for_types).to include("Unknown")
       expect(svg_for_types).to include('data-element-id="unknown1"')
     end
   end
@@ -653,29 +685,31 @@ RSpec.describe Lutaml::Ea::Diagram::SvgRenderer do
     let(:svg_output) { renderer.render }
 
     it "generates valid SVG with all components" do
-      expect(svg_output).to start_with('<?xml')
-      expect(svg_output).to include('<svg')
-      expect(svg_output).to include('<defs>')
-      expect(svg_output).to include('</svg>')
+      expect(svg_output).to start_with("<?xml")
+      expect(svg_output).to include("<svg")
+      expect(svg_output).to include("<defs>")
+      expect(svg_output).to include("</svg>")
     end
 
     it "properly integrates element renderers" do
-      expect(svg_output).to include('TestClass')
-      expect(svg_output).to include('TestPackage')
+      expect(svg_output).to include("TestClass")
+      expect(svg_output).to include("TestPackage")
     end
 
     it "properly integrates path builder for connectors" do
-      expect(svg_output).to include('<path d=')
-      expect(svg_output).to include('M ')  # SVG path command
+      expect(svg_output).to include("<path d=")
+      expect(svg_output).to include("M ") # SVG path command
     end
 
     it "properly integrates style resolver" do
-      expect(svg_output).to include('stroke:')
-      expect(svg_output).to include('fill:')
+      expect(svg_output).to include("stroke:")
+      expect(svg_output).to include("fill:")
     end
 
     it "produces parseable SVG" do
-      expect { Nokogiri::XML(svg_output) { |config| config.strict } }.not_to raise_error
+      expect do
+        Nokogiri::XML(svg_output, &:strict)
+      end.not_to raise_error
     end
   end
 end

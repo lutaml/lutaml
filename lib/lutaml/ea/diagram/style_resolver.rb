@@ -31,26 +31,37 @@ module Lutaml
         # Resolve complete style for an element
         #
         # @param element [Object] UML element (Class, DataType, etc.)
-        # @param diagram_object [Lutaml::Uml::DiagramObject, nil] Diagram placement data
+        # @param diagram_object [Lutaml::Uml::DiagramObject, nil]
+        # Diagram placement data
         # @return [Hash] Complete resolved style
-        def resolve_element_style(element, diagram_object = nil)
+        def resolve_element_style(element, diagram_object = nil) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           style = {}
 
           # Start with configuration defaults
           style[:fill] = configuration.style_for(element, "colors.fill")
           style[:stroke] = configuration.style_for(element, "colors.stroke")
-          style[:stroke_width] = configuration.style_for(element, "box.stroke_width")
-          style[:stroke_linecap] = configuration.style_for(element, "box.stroke_linecap")
-          style[:stroke_linejoin] = configuration.style_for(element, "box.stroke_linejoin")
-          style[:corner_radius] = configuration.style_for(element, "box.corner_radius")
-          style[:fill_opacity] = configuration.style_for(element, "box.fill_opacity")
-          style[:stroke_opacity] = configuration.style_for(element, "box.stroke_opacity")
+          style[:stroke_width] =
+            configuration.style_for(element, "box.stroke_width")
+          style[:stroke_linecap] =
+            configuration.style_for(element, "box.stroke_linecap")
+          style[:stroke_linejoin] =
+            configuration.style_for(element, "box.stroke_linejoin")
+          style[:corner_radius] =
+            configuration.style_for(element, "box.corner_radius")
+          style[:fill_opacity] =
+            configuration.style_for(element, "box.fill_opacity")
+          style[:stroke_opacity] =
+            configuration.style_for(element, "box.stroke_opacity")
 
           # Font configuration
-          style[:font_family] = configuration.style_for(element, "fonts.class_name.family")
-          style[:font_size] = configuration.style_for(element, "fonts.class_name.size")
-          style[:font_weight] = configuration.style_for(element, "fonts.class_name.weight")
-          style[:font_style] = configuration.style_for(element, "fonts.class_name.style")
+          style[:font_family] =
+            configuration.style_for(element, "fonts.class_name.family")
+          style[:font_size] =
+            configuration.style_for(element, "fonts.class_name.size")
+          style[:font_weight] =
+            configuration.style_for(element, "fonts.class_name.weight")
+          style[:font_style] =
+            configuration.style_for(element, "fonts.class_name.style")
 
           # Override with EA data if present (highest priority)
           if diagram_object&.style
@@ -63,22 +74,31 @@ module Lutaml
 
         # Resolve complete style for a connector
         #
-        # @param connector [Object] UML connector (Association, Generalization, etc.)
-        # @param diagram_link [Lutaml::Uml::DiagramLink, nil] Diagram routing data
+        # @param connector [Object] UML connector
+        # (Association, Generalization, etc.)
+        # @param diagram_link [Lutaml::Uml::DiagramLink, nil]
+        # Diagram routing data
         # @return [Hash] Complete resolved style
-        def resolve_connector_style(connector, diagram_link = nil)
+        def resolve_connector_style(connector, diagram_link = nil) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           # Determine connector type
           connector_type = determine_connector_type(connector)
 
           style = {}
 
           # Start with configuration defaults for this connector type
-          style[:arrow_type] = configuration.connector_style(connector_type, "arrow.type")
-          style[:arrow_size] = configuration.connector_style(connector_type, "arrow.size")
-          style[:stroke] = configuration.connector_style(connector_type, "line.stroke")
-          style[:stroke_width] = configuration.connector_style(connector_type, "line.stroke_width")
-          style[:stroke_dasharray] = configuration.connector_style(connector_type, "line.stroke_dasharray")
-          style[:fill] = configuration.connector_style(connector_type, "line.fill") || "none"
+          style[:arrow_type] =
+            configuration.connector_style(connector_type, "arrow.type")
+          style[:arrow_size] =
+            configuration.connector_style(connector_type, "arrow.size")
+          style[:stroke] =
+            configuration.connector_style(connector_type, "line.stroke")
+          style[:stroke_width] =
+            configuration.connector_style(connector_type, "line.stroke_width")
+          style[:stroke_dasharray] =
+            configuration.connector_style(connector_type,
+                                          "line.stroke_dasharray")
+          style[:fill] =
+            configuration.connector_style(connector_type, "line.fill") || "none"
 
           # Override with EA data if present (highest priority)
           if diagram_link&.style
@@ -92,7 +112,8 @@ module Lutaml
         # Resolve fill color specifically
         #
         # @param element [Object] UML element
-        # @param diagram_object [Lutaml::Uml::DiagramObject, nil] Diagram placement data
+        # @param diagram_object [Lutaml::Uml::DiagramObject, nil]
+        # Diagram placement data
         # @return [String] Resolved fill color
         def resolve_fill_color(element, diagram_object = nil)
           # Priority 1: EA data from DiagramObject.style
@@ -108,7 +129,8 @@ module Lutaml
         # Resolve stroke color specifically
         #
         # @param element [Object] UML element
-        # @param diagram_object [Lutaml::Uml::DiagramObject, nil] Diagram placement data
+        # @param diagram_object [Lutaml::Uml::DiagramObject, nil]
+        # Diagram placement data
         # @return [String] Resolved stroke color
         def resolve_stroke_color(element, diagram_object = nil)
           # Priority 1: EA data from DiagramObject.style
@@ -124,14 +146,15 @@ module Lutaml
         # Resolve font properties
         #
         # @param element [Object] UML element
-        # @param context [Symbol] Font context (:class_name, :attribute, :operation, :stereotype)
+        # @param context [Symbol] Font context
+        # (:class_name, :attribute, :operation, :stereotype)
         # @return [Hash] Font properties (family, size, weight, style)
         def resolve_font(element, context = :class_name)
           {
             family: configuration.style_for(element, "fonts.#{context}.family"),
             size: configuration.style_for(element, "fonts.#{context}.size"),
             weight: configuration.style_for(element, "fonts.#{context}.weight"),
-            style: configuration.style_for(element, "fonts.#{context}.style")
+            style: configuration.style_for(element, "fonts.#{context}.style"),
           }.compact
         end
 
@@ -140,13 +163,13 @@ module Lutaml
         alias parse_element_style resolve_element_style
 
         private
-        private
 
-        # Parse DiagramObject.style string (EA format: "BCol=16764159;LCol=0;SOID=123")
+        # Parse DiagramObject.style string
+        # (EA format: "BCol=16764159;LCol=0;SOID=123")
         #
         # @param style_string [String] EA style string
         # @return [Hash] Parsed style with fill and stroke colors
-        def parse_diagram_object_style(style_string)
+        def parse_diagram_object_style(style_string) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           return {} unless style_string
 
           style = {}
@@ -162,7 +185,8 @@ module Lutaml
               style[:fill] = style_parser.send(:color_from_ea_color, value.to_i)
             when "LCol"
               # Line color (BGR integer)
-              style[:stroke] = style_parser.send(:color_from_ea_color, value.to_i)
+              style[:stroke] =
+                style_parser.send(:color_from_ea_color, value.to_i)
             when "BFol"
               # Bold font (0 or 1)
               style[:font_weight] = value == "1" ? 700 : 400
@@ -182,7 +206,7 @@ module Lutaml
         #
         # @param style_string [String] EA style string
         # @return [Hash] Parsed style
-        def parse_diagram_link_style(style_string)
+        def parse_diagram_link_style(style_string) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength
           return {} unless style_string
 
           style = {}
@@ -195,7 +219,8 @@ module Lutaml
             case key.strip
             when "LCol"
               # Line color
-              style[:stroke] = style_parser.send(:color_from_ea_color, value.to_i)
+              style[:stroke] =
+                style_parser.send(:color_from_ea_color, value.to_i)
             when "LWth"
               # Line width
               style[:stroke_width] = value.to_i
@@ -217,7 +242,7 @@ module Lutaml
         #
         # @param connector [Object] UML connector
         # @return [String] Connector type name
-        def determine_connector_type(connector)
+        def determine_connector_type(connector) # rubocop:disable Metrics/MethodLength
           return "association" unless connector
 
           case connector.class.name
@@ -238,11 +263,12 @@ module Lutaml
         #
         # @param connector [Object] Association connector
         # @return [String] Specific association type
-        def determine_association_type(connector)
+        def determine_association_type(connector) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/MethodLength
           return "association" unless connector.respond_to?(:member_end)
           return "association" unless connector.member_end
 
-          # Ensure member_end is an array (handle legacy data where it might be a string)
+          # Ensure member_end is an array (handle legacy data
+          # where it might be a string)
           member_ends = Array(connector.member_end)
 
           # Check for aggregation or composition

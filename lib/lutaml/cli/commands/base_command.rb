@@ -8,13 +8,15 @@ module Lutaml
       # BaseCommand provides common functionality for all command handlers
       #
       # All command classes should inherit from this base class to access
-      # common utilities like repository loading, error handling, and output formatting.
+      # common utilities like repository loading, error handling,
+      # and output formatting.
       class BaseCommand
         attr_reader :repository, :options
 
         # Initialize command with repository and options
         #
-        # @param repository [Lutaml::UmlRepository::Repository, nil] Repository instance
+        # @param repository [Lutaml::UmlRepository::Repository, nil]
+        # Repository instance
         # @param options [Hash] Command options
         def initialize(repository = nil, options = {})
           @repository = repository
@@ -36,7 +38,7 @@ module Lutaml
         # @param lur_path [String] Path to LUR package file
         # @param lazy [Boolean] Whether to use lazy loading
         # @return [Lutaml::UmlRepository::Repository] Loaded repository
-        def load_repository(lur_path, lazy: false)
+        def load_repository(lur_path, lazy: false) # rubocop:disable Metrics/MethodLength
           unless File.exist?(lur_path)
             error_and_exit("Package file not found: #{lur_path}")
           end
@@ -104,7 +106,8 @@ module Lutaml
         # Format and print output based on format option
         #
         # @param data [Object] Data to format
-        # @param format [String, nil] Output format (uses options[:format] if nil)
+        # @param format [String, nil] Output format
+        # (uses options[:format] if nil)
         def print_formatted(data, format: nil)
           format ||= options[:format] || "text"
           puts OutputFormatter.format(data, format: format)

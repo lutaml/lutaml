@@ -35,12 +35,13 @@ module Lutaml
           thor_class.option :format, type: :string, default: "text",
                                      desc: "Output format (text|yaml|json)"
           thor_class.option :include, type: :array,
-                                      desc: "Include sections (attributes, associations, operations)"
+                                      desc: "Include sections (attributes, " \
+                                            "associations, operations)"
           thor_class.option :lazy, type: :boolean, default: false,
                                    desc: "Use lazy loading"
         end
 
-        def run(lur_path, element_id)
+        def run(lur_path, element_id) # rubocop:disable Metrics/MethodLength
           repo = load_repository(lur_path, lazy: options[:lazy])
           identifier = ElementIdentifier.parse(element_id)
 
@@ -69,7 +70,8 @@ module Lutaml
         end
 
         def display_element_details(element, identifier, repo)
-          presenter_class_name = ResourceRegistry.config_for(identifier.type)[:presenter]
+          presenter_class_name = ResourceRegistry
+            .config_for(identifier.type)[:presenter]
           presenter_class = Lutaml::UmlRepository::Presenters.const_get(presenter_class_name)
           presenter = presenter_class.new(element, repo)
 

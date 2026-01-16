@@ -45,7 +45,8 @@ RSpec.describe Lutaml::Qea::Models::EaObject do
     end
 
     it "allows reading and writing ea_guid" do
-      obj = described_class.new(ea_guid: "{12345678-1234-1234-1234-123456789012}")
+      obj = described_class
+        .new(ea_guid: "{12345678-1234-1234-1234-123456789012}")
       expect(obj.ea_guid).to eq("{12345678-1234-1234-1234-123456789012}")
     end
 

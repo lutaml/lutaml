@@ -20,7 +20,7 @@ RSpec.describe Lutaml::Cli::InteractiveShell do
         max_package_depth: 2,
         avg_package_depth: 1.5,
         avg_class_complexity: 3.0,
-      }
+      },
     )
   end
 
@@ -280,7 +280,8 @@ RSpec.describe Lutaml::Cli::InteractiveShell do
 
       describe "#bookmark_list" do
         it "lists all bookmarks" do
-          shell.instance_variable_set(:@bookmarks, { "bm1" => "Path1", "bm2" => "Path2" })
+          shell.instance_variable_set(:@bookmarks,
+                                      { "bm1" => "Path1", "bm2" => "Path2" })
 
           output = StringIO.new
           original_stdout = $stdout
@@ -309,7 +310,8 @@ RSpec.describe Lutaml::Cli::InteractiveShell do
 
       describe "#bookmark_go" do
         before do
-          shell.instance_variable_set(:@bookmarks, { "test" => "ModelRoot::Package" })
+          shell.instance_variable_set(:@bookmarks,
+                                      { "test" => "ModelRoot::Package" })
           allow(mock_repo).to receive(:find_package).with("ModelRoot::Package")
             .and_return(double("Package", name: "Package"))
         end

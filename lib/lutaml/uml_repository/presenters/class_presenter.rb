@@ -14,7 +14,7 @@ module Lutaml
         # Generate detailed text view.
         #
         # @return [String] Multi-line formatted text
-        def to_text
+        def to_text # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           lines = []
           lines << "Class: #{element.name}"
           lines << ("=" * 50)
@@ -42,11 +42,11 @@ module Lutaml
         # Generate structured hash.
         #
         # @return [Hash] Structured representation
-        def to_hash
+        def to_hash # rubocop:disable Metrics/AbcSize
           data = {
             type: "Class",
             name: element.name,
-            is_abstract: !!element.is_abstract
+            is_abstract: !!element.is_abstract,
           }
 
           data[:xmi_id] = element.xmi_id if element.xmi_id

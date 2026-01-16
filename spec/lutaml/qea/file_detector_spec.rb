@@ -65,7 +65,8 @@ RSpec.describe Lutaml::Qea::FileDetector do
         result = described_class.validate_qea(f.path)
 
         expect(result[:valid]).to be false
-        expect(result[:errors]).to include(a_string_matching(/not a valid SQLite/i))
+        expect(result[:errors])
+          .to include(a_string_matching(/not a valid SQLite/i))
       end
     end
 
@@ -78,7 +79,8 @@ RSpec.describe Lutaml::Qea::FileDetector do
 
         result = described_class.validate_qea(f.path)
 
-        expect(result[:warnings]).to include(a_string_matching(/does not have \.qea extension/i))
+        expect(result[:warnings])
+          .to include(a_string_matching(/does not have \.qea extension/i))
       end
     end
 

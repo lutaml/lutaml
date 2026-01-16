@@ -27,7 +27,7 @@ module Lutaml
                                     desc: "Enable icons in output"
         end
 
-        def run(lur_path)
+        def run(lur_path) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           unless File.exist?(lur_path)
             puts OutputFormatter.error("Package file not found: #{lur_path}")
             raise Thor::Error, "Package file not found: #{lur_path}"

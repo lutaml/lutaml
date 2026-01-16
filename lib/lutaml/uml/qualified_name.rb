@@ -19,10 +19,12 @@ module Lutaml
 
       # Create a new QualifiedName.
       #
-      # @param qualified_name [String, Array<String>] The full qualified name or array of segments
-      #   (e.g., "i-UR::urf::UrbanPlanningArea" or ["i-UR", "urf", "UrbanPlanningArea"])
+      # @param qualified_name [String, Array<String>] The full qualified name or
+      # array of segments
+      #   (e.g., "i-UR::urf::UrbanPlanningArea" or
+      #   ["i-UR", "urf", "UrbanPlanningArea"])
       # @raise [ArgumentError] if qualified_name is nil
-      def initialize(qualified_name)
+      def initialize(qualified_name) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
         if qualified_name.nil?
           raise ArgumentError, "Qualified name cannot be nil"
         end
@@ -36,20 +38,20 @@ module Lutaml
 
         # Allow empty qualified names
         if parts.empty?
-          @class_name = "".freeze
+          @class_name = ""
           @package_path = PackagePath.new("")
         else
           @class_name = parts.last.freeze
-          
+
           # Package path can be empty for unqualified names
-          if parts.size > 1
-            @package_path = PackagePath.new(parts[0...-1])
-          else
-            # Create empty package path
-            @package_path = PackagePath.new("")
-          end
+          @package_path = if parts.size > 1
+                            PackagePath.new(parts[0...-1])
+                          else
+                            # Create empty package path
+                            PackagePath.new("")
+                          end
         end
-        
+
         freeze
       end
 
@@ -61,16 +63,16 @@ module Lutaml
       #   qname.to_s # => "i-UR::urf::UrbanPlanningArea"
       def to_s
         return "" if @class_name.nil? || @class_name.empty?
-        
+
         # Check if package path is empty
         if @package_path.nil? ||
-           (@package_path.respond_to?(:empty?) && @package_path.empty?)
+            (@package_path.respond_to?(:empty?) && @package_path.empty?)
           return @class_name
         end
-        
+
         "#{@package_path}#{PackagePath::SEPARATOR}#{@class_name}"
       end
-      
+
       # Check if this is a qualified name (has a package path).
       #
       # @return [Boolean] true if qualified (has package), false if unqualified
@@ -103,12 +105,13 @@ module Lutaml
       #   qname.matches_glob?("Package1::*::ClassName") # => true
       def matches_glob?(pattern)
         # Create a full path for matching (package + class)
-        full_segments = if @package_path.respond_to?(:segments) && !@package_path.segments.empty?
+        full_segments = if @package_path.respond_to?(:segments) &&
+            !@package_path.segments.empty?
                           @package_path.segments + [@class_name]
                         else
                           [@class_name]
                         end
-        
+
         full_path = PackagePath.new(full_segments)
         full_path.matches_glob?(pattern)
       end
@@ -132,17 +135,18 @@ module Lutaml
       # Get the relative qualified name from a base package path.
       #
       # @param base_path_string [String] The base package path
-      # @return [QualifiedName] The relative qualified name, or self if not relative
+      # @return [QualifiedName] The relative qualified name,
+      # or self if not relative
       # @example
       #   qname = QualifiedName.new("ModelRoot::i-UR::urf::UrbanPlanningArea")
       #   qname.relative_to("ModelRoot::i-UR")
       #   # => QualifiedName("urf::UrbanPlanningArea")
       def relative_to(base_path_string)
         relative_path = @package_path.relative_to(base_path_string)
-        
+
         # If package path didn't change, return self
         return self if relative_path == @package_path
-        
+
         # Otherwise create new qualified name with relative path
         if relative_path.respond_to?(:empty?) && relative_path.empty?
           self.class.new(@class_name)

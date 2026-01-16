@@ -15,7 +15,7 @@ module Lutaml
 
         private
 
-        def validate_parent_references
+        def validate_parent_references # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           packages.each do |package|
             next if package.root?
 
@@ -35,7 +35,7 @@ module Lutaml
           end
         end
 
-        def validate_duplicate_names
+        def validate_duplicate_names # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           packages_by_parent = packages.group_by(&:parent_id)
 
           packages_by_parent.each do |parent_id, sibling_packages|
@@ -46,14 +46,19 @@ module Lutaml
               dup_packages = sibling_packages.select { |p| p.name == dup_name }
               dup_packages.each do |package|
                 package_path = resolve_package_path(package.package_id)
-                parent_path = parent_id ? resolve_package_path(parent_id) : "Root"
+                parent_path = if parent_id
+                                resolve_package_path(parent_id)
+                              else
+                                "Root"
+                              end
                 result.add_warning(
                   category: :duplicate,
                   entity_type: :package,
                   entity_id: package.package_id.to_s,
                   entity_name: package.name,
                   field: "name",
-                  message: "Duplicate package name '#{dup_name}' in parent #{parent_path}",
+                  message: "Duplicate package name '#{dup_name}' " \
+                           "in parent #{parent_path}",
                   location: package_path,
                 )
               end
@@ -61,7 +66,7 @@ module Lutaml
           end
         end
 
-        def validate_circular_hierarchy
+        def validate_circular_hierarchy # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           packages.each do |package|
             next if package.root?
 

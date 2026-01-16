@@ -69,7 +69,8 @@ RSpec.describe Lutaml::ModelTransformations do
     it "passes options to underlying engine" do
       options = { validate_input: true }
 
-      expect(described_class.engine).to receive(:parse).with(xmi_file.path, options)
+      expect(described_class.engine).to receive(:parse).with(xmi_file.path,
+                                                             options)
       described_class.parse(xmi_file.path, options)
     end
 
@@ -82,7 +83,8 @@ RSpec.describe Lutaml::ModelTransformations do
 
   describe ".supports_file?" do
     it "delegates to engine" do
-      expect(described_class.engine).to receive(:supports_file?).with("test.xmi")
+      expect(described_class.engine)
+        .to receive(:supports_file?).with("test.xmi")
       described_class.supports_file?("test.xmi")
     end
   end
@@ -124,7 +126,9 @@ RSpec.describe Lutaml::ModelTransformations do
     end
 
     it "delegates to engine" do
-      expect(described_class.engine).to receive(:register_parser).with(".custom", TestCustomParser)
+      expect(described_class.engine).to receive(:register_parser).with(
+        ".custom", TestCustomParser
+      )
       described_class.register_parser(".custom", TestCustomParser)
     end
   end
@@ -151,7 +155,7 @@ RSpec.describe Lutaml::ModelTransformations do
       expect(stats).to include(
         :total_transformations,
         :successful_transformations,
-        :configuration_version
+        :configuration_version,
       )
     end
 
@@ -241,7 +245,7 @@ RSpec.describe Lutaml::ModelTransformations do
       expect(results).to include(
         :configuration_valid,
         :parsers_loaded,
-        :parser_errors
+        :parser_errors,
       )
 
       expect(results[:configuration_valid]).to be true
@@ -394,7 +398,7 @@ RSpec.describe Lutaml::ModelTransformations do
       expect(stats).to include(
         :total_transformations,
         :average_duration,
-        :success_rate
+        :success_rate,
       )
     end
   end

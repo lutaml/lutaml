@@ -19,7 +19,8 @@ module Lutaml
       class ObjectRepository < BaseRepository
         # Find objects by type
         #
-        # @param object_type [String] The object type (e.g., "Class", "Interface")
+        # @param object_type [String] The object type
+        # (e.g., "Class", "Interface")
         # @return [Array<Models::EaObject>] Matching objects
         #
         # @example

@@ -20,8 +20,10 @@ module Lutaml
           #
           # @param result [ValidationResult] The validation result to format
           # @param options [Hash] Formatting options
-          # @option options [Boolean] :color Enable colored output (default: true)
-          # @option options [Boolean] :verbose Show all messages (default: false)
+          # @option options [Boolean] :color Enable colored output
+          # (default: true)
+          # @option options [Boolean] :verbose Show all messages
+          # (default: false)
           # @option options [Integer] :limit Maximum messages per category
           def initialize(result: nil, **options)
             @result = result
@@ -35,7 +37,7 @@ module Lutaml
           # Formats the validation result as text
           #
           # @return [String] Formatted text output
-          def format
+          def format # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
             lines = []
             lines << header
             lines << ""
@@ -82,7 +84,7 @@ module Lutaml
           # Formats the summary
           #
           # @return [String]
-          def summary
+          def summary # rubocop:disable Metrics/AbcSize
             status = if result.valid?
                        colorize("✓ VALID", :green, bold: true)
                      elsif result.has_errors?
@@ -120,7 +122,7 @@ module Lutaml
           #
           # @param messages [Array<ValidationMessage>] Messages to format
           # @return [String]
-          def format_messages(messages)
+          def format_messages(messages) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
             lines = []
             messages_to_show = apply_limit(messages)
 
@@ -209,7 +211,7 @@ module Lutaml
           # @param color [Symbol] Color name
           # @param bold [Boolean] Make text bold
           # @return [String]
-          def colorize(text, color = nil, bold: false)
+          def colorize(text, color = nil, bold: false) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/MethodLength
             return text unless options[:color]
 
             codes = []

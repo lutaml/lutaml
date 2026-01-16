@@ -10,7 +10,7 @@ RSpec.describe Lutaml::Qea::Repositories::BaseRepository do
       ea_object_id: 1,
       name: "ClassA",
       object_type: "Class",
-      visibility: "Public"
+      visibility: "Public",
     )
   end
 
@@ -19,7 +19,7 @@ RSpec.describe Lutaml::Qea::Repositories::BaseRepository do
       ea_object_id: 2,
       name: "ClassB",
       object_type: "Interface",
-      visibility: "Public"
+      visibility: "Public",
     )
   end
 
@@ -28,7 +28,7 @@ RSpec.describe Lutaml::Qea::Repositories::BaseRepository do
       ea_object_id: 3,
       name: "ClassC",
       object_type: "Class",
-      visibility: "Private"
+      visibility: "Private",
     )
   end
 
@@ -88,7 +88,9 @@ RSpec.describe Lutaml::Qea::Repositories::BaseRepository do
       end
 
       it "filters with complex condition" do
-        results = repository.where { |r| r.object_type == "Class" && r.visibility == "Public" }
+        results = repository.where do |r|
+          r.object_type == "Class" && r.visibility == "Public"
+        end
         expect(results).to contain_exactly(object1)
       end
     end

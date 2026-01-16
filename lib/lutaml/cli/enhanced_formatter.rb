@@ -51,8 +51,9 @@ module Lutaml
       # @param prefix [String] Current indentation prefix
       # @param is_last [Boolean] Whether this is the last sibling
       # @return [String] Formatted tree with icons
-      def self.format_tree_with_icons(node, config = {}, prefix: "",
-is_last: true)
+      def self.format_tree_with_icons( # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+        node, config = {}, prefix: "", is_last: true
+      )
         return "" if node.nil?
 
         config = {
@@ -62,7 +63,13 @@ is_last: true)
         }.merge(config)
 
         lines = []
-        connector = is_last ? "#{TREE_CHARS[:corner]}#{TREE_CHARS[:horizontal]}#{TREE_CHARS[:horizontal]} " : "#{TREE_CHARS[:branch]}#{TREE_CHARS[:horizontal]}#{TREE_CHARS[:horizontal]} "
+        connector = if is_last
+                      "#{TREE_CHARS[:corner]}#{TREE_CHARS[:horizontal]}" \
+                        "#{TREE_CHARS[:horizontal]} "
+                    else
+                      "#{TREE_CHARS[:branch]}#{TREE_CHARS[:horizontal]}" \
+                        "#{TREE_CHARS[:horizontal]} "
+                    end
 
         # Build node display
         icon = config[:show_icons] ? get_icon(node) : ""
@@ -93,7 +100,8 @@ is_last: true)
       # @param headers [Array<String>] Column headers
       # @param rows [Array<Array>] Data rows
       # @param options [Hash] Pagination options
-      # @option options [Integer] :page_size Number of rows per page (default: 50)
+      # @option options [Integer] :page_size Number of rows per page
+      # (default: 50)
       # @option options [Boolean] :interactive Enable interactive navigation
       # @option options [Integer] :current_page Starting page (default: 1)
       # @return [String] Formatted and optionally paginated table
@@ -117,7 +125,7 @@ is_last: true)
       # @param klass [Object] Class object to display
       # @param path_formatter [Proc] Formatter for package paths
       # @return [String] Enhanced class details
-      def self.format_class_details_enhanced(klass, path_formatter = nil)
+      def self.format_class_details_enhanced(klass, path_formatter = nil) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
         lines = []
 
         # Header box
@@ -145,9 +153,11 @@ is_last: true)
         lines << ""
 
         # Attributes
-        if klass.respond_to?(:attributes) && klass.attributes && !klass.attributes.empty?
+        if klass.respond_to?(:attributes) && klass.attributes &&
+            !klass.attributes.empty?
           lines << colorize(
-            "#{ICONS[:attribute]} Attributes (#{klass.attributes.size}):", :yellow
+            "#{ICONS[:attribute]} Attributes (#{klass.attributes.size}):",
+            :yellow,
           )
           attr_data = klass.attributes.map do |attr|
             {
@@ -161,9 +171,11 @@ is_last: true)
         end
 
         # Operations
-        if klass.respond_to?(:operations) && klass.operations && !klass.operations.empty?
+        if klass.respond_to?(:operations) && klass.operations &&
+            !klass.operations.empty?
           lines << colorize(
-            "#{ICONS[:operation]} Operations (#{klass.operations.size}):", :yellow
+            "#{ICONS[:operation]} Operations (#{klass.operations.size}):",
+            :yellow,
           )
           klass.operations.each do |op|
             params = if op.respond_to?(:parameters) && op.parameters
@@ -178,7 +190,8 @@ is_last: true)
                           else
                             ""
                           end
-            lines << "  #{ICONS[:operation]} #{op.name}(#{params})#{return_type}"
+            lines << "  #{ICONS[:operation]} #{op.name}(#{params})" \
+                     "#{return_type}"
           end
           lines << ""
         end
@@ -207,7 +220,7 @@ is_last: true)
       # @param stats [Hash] Statistics data
       # @param options [Hash] Display options
       # @return [String] Formatted statistics
-      def self.format_stats_enhanced(stats, options = {})
+      def self.format_stats_enhanced(stats, options = {}) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
         lines = []
 
         # Header
@@ -215,7 +228,8 @@ is_last: true)
         header = "Repository Statistics"
         padding = (78 - header.length) / 2
         lines << colorize(
-          "║#{' ' * padding}#{header}#{' ' * (78 - padding - header.length)}║", :cyan
+          "║#{' ' * padding}#{header}#{' ' * (78 - padding - header.length)}║",
+          :cyan,
         )
         lines << colorize("╚#{'═' * 78}╝", :cyan)
         lines << ""
@@ -256,11 +270,17 @@ is_last: true)
         if options[:show_complexity] && stats[:avg_class_complexity]
           lines << colorize("#{ICONS[:complex]} Complexity Metrics", :yellow)
           lines << "  Avg Complexity: #{'%.2f' % stats[:avg_class_complexity]}"
-          if stats[:most_complex_classes] && !stats[:most_complex_classes].empty?
+          if stats[:most_complex_classes] &&
+              !stats[:most_complex_classes].empty?
             lines << "  Most Complex:"
             stats[:most_complex_classes].first(3).each do |cls|
-              complexity_icon = cls[:total_complexity] > 10 ? ICONS[:complex] : ICONS[:class]
-              lines << "    #{complexity_icon} #{cls[:name]} (#{cls[:total_complexity]})"
+              complexity_icon = if cls[:total_complexity] > 10
+                                  ICONS[:complex]
+                                else
+                                  ICONS[:class]
+                                end
+              lines << "    #{complexity_icon} #{cls[:name]} " \
+                       "(#{cls[:total_complexity]})"
             end
           end
         end
@@ -283,14 +303,15 @@ is_last: true)
       # @param node [Hash] Node with metadata
       # @param config [Hash] Display configuration
       # @return [String] Formatted metadata
-      def self.build_metadata_string(node, config)
+      def self.build_metadata_string(node, config) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/MethodLength
         parts = []
 
         if config[:show_counts] && node[:count]
           parts << " (#{node[:count]} classes)"
         end
 
-        if config[:show_complexity] && node[:complexity] && (node[:complexity] > 10)
+        if config[:show_complexity] && node[:complexity] &&
+            (node[:complexity] > 10)
           parts << " #{ICONS[:complex]}"
         end
 
@@ -307,7 +328,7 @@ is_last: true)
       # @param rows [Array<Array>] Data rows
       # @param options [Hash] TableTennis options
       # @return [String] Formatted table
-      def self.format_simple_table(headers, rows, options: {})
+      def self.format_simple_table(headers, rows, options: {}) # rubocop:disable Metrics/MethodLength
         return "" if rows.empty?
 
         # Convert to array of hashes for TableTennis
@@ -333,8 +354,9 @@ is_last: true)
       # @param page_size [Integer] Rows per page
       # @param current_page [Integer] Starting page
       # @return [String] Final page output
-      def self.interactive_paginated_table(headers, rows, page_size,
-current_page)
+      def self.interactive_paginated_table( # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength
+        headers, rows, page_size, current_page
+      )
         total_pages = (rows.size.to_f / page_size).ceil
         page = current_page
 
@@ -380,8 +402,10 @@ current_page)
       # @param page_size [Integer] Rows per page
       # @param current_page [Integer] Page to display
       # @return [String] Formatted page
-      def self.non_interactive_paginated_table(headers, rows, page_size,
-current_page)
+      def self.non_interactive_paginated_table( # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+        headers, rows, page_size,
+        current_page
+      )
         total_pages = (rows.size.to_f / page_size).ceil
         page = [[current_page, 1].max, total_pages].min
 
@@ -415,7 +439,7 @@ current_page)
       # @param rows [Array<Array>] Data rows
       # @param col_widths [Array<Integer>] Column widths
       # @return [String] Formatted table
-      def self.format_table_content(headers, rows, col_widths)
+      def self.format_table_content(headers, rows, col_widths) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
         lines = []
 
         # Header row
@@ -460,7 +484,7 @@ current_page)
       #
       # @param attr [Object] Attribute with cardinality
       # @return [String] Formatted cardinality
-      def self.format_cardinality(attr)
+      def self.format_cardinality(attr) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
         return "" unless attr.respond_to?(:cardinality)
         return "" unless attr.cardinality
 

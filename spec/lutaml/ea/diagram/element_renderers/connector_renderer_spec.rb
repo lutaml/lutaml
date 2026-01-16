@@ -13,7 +13,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ConnectorRenderer do
       type: "association",
       source: "elem-1",
       target: "elem-2",
-      geometry: "SX=10;SY=5;EX=-10;EY=-5;EDGE=1;"
+      geometry: "SX=10;SY=5;EX=-10;EY=-5;EDGE=1;",
     }
   end
   let(:source_element) do
@@ -23,7 +23,8 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ConnectorRenderer do
     { id: "elem-2", x: 400, y: 200, width: 150, height: 100 }
   end
   let(:renderer) do
-    described_class.new(connector_data, style_parser, source_element, target_element)
+    described_class.new(connector_data, style_parser, source_element,
+                        target_element)
   end
 
   describe "inheritance" do
@@ -50,12 +51,14 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ConnectorRenderer do
     end
 
     it "accepts nil source element" do
-      renderer_no_source = described_class.new(connector_data, style_parser, nil, target_element)
+      renderer_no_source = described_class.new(connector_data, style_parser,
+                                               nil, target_element)
       expect(renderer_no_source.source_element).to be_nil
     end
 
     it "accepts nil target element" do
-      renderer_no_target = described_class.new(connector_data, style_parser, source_element, nil)
+      renderer_no_target = described_class.new(connector_data, style_parser,
+                                               source_element, nil)
       expect(renderer_no_target.target_element).to be_nil
     end
   end
@@ -89,7 +92,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ConnectorRenderer do
     it "includes type-specific connector class" do
       svg = renderer.render
 
-      expect(svg).to include('lutaml-diagram-connector-association')
+      expect(svg).to include("lutaml-diagram-connector-association")
     end
 
     it "includes arrowhead marker reference" do
@@ -118,7 +121,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ConnectorRenderer do
     it "applies connector styles" do
       svg = renderer.render
 
-      expect(svg).to include('style=')
+      expect(svg).to include("style=")
     end
 
     context "with generalization connector" do
@@ -129,7 +132,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ConnectorRenderer do
       it "includes generalization class" do
         svg = renderer.render
 
-        expect(svg).to include('lutaml-diagram-connector-generalization')
+        expect(svg).to include("lutaml-diagram-connector-generalization")
       end
     end
 
@@ -141,7 +144,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ConnectorRenderer do
       it "includes dependency class" do
         svg = renderer.render
 
-        expect(svg).to include('lutaml-diagram-connector-dependency')
+        expect(svg).to include("lutaml-diagram-connector-dependency")
       end
     end
 
@@ -153,7 +156,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ConnectorRenderer do
       it "includes composition class" do
         svg = renderer.render
 
-        expect(svg).to include('lutaml-diagram-connector-composition')
+        expect(svg).to include("lutaml-diagram-connector-composition")
       end
     end
   end
@@ -164,7 +167,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ConnectorRenderer do
         style_hash = {
           stroke: "#000000",
           "stroke-width": 2,
-          "stroke-dasharray": "5,5"
+          "stroke-dasharray": "5,5",
         }
 
         css = renderer.send(:style_to_css, style_hash)
@@ -211,7 +214,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ConnectorRenderer do
       svg = renderer.render
 
       # Should generate path from geometry
-      expect(svg).to match(/d\=\"M \d+,\d+ L \d+,\d+/)
+      expect(svg).to match(/d="M \d+,\d+ L \d+,\d+/)
     end
 
     it "handles connector without geometry" do
@@ -256,7 +259,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ConnectorRenderer do
         connector_data,
         style_parser,
         nil,
-        target_element
+        target_element,
       )
 
       expect { renderer_no_source.render }.not_to raise_error
@@ -267,7 +270,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ConnectorRenderer do
         connector_data,
         style_parser,
         source_element,
-        nil
+        nil,
       )
 
       expect { renderer_no_target.render }.not_to raise_error
@@ -278,7 +281,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ConnectorRenderer do
         connector_data,
         style_parser,
         nil,
-        nil
+        nil,
       )
 
       expect { renderer_no_elements.render }.not_to raise_error

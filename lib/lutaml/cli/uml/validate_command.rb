@@ -12,7 +12,7 @@ module Lutaml
           @options = options.transform_keys(&:to_sym)
         end
 
-        def self.add_options_to(thor_class, _method_name)
+        def self.add_options_to(thor_class, _method_name) # rubocop:disable Metrics/MethodLength
           thor_class.long_desc <<-DESC
           Validate a LUR package or QEA file for consistency and completeness.
 
@@ -52,7 +52,7 @@ module Lutaml
                                       desc: "Show detailed validation messages"
         end
 
-        def run(file_path)
+        def run(file_path) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           unless File.exist?(file_path)
             puts OutputFormatter.error("File not found: #{file_path}")
             raise Thor::Error, "File not found: #{file_path}"
@@ -67,7 +67,8 @@ module Lutaml
             puts OutputFormatter.error(
               "Unsupported file type. Please provide a .qea or .lur file.",
             )
-            raise Thor::Error, "Unsupported file type. Please provide a .qea or .lur file."
+            raise Thor::Error,
+                  "Unsupported file type. Please provide a .qea or .lur file."
           end
         rescue Thor::Error
           raise
@@ -80,7 +81,7 @@ module Lutaml
 
         private
 
-        def validate_lur_file(lur_path)
+        def validate_lur_file(lur_path) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           OutputFormatter.progress("Loading package")
           repo = Lutaml::UmlRepository::Repository.from_package(lur_path)
           OutputFormatter.progress_done
@@ -103,7 +104,7 @@ module Lutaml
           end
         end
 
-        def validate_qea_file(qea_path)
+        def validate_qea_file(qea_path) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           require_relative "../../qea"
           require_relative "../../qea/validation/formatters/text_formatter"
           require_relative "../../qea/validation/formatters/json_formatter"
@@ -141,7 +142,9 @@ module Lutaml
           # Display or save output
           if options[:output]
             File.write(options[:output], output)
-            puts OutputFormatter.success("Validation report saved to: #{options[:output]}")
+            puts OutputFormatter.success(
+              "Validation report saved to: #{options[:output]}",
+            )
           else
             puts output
           end
@@ -157,7 +160,7 @@ module Lutaml
           end
         end
 
-        def display_validation_results(result)
+        def display_validation_results(result) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           if result.warnings.any?
             puts ""
             puts OutputFormatter.colorize("Warnings:", :yellow)
@@ -173,7 +176,8 @@ module Lutaml
           if result.has_external_references?
             puts ""
             puts OutputFormatter.colorize(
-              "External Type References (#{result.external_references.size}):", :cyan
+              "External Type References (#{result.external_references.size}):",
+              :cyan,
             )
             puts ""
             puts OutputFormatter.format_array_table(

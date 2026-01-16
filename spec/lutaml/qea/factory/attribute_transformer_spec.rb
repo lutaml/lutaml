@@ -22,7 +22,7 @@ RSpec.describe Lutaml::Qea::Factory::AttributeTransformer do
         ea_guid: "{ATTR-GUID}",
         isstatic: 0,
         derived: "0",
-        notes: "Person's first name"
+        notes: "Person's first name",
       )
 
       result = transformer.transform(ea_attr)
@@ -41,7 +41,7 @@ RSpec.describe Lutaml::Qea::Factory::AttributeTransformer do
       ea_attr = Lutaml::Qea::Models::EaAttribute.new(
         name: "count",
         type: "Integer",
-        isstatic: 1
+        isstatic: 1,
       )
 
       result = transformer.transform(ea_attr)
@@ -52,7 +52,7 @@ RSpec.describe Lutaml::Qea::Factory::AttributeTransformer do
     it "marks derived attributes" do
       ea_attr = Lutaml::Qea::Models::EaAttribute.new(
         name: "fullName",
-        derived: "1"
+        derived: "1",
       )
 
       result = transformer.transform(ea_attr)
@@ -64,7 +64,7 @@ RSpec.describe Lutaml::Qea::Factory::AttributeTransformer do
       ea_attr = Lutaml::Qea::Models::EaAttribute.new(
         name: "tags",
         lowerbound: "0",
-        upperbound: "*"
+        upperbound: "*",
       )
 
       result = transformer.transform(ea_attr)
@@ -78,7 +78,7 @@ RSpec.describe Lutaml::Qea::Factory::AttributeTransformer do
       ea_attr = Lutaml::Qea::Models::EaAttribute.new(
         name: "simple",
         lowerbound: nil,
-        upperbound: nil
+        upperbound: nil,
       )
 
       result = transformer.transform(ea_attr)
@@ -90,7 +90,7 @@ RSpec.describe Lutaml::Qea::Factory::AttributeTransformer do
       ["Public", "Private", "Protected"].each do |visibility|
         ea_attr = Lutaml::Qea::Models::EaAttribute.new(
           name: "attr",
-          scope: visibility
+          scope: visibility,
         )
 
         result = transformer.transform(ea_attr)
@@ -102,7 +102,7 @@ RSpec.describe Lutaml::Qea::Factory::AttributeTransformer do
     it "skips empty notes" do
       ea_attr = Lutaml::Qea::Models::EaAttribute.new(
         name: "attr",
-        notes: ""
+        notes: "",
       )
 
       result = transformer.transform(ea_attr)

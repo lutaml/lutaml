@@ -16,7 +16,7 @@ RSpec.describe Lutaml::Qea::Factory::TaggedValueTransformer do
           element_id: "{ELEMENT-GUID}",
           base_class: "ASSOCIATION_SOURCE",
           tag_value: "sequenceNumber|15$ea_notes=Unique integer value",
-          notes: nil
+          notes: nil,
         )
       end
 
@@ -37,7 +37,7 @@ RSpec.describe Lutaml::Qea::Factory::TaggedValueTransformer do
           element_id: "{ELEMENT-GUID}",
           base_class: "ASSOCIATION_SOURCE",
           tag_value: "isMetadata$ea_notes=Boolean flag",
-          notes: nil
+          notes: nil,
         )
       end
 
@@ -65,7 +65,7 @@ RSpec.describe Lutaml::Qea::Factory::TaggedValueTransformer do
           element_id: "{ELEMENT-GUID}",
           base_class: "ASSOCIATION_SOURCE",
           tag_value: nil,
-          notes: "Some notes"
+          notes: "Some notes",
         )
       end
 
@@ -82,12 +82,12 @@ RSpec.describe Lutaml::Qea::Factory::TaggedValueTransformer do
         Lutaml::Qea::Models::EaTaggedValue.new(
           property_id: "{GUID-1}",
           element_id: "{ELEMENT-GUID}",
-          tag_value: "tag1|value1$ea_notes=Note1"
+          tag_value: "tag1|value1$ea_notes=Note1",
         ),
         Lutaml::Qea::Models::EaTaggedValue.new(
           property_id: "{GUID-2}",
           element_id: "{ELEMENT-GUID}",
-          tag_value: "tag2|value2"
+          tag_value: "tag2|value2",
         ),
       ]
     end

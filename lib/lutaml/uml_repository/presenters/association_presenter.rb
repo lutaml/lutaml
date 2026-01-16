@@ -14,7 +14,7 @@ module Lutaml
           super
         end
 
-        def to_text
+        def to_text # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           lines = []
           lines << "Association: #{element.name || '(unnamed)'}"
           lines << ("=" * 50)
@@ -57,11 +57,13 @@ module Lutaml
         private
 
         def source_display
-          @context["source"] || @context[:source] || element.owner_end || "Unknown"
+          @context["source"] || @context[:source] ||
+            element.owner_end || "Unknown"
         end
 
-        def target_display
-          # Check string key first (from search), then symbol key (from show command)
+        def target_display # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+          # Check string key first (from search),
+          # then symbol key (from show command)
           if @context["target"] || @context[:target]
             @context["target"] || @context[:target]
           elsif element.respond_to?(:member_end) && element.member_end

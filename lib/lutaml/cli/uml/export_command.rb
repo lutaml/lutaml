@@ -30,7 +30,7 @@ module Lutaml
                                         desc: "Include nested packages"
         end
 
-        def run(lur_path)
+        def run(lur_path) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           repo = load_repository(lur_path)
 
           exporter_class = case options[:format].downcase
@@ -39,8 +39,11 @@ module Lutaml
                            when "markdown"
                              Lutaml::UmlRepository::Exporters::MarkdownExporter
                            else
-                             puts OutputFormatter.error("Unknown format: #{options[:format]}")
-                             raise Thor::Error, "Unknown format: #{options[:format]}"
+                             puts OutputFormatter.error(
+                               "Unknown format: #{options[:format]}",
+                             )
+                             raise Thor::Error,
+                                   "Unknown format: #{options[:format]}"
                            end
 
           exporter = exporter_class.new(repo)

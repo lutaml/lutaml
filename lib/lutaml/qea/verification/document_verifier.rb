@@ -28,7 +28,7 @@ module Lutaml
         # @param xmi_path [String] Path to XMI file
         # @param qea_path [String] Path to QEA file
         # @return [ComparisonResult] Verification result
-        def verify(xmi_path, qea_path)
+        def verify(xmi_path, qea_path) # rubocop:disable Metrics/MethodLength
           # Parse documents
           xmi_doc = parse_xmi(xmi_path)
           qea_doc = parse_qea(qea_path)
@@ -70,7 +70,7 @@ module Lutaml
         # @param xmi_doc [Lutaml::Uml::Document] XMI document
         # @param qea_doc [Lutaml::Uml::Document] QEA document
         # @return [void]
-        def verify_structure(xmi_doc, qea_doc)
+        def verify_structure(xmi_doc, qea_doc) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           # Compare package counts
           match_result = matcher.match_packages(xmi_doc, qea_doc)
           result.add_matches(:packages, match_result[:matches].size)
@@ -107,7 +107,8 @@ module Lutaml
           result.add_matches(:associations, [xmi_assocs, qea_assocs].min)
           if qea_assocs < xmi_assocs
             result.add_difference(
-              "Associations: #{xmi_assocs} (XMI) vs #{qea_assocs} (QEA) - QEA has fewer",
+              "Associations: #{xmi_assocs} (XMI) " \
+              "vs #{qea_assocs} (QEA) - QEA has fewer",
             )
           end
         end
@@ -227,11 +228,11 @@ module Lutaml
         end
 
         # Verify class properties
-        def verify_class_properties(matches)
+        def verify_class_properties(matches) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength
           attr_count = 0
           op_count = 0
 
-          matches.each do |qualified_name, pair|
+          matches.each do |qualified_name, pair| # rubocop:disable Metrics/BlockLength
             xmi_class = pair[:xmi]
             qea_class = pair[:qea]
 

@@ -84,7 +84,9 @@ RSpec.describe Lutaml::Qea::Benchmark do
 
   describe ".compare" do
     it "compares QEA and XMI parsing" do
-      skip "Test files not available" unless File.exist?(qea_file_path) && File.exist?(xmi_file_path)
+      unless File.exist?(qea_file_path) && File.exist?(xmi_file_path)
+        skip "Test files not available"
+      end
 
       result = described_class.compare(qea_file_path, xmi_file_path)
 
@@ -96,7 +98,9 @@ RSpec.describe Lutaml::Qea::Benchmark do
     end
 
     it "calculates speedup correctly" do
-      skip "Test files not available" unless File.exist?(qea_file_path) && File.exist?(xmi_file_path)
+      unless File.exist?(qea_file_path) && File.exist?(xmi_file_path)
+        skip "Test files not available"
+      end
 
       result = described_class.compare(qea_file_path, xmi_file_path)
 
@@ -108,7 +112,9 @@ RSpec.describe Lutaml::Qea::Benchmark do
     end
 
     it "calculates improvement percentage" do
-      skip "Test files not available" unless File.exist?(qea_file_path) && File.exist?(xmi_file_path)
+      unless File.exist?(qea_file_path) && File.exist?(xmi_file_path)
+        skip "Test files not available"
+      end
 
       result = described_class.compare(qea_file_path, xmi_file_path)
 
@@ -118,7 +124,9 @@ RSpec.describe Lutaml::Qea::Benchmark do
 
   describe ".format_results" do
     it "formats comparison results as text" do
-      skip "Test files not available" unless File.exist?(qea_file_path) && File.exist?(xmi_file_path)
+      unless File.exist?(qea_file_path) && File.exist?(xmi_file_path)
+        skip "Test files not available"
+      end
 
       results = described_class.compare(qea_file_path, xmi_file_path)
       formatted = described_class.format_results(results)
@@ -131,7 +139,9 @@ RSpec.describe Lutaml::Qea::Benchmark do
     end
 
     it "includes speedup information" do
-      skip "Test files not available" unless File.exist?(qea_file_path) && File.exist?(xmi_file_path)
+      unless File.exist?(qea_file_path) && File.exist?(xmi_file_path)
+        skip "Test files not available"
+      end
 
       results = described_class.compare(qea_file_path, xmi_file_path)
       formatted = described_class.format_results(results)

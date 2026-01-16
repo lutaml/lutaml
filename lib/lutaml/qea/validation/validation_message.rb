@@ -54,7 +54,7 @@ module Lutaml
         # @param message [String] Human-readable description
         # @param location [String, nil] Package path or context
         # @param context [Hash] Additional context information
-        def initialize(
+        def initialize( # rubocop:disable Metrics/ParameterLists
           severity:,
           category:,
           entity_type:,
@@ -102,7 +102,7 @@ module Lutaml
         # Returns a formatted string representation of the message
         #
         # @return [String]
-        def to_s
+        def to_s # rubocop:disable Metrics/AbcSize
           parts = []
           parts << "#{entity_type.to_s.capitalize} '#{entity_name}'"
           parts << "{#{entity_id}}"
@@ -116,7 +116,7 @@ module Lutaml
         # Returns a hash representation of the message
         #
         # @return [Hash]
-        def to_h
+        def to_h # rubocop:disable Metrics/MethodLength
           {
             severity: severity,
             category: category,

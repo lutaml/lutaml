@@ -18,7 +18,7 @@ module Lutaml
         # Transform EA object to UML class
         # @param ea_object [EaObject] EA object model
         # @return [Lutaml::Uml::Class] UML class
-        def transform(ea_object)
+        def transform(ea_object) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           return nil if ea_object.nil?
 
           # Allow Class, Interface, and Text objects that appear on diagrams
@@ -26,12 +26,14 @@ module Lutaml
           is_text_class = ea_object.object_type == 'Text'
           return nil unless is_class_type || is_text_class
 
-          Lutaml::Uml::Class.new.tap do |klass|
+          Lutaml::Uml::Class.new.tap do |klass| # rubocop:disable Metrics/BlockLength
             # Map basic properties
             klass.name = ea_object.name
-            klass.xmi_id = normalize_guid_to_xmi_format(ea_object.ea_guid, "EAID")
+            klass.xmi_id = normalize_guid_to_xmi_format(ea_object.ea_guid,
+                                                        "EAID")
             klass.is_abstract = ea_object.abstract?
-            klass.type = is_text_class ? "Class" : "Class"  # Text objects exported as Class in XMI
+            # Text objects exported as Class in XMI
+            klass.type = is_text_class ? "Class" : "Class"
             klass.visibility = map_visibility(ea_object.visibility)
 
             # Map stereotype - return string if single, array if multiple
@@ -40,7 +42,8 @@ module Lutaml
               stereotypes << ea_object.stereotype
             end
 
-            # Check t_xref for additional stereotypes (only if not already added)
+            # Check t_xref for additional stereotypes
+            # (only if not already added)
             xref_stereotype = load_stereotype_from_xref(ea_object.ea_guid)
             if xref_stereotype && !stereotypes.include?(xref_stereotype)
               stereotypes << xref_stereotype
@@ -48,7 +51,11 @@ module Lutaml
 
             # Return string if single stereotype, array if multiple, nil if none
             unless stereotypes.empty?
-              klass.stereotype = stereotypes.size == 1 ? stereotypes.first : stereotypes
+              klass.stereotype = if stereotypes.size == 1
+                                   stereotypes.first
+                                 else
+                                   stereotypes
+                                 end
             end
 
             # Add "interface" stereotype if it's an interface
@@ -58,7 +65,9 @@ module Lutaml
               elsif klass.stereotype.is_a?(String)
                 klass.stereotype = [klass.stereotype, "interface"].uniq
               elsif klass.stereotype.is_a?(Array)
-                klass.stereotype << "interface" unless klass.stereotype.include?("interface")
+                unless klass.stereotype.include?("interface")
+                  klass.stereotype << "interface"
+                end
               end
             end
 
@@ -69,7 +78,7 @@ module Lutaml
             # Load and transform attributes
             attrs = load_attributes(ea_object.ea_object_id)
             assoc_attrs = convert_to_top_element_attributes(
-              load_association_attributes(ea_object.ea_object_id)
+              load_association_attributes(ea_object.ea_object_id),
             )
             klass.attributes = attrs + assoc_attrs
 
@@ -83,16 +92,22 @@ module Lutaml
             klass.tagged_values = load_tagged_values(ea_object.ea_guid)
 
             # Load and transform object properties (as additional tagged values)
-            klass.tagged_values.concat(load_object_properties(ea_object.ea_object_id))
+            klass.tagged_values.concat(
+              load_object_properties(ea_object.ea_object_id),
+            )
 
             # Load generalization (inheritance)
             klass.generalization = load_generalization(ea_object.ea_object_id)
 
             # Load association generalizations
-            klass.association_generalization = load_association_generalizations(ea_object.ea_object_id)
+            klass.association_generalization = load_association_generalizations(
+              ea_object.ea_object_id,
+            )
 
             # Load associations for this class
-            klass.associations = load_class_associations(ea_object.ea_object_id, ea_object.ea_guid)
+            klass.associations = load_class_associations(
+              ea_object.ea_object_id, ea_object.ea_guid
+            )
           end
         end
 
@@ -191,13 +206,14 @@ module Lutaml
         # Load stereotype from t_xref table
         # @param ea_guid [String] Element GUID
         # @return [String, nil] Stereotype value
-        def load_stereotype_from_xref(ea_guid)
+        def load_stereotype_from_xref(ea_guid) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           return nil if ea_guid.nil?
           return nil unless database.xrefs
 
           # Find stereotype xref from the in-memory collection
           xref = database.xrefs.find do |x|
-            x.client == ea_guid && x.name == 'Stereotypes' && x.type == 'element property'
+            x.client == ea_guid && x.name == 'Stereotypes' &&
+              x.type == 'element property'
           end
 
           return nil unless xref
@@ -217,15 +233,18 @@ module Lutaml
 
         # Load generalization for a class
         # @param object_id [Integer] Object ID
-        # @param visited [Set] Set of visited object IDs to prevent circular references
-        # @param is_leaf [Boolean] Whether this is the leaf class (not a parent in recursion)
+        # @param visited [Set] Set of visited object IDs to prevent
+        # circular references
+        # @param is_leaf [Boolean] Whether this is the leaf class
+        # (not a parent in recursion)
         # @return [Lutaml::Uml::Generalization, nil] UML generalization or nil
-        def load_generalization(object_id, visited = Set.new, is_leaf = true)
+        def load_generalization(object_id, visited = Set.new, is_leaf = true) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity,Style/OptionalBooleanParameter
           return nil if object_id.nil?
 
           # Detect circular reference
           if visited.include?(object_id)
-            warn "Circular inheritance detected for object_id #{object_id}, stopping recursion"
+            warn "Circular inheritance detected for object_id #{object_id}, " \
+                 "stopping recursion"
             return nil
           end
 
@@ -237,11 +256,13 @@ module Lutaml
           return nil unless current_obj
 
           # 2. Find generalization connector where this class is the subtype
-          query = "SELECT * FROM t_connector WHERE Start_Object_ID = ? AND Connector_Type = 'Generalization' LIMIT 1"
+          query = "SELECT * FROM t_connector WHERE Start_Object_ID = ? " \
+                  "AND Connector_Type = 'Generalization' LIMIT 1"
           rows = database.connection.execute(query, object_id)
 
           # 3. Create generalization object for current class
-          # Even if no parent exists, we need a Generalization representing this class
+          # Even if no parent exists, we need a Generalization
+          # representing this class
           if rows.empty?
             # No parent - create terminal generalization
             gen_transformer = GeneralizationTransformer.new(database)
@@ -260,14 +281,17 @@ module Lutaml
           current_attrs = load_attributes(object_id)
           current_assoc_attrs = load_association_attributes(object_id)
           general_attrs = convert_to_general_attributes(
-            current_attrs + current_assoc_attrs)
+            current_attrs + current_assoc_attrs,
+          )
 
-          # Set gen_name and name_ns on general_attributes (matches current class context)
+          # Set gen_name and name_ns on general_attributes
+          # (matches current class context)
           upper_klass = generalization.general_upper_klass
           gen_name = generalization.general_name
           general_attrs.each do |attr|
             attr.gen_name = gen_name
-            # Determine name_ns based on type_ns (same logic as transform_general_attributes)
+            # Determine name_ns based on type_ns
+            # (same logic as transform_general_attributes)
             name_ns = case attr.type_ns
                       when "core", "gml"
                         upper_klass
@@ -280,17 +304,20 @@ module Lutaml
           generalization.general_attributes = general_attrs
             .sort_by { |a| [a.name.to_s, a.id] }
 
-          # 5. Transform attributes (set name_ns, gen_name) - creates working copies
+          # 5. Transform attributes (set name_ns, gen_name) -
+          # creates working copies
           generalization.attributes = transform_general_attributes(
-            generalization)
+            generalization,
+          )
 
           # 6. Partition into owned_props and assoc_props
           generalization.owned_props = generalization.attributes
-            .select { |a| !a.has_association }
+            .reject(&:has_association)
           generalization.assoc_props = generalization.attributes
             .select(&:has_association)
 
-          # 7. Recursively load PARENT generalization with circular reference detection
+          # 7. Recursively load PARENT generalization with circular
+          # reference detection
           # Pass is_leaf=false so parent doesn't populate inherited_props
           parent_object_id = ea_connector&.end_object_id
           if parent_object_id
@@ -302,8 +329,11 @@ module Lutaml
           end
 
           # 8. Collect inherited properties from ancestor chain
-          # Only populate inherited_props at the LEAF level (matches XMI behavior)
-          collect_inherited_properties(generalization) if is_leaf && generalization.has_general
+          # Only populate inherited_props at the LEAF level
+          # (matches XMI behavior)
+          if is_leaf && generalization.has_general
+            collect_inherited_properties(generalization)
+          end
 
           generalization
         end
@@ -311,7 +341,7 @@ module Lutaml
         # Convert TopElementAttribute array to GeneralAttribute array
         # @param attributes [Array<Lutaml::Uml::TopElementAttribute>]
         # @return [Array<Lutaml::Uml::GeneralAttribute>]
-        def convert_to_general_attributes(attributes)
+        def convert_to_general_attributes(attributes) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           attributes.map do |attr|
             Lutaml::Uml::GeneralAttribute.new.tap do |gen_attr|
               gen_attr.id = attr.id
@@ -331,7 +361,7 @@ module Lutaml
         # Convert GeneralAttribute array to TopElementAttribute array
         # @param attributes [Array<Lutaml::Uml::TopElementAttribute>]
         # @return [Array<Lutaml::Uml::TopElementAttribute>]
-        def convert_to_top_element_attributes(attributes)
+        def convert_to_top_element_attributes(attributes) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           attributes.map do |attr|
             Lutaml::Uml::TopElementAttribute.new.tap do |top_attr|
               top_attr.id = attr.id
@@ -351,7 +381,7 @@ module Lutaml
         # Similar to XMI's create_uml_attributes
         # @param generalization [Lutaml::Uml::Generalization]
         # @return [Array<Lutaml::Uml::GeneralAttribute>]
-        def transform_general_attributes(generalization)
+        def transform_general_attributes(generalization) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           upper_klass = generalization.general_upper_klass
           gen_name = generalization.general_name
           gen_attrs = generalization.general_attributes
@@ -381,7 +411,7 @@ module Lutaml
         # Similar to XMI's loop_general_item
         # @param generalization [Lutaml::Uml::Generalization]
         # @return [void] (modifies generalization in place)
-        def collect_inherited_properties(generalization)
+        def collect_inherited_properties(generalization) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           inherited_props = []
           inherited_assoc_props = []
           level = 0
@@ -389,16 +419,19 @@ module Lutaml
           # Walk the general chain
           current_gen = generalization.general
           while current_gen
-            # Set metadata on BOTH general_attributes and attributes (matches XMI behavior)
+            # Set metadata on BOTH general_attributes and attributes
+            # (matches XMI behavior)
             # upper_klass and level are set during the inheritance walk
-            [current_gen.general_attributes, current_gen.attributes].each do |attr_list|
+            [current_gen.general_attributes,
+             current_gen.attributes].each do |attr_list|
               attr_list&.each do |attr|
                 attr.upper_klass = current_gen.general_upper_klass
                 attr.level = level
               end
             end
 
-            # Process each attribute in reverse order (to show super class first after reversal)
+            # Process each attribute in reverse order
+            # (to show super class first after reversal)
             current_gen.attributes.reverse_each do |attr|
               # Clone attribute for inherited collection
               inherited_attr = attr.dup
@@ -426,17 +459,24 @@ module Lutaml
 
         # Load association generalizations for a class
         # @param object_id [Integer] Object ID
-        # @return [Array<Lutaml::Uml::AssociationGeneralization>] UML association generalizations
-        def load_association_generalizations(object_id)
+        # @return [Array<Lutaml::Uml::AssociationGeneralization>]
+        # UML association generalizations
+        def load_association_generalizations(object_id) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           return [] if object_id.nil?
 
           # Query for ALL generalization connectors for this class
-          query = "SELECT ea_guid, End_Object_ID FROM t_connector WHERE Start_Object_ID = ? AND Connector_Type = 'Generalization'"
+          query = "SELECT ea_guid, End_Object_ID FROM t_connector " \
+                  "WHERE Start_Object_ID = ? " \
+                  "AND Connector_Type = 'Generalization'"
           rows = database.connection.execute(query, object_id)
 
           rows.map do |row|
             guid = row.is_a?(Hash) ? (row['ea_guid'] || row[:ea_guid]) : row[0]
-            parent_object_id = row.is_a?(Hash) ? (row['End_Object_ID'] || row[:End_Object_ID]) : row[1]
+            parent_object_id = if row.is_a?(Hash)
+                                 row['End_Object_ID'] || row[:End_Object_ID]
+                               else
+                                 row[1]
+                               end
 
             # Find parent object to get its GUID
             parent_obj = find_object_by_id(parent_object_id)
@@ -445,54 +485,86 @@ module Lutaml
             Lutaml::Uml::AssociationGeneralization.new.tap do |ag|
               ag.id = normalize_guid_to_xmi_format(guid, "EAID")
               ag.type = "uml:Generalization"
-              ag.general = normalize_guid_to_xmi_format(parent_obj.ea_guid, "EAID")
+              ag.general = normalize_guid_to_xmi_format(parent_obj.ea_guid,
+                                                        "EAID")
             end
           end.compact
         end
 
         # Load associations for a class
-        # Creates Association objects from navigable association ends (ownedAttributes with association markers)
+        # Creates Association objects from navigable association ends
+        # (ownedAttributes with association markers)
         # This matches XMI behavior where current class is always the owner
         # @param object_id [Integer] Object ID
         # @param object_guid [String] Object GUID
         # @return [Array<Lutaml::Uml::Association>] UML associations
-        def load_class_associations(object_id, object_guid)
+        def load_class_associations(object_id, object_guid) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           return [] if object_id.nil?
 
           associations = []
-          normalized_owner_xmi_id = normalize_guid_to_xmi_format(object_guid, "EAID")
+          normalized_owner_xmi_id = normalize_guid_to_xmi_format(object_guid,
+                                                                 "EAID")
 
           # Find all association-type connectors where this class participates
-          query = "SELECT * FROM t_connector WHERE (Start_Object_ID = ? OR End_Object_ID = ?) AND Connector_Type IN ('Association', 'Aggregation', 'Composition')"
+          query = "SELECT * FROM t_connector " \
+                  "WHERE (Start_Object_ID = ? OR End_Object_ID = ?) " \
+                  "AND Connector_Type IN " \
+                  "('Association', 'Aggregation', 'Composition')"
           rows = database.connection.execute(query, [object_id, object_id])
 
-          rows.each do |row|
+          rows.each do |row| # rubocop:disable Metrics/BlockLength
             ea_connector = Models::EaConnector.from_db_row(row)
 
             # Determine which end this class is on
             is_start = ea_connector.start_object_id == object_id
 
             # Get role name (this is the ownedAttribute name)
-            owner_end_attribute_name = is_start ? ea_connector.destrole : ea_connector.sourcerole
+            owner_end_attribute_name = if is_start
+                                         ea_connector.destrole
+                                       else
+                                         ea_connector.sourcerole
+                                       end
 
-            # Only create association if there's a navigable role name (matches XMI ownedAttribute[@association])
-            next if owner_end_attribute_name.nil? || owner_end_attribute_name.empty?
+            # Only create association if there's a navigable role name
+            # (matches XMI ownedAttribute[@association])
+            if owner_end_attribute_name.nil? || owner_end_attribute_name.empty?
+              next
+            end
 
             # Get member end (the other class)
-            member_obj = is_start ? find_object_by_id(ea_connector.end_object_id) : find_object_by_id(ea_connector.start_object_id)
+            member_obj = if is_start
+                           find_object_by_id(ea_connector.end_object_id)
+                         else
+                           find_object_by_id(ea_connector.start_object_id)
+                         end
             next unless member_obj
 
-            # Get member end attribute name (role at the opposite end, or class name if no role)
-            member_end_attribute_name = is_start ? ea_connector.sourcerole : ea_connector.destrole
-            member_end_attribute_name = member_obj.name if member_end_attribute_name.nil? || member_end_attribute_name.empty?
+            # Get member end attribute name
+            # (role at the opposite end, or class name if no role)
+            member_end_attribute_name = if is_start
+                                          ea_connector.sourcerole
+                                        else
+                                          ea_connector.destrole
+                                        end
+            if member_end_attribute_name.nil? ||
+                member_end_attribute_name.empty?
+              member_end_attribute_name = member_obj.name
+            end
 
             # Get cardinality for this end
-            member_cardinality_str = is_start ? ea_connector.destcard : ea_connector.sourcecard
+            member_cardinality_str = if is_start
+                                       ea_connector.destcard
+                                     else
+                                       ea_connector.sourcecard
+                                     end
 
             # Create association from this class's perspective
-            associations << Lutaml::Uml::Association.new.tap do |assoc|
-              assoc.xmi_id = normalize_guid_to_xmi_format(ea_connector.ea_guid, "EAID")
-              assoc.name = ea_connector.name unless ea_connector.name.nil? || ea_connector.name.empty?
+            associations << Lutaml::Uml::Association.new.tap do |assoc| # rubocop:disable Metrics/BlockLength
+              assoc.xmi_id = normalize_guid_to_xmi_format(ea_connector.ea_guid,
+                                                          "EAID")
+              unless ea_connector.name.nil? || ea_connector.name.empty?
+                assoc.name = ea_connector.name
+              end
 
               # Owner is always the current class (matches XMI)
               assoc.owner_end = find_object_by_id(object_id)&.name
@@ -501,7 +573,9 @@ module Lutaml
 
               # Member is the other end
               assoc.member_end = member_obj.name
-              assoc.member_end_xmi_id = normalize_guid_to_xmi_format(member_obj.ea_guid, "EAID")
+              assoc.member_end_xmi_id = normalize_guid_to_xmi_format(
+                member_obj.ea_guid, "EAID"
+              )
               assoc.member_end_attribute_name = member_end_attribute_name
 
               # Set member_end_type based on connector type
@@ -512,35 +586,43 @@ module Lutaml
               if member_cardinality_str && !member_cardinality_str.empty?
                 parsed = parse_cardinality(member_cardinality_str)
                 if parsed[:min] || parsed[:max]
-                  assoc.member_end_cardinality = Lutaml::Uml::Cardinality.new.tap do |card|
-                    card.min = parsed[:min]
-                    card.max = parsed[:max]
-                  end
+                  assoc.member_end_cardinality = Lutaml::Uml::Cardinality.new
+                    .tap do |card|
+                      card.min = parsed[:min]
+                      card.max = parsed[:max]
+                    end
                 end
               end
 
-              # Note: XMI does not include connector notes in Association definition
+              # Note: XMI does not include connector notes
+              # in Association definition
             end
           end
 
           associations.compact
         end
 
-        # Load association-based attributes (navigable association ends with role names)
+        # Load association-based attributes
+        # (navigable association ends with role names)
         # @param object_id [Integer] Object ID
-        # @return [Array<Lutaml::Uml::TopElementAttribute>] Association-based attributes
-        def load_association_attributes(object_id)
+        # @return [Array<Lutaml::Uml::TopElementAttribute>]
+        # Association-based attributes
+        def load_association_attributes(object_id) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           return [] if object_id.nil?
 
           attributes = []
 
-          # Find all association-type connectors (Association, Aggregation, Composition)
-          query = "SELECT * FROM t_connector WHERE (Start_Object_ID = ? OR End_Object_ID = ?) AND Connector_Type IN ('Association', 'Aggregation', 'Composition')"
+          # Find all association-type connectors
+          # (Association, Aggregation, Composition)
+          query = "SELECT * FROM t_connector " \
+                  "WHERE (Start_Object_ID = ? OR End_Object_ID = ?) " \
+                  "AND Connector_Type IN " \
+                  "('Association', 'Aggregation', 'Composition')"
           rows = database.connection.execute(query, [object_id, object_id])
           obj = find_object_by_id(object_id)
           obj_pkg_name = find_package_name(obj&.package_id)
 
-          rows.each do |row|
+          rows.each do |row| # rubocop:disable Metrics/BlockLength
             ea_connector = Models::EaConnector.from_db_row(row)
 
             # Check if this object is the source (owner) or target (member)
@@ -563,11 +645,13 @@ module Lutaml
                 gen_name: obj.name,
                 name_ns: obj_pkg_name,
                 type_ns: target_obj_pkg_name,
-                is_src: false
+                is_src: false,
               )
             elsif ea_connector.end_object_id == object_id
               # This class is the target - check for source role
-              next if ea_connector.sourcerole.nil? || ea_connector.sourcerole.empty?
+              if ea_connector.sourcerole.nil? || ea_connector.sourcerole.empty?
+                next
+              end
 
               source_obj = find_object_by_id(ea_connector.start_object_id)
               next unless source_obj
@@ -583,7 +667,7 @@ module Lutaml
                 definition: ea_connector.notes,
                 gen_name: obj.name,
                 name_ns: obj_pkg_name,
-                type_ns: source_obj_pkg_name
+                type_ns: source_obj_pkg_name,
               )
             end
           end
@@ -599,7 +683,11 @@ module Lutaml
         # @param cardinality [String] Cardinality string
         # @param gen_name [String] Name of the generalization object
         # @return [Lutaml::Uml::GeneralAttribute] Created attribute
-        def create_association_attribute(name:, type:, type_xmi_id:, association_xmi_id:, cardinality:, definition:, gen_name:, name_ns:, type_ns:, is_src: true)
+        def create_association_attribute( # rubocop:disable Metrics/AbcSize,Metrics/MethodLength,Metrics/ParameterLists
+          name:, type:, type_xmi_id:,
+          association_xmi_id:, cardinality:, definition:,
+          gen_name:, name_ns:, type_ns:, is_src: true
+        )
           Lutaml::Uml::GeneralAttribute.new.tap do |attr|
             attr.name = name
             attr.type = type
@@ -607,10 +695,12 @@ module Lutaml
             attr.definition = definition
             attr.xmi_id = normalize_guid_to_xmi_format(type_xmi_id, "EAID")
             attr.association = normalize_guid_to_xmi_format(
-              association_xmi_id, "EAID")
+              association_xmi_id, "EAID"
+            )
             attr.has_association = true
             attr.id = normalize_guid_to_xmi_src_dst_format(
-              association_xmi_id, "EAID", is_src)
+              association_xmi_id, "EAID", is_src
+            )
             attr.name_ns = name_ns
             attr.type_ns = type_ns
 

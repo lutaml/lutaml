@@ -5,7 +5,8 @@ require "yaml"
 
 module Lutaml
   module ModelTransformations
-    # Configuration service for model transformations using external YAML configuration.
+    # Configuration service for model transformations using external YAML
+    # configuration.
     #
     # This class follows the Dependency Inversion Principle by allowing external
     # configuration instead of hardcoded behavior. It uses lutaml-model for
@@ -213,7 +214,9 @@ module Lutaml
       # @return [ParserConfig, nil] The parser configuration or nil if not found
       def parser_config_for_extension(extension)
         normalized_ext = extension.downcase
-        normalized_ext = ".#{normalized_ext}" unless normalized_ext.start_with?(".")
+        unless normalized_ext.start_with?(".")
+          normalized_ext = ".#{normalized_ext}"
+        end
 
         enabled_parsers.find { |p| p.handles_extension?(normalized_ext) }
       end
@@ -280,7 +283,7 @@ module Lutaml
       #
       # @param other [Configuration] Configuration to merge with
       # @return [Configuration] New merged configuration
-      def merge(other)
+      def merge(other) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
         merged = self.class.new
 
         # Basic attributes
@@ -291,7 +294,8 @@ module Lutaml
         merged.parsers = merge_parsers(other.parsers)
 
         # Use this config's options, fallback to other
-        merged.transformation_options = transformation_options || other.transformation_options
+        merged.transformation_options = transformation_options ||
+          other.transformation_options
         merged.format_detection = format_detection || other.format_detection
         merged.error_handling = error_handling || other.error_handling
 
@@ -304,7 +308,7 @@ module Lutaml
       #
       # @param other_parsers [Array<ParserConfig>] Other parsers to merge
       # @return [Array<ParserConfig>] Merged parser list
-      def merge_parsers(other_parsers)
+      def merge_parsers(other_parsers) # rubocop:disable Metrics/MethodLength
         return parsers unless other_parsers
         return other_parsers unless parsers
 

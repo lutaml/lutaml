@@ -37,7 +37,7 @@ module Lutaml
           background_color: "#ffffff",
           grid_visible: false,
           interactive: false,
-          config_path: nil
+          config_path: nil,
         }.freeze
 
         attr_reader :options
@@ -61,7 +61,7 @@ module Lutaml
         # @param opts [Hash] Additional options
         # @option opts [String] :output Output file path
         # @return [Hash] Result with :success, :path, :diagram, :message
-        def extract_one(lur_path, diagram_id, opts = {})
+        def extract_one(lur_path, diagram_id, opts = {}) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength
           merged_opts = @options.merge(opts)
 
           # Load repository
@@ -73,7 +73,7 @@ module Lutaml
             return {
               success: false,
               message: "Diagram not found: #{diagram_id}",
-              available: repository.all_diagrams.map(&:name)
+              available: repository.all_diagrams.map(&:name),
             }
           end
 
@@ -93,7 +93,7 @@ module Lutaml
             success: true,
             diagram: diagram_info(diagram),
             format: merged_opts[:format],
-            message: "Diagram rendered successfully"
+            message: "Diagram rendered successfully",
           }
 
           # Include path if file was written
@@ -107,7 +107,7 @@ module Lutaml
           {
             success: false,
             message: "Failed to extract diagram: #{e.message}",
-            error: e
+            error: e,
           }
         end
 
@@ -115,20 +115,20 @@ module Lutaml
         #
         # @param lur_path [String] Path to LUR repository file
         # @return [Hash] Result with :success, :diagrams, :count, :message
-        def list_diagrams(lur_path)
+        def list_diagrams(lur_path) # rubocop:disable Metrics/MethodLength
           repository = load_repository(lur_path)
           diagrams = repository.all_diagrams
 
           {
             success: true,
             count: diagrams.size,
-            diagrams: diagrams.map { |d| diagram_info(d) }
+            diagrams: diagrams.map { |d| diagram_info(d) },
           }
         rescue StandardError => e
           {
             success: false,
             message: "Failed to list diagrams: #{e.message}",
-            error: e
+            error: e,
           }
         end
 
@@ -139,7 +139,7 @@ module Lutaml
         # @param opts [Hash] Additional options
         # @option opts [String] :output_dir Output directory
         # @return [Hash] Result with :success, :results, :summary
-        def extract_batch(lur_path, diagram_ids, opts = {})
+        def extract_batch(lur_path, diagram_ids, opts = {}) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength
           merged_opts = @options.merge(opts)
           output_dir = merged_opts[:output_dir] || "."
 
@@ -147,42 +147,59 @@ module Lutaml
           FileUtils.mkdir_p(output_dir) unless Dir.exist?(output_dir)
 
           results = diagram_ids.map do |diagram_id|
-            output_path = File.join(output_dir, "#{sanitize_filename(diagram_id)}.svg")
-            extract_one(lur_path, diagram_id, merged_opts.merge(output: output_path))
+            output_path = File.join(output_dir,
+                                    "#{sanitize_filename(diagram_id)}.svg")
+            extract_one(lur_path, diagram_id,
+                        merged_opts.merge(output: output_path))
           end
 
           successful = results.count { |r| r[:success] }
           failed = results.count { |r| !r[:success] }
 
           {
-            success: failed == 0,
+            success: failed.zero?,
             results: results,
             summary: {
               total: diagram_ids.size,
               successful: successful,
-              failed: failed
-            }
+              failed: failed,
+            },
           }
         rescue StandardError => e
           {
             success: false,
             message: "Batch extraction failed: #{e.message}",
-            error: e
+            error: e,
           }
         end
 
         private
 
         # Resolve options from defaults, environment, and parameters
-        def resolve_options(opts)
+        def resolve_options(opts) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           resolved = DEFAULT_OPTIONS.dup
 
           # Environment variables
-          resolved[:padding] = ENV["LUTAML_DIAGRAM_PADDING"].to_i if ENV["LUTAML_DIAGRAM_PADDING"]
-          resolved[:background_color] = ENV["LUTAML_DIAGRAM_BG_COLOR"] if ENV["LUTAML_DIAGRAM_BG_COLOR"]
-          resolved[:grid_visible] = ENV["LUTAML_DIAGRAM_GRID"] == "true" if ENV["LUTAML_DIAGRAM_GRID"]
-          resolved[:interactive] = ENV["LUTAML_DIAGRAM_INTERACTIVE"] == "true" if ENV["LUTAML_DIAGRAM_INTERACTIVE"]
-          resolved[:config_path] = ENV["LUTAML_DIAGRAM_CONFIG"] if ENV["LUTAML_DIAGRAM_CONFIG"]
+          if ENV["LUTAML_DIAGRAM_PADDING"]
+            resolved[:padding] =
+              ENV["LUTAML_DIAGRAM_PADDING"].to_i
+          end
+          if ENV["LUTAML_DIAGRAM_BG_COLOR"]
+            resolved[:background_color] =
+              ENV["LUTAML_DIAGRAM_BG_COLOR"]
+          end
+          if ENV["LUTAML_DIAGRAM_GRID"]
+            resolved[:grid_visible] =
+              ENV["LUTAML_DIAGRAM_GRID"] == "true"
+          end
+          if ENV["LUTAML_DIAGRAM_INTERACTIVE"]
+            resolved[:interactive] =
+              ENV["LUTAML_DIAGRAM_INTERACTIVE"] == "true"
+          end
+          if ENV["LUTAML_DIAGRAM_CONFIG"]
+            resolved[:config_path] =
+              ENV["LUTAML_DIAGRAM_CONFIG"]
+          end
 
           # User-provided options override environment
           resolved.merge(opts)
@@ -203,7 +220,9 @@ module Lutaml
 
           # Try partial name match (case-insensitive)
           all_diagrams = repository.all_diagrams
-          all_diagrams.find { |d| d.name.downcase.include?(diagram_id.downcase) }
+          all_diagrams.find do |d|
+            d.name.downcase.include?(diagram_id.downcase)
+          end
         end
 
         # Convert diagram to rendering format
@@ -214,12 +233,12 @@ module Lutaml
           {
             name: diagram.name,
             elements: elements,
-            connectors: connectors
+            connectors: connectors,
           }
         end
 
         # Build element data from diagram objects
-        def build_elements(diagram, repository)
+        def build_elements(diagram, repository) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           diagram.diagram_objects.map do |obj|
             uml_element = find_element(obj.object_xmi_id, repository)
             next unless uml_element
@@ -232,29 +251,39 @@ module Lutaml
               y: obj.top || 0,
               width: (obj.right - obj.left) || 120,
               height: (obj.bottom - obj.top) || 80,
-              style: obj.style
+              style: obj.style,
             }
 
             # Add stereotype
             if uml_element.respond_to?(:stereotype) && uml_element.stereotype
-              element_data[:stereotype] = array_value(uml_element.stereotype).first
+              element_data[:stereotype] =
+                array_value(uml_element.stereotype).first
             end
 
             # Add class-specific data
-            add_class_data(element_data, uml_element) if element_data[:type] == "class"
+            if element_data[:type] == "class"
+              add_class_data(element_data,
+                             uml_element)
+            end
 
             element_data
           end.compact
         end
 
         # Build connector data from diagram links
-        def build_connectors(diagram, repository)
-          diagram.diagram_links.map do |link|
+        def build_connectors(diagram, repository) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+          diagram.diagram_links.map do |link| # rubocop:disable Metrics/BlockLength
             connector = find_connector(link.connector_xmi_id, repository)
             next unless connector
 
-            source_obj = find_diagram_object(connector.source.xmi_id, diagram) if connector.respond_to?(:source) && connector.source
-            target_obj = find_diagram_object(connector.target.xmi_id, diagram) if connector.respond_to?(:target) && connector.target
+            if connector.respond_to?(:source) && connector.source
+              source_obj = find_diagram_object(connector.source.xmi_id,
+                                               diagram)
+            end
+            if connector.respond_to?(:target) && connector.target
+              target_obj = find_diagram_object(connector.target.xmi_id,
+                                               diagram)
+            end
 
             connector_data = {
               id: link.connector_id || link.connector_xmi_id,
@@ -263,7 +292,7 @@ module Lutaml
               diagram_link: link,
               style: link.style,
               geometry: link.geometry,
-              path: link.path
+              path: link.path,
             }
 
             # Add source/target positions
@@ -272,7 +301,7 @@ module Lutaml
                 left: source_obj.left,
                 top: source_obj.top,
                 right: source_obj.right,
-                bottom: source_obj.bottom
+                bottom: source_obj.bottom,
               }
             end
 
@@ -281,7 +310,7 @@ module Lutaml
                 left: target_obj.left,
                 top: target_obj.top,
                 right: target_obj.right,
-                bottom: target_obj.bottom
+                bottom: target_obj.bottom,
               }
             end
 
@@ -293,13 +322,13 @@ module Lutaml
         end
 
         # Add class attributes and operations
-        def add_class_data(element_data, uml_element)
+        def add_class_data(element_data, uml_element) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           if uml_element.respond_to?(:attributes) && uml_element.attributes
             element_data[:attributes] = uml_element.attributes.map do |attr|
               {
                 name: attr.name,
                 type: attr.type,
-                visibility: attr.visibility || "public"
+                visibility: attr.visibility || "public",
               }
             end
           end
@@ -310,28 +339,40 @@ module Lutaml
                 name: op.name,
                 return_type: op.return_type,
                 visibility: op.visibility || "public",
-                parameters: op.parameters&.map { |p| { name: p.name, type: p.type } } || []
+                parameters: op.parameters&.map do |p|
+                  { name: p.name, type: p.type }
+                end || [],
               }
             end
           end
         end
 
         # Add connector role and multiplicity information
-        def add_connector_metadata(connector_data, connector)
-          connector_data[:source_role] = connector.owner_end_attribute_name if connector.respond_to?(:owner_end_attribute_name)
-          connector_data[:target_role] = connector.member_end_attribute_name if connector.respond_to?(:member_end_attribute_name)
-
-          if connector.respond_to?(:owner_end_cardinality) && connector.owner_end_cardinality
-            connector_data[:source_multiplicity] = format_cardinality(connector.owner_end_cardinality)
+        def add_connector_metadata(connector_data, connector) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength
+          if connector.respond_to?(:owner_end_attribute_name)
+            connector_data[:source_role] =
+              connector.owner_end_attribute_name
+          end
+          if connector.respond_to?(:member_end_attribute_name)
+            connector_data[:target_role] =
+              connector.member_end_attribute_name
           end
 
-          if connector.respond_to?(:member_end_cardinality) && connector.member_end_cardinality
-            connector_data[:target_multiplicity] = format_cardinality(connector.member_end_cardinality)
+          if connector.respond_to?(:owner_end_cardinality) &&
+              connector.owner_end_cardinality
+            connector_data[:source_multiplicity] =
+              format_cardinality(connector.owner_end_cardinality)
+          end
+
+          if connector.respond_to?(:member_end_cardinality) &&
+              connector.member_end_cardinality
+            connector_data[:target_multiplicity] =
+              format_cardinality(connector.member_end_cardinality)
           end
         end
 
         # Find UML element by XMI ID
-        def find_element(xmi_id, repository)
+        def find_element(xmi_id, repository) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
           repository.classes_index.find { |c| c.xmi_id == xmi_id } ||
             repository.packages_index.find { |p| p.xmi_id == xmi_id } ||
             repository.data_types_index.find { |d| d.xmi_id == xmi_id } ||
@@ -345,7 +386,9 @@ module Lutaml
 
         # Find diagram object for element
         def find_diagram_object(element_xmi_id, diagram)
-          diagram.diagram_objects.find { |obj| obj.object_xmi_id == element_xmi_id }
+          diagram.diagram_objects.find do |obj|
+            obj.object_xmi_id == element_xmi_id
+          end
         end
 
         # Determine element type from UML class
@@ -382,7 +425,7 @@ module Lutaml
             type: diagram.diagram_type,
             package: diagram.package_name || "Unknown",
             objects: diagram.diagram_objects&.size || 0,
-            links: diagram.diagram_links&.size || 0
+            links: diagram.diagram_links&.size || 0,
           }
         end
 

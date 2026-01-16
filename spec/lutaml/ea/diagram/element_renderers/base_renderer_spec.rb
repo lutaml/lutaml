@@ -16,11 +16,10 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::BaseRenderer do
       width: 120,
       height: 80,
       element: double("Element",
-        name: "TestClass",
-        package_name: nil,
-        stereotype: nil
-      ),
-      diagram_object: nil
+                      name: "TestClass",
+                      package_name: nil,
+                      stereotype: nil),
+      diagram_object: nil,
     }
   end
   let(:renderer) { described_class.new(element_data, style_parser) }
@@ -46,7 +45,8 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::BaseRenderer do
     it "includes element type in class attribute" do
       svg = renderer.render
 
-      expect(svg).to include('class="lutaml-diagram-element lutaml-diagram-class"')
+      expect(svg)
+        .to include('class="lutaml-diagram-element lutaml-diagram-class"')
     end
 
     it "includes data attributes for element ID and type" do
@@ -93,7 +93,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::BaseRenderer do
       {
         font_family: "Arial, sans-serif",
         font_size: 12,
-        font_weight: 700
+        font_weight: 700,
       }
     end
 
@@ -241,7 +241,8 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::BaseRenderer do
     it "escapes multiple special characters" do
       result = renderer.send(:escape_text, "<tag attr=\"value\" & 'more'>")
 
-      expect(result).to eq("&lt;tag attr=&quot;value&quot; &amp; &apos;more&apos;&gt;")
+      expect(result)
+        .to eq("&lt;tag attr=&quot;value&quot; &amp; &apos;more&apos;&gt;")
     end
 
     it "returns empty string for nil input" do

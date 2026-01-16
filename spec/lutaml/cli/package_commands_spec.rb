@@ -8,8 +8,12 @@ require "zip"
 require "yaml"
 
 RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
-  let(:test_xmi) { File.join(__dir__, "../../../examples/xmi/test.xmi") }
-  let(:test_qea) { File.join(__dir__, "../../../examples/qea/test.qea") }
+  let(:test_xmi) do
+    File.expand_path(File.join(__dir__, "../../../examples/xmi/test.xmi"))
+  end
+  let(:test_qea) do
+    File.expand_path(File.join(__dir__, "../../../examples/qea/test.qea"))
+  end
   let(:output_lur) { Tempfile.new(["package_test", ".lur"]).path }
 
   after do
@@ -24,28 +28,34 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
         $stdout = output
 
         begin
-          # Disable validation for this test since the test XMI has many validation errors
+          # Disable validation for this test since the test XMI has many
+          # validation errors
           Lutaml::Cli::UmlCommands.start(["build", test_xmi,
                                         "-o", output_lur,
                                         "--name", "TestPackage",
                                         "--version", "2.0",
                                         "--no-validate"])
-        rescue SystemExit => e
+        rescue SystemExit
           # If build fails, we still want to check the output
         end
 
         $stdout = original_stdout
 
-        # The build should succeed without validation - check for either success or export completion
-        expect(output.string).to include("Package built successfully").or include("Exporting to LUR package... ✓")
+        # The build should succeed without validation - check for either
+        # success or export completion
+        expect(output.string)
+          .to include("Package built successfully")
+          .or include("Exporting to LUR package... ✓")
         expect(File.exist?(output_lur)).to be true
 
-        # Verify package structure - be more flexible about what files might be present
+        # Verify package structure - be more flexible about what files might
+        # be present
         expect {
           Zip::File.open(output_lur) do |zip|
             # Check for at least one of the expected files
             has_metadata = !zip.find_entry("metadata.yaml").nil?
-            has_repository = !zip.find_entry("repository.marshal").nil? || !zip.find_entry("repository.yaml").nil?
+            has_repository = !zip.find_entry("repository.marshal").nil? ||
+              !zip.find_entry("repository.yaml").nil?
             expect(has_metadata || has_repository).to be true
           end
         }.not_to raise_error
@@ -60,14 +70,16 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
           Lutaml::Cli::UmlCommands.start(["build", test_xmi,
                                         "-o", output_lur,
                                         "--validate"])
-        rescue SystemExit => e
+        rescue SystemExit
           # Expected to exit due to validation errors
         end
 
         $stdout = original_stdout
 
         # Should show validation output but may not complete due to errors
-        expect(output.string).to include("Validating repository").or include("Parsing")
+        expect(output.string)
+          .to include("Validating repository")
+          .or include("Parsing")
         # Don't expect success message since validation fails
       end
 
@@ -80,7 +92,7 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
           Lutaml::Cli::UmlCommands.start(["build", test_xmi,
                                         "-o", output_lur,
                                         "--no-validate"])
-        rescue SystemExit => e
+        rescue SystemExit
           # If build fails, we still want to check the output
         end
 
@@ -97,19 +109,22 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
         $stdout = output
 
         begin
-          # Disable validation for this test since the test XMI has many validation errors
+          # Disable validation for this test since the test XMI has many
+          # validation errors
           Lutaml::Cli::UmlCommands.start(["build", test_xmi,
                                         "-o", output_lur,
                                         "--format", "yaml",
                                         "--no-validate"])
-        rescue SystemExit => e
+        rescue SystemExit
           # If build fails, we still want to check the output
         end
 
         $stdout = original_stdout
 
         # Check for either success or the specific export process
-        expect(output.string).to include("Package built successfully").or include("Exporting to LUR package")
+        expect(output.string)
+          .to include("Package built successfully")
+          .or include("Exporting to LUR package")
         expect(File.exist?(output_lur)).to be true
 
         # If the build succeeded, verify YAML format was used
@@ -127,9 +142,11 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
         $stdout = output
 
         begin
-          # Disable validation for this test since the test XMI has many validation errors
-          Lutaml::Cli::UmlCommands.start(["build", test_xmi, "-o", output_lur, "--no-validate"])
-        rescue SystemExit => e
+          # Disable validation for this test since the test XMI has many
+          # validation errors
+          Lutaml::Cli::UmlCommands
+            .start(["build", test_xmi, "-o", output_lur, "--no-validate"])
+        rescue SystemExit
           # If build fails, we still want to check the output
         end
 
@@ -194,13 +211,15 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
           Lutaml::Cli::UmlCommands.start(["build", test_qea,
                                         "-o", output_lur,
                                         "--name", "QEATestPackage"])
-        rescue SystemExit => e
+        rescue SystemExit
           # If build fails, we still want to check the output
         end
 
         $stdout = original_stdout
 
-        expect(output.string).to include("Parsing QEA file").or include("Package built successfully")
+        expect(output.string)
+          .to include("Parsing QEA file")
+          .or include("Package built successfully")
         expect(File.exist?(output_lur)).to be true
       end
     end
@@ -214,7 +233,7 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
         begin
           Lutaml::Cli::UmlCommands.start(["build", "nonexistent.xmi",
                                         "-o", output_lur])
-        rescue Thor::Error => e
+        rescue Thor::Error
           # Expected to raise Thor::Error
         end
 
@@ -235,7 +254,7 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
         begin
           Lutaml::Cli::UmlCommands.start(["build", invalid_xmi.path,
                                         "-o", output_lur])
-        rescue Thor::Error => e
+        rescue Thor::Error
           # Expected to raise Thor::Error
         end
 
@@ -252,7 +271,8 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
     let(:test_lur) { File.join(__dir__, "../../../examples/lur/test.lur") }
 
     it "shows package information in text format" do
-      skip "LUR file deserialization issue: Tried to load unspecified class: Symbol"
+      skip "LUR file deserialization issue: Tried to load unspecified class: " \
+           "Symbol"
       output = StringIO.new
       original_stdout = $stdout
       $stdout = output
@@ -267,7 +287,8 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
     end
 
     it "shows package information in JSON format" do
-      skip "LUR file deserialization issue: Tried to load unspecified class: Symbol"
+      skip "LUR file deserialization issue: Tried to load unspecified class: " \
+           "Symbol"
       output = StringIO.new
       original_stdout = $stdout
       $stdout = output
@@ -281,7 +302,8 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
     end
 
     it "shows package information in YAML format" do
-      skip "LUR file deserialization issue: Tried to load unspecified class: Symbol"
+      skip "LUR file deserialization issue: Tried to load unspecified class: " \
+           "Symbol"
       output = StringIO.new
       original_stdout = $stdout
       $stdout = output
@@ -301,7 +323,7 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
 
       begin
         Lutaml::Cli::UmlCommands.start(["info", "nonexistent.lur"])
-      rescue Thor::Error => e
+      rescue Thor::Error
         # Expected to raise Thor::Error
       end
 
@@ -321,7 +343,7 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
 
       begin
         Lutaml::Cli::UmlCommands.start(["info", invalid_lur.path])
-      rescue Thor::Error => e
+      rescue Thor::Error
         # Expected to raise Thor::Error
       end
 
@@ -374,7 +396,7 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
 
       begin
         Lutaml::Cli::UmlCommands.start(["validate", "nonexistent.lur"])
-      rescue Thor::Error => e
+      rescue Thor::Error
         # Expected to raise Thor::Error
       end
 
@@ -402,7 +424,8 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
       original_stdout2 = $stdout
       $stdout = output2
 
-      Lutaml::Cli::UmlCommands.start(["search", test_lur, "building", "--limit", "3"])
+      Lutaml::Cli::UmlCommands.start(["search", test_lur, "building",
+"--limit", "3"])
 
       $stdout = original_stdout2
 
@@ -411,7 +434,8 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
 
     it "creates packages that work with inspect commands" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["inspect", test_lur, "package:ModelRoot"])
+        Lutaml::Cli::UmlCommands.start(["inspect", test_lur,
+"package:ModelRoot"])
       }.not_to output(/ERROR/).to_stdout
     end
 

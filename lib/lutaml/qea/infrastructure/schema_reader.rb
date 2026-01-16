@@ -3,7 +3,8 @@
 module Lutaml
   module Qea
     module Infrastructure
-      # SchemaReader reads database schema information from a QEA SQLite database.
+      # SchemaReader reads database schema information from a
+      # QEA SQLite database.
       #
       # This class is responsible for introspecting the database schema,
       # including table names, column definitions, and metadata.
@@ -27,7 +28,8 @@ module Lutaml
 
         # Get list of all table names in the database
         #
-        # @param exclude_system [Boolean] Exclude SQLite system tables (default: true)
+        # @param exclude_system [Boolean]
+        # Exclude SQLite system tables (default: true)
         # @return [Array<String>] List of table names
         def tables(exclude_system: true)
           query = "SELECT name FROM sqlite_master WHERE type='table'"
@@ -77,7 +79,8 @@ module Lutaml
         # Get primary key column name for a table
         #
         # @param table_name [String] The table name
-        # @return [String, nil] The primary key column name, or nil if no primary key
+        # @return [String, nil] The primary key column name,
+        # or nil if no primary key
         def primary_key(table_name)
           pk_column = columns(table_name).find { |col| col["pk"] == 1 }
           pk_column&.fetch("name", nil)
@@ -86,7 +89,8 @@ module Lutaml
         # Get table schema as CREATE TABLE statement
         #
         # @param table_name [String] The table name
-        # @return [String, nil] The CREATE TABLE SQL statement, or nil if table doesn't exist
+        # @return [String, nil] The CREATE TABLE SQL statement,
+        # or nil if table doesn't exist
         def table_schema(table_name)
           result = @database.execute(
             "SELECT sql FROM sqlite_master WHERE type='table' AND name=?",
@@ -101,7 +105,8 @@ module Lutaml
         # @return [Array<Hash>] Array of index information
         def indexes(table_name)
           @database.execute(
-            "SELECT name, sql FROM sqlite_master WHERE type='index' AND tbl_name=?",
+            "SELECT name, sql FROM sqlite_master " \
+            "WHERE type='index' AND tbl_name=?",
             table_name,
           )
         end
@@ -111,7 +116,9 @@ module Lutaml
         # @param table_name [String] The table name
         # @return [Integer] Number of rows in the table
         def row_count(table_name)
-          result = @database.execute("SELECT COUNT(*) as count FROM #{table_name}")
+          result = @database.execute(
+            "SELECT COUNT(*) as count FROM #{table_name}",
+          )
           result.first["count"]
         end
 

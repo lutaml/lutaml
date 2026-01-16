@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require_relative "../../../../lib/lutaml/uml_repository/exporters/markdown_exporter"
+require_relative "../../../../lib/lutaml/uml_repository/exporters/" \
+                 "markdown_exporter"
 require "tempfile"
 require "fileutils"
 

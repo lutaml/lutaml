@@ -127,7 +127,8 @@ RSpec.describe "Diagram Commands (via UmlCommands)" do
 
   #   it "shows statistics in JSON format" do
   #     expect {
-  #       Lutaml::Cli::UmlCommands.start(["stats", lur_path, "--format", "json"])
+  #       Lutaml::Cli::UmlCommands
+  #         .start(["stats", lur_path, "--format", "json"])
   #     }.to output(/{/).to_stdout
   #      .and output(/"total_diagrams"/).to_stdout
   #   end

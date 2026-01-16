@@ -59,17 +59,19 @@ module Lutaml
 
       # Initialize a new Repository.
       #
-      # This is typically not called directly. Use [`from_xmi`](#from_xmi) instead.
+      # This is typically not called directly.
+      # Use [`from_xmi`](#from_xmi) instead.
       #
       # @param document [Lutaml::Uml::Document] The UML document to wrap
       # @param indexes [Hash, nil] Pre-built indexes, or nil to build them
       #   automatically
-      # @param metadata [PackageMetadata, nil] Package metadata (if loaded from LUR)
+      # @param metadata [PackageMetadata, nil] Package metadata
+      # (if loaded from LUR)
       # @return [Repository] A new frozen repository instance
       # @example
       #   indexes = IndexBuilder.build_all(document)
       #   repo = Repository.new(document: document, indexes: indexes)
-      def initialize(document:, indexes: nil, metadata: nil, options: {})
+      def initialize(document:, indexes: nil, metadata: nil, options: {}) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
         @document = document.freeze
         @indexes = indexes || IndexBuilder.build_all(document)
         @metadata = metadata
@@ -80,9 +82,11 @@ module Lutaml
           @package_query = Queries::PackageQuery.new(@document, @indexes)
           @class_query = Queries::ClassQuery.new(@document, @indexes)
           @inheritance_query = Queries::InheritanceQuery.new(
-            @document, @indexes)
+            @document, @indexes
+          )
           @association_query = Queries::AssociationQuery.new(
-            @document, @indexes)
+            @document, @indexes
+          )
           @diagram_query = Queries::DiagramQuery.new(@document, @indexes)
           @search_query = Queries::SearchQuery.new(@document, @indexes)
         end
@@ -179,7 +183,7 @@ module Lutaml
       # @example Using custom cache path
       #   repo = Repository.from_file_cached('model.xmi',
       #                                          lur_path: 'cache/model.lur')
-      def self.from_file_cached(xmi_path, lur_path: nil)
+      def self.from_file_cached(xmi_path, lur_path: nil) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
         lur_path ||= xmi_path.sub(/\.xmi$/i, ".lur")
 
         if File.exist?(lur_path) && File.mtime(lur_path) >= File.mtime(xmi_path)
@@ -327,7 +331,8 @@ module Lutaml
       #   (e.g., "ModelRoot::i-UR::urf::Building")
       # @param raise_on_error [Boolean] Whether to raise an error if not found
       #   (default: false)
-      # @return [Lutaml::Uml::Class, Lutaml::Uml::DataType, Lutaml::Uml::Enum, nil]
+      # @return [Lutaml::Uml::Class, Lutaml::Uml::DataType,
+      # Lutaml::Uml::Enum, nil]
       #   The class object, or nil if not found
       # @raise [NameError] If class not found and raise_on_error is true
       # @example
@@ -358,7 +363,8 @@ module Lutaml
       # @return [Array] Array of class objects in the package
       # @example
       #   classes = repo.classes_in_package("ModelRoot::i-UR::urf")
-      #   all_classes = repo.classes_in_package("ModelRoot::i-UR", recursive: true)
+      #   all_classes = repo.classes_in_package(
+      #   "ModelRoot::i-UR", recursive: true)
       def classes_in_package(package_path, recursive: false)
         class_query.in_package(package_path, recursive: recursive)
       end
@@ -384,7 +390,8 @@ module Lutaml
       # @return [Array] Array of child class objects
       # @example
       #   children = repo.subtypes_of("ModelRoot::Parent")
-      #   all_descendants = repo.subtypes_of("ModelRoot::Parent", recursive: true)
+      #   all_descendants = repo.subtypes_of(
+      #   "ModelRoot::Parent", recursive: true)
       def subtypes_of(class_or_qname, recursive: false)
         inheritance_query.subtypes(class_or_qname, recursive: recursive)
       end
@@ -424,11 +431,13 @@ module Lutaml
       # @option options [Symbol] :direction (:both) Filter by direction:
       #   :source, :target, or :both
       # @option options [Boolean] :owned_only Return only owned associations
-      # @option options [Boolean] :navigable_only Return only navigable associations
+      # @option options [Boolean] :navigable_only
+      # Return only navigable associations
       # @return [Array<Lutaml::Uml::Association>] Array of association objects
       # @example
       #   all_assocs = repo.associations_of("ModelRoot::Building")
-      #   outgoing = repo.associations_of("ModelRoot::Building", direction: :source)
+      #   outgoing = repo.associations_of(
+      #   "ModelRoot::Building", direction: :source)
       def associations_of(class_or_qname, options = {})
         association_query.find_for_class(class_or_qname, options)
       end
@@ -446,7 +455,8 @@ module Lutaml
       # Find a diagram by its name.
       #
       # @param diagram_name [String] The diagram name
-      # @return [Lutaml::Uml::Diagram, nil] The diagram object, or nil if not found
+      # @return [Lutaml::Uml::Diagram, nil] The diagram object,
+      # or nil if not found
       # @example
       #   diagram = repo.find_diagram("Class Diagram 1")
       def find_diagram(diagram_name)
@@ -467,15 +477,17 @@ module Lutaml
       # @param query [String] The search query
       # @param types [Array<Symbol>] Types to search (:class, :attribute,
       #   :association) (default: [:class, :attribute, :association])
-      # @param fields [Array<Symbol>] Fields to search in (:name, :documentation)
+      # @param fields [Array<Symbol>] Fields to search in
+      # (:name, :documentation)
       #   (default: [:name])
       # @return [Hash] Search results grouped by type
       # @example
       #   results = repo.search("Building")
       #   results = repo.search("address", types: [:attribute])
       #   results = repo.search("urban", fields: [:name, :documentation])
-      def search(query, types: %i[class attribute association],
-fields: [:name])
+      def search(
+        query, types: %i[class attribute association], fields: [:name]
+      )
         search_query.search(query, types: types, fields: fields)
       end
 
@@ -487,14 +499,15 @@ fields: [:name])
       # @param pattern [String, Regexp] The regex pattern to match
       # @param types [Array<Symbol>] Types to search (:class, :attribute,
       #   :association) (default: [:class, :attribute, :association])
-      # @param fields [Array<Symbol>] Fields to search in (:name, :documentation)
+      # @param fields [Array<Symbol>] Fields to search in
+      # (:name, :documentation)
       #   (default: [:name])
       # @return [Hash] Search results grouped by type (same format as search)
       # @example
       #   results = repo.search("^Building.*", types:[:class])
       #   results = repo.search("address$", types: [:attribute])
       #   results = repo.search("urban", fields: [:documentation])
-      def search(
+      def search( # rubocop:disable Lint/DuplicateMethods
         pattern,
         types: %i[class attribute association],
         fields: [:name]
@@ -513,7 +526,8 @@ fields: [:name])
       #   stats = repo.statistics
       #   puts "Total packages: #{stats[:total_packages]}"
       #   puts "Max package depth: #{stats[:max_package_depth]}"
-      #   puts "Most complex class: #{stats[:most_complex_classes].first[:name]}"
+      #   puts "Most complex class:
+      #     #{stats[:most_complex_classes].first[:name]}"
       def statistics
         @statistics
       end
@@ -537,7 +551,8 @@ fields: [:name])
       #     result.errors.each { |error| puts "ERROR: #{error}" }
       #   end
       def validate(verbose: false)
-        Validators::RepositoryValidator.new(@document, @indexes).validate(verbose: verbose)
+        Validators::RepositoryValidator.new(@document,
+                                            @indexes).validate(verbose: verbose)
       end
 
       # Build a query using the Query DSL
@@ -597,7 +612,7 @@ fields: [:name])
       # Get all associations as an array
       # Collects from both document-level (XMI) and class-level (QEA/EA)
       # @return [Array<Lutaml::Uml::Association>] All associations
-      def associations_index
+      def associations_index # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
         # Use cached index if available (built by IndexBuilder)
         return @indexes[:associations].values if @indexes[:associations]
 
@@ -614,6 +629,7 @@ fields: [:name])
           klass.associations.each do |assoc|
             # Avoid duplicates - check xmi_id
             next if associations.any? { |a| a.xmi_id == assoc.xmi_id }
+
             associations << assoc
           end
         end
@@ -683,13 +699,15 @@ fields: [:name])
 
       # Restore from marshaled state
       #
-      # Reconstructs the repository from serialized document, indexes, and metadata,
+      # Reconstructs the repository from serialized document, indexes,
+      # and metadata,
       # reinitializing all query services.
       #
-      # @param data [Hash] Serialized state with :document, :indexes, and :metadata
+      # @param data [Hash] Serialized state with :document, :indexes,
+      # and :metadata
       # @return [void]
       # @api private
-      def marshal_load(data)
+      def marshal_load(data) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
         @document = data[:document]
         @indexes = data[:indexes]
         @metadata = data[:metadata]

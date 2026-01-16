@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require_relative "../../../lib/lutaml/model_transformations/transformation_engine"
+require_relative "../../../lib/lutaml/model_transformations/" \
+                 "transformation_engine"
 require_relative "../../../lib/lutaml/model_transformations/configuration"
 require_relative "../../../lib/lutaml/model_transformations/parsers/base_parser"
 require "tempfile"
@@ -24,8 +25,7 @@ RSpec.describe Lutaml::ModelTransformations::TransformationEngine do
     def parse_internal(file_path)
       @parse_called_with = file_path
 
-      doc = Lutaml::Uml::Document.new
-      doc
+      Lutaml::Uml::Document.new
     end
   end
 
@@ -103,7 +103,7 @@ RSpec.describe Lutaml::ModelTransformations::TransformationEngine do
 
     it "successfully parses supported file" do
       result = engine.parse(test_file.path)
-      expect(result).to be_a_kind_of(Object)  # Mock document
+      expect(result).to be_a_kind_of(Object) # Mock document
     end
 
     it "calls the appropriate parser" do
@@ -197,7 +197,8 @@ RSpec.describe Lutaml::ModelTransformations::TransformationEngine do
 
     context "with file extension detection enabled" do
       it "detects parser by file extension" do
-        allow(mock_config.format_detection).to receive(:use_file_extension).and_return(true)
+        allow(mock_config.format_detection)
+          .to receive(:use_file_extension).and_return(true)
 
         parser_class = engine.detect_parser("test.mock")
         expect(parser_class).to eq(MockParser)
@@ -215,11 +216,14 @@ RSpec.describe Lutaml::ModelTransformations::TransformationEngine do
       after { test_file.unlink }
 
       it "falls back to content detection when extension detection fails" do
-        allow(mock_config.format_detection).to receive(:use_file_extension).and_return(false)
-        allow(mock_config.format_detection).to receive(:use_content_sniffing).and_return(true)
+        allow(mock_config.format_detection)
+          .to receive(:use_file_extension).and_return(false)
+        allow(mock_config.format_detection)
+          .to receive(:use_content_sniffing).and_return(true)
 
         # Mock content detection
-        allow(engine.format_registry).to receive(:detect_by_content).and_return(MockParser)
+        allow(engine.format_registry)
+          .to receive(:detect_by_content).and_return(MockParser)
 
         parser_class = engine.detect_parser(test_file.path)
         expect(parser_class).to eq(MockParser)
@@ -228,9 +232,12 @@ RSpec.describe Lutaml::ModelTransformations::TransformationEngine do
 
     context "with fallback parser configured" do
       it "uses fallback parser when detection fails" do
-        allow(mock_config.format_detection).to receive(:use_file_extension).and_return(false)
-        allow(mock_config.format_detection).to receive(:use_content_sniffing).and_return(false)
-        allow(mock_config.format_detection).to receive(:fallback_parser).and_return("MockParser")
+        allow(mock_config.format_detection)
+          .to receive(:use_file_extension).and_return(false)
+        allow(mock_config.format_detection)
+          .to receive(:use_content_sniffing).and_return(false)
+        allow(mock_config.format_detection)
+          .to receive(:fallback_parser).and_return("MockParser")
 
         parser_class = engine.detect_parser("unknown.file")
         expect(parser_class).to eq(MockParser)
@@ -238,9 +245,12 @@ RSpec.describe Lutaml::ModelTransformations::TransformationEngine do
     end
 
     it "returns nil when no parser can be detected" do
-      allow(mock_config.format_detection).to receive(:use_file_extension).and_return(false)
-      allow(mock_config.format_detection).to receive(:use_content_sniffing).and_return(false)
-      allow(mock_config.format_detection).to receive(:fallback_parser).and_return(nil)
+      allow(mock_config.format_detection)
+        .to receive(:use_file_extension).and_return(false)
+      allow(mock_config.format_detection)
+        .to receive(:use_content_sniffing).and_return(false)
+      allow(mock_config.format_detection)
+        .to receive(:fallback_parser).and_return(nil)
 
       parser_class = engine.detect_parser("unknown.file")
       expect(parser_class).to be_nil
@@ -340,7 +350,7 @@ RSpec.describe Lutaml::ModelTransformations::TransformationEngine do
         :average_duration,
         :supported_extensions,
         :registered_parsers,
-        :configuration_version
+        :configuration_version,
       )
 
       expect(stats[:total_transformations]).to eq(1)
@@ -415,11 +425,13 @@ RSpec.describe Lutaml::ModelTransformations::TransformationEngine do
 
     it "returns history entries for specific file" do
       engine.parse(test_file.path)
-      engine.parse(test_file.path)  # Parse twice
+      engine.parse(test_file.path) # Parse twice
 
       history = engine.history_for_file(test_file.path)
       expect(history.size).to eq(2)
-      expect(history.all? { |entry| entry[:file_path] == test_file.path }).to be true
+      expect(history.all? do |entry|
+        entry[:file_path] == test_file.path
+      end).to be true
     end
 
     it "returns empty array for file with no history" do
@@ -491,7 +503,7 @@ RSpec.describe Lutaml::ModelTransformations::TransformationEngine do
         :configuration_valid,
         :parsers_loaded,
         :parser_errors,
-        :warnings
+        :warnings,
       )
 
       expect(results[:configuration_valid]).to be true
@@ -501,7 +513,8 @@ RSpec.describe Lutaml::ModelTransformations::TransformationEngine do
 
     it "detects parser instantiation failures" do
       # Register a non-existent parser class
-      allow(engine.format_registry).to receive(:all_parsers).and_return({ ".bad" => String })
+      allow(engine.format_registry)
+        .to receive(:all_parsers).and_return({ ".bad" => String })
 
       results = engine.validate_setup
       expect(results[:parser_errors]).not_to be_empty
@@ -524,7 +537,8 @@ RSpec.describe Lutaml::ModelTransformations::TransformationEngine do
 
     it "respects error handling configuration" do
       engine.parse(test_file.path)
-      expect(engine.current_parser.configuration.error_handling).to eq(mock_config.error_handling)
+      expect(engine.current_parser.configuration.error_handling)
+        .to eq(mock_config.error_handling)
     end
   end
 end

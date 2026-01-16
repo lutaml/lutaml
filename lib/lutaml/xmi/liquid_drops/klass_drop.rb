@@ -84,7 +84,8 @@ module Lutaml
         def attributes
           @owned_attributes.map do |owned_attr|
             if @options[:with_assoc] || owned_attr.association.nil?
-              ::Lutaml::Xmi::LiquidDrops::AttributeDrop.new(owned_attr, @options)
+              ::Lutaml::Xmi::LiquidDrops::AttributeDrop.new(owned_attr,
+                                                            @options)
             end
           end.compact
         end
@@ -109,7 +110,8 @@ module Lutaml
 
         def inheritances
           @inheritance_ids.map do |inheritance_id|
-            # ::Lutaml::Xmi::LiquidDrops::InheritanceDrop.new(dependency, @options)
+            # ::Lutaml::Xmi::LiquidDrops::InheritanceDrop
+            #   .new(dependency, @options)
             connector = fetch_connector(inheritance_id)
             ::Lutaml::Xmi::LiquidDrops::ConnectorDrop.new(connector, @options)
           end.compact

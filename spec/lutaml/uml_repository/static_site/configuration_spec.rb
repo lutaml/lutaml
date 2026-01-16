@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require_relative "../../../../lib/lutaml/uml_repository/static_site/configuration"
+require_relative "../../../../lib/lutaml/uml_repository/" \
+                 "static_site/configuration"
 require "tempfile"
 
 RSpec.describe Lutaml::UmlRepository::StaticSite::Configuration do
@@ -85,7 +86,8 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Configuration do
         config = described_class.load(custom_config_file.path)
 
         expect(config.search.document_types).to be_an(Array)
-        expect(config.search.document_types.first).to be_a(described_class::DocumentType)
+        expect(config.search.document_types.first)
+          .to be_a(described_class::DocumentType)
         expect(config.search.document_types.first.type).to eq("class")
         expect(config.search.document_types.first.boost).to eq(2.0)
       end

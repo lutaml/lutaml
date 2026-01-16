@@ -86,8 +86,12 @@ RSpec.describe "Inspect/Show Commands (via UmlCommands)" do
 
       if attributes.any?
         attr = attributes.first
-        class_qname = test_repo.qualified_name_for(attr.owner) if attr.respond_to?(:owner)
-        "attribute:#{class_qname}::#{attr.name}" if class_qname && attr.respond_to?(:name)
+        if attr.respond_to?(:owner)
+          class_qname = test_repo.qualified_name_for(attr.owner)
+        end
+        if class_qname && attr.respond_to?(:name)
+          "attribute:#{class_qname}::#{attr.name}"
+        end
       end
     end
 
@@ -97,7 +101,8 @@ RSpec.describe "Inspect/Show Commands (via UmlCommands)" do
 
     it "shows attribute details" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["inspect", test_lur, sample_attribute_id])
+        Lutaml::Cli::UmlCommands.start(["inspect", test_lur,
+sample_attribute_id])
       }.to output(/Attribute:|Name:/).to_stdout
     end
   end
@@ -105,13 +110,15 @@ RSpec.describe "Inspect/Show Commands (via UmlCommands)" do
   describe "inspect command error handling" do
     it "handles missing LUR file gracefully" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["inspect", "nonexistent.lur", "class:Test"])
+        Lutaml::Cli::UmlCommands.start(["inspect", "nonexistent.lur",
+"class:Test"])
       }.to output(/Failed to load repository|not found/).to_stdout
     end
 
     it "handles non-existent elements" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["inspect", test_lur, "class:NonExistentClass"])
+        Lutaml::Cli::UmlCommands.start(["inspect", test_lur,
+"class:NonExistentClass"])
       }.to output(/Element not found/).to_stdout
     end
 

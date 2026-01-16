@@ -34,7 +34,8 @@ module Lutaml
         def attributes
           @owned_attributes.map do |owned_attr|
             if @options[:with_assoc] || owned_attr.association.nil?
-              ::Lutaml::Xmi::LiquidDrops::AttributeDrop.new(owned_attr, @options)
+              ::Lutaml::Xmi::LiquidDrops::AttributeDrop.new(owned_attr,
+                                                            @options)
             end
           end.compact
         end

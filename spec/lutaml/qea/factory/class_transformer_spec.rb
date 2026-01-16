@@ -17,7 +17,7 @@ RSpec.describe Lutaml::Qea::Factory::ClassTransformer do
 
     it "returns nil for non-class objects" do
       ea_obj = Lutaml::Qea::Models::EaObject.new(
-        object_type: "Package"
+        object_type: "Package",
       )
 
       result = transformer.transform(ea_obj)
@@ -33,21 +33,26 @@ RSpec.describe Lutaml::Qea::Factory::ClassTransformer do
         ea_guid: "{CLASS-GUID}",
         abstract: "0",
         visibility: "Public",
-        note: "Represents a building"
+        note: "Represents a building",
       )
 
       allow(connection).to receive(:execute).and_return([])
       allow(database).to receive(:xrefs).and_return(nil)
       allow(database).to receive(:tagged_values).and_return([])
       allow(connection).to receive(:execute)
-        .with("SELECT * FROM t_connector WHERE (Start_Object_ID = ? OR End_Object_ID = ?) AND Connector_Type IN ('Association', 'Aggregation', 'Composition')", [1, 1])
-        .and_return([])
+        .with(
+          "SELECT * FROM t_connector WHERE " \
+          "(Start_Object_ID = ? OR End_Object_ID = ?) AND Connector_Type IN " \
+          "('Association', 'Aggregation', 'Composition')", [1, 1]
+        ).and_return([])
       allow(connection).to receive(:execute)
         .with("SELECT * FROM t_object WHERE Object_ID = ?", 1)
         .and_return([])
       allow(connection).to receive(:execute)
-        .with("SELECT ea_guid, End_Object_ID FROM t_connector WHERE Start_Object_ID = ? AND Connector_Type = 'Generalization'", 1)
-        .and_return([])
+        .with(
+          "SELECT ea_guid, End_Object_ID FROM t_connector WHERE " \
+          "Start_Object_ID = ? AND Connector_Type = 'Generalization'", 1
+        ).and_return([])
       allow(database).to receive(:attribute_tags).and_return([])
       allow(database).to receive(:object_constraints).and_return([])
       allow(database).to receive(:object_properties).and_return([])
@@ -67,7 +72,7 @@ RSpec.describe Lutaml::Qea::Factory::ClassTransformer do
         object_id: 1,
         object_type: "Class",
         name: "Shape",
-        abstract: "1"
+        abstract: "1",
       )
 
       allow(connection).to receive(:execute).and_return([])
@@ -81,21 +86,26 @@ RSpec.describe Lutaml::Qea::Factory::ClassTransformer do
       ea_obj = Lutaml::Qea::Models::EaObject.new(
         ea_object_id: 1,
         object_type: "Interface",
-        name: "IDrawable"
+        name: "IDrawable",
       )
 
       allow(connection).to receive(:execute).and_return([])
       allow(database).to receive(:xrefs).and_return(nil)
       allow(database).to receive(:tagged_values).and_return([])
       allow(connection).to receive(:execute)
-        .with("SELECT * FROM t_connector WHERE (Start_Object_ID = ? OR End_Object_ID = ?) AND Connector_Type IN ('Association', 'Aggregation', 'Composition')", [1, 1])
-        .and_return([])
+        .with(
+          "SELECT * FROM t_connector WHERE " \
+          "(Start_Object_ID = ? OR End_Object_ID = ?) AND Connector_Type IN " \
+          "('Association', 'Aggregation', 'Composition')", [1, 1]
+        ).and_return([])
       allow(connection).to receive(:execute)
         .with("SELECT * FROM t_object WHERE Object_ID = ?", 1)
         .and_return([])
       allow(connection).to receive(:execute)
-        .with("SELECT ea_guid, End_Object_ID FROM t_connector WHERE Start_Object_ID = ? AND Connector_Type = 'Generalization'", 1)
-        .and_return([])
+        .with(
+          "SELECT ea_guid, End_Object_ID FROM t_connector WHERE " \
+          "Start_Object_ID = ? AND Connector_Type = 'Generalization'", 1
+        ).and_return([])
       allow(database).to receive(:attribute_tags).and_return([])
       allow(database).to receive(:object_constraints).and_return([])
       allow(database).to receive(:object_properties).and_return([])
@@ -109,7 +119,7 @@ RSpec.describe Lutaml::Qea::Factory::ClassTransformer do
       ea_obj = Lutaml::Qea::Models::EaObject.new(
         ea_object_id: 1,
         object_type: "Class",
-        name: "Person"
+        name: "Person",
       )
 
       attr_row = {
@@ -128,14 +138,19 @@ RSpec.describe Lutaml::Qea::Factory::ClassTransformer do
         .with(/SELECT.*t_operation/, 1)
         .and_return([])
       allow(connection).to receive(:execute)
-        .with("SELECT * FROM t_connector WHERE (Start_Object_ID = ? OR End_Object_ID = ?) AND Connector_Type IN ('Association', 'Aggregation', 'Composition')", [1, 1])
-        .and_return([])
+        .with(
+          "SELECT * FROM t_connector WHERE " \
+          "(Start_Object_ID = ? OR End_Object_ID = ?) AND Connector_Type IN " \
+          "('Association', 'Aggregation', 'Composition')", [1, 1]
+        ).and_return([])
       allow(connection).to receive(:execute)
         .with("SELECT * FROM t_object WHERE Object_ID = ?", 1)
         .and_return([])
       allow(connection).to receive(:execute)
-        .with("SELECT ea_guid, End_Object_ID FROM t_connector WHERE Start_Object_ID = ? AND Connector_Type = 'Generalization'", 1)
-        .and_return([])
+        .with(
+          "SELECT ea_guid, End_Object_ID FROM t_connector WHERE " \
+          "Start_Object_ID = ? AND Connector_Type = 'Generalization'", 1
+        ).and_return([])
       allow(database).to receive(:attribute_tags).and_return([])
       allow(database).to receive(:object_constraints).and_return([])
       allow(database).to receive(:object_properties).and_return([])
@@ -150,7 +165,7 @@ RSpec.describe Lutaml::Qea::Factory::ClassTransformer do
       ea_obj = Lutaml::Qea::Models::EaObject.new(
         ea_object_id: 1,
         object_type: "Class",
-        name: "Calculator"
+        name: "Calculator",
       )
 
       op_row = {
@@ -172,14 +187,21 @@ RSpec.describe Lutaml::Qea::Factory::ClassTransformer do
         .with(/SELECT.*t_operationparams/, 1)
         .and_return([])
       allow(connection).to receive(:execute)
-        .with("SELECT * FROM t_connector WHERE (Start_Object_ID = ? OR End_Object_ID = ?) AND Connector_Type IN ('Association', 'Aggregation', 'Composition')", [1, 1])
-        .and_return([])
+        .with(
+          "SELECT * FROM t_connector " \
+          "WHERE (Start_Object_ID = ? OR End_Object_ID = ?) " \
+          "AND Connector_Type " \
+          "IN ('Association', 'Aggregation', 'Composition')",
+          [1, 1],
+        ).and_return([])
       allow(connection).to receive(:execute)
         .with("SELECT * FROM t_object WHERE Object_ID = ?", 1)
         .and_return([])
       allow(connection).to receive(:execute)
-        .with("SELECT ea_guid, End_Object_ID FROM t_connector WHERE Start_Object_ID = ? AND Connector_Type = 'Generalization'", 1)
-        .and_return([])
+        .with(
+          "SELECT ea_guid, End_Object_ID FROM t_connector WHERE " \
+          "Start_Object_ID = ? AND Connector_Type = 'Generalization'", 1
+        ).and_return([])
       allow(database).to receive(:attribute_tags).and_return([])
       allow(database).to receive(:object_constraints).and_return([])
       allow(database).to receive(:object_properties).and_return([])
@@ -195,7 +217,7 @@ RSpec.describe Lutaml::Qea::Factory::ClassTransformer do
         object_id: 1,
         object_type: "Class",
         name: "Entity",
-        stereotype: "entity"
+        stereotype: "entity",
       )
 
       allow(connection).to receive(:execute).and_return([])

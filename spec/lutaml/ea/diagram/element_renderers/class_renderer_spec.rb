@@ -19,11 +19,10 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ClassRenderer do
       attributes: [],
       operations: [],
       element: double("Element",
-        name: "Person",
-        package_name: nil,
-        stereotype: nil
-      ),
-      diagram_object: nil
+                      name: "Person",
+                      package_name: nil,
+                      stereotype: nil),
+      diagram_object: nil,
     }
   end
   let(:renderer) { described_class.new(element_data, style_resolver) }
@@ -44,7 +43,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ClassRenderer do
         stroke_linejoin: "bevel",
         corner_radius: 0,
         fill_opacity: "1.00",
-        stroke_opacity: "1.00"
+        stroke_opacity: "1.00",
       }
     end
 
@@ -93,7 +92,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ClassRenderer do
       before do
         element_data[:attributes] = [
           { name: "name", type: "String", visibility: "private" },
-          { name: "age", type: "Integer", visibility: "public" }
+          { name: "age", type: "Integer", visibility: "public" },
         ]
       end
 
@@ -108,7 +107,8 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ClassRenderer do
       it "adjusts height to fit attributes" do
         shape = renderer.send(:render_shape, style)
 
-        # Should have height >= name_height(25) + attributes_height(40) + operations_height(0)
+        # Should have height >= name_height(25) + attributes_height(40) +
+        # operations_height(0)
         expect(shape).to match(/height="\d+"/)
       end
     end
@@ -116,7 +116,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ClassRenderer do
     context "with operations" do
       before do
         element_data[:operations] = [
-          { name: "getName", return_type: "String", visibility: "public" }
+          { name: "getName", return_type: "String", visibility: "public" },
         ]
       end
 
@@ -144,7 +144,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ClassRenderer do
         font_family: "Arial, sans-serif",
         font_size: 9,
         font_weight: 700,
-        font_style: "normal"
+        font_style: "normal",
       }
     end
 
@@ -190,7 +190,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ClassRenderer do
         label = renderer.send(:render_label, style)
 
         # Should have two text elements
-        expect(label.scan(/<text/).size).to eq(2)
+        expect(label.scan("<text").size).to eq(2)
       end
     end
 
@@ -198,7 +198,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ClassRenderer do
       before do
         element_data[:attributes] = [
           { name: "name", type: "String", visibility: "private" },
-          { name: "age", type: "Integer", visibility: "public" }
+          { name: "age", type: "Integer", visibility: "public" },
         ]
       end
 
@@ -226,16 +226,17 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ClassRenderer do
 
         # First attribute should be at y + name_height + 15
         # = 50 + 25 + 15 = 90
-        expect(label).to match(/y\=\"90/)
+        expect(label).to match(/y="90/)
       end
     end
 
     context "with operations" do
       before do
         element_data[:operations] = [
-          { name: "getName", return_type: "String", visibility: "public", parameters: [] },
+          { name: "getName", return_type: "String", visibility: "public",
+            parameters: [] },
           { name: "setAge", return_type: nil, visibility: "public",
-            parameters: [{ name: "value", type: "Integer" }] }
+            parameters: [{ name: "value", type: "Integer" }] },
         ]
       end
 
@@ -349,12 +350,13 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ClassRenderer do
     end
 
     describe "#format_operation" do
-      it "formats operation with visibility, name, parameters, and return type" do
+      it "formats operation with visibility, name, parameters, " \
+         "and return type" do
         op = {
           name: "calculate",
           visibility: "public",
           parameters: [{ name: "x", type: "Integer" }],
-          return_type: "Boolean"
+          return_type: "Boolean",
         }
 
         result = renderer.send(:format_operation, op)
@@ -376,9 +378,9 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ClassRenderer do
           visibility: "public",
           parameters: [
             { name: "a", type: "Integer" },
-            { name: "b", type: "Integer" }
+            { name: "b", type: "Integer" },
           ],
-          return_type: "Integer"
+          return_type: "Integer",
         }
 
         result = renderer.send(:format_operation, op)
@@ -397,7 +399,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ClassRenderer do
       it "formats array of parameter hashes" do
         params = [
           { name: "x", type: "Integer" },
-          { name: "y", type: "String" }
+          { name: "y", type: "String" },
         ]
 
         result = renderer.send(:format_parameters, params)
@@ -478,32 +480,36 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ClassRenderer do
           font_family: "Arial",
           font_size: 12,
           font_weight: 700,
-          font_style: "italic"
+          font_style: "italic",
         }
       end
 
       it "renders SVG text element" do
-        text = renderer.send(:render_text_element, "Test", 100, 50, style, "test-class")
+        text = renderer.send(:render_text_element, "Test", 100, 50, style,
+                             "test-class")
 
         expect(text).to include("<text")
         expect(text).to include("</text>")
       end
 
       it "positions text at specified coordinates" do
-        text = renderer.send(:render_text_element, "Test", 100, 50, style, "test-class")
+        text = renderer.send(:render_text_element, "Test", 100, 50, style,
+                             "test-class")
 
-        expect(text).to include(/x\=\"100/)
-        expect(text).to include(/y\=\"50/)
+        expect(text).to include(/x="100/)
+        expect(text).to include(/y="50/)
       end
 
       it "includes CSS class" do
-        text = renderer.send(:render_text_element, "Test", 100, 50, style, "my-class")
+        text = renderer.send(:render_text_element, "Test", 100, 50, style,
+                             "my-class")
 
         expect(text).to include('class="my-class"')
       end
 
       it "applies font styles" do
-        text = renderer.send(:render_text_element, "Test", 100, 50, style, "test-class")
+        text = renderer.send(:render_text_element, "Test", 100, 50, style,
+                             "test-class")
 
         expect(text).to include("font-family:Arial")
         expect(text).to include("font-weight:700")
@@ -512,23 +518,25 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ClassRenderer do
       end
 
       it "escapes text content" do
-        text = renderer.send(:render_text_element, "<tag>", 100, 50, style, "test-class")
+        text = renderer.send(:render_text_element, "<tag>", 100, 50, style,
+                             "test-class")
 
         expect(text).to include("&lt;tag&gt;")
       end
 
       it "returns empty string for nil text" do
-        text = renderer.send(:render_text_element, nil, 100, 50, style, "test-class")
+        text = renderer.send(:render_text_element, nil, 100, 50, style,
+                             "test-class")
 
         expect(text).to eq("")
       end
 
       it "accepts custom options" do
-        text = renderer.send(:render_text_element, "Test", 100, 50, style, "test-class",
-          font_size: "14pt",
-          text_anchor: "end",
-          fill: "#FF0000"
-        )
+        text = renderer.send(:render_text_element,
+                             "Test", 100, 50, style, "test-class",
+                             font_size: "14pt",
+                             text_anchor: "end",
+                             fill: "#FF0000")
 
         expect(text).to include("font-size:14pt")
         expect(text).to include('text-anchor="end"')

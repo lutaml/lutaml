@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require_relative "../../../../../lib/lutaml/qea/validation/formatters/text_formatter"
+require_relative "../../../../../lib/lutaml/qea/validation/formatters/" \
+                 "text_formatter"
 require_relative "../../../../../lib/lutaml/qea/validation/validation_result"
 require_relative "../../../../../lib/lutaml/qea/validation/validation_message"
 
@@ -56,7 +57,7 @@ RSpec.describe Lutaml::Qea::Validation::Formatters::TextFormatter do
           entity_type: :class,
           entity_id: "123",
           entity_name: "TestClass",
-          message: "Class not found"
+          message: "Class not found",
         )
       end
 
@@ -95,7 +96,7 @@ RSpec.describe Lutaml::Qea::Validation::Formatters::TextFormatter do
             entity_type: :class,
             entity_id: i.to_s,
             entity_name: "Class#{i}",
-            message: "Error #{i}"
+            message: "Error #{i}",
           )
         end
 
@@ -114,7 +115,7 @@ RSpec.describe Lutaml::Qea::Validation::Formatters::TextFormatter do
           entity_type: :class,
           entity_id: "456",
           entity_name: "UndocumentedClass",
-          message: "Class lacks documentation"
+          message: "Class lacks documentation",
         )
       end
 
@@ -144,12 +145,13 @@ RSpec.describe Lutaml::Qea::Validation::Formatters::TextFormatter do
           entity_type: :package,
           entity_id: "789",
           entity_name: "ModelPackage",
-          message: "Consider adding more classes"
+          message: "Consider adding more classes",
         )
       end
 
       it "hides info by default" do
-        formatter = described_class.new(result: result, color: false, verbose: false)
+        formatter = described_class.new(result: result, color: false,
+                                        verbose: false)
         output = formatter.format
 
         expect(output).not_to include("INFO")
@@ -157,7 +159,8 @@ RSpec.describe Lutaml::Qea::Validation::Formatters::TextFormatter do
       end
 
       it "shows info when verbose" do
-        formatter = described_class.new(result: result, color: false, verbose: true)
+        formatter = described_class.new(result: result, color: false,
+                                        verbose: true)
         output = formatter.format
 
         expect(output).to include("INFO (1):")
@@ -173,14 +176,14 @@ RSpec.describe Lutaml::Qea::Validation::Formatters::TextFormatter do
           entity_type: :class,
           entity_id: "1",
           entity_name: "ErrorClass",
-          message: "Critical error"
+          message: "Critical error",
         )
         result.add_warning(
           category: :missing_documentation,
           entity_type: :class,
           entity_id: "2",
           entity_name: "WarningClass",
-          message: "Minor warning"
+          message: "Minor warning",
         )
       end
 
