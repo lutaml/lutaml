@@ -68,6 +68,10 @@ RSpec.describe Lutaml::Parser, "#parse with QEA files" do
     end
 
     context "error handling" do
+      after do
+        tempfile.unlink if defined?(tempfile) && File.exist?(tempfile.path)
+      end
+
       it "raises error for non-existent QEA file" do
         file = double("file", path: "nonexistent.qea")
         allow(File).to receive(:exist?).and_return(false)
@@ -79,14 +83,13 @@ RSpec.describe Lutaml::Parser, "#parse with QEA files" do
 
       it "handles invalid QEA file gracefully" do
         # Create temp file with invalid content
-        Tempfile.create(["invalid", ".qea"]) do |f|
-          f.write("not a valid qea file")
-          f.rewind
+        tempfile = Tempfile.new(["invalid", ".qea"])
+        tempfile.write("not a valid qea file")
+        tempfile.close
 
-          expect do
-            described_class.parse([f])
-          end.to raise_error(SQLite3::Exception)
-        end
+        expect do
+          described_class.parse([tempfile])
+        end.to raise_error(SQLite3::Exception)
       end
     end
   end

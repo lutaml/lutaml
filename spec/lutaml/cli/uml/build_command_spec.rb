@@ -8,24 +8,24 @@ require "tempfile"
 
 RSpec.describe Lutaml::Cli::Uml::BuildCommand do
   let(:test_xmi) { File.join(__dir__, "../../../../examples/xmi/basic.xmi") }
-  let(:output_lur) { Tempfile.new(["build_test", ".lur"]).path }
+  let(:output_lur) { Tempfile.new(["build_test", ".lur"]) }
   let(:command) { described_class.new(options) }
 
   after do
-    File.unlink(output_lur) if File.exist?(output_lur)
+    output_lur.unlink if File.exist?(output_lur.path)
   end
 
   describe "#run" do
     context "with XMI input" do
       let(:options) do
-        { output: output_lur, name: "TestPackage", version: "1.0" }
+        { output: output_lur.path, name: "TestPackage", version: "1.0" }
       end
 
       it "builds LUR package successfully" do
         expect do
           command.run(test_xmi)
         end.to output(/Package built successfully/).to_stdout
-        expect(File.exist?(output_lur)).to be true
+        expect(File.exist?(output_lur.path)).to be true
       end
 
       it "displays package statistics" do
@@ -36,7 +36,7 @@ RSpec.describe Lutaml::Cli::Uml::BuildCommand do
     end
 
     context "with validation enabled" do
-      let(:options) { { output: output_lur, validate: true } }
+      let(:options) { { output: output_lur.path, validate: true } }
 
       it "validates before building" do
         expect do
@@ -46,7 +46,7 @@ RSpec.describe Lutaml::Cli::Uml::BuildCommand do
     end
 
     context "with validation disabled" do
-      let(:options) { { output: output_lur, validate: false } }
+      let(:options) { { output: output_lur.path, validate: false } }
 
       it "skips validation" do
         expect do
@@ -56,7 +56,7 @@ RSpec.describe Lutaml::Cli::Uml::BuildCommand do
     end
 
     context "error handling" do
-      let(:options) { { output: output_lur } }
+      let(:options) { { output: output_lur.path } }
 
       it "handles missing input file" do
         expect do

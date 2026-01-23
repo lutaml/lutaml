@@ -9,15 +9,15 @@ require "tempfile"
 RSpec.describe Lutaml::Cli::Uml::StatsCommand do
   let(:test_xmi) { File.join(__dir__, "../../../../examples/xmi/basic.xmi") }
   let(:test_lur) do
-    temp_lur = Tempfile.new(["stats_test", ".lur"]).path
+    temp_lur = Tempfile.new(["stats_test", ".lur"])
     repo = Lutaml::UmlRepository::Repository.from_xmi(test_xmi)
-    repo.export_to_package(temp_lur)
+    repo.export_to_package(temp_lur.path)
     temp_lur
   end
   let(:command) { described_class.new(options) }
 
   after do
-    File.unlink(test_lur) if File.exist?(test_lur)
+    test_lur.unlink if File.exist?(test_lur.path)
   end
 
   describe "#run" do
@@ -25,7 +25,7 @@ RSpec.describe Lutaml::Cli::Uml::StatsCommand do
       let(:options) { { format: "text" } }
 
       it "displays statistics" do
-        expect { command.run(test_lur) }.to output(/Packages:/).to_stdout
+        expect { command.run(test_lur.path) }.to output(/Packages:/).to_stdout
       end
     end
 
@@ -33,7 +33,7 @@ RSpec.describe Lutaml::Cli::Uml::StatsCommand do
       let(:options) { { format: "text", detailed: true } }
 
       it "shows detailed statistics" do
-        expect { command.run(test_lur) }.not_to output(/ERROR/).to_stdout
+        expect { command.run(test_lur.path) }.not_to output(/ERROR/).to_stdout
       end
     end
 
@@ -41,7 +41,7 @@ RSpec.describe Lutaml::Cli::Uml::StatsCommand do
       let(:options) { { format: "json" } }
 
       it "outputs JSON format" do
-        expect { command.run(test_lur) }.to output(/{/).to_stdout
+        expect { command.run(test_lur.path) }.to output(/{/).to_stdout
       end
     end
   end

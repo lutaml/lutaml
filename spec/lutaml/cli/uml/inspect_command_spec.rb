@@ -9,15 +9,15 @@ require "tempfile"
 RSpec.describe Lutaml::Cli::Uml::InspectCommand do
   let(:test_xmi) { File.join(__dir__, "../../../../examples/xmi/basic.xmi") }
   let(:test_lur) do
-    temp_lur = Tempfile.new(["inspect_test", ".lur"]).path
+    temp_lur = Tempfile.new(["inspect_test", ".lur"])
     repo = Lutaml::UmlRepository::Repository.from_xmi(test_xmi)
-    repo.export_to_package(temp_lur)
+    repo.export_to_package(temp_lur.path)
     temp_lur
   end
   let(:command) { described_class.new(options) }
 
   after do
-    File.unlink(test_lur) if File.exist?(test_lur)
+    test_lur.unlink if File.exist?(test_lur.path)
   end
 
   describe "#run" do
@@ -26,7 +26,7 @@ RSpec.describe Lutaml::Cli::Uml::InspectCommand do
 
       it "displays package details" do
         expect do
-          command.run(test_lur, "package:ModelRoot")
+          command.run(test_lur.path, "package:ModelRoot")
         end.not_to output(/ERROR/).to_stdout
       end
     end
@@ -36,7 +36,7 @@ RSpec.describe Lutaml::Cli::Uml::InspectCommand do
 
       it "outputs JSON format" do
         expect do
-          command.run(test_lur, "package:ModelRoot")
+          command.run(test_lur.path, "package:ModelRoot")
         end.to output(/{/).to_stdout
       end
     end
@@ -46,7 +46,7 @@ RSpec.describe Lutaml::Cli::Uml::InspectCommand do
 
       it "handles non-existent element" do
         expect do
-          command.run(test_lur,
+          command.run(test_lur.path,
                       "class:NonExistent")
         end.to raise_error(/Element not found/)
       end

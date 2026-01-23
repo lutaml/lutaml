@@ -9,15 +9,15 @@ require "tempfile"
 RSpec.describe Lutaml::Cli::Uml::TreeCommand do
   let(:test_xmi) { File.join(__dir__, "../../../../examples/xmi/basic.xmi") }
   let(:test_lur) do
-    temp_lur = Tempfile.new(["tree_test", ".lur"]).path
+    temp_lur = Tempfile.new(["tree_test", ".lur"])
     repo = Lutaml::UmlRepository::Repository.from_xmi(test_xmi)
-    repo.export_to_package(temp_lur)
+    repo.export_to_package(temp_lur.path)
     temp_lur
   end
   let(:command) { described_class.new(options) }
 
   after do
-    File.unlink(test_lur) if File.exist?(test_lur)
+    test_lur.unlink if File.exist?(test_lur.path)
   end
 
   describe "#run" do
@@ -25,7 +25,7 @@ RSpec.describe Lutaml::Cli::Uml::TreeCommand do
       let(:options) { { format: "text", show_counts: true } }
 
       it "displays package tree" do
-        expect { command.run(test_lur) }.not_to output(/ERROR/).to_stdout
+        expect { command.run(test_lur.path) }.not_to output(/ERROR/).to_stdout
       end
     end
 
@@ -33,7 +33,7 @@ RSpec.describe Lutaml::Cli::Uml::TreeCommand do
       let(:options) { { format: "text", depth: 2 } }
 
       it "respects depth limit" do
-        expect { command.run(test_lur) }.not_to output(/ERROR/).to_stdout
+        expect { command.run(test_lur.path) }.not_to output(/ERROR/).to_stdout
       end
     end
 
@@ -41,7 +41,7 @@ RSpec.describe Lutaml::Cli::Uml::TreeCommand do
       let(:options) { { format: "json" } }
 
       it "outputs JSON format" do
-        expect { command.run(test_lur) }.to output(/{/).to_stdout
+        expect { command.run(test_lur.path) }.to output(/{/).to_stdout
       end
     end
 
@@ -50,7 +50,7 @@ RSpec.describe Lutaml::Cli::Uml::TreeCommand do
 
       it "handles non-existent package" do
         expect do
-          command.run(test_lur,
+          command.run(test_lur.path,
                       "NonExistent::Package")
         end.to raise_error(/Package not found/)
       end

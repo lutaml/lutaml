@@ -14,15 +14,15 @@ RSpec.describe "Inspect/Show Commands (via UmlCommands)" do
       # Build LUR package for testing
       repo = Lutaml::UmlRepository::Repository.from_xmi(test_xmi)
       repo.export_to_package(f.path)
-    end.path
+    end
   end
 
   after do
-    File.unlink(test_lur) if File.exist?(test_lur)
+    test_lur.unlink if File.exist?(test_lur.path)
   end
 
   # Helper to find real elements from the test data
-  let(:test_repo) { Lutaml::UmlRepository::Repository.from_package(test_lur) }
+  let(:test_repo) { Lutaml::UmlRepository::Repository.from_package(test_lur.path) }
 
   let(:sample_class_id) do
     # Get a real class identifier
@@ -44,20 +44,21 @@ RSpec.describe "Inspect/Show Commands (via UmlCommands)" do
 
     it "shows class details in text format" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["inspect", test_lur, sample_class_id])
+        Lutaml::Cli::UmlCommands.start(["inspect", test_lur.path,
+sample_class_id])
       }.to output(/Class:|Name:/).to_stdout
     end
 
     it "shows class details in JSON format" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["inspect", test_lur, sample_class_id,
+        Lutaml::Cli::UmlCommands.start(["inspect", test_lur.path, sample_class_id,
                                       "--format", "json"])
       }.to output(/{/).to_stdout
     end
 
     it "shows class details in YAML format" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["inspect", test_lur, sample_class_id,
+        Lutaml::Cli::UmlCommands.start(["inspect", test_lur.path, sample_class_id,
                                       "--format", "yaml"])
       }.to output(/name:/).to_stdout
     end
@@ -66,13 +67,14 @@ RSpec.describe "Inspect/Show Commands (via UmlCommands)" do
   describe "inspect command for packages" do
     it "shows package details for root" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["inspect", test_lur, sample_package_id])
+        Lutaml::Cli::UmlCommands.start(["inspect", test_lur.path,
+sample_package_id])
       }.to output(/Package:|Name:/).to_stdout
     end
 
     it "shows package details in JSON format" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["inspect", test_lur, sample_package_id,
+        Lutaml::Cli::UmlCommands.start(["inspect", test_lur.path, sample_package_id,
                                       "--format", "json"])
       }.to output(/{/).to_stdout
     end
@@ -101,7 +103,7 @@ RSpec.describe "Inspect/Show Commands (via UmlCommands)" do
 
     it "shows attribute details" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["inspect", test_lur,
+        Lutaml::Cli::UmlCommands.start(["inspect", test_lur.path,
 sample_attribute_id])
       }.to output(/Attribute:|Name:/).to_stdout
     end
@@ -117,14 +119,15 @@ sample_attribute_id])
 
     it "handles non-existent elements" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["inspect", test_lur,
+        Lutaml::Cli::UmlCommands.start(["inspect", test_lur.path,
 "class:NonExistentClass"])
       }.to output(/Element not found/).to_stdout
     end
 
     it "handles invalid element identifiers" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["inspect", test_lur, "invalid_format"])
+        Lutaml::Cli::UmlCommands.start(["inspect", test_lur.path,
+"invalid_format"])
       }.to output(/Element not found|Invalid/).to_stdout
     end
   end
@@ -136,21 +139,21 @@ sample_attribute_id])
 
     it "includes attributes when requested" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["inspect", test_lur, sample_class_id,
+        Lutaml::Cli::UmlCommands.start(["inspect", test_lur.path, sample_class_id,
                                       "--include", "attributes"])
       }.not_to output(/ERROR/).to_stdout
     end
 
     it "includes associations when requested" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["inspect", test_lur, sample_class_id,
+        Lutaml::Cli::UmlCommands.start(["inspect", test_lur.path, sample_class_id,
                                       "--include", "associations"])
       }.not_to output(/ERROR/).to_stdout
     end
 
     it "includes operations when requested" do
       expect {
-        Lutaml::Cli::UmlCommands.start(["inspect", test_lur, sample_class_id,
+        Lutaml::Cli::UmlCommands.start(["inspect", test_lur.path, sample_class_id,
                                       "--include", "operations"])
       }.not_to output(/ERROR/).to_stdout
     end
