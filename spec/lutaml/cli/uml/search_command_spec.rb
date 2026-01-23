@@ -51,7 +51,7 @@ RSpec.describe Lutaml::Cli::Uml::SearchCommand do
       let(:options) { { format: "json", type: ["class"], in: ["name"] } }
 
       it "outputs JSON format" do
-        expect { command.run(test_lur, "test") }.to output(/{|w+/).to_stdout
+        expect { command.run(test_lur, "Class A") }.to output(/{|w+/).to_stdout
       end
     end
   end
