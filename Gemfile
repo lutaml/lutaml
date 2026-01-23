@@ -5,6 +5,7 @@ gemspec
 
 gem "canon", "=0.1.3"
 gem "listen"
+gem "openssl", "~> 3.0"
 gem "pry"
 gem "puma"
 gem "rack-test"
