@@ -9,39 +9,39 @@ require "tempfile"
 RSpec.describe Lutaml::Cli::Uml::ExportCommand do
   let(:test_xmi) { File.join(__dir__, "../../../../examples/xmi/basic.xmi") }
   let(:test_lur) do
-    temp_lur = Tempfile.new(["export_test", ".lur"]).path
+    temp_lur = Tempfile.new(["export_test", ".lur"])
     repo = Lutaml::UmlRepository::Repository.from_xmi(test_xmi)
-    repo.export_to_package(temp_lur)
+    repo.export_to_package(temp_lur.path)
     temp_lur
   end
-  let(:output_file) { Tempfile.new(["export_output", ".csv"]).path }
+  let(:output_file) { Tempfile.new(["export_output", ".csv"]) }
   let(:command) { described_class.new(options) }
 
   after do
-    File.unlink(test_lur) if File.exist?(test_lur)
-    File.unlink(output_file) if File.exist?(output_file)
+    test_lur.unlink if File.exist?(test_lur.path)
+    output_file.unlink if File.exist?(output_file.path)
   end
 
   describe "#run" do
     context "exporting to JSON" do
-      let(:output_json) { Tempfile.new(["export_output", ".json"]).path }
-      let(:options) { { format: "json", output: output_json } }
+      let(:output_json) { Tempfile.new(["export_output", ".json"]) }
+      let(:options) { { format: "json", output: output_json.path } }
 
       after do
-        File.unlink(output_json) if File.exist?(output_json)
+        output_json.unlink if File.exist?(output_json.path)
       end
 
       it "exports to JSON format" do
-        expect { command.run(test_lur) }.to output(/Exported to/).to_stdout
-        expect(File.exist?(output_json)).to be true
+        expect { command.run(test_lur.path) }.to output(/Exported to/).to_stdout
+        expect(File.exist?(output_json.path)).to be true
       end
     end
 
     context "error handling" do
-      let(:options) { { format: "csv", output: output_file } }
+      let(:options) { { format: "csv", output: output_file.path } }
 
       it "exports successfully" do
-        expect { command.run(test_lur) }.to raise_error(/Unknown format/)
+        expect { command.run(test_lur.path) }.to raise_error(/Unknown format/)
       end
     end
   end

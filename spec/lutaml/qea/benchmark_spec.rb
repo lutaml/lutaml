@@ -8,6 +8,10 @@ RSpec.describe Lutaml::Qea::Benchmark do
   let(:xmi_file_path) { File.join(__dir__, "../../fixtures/test.xmi") }
 
   describe ".measure_qea" do
+    after do
+      tempfile.unlink if defined?(tempfile) && File.exist?(tempfile.path)
+    end
+
     it "measures QEA parsing performance" do
       skip "QEA test file not available" unless File.exist?(qea_file_path)
 
@@ -51,14 +55,12 @@ RSpec.describe Lutaml::Qea::Benchmark do
     end
 
     it "handles parsing errors gracefully" do
-      Tempfile.create(["invalid", ".qea"]) do |f|
-        f.write("invalid content")
-        f.flush
+      # Create temp file with invalid content
+      tempfile = Tempfile.new(["invalid", ".qea"])
+      tempfile.write("not a valid qea file")
+      tempfile.close
 
-        result = described_class.measure_qea(f.path)
-
-        expect(result).to have_key(:error)
-      end
+      expect(described_class.measure_qea(tempfile.path)).to have_key(:error)
     end
   end
 

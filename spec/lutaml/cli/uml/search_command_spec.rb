@@ -9,15 +9,15 @@ require "tempfile"
 RSpec.describe Lutaml::Cli::Uml::SearchCommand do
   let(:test_xmi) { File.join(__dir__, "../../../../examples/xmi/basic.xmi") }
   let(:test_lur) do
-    temp_lur = Tempfile.new(["search_test", ".lur"]).path
+    temp_lur = Tempfile.new(["search_test", ".lur"])
     repo = Lutaml::UmlRepository::Repository.from_xmi(test_xmi)
-    repo.export_to_package(temp_lur)
+    repo.export_to_package(temp_lur.path)
     temp_lur
   end
   let(:command) { described_class.new(options) }
 
   after do
-    File.unlink(test_lur) if File.exist?(test_lur)
+    test_lur.unlink if File.exist?(test_lur.path)
   end
 
   describe "#run" do
@@ -26,13 +26,13 @@ RSpec.describe Lutaml::Cli::Uml::SearchCommand do
 
       it "performs search" do
         expect {
-          command.run(test_lur, "Building")
+          command.run(test_lur.path, "Building")
         }.not_to output(/ERROR/).to_stdout
       end
 
       it "shows results or no results message" do
         expect {
-          capture(:stdout) { command.run(test_lur, "NonExistent12345") }
+          capture(:stdout) { command.run(test_lur.path, "NonExistent12345") }
         }.not_to raise_error
       end
     end
@@ -42,7 +42,7 @@ RSpec.describe Lutaml::Cli::Uml::SearchCommand do
 
       it "treats query as regex" do
         expect {
-          command.run(test_lur, "^Building")
+          command.run(test_lur.path, "^Building")
         }.not_to output(/ERROR/).to_stdout
       end
     end
@@ -51,7 +51,9 @@ RSpec.describe Lutaml::Cli::Uml::SearchCommand do
       let(:options) { { format: "json", type: ["class"], in: ["name"] } }
 
       it "outputs JSON format" do
-        expect { command.run(test_lur, "Class A") }.to output(/{|w+/).to_stdout
+        expect {
+          command.run(test_lur.path, "Class A")
+        }.to output(/{|w+/).to_stdout
       end
     end
   end
