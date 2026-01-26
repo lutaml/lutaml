@@ -244,8 +244,8 @@ RSpec.describe "UmlCommands Integration Tests" do
 
       # Search
       expect {
-        Lutaml::Cli::UmlCommands.start(["search", temp_lur.path, "building",
-"--limit", "3"])
+        Lutaml::Cli::UmlCommands.start(["search",
+          temp_lur.path, "building", "--limit", "3"])
       }.not_to output(/ERROR/).to_stdout
 
       # Export
@@ -256,8 +256,8 @@ RSpec.describe "UmlCommands Integration Tests" do
       }.to output(/Exported to/).to_stdout
       expect(File.exist?(export_file.path)).to be true
 
-      temp_lur.unlink
-      export_file.unlink
+      temp_lur.close!
+      export_file.close!
     end
   end
 
