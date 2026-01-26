@@ -10,21 +10,28 @@ require "yaml"
 RSpec.describe "UmlCommands Integration Tests" do
   let(:test_xmi) { File.join(__dir__, "../../../examples/xmi/basic.xmi") }
   let(:test_lur) do
-    Tempfile.new(["integration_test", ".lur"]).tap do |f|
-      f.close
-      # Build LUR package for testing
-      repo = Lutaml::UmlRepository::Repository.from_xmi(test_xmi)
-      repo.export_to_package(f.path)
-    end
+    temp_lur = Tempfile.new(["integration_test", ".lur"])
+    # Build LUR package for testing
+    repo = Lutaml::UmlRepository::Repository.from_xmi(test_xmi)
+    temp_lur.close
+    repo.export_to_package(temp_lur.path)
+    temp_lur
   end
 
   after do
-    test_lur.unlink if File.exist?(test_lur.path)
+    if File.exist?(test_lur.path)
+      begin
+        test_lur.close if !test_lur.closed?
+        test_lur.unlink
+      rescue Errno::EACCES
+      end
+    end
   end
 
   describe "build -> info workflow" do
     it "builds a package and retrieves its info" do
       temp_lur = Tempfile.new(["workflow_test", ".lur"])
+      temp_lur.close
 
       # Build package
       expect {
@@ -42,13 +49,18 @@ RSpec.describe "UmlCommands Integration Tests" do
         Lutaml::Cli::UmlCommands.start(["info", temp_lur.path])
       }.to output(/Package Information/).to_stdout
 
-      temp_lur.unlink
+      begin
+        temp_lur.close if !temp_lur.closed?
+        temp_lur.unlink
+      rescue Errno::EACCES
+      end
     end
   end
 
   describe "build -> validate workflow" do
     it "builds and validates a package" do
       temp_lur = Tempfile.new(["validate_workflow", ".lur"])
+      temp_lur.close
 
       # Build
       expect {
@@ -60,7 +72,11 @@ RSpec.describe "UmlCommands Integration Tests" do
         Lutaml::Cli::UmlCommands.start(["validate", temp_lur.path])
       }.to output(/Validating repository/).to_stdout
 
-      temp_lur.unlink
+      begin
+        temp_lur.close if !temp_lur.closed?
+        temp_lur.unlink
+      rescue Errno::EACCES
+      end
     end
   end
 
@@ -106,6 +122,7 @@ RSpec.describe "UmlCommands Integration Tests" do
   describe "build -> export workflow" do
     it "builds a package and exports it" do
       export_file = Tempfile.new(["export_test", ".json"])
+      export_file.close
 
       expect {
         Lutaml::Cli::UmlCommands.start(["export", test_lur.path,
@@ -114,7 +131,11 @@ RSpec.describe "UmlCommands Integration Tests" do
       }.to output(/Exported to/).to_stdout
       expect(File.exist?(export_file.path)).to be true
 
-      export_file.unlink
+      begin
+        export_file.close if !export_file.closed?
+        export_file.unlink
+      rescue Errno::EACCES
+      end
     end
   end
 
@@ -234,6 +255,8 @@ RSpec.describe "UmlCommands Integration Tests" do
     it "builds, validates, searches, and exports" do
       temp_lur = Tempfile.new(["complex_workflow", ".lur"])
       export_file = Tempfile.new(["complex_export", ".json"])
+      temp_lur.close
+      export_file.close
 
       # Build
       expect {
@@ -256,8 +279,21 @@ RSpec.describe "UmlCommands Integration Tests" do
       }.to output(/Exported to/).to_stdout
       expect(File.exist?(export_file.path)).to be true
 
-      temp_lur.close!
-      export_file.close!
+      if File.exist?(temp_lur.path)
+        begin
+          temp_lur.close if !temp_lur.closed?
+          temp_lur.unlink
+        rescue Errno::EACCES
+        end
+      end
+
+      if File.exist?(export_file.path)
+        begin
+          export_file.close if !export_file.closed?
+          export_file.unlink
+        rescue Errno::EACCES
+        end
+      end
     end
   end
 

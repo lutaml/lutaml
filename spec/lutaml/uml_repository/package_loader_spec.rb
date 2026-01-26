@@ -8,32 +8,42 @@ require "lutaml/uml_repository/package_metadata"
 
 RSpec.describe Lutaml::UmlRepository::PackageLoader do
   let(:repository) { create_test_repository }
-  let(:lur_path) { "spec/tmp/test.lur" }
-
-  before do
-    FileUtils.mkdir_p("spec/tmp")
-    # Create a test LUR file
-    exporter = Lutaml::UmlRepository::PackageExporter.new(repository)
-    exporter.export(lur_path)
+  let(:lur_path) do
+    temp_lur = Tempfile.new(["test", ".lur"])
+    temp_lur.close
+    temp_lur
   end
 
   after do
-    FileUtils.rm_f(lur_path)
+    if File.exist?(lur_path.path)
+      begin
+        lur_path.close if !lur_path.closed?
+        lur_path.unlink
+      rescue Errno::EACCES
+      end
+    end
+  end
+
+  before do
+    # Create a test LUR file
+    exporter = Lutaml::UmlRepository::PackageExporter.new(repository)
+    lur_path.close
+    exporter.export(lur_path.path)
   end
 
   describe ".load" do
     it "loads repository from package" do
-      loaded_repo = described_class.load(lur_path)
+      loaded_repo = described_class.load(lur_path.path)
       expect(loaded_repo).to be_a(Lutaml::UmlRepository::Repository)
     end
 
     it "deserializes document" do
-      loaded_repo = described_class.load(lur_path)
+      loaded_repo = described_class.load(lur_path.path)
       expect(loaded_repo.document).to be_a(Lutaml::Uml::Document)
     end
 
     it "loads indexes" do
-      loaded_repo = described_class.load(lur_path)
+      loaded_repo = described_class.load(lur_path.path)
       expect(loaded_repo.indexes).to be_a(Hash)
       expect(loaded_repo.indexes.keys).to include(
         :package_paths,
@@ -45,14 +55,14 @@ RSpec.describe Lutaml::UmlRepository::PackageLoader do
     end
 
     it "loads metadata as PackageMetadata object" do
-      loaded_repo = described_class.load(lur_path)
+      loaded_repo = described_class.load(lur_path.path)
       expect(loaded_repo.metadata).to be_a(Lutaml::UmlRepository::PackageMetadata)
       expect(loaded_repo.metadata.name).to eq("UML Model")
       expect(loaded_repo.metadata.version).to eq("1.0")
     end
 
     it "creates functional repository" do
-      loaded_repo = described_class.load(lur_path)
+      loaded_repo = described_class.load(lur_path.path)
 
       # Test that queries work
       packages = loaded_repo.list_packages(loaded_repo.document.name)
@@ -61,7 +71,7 @@ RSpec.describe Lutaml::UmlRepository::PackageLoader do
 
     it "preserves document structure" do
       original_doc = repository.document
-      loaded_repo = described_class.load(lur_path)
+      loaded_repo = described_class.load(lur_path.path)
       loaded_doc = loaded_repo.document
 
       expect(loaded_doc.name).to eq(original_doc.name)
@@ -70,7 +80,7 @@ RSpec.describe Lutaml::UmlRepository::PackageLoader do
 
     it "preserves indexes" do
       original_indexes = repository.indexes
-      loaded_repo = described_class.load(lur_path)
+      loaded_repo = described_class.load(lur_path.path)
       loaded_indexes = loaded_repo.indexes
 
       expect(loaded_indexes[:package_paths].keys.map(&:to_s).sort)
@@ -84,9 +94,9 @@ RSpec.describe Lutaml::UmlRepository::PackageLoader do
 
     it "handles corrupted files" do
       # Create a corrupted file
-      File.write(lur_path, "corrupted data")
+      File.write(lur_path.path, "corrupted data")
 
-      expect { described_class.load(lur_path) }
+      expect { described_class.load(lur_path.path) }
         .to raise_error(/Invalid LUR package/)
     end
   end
@@ -104,10 +114,10 @@ RSpec.describe Lutaml::UmlRepository::PackageLoader do
         repository,
         metadata: metadata,
       )
-      exporter.export(lur_path)
+      exporter.export(lur_path.path)
 
       # Load and verify
-      loaded_repo = described_class.load(lur_path)
+      loaded_repo = described_class.load(lur_path.path)
       expect(loaded_repo.metadata.name).to eq("Test Model")
       expect(loaded_repo.metadata.version).to eq("2.0")
       expect(loaded_repo.metadata.publisher).to eq("Test Publisher")
@@ -130,9 +140,9 @@ RSpec.describe Lutaml::UmlRepository::PackageLoader do
         repository,
         metadata: metadata,
       )
-      exporter.export(lur_path)
+      exporter.export(lur_path.path)
 
-      loaded_repo = described_class.load(lur_path)
+      loaded_repo = described_class.load(lur_path.path)
       loaded_metadata = loaded_repo.metadata
 
       expect(loaded_metadata.name).to eq("Full Model")
@@ -151,10 +161,10 @@ RSpec.describe Lutaml::UmlRepository::PackageLoader do
     it "preserves data through export and load cycle" do
       # Export
       exporter = Lutaml::UmlRepository::PackageExporter.new(repository)
-      exporter.export(lur_path)
+      exporter.export(lur_path.path)
 
       # Load
-      loaded_repo = described_class.load(lur_path)
+      loaded_repo = described_class.load(lur_path.path)
 
       # Compare
       expect(loaded_repo.document.name).to eq(repository.document.name)
@@ -165,7 +175,7 @@ RSpec.describe Lutaml::UmlRepository::PackageLoader do
     end
 
     it "maintains query functionality" do
-      loaded_repo = described_class.load(lur_path)
+      loaded_repo = described_class.load(lur_path.path)
 
       # Test various queries
       doc_name = loaded_repo.document.name
@@ -186,9 +196,9 @@ RSpec.describe Lutaml::UmlRepository::PackageLoader do
         repository,
         metadata: metadata,
       )
-      exporter.export(lur_path)
+      exporter.export(lur_path.path)
 
-      loaded_repo = described_class.load(lur_path)
+      loaded_repo = described_class.load(lur_path.path)
 
       expect(loaded_repo.metadata.name).to eq("Round Trip Test")
       expect(loaded_repo.metadata.version).to eq("1.5")
@@ -198,22 +208,22 @@ RSpec.describe Lutaml::UmlRepository::PackageLoader do
 
   describe "with YAML format" do
     before do
-      FileUtils.rm_f(lur_path)
+      FileUtils.rm_f(lur_path.path)
       exporter = Lutaml::UmlRepository::PackageExporter.new(
         repository,
         serialization_format: :yaml,
       )
-      exporter.export(lur_path)
+      exporter.export(lur_path.path)
     end
 
     # Skip YAML format tests - has known issues unrelated to metadata
     xit "loads from YAML format" do
-      loaded_repo = described_class.load(lur_path)
+      loaded_repo = described_class.load(lur_path.path)
       expect(loaded_repo).to be_a(Lutaml::UmlRepository::Repository)
     end
 
     xit "deserializes YAML document correctly" do
-      loaded_repo = described_class.load(lur_path)
+      loaded_repo = described_class.load(lur_path.path)
       expect(loaded_repo.document).to be_a(Lutaml::Uml::Document)
     end
   end
