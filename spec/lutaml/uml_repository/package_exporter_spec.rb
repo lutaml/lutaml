@@ -7,7 +7,21 @@ require "lutaml/uml_repository/package_metadata"
 
 RSpec.describe Lutaml::UmlRepository::PackageExporter do
   let(:repository) { create_test_repository }
-  let(:output_path) { "spec/tmp/test.lur" }
+  let(:output_path) do
+    temp_lur = Tempfile.new(["test", ".lur"])
+    temp_lur.close
+    temp_lur
+  end
+
+  after do
+    if File.exist?(output_path.path)
+      begin
+        output_path.close if !output_path.closed?
+        output_path.unlink
+      rescue Errno::EACCES
+      end
+    end
+  end
 
   # Helper to get permitted classes for YAML loading
   def yaml_permitted_classes
@@ -17,14 +31,6 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
       constant_value if constant_value.is_a?(Class)
     end.compact
     [Symbol, Time, Date, DateTime, uml_classes].flatten
-  end
-
-  before do
-    FileUtils.mkdir_p("spec/tmp")
-  end
-
-  after do
-    FileUtils.rm_f(output_path)
   end
 
   describe "#initialize" do
@@ -72,24 +78,24 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
   describe "#export" do
     it "creates ZIP file" do
       exporter = described_class.new(repository)
-      exporter.export(output_path)
-      expect(File.exist?(output_path)).to be true
+      exporter.export(output_path.path)
+      expect(File.exist?(output_path.path)).to be true
     end
 
     it "creates valid ZIP file" do
       exporter = described_class.new(repository)
-      exporter.export(output_path)
+      exporter.export(output_path.path)
 
-      expect { Zip::File.open(output_path) {} }.not_to raise_error
+      expect { Zip::File.open(output_path.path) {} }.not_to raise_error
     end
 
     it "includes metadata.yaml" do
       exporter = described_class.new(repository,
                                      name: "Test Model",
                                      version: "1.2.3")
-      exporter.export(output_path)
+      exporter.export(output_path.path)
 
-      Zip::File.open(output_path) do |zip_file|
+      Zip::File.open(output_path.path) do |zip_file|
         metadata_entry = zip_file.find_entry("metadata.yaml")
         expect(metadata_entry).not_to be_nil
 
@@ -115,9 +121,9 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
         description: "Urban planning model",
       )
       exporter = described_class.new(repository, metadata: metadata)
-      exporter.export(output_path)
+      exporter.export(output_path.path)
 
-      Zip::File.open(output_path) do |zip_file|
+      Zip::File.open(output_path.path) do |zip_file|
         metadata_entry = zip_file.find_entry("metadata.yaml")
         loaded_metadata = YAML.safe_load(
           metadata_entry.get_input_stream.read,
@@ -135,9 +141,9 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
 
     it "includes serialized repository with marshal format" do
       exporter = described_class.new(repository)
-      exporter.export(output_path)
+      exporter.export(output_path.path)
 
-      Zip::File.open(output_path) do |zip_file|
+      Zip::File.open(output_path.path) do |zip_file|
         doc_entry = zip_file.find_entry("repository.marshal")
         expect(doc_entry).not_to be_nil
 
@@ -149,9 +155,9 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
     # Skip YAML document serialization - has known issues unrelated to metadata
     xit "includes serialized repository with yaml format" do
       exporter = described_class.new(repository, serialization_format: :yaml)
-      exporter.export(output_path)
+      exporter.export(output_path.path)
 
-      Zip::File.open(output_path) do |zip_file|
+      Zip::File.open(output_path.path) do |zip_file|
         doc_entry = zip_file.find_entry("repository.yaml")
         expect(doc_entry).not_to be_nil
 
@@ -166,9 +172,9 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
 
     it "includes indexes" do
       exporter = described_class.new(repository)
-      exporter.export(output_path)
+      exporter.export(output_path.path)
 
-      Zip::File.open(output_path) do |zip_file|
+      Zip::File.open(output_path.path) do |zip_file|
         indexes_entry = zip_file.find_entry("indexes/all.marshal")
         expect(indexes_entry).not_to be_nil
 
@@ -179,9 +185,9 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
 
     it "includes index_tree.yaml" do
       exporter = described_class.new(repository)
-      exporter.export(output_path)
+      exporter.export(output_path.path)
 
-      Zip::File.open(output_path) do |zip_file|
+      Zip::File.open(output_path.path) do |zip_file|
         tree_entry = zip_file.find_entry("index_tree.yaml")
         expect(tree_entry).not_to be_nil
 
@@ -198,9 +204,9 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
 
     it "includes statistics.yaml" do
       exporter = described_class.new(repository)
-      exporter.export(output_path)
+      exporter.export(output_path.path)
 
-      Zip::File.open(output_path) do |zip_file|
+      Zip::File.open(output_path.path) do |zip_file|
         stats_entry = zip_file.find_entry("statistics.yaml")
         expect(stats_entry).not_to be_nil
 
@@ -218,7 +224,7 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
     it "raises error for invalid serialization format" do
       expect do
         described_class.new(repository, serialization_format: :invalid)
-          .export(output_path)
+          .export(output_path.path)
       end.to raise_error(ArgumentError, /Invalid serialization format/)
     end
 
@@ -230,14 +236,14 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
 
     it "overwrites existing file" do
       exporter = described_class.new(repository)
-      exporter.export(output_path)
+      exporter.export(output_path.path)
 
-      File.size(output_path)
-      exporter.export(output_path)
+      File.size(output_path.path)
+      exporter.export(output_path.path)
 
-      expect(File.exist?(output_path)).to be true
+      expect(File.exist?(output_path.path)).to be true
       # File might be same size or different, just verify it exists
-      expect(File.size(output_path)).to be > 0
+      expect(File.size(output_path.path)).to be > 0
     end
   end
 
@@ -248,9 +254,9 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
                                      name: "Legacy",
                                      version: "1.0",
                                      serialization_format: :yaml)
-      exporter.export(output_path)
+      exporter.export(output_path.path)
 
-      Zip::File.open(output_path) do |zip_file|
+      Zip::File.open(output_path.path) do |zip_file|
         # Check metadata
         metadata_entry = zip_file.find_entry("metadata.yaml")
         metadata = YAML.safe_load(
@@ -272,9 +278,9 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
                                      name: "Legacy",
                                      version: "1.0",
                                      serialization_format: :marshal)
-      exporter.export(output_path)
+      exporter.export(output_path.path)
 
-      Zip::File.open(output_path) do |zip_file|
+      Zip::File.open(output_path.path) do |zip_file|
         # Check metadata
         metadata_entry = zip_file.find_entry("metadata.yaml")
         metadata = YAML.safe_load(

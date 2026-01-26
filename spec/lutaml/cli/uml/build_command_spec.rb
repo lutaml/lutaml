@@ -11,8 +11,18 @@ RSpec.describe Lutaml::Cli::Uml::BuildCommand do
   let(:output_lur) { Tempfile.new(["build_test", ".lur"]) }
   let(:command) { described_class.new(options) }
 
+  before do
+    output_lur.close
+  end
+
   after do
-    output_lur.close! if File.exist?(output_lur.path)
+    if File.exist?(output_lur.path)
+      begin
+        output_lur.close if !output_lur.closed?
+        output_lur.unlink
+      rescue Errno::EACCES
+      end
+    end
   end
 
   describe "#run" do

@@ -17,7 +17,13 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
   let(:output_lur) { Tempfile.new(["package_test", ".lur"]) }
 
   after do
-    output_lur.close! if File.exist?(output_lur.path)
+    if File.exist?(output_lur.path)
+      begin
+        output_lur.close if !output_lur.closed?
+        output_lur.unlink
+      rescue Errno::EACCES
+      end
+    end
   end
 
   describe "build command" do
@@ -30,6 +36,7 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
         begin
           # Disable validation for this test since the test XMI has many
           # validation errors
+          output_lur.close
           Lutaml::Cli::UmlCommands.start(["build", test_xmi,
                                         "-o", output_lur.path,
                                         "--name", "TestPackage",
@@ -67,6 +74,7 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
         $stdout = output
 
         begin
+          output_lur.close
           Lutaml::Cli::UmlCommands.start(["build", test_xmi,
                                         "-o", output_lur.path,
                                         "--validate"])
@@ -89,6 +97,7 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
         $stdout = output
 
         begin
+          output_lur.close
           Lutaml::Cli::UmlCommands.start(["build", test_xmi,
                                         "-o", output_lur.path,
                                         "--no-validate"])
@@ -144,6 +153,7 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
         begin
           # Disable validation for this test since the test XMI has many
           # validation errors
+          output_lur.close
           Lutaml::Cli::UmlCommands
             .start(["build", test_xmi, "-o", output_lur.path, "--no-validate"])
         rescue SystemExit
@@ -188,6 +198,7 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
 
         # This test should show validation errors in strict mode
         expect {
+          output_lur.close
           Lutaml::Cli::UmlCommands.start(["build", invalid_xmi.path,
                                         "-o", output_lur.path,
                                         "--strict"])
@@ -208,6 +219,7 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
         $stdout = output
 
         begin
+          output_lur.close
           Lutaml::Cli::UmlCommands.start(["build", test_qea,
                                         "-o", output_lur.path,
                                         "--name", "QEATestPackage"])
@@ -231,6 +243,7 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
         $stdout = output
 
         begin
+          output_lur.close
           Lutaml::Cli::UmlCommands.start(["build", "nonexistent.xmi",
                                         "-o", output_lur.path])
         rescue Thor::Error
@@ -252,6 +265,7 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
         $stdout = output
 
         begin
+          output_lur.close
           Lutaml::Cli::UmlCommands.start(["build", invalid_xmi.path,
                                         "-o", output_lur.path])
         rescue Thor::Error

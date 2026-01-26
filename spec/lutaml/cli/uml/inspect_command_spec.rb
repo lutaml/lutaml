@@ -10,6 +10,7 @@ RSpec.describe Lutaml::Cli::Uml::InspectCommand do
   let(:test_xmi) { File.join(__dir__, "../../../../examples/xmi/basic.xmi") }
   let(:test_lur) do
     temp_lur = Tempfile.new(["inspect_test", ".lur"])
+    temp_lur.close
     repo = Lutaml::UmlRepository::Repository.from_xmi(test_xmi)
     repo.export_to_package(temp_lur.path)
     temp_lur
@@ -17,7 +18,13 @@ RSpec.describe Lutaml::Cli::Uml::InspectCommand do
   let(:command) { described_class.new(options) }
 
   after do
-    test_lur.close! if File.exist?(test_lur.path)
+    if File.exist?(test_lur.path)
+      begin
+        test_lur.close if !test_lur.closed?
+        test_lur.unlink
+      rescue Errno::EACCES
+      end
+    end
   end
 
   describe "#run" do
