@@ -18,8 +18,8 @@ RSpec.describe Lutaml::Cli::Uml::ExportCommand do
   let(:command) { described_class.new(options) }
 
   after do
-    test_lur.unlink if File.exist?(test_lur.path)
-    output_file.unlink if File.exist?(output_file.path)
+    test_lur.close! if File.exist?(test_lur.path)
+    output_file.close! if File.exist?(output_file.path)
   end
 
   describe "#run" do
@@ -28,7 +28,7 @@ RSpec.describe Lutaml::Cli::Uml::ExportCommand do
       let(:options) { { format: "json", output: output_json.path } }
 
       after do
-        output_json.unlink if File.exist?(output_json.path)
+        output_json.close! if File.exist?(output_json.path)
       end
 
       it "exports to JSON format" do

@@ -12,7 +12,7 @@ RSpec.describe Lutaml::Cli::Uml::BuildCommand do
   let(:command) { described_class.new(options) }
 
   after do
-    output_lur.unlink if File.exist?(output_lur.path)
+    output_lur.close! if File.exist?(output_lur.path)
   end
 
   describe "#run" do

@@ -17,7 +17,7 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
   let(:output_lur) { Tempfile.new(["package_test", ".lur"]) }
 
   after do
-    output_lur.unlink if File.exist?(output_lur)
+    output_lur.close! if File.exist?(output_lur.path)
   end
 
   describe "build command" do

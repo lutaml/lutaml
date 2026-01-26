@@ -17,7 +17,7 @@ RSpec.describe Lutaml::Cli::Uml::TreeCommand do
   let(:command) { described_class.new(options) }
 
   after do
-    test_lur.unlink if File.exist?(test_lur.path)
+    test_lur.close! if File.exist?(test_lur.path)
   end
 
   describe "#run" do
