@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "expressir"
 require "expressir/express/cache"
 require_relative "xmi"
 require_relative "xml"

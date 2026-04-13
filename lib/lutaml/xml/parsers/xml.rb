@@ -14,7 +14,7 @@ module Lutaml
       # Class for parsing .xml schema files into ::Lutaml::Uml::Document
       class Xml
         def self.load_schema(schema, root_schema)
-          result = Lutaml::Model::Schema.from_xml(schema)
+          result = Lutaml::Model::Schema.from_xml(schema, module_namespace: nil)
 
           result.each_value do |klass|
             klass = klass.gsub(/^require.*?\n/, "")
