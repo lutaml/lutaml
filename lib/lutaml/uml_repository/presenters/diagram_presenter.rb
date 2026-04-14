@@ -117,7 +117,7 @@ module Lutaml
         def build_elements_data # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           return [] unless element.diagram_objects
 
-          element.diagram_objects.map do |diagram_object|
+          element.diagram_objects.filter_map do |diagram_object|
             # Look up the actual element in the repository
             uml_element = find_element_by_xmi_id(diagram_object.object_xmi_id)
             next nil unless uml_element
@@ -140,7 +140,7 @@ module Lutaml
               element: uml_element, # Original UML element
               diagram_object: diagram_object, # Original diagram placement data
             }
-          end.compact
+          end
         end
 
         # Build connector data from diagram_links
@@ -151,9 +151,9 @@ module Lutaml
 
           # Build elements index for quick lookup by XMI ID
           elements_map = build_elements_data
-            .each_with_object({}) do |elem, hash|
-              hash[elem[:id]] = elem
-            end
+            .to_h do |elem|
+            [elem[:id], elem]
+          end
 
           # Build diagram objects map for EA internal ID lookup
           diagram_objects_map = {}
@@ -161,7 +161,7 @@ module Lutaml
             diagram_objects_map[extract_ea_id(dobj)] = dobj.object_xmi_id
           end
 
-          element.diagram_links.map do |diagram_link| # rubocop:disable Metrics/BlockLength
+          element.diagram_links.filter_map do |diagram_link| # rubocop:disable Metrics/BlockLength
             # Skip hidden connectors
             next nil if diagram_link.hidden
 
@@ -219,7 +219,7 @@ module Lutaml
               # Original diagram routing data
               diagram_link: diagram_link,
             }
-          end.compact
+          end
         end
 
         # Parse EA diagram link style string

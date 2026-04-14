@@ -82,39 +82,39 @@ module Lutaml
         end
 
         def attributes
-          @owned_attributes.map do |owned_attr|
+          @owned_attributes.filter_map do |owned_attr|
             if @options[:with_assoc] || owned_attr.association.nil?
               ::Lutaml::Xmi::LiquidDrops::AttributeDrop.new(owned_attr,
                                                             @options)
             end
-          end.compact
+          end
         end
 
         def owned_attributes
-          @owned_attributes.map do |owned_attr|
+          @owned_attributes.filter_map do |owned_attr|
             ::Lutaml::Xmi::LiquidDrops::AttributeDrop.new(owned_attr, @options)
-          end.compact
+          end
         end
 
         def suppliers_dependencies
-          @suppliers_dependencies.map do |dependency|
+          @suppliers_dependencies.filter_map do |dependency|
             ::Lutaml::Xmi::LiquidDrops::DependencyDrop.new(dependency, @options)
-          end.compact
+          end
         end
 
         def clients_dependencies
-          @clients_dependencies.map do |dependency|
+          @clients_dependencies.filter_map do |dependency|
             ::Lutaml::Xmi::LiquidDrops::DependencyDrop.new(dependency, @options)
-          end.compact
+          end
         end
 
         def inheritances
-          @inheritance_ids.map do |inheritance_id|
+          @inheritance_ids.filter_map do |inheritance_id|
             # ::Lutaml::Xmi::LiquidDrops::InheritanceDrop
             #   .new(dependency, @options)
             connector = fetch_connector(inheritance_id)
             ::Lutaml::Xmi::LiquidDrops::ConnectorDrop.new(connector, @options)
-          end.compact
+          end
         end
 
         def associations # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity,Metrics/MethodLength
@@ -126,7 +126,7 @@ module Lutaml
             links << link.generalization if link.generalization.any?
           end
 
-          links.flatten.compact.map do |assoc|
+          links.flatten.compact.filter_map do |assoc|
             link_member = assoc.start == xmi_id ? "end" : "start"
             link_owner_name = link_member == "start" ? "end" : "start"
 
@@ -155,15 +155,15 @@ module Lutaml
                 options: @options,
               )
             end
-          end.compact
+          end
         end
 
         def operations
-          @model.owned_operation.map do |operation|
+          @model.owned_operation.filter_map do |operation|
             if operation.association.nil?
               ::Lutaml::Xmi::LiquidDrops::OperationDrop.new(operation)
             end
-          end.compact
+          end
         end
 
         def constraints

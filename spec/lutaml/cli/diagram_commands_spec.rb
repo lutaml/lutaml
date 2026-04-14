@@ -63,23 +63,23 @@ RSpec.describe "Diagram Commands (via UmlCommands)" do
 
   describe "ls command with --type diagrams" do
     it "lists diagrams or shows appropriate message" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["ls", lur_path, "--type", "diagrams"])
-      }.not_to raise_error
+      end.not_to raise_error
     end
 
     it "handles JSON format for diagrams" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["ls", lur_path, "--type", "diagrams",
-                                      "--format", "json"])
-      }.to output(/\[/).to_stdout
+                                        "--format", "json"])
+      end.to output(/\[/).to_stdout
     end
 
     it "handles YAML format for diagrams" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["ls", lur_path, "--type", "diagrams",
-                                      "--format", "yaml"])
-      }.not_to output(/ERROR/).to_stdout
+                                        "--format", "yaml"])
+      end.not_to output(/ERROR/).to_stdout
     end
 
     it "shows warning when no diagrams found" do
@@ -94,9 +94,9 @@ RSpec.describe "Diagram Commands (via UmlCommands)" do
       empty_repo = Lutaml::UmlRepository::Repository.new(document: empty_doc)
       empty_repo.export_to_package(empty_lur)
 
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["ls", empty_lur, "--type", "diagrams"])
-      }.to output(/No diagrams found/).to_stdout
+      end.to output(/No diagrams found/).to_stdout
     end
   end
 

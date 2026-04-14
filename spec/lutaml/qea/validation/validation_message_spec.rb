@@ -54,21 +54,21 @@ RSpec.describe Lutaml::Qea::Validation::ValidationMessage do
 
   describe "severity checks" do
     it "identifies error messages" do
-      msg = described_class.new(**message_attributes.merge(severity: :error))
+      msg = described_class.new(**message_attributes, severity: :error)
       expect(msg.error?).to be true
       expect(msg.warning?).to be false
       expect(msg.info?).to be false
     end
 
     it "identifies warning messages" do
-      msg = described_class.new(**message_attributes.merge(severity: :warning))
+      msg = described_class.new(**message_attributes, severity: :warning)
       expect(msg.error?).to be false
       expect(msg.warning?).to be true
       expect(msg.info?).to be false
     end
 
     it "identifies info messages" do
-      msg = described_class.new(**message_attributes.merge(severity: :info))
+      msg = described_class.new(**message_attributes, severity: :info)
       expect(msg.error?).to be false
       expect(msg.warning?).to be false
       expect(msg.info?).to be true

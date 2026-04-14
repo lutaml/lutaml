@@ -104,7 +104,7 @@ module Lutaml
           class_transformer = ClassTransformer.new(database)
           ea_objects.each do |ea_obj|
             is_class_type = ea_obj.uml_class? || ea_obj.interface?
-            is_text_on_diagram = ea_obj.object_type == 'Text' &&
+            is_text_on_diagram = ea_obj.object_type == "Text" &&
               appears_on_diagram?(ea_obj.ea_object_id)
 
             next unless is_class_type || is_text_on_diagram
@@ -163,7 +163,7 @@ module Lutaml
           # Find stereotype xref from the in-memory collection
           xref = database.xrefs.find do |x|
             x.client == ea_guid &&
-              x.name == 'Stereotypes' && x.type == 'element property'
+              x.name == "Stereotypes" && x.type == "element property"
           end
 
           return nil unless xref

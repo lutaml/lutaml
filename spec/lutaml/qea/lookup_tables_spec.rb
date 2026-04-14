@@ -371,11 +371,11 @@ RSpec.describe "Priority 3 Lookup Tables" do
 
     it "totals 140 lookup table records" do
       lookup_total = database.constraint_types.size +
-                     database.connector_types.size +
-                     database.diagram_types.size +
-                     database.object_types.size +
-                     database.status_types.size +
-                     database.complexity_types.size
+        database.connector_types.size +
+        database.diagram_types.size +
+        database.object_types.size +
+        database.status_types.size +
+        database.complexity_types.size
       expect(lookup_total).to eq(140)
     end
   end

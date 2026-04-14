@@ -77,10 +77,8 @@ module Lutaml
             documents << build_class_document(klass)
 
             # Index attributes
-            if klass.attributes
-              klass.attributes.each do |attr|
-                documents << build_attribute_document(attr, klass)
-              end
+            klass.attributes&.each do |attr|
+              documents << build_attribute_document(attr, klass)
             end
           end
 

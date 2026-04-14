@@ -46,10 +46,10 @@ module Lutaml
 
               # Permit all Lutaml::Uml classes for safe loading
               uml_constants = Lutaml::Uml.constants
-              uml_classes = uml_constants.map do |const_name|
+              uml_classes = uml_constants.filter_map do |const_name|
                 constant_value = Lutaml::Uml.const_get(const_name)
                 constant_value if constant_value.is_a?(Class)
-              end.compact
+              end
               permitted_classes = [Symbol, Time, Date, DateTime, uml_classes]
                 .flatten
 

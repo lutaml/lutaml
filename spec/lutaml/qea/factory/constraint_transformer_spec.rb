@@ -115,7 +115,7 @@ RSpec.describe Lutaml::Qea::Factory::ConstraintTransformer do
           constraint_type: "Invariant",
           weight: 10000.0,
           status: "Approved",
-        )
+        ),
       ]
 
       uml_constraints = transformer.transform_collection(ea_constraints)

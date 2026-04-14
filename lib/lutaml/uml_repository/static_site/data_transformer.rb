@@ -70,7 +70,7 @@ module Lutaml
             next unless klass.respond_to?(:association_generalization)
             unless klass.association_generalization &&
                 !klass.association_generalization.empty?
-               next
+              next
             end
 
             # Each class has an association_generalization array with
@@ -137,15 +137,15 @@ module Lutaml
           # Get root packages from document.packages (not from index)
           root_packages = if repository.document.respond_to?(:packages) &&
               repository.document.packages
-                           repository.document.packages
-                         else
-                           # Fallback: find packages without parent namespace
-                           repository.packages_index.select do |pkg|
-                             !pkg.respond_to?(:namespace) ||
-                               pkg.namespace.nil? ||
-                               !pkg.namespace.is_a?(Lutaml::Uml::Package)
-                           end
-                         end
+                            repository.document.packages
+                          else
+                            # Fallback: find packages without parent namespace
+                            repository.packages_index.select do |pkg|
+                              !pkg.respond_to?(:namespace) ||
+                                pkg.namespace.nil? ||
+                                !pkg.namespace.is_a?(Lutaml::Uml::Package)
+                            end
+                          end
 
           if root_packages.size == 1
             build_tree_node(root_packages.first)
@@ -166,7 +166,7 @@ module Lutaml
 
           # Sort child packages by name
           sorted_children = (package.packages || []).sort_by do |p|
-            p.name || ''
+            p.name || ""
           end
 
           # Sort classes by name, filtering out unnamed classes
@@ -174,7 +174,7 @@ module Lutaml
           # counted
           sorted_classes = (package.classes || [])
             .reject { |c| c.name.nil? || c.name.empty? }
-            .sort_by { |c| c.name }
+            .sort_by(&:name)
 
           # Build child nodes first to get their counts
           child_nodes = sorted_children.map do |child|
@@ -243,8 +243,8 @@ module Lutaml
             end,
             parent: if package.respond_to?(:namespace) &&
                 package.namespace.is_a?(Lutaml::Uml::Package)
-              @id_generator.package_id(package.namespace)
-            end,
+                      @id_generator.package_id(package.namespace)
+                    end,
           }
         end
 
@@ -267,15 +267,15 @@ module Lutaml
             assoc = repository.associations_index.find do |a|
               @id_generator.association_id(a) == assoc_id
             end
-            next '' unless assoc
+            next "" unless assoc
 
             # Determine local role for this class
             if assoc.owner_end_xmi_id == klass.xmi_id
-              assoc.owner_end_attribute_name || assoc.owner_end || ''
+              assoc.owner_end_attribute_name || assoc.owner_end || ""
             elsif assoc.member_end_xmi_id == klass.xmi_id
-              assoc.member_end_attribute_name || assoc.member_end || ''
+              assoc.member_end_attribute_name || assoc.member_end || ""
             else
-              ''
+              ""
             end
           end
 
@@ -293,7 +293,7 @@ module Lutaml
             ),
             definition: format_definition(klass.definition),
             attributes: (klass.attributes || []).sort_by do |a|
-              a.name || ''
+              a.name || ""
             end.map do |attr|
               @id_generator.attribute_id(attr, klass)
             end,
@@ -347,10 +347,10 @@ module Lutaml
                         false
                       end,
             isReadOnly: if attribute.respond_to?(:is_read_only)
-                            attribute.is_read_only
-                          else
-                            false
-                          end,
+                          attribute.is_read_only
+                        else
+                          false
+                        end,
             defaultValue: if attribute.respond_to?(:default)
                             attribute.default
                           end,
@@ -614,7 +614,7 @@ module Lutaml
 
         def package_id_for_class(klass)
           ns = klass.respond_to?(:namespace) ? klass.namespace : nil
-          return nil unless ns&.is_a?(Lutaml::Uml::Package)
+          return nil unless ns.is_a?(Lutaml::Uml::Package)
 
           @id_generator.package_id(ns)
         end
@@ -696,13 +696,13 @@ module Lutaml
 
           if parent_xmi_ids && !parent_xmi_ids.empty?
             # Map each parent XMI ID to class ID
-            parents = parent_xmi_ids.map do |parent_xmi_id|
+            parents = parent_xmi_ids.filter_map do |parent_xmi_id|
               # Skip self-referential generalization
               next if parent_xmi_id == klass.xmi_id
 
               parent = find_class_by_xmi_id(parent_xmi_id)
               parent ? @id_generator.class_id(parent) : nil
-            end.compact
+            end
 
             return parents unless parents.empty?
           end
@@ -838,7 +838,7 @@ module Lutaml
             if parent_class.attributes
               # Sort attributes by name within this parent
               sorted_attrs = parent_class.attributes.sort_by do |a|
-                a.name || ''
+                a.name || ""
               end
               sorted_attrs.each do |attr|
                 attr_id = @id_generator.attribute_id(attr, parent_class)
@@ -855,8 +855,8 @@ module Lutaml
             # Move to parent's parent
             parent_order += 1
             current_gen = if current_gen.respond_to?(:general)
-              current_gen.general
-            end
+                            current_gen.general
+                          end
           end
 
           # Already sorted by parent hierarchy, then by name within parent
@@ -889,7 +889,7 @@ module Lutaml
 
             # Get association details and determine local role from parent's
             # perspective
-            assoc_with_roles = parent_associations.map do |assoc_id|
+            assoc_with_roles = parent_associations.filter_map do |assoc_id|
               assoc = repository.associations_index.find do |a|
                 @id_generator.association_id(a) == assoc_id
               end
@@ -898,15 +898,15 @@ module Lutaml
               # Determine which role is the "local" one for the parent class
               # This becomes the inherited local role
               local_role = if assoc.owner_end_xmi_id == parent_class.xmi_id
-                assoc.owner_end_attribute_name || assoc.owner_end || ''
-              elsif assoc.member_end_xmi_id == parent_class.xmi_id
-                assoc.member_end_attribute_name || assoc.member_end || ''
-              else
-                ''
-              end
+                             assoc.owner_end_attribute_name || assoc.owner_end || ""
+                           elsif assoc.member_end_xmi_id == parent_class.xmi_id
+                             assoc.member_end_attribute_name || assoc.member_end || ""
+                           else
+                             ""
+                           end
 
               { id: assoc_id, role: local_role }
-            end.compact
+            end
 
             # Sort by local role within this parent
             assoc_with_roles.sort_by { |a| a[:role] }.each do |item|
@@ -922,8 +922,8 @@ module Lutaml
             # Move to parent's parent
             parent_order += 1
             current_gen = if current_gen.respond_to?(:general)
-              current_gen.general
-            end
+                            current_gen.general
+                          end
           end
 
           inherited
@@ -935,6 +935,7 @@ module Lutaml
         # Find class by XMI ID
         def find_class_by_xmi_id(xmi_id)
           return nil unless xmi_id
+
           repository.classes_index.find { |c| c.xmi_id == xmi_id }
         rescue StandardError
           nil
@@ -943,6 +944,7 @@ module Lutaml
         # Find class by object ID (EA object ID)
         def find_class_by_object_id(object_id)
           return nil unless object_id
+
           repository.classes_index.find do |c|
             c.respond_to?(:ea_object_id) && c.ea_object_id == object_id
           end

@@ -13,7 +13,7 @@ RSpec.describe Lutaml::Qea::Models::EaObjectConstraint do
         "ConstraintType" => "Invariant",
         "Weight" => "0.0",
         "Notes" => "Test note",
-        "Status" => "Approved"
+        "Status" => "Approved",
       }
 
       constraint = described_class.from_db_row(row)
@@ -35,7 +35,7 @@ RSpec.describe Lutaml::Qea::Models::EaObjectConstraint do
         "ConstraintType" => "Invariant",
         "Weight" => "10000.0",
         "Notes" => nil,
-        "Status" => "Approved"
+        "Status" => "Approved",
       }
 
       constraint = described_class.from_db_row(row)
@@ -59,7 +59,7 @@ RSpec.describe Lutaml::Qea::Models::EaObjectConstraint do
         "ConstraintType" => "Invariant",
         "Weight" => nil,
         "Notes" => nil,
-        "Status" => "Approved"
+        "Status" => "Approved",
       }
 
       constraint = described_class.from_db_row(row)

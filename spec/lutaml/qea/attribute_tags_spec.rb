@@ -17,7 +17,7 @@ RSpec.describe "Attribute Tags Support" do
           "Property" => "isMetadata",
           "VALUE" => "false",
           "NOTES" => nil,
-          "ea_guid" => "{CB7388F0-4FF7-4c90-9849-996F41297C17}"
+          "ea_guid" => "{CB7388F0-4FF7-4c90-9849-996F41297C17}",
         }
 
         tag = described_class.from_db_row(row)

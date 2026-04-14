@@ -152,7 +152,7 @@ RSpec.describe "Two-Phase Validation System" do
       context = engine.send(:build_context)
       uml_packages = context[:packages]
 
-      if uml_packages && uml_packages.any?
+      if uml_packages&.any?
         expect(uml_packages.first).to be_a(Lutaml::Uml::Package)
         expect(uml_packages.first).not_to respond_to(:package_id)
       end

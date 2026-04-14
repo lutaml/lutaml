@@ -3,9 +3,9 @@ source "https://rubygems.org"
 # Specify your gem's dependencies in lutaml.gemspec
 gemspec
 
-gem "lutaml-model", github: "lutaml/lutaml-model", branch: "main"
 gem "canon"
 gem "listen"
+gem "lutaml-model", github: "lutaml/lutaml-model", branch: "main"
 gem "openssl", "~> 3.0"
 gem "pry"
 gem "puma"

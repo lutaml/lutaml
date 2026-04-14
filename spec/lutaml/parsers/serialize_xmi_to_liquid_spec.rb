@@ -141,7 +141,7 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
           entity.name == "Block"
         end
 
-        expect(klass.associations.map(&:member_end).compact)
+        expect(klass.associations.filter_map(&:member_end))
           .to(eq(expected_association_names))
       end
 

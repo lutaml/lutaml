@@ -140,7 +140,7 @@ module Lutaml
         when Hash
           format_hash_table(data)
         when Array
-          data.map(&:to_s).join("\n")
+          data.join("\n")
         else
           data.to_s
         end

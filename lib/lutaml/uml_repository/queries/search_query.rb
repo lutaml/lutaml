@@ -114,14 +114,14 @@ module Lutaml
         # @param fields [Array<Symbol>] Fields to search in
         # @return [Array<SearchResult>] Matching search result objects
         def search_classes( # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
-          query, fields: [:name, :documentation],
+          query, fields: %i[name documentation],
           case_sensitive: false
         )
           pattern = regex_pattern_from_query(
             query, case_sensitive: case_sensitive
           )
 
-          indexes[:qualified_names].map do |qname, entity|
+          indexes[:qualified_names].filter_map do |qname, entity|
             match_field = nil
             qualified_name = nil
 
@@ -146,7 +146,7 @@ module Lutaml
                 match_field: match_field,
               )
             end
-          end.compact.uniq
+          end.uniq
         end
 
         def search_by_stereotype(query, case_sensitive: false) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
@@ -155,12 +155,12 @@ module Lutaml
           )
 
           matched_entities = indexes[:stereotypes]
-            .map do |_stereotype, entities|
-              entities.select do |entity|
-                entity.respond_to?(:stereotype) &&
-                  entity.stereotype&.match?(pattern)
-              end.uniq
-          end.compact.uniq.flatten
+            .filter_map do |_stereotype, entities|
+            entities.select do |entity|
+              entity.respond_to?(:stereotype) &&
+                entity.stereotype&.match?(pattern)
+            end.uniq
+          end.uniq.flatten
 
           matched_entities.map do |entity|
             SearchResult.new(
@@ -183,7 +183,7 @@ module Lutaml
             query, case_sensitive: case_sensitive
           )
 
-          indexes[:package_paths].map do |path_string, package|
+          indexes[:package_paths].filter_map do |path_string, package|
             if path_string.to_s.match?(pattern)
               SearchResult.new(
                 element: package,
@@ -193,7 +193,7 @@ module Lutaml
                 match_field: :package_path,
               )
             end
-          end.compact
+          end
         end
 
         def regex_pattern_from_query(query, case_sensitive: false)
@@ -217,7 +217,7 @@ module Lutaml
             query, case_sensitive: case_sensitive
           )
 
-          indexes[:qualified_names].map do |class_qname, entity| # rubocop:disable Metrics/BlockLength
+          indexes[:qualified_names].filter_map do |class_qname, entity| # rubocop:disable Metrics/BlockLength
             next unless entity.respond_to?(:attributes) && entity.attributes
 
             match_field = nil
@@ -250,7 +250,7 @@ module Lutaml
                 },
               )
             end
-          end.compact.uniq
+          end.uniq
         end
 
         # Get all associations in the model
@@ -290,7 +290,7 @@ module Lutaml
             query, case_sensitive: case_sensitive
           )
 
-          all_associations.map do |assoc|
+          all_associations.filter_map do |assoc|
             match_field = nil
 
             fields.each do |field|
@@ -312,7 +312,7 @@ module Lutaml
                 },
               )
             end
-          end.compact.uniq
+          end.uniq
         end
 
         private

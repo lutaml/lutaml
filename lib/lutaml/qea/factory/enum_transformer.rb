@@ -55,7 +55,7 @@ module Lutaml
           query = "SELECT * FROM t_attribute WHERE Object_ID = ? ORDER BY Pos"
           rows = database.connection.execute(query, object_id)
 
-          rows.map do |row|
+          rows.filter_map do |row|
             ea_attr = Models::EaAttribute.from_db_row(row)
 
             Lutaml::Uml::Value.new.tap do |value|
@@ -64,7 +64,7 @@ module Lutaml
               value.definition = ea_attr.notes unless
                 ea_attr.notes.nil? || ea_attr.notes.empty?
             end
-          end.compact
+          end
         end
 
         # Load and transform tagged values for an enum

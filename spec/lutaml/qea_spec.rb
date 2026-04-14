@@ -53,7 +53,7 @@ RSpec.describe Lutaml::Qea do
     end
 
     it "returns fresh configuration instance" do
-      config1 = described_class.configuration
+      described_class.configuration
       config2 = described_class.reload_configuration
       expect(config2).to be_a(Lutaml::Qea::Services::Configuration)
     end

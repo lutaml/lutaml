@@ -285,9 +285,9 @@ RSpec.describe Lutaml::ModelTransformations::FormatRegistry do
     it "returns hash of all registered parsers" do
       parsers = registry.all_parsers
       expect(parsers).to eq({
-        ".test1" => MockParser1,
-        ".test2" => MockParser2
-      })
+                              ".test1" => MockParser1,
+                              ".test2" => MockParser2,
+                            })
     end
 
     it "returns defensive copy" do
@@ -326,10 +326,10 @@ RSpec.describe Lutaml::ModelTransformations::FormatRegistry do
       parsers = registry.parsers_by_priority
 
       expect(parsers.map(&:last)).to eq([
-        HighPriorityParser,
-        MockParser1, # Default priority (100)
-        LowPriorityParser
-      ])
+                                          HighPriorityParser,
+                                          MockParser1, # Default priority (100)
+                                          LowPriorityParser,
+                                        ])
     end
 
     it "includes extension information" do
@@ -462,7 +462,7 @@ RSpec.describe Lutaml::ModelTransformations::FormatRegistry do
 
       threads.each(&:join)
 
-      expect(results.all? { |r| r == MockParser1 }).to be true
+      expect(results.all?(MockParser1)).to be true
     end
   end
 

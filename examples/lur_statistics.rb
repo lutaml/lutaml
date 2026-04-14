@@ -132,14 +132,14 @@ puts "=" * 80
 puts "4. Class Complexity Metrics"
 puts "=" * 80
 
-all_classes = repo.classes_index.select { |c| c.is_a?(Lutaml::Uml::Class) }
+all_classes = repo.classes_index.grep(Lutaml::Uml::Class)
 
 if all_classes.any?
   # Attribute counts
   attr_counts = all_classes.map { |c| c.attributes&.size || 0 }
 
   puts "Attribute statistics:"
-  puts "  Classes with attributes: #{attr_counts.count { |c| c > 0 }}"
+  puts "  Classes with attributes: #{attr_counts.count(&:positive?)}"
   puts "  Min attributes: #{attr_counts.min}"
   puts "  Max attributes: #{attr_counts.max}"
   puts "  Avg attributes: #{(attr_counts.sum.to_f / attr_counts.size).round(2)}"
@@ -148,8 +148,8 @@ if all_classes.any?
   # Find most complex classes
   puts "\nMost complex classes (by attribute count):"
   complex_classes = all_classes.map { |c| [c.name, c.attributes&.size || 0] }
-                                .sort_by { |_, count| -count }
-                                .first(5)
+    .sort_by { |_, count| -count }
+    .first(5)
 
   complex_classes.each do |name, count|
     puts "  #{name}: #{count} attributes"
@@ -159,7 +159,7 @@ if all_classes.any?
   op_counts = all_classes.map { |c| c.operations&.size || 0 }
 
   puts "\nOperation statistics:"
-  puts "  Classes with operations: #{op_counts.count { |c| c > 0 }}"
+  puts "  Classes with operations: #{op_counts.count(&:positive?)}"
   puts "  Max operations: #{op_counts.max}"
   puts "  Avg operations: #{(op_counts.sum.to_f / op_counts.size).round(2)}"
 else
@@ -296,16 +296,16 @@ summary = {
     data_types: stats[:total_data_types],
     enumerations: stats[:total_enums],
     associations: stats[:total_associations],
-    diagrams: stats[:total_diagrams]
+    diagrams: stats[:total_diagrams],
   },
   structure: {
-    max_package_depth: stats[:max_package_depth]
+    max_package_depth: stats[:max_package_depth],
   },
   validation: {
     valid: validation.valid?,
     errors: validation.errors.size,
-    warnings: validation.warnings.size
-  }
+    warnings: validation.warnings.size,
+  },
 }
 
 if stats[:classes_by_stereotype]

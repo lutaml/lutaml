@@ -73,7 +73,7 @@ module Lutaml
 
           # Transform each root package with its hierarchy
           package_transformer = get_transformer(:package)
-          root_packages.map do |ea_package|
+          root_packages.filter_map do |ea_package|
             uml_package = package_transformer.transform_with_hierarchy(
               ea_package,
               include_children: true,
@@ -83,7 +83,7 @@ module Lutaml
             register_package_hierarchy(uml_package)
 
             uml_package
-          end.compact
+          end
         end
 
         # Transform all classes

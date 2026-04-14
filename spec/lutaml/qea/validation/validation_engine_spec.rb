@@ -78,7 +78,7 @@ RSpec.describe Lutaml::Qea::Validation::ValidationEngine do
     end
 
     it "runs only specified validators" do
-      result = engine.validate(validators: [:package, :class])
+      result = engine.validate(validators: %i[package class])
 
       expect(result).to be_a(Lutaml::Qea::Validation::ValidationResult)
     end
@@ -144,7 +144,7 @@ RSpec.describe Lutaml::Qea::Validation::ValidationEngine do
     let(:engine) { described_class.new(document, database: database) }
     let(:custom_validator) do
       Class.new(Lutaml::Qea::Validation::BaseValidator) do
-        def validate(context)
+        def validate(_context)
           Lutaml::Qea::Validation::ValidationResult.new
         end
       end

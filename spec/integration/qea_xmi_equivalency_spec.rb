@@ -36,8 +36,8 @@ RSpec.describe "QEA and XMI Equivalency", :integration do
       qea_class_count = count_all_classes(qea_document)
 
       expect(xmi_class_count).to be <= qea_class_count,
-        "XMI should have <= classes than QEA (XMI: #{xmi_class_count}, " \
-        "QEA: #{qea_class_count})"
+                                 "XMI should have <= classes than QEA (XMI: #{xmi_class_count}, " \
+                                 "QEA: #{qea_class_count})"
     end
 
     it "XMI classes are subset of QEA classes" do
@@ -116,8 +116,8 @@ RSpec.describe "QEA and XMI Equivalency", :integration do
 
       # QEA should have >= associations
       expect(qea_assoc_count).to be >= xmi_assoc_count,
-        "QEA should have >= associations (QEA: #{qea_assoc_count}, " \
-        "XMI: #{xmi_assoc_count})"
+                                 "QEA should have >= associations (QEA: #{qea_assoc_count}, " \
+                                 "XMI: #{xmi_assoc_count})"
     end
   end
 
@@ -148,7 +148,7 @@ RSpec.describe "QEA and XMI Equivalency", :integration do
   def collect_class_names_from_packages(packages)
     names = []
     packages.each do |pkg|
-      names += pkg.classes&.map(&:name) ||[]
+      names += pkg.classes&.map(&:name) || []
       names += collect_class_names_from_packages(pkg.packages || [])
     end
     names

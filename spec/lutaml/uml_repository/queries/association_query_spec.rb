@@ -10,9 +10,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::AssociationQuery do
 
   describe "#find_for_class" do
     it "finds associations for a class" do
-      classes = indexes[:qualified_names].values.select do |e|
-        e.is_a?(Lutaml::Uml::Class)
-      end
+      classes = indexes[:qualified_names].values.grep(Lutaml::Uml::Class)
 
       classes.each do |klass|
         associations = query.find_for_class(klass.xmi_id)

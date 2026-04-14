@@ -241,7 +241,7 @@ module Lutaml
       #
       # @return [Array<String>] Array of supported extensions
       def supported_extensions
-        enabled_parsers.map(&:extension).compact
+        enabled_parsers.filter_map(&:extension)
       end
 
       # Check if content sniffing is enabled

@@ -22,19 +22,19 @@ RSpec.describe "XMI/QEA Equivalence Integration" do
       it "has same or more packages" do
         xmi_only = result.xmi_only[:packages]
         expect(xmi_only).to be_empty,
-          "QEA missing packages: #{xmi_only.join(', ')}"
+                            "QEA missing packages: #{xmi_only.join(', ')}"
       end
 
       it "has same or more classes" do
         xmi_only = result.xmi_only[:classes]
         expect(xmi_only).to be_empty,
-          "QEA missing classes: #{xmi_only.join(', ')}"
+                            "QEA missing classes: #{xmi_only.join(', ')}"
       end
 
       it "preserves all XMI class names" do
         xmi_only_classes = result.xmi_only[:classes]
         expect(xmi_only_classes).to be_empty,
-          "Missing classes in QEA: #{xmi_only_classes.first(10).join(', ')}"
+                                    "Missing classes in QEA: #{xmi_only_classes.first(10).join(', ')}"
       end
 
       it "preserves class properties" do
@@ -43,20 +43,20 @@ RSpec.describe "XMI/QEA Equivalence Integration" do
         end
 
         expect(critical_diffs).to be_empty,
-          "Property differences found: #{critical_diffs.map do |d|
-            d[:name]
-          end.join(', ')}"
+                                  "Property differences found: #{critical_diffs.map do |d|
+                                    d[:name]
+                                  end.join(', ')}"
       end
 
       it "does not lose critical information" do
         critical_issues = result.critical_issues
         expect(critical_issues).to be_empty,
-          "Critical issues: #{critical_issues.join('; ')}"
+                                   "Critical issues: #{critical_issues.join('; ')}"
       end
 
       it "is equivalent (QEA >= XMI)" do
         expect(result.equivalent?).to be(true),
-          "Documents not equivalent:\n#{result.summary}"
+                                      "Documents not equivalent:\n#{result.summary}"
       end
 
       it "has reasonable statistics" do
@@ -73,24 +73,24 @@ RSpec.describe "XMI/QEA Equivalence Integration" do
 
   # Test all 4 file pairs
   include_examples "equivalent documents",
-    "UmlModel_template.xmi",
-    "UmlModel_template.qea",
-    "UmlModel_template"
+                   "UmlModel_template.xmi",
+                   "UmlModel_template.qea",
+                   "UmlModel_template"
 
   include_examples "equivalent documents",
-    "test.xmi",
-    "test.qea",
-    "test"
+                   "test.xmi",
+                   "test.qea",
+                   "test"
 
   include_examples "equivalent documents",
-    "ArcGISWorkspace_template.xmi",
-    "ArcGISWorkspace_template.qea",
-    "ArcGISWorkspace_template"
+                   "ArcGISWorkspace_template.xmi",
+                   "ArcGISWorkspace_template.qea",
+                   "ArcGISWorkspace_template"
 
   include_examples "equivalent documents",
-    "20251010_current_plateau_v5.1.xmi",
-    "20251010_current_plateau_v5.1.qea",
-    "20251010_current_plateau_v5.1"
+                   "20251010_current_plateau_v5.1.xmi",
+                   "20251010_current_plateau_v5.1.qea",
+                   "20251010_current_plateau_v5.1"
 
   describe "detailed verification" do
     let(:xmi_path) { File.join(examples_dir, "test.xmi") }
@@ -154,13 +154,13 @@ RSpec.describe "XMI/QEA Equivalence Integration" do
 
       # Check packages are sorted
       if normalized.packages && normalized.packages.size > 1
-        names = normalized.packages.map(&:name).compact
+        names = normalized.packages.filter_map(&:name)
         expect(names).to eq(names.sort)
       end
 
       # Check classes are sorted
       if normalized.classes && normalized.classes.size > 1
-        names = normalized.classes.map(&:name).compact
+        names = normalized.classes.filter_map(&:name)
         expect(names).to eq(names.sort)
       end
     end
@@ -293,7 +293,7 @@ RSpec.describe "XMI/QEA Equivalence Integration" do
     it "identifies critical issues" do
       result.add_xmi_only(:classes, ["MissingClass"])
       result.add_property_difference(:class, "TestClass",
-["attributes: 5 (XMI) vs 3 (QEA) - QEA has fewer"])
+                                     ["attributes: 5 (XMI) vs 3 (QEA) - QEA has fewer"])
 
       issues = result.critical_issues
       expect(issues).not_to be_empty
@@ -303,7 +303,7 @@ RSpec.describe "XMI/QEA Equivalence Integration" do
     it "identifies acceptable differences" do
       result.add_qea_only(:classes, ["ExtraClass"])
       result.add_property_difference(:class, "TestClass",
-["attributes: 3 (XMI) vs 5 (QEA) - QEA has more (acceptable)"])
+                                     ["attributes: 3 (XMI) vs 5 (QEA) - QEA has more (acceptable)"])
 
       acceptable = result.acceptable_differences
       expect(acceptable).not_to be_empty

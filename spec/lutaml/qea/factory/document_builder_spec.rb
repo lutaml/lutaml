@@ -9,7 +9,7 @@ RSpec.describe Lutaml::Qea::Factory::DocumentBuilder do
   # Mock UML elements
   let(:mock_package) do
     double("Package", xmi_id: "PKG-001", name: "TestPackage",
-           classes: [], enums: [], data_types: [], packages: [], instances: [])
+                      classes: [], enums: [], data_types: [], packages: [], instances: [])
   end
 
   let(:mock_class) do
@@ -22,10 +22,10 @@ RSpec.describe Lutaml::Qea::Factory::DocumentBuilder do
 
   let(:mock_association) do
     double("Association", xmi_id: "ASSOC-001",
-           member_end: "Building",
-           member_end_xmi_id: "CLASS-001",
-           owner_end: "Site",
-           owner_end_xmi_id: "CLASS-002")
+                          member_end: "Building",
+                          member_end_xmi_id: "CLASS-001",
+                          owner_end: "Site",
+                          owner_end_xmi_id: "CLASS-002")
   end
 
   describe "#initialize" do
@@ -215,11 +215,11 @@ RSpec.describe Lutaml::Qea::Factory::DocumentBuilder do
       it "raises validation error" do
         pkg1 = double(
           "Pkg1", xmi_id: "SAME-ID",
-          classes: [], enums: [], data_types: [], packages: [], instances: []
+                  classes: [], enums: [], data_types: [], packages: [], instances: []
         )
         pkg2 = double(
           "Pkg2", xmi_id: "SAME-ID",
-          classes: [], enums: [], data_types: [], packages: [], instances: []
+                  classes: [], enums: [], data_types: [], packages: [], instances: []
         )
 
         builder.add_packages([pkg1, pkg2])
@@ -233,21 +233,21 @@ RSpec.describe Lutaml::Qea::Factory::DocumentBuilder do
       it "collects xmi_ids from nested packages" do
         # Create nested package structure
         inner_class = double("InnerClass", xmi_id: "INNER-CLASS-001",
-                            name: "InnerClass")
+                                           name: "InnerClass")
         inner_package = double("InnerPackage", xmi_id: "INNER-PKG-001",
-                              classes: [inner_class], enums: [],
-                              data_types: [], packages: [], instances: [])
+                                               classes: [inner_class], enums: [],
+                                               data_types: [], packages: [], instances: [])
         outer_package = double("OuterPackage", xmi_id: "OUTER-PKG-001",
-                              classes: [], enums: [], data_types: [],
-                              packages: [inner_package], instances: [])
+                                               classes: [], enums: [], data_types: [],
+                                               packages: [inner_package], instances: [])
 
         # Create association referencing class in nested package
         assoc = double("Assoc",
-                      xmi_id: "ASSOC-001",
-                      member_end: "InnerClass",
-                      member_end_xmi_id: "INNER-CLASS-001",
-                      owner_end: "OuterClass",
-                      owner_end_xmi_id: "OUTER-CLASS-001")
+                       xmi_id: "ASSOC-001",
+                       member_end: "InnerClass",
+                       member_end_xmi_id: "INNER-CLASS-001",
+                       owner_end: "OuterClass",
+                       owner_end_xmi_id: "OUTER-CLASS-001")
 
         outer_class = double("OuterClass", xmi_id: "OUTER-CLASS-001")
 
@@ -263,21 +263,21 @@ RSpec.describe Lutaml::Qea::Factory::DocumentBuilder do
         # Create 3-level nesting
         deep_class = double("DeepClass", xmi_id: "DEEP-CLASS-001")
         level3_pkg = double("Level3", xmi_id: "PKG-L3",
-                           classes: [deep_class], enums: [],
-                           data_types: [], packages: [], instances: [])
+                                      classes: [deep_class], enums: [],
+                                      data_types: [], packages: [], instances: [])
         level2_pkg = double("Level2", xmi_id: "PKG-L2",
-                           classes: [], enums: [], data_types: [],
-                           packages: [level3_pkg], instances: [])
+                                      classes: [], enums: [], data_types: [],
+                                      packages: [level3_pkg], instances: [])
         level1_pkg = double("Level1", xmi_id: "PKG-L1",
-                           classes: [], enums: [], data_types: [],
-                           packages: [level2_pkg], instances: [])
+                                      classes: [], enums: [], data_types: [],
+                                      packages: [level2_pkg], instances: [])
 
         assoc = double("Assoc",
-                      xmi_id: "ASSOC-DEEP",
-                      member_end: "DeepClass",
-                      member_end_xmi_id: "DEEP-CLASS-001",
-                      owner_end: "TopClass",
-                      owner_end_xmi_id: "TOP-CLASS-001")
+                       xmi_id: "ASSOC-DEEP",
+                       member_end: "DeepClass",
+                       member_end_xmi_id: "DEEP-CLASS-001",
+                       owner_end: "TopClass",
+                       owner_end_xmi_id: "TOP-CLASS-001")
 
         top_class = double("TopClass", xmi_id: "TOP-CLASS-001")
 
@@ -332,11 +332,11 @@ RSpec.describe Lutaml::Qea::Factory::DocumentBuilder do
   describe "method chaining" do
     it "supports fluent interface" do
       doc = builder
-              .add_packages([mock_package])
-              .add_classes([mock_class])
-              .add_enums([mock_enum])
-              .set_metadata(title: "Test", caption: "Caption")
-              .build(validate: false)
+        .add_packages([mock_package])
+        .add_classes([mock_class])
+        .add_enums([mock_enum])
+        .set_metadata(title: "Test", caption: "Caption")
+        .build(validate: false)
 
       expect(doc.packages.size).to eq(1)
       expect(doc.classes.size).to eq(1)

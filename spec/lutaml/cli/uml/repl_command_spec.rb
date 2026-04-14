@@ -23,7 +23,7 @@ RSpec.describe Lutaml::Cli::Uml::ReplCommand do
   end
 
   after do
-    File.unlink(test_lur) if File.exist?(test_lur)
+    FileUtils.rm_f(test_lur)
   end
 
   describe "#run" do

@@ -126,8 +126,8 @@ module Lutaml
         #
         # @return [Hash] Hash mapping table names to row counts
         def statistics
-          tables.each_with_object({}) do |table_name, stats|
-            stats[table_name] = row_count(table_name)
+          tables.to_h do |table_name|
+            [table_name, row_count(table_name)]
           end
         end
       end

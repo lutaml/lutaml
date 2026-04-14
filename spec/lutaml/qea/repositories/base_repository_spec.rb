@@ -168,19 +168,19 @@ RSpec.describe Lutaml::Qea::Repositories::BaseRepository do
     it "extracts single attribute" do
       result = repository.pluck(:name)
       expect(result).to eq([
-        { name: "ClassA" },
-        { name: "ClassB" },
-        { name: "ClassC" }
-      ])
+                             { name: "ClassA" },
+                             { name: "ClassB" },
+                             { name: "ClassC" },
+                           ])
     end
 
     it "extracts multiple attributes" do
       result = repository.pluck(:ea_object_id, :name)
       expect(result).to eq([
-        { ea_object_id: 1, name: "ClassA" },
-        { ea_object_id: 2, name: "ClassB" },
-        { ea_object_id: 3, name: "ClassC" }
-      ])
+                             { ea_object_id: 1, name: "ClassA" },
+                             { ea_object_id: 2, name: "ClassB" },
+                             { ea_object_id: 3, name: "ClassC" },
+                           ])
     end
   end
 

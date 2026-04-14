@@ -245,7 +245,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::QeaParser do
           p.format = "qea"
           p.enabled = true
           p.options = { "connection_timeout" => 30 }
-        end
+        end,
       ]
 
       expect(parser.configuration.parsers).not_to be_empty
@@ -279,13 +279,11 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::QeaParser do
     end
 
     it "provides detailed error information" do
-      begin
-        parser.parse(corrupted_file.path)
-      rescue StandardError => e
-        # Error should contain useful information
-        expect(e.message).to be_a(String)
-        expect(e.message.length).to be > 0
-      end
+      parser.parse(corrupted_file.path)
+    rescue StandardError => e
+      # Error should contain useful information
+      expect(e.message).to be_a(String)
+      expect(e.message.length).to be > 0
     end
   end
 

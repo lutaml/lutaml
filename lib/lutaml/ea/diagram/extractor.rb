@@ -144,7 +144,7 @@ module Lutaml
           output_dir = merged_opts[:output_dir] || "."
 
           # Create output directory if needed
-          FileUtils.mkdir_p(output_dir) unless Dir.exist?(output_dir)
+          FileUtils.mkdir_p(output_dir)
 
           results = diagram_ids.map do |diagram_id|
             output_path = File.join(output_dir,
@@ -239,7 +239,7 @@ module Lutaml
 
         # Build element data from diagram objects
         def build_elements(diagram, repository) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
-          diagram.diagram_objects.map do |obj|
+          diagram.diagram_objects.filter_map do |obj|
             uml_element = find_element(obj.object_xmi_id, repository)
             next unless uml_element
 
@@ -267,12 +267,12 @@ module Lutaml
             end
 
             element_data
-          end.compact
+          end
         end
 
         # Build connector data from diagram links
         def build_connectors(diagram, repository) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
-          diagram.diagram_links.map do |link| # rubocop:disable Metrics/BlockLength
+          diagram.diagram_links.filter_map do |link| # rubocop:disable Metrics/BlockLength
             connector = find_connector(link.connector_xmi_id, repository)
             next unless connector
 
@@ -318,7 +318,7 @@ module Lutaml
             add_connector_metadata(connector_data, connector)
 
             connector_data
-          end.compact
+          end
         end
 
         # Add class attributes and operations

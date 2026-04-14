@@ -23,7 +23,7 @@ module Lutaml
 
           # Allow Class, Interface, and Text objects that appear on diagrams
           is_class_type = ea_object.uml_class? || ea_object.interface?
-          is_text_class = ea_object.object_type == 'Text'
+          is_text_class = ea_object.object_type == "Text"
           return nil unless is_class_type || is_text_class
 
           Lutaml::Uml::Class.new.tap do |klass| # rubocop:disable Metrics/BlockLength
@@ -212,8 +212,8 @@ module Lutaml
 
           # Find stereotype xref from the in-memory collection
           xref = database.xrefs.find do |x|
-            x.client == ea_guid && x.name == 'Stereotypes' &&
-              x.type == 'element property'
+            x.client == ea_guid && x.name == "Stereotypes" &&
+              x.type == "element property"
           end
 
           return nil unless xref
@@ -267,15 +267,14 @@ module Lutaml
             # No parent - create terminal generalization
             gen_transformer = GeneralizationTransformer.new(database)
             generalization = gen_transformer.transform(nil, current_obj)
-            return nil unless generalization
           else
             # Has parent - create generalization with parent connector
             ea_connector = Models::EaConnector.from_db_row(rows.first)
             gen_transformer = GeneralizationTransformer.new(database)
             generalization = gen_transformer
               .transform(ea_connector, current_obj)
-            return nil unless generalization
           end
+          return nil unless generalization
 
           # 4. Load CURRENT object attributes and convert to GeneralAttribute
           current_attrs = load_attributes(object_id)
@@ -470,10 +469,10 @@ module Lutaml
                   "AND Connector_Type = 'Generalization'"
           rows = database.connection.execute(query, object_id)
 
-          rows.map do |row|
-            guid = row.is_a?(Hash) ? (row['ea_guid'] || row[:ea_guid]) : row[0]
+          rows.filter_map do |row|
+            guid = row.is_a?(Hash) ? (row["ea_guid"] || row[:ea_guid]) : row[0]
             parent_object_id = if row.is_a?(Hash)
-                                 row['End_Object_ID'] || row[:End_Object_ID]
+                                 row["End_Object_ID"] || row[:End_Object_ID]
                                else
                                  row[1]
                                end
@@ -488,7 +487,7 @@ module Lutaml
               ag.general = normalize_guid_to_xmi_format(parent_obj.ea_guid,
                                                         "EAID")
             end
-          end.compact
+          end
         end
 
         # Load associations for a class

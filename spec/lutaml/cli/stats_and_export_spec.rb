@@ -16,38 +16,38 @@ RSpec.describe "Stats and Export Commands (via UmlCommands)" do
   end
 
   after do
-    FileUtils.rm_rf(output_dir) if Dir.exist?(output_dir)
+    FileUtils.rm_rf(output_dir)
   end
 
   describe "stats command" do
     it "shows repository statistics in text format" do
       # Thor CLI output capture is not reliable in RSpec
       # This test verifies the command runs without errors
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["stats", test_lur])
-      }.not_to raise_error
+      end.not_to raise_error
     end
 
     it "shows repository statistics in JSON format" do
       # Thor CLI output capture is not reliable in RSpec
       # This test verifies the command runs without errors
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["stats", test_lur, "--format", "json"])
-      }.not_to raise_error
+      end.not_to raise_error
     end
 
     it "shows repository statistics in YAML format" do
       # Thor CLI output capture is not reliable in RSpec
       # This test verifies the command runs without errors
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["stats", test_lur, "--format", "yaml"])
-      }.not_to raise_error
+      end.not_to raise_error
     end
 
     it "shows detailed statistics" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["stats", test_lur, "--detailed"])
-      }.not_to raise_error
+      end.not_to raise_error
     end
   end
 
@@ -55,11 +55,11 @@ RSpec.describe "Stats and Export Commands (via UmlCommands)" do
     it "exports to JSON format" do
       output_file = File.join(output_dir, "export.json")
 
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["export", test_lur,
-                                      "--format", "json",
-                                      "-o", output_file])
-      }.to output(/Exported to|Failed to load|Export failed/).to_stdout
+                                        "--format", "json",
+                                        "-o", output_file])
+      end.to output(/Exported to|Failed to load|Export failed/).to_stdout
       # Only check file if export succeeded
       if File.exist?(output_file)
         expect { JSON.parse(File.read(output_file)) }.not_to raise_error
@@ -69,22 +69,22 @@ RSpec.describe "Stats and Export Commands (via UmlCommands)" do
     it "exports to Markdown format" do
       output_file = File.join(output_dir, "export")
 
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["export", test_lur,
-                                      "--format", "markdown",
-                                      "-o", output_file])
-      }.to output(/Exported to|Failed to load|Export failed/).to_stdout
+                                        "--format", "markdown",
+                                        "-o", output_file])
+      end.to output(/Exported to|Failed to load|Export failed/).to_stdout
     end
 
     it "exports with package filter" do
       output_file = File.join(output_dir, "filtered.json")
 
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["export", test_lur,
-                                      "--format", "json",
-                                      "-o", output_file,
-                                      "--package", "ModelRoot"])
-      }.to output(/Exported to|Failed to load|Export failed/).to_stdout
+                                        "--format", "json",
+                                        "-o", output_file,
+                                        "--package", "ModelRoot"])
+      end.to output(/Exported to|Failed to load|Export failed/).to_stdout
       # Only check file if export succeeded
       # expect(File.exist?(output_file)).to be true
     end
@@ -92,12 +92,12 @@ RSpec.describe "Stats and Export Commands (via UmlCommands)" do
     it "exports recursively by default" do
       output_file = File.join(output_dir, "recursive.json")
 
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["export", test_lur,
-                                      "--format", "json",
-                                      "-o", output_file,
-                                      "--recursive"])
-      }.to output(/Exported to|Failed to load|Export failed/).to_stdout
+                                        "--format", "json",
+                                        "-o", output_file,
+                                        "--recursive"])
+      end.to output(/Exported to|Failed to load|Export failed/).to_stdout
       # Only check file if export succeeded
       # expect(File.exist?(output_file)).to be true
     end
@@ -105,61 +105,61 @@ RSpec.describe "Stats and Export Commands (via UmlCommands)" do
 
   describe "tree command" do
     it "shows package tree structure" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["tree", test_lur])
-      }.not_to output(/ERROR/).to_stdout
+      end.not_to output(/ERROR/).to_stdout
     end
 
     it "shows tree with class counts" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["tree", test_lur, "--show-counts"])
-      }.not_to output(/ERROR/).to_stdout
+      end.not_to output(/ERROR/).to_stdout
     end
 
     it "shows tree up to specified depth" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["tree", test_lur, "--depth", "2"])
-      }.not_to output(/ERROR/).to_stdout
+      end.not_to output(/ERROR/).to_stdout
     end
 
     it "outputs tree in JSON format" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["tree", test_lur, "--format", "json"])
-      }.to output(/{|Failed to load/).to_stdout
+      end.to output(/{|Failed to load/).to_stdout
     end
 
     it "outputs tree in YAML format" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["tree", test_lur, "--format", "yaml"])
-      }.not_to output(/ERROR/).to_stdout
+      end.not_to output(/ERROR/).to_stdout
     end
   end
 
   describe "error handling" do
     it "handles missing LUR file" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["stats", "nonexistent.lur"])
-      }.to output(/Package file not found|Failed to load/).to_stdout
+      end.to output(/Package file not found|Failed to load/).to_stdout
     end
 
     it "handles invalid output directory" do
       invalid_path = "/invalid/path/output.json"
 
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["export", test_lur,
-                                      "--format", "json",
-                                      "-o", invalid_path])
-      }.to output(/Failed to load|Export failed|Permission denied/).to_stdout
+                                        "--format", "json",
+                                        "-o", invalid_path])
+      end.to output(/Failed to load|Export failed|Permission denied/).to_stdout
     end
 
     it "handles unsupported export format" do
       output_file = File.join(output_dir, "export.invalid")
 
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["export", test_lur,
-                                      "--format", "invalid",
-                                      "-o", output_file])
-      }.to output(/Unknown format|Failed to load|Export failed/).to_stdout
+                                        "--format", "invalid",
+                                        "-o", output_file])
+      end.to output(/Unknown format|Failed to load|Export failed/).to_stdout
     end
   end
 
@@ -167,9 +167,9 @@ RSpec.describe "Stats and Export Commands (via UmlCommands)" do
     it "completes stats command within reasonable time" do
       start_time = Time.now
 
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["stats", test_lur])
-      }.not_to raise_error
+      end.not_to raise_error
 
       duration = Time.now - start_time
       expect(duration).to be < 10.0  # Should complete within 10 seconds
@@ -179,11 +179,11 @@ RSpec.describe "Stats and Export Commands (via UmlCommands)" do
       output_file = File.join(output_dir, "performance_test.json")
       start_time = Time.now
 
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["export", test_lur,
-                                      "--format", "json",
-                                      "-o", output_file])
-      }.not_to raise_error
+                                        "--format", "json",
+                                        "-o", output_file])
+      end.not_to raise_error
 
       duration = Time.now - start_time
       expect(duration).to be < 15.0  # Should complete within 15 seconds

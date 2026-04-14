@@ -318,7 +318,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::XmiParser do
           p.format = "xmi"
           p.enabled = true
           p.options = { "strict_validation" => true }
-        end
+        end,
       ]
 
       expect(parser.configuration.parsers).not_to be_empty

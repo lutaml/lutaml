@@ -181,9 +181,9 @@ module Lutaml
           child_qnames = indexes[:inheritance_graph][qname_string]
           return [] unless child_qnames
 
-          child_qnames.map do |child_qname|
+          child_qnames.filter_map do |child_qname|
             indexes[:qualified_names][child_qname]
-          end.compact
+          end
         end
 
         # Recursively collect descendants

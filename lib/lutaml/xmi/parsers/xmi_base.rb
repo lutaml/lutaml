@@ -584,8 +584,10 @@ module Lutaml
         def fetch_definition_node_value(link_id, node_name)
           connector_node = fetch_connector(link_id)
           return nil unless connector_node
+
           node = connector_node.send(node_name.to_sym)
           return nil unless node
+
           documentation = node.documentation
 
           if documentation.is_a?(::Xmi::Sparx::Element::Documentation)
@@ -599,7 +601,7 @@ module Lutaml
         # @return [Array<Hash>]
         # @note xpath .//ownedOperation
         def serialize_class_operations(klass) # rubocop:disable Metrics/MethodLength
-          klass.owned_operation.map do |operation|
+          klass.owned_operation.filter_map do |operation|
             uml_type = operation.uml_type.first
             uml_type_idref = uml_type.idref if uml_type
 
@@ -611,7 +613,7 @@ module Lutaml
                 definition: lookup_attribute_documentation(operation.id),
               }
             end
-          end.compact
+          end
         end
 
         # @param klass_id [String]
@@ -749,6 +751,7 @@ module Lutaml
         def fetch_assoc_connector(link_id, connector_type) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
           connector = fetch_connector(link_id)
           return [nil, nil] unless connector
+
           assoc_connector = connector.send(connector_type.to_sym)
 
           if assoc_connector
@@ -831,7 +834,7 @@ module Lutaml
             attr.type?("uml:Property")
           end
 
-          owned_attributes.map do |oa|
+          owned_attributes.filter_map do |oa|
             if with_assoc || oa.association.nil?
               attrs = build_class_attributes(oa)
 
@@ -843,7 +846,7 @@ module Lutaml
 
               attrs
             end
-          end.compact
+          end
         end
 
         def loopup_assoc_def(association)

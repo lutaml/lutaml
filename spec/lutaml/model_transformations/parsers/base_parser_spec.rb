@@ -60,7 +60,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::BaseParser do
 
     protected
 
-    def parse_internal(file_path)
+    def parse_internal(_file_path)
       raise StandardError, "Simulated parsing failure"
     end
   end
@@ -77,7 +77,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::BaseParser do
 
     protected
 
-    def parse_internal(file_path)
+    def parse_internal(_file_path)
       # Return a mock Lutaml::Uml::Document
       Lutaml::Uml::Document.new
     end
@@ -88,7 +88,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::BaseParser do
     end
 
     def validate_output!(result)
-      raise RuntimeError, "Invalid output" if result.nil?
+      raise "Invalid output" if result.nil?
     end
   end
 
@@ -477,7 +477,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::BaseParser do
       custom_options = {
         validate_input: false,
         timeout: 30,
-        custom_option: "value"
+        custom_option: "value",
       }
 
       custom_parser = TestParser.new(configuration: configuration,

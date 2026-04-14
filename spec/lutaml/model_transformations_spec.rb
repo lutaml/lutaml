@@ -304,7 +304,7 @@ RSpec.describe Lutaml::ModelTransformations do
         threads.each(&:join)
 
         expect(results.size).to eq(5)
-        expect(results.all? { |r| r.is_a?(Lutaml::Uml::Document) }).to be true
+        expect(results.all?(Lutaml::Uml::Document)).to be true
       ensure
         files.each(&:unlink)
       end

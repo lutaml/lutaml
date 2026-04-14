@@ -22,115 +22,115 @@ RSpec.describe "Search and Find Commands (via UmlCommands)" do
 
   describe "search command" do
     it "searches and returns results" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands
           .start(["search", lur_file.path, "Class", "--limit", "5"])
-      }.not_to output(/ERROR/).to_stdout
+      end.not_to output(/ERROR/).to_stdout
     end
 
     it "filters by element type" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["search", lur_file.path, "Class",
-                                       "--type", "class", "--limit", "5"])
-      }.not_to output(/ERROR/).to_stdout
+                                        "--type", "class", "--limit", "5"])
+      end.not_to output(/ERROR/).to_stdout
     end
 
     it "supports package filtering" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["search", lur_file.path, "building",
-                                       "--package", "Model", "--limit", "5"])
-      }.not_to output(/ERROR/).to_stdout
+                                        "--package", "Model", "--limit", "5"])
+      end.not_to output(/ERROR/).to_stdout
     end
 
     it "searches with regex pattern" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["search", lur_file.path, "^Building",
-                                       "--regex", "--type", "class",
-                                       "--limit", "5"])
-      }.not_to output(/ERROR/).to_stdout
+                                        "--regex", "--type", "class",
+                                        "--limit", "5"])
+      end.not_to output(/ERROR/).to_stdout
     end
 
     it "searches in name field by default" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["search", lur_file.path, "Class",
-                                       "--in", "name", "--limit", "5"])
-      }.not_to output(/ERROR/).to_stdout
+                                        "--in", "name", "--limit", "5"])
+      end.not_to output(/ERROR/).to_stdout
     end
 
     it "accepts documentation field option" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["search", lur_file.path, "Class",
-                                       "--in", "name", "documentation",
-                                       "--limit", "5"])
-      }.not_to output(/ERROR/).to_stdout
+                                        "--in", "name", "documentation",
+                                        "--limit", "5"])
+      end.not_to output(/ERROR/).to_stdout
     end
 
     it "outputs JSON format" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["search", lur_file.path, "Class",
-                                       "--format", "json", "--limit", "2"])
-      }.to output(/\[/).to_stdout
+                                        "--format", "json", "--limit", "2"])
+      end.to output(/\[/).to_stdout
     end
 
     it "outputs YAML format" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["search", lur_file.path, "Class",
-                                       "--format", "yaml", "--limit", "2"])
-      }.to output(/---/).to_stdout
+                                        "--format", "yaml", "--limit", "2"])
+      end.to output(/---/).to_stdout
     end
 
     it "outputs table format" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["search", lur_file.path, "Class",
-                                       "--format", "table", "--limit", "5"])
-      }.not_to output(/ERROR/).to_stdout
+                                        "--format", "table", "--limit", "5"])
+      end.not_to output(/ERROR/).to_stdout
     end
 
     it "respects limit parameter" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["search", lur_file.path, "building",
-"--limit", "3"])
-      }.not_to output(/ERROR/).to_stdout
+                                        "--limit", "3"])
+      end.not_to output(/ERROR/).to_stdout
     end
 
     it "handles missing LUR file gracefully" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["search", "nonexistent.lur", "test"])
-      }.to output(/Package file not found|Failed to load/).to_stdout
+      end.to output(/Package file not found|Failed to load/).to_stdout
     end
 
     it "handles empty search results" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["search", lur_file.path,
-"XyZabc123NotFound"])
-      }.to output(/No results found/).to_stdout
+                                        "XyZabc123NotFound"])
+      end.to output(/No results found/).to_stdout
     end
   end
 
   describe "find command" do
     it "finds by stereotype" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["find", lur_file.path, "--stereotype",
-"interface"])
-      }.not_to output(/ERROR/).to_stdout
+                                        "interface"])
+      end.not_to output(/ERROR/).to_stdout
     end
 
     it "finds by package" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["find", lur_file.path, "--package",
-"Model"])
-      }.not_to output(/ERROR/).to_stdout
+                                        "Model"])
+      end.not_to output(/ERROR/).to_stdout
     end
 
     it "finds by pattern" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands
           .start(["find", lur_file.path, "--pattern", "^Building.*"])
-      }.not_to output(/ERROR/).to_stdout
+      end.not_to output(/ERROR/).to_stdout
     end
 
     it "outputs in JSON format" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands
           .start(
             [
@@ -139,11 +139,11 @@ RSpec.describe "Search and Find Commands (via UmlCommands)" do
               "--format", "json"
             ],
           )
-      }.to output(/\[/).to_stdout
+      end.to output(/\[/).to_stdout
     end
 
     it "outputs in YAML format" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands
           .start(
             [
@@ -155,22 +155,22 @@ RSpec.describe "Search and Find Commands (via UmlCommands)" do
               "yaml",
             ],
           )
-      }.not_to output(/ERROR/).to_stdout
+      end.not_to output(/ERROR/).to_stdout
     end
 
     it "requires at least one filter" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["find", lur_file.path])
-      }.to output(/Please specify at least one filter/).to_stdout
+      end.to output(/Please specify at least one filter/).to_stdout
     end
 
     it "shows warning when no results found" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands
           .start(
             ["find", lur_file.path, "--stereotype", "NonExistent"],
           )
-      }.to output(/No elements found matching stereotype: NonExistent/)
+      end.to output(/No elements found matching stereotype: NonExistent/)
         .to_stdout
     end
   end

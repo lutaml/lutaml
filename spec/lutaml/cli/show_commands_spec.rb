@@ -43,51 +43,51 @@ RSpec.describe "Inspect/Show Commands (via UmlCommands)" do
     end
 
     it "shows class details in text format" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["inspect",
-          test_lur.path,
-          sample_class_id])
-      }.to output(/Class:|Name:/).to_stdout
+                                        test_lur.path,
+                                        sample_class_id])
+      end.to output(/Class:|Name:/).to_stdout
     end
 
     it "shows class details in JSON format" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["inspect",
-          test_lur.path,
-          sample_class_id,
-          "--format",
-          "json"])
-      }.to output(/{/).to_stdout
+                                        test_lur.path,
+                                        sample_class_id,
+                                        "--format",
+                                        "json"])
+      end.to output(/{/).to_stdout
     end
 
     it "shows class details in YAML format" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["inspect",
-          test_lur.path,
-          sample_class_id,
-          "--format",
-          "yaml"])
-      }.to output(/name:/).to_stdout
+                                        test_lur.path,
+                                        sample_class_id,
+                                        "--format",
+                                        "yaml"])
+      end.to output(/name:/).to_stdout
     end
   end
 
   describe "inspect command for packages" do
     it "shows package details for root" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["inspect",
-        test_lur.path,
-        sample_package_id])
-      }.to output(/Package:|Name:/).to_stdout
+                                        test_lur.path,
+                                        sample_package_id])
+      end.to output(/Package:|Name:/).to_stdout
     end
 
     it "shows package details in JSON format" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["inspect",
-            test_lur.path,
-            sample_package_id,
-            "--format",
-            "json"])
-      }.to output(/{/).to_stdout
+                                        test_lur.path,
+                                        sample_package_id,
+                                        "--format",
+                                        "json"])
+      end.to output(/{/).to_stdout
     end
   end
 
@@ -113,37 +113,37 @@ RSpec.describe "Inspect/Show Commands (via UmlCommands)" do
     end
 
     it "shows attribute details" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["inspect",
-          test_lur.path,
-          sample_attribute_id])
-      }.to output(/Attribute:|Name:/).to_stdout
+                                        test_lur.path,
+                                        sample_attribute_id])
+      end.to output(/Attribute:|Name:/).to_stdout
     end
   end
 
   describe "inspect command error handling" do
     it "handles missing LUR file gracefully" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["inspect",
-          "nonexistent.lur",
-          "class:Test"])
-      }.to output(/Failed to load repository|not found/).to_stdout
+                                        "nonexistent.lur",
+                                        "class:Test"])
+      end.to output(/Failed to load repository|not found/).to_stdout
     end
 
     it "handles non-existent elements" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["inspect",
-          test_lur.path,
-          "class:NonExistentClass"])
-      }.to output(/Element not found/).to_stdout
+                                        test_lur.path,
+                                        "class:NonExistentClass"])
+      end.to output(/Element not found/).to_stdout
     end
 
     it "handles invalid element identifiers" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["inspect",
-          test_lur.path,
-          "invalid_format"])
-      }.to output(/Element not found|Invalid/).to_stdout
+                                        test_lur.path,
+                                        "invalid_format"])
+      end.to output(/Element not found|Invalid/).to_stdout
     end
   end
 
@@ -153,33 +153,33 @@ RSpec.describe "Inspect/Show Commands (via UmlCommands)" do
     end
 
     it "includes attributes when requested" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["inspect",
-          test_lur.path,
-          sample_class_id,
-          "--include",
-          "attributes"])
-      }.not_to output(/ERROR/).to_stdout
+                                        test_lur.path,
+                                        sample_class_id,
+                                        "--include",
+                                        "attributes"])
+      end.not_to output(/ERROR/).to_stdout
     end
 
     it "includes associations when requested" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["inspect",
-          test_lur.path,
-          sample_class_id,
-          "--include",
-          "associations"])
-      }.not_to output(/ERROR/).to_stdout
+                                        test_lur.path,
+                                        sample_class_id,
+                                        "--include",
+                                        "associations"])
+      end.not_to output(/ERROR/).to_stdout
     end
 
     it "includes operations when requested" do
-      expect {
+      expect do
         Lutaml::Cli::UmlCommands.start(["inspect",
-          test_lur.path,
-          sample_class_id,
-          "--include",
-          "operations"])
-      }.not_to output(/ERROR/).to_stdout
+                                        test_lur.path,
+                                        sample_class_id,
+                                        "--include",
+                                        "operations"])
+      end.not_to output(/ERROR/).to_stdout
     end
   end
 end

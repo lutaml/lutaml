@@ -72,8 +72,9 @@ module Lutaml
         # @param connectors [Array] Array of connectors
         # @return [Array] Elements with calculated positions
         def apply_layout(elements, connectors = []) # rubocop:disable Metrics/MethodLength
-          positioned_elements = elements.select { |e| e[:x] && e[:y] }
-          unpositioned_elements = elements.reject { |e| e[:x] && e[:y] }
+          positioned_elements, unpositioned_elements = elements.partition do |e|
+            e[:x] && e[:y]
+          end
 
           # Apply force-directed layout for unpositioned elements
           if unpositioned_elements.any?

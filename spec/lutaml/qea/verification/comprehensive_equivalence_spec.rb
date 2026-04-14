@@ -13,27 +13,27 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
       {
         name: "UmlModel Template",
         xmi: File.join(__dir__, "../../../examples/qea/UmlModel_template.xmi"),
-        qea: File.join(__dir__, "../../../examples/qea/UmlModel_template.qea")
+        qea: File.join(__dir__, "../../../examples/qea/UmlModel_template.qea"),
       },
       {
         name: "Test Model",
         xmi: File.join(__dir__, "../../../examples/qea/test.xmi"),
-        qea: File.join(__dir__, "../../../examples/qea/test.qea")
+        qea: File.join(__dir__, "../../../examples/qea/test.qea"),
       },
       {
         name: "ArcGIS Workspace Template",
         xmi: File.join(__dir__,
-          "../../../examples/qea/ArcGISWorkspace_template.xmi"),
+                       "../../../examples/qea/ArcGISWorkspace_template.xmi"),
         qea: File.join(__dir__,
-          "../../../examples/qea/ArcGISWorkspace_template.qea")
+                       "../../../examples/qea/ArcGISWorkspace_template.qea"),
       },
       {
         name: "Plateau v5.1",
         xmi: File.join(__dir__,
-          "../../../examples/qea/20251010_current_plateau_v5.1.xmi"),
+                       "../../../examples/qea/20251010_current_plateau_v5.1.xmi"),
         qea: File.join(__dir__,
-          "../../../examples/qea/20251010_current_plateau_v5.1.qea")
-      }
+                       "../../../examples/qea/20251010_current_plateau_v5.1.qea"),
+      },
     ]
 
     @available_files = test_files.select do |file_pair|
@@ -47,7 +47,7 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
 
   describe "Package Coverage Verification" do
     @available_files&.each do |file_pair|
-      context "#{file_pair[:name]}" do
+      context file_pair[:name].to_s do
         let(:xmi_repo) { Lutaml::UmlRepository::Repository.from_xmi(file_pair[:xmi]) }
         let(:qea_repo) { Lutaml::Qea::Parser.parse(file_pair[:qea]).to_uml_repository }
 
@@ -59,8 +59,8 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
             matching_qea = find_matching_package(qea_packages, xmi_package)
 
             expect(matching_qea).not_to be_nil,
-              "Package '#{xmi_package.name}' (#{xmi_package.qualified_name}) " \
-              "from XMI not found in QEA"
+                                        "Package '#{xmi_package.name}' (#{xmi_package.qualified_name}) " \
+                                        "from XMI not found in QEA"
 
             # Verify package properties match
             expect(matching_qea.name).to eq(xmi_package.name)
@@ -75,8 +75,8 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
           qea_count = count_packages(qea_repo)
 
           expect(qea_count).to be >= xmi_count,
-            "QEA has #{qea_count} packages, XMI has #{xmi_count}. " \
-            "QEA should have >= XMI packages."
+                               "QEA has #{qea_count} packages, XMI has #{xmi_count}. " \
+                               "QEA should have >= XMI packages."
         end
       end
     end
@@ -84,7 +84,7 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
 
   describe "Class Coverage Verification" do
     @available_files&.each do |file_pair|
-      context "#{file_pair[:name]}" do
+      context file_pair[:name].to_s do
         let(:xmi_repo) { Lutaml::UmlRepository::Repository.from_xmi(file_pair[:xmi]) }
         let(:qea_repo) { Lutaml::Qea::Parser.parse(file_pair[:qea]).to_uml_repository }
 
@@ -96,8 +96,8 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
             matching_qea = find_matching_class(qea_classes, xmi_class)
 
             expect(matching_qea).not_to be_nil,
-              "Class '#{xmi_class.name}' from " \
-              "package '#{xmi_class.package_name}' not found in QEA"
+                                        "Class '#{xmi_class.name}' from " \
+                                        "package '#{xmi_class.package_name}' not found in QEA"
 
             # Verify class properties
             expect(matching_qea.name).to eq(xmi_class.name)
@@ -114,8 +114,8 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
           qea_count = count_classes(qea_repo)
 
           expect(qea_count).to be >= xmi_count,
-            "QEA has #{qea_count} classes, XMI has #{xmi_count}. " \
-            "QEA should have >= XMI classes."
+                               "QEA has #{qea_count} classes, XMI has #{xmi_count}. " \
+                               "QEA should have >= XMI classes."
         end
       end
     end
@@ -123,7 +123,7 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
 
   describe "Attribute Coverage Verification" do
     @available_files&.each do |file_pair|
-      context "#{file_pair[:name]}" do
+      context file_pair[:name].to_s do
         let(:xmi_repo) { Lutaml::UmlRepository::Repository.from_xmi(file_pair[:xmi]) }
         let(:qea_repo) { Lutaml::Qea::Parser.parse(file_pair[:qea]).to_uml_repository }
 
@@ -135,8 +135,8 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
             matching_qea = find_matching_attribute(qea_attributes, xmi_attr)
 
             expect(matching_qea).not_to be_nil,
-              "Attribute '#{xmi_attr.name}' in " \
-              "class '#{xmi_attr.owner_name}' not found in QEA"
+                                        "Attribute '#{xmi_attr.name}' in " \
+                                        "class '#{xmi_attr.owner_name}' not found in QEA"
 
             # Verify attribute properties
             expect(matching_qea.name).to eq(xmi_attr.name)
@@ -153,8 +153,8 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
           qea_count = count_attributes(qea_repo)
 
           expect(qea_count).to be >= xmi_count,
-            "QEA has #{qea_count} attributes, XMI has #{xmi_count}. " \
-            "QEA should have >= XMI attributes."
+                               "QEA has #{qea_count} attributes, XMI has #{xmi_count}. " \
+                               "QEA should have >= XMI attributes."
         end
       end
     end
@@ -162,7 +162,7 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
 
   describe "Association Coverage Verification" do
     @available_files&.each do |file_pair|
-      context "#{file_pair[:name]}" do
+      context file_pair[:name].to_s do
         let(:xmi_repo) { Lutaml::UmlRepository::Repository.from_xmi(file_pair[:xmi]) }
         let(:qea_repo) { Lutaml::Qea::Parser.parse(file_pair[:qea]).to_uml_repository }
 
@@ -176,8 +176,8 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
             )
 
             expect(matching_qea).not_to be_nil,
-              "Association between '#{xmi_assoc.source_type}' " \
-              "and '#{xmi_assoc.target_type}' not found in QEA"
+                                        "Association between '#{xmi_assoc.source_type}' " \
+                                        "and '#{xmi_assoc.target_type}' not found in QEA"
 
             # Verify association properties
             expect(matching_qea.source_type).to eq(xmi_assoc.source_type)
@@ -194,8 +194,8 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
           qea_count = count_associations(qea_repo)
 
           expect(qea_count).to be >= xmi_count,
-            "QEA has #{qea_count} associations, XMI has #{xmi_count}. " \
-            "QEA should have >= XMI associations."
+                               "QEA has #{qea_count} associations, XMI has #{xmi_count}. " \
+                               "QEA should have >= XMI associations."
         end
       end
     end
@@ -203,7 +203,7 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
 
   describe "Enumeration Coverage Verification" do
     @available_files&.each do |file_pair|
-      context "#{file_pair[:name]}" do
+      context file_pair[:name].to_s do
         let(:xmi_repo) { Lutaml::UmlRepository::Repository.from_xmi(file_pair[:xmi]) }
         let(:qea_repo) { Lutaml::Qea::Parser.parse(file_pair[:qea]).to_uml_repository }
 
@@ -215,8 +215,8 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
             matching_qea = find_matching_enum(qea_enums, xmi_enum)
 
             expect(matching_qea).not_to be_nil,
-              "Enumeration '#{xmi_enum.name}' from " \
-              "package '#{xmi_enum.package_name}' not found in QEA"
+                                        "Enumeration '#{xmi_enum.name}' from " \
+                                        "package '#{xmi_enum.package_name}' not found in QEA"
 
             # Verify enum properties
             expect(matching_qea.name).to eq(xmi_enum.name)
@@ -229,8 +229,8 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
           qea_count = count_enums(qea_repo)
 
           expect(qea_count).to be >= xmi_count,
-            "QEA has #{qea_count} enums, XMI has #{xmi_count}. " \
-            "QEA should have >= XMI enums."
+                               "QEA has #{qea_count} enums, XMI has #{xmi_count}. " \
+                               "QEA should have >= XMI enums."
         end
       end
     end
@@ -238,7 +238,7 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
 
   describe "Data Type Coverage Verification" do
     @available_files&.each do |file_pair|
-      context "#{file_pair[:name]}" do
+      context file_pair[:name].to_s do
         let(:xmi_repo) { Lutaml::UmlRepository::Repository.from_xmi(file_pair[:xmi]) }
         let(:qea_repo) { Lutaml::Qea::Parser.parse(file_pair[:qea]).to_uml_repository }
 
@@ -250,8 +250,8 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
             matching_qea = find_matching_datatype(qea_datatypes, xmi_dt)
 
             expect(matching_qea).not_to be_nil,
-              "Data type '#{xmi_dt.name}' from " \
-              "package '#{xmi_dt.package_name}' not found in QEA"
+                                        "Data type '#{xmi_dt.name}' from " \
+                                        "package '#{xmi_dt.package_name}' not found in QEA"
 
             # Verify data type properties
             expect(matching_qea.name).to eq(xmi_dt.name)
@@ -264,8 +264,8 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
           qea_count = count_datatypes(qea_repo)
 
           expect(qea_count).to be >= xmi_count,
-            "QEA has #{qea_count} data types, XMI has #{xmi_count}. " \
-            "QEA should have >= XMI data types."
+                               "QEA has #{qea_count} data types, XMI has #{xmi_count}. " \
+                               "QEA should have >= XMI data types."
         end
       end
     end
@@ -273,7 +273,7 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
 
   describe "Operation Coverage Verification" do
     @available_files&.each do |file_pair|
-      context "#{file_pair[:name]}" do
+      context file_pair[:name].to_s do
         let(:xmi_repo) { Lutaml::UmlRepository::Repository.from_xmi(file_pair[:xmi]) }
         let(:qea_repo) { Lutaml::Qea::Parser.parse(file_pair[:qea]).to_uml_repository }
 
@@ -285,8 +285,8 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
             matching_qea = find_matching_operation(qea_operations, xmi_op)
 
             expect(matching_qea).not_to be_nil,
-              "Operation '#{xmi_op.name}' in class '#{xmi_op.owner_name}' " \
-              "not found in QEA"
+                                        "Operation '#{xmi_op.name}' in class '#{xmi_op.owner_name}' " \
+                                        "not found in QEA"
 
             # Verify operation properties
             expect(matching_qea.name).to eq(xmi_op.name)
@@ -299,8 +299,8 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
           qea_count = count_operations(qea_repo)
 
           expect(qea_count).to be >= xmi_count,
-            "QEA has #{qea_count} operations, XMI has #{xmi_count}. " \
-            "QEA should have >= XMI operations."
+                               "QEA has #{qea_count} operations, XMI has #{xmi_count}. " \
+                               "QEA should have >= XMI operations."
         end
       end
     end
@@ -308,7 +308,7 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
 
   describe "Diagram Coverage Verification" do
     @available_files&.each do |file_pair|
-      context "#{file_pair[:name]}" do
+      context file_pair[:name].to_s do
         let(:xmi_repo) { Lutaml::UmlRepository::Repository.from_xmi(file_pair[:xmi]) }
         let(:qea_repo) { Lutaml::Qea::Parser.parse(file_pair[:qea]).to_uml_repository }
 
@@ -317,8 +317,8 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
           qea_count = count_diagrams(qea_repo)
 
           expect(qea_count).to be >= xmi_count,
-            "QEA has #{qea_count} diagrams, XMI has #{xmi_count}. " \
-            "QEA should have >= XMI diagrams."
+                               "QEA has #{qea_count} diagrams, XMI has #{xmi_count}. " \
+                               "QEA should have >= XMI diagrams."
         end
       end
     end
@@ -336,7 +336,8 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
           qea_packages: count_packages(qea_repo),
           xmi_classes: count_classes(xmi_repo),
           qea_classes: count_classes(qea_repo),
-          ratio: count_classes(qea_repo).to_f / [count_classes(xmi_repo), 1].max
+          ratio: count_classes(qea_repo).to_f / [count_classes(xmi_repo),
+                                                 1].max,
         }
       end
 
@@ -351,7 +352,7 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
 
   describe "Repository Integration" do
     @available_files&.each do |file_pair|
-      context "#{file_pair[:name]}" do
+      context file_pair[:name].to_s do
         let(:xmi_repo) { Lutaml::UmlRepository::Repository.from_xmi(file_pair[:xmi]) }
         let(:qea_repo) { Lutaml::Qea::Parser.parse(file_pair[:qea]).to_uml_repository }
 
@@ -408,13 +409,13 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
           qea_repo.classes.each do |klass|
             klass.attributes.each do |attr|
               if attr.type && !attr.type.empty?
-                type_found = qea_repo.classes.any? do |c|
+                qea_repo.classes.any? do |c|
                   c.name == attr.type
                 end ||
-                           qea_repo.data_types.any? do |dt|
-                             dt.name == attr.type
-                           end ||
-                           qea_repo.enums.any? { |e| e.name == attr.type }
+                  qea_repo.data_types.any? do |dt|
+                    dt.name == attr.type
+                  end ||
+                  qea_repo.enums.any? { |e| e.name == attr.type }
               end
             end
           end
@@ -425,7 +426,7 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
 
   describe "Performance Benchmarks" do
     @available_files&.each do |file_pair|
-      context "#{file_pair[:name]}" do
+      context file_pair[:name].to_s do
         it "loads QEA files in reasonable time" do
           start_time = Time.now
           Lutaml::Qea::Parser
@@ -522,49 +523,49 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
   def find_matching_package(qea_packages, xmi_package)
     qea_packages.find do |qea_pkg|
       qea_pkg.name == xmi_package.name &&
-      qea_pkg.qualified_name == xmi_package.qualified_name
+        qea_pkg.qualified_name == xmi_package.qualified_name
     end
   end
 
   def find_matching_class(qea_classes, xmi_class)
     qea_classes.find do |qea_cls|
       qea_cls.name == xmi_class.name &&
-      qea_cls.package_name == xmi_class.package_name
+        qea_cls.package_name == xmi_class.package_name
     end
   end
 
   def find_matching_attribute(qea_attributes, xmi_attr)
     qea_attributes.find do |qea_attr|
       qea_attr.name == xmi_attr.name &&
-      qea_attr.owner_name == xmi_attr.owner_name
+        qea_attr.owner_name == xmi_attr.owner_name
     end
   end
 
   def find_matching_association(qea_associations, xmi_assoc)
     qea_associations.find do |qea_assoc|
       qea_assoc.source_type == xmi_assoc.source_type &&
-      qea_assoc.target_type == xmi_assoc.target_type
+        qea_assoc.target_type == xmi_assoc.target_type
     end
   end
 
   def find_matching_enum(qea_enums, xmi_enum)
     qea_enums.find do |qea_enum|
       qea_enum.name == xmi_enum.name &&
-      qea_enum.package_name == xmi_enum.package_name
+        qea_enum.package_name == xmi_enum.package_name
     end
   end
 
   def find_matching_datatype(qea_datatypes, xmi_dt)
     qea_datatypes.find do |qea_dt|
       qea_dt.name == xmi_dt.name &&
-      qea_dt.package_name == xmi_dt.package_name
+        qea_dt.package_name == xmi_dt.package_name
     end
   end
 
   def find_matching_operation(qea_operations, xmi_op)
     qea_operations.find do |qea_op|
       qea_op.name == xmi_op.name &&
-      qea_op.owner_name == xmi_op.owner_name
+        qea_op.owner_name == xmi_op.owner_name
     end
   end
 end

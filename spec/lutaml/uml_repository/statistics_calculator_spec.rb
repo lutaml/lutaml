@@ -78,7 +78,7 @@ RSpec.describe Lutaml::UmlRepository::StatisticsCalculator do
     it "groups classes by stereotype correctly" do
       classes_by_stereotype = stats[:classes_by_stereotype]
 
-      classes_by_stereotype.each do |stereotype, count|
+      classes_by_stereotype.each_value do |count|
         expect(count).to be_an(Integer)
         expect(count).to be > 0
       end
@@ -169,7 +169,7 @@ RSpec.describe Lutaml::UmlRepository::StatisticsCalculator do
       klass.name = "TestClass"
       klass.attributes = [
         Lutaml::Uml::TopElementAttribute.new,
-        Lutaml::Uml::TopElementAttribute.new
+        Lutaml::Uml::TopElementAttribute.new,
       ]
 
       complexity = calculator.send(:class_complexity, klass)

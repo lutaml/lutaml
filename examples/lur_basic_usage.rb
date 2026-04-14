@@ -51,8 +51,8 @@ puts
 
 # For demonstration, let's use a QEA file if available
 qea_file = Dir.glob("examples/qea/*.qea").first
+puts "=" * 80
 if qea_file
-  puts "=" * 80
   puts "Example 4: Loading from QEA file (10-20x faster than XMI)"
   puts "=" * 80
   puts "QEA file found: #{qea_file}"
@@ -172,7 +172,6 @@ if qea_file
   puts
 
 else
-  puts "=" * 80
   puts "No QEA files found in examples/qea/"
   puts "=" * 80
   puts

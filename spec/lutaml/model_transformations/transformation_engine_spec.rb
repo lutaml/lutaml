@@ -41,7 +41,7 @@ RSpec.describe Lutaml::ModelTransformations::TransformationEngine do
 
     protected
 
-    def parse_internal(file_path)
+    def parse_internal(_file_path)
       raise StandardError, "Mock parsing failure"
     end
   end
@@ -56,7 +56,7 @@ RSpec.describe Lutaml::ModelTransformations::TransformationEngine do
         p.parser_class = "MockParser"
         p.enabled = true
         p.priority = 100
-      end
+      end,
     ]
     config.transformation_options = Lutaml::ModelTransformations::Configuration::TransformationOptions.new
     config.format_detection = Lutaml::ModelTransformations::Configuration::FormatDetection.new
@@ -453,11 +453,9 @@ RSpec.describe Lutaml::ModelTransformations::TransformationEngine do
       begin
         # Generate some failures
         3.times do
-          begin
-            engine.parse(failing_file.path)
-          rescue StandardError
-            # Expected failures
-          end
+          engine.parse(failing_file.path)
+        rescue StandardError
+          # Expected failures
         end
 
         failures = engine.recent_failures
@@ -476,11 +474,9 @@ RSpec.describe Lutaml::ModelTransformations::TransformationEngine do
       begin
         # Generate more failures than limit
         5.times do
-          begin
-            engine.parse(failing_file.path)
-          rescue StandardError
-            # Expected failures
-          end
+          engine.parse(failing_file.path)
+        rescue StandardError
+          # Expected failures
         end
 
         failures = engine.recent_failures(2)

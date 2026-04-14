@@ -79,32 +79,32 @@ module Lutaml
             qname = Lutaml::Uml::QualifiedName.new(qname_string)
 
             matched = if is_absolute
-              # Absolute path - exact match
-              if recursive
-                qname.package_path.starts_with?(package_path)
-              else
-                qname.package_path == package_path
-              end
-            else
-              # Relative path - match if the class's package path ends with
-              # the given path
-              class_pkg_segs = qname.package_path.segments
-              search_segs = package_path.segments
+                        # Absolute path - exact match
+                        if recursive
+                          qname.package_path.starts_with?(package_path)
+                        else
+                          qname.package_path == package_path
+                        end
+                      else
+                        # Relative path - match if the class's package path ends with
+                        # the given path
+                        class_pkg_segs = qname.package_path.segments
+                        search_segs = package_path.segments
 
-              if recursive
-                # For recursive, check if any suffix of the class path
-                # starts with search_segs
-                (0..class_pkg_segs.size - search_segs.size)
-                  .any? do |i|
-                    class_pkg_segs[i, search_segs.size] == search_segs
-                end
-              else
-                # For non-recursive, check if class path ends with
-                # search_segs
-                class_pkg_segs.size >= search_segs.size &&
-                  class_pkg_segs[-search_segs.size..] == search_segs
-              end
-            end
+                        if recursive
+                          # For recursive, check if any suffix of the class path
+                          # starts with search_segs
+                          (0..(class_pkg_segs.size - search_segs.size))
+                            .any? do |i|
+                            class_pkg_segs[i, search_segs.size] == search_segs
+                          end
+                        else
+                          # For non-recursive, check if class path ends with
+                          # search_segs
+                          class_pkg_segs.size >= search_segs.size &&
+                            class_pkg_segs[-search_segs.size..] == search_segs
+                        end
+                      end
 
             results << klass if matched
           end

@@ -279,7 +279,7 @@ module Lutaml
               label=<#{format_class(class_node, hide_members)}>]
           HEREDOC
         end.join("\n")
-        associations = node.classes.map(&:associations).compact.flatten +
+        associations = node.classes.filter_map(&:associations).flatten +
           node.associations
         if node.groups
           associations = sort_by_document_grouping(node.groups,
