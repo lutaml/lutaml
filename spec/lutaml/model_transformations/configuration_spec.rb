@@ -129,7 +129,7 @@ RSpec.describe Lutaml::ModelTransformations::Configuration do
       it "raises an error for invalid YAML" do
         expect do
           described_class.load(invalid_config_file.path)
-        end.to raise_error(Psych::SyntaxError)
+        end.to raise_error(Lutaml::Model::InvalidFormatError)
       end
     end
   end

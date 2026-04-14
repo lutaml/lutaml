@@ -38,6 +38,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "nokogiri", "~> 1.18"
   spec.add_dependency "paint"
   spec.add_dependency "parslet", "~> 2.0"
+  spec.add_dependency "readline"
   spec.add_dependency "ruby-graphviz"
   spec.add_dependency "rubyzip", "~> 2.3"
   spec.add_dependency "sinatra", "~> 4.2"
