@@ -462,7 +462,7 @@ RSpec.describe Lutaml::ModelTransformations::FormatRegistry do
 
       threads.each(&:join)
 
-      expect(results.all?(MockParser1)).to be true
+      expect(results.all? { |r| r == MockParser1 }).to be true
     end
   end
 
