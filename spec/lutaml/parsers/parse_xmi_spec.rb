@@ -176,7 +176,7 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
         e = new_parser.send(
           :fetch_element, "EAID_D832D6D8_0518_43f7_9166_7A4E3E8605AA"
         )
-        expect(e).to be_instance_of(Xmi::Sparx::SparxElement)
+        expect(e).to be_instance_of(Xmi::Sparx::Element::Element)
         expect(e.idref).to eq("EAID_D832D6D8_0518_43f7_9166_7A4E3E8605AA")
       end
 
@@ -336,7 +336,7 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
           :fetch_connector,
           "EAID_2CA98919_831B_4182_BBC2_C2EAF17FEF60",
         )
-        expect(val).to be_instance_of(Xmi::Sparx::SparxConnector)
+        expect(val).to be_instance_of(Xmi::Sparx::Connector::Connector)
         expect(val.idref).to eq("EAID_2CA98919_831B_4182_BBC2_C2EAF17FEF60")
       end
 

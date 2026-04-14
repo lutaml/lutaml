@@ -178,6 +178,7 @@ module Lutaml
       end
 
       def create_uml_cardinality(hash)
+        return nil unless hash
         ::Lutaml::Uml::Cardinality.new.tap do |cardinality|
           cardinality.min = hash[:min]
           cardinality.max = hash[:max]

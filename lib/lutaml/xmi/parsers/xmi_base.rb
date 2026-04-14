@@ -583,9 +583,12 @@ module Lutaml
         #   %(//connector[@xmi:idref="#{link_id}"]/#{node_name}/documentation)
         def fetch_definition_node_value(link_id, node_name)
           connector_node = fetch_connector(link_id)
-          documentation = connector_node.send(node_name.to_sym).documentation
+          return nil unless connector_node
+          node = connector_node.send(node_name.to_sym)
+          return nil unless node
+          documentation = node.documentation
 
-          if documentation.is_a?(::Xmi::Sparx::SparxElementDocumentation)
+          if documentation.is_a?(::Xmi::Sparx::Element::Documentation)
             documentation&.value
           else
             documentation
@@ -745,6 +748,7 @@ module Lutaml
         # @note xpath %(//connector[@xmi:idref="#{link_id}"]/#{connector_type})
         def fetch_assoc_connector(link_id, connector_type) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
           connector = fetch_connector(link_id)
+          return [nil, nil] unless connector
           assoc_connector = connector.send(connector_type.to_sym)
 
           if assoc_connector
