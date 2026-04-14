@@ -1,0 +1,99 @@
+name: links
+
+on:
+  push:
+    branches:
+    - main
+    paths:
+    - 'docs/**'
+  pull_request:
+    paths:
+    - 'docs/**'
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  link_checker:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+
+    - uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.4'
+        bundler-cache: true
+        working-directory: docs
+
+    - name: Build site
+      env:
+        JEKYLL_ENV: production
+      run: bundle exec jekyll build --trace
+      working-directory: docs
+
+    - name: Restore lychee cache
+      uses: actions/cache@v4
+      with:
+        path: .lycheecache
+        key: cache-lychee-${{ github.sha }}
+        restore-keys: cache-lychee-
+
+    - name: Check if site was built
+      run: |
+        if [ ! -d "_site" ]; then
+          echo "Error: _site directory not created"
+          exit 1
+        fi
+        echo "Site built successfully"
+        ls -la _site/
+      working-directory: docs
+
+    - name: Link Checker (Built Site)
+      uses: lycheeverse/lychee-action@v2
+      with:
+        # Check the built HTML site for rendered links
+        # Only check https and http schemes, exclude file:// due to path resolution issues
+        args: >-
+          --verbose
+          --no-progress
+          --config lychee.toml
+          --root-dir "$(pwd)/_site"
+          --scheme https,http
+          '_site/**/*.html'
+        fail: true
+        output: link-check-results.md
+        format: markdown
+        workingDirectory: docs
+
+    - name: Upload link check results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: link-check-results
+        path: |
+          docs/link-check-results.md
+        retention-days: 30
+
+    - name: Comment PR with results
+      if: failure() && github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          let comment = '## 🔗 Link Check Failed\n\n';
+
+          if (fs.existsSync('docs/link-check-results.md')) {
+            const results = fs.readFileSync('docs/link-check-results.md', 'utf8');
+            comment += '### Built Site Results\n\n' + results + '\n\n';
+          }
+
+          comment += '\n---\n\n*Please fix the broken links and push a new commit.*';
+
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });
