@@ -1,8 +1,5 @@
 name: rake
 
-permissions:
-  contents: write
-
 on:
   push:
     branches: [ master, main ]
@@ -12,4 +9,12 @@ on:
 
 jobs:
   rake:
-    uses: metanorma/ci/.github/workflows/graphviz-rake.yml@main
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.4
+          bundler-cache: false
+      - run: bundle install
+      - run: bundle exec rake
