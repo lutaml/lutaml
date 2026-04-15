@@ -9,7 +9,7 @@ gem "parsanol", "1.3.9"
 
 gem "canon"
 gem "listen"
-gem "lutaml-model", github: "lutaml/lutaml-model", branch: "main"
+gem "lutaml-model", github: "lutaml/lutaml-model", ref: "1dbe006"
 gem "openssl", "~> 3.0"
 gem "pry"
 gem "puma"
