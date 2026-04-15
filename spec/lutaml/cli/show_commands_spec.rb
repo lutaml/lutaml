@@ -8,6 +8,19 @@ require "json"
 
 RSpec.describe "Inspect/Show Commands (via UmlCommands)" do
   let(:test_xmi) { File.join(__dir__, "../../../examples/xmi/basic.xmi") }
+  # Helper to find real elements from the test data
+  let(:test_repo) { Lutaml::UmlRepository::Repository.from_package(test_lur.path) }
+  let(:sample_class_id) do
+    # Get a real class identifier
+    classes = test_repo.all_classes
+    if classes.any?
+      qname = test_repo.qualified_name_for(classes.first)
+      "class:#{qname}"
+    end
+  end
+  let(:sample_package_id) do
+    "package:ModelRoot"
+  end
   let(:test_lur) do
     Tempfile.new(["show_test", ".lur"]).tap do |f|
       f.close
@@ -19,22 +32,6 @@ RSpec.describe "Inspect/Show Commands (via UmlCommands)" do
 
   after do
     test_lur.unlink if File.exist?(test_lur.path)
-  end
-
-  # Helper to find real elements from the test data
-  let(:test_repo) { Lutaml::UmlRepository::Repository.from_package(test_lur.path) }
-
-  let(:sample_class_id) do
-    # Get a real class identifier
-    classes = test_repo.all_classes
-    if classes.any?
-      qname = test_repo.qualified_name_for(classes.first)
-      "class:#{qname}"
-    end
-  end
-
-  let(:sample_package_id) do
-    "package:ModelRoot"
   end
 
   describe "inspect command for classes" do

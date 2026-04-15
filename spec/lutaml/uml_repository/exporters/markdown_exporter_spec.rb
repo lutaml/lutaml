@@ -7,13 +7,13 @@ require "tempfile"
 require "fileutils"
 
 RSpec.describe Lutaml::UmlRepository::Exporters::MarkdownExporter do
-  let(:repository) { instance_double("Lutaml::UmlRepository::UmlRepository") }
+  let(:repository) { instance_double(Lutaml::UmlRepository::UmlRepository) }
   let(:exporter) { described_class.new(repository) }
   let(:temp_dir) { Dir.mktmpdir }
 
   let(:mock_class) do
     instance_double(
-      "Lutaml::Uml::Class",
+      Lutaml::Uml::Class,
       xmi_id: "class1",
       name: "Building",
       class: Lutaml::Uml::Class,
@@ -26,7 +26,7 @@ RSpec.describe Lutaml::UmlRepository::Exporters::MarkdownExporter do
 
   let(:mock_package) do
     instance_double(
-      "Lutaml::Uml::Package",
+      Lutaml::Uml::Package,
       xmi_id: "pkg1",
       name: "urf",
       definition: "Urban features package",
@@ -62,15 +62,8 @@ RSpec.describe Lutaml::UmlRepository::Exporters::MarkdownExporter do
   end
 
   before do
-    allow(repository).to receive(:indexes).and_return(indexes)
-    allow(repository).to receive(:statistics).and_return(statistics)
-    allow(repository).to receive(:package_tree).and_return(tree)
-    allow(repository).to receive(:list_packages).and_return([mock_package])
-    allow(repository).to receive(:classes_in_package).and_return([mock_class])
-    allow(repository).to receive(:diagrams_in_package).and_return([])
-    allow(repository).to receive(:associations_of).and_return([])
-    allow(repository).to receive(:supertype_of).and_return(nil)
-    allow(repository).to receive(:subtypes_of).and_return([])
+    allow(repository).to receive_messages(indexes: indexes,
+                                          statistics: statistics, package_tree: tree, list_packages: [mock_package], classes_in_package: [mock_class], diagrams_in_package: [], associations_of: [], supertype_of: nil, subtypes_of: [])
   end
 
   after do

@@ -45,23 +45,12 @@ RSpec.describe Lutaml::Qea::Validation::ValidationEngine do
 
     before do
       # Mock document methods for UML tree extraction
-      allow(document).to receive(:classes).and_return([])
-      allow(document).to receive(:packages).and_return([])
-      allow(document).to receive(:enums).and_return([])
-      allow(document).to receive(:data_types).and_return([])
-      allow(document).to receive(:associations).and_return([])
+      allow(document).to receive_messages(classes: [], packages: [], enums: [],
+                                          data_types: [], associations: [])
 
       # Mock database collections
-      allow(database).to receive(:packages).and_return([])
-      allow(database)
-        .to receive(:objects)
-        .and_return(double("ObjectRepository", all: []))
-      allow(database).to receive(:attributes).and_return([])
-      allow(database).to receive(:operations).and_return([])
-      allow(database).to receive(:connectors).and_return([])
-      allow(database).to receive(:diagrams).and_return([])
-      allow(database).to receive(:diagram_objects).and_return([])
-      allow(database).to receive(:diagram_links).and_return([])
+      allow(database).to receive_messages(packages: [],
+                                          objects: double("ObjectRepository", all: []), attributes: [], operations: [], connectors: [], diagrams: [], diagram_objects: [], diagram_links: [])
     end
 
     it "returns a ValidationResult" do
@@ -118,23 +107,14 @@ RSpec.describe Lutaml::Qea::Validation::ValidationEngine do
     let(:engine) { described_class.new(document, database: database) }
 
     before do
-      allow(database).to receive(:packages).and_return([])
-      allow(database).to receive(:objects).and_return([])
-      allow(database).to receive(:attributes).and_return([])
-      allow(database).to receive(:operations).and_return([])
-      allow(database).to receive(:connectors).and_return([])
-      allow(database).to receive(:diagrams).and_return([])
-      allow(database).to receive(:diagram_objects).and_return([])
-      allow(database).to receive(:diagram_links).and_return([])
+      allow(database).to receive_messages(packages: [], objects: [],
+                                          attributes: [], operations: [], connectors: [], diagrams: [], diagram_objects: [], diagram_links: [])
     end
 
     it "returns true when no errors" do
       # Mock document methods for this test
-      allow(document).to receive(:classes).and_return([])
-      allow(document).to receive(:packages).and_return([])
-      allow(document).to receive(:enums).and_return([])
-      allow(document).to receive(:data_types).and_return([])
-      allow(document).to receive(:associations).and_return([])
+      allow(document).to receive_messages(classes: [], packages: [], enums: [],
+                                          data_types: [], associations: [])
 
       expect(engine.valid?).to be true
     end
@@ -162,23 +142,12 @@ RSpec.describe Lutaml::Qea::Validation::ValidationEngine do
 
     before do
       # Mock document methods
-      allow(document).to receive(:classes).and_return([])
-      allow(document).to receive(:packages).and_return([])
-      allow(document).to receive(:enums).and_return([])
-      allow(document).to receive(:data_types).and_return([])
-      allow(document).to receive(:associations).and_return([])
+      allow(document).to receive_messages(classes: [], packages: [], enums: [],
+                                          data_types: [], associations: [])
 
       # Mock database collections
-      allow(database).to receive(:packages).and_return([])
-      allow(database)
-        .to receive(:objects)
-        .and_return(double("ObjectRepository", all: []))
-      allow(database).to receive(:attributes).and_return([])
-      allow(database).to receive(:operations).and_return([])
-      allow(database).to receive(:connectors).and_return([])
-      allow(database).to receive(:diagrams).and_return([])
-      allow(database).to receive(:diagram_objects).and_return([])
-      allow(database).to receive(:diagram_links).and_return([])
+      allow(database).to receive_messages(packages: [],
+                                          objects: double("ObjectRepository", all: []), attributes: [], operations: [], connectors: [], diagrams: [], diagram_objects: [], diagram_links: [])
     end
 
     it "validates and returns result" do

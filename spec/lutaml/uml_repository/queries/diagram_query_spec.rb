@@ -15,9 +15,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::DiagramQuery do
       package_ids.each do |package_id|
         diagrams = query.find_by_package(package_id)
         expect(diagrams).to be_an(Array)
-        diagrams.each do |diagram|
-          expect(diagram).to be_a(Lutaml::Uml::Diagram)
-        end
+        expect(diagrams).to all(be_a(Lutaml::Uml::Diagram))
       end
     end
 
@@ -47,7 +45,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::DiagramQuery do
 
     it "returns empty array for non-existent diagram name" do
       diagrams = query.find_by_name("NonExistentDiagram")
-      expect(diagrams).to eq(nil)
+      expect(diagrams).to be_nil
     end
 
     it "handles diagrams with same name in different packages" do
@@ -65,9 +63,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::DiagramQuery do
     it "returns all diagrams" do
       diagrams = query.all
       expect(diagrams).to be_an(Array)
-      diagrams.each do |diagram|
-        expect(diagram).to be_a(Lutaml::Uml::Diagram)
-      end
+      expect(diagrams).to all(be_a(Lutaml::Uml::Diagram))
     end
 
     it "includes diagrams from all packages" do
@@ -104,9 +100,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::DiagramQuery do
       indexes[:diagram_index].each do |package_id, diagrams|
         expect(package_id).to be_a(String)
         expect(diagrams).to be_an(Array)
-        diagrams.each do |diagram|
-          expect(diagram).to be_a(Lutaml::Uml::Diagram)
-        end
+        expect(diagrams).to all(be_a(Lutaml::Uml::Diagram))
       end
     end
   end

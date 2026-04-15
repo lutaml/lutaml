@@ -15,9 +15,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::AssociationQuery do
       classes.each do |klass|
         associations = query.find_for_class(klass.xmi_id)
         expect(associations).to be_an(Array)
-        associations.each do |assoc|
-          expect(assoc).to be_a(Lutaml::Uml::Association)
-        end
+        expect(associations).to all(be_a(Lutaml::Uml::Association))
       end
     end
 
@@ -126,9 +124,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::AssociationQuery do
     it "returns all associations" do
       associations = query.all
       expect(associations).to be_an(Array)
-      associations.each do |assoc|
-        expect(assoc).to be_a(Lutaml::Uml::Association)
-      end
+      expect(associations).to all(be_a(Lutaml::Uml::Association))
     end
 
     it "includes associations from all classes" do

@@ -99,9 +99,7 @@ RSpec.describe Lutaml::UmlRepository::Validators::RepositoryValidator do
       validator.send(:check_type_references)
       errors = validator.instance_variable_get(:@errors)
       expect(errors).to be_an(Array)
-      errors.each do |error|
-        expect(error).to be_a(String)
-      end
+      expect(errors).to all(be_a(String))
     end
   end
 

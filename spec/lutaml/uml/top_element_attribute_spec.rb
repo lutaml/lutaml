@@ -34,7 +34,7 @@ RSpec.describe Lutaml::Uml::TopElementAttribute do
     end
 
     it "outputs default is_derived" do
-      expect(YAML.safe_load(output)["is_derived"]).to eq(false)
+      expect(YAML.safe_load(output)["is_derived"]).to be(false)
     end
 
     it "outputs stripped definition" do

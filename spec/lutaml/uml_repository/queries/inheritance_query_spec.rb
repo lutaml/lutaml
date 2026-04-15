@@ -15,9 +15,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::InheritanceQuery do
       parent_classes.each do |parent_id|
         children = query.find_children(parent_id)
         expect(children).to be_an(Array)
-        children.each do |child|
-          expect(child).to be_a(Lutaml::Uml::Class)
-        end
+        expect(children).to all(be_a(Lutaml::Uml::Class))
       end
     end
 
@@ -87,9 +85,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::InheritanceQuery do
       classes_with_parents.each do |klass|
         ancestors = query.find_ancestors(klass.xmi_id)
         expect(ancestors).to be_an(Array)
-        ancestors.each do |ancestor|
-          expect(ancestor).to be_a(Lutaml::Uml::Class)
-        end
+        expect(ancestors).to all(be_a(Lutaml::Uml::Class))
       end
     end
 

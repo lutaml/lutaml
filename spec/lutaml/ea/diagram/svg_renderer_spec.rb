@@ -98,12 +98,12 @@ RSpec.describe Lutaml::Ea::Diagram::SvgRenderer do
 
     it "accepts grid_visible option" do
       renderer = described_class.new(diagram_renderer, grid_visible: true)
-      expect(renderer.options[:grid_visible]).to eq(true)
+      expect(renderer.options[:grid_visible]).to be(true)
     end
 
     it "accepts interactive option" do
       renderer = described_class.new(diagram_renderer, interactive: true)
-      expect(renderer.options[:interactive]).to eq(true)
+      expect(renderer.options[:interactive]).to be(true)
     end
 
     it "accepts custom CSS classes" do

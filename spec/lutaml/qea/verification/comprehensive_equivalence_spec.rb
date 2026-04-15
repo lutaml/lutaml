@@ -435,22 +435,17 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
 
           # Large files should load within 30 seconds
           expect(load_time).to be < 30.0
-
-          puts "  QEA load time: #{load_time.round(2)}s"
         end
 
         it "provides efficient search on large models" do
           qea_repo = Lutaml::Qea::Parser.parse(file_pair[:qea]).to_uml_repository
 
           start_time = Time.now
-          results = qea_repo.search("building")
+          qea_repo.search("building")
           search_time = Time.now - start_time
 
           # Search should complete within 5 seconds even for large models
           expect(search_time).to be < 5.0
-
-          puts "  Search time: #{search_time.round(3)}s " \
-               "(#{results.size} results)"
         end
       end
     end

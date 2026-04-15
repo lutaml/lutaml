@@ -6,14 +6,14 @@ require "json"
 require "tempfile"
 
 RSpec.describe Lutaml::UmlRepository::Exporters::JsonExporter do
-  let(:repository) { instance_double("Lutaml::UmlRepository::UmlRepository") }
+  let(:repository) { instance_double(Lutaml::UmlRepository::UmlRepository) }
   let(:exporter) { described_class.new(repository) }
   let(:temp_file) { Tempfile.new(["test", ".json"]) }
   let(:output_path) { temp_file.path }
 
   let(:mock_class) do
     instance_double(
-      "Lutaml::Uml::Class",
+      Lutaml::Uml::Class,
       xmi_id: "class1",
       name: "Building",
       class: Lutaml::Uml::Class,
@@ -43,11 +43,8 @@ RSpec.describe Lutaml::UmlRepository::Exporters::JsonExporter do
   end
 
   before do
-    allow(repository).to receive(:indexes).and_return(indexes)
-    allow(repository).to receive(:statistics).and_return(statistics)
-    allow(repository).to receive(:list_packages).and_return([])
-    allow(repository).to receive(:all_diagrams).and_return([])
-    allow(repository).to receive(:supertype_of).and_return(nil)
+    allow(repository).to receive_messages(indexes: indexes,
+                                          statistics: statistics, list_packages: [], all_diagrams: [], supertype_of: nil)
   end
 
   after do

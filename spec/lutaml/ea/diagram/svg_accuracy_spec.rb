@@ -32,6 +32,16 @@ RSpec.describe "EA Diagram SVG Accuracy" do
   include SvgComparisonHelper
 
   let(:qea_path) { "spec/fixtures/test.qea" }
+  # Load repository once for all tests
+  let(:repository) do
+    if File.exist?(lur_path)
+      Lutaml::UmlRepository::RepositoryEnhanced.from_file(lur_path)
+    else
+      skip "Repository file not found: #{lur_path}"
+    end
+  end
+  # Get all diagrams from repository
+  let(:diagrams) { repository.all_diagrams }
   let(:lur_path) { lur_path }
   let(:reference_dir) { "examples/xmi/Images" }
 
@@ -57,41 +67,15 @@ RSpec.describe "EA Diagram SVG Accuracy" do
     File.exist?(path) ? path : nil
   end
 
-  # Load repository once for all tests
-  let(:repository) do
-    if File.exist?(lur_path)
-      Lutaml::UmlRepository::RepositoryEnhanced.from_file(lur_path)
-    else
-      skip "Repository file not found: #{lur_path}"
-    end
-  end
-
-  # Get all diagrams from repository
-  let(:diagrams) { repository.all_diagrams }
-
-  before(:all) do
-    # Display information about test setup
-    puts "\n#{'=' * 80}"
-    puts "SVG Accuracy Test Suite - EA Reference Comparison".center(80)
-    puts "=" * 80
-    puts "\nThis test suite validates diagram generation accuracy against"
-    puts "Enterprise Architect (EA) SVG exports using Canon gem's XML " \
-         "equivalence."
-    puts "\nEA Reference directory: examples/xmi/Images/"
-    puts "\n#{'=' * 80}\n"
-  end
-
   describe "Reference file availability" do
     it "has EA reference directory" do
-      expect(Dir.exist?(reference_dir)).to be_truthy
+      expect(Dir).to exist(reference_dir)
     end
 
     it "contains EA-generated SVG files" do
       svg_files = Dir.glob(File.join(reference_dir, "EAID_*.svg"))
       expect(svg_files)
         .not_to be_empty, "EA reference directory should contain SVG files"
-
-      puts "\n  Found #{svg_files.size} EA reference SVG files"
     end
 
     it "has Canon gem available for XML equivalence testing" do
@@ -114,9 +98,6 @@ RSpec.describe "EA Diagram SVG Accuracy" do
 
       diagrams = repository.all_diagrams
       expect(diagrams).not_to be_empty
-
-      puts "\n  Diagrams in basic_test.lur: #{diagrams.size}"
-      puts "  Testing #{diagrams_to_test.size} diagrams with EA references:"
     end
   end
 
@@ -160,12 +141,6 @@ RSpec.describe "EA Diagram SVG Accuracy" do
               skip "Generated SVG is empty (diagram lacks rendering data)"
             end
 
-            puts "\n  Comparing generated SVG with EA reference " \
-                 "using Canon gem..."
-            puts "  EA reference: #{File.basename(ea_reference_path)}"
-            puts "  Generated size: #{generated_svg.bytesize} bytes"
-            puts "  Reference size: #{ea_reference_svg.bytesize} bytes"
-
             # Use Canon's be_xml_equivalent_to matcher
             expect(generated_svg).to be_xml_equivalent_to(ea_reference_svg)
           end
@@ -180,12 +155,11 @@ RSpec.describe "EA Diagram SVG Accuracy" do
             comparison = compare_svg_structure(generated_svg, ea_reference_svg)
 
             unless comparison[:matching]
-              puts "\n  Structure Differences:"
+
               comparison[:differences].first(5).each do |diff|
-                puts "    - #{diff}"
               end
               if comparison[:differences].size > 5
-                puts "    ... and #{comparison[:differences].size - 5} more"
+
               end
             end
 
@@ -213,12 +187,11 @@ RSpec.describe "EA Diagram SVG Accuracy" do
                                               tolerance: 10.0)
 
             unless differences.empty?
-              puts "\n  Coordinate Differences (tolerance: 10px):"
+
               differences.first(10).each do |diff|
-                puts "    - #{diff}"
               end
               if differences.size > 10
-                puts "    ... and #{differences.size - 10} more"
+
               end
             end
 
@@ -248,9 +221,6 @@ RSpec.describe "EA Diagram SVG Accuracy" do
             # Check for significant text overlap
             common_texts = gen_texts & ref_texts
             overlap_ratio = common_texts.size.to_f / [ref_texts.size, 1].max
-
-            puts "\n  Text overlap: #{(overlap_ratio * 100).round(2)}% " \
-                 "(#{common_texts.size}/#{ref_texts.size})"
 
             expect(overlap_ratio)
               .to be >= 0.5, "Should preserve at least 50% of text content " \

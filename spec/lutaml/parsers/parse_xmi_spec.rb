@@ -110,7 +110,7 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
 
       it "correctly parses package tree" do
         expect(first_package.packages.map(&:name))
-          .to match_array([])
+          .to be_empty
       end
 
       it "correctly parses package classes" do
@@ -191,7 +191,7 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
           :doc_node_attribute_value,
           "EAID_D832D6D8_0518_43f7_9166_7A4E3E8605AA", "isAbstract"
         )
-        expect(val).to eq(false)
+        expect(val).to be(false)
 
         val = new_parser.send(
           :doc_node_attribute_value,
@@ -307,7 +307,7 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
           :serialize_model_associations,
           "EAPK_C799E047_A10F_4203_9E22_9C47183CED98",
         )
-        expect(val).to eq(nil)
+        expect(val).to be_nil
       end
 
       it ".serialize_model_associations with associations" do
@@ -345,7 +345,7 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
           :fetch_definition_node_value,
           "EAID_2CA98919_831B_4182_BBC2_C2EAF17FEF60", "source"
         )
-        expect(val).to eq(nil)
+        expect(val).to be_nil
       end
 
       it ".serialize_class_operations" do

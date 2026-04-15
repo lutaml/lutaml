@@ -113,7 +113,7 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
 
       it "correctly parses package tree" do
         expect(first_package.packages.map(&:name))
-          .to match_array([])
+          .to be_empty
       end
 
       it "correctly parses package classes" do
@@ -177,7 +177,7 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
     context "when parsing xmi with generalization" do
       let(:file) { File.new(fixtures_path("plateau_all_packages_export.xmi")) }
 
-      it "should output attributes correctly" do
+      it "outputs attributes correctly" do
         test_package = output.packages.first.packages[2].packages[9]
         gen_obj = test_package.classes[3].generalization
         expect(test_package.name).to eq("bldg")
@@ -191,8 +191,8 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
         expect(gen_obj.general.attributes[0][:xmi_id]).to eq(
           "EAJava_gml__CodeType",
         )
-        expect(gen_obj.general.attributes[0][:is_derived]).to eq(nil)
-        expect(gen_obj.general.attributes[0][:association]).to eq(nil)
+        expect(gen_obj.general.attributes[0][:is_derived]).to be_nil
+        expect(gen_obj.general.attributes[0][:association]).to be_nil
         expect(gen_obj.general.attributes[0][:definition]).to eq(
           "建築物の形態による区分。コードリスト(&lt;&lt;Building_class.xml&gt;&gt;)より選択する。",
         )
@@ -202,11 +202,11 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
 
         expect(gen_obj.inherited_props[0].name).to eq("description")
         expect(gen_obj.inherited_props[0].type).to eq("gml::StringOrRefType")
-        expect(gen_obj.inherited_props[0].type_ns).to eq(nil)
+        expect(gen_obj.inherited_props[0].type_ns).to be_nil
         expect(gen_obj.inherited_props[0].upper_klass.name).to eq("gml")
         expect(gen_obj.inherited_props[0].gen_name).to eq("_Feature")
         expect(gen_obj.inherited_props[0].name_ns).to eq("gml")
-        expect(gen_obj.inherited_props[0].association).to eq(nil)
+        expect(gen_obj.inherited_props[0].association).to be_nil
 
         expect(gen_obj.inherited_assoc_props[0].association).to eq(
           "EAID_98F26EAF_7E3C_48b2_AAE7_4769CF1AAFD6",
@@ -215,14 +215,14 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
     end
 
     context "when parsing xmi with generalization and guidance yaml" do
-      let(:file) { File.new(fixtures_path("plateau_all_packages_export.xmi")) }
-      let(:guidance) { YAML.load_file(fixtures_path("guidance/guidance.yaml")) }
-
       subject(:output) do
         described_class.serialize_xmi_to_liquid(file, guidance)
       end
 
-      it "should output attributes correctly" do
+      let(:file) { File.new(fixtures_path("plateau_all_packages_export.xmi")) }
+      let(:guidance) { YAML.load_file(fixtures_path("guidance/guidance.yaml")) }
+
+      it "outputs attributes correctly" do
         test_package = output.packages.first.packages[2].packages[9]
         test_klass = test_package.classes[3]
         gen_obj = test_package.classes[3].generalization
@@ -244,8 +244,8 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
         expect(gen_obj.general.attributes[0][:xmi_id]).to eq(
           "EAJava_gml__CodeType",
         )
-        expect(gen_obj.general.attributes[0][:is_derived]).to eq(nil)
-        expect(gen_obj.general.attributes[0][:association]).to eq(nil)
+        expect(gen_obj.general.attributes[0][:is_derived]).to be_nil
+        expect(gen_obj.general.attributes[0][:association]).to be_nil
         expect(gen_obj.general.attributes[0][:definition]).to eq(
           "建築物の形態による区分。コードリスト(&lt;&lt;Building_class.xml&gt;&gt;)より選択する。",
         )
@@ -254,18 +254,18 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
         )
 
         expect(gen_obj.inherited_props[2].name).to eq("boundedBy")
-        expect(gen_obj.inherited_props[2].used?).to eq(false)
+        expect(gen_obj.inherited_props[2].used?).to be(false)
         expect(gen_obj.inherited_props[2].guidance).to eq("この属性は使用されていません。\n")
 
         expect(gen_obj.inherited_props[0].name).to eq("description")
         expect(gen_obj.inherited_props[0].type).to eq("gml::StringOrRefType")
-        expect(gen_obj.inherited_props[0].type_ns).to eq(nil)
+        expect(gen_obj.inherited_props[0].type_ns).to be_nil
         expect(gen_obj.inherited_props[0].upper_klass.name).to eq("gml")
         expect(gen_obj.inherited_props[0].gen_name).to eq("_Feature")
         expect(gen_obj.inherited_props[0].name_ns).to eq("gml")
-        expect(gen_obj.inherited_props[0].association).to eq(nil)
-        expect(gen_obj.inherited_props[0].used?).to eq(true)
-        expect(gen_obj.inherited_props[0].guidance).to eq(nil)
+        expect(gen_obj.inherited_props[0].association).to be_nil
+        expect(gen_obj.inherited_props[0].used?).to be(true)
+        expect(gen_obj.inherited_props[0].guidance).to be_nil
 
         expect(gen_obj.inherited_assoc_props[0].association).to eq(
           "EAID_98F26EAF_7E3C_48b2_AAE7_4769CF1AAFD6",
@@ -276,7 +276,7 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
     context "when parsing xmi with generalization and sorted props" do
       let(:file) { File.new(fixtures_path("plateau_all_packages_export.xmi")) }
 
-      it "should output attributes correctly" do
+      it "outputs attributes correctly" do
         test_package = output.packages.first.packages[1].packages[0]
           .packages[1].classes[144]
         gen_obj = test_package.generalization

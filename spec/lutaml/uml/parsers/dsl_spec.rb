@@ -4,14 +4,15 @@ require "spec_helper"
 
 RSpec.describe Lutaml::Uml::Parsers::Dsl do
   describe ".parse" do
-    subject(:parse) { described_class.parse(content) }
     subject(:format_parsed_document) do
       Lutaml::Formatter::Graphviz.new.format_document(parse)
     end
 
+    let(:parse) { described_class.parse(content) }
+
     shared_examples "the correct graphviz formatting" do
       it "does not raise error on graphviz formatting" do
-        expect { format_parsed_document }.to_not raise_error
+        expect { format_parsed_document }.not_to raise_error
       end
     end
 
@@ -64,8 +65,7 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
         File.new(fixtures_path("dsl/diagram_class_fields.lutaml"))
       end
 
-      it "creates the correct classes and sets the \
-          correct number of attributes" do
+      it "creates the correct classes and sets the correct number of attributes" do
         classes = parse.classes
         expect(by_name(classes, "Component").attributes).to be_nil
         expect(by_name(classes, "AddressClassProfile")
@@ -125,7 +125,7 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
         expect(parse.associations.length).to eq(3)
       end
 
-      context "when bidirectional asscoiation syntax " do
+      context "when bidirectional asscoiation syntax" do
         subject(:association) do
           by_name(parse.associations, "BidirectionalAsscoiation")
         end
@@ -144,7 +144,7 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
         end
       end
 
-      context "when direct asscoiation syntax " do
+      context "when direct asscoiation syntax" do
         subject(:association) do
           by_name(parse.associations, "DirectAsscoiation")
         end
@@ -161,7 +161,7 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
         end
       end
 
-      context "when reverse asscoiation syntax " do
+      context "when reverse asscoiation syntax" do
         subject(:association) do
           by_name(parse.associations, "ReverseAsscoiation")
         end
@@ -202,7 +202,7 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
 
       it "Generates the correct nodes for primitives" do
         data_types = parse.primitives
-        expect(by_name(data_types, "Integer")).to_not be_nil
+        expect(by_name(data_types, "Integer")).not_to be_nil
       end
 
       it_behaves_like "the correct graphviz formatting"
@@ -300,7 +300,7 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
       end
 
       it "successfully renders" do
-        expect { parse }.to_not(raise_error)
+        expect { parse }.not_to(raise_error)
       end
     end
 
@@ -310,7 +310,7 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
       end
 
       it "successfully renders" do
-        expect { parse }.to_not(raise_error)
+        expect { parse }.not_to(raise_error)
       end
     end
 
@@ -320,7 +320,7 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
       end
 
       it "successfully renders" do
-        expect { parse }.to_not(raise_error)
+        expect { parse }.not_to(raise_error)
       end
     end
 
@@ -330,7 +330,7 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
       end
 
       it "successfully renders" do
-        expect { parse }.to_not(raise_error)
+        expect { parse }.not_to(raise_error)
       end
     end
 

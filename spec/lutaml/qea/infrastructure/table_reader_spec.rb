@@ -233,7 +233,7 @@ RSpec.describe Lutaml::Qea::Infrastructure::TableReader do
       expect(results).to be_an(Array)
       if results.any?
         result = results.first
-        expect(result.keys).to match_array(["Object_ID", "Name"])
+        expect(result.keys).to contain_exactly("Object_ID", "Name")
       end
     end
 

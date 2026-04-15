@@ -103,13 +103,8 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Generator do
   describe "#generate" do
     before do
       # Mock repository methods
-      allow(repository).to receive(:associations_of).and_return([])
-      allow(repository).to receive(:supertype_of).and_return(nil)
-      allow(repository).to receive(:subtypes_of).and_return([])
-      allow(repository).to receive(:diagrams_in_package).and_return([])
-      allow(repository).to receive(:diagrams_index).and_return([])
-      allow(repository).to receive(:document).and_return([])
-      allow(repository).to receive(:packages_index).and_return([])
+      allow(repository).to receive_messages(associations_of: [],
+                                            supertype_of: nil, subtypes_of: [], diagrams_in_package: [], diagrams_index: [], document: [], packages_index: [])
     end
 
     context "with single-file mode" do

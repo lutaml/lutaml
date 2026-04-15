@@ -26,6 +26,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::SearchQuery do
         expect(result.match_field).to eq("name")
       end
     end
+
     it "searches classes by wildcard pattern" do
       results = query.search_classes("*")
 
@@ -71,13 +72,13 @@ RSpec.describe Lutaml::UmlRepository::Queries::SearchQuery do
     it "handles case-sensitive search" do
       results = query.search_classes("requirement", case_sensitive: true)
       expect(results).to be_an(Array)
-      expect(results.empty?).to eq(true)
+      expect(results.empty?).to be(true)
     end
 
     it "handles case-insensitive search" do
       results = query.search_classes("requirement", case_sensitive: false)
       expect(results).to be_an(Array)
-      expect(results.empty?).to eq(false)
+      expect(results.empty?).to be(false)
     end
   end
 

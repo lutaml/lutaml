@@ -62,35 +62,30 @@ RSpec.describe "XMI/QEA Equivalence Integration" do
       it "has reasonable statistics" do
         stats = result.statistics
         expect(stats[:total_matches]).to be > 0
-        puts "\nStatistics for #{description}:"
-        puts "  Matched elements: #{stats[:total_matches]}"
-        puts "  XMI-only: #{stats[:total_xmi_only]}"
-        puts "  QEA-only: #{stats[:total_qea_only]}"
-        puts "  Property diffs: #{stats[:total_property_diffs]}"
       end
     end
   end
 
   # Test all 4 file pairs
-  include_examples "equivalent documents",
-                   "UmlModel_template.xmi",
-                   "UmlModel_template.qea",
-                   "UmlModel_template"
+  it_behaves_like "equivalent documents",
+                  "UmlModel_template.xmi",
+                  "UmlModel_template.qea",
+                  "UmlModel_template"
 
-  include_examples "equivalent documents",
-                   "test.xmi",
-                   "test.qea",
-                   "test"
+  it_behaves_like "equivalent documents",
+                  "test.xmi",
+                  "test.qea",
+                  "test"
 
-  include_examples "equivalent documents",
-                   "ArcGISWorkspace_template.xmi",
-                   "ArcGISWorkspace_template.qea",
-                   "ArcGISWorkspace_template"
+  it_behaves_like "equivalent documents",
+                  "ArcGISWorkspace_template.xmi",
+                  "ArcGISWorkspace_template.qea",
+                  "ArcGISWorkspace_template"
 
-  include_examples "equivalent documents",
-                   "20251010_current_plateau_v5.1.xmi",
-                   "20251010_current_plateau_v5.1.qea",
-                   "20251010_current_plateau_v5.1"
+  it_behaves_like "equivalent documents",
+                  "20251010_current_plateau_v5.1.xmi",
+                  "20251010_current_plateau_v5.1.qea",
+                  "20251010_current_plateau_v5.1"
 
   describe "detailed verification" do
     let(:xmi_path) { File.join(examples_dir, "test.xmi") }
@@ -107,7 +102,6 @@ RSpec.describe "XMI/QEA Equivalence Integration" do
       summary = result.summary
       expect(summary).to include("Verification Summary")
       expect(summary).to include("Matched Elements")
-      puts "\n#{summary}"
     end
 
     it "generates a detailed report" do
@@ -125,7 +119,7 @@ RSpec.describe "XMI/QEA Equivalence Integration" do
       # QEA may have more elements - this is acceptable
       expect(acceptable).to be_an(Array)
       if acceptable.any?
-        puts "\nAcceptable differences: #{acceptable.join('; ')}"
+
       end
     end
   end

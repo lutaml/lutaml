@@ -103,7 +103,7 @@ RSpec.describe Lutaml::ModelTransformations::TransformationEngine do
 
     it "successfully parses supported file" do
       result = engine.parse(test_file.path)
-      expect(result).to be_a_kind_of(Object) # Mock document
+      expect(result).to be_a(Object) # Mock document
     end
 
     it "calls the appropriate parser" do
@@ -217,9 +217,8 @@ RSpec.describe Lutaml::ModelTransformations::TransformationEngine do
 
       it "falls back to content detection when extension detection fails" do
         allow(mock_config.format_detection)
-          .to receive(:use_file_extension).and_return(false)
-        allow(mock_config.format_detection)
-          .to receive(:use_content_sniffing).and_return(true)
+          .to receive_messages(use_file_extension: false,
+                               use_content_sniffing: true)
 
         # Mock content detection
         allow(engine.format_registry)
@@ -233,11 +232,8 @@ RSpec.describe Lutaml::ModelTransformations::TransformationEngine do
     context "with fallback parser configured" do
       it "uses fallback parser when detection fails" do
         allow(mock_config.format_detection)
-          .to receive(:use_file_extension).and_return(false)
-        allow(mock_config.format_detection)
-          .to receive(:use_content_sniffing).and_return(false)
-        allow(mock_config.format_detection)
-          .to receive(:fallback_parser).and_return("MockParser")
+          .to receive_messages(use_file_extension: false,
+                               use_content_sniffing: false, fallback_parser: "MockParser")
 
         parser_class = engine.detect_parser("unknown.file")
         expect(parser_class).to eq(MockParser)
@@ -246,11 +242,8 @@ RSpec.describe Lutaml::ModelTransformations::TransformationEngine do
 
     it "returns nil when no parser can be detected" do
       allow(mock_config.format_detection)
-        .to receive(:use_file_extension).and_return(false)
-      allow(mock_config.format_detection)
-        .to receive(:use_content_sniffing).and_return(false)
-      allow(mock_config.format_detection)
-        .to receive(:fallback_parser).and_return(nil)
+        .to receive_messages(use_file_extension: false,
+                             use_content_sniffing: false, fallback_parser: nil)
 
       parser_class = engine.detect_parser("unknown.file")
       expect(parser_class).to be_nil
