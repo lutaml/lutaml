@@ -7,7 +7,7 @@ require "tempfile"
 require "fileutils"
 
 RSpec.describe Lutaml::UmlRepository::Exporters::MarkdownExporter do
-  let(:repository) { instance_double(Lutaml::UmlRepository::UmlRepository) }
+  let(:repository) { instance_double(Lutaml::UmlRepository::Repository) }
   let(:exporter) { described_class.new(repository) }
   let(:temp_dir) { Dir.mktmpdir }
 

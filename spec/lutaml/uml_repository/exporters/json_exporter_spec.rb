@@ -6,7 +6,7 @@ require "json"
 require "tempfile"
 
 RSpec.describe Lutaml::UmlRepository::Exporters::JsonExporter do
-  let(:repository) { instance_double(Lutaml::UmlRepository::UmlRepository) }
+  let(:repository) { instance_double(Lutaml::UmlRepository::Repository) }
   let(:exporter) { described_class.new(repository) }
   let(:temp_file) { Tempfile.new(["test", ".json"]) }
   let(:output_path) { temp_file.path }
