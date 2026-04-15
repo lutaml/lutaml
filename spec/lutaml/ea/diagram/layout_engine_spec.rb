@@ -584,7 +584,7 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
     end
 
     # calculate_connector_bounds is not defined
-    xdescribe "#calculate_connector_bounds" do
+    describe "#calculate_connector_bounds" do
       it "returns nil when connectors array is empty" do
         result = engine.send(:calculate_connector_bounds, [], [])
         expect(result).to be_nil

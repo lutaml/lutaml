@@ -4,6 +4,7 @@ require "spec_helper"
 require "canon"
 require_relative "../../../support/svg_comparison_helper"
 require_relative "../../../../lib/lutaml/ea/diagram"
+require_relative "../../../../lib/lutaml/ea/diagram/extractor"
 
 RSpec.describe "EA Diagram SVG Accuracy" do
   # Path to test repository
@@ -106,7 +107,7 @@ RSpec.describe "EA Diagram SVG Accuracy" do
     describe "diagram: #{diagram_info[:name]}" do
       let(:diagram_name) { diagram_info[:name] }
       let(:diagram_xmi_id) { diagram_info[:xmi_id] }
-      let(:diagram) { repository.find_diagram(diagram_xmi_id) }
+      let(:diagram) { repository.find_diagram(diagram_name) }
       let(:ea_reference_path) { find_ea_reference_svg(diagram_xmi_id) }
 
       before do

@@ -156,6 +156,34 @@ module Lutaml
 
         private
 
+        def calculate_connector_bounds(connectors, _elements = []) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
+          return nil if connectors.empty?
+
+          valid = connectors.select do |c|
+            c[:source_element] && c[:target_element] && c[:geometry]
+          end
+          return nil if valid.empty?
+
+          points = valid.flat_map { |conn| connector_endpoints(conn) }
+          xs = points.map(&:first)
+          ys = points.map(&:last)
+
+          { min_x: xs.min, max_x: xs.max, min_y: ys.min, max_y: ys.max }
+        end
+
+        def connector_endpoints(conn) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
+          src = conn[:source_element]
+          tgt = conn[:target_element]
+          sx, sy, ex, ey = parse_geometry_offsets(conn[:geometry])
+
+          src_point = [(src[:x] || 0) + (src[:width] || 120) + sx,
+                       (src[:y] || 0) + ((src[:height] || 80) / 2) + sy]
+          tgt_point = [(tgt[:x] || 0) + ex,
+                       (tgt[:y] || 0) + ((tgt[:height] || 80) / 2) + ey]
+
+          [src_point, tgt_point]
+        end
+
         def element_width_for(element) # rubocop:disable Metrics/MethodLength
           if element[:width]
             return element[:width].zero? ? ELEMENT_WIDTH : element[:width]

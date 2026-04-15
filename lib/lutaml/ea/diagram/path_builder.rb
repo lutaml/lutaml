@@ -25,6 +25,7 @@ module Lutaml
         # @return [String] SVG path data
         def build_path
           return straight_path if simple_connector?
+          return waypoint_path if geometry_has_waypoints?
 
           case connector[:routing_type]
           when "orthogonal" then orthogonal_path
@@ -118,6 +119,30 @@ module Lutaml
             path += " L #{point[0]},#{point[1]}"
           end
           path
+        end
+
+        def geometry_has_waypoints?
+          return false unless connector[:geometry]
+
+          geometry_data = parse_ea_geometry(connector[:geometry])
+          geometry_data&.dig(:waypoints)&.any?
+        end
+
+        def waypoint_path
+          geometry_data = parse_ea_geometry(connector[:geometry])
+          points = []
+
+          sp = source_point
+          points << sp if sp
+
+          geometry_data[:waypoints].each do |wp|
+            points << [wp[:x], wp[:y]]
+          end
+
+          tp = target_point
+          points << tp if tp
+
+          path_from_points(points)
         end
 
         def source_point
