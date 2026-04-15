@@ -154,9 +154,10 @@ module Lutaml
           end
         end
 
-        private
-
-        def calculate_connector_bounds(connectors, _elements = []) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
+        # Calculate min/max bounds from connector endpoints
+        # @param connectors [Array] Array of connectors with geometry
+        # @return [Hash, nil] Bounds hash with min_x, max_x, min_y, max_y
+        def calculate_connector_bounds(connectors) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
           return nil if connectors.empty?
 
           valid = connectors.select do |c|
@@ -170,6 +171,8 @@ module Lutaml
 
           { min_x: xs.min, max_x: xs.max, min_y: ys.min, max_y: ys.max }
         end
+
+        private
 
         def connector_endpoints(conn) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
           src = conn[:source_element]

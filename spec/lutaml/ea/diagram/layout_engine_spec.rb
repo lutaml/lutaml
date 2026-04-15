@@ -583,10 +583,9 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
       end
     end
 
-    # calculate_connector_bounds is not defined
     describe "#calculate_connector_bounds" do
       it "returns nil when connectors array is empty" do
-        result = engine.send(:calculate_connector_bounds, [], [])
+        result = engine.calculate_connector_bounds([])
         expect(result).to be_nil
       end
 
@@ -595,7 +594,7 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
           { id: "c1", geometry: "SX=0;SY=0;EX=0;EY=0;" },
           # Missing source_element and target_element
         ]
-        result = engine.send(:calculate_connector_bounds, connectors, [])
+        result = engine.calculate_connector_bounds(connectors)
         expect(result).to be_nil
       end
 
@@ -612,7 +611,7 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
           },
         ]
 
-        result = engine.send(:calculate_connector_bounds, connectors, [])
+        result = engine.calculate_connector_bounds(connectors)
 
         expect(result).to be_a(Hash)
         expect(result).to have_key(:min_x)
