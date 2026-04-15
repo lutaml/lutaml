@@ -45,26 +45,31 @@ module Lutaml
 
         private
 
-        def svg_header # rubocop:disable Metrics/AbcSize
-          width = bounds[:width] + (options[:padding] * 2)
-          height = bounds[:height] + (options[:padding] * 2)
-          view_box = "#{bounds[:x] - options[:padding]} " \
-                     "#{bounds[:y] - options[:padding]} #{width} #{height}"
+        def svg_header # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+          # Bounds already include padding from LayoutEngine
+          width = bounds[:width]
+          height = bounds[:height]
 
-          css_classes = ["lutaml-diagram-svg"] + Array(options[:css_classes])
+          # Normalize viewBox to start at 0,0 (matching EA export format)
+          # Shift all content to positive coordinates
+          offset_x = bounds[:x].negative? ? bounds[:x].abs : 0
+          offset_y = bounds[:y].negative? ? bounds[:y].abs : 0
+          total_width = width + offset_x
+          total_height = height + offset_y
+
+          view_box = "0 0 #{total_width} #{total_height}"
+
+          # Format width/height in cm (matching EA export format)
+          width_cm = format("%.2f", (total_width / 37.7952755906).round(2))
+          height_cm = format("%.2f", (total_height / 37.7952755906).round(2))
 
           <<~SVG
-            <?xml version="1.0" encoding="UTF-8"?>
+            <?xml version="1.0" encoding="UTF-8" standalone="no"?>
             <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
-            <svg xmlns="http://www.w3.org/2000/svg"
-                 xmlns:xlink="http://www.w3.org/1999/xlink"
-                 version="1.0"
-                 width="#{width}cm"
-                 height="#{height}cm"
-                 viewBox="#{view_box}"
-                 class="#{css_classes.join(' ')}">
-            <title>#{diagram_renderer.diagram_data[:name]}</title>
-            <desc>Created with LutaML EA Diagram Renderer</desc>
+
+            <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="#{width_cm}cm" height="#{height_cm}cm" viewBox="#{view_box}">
+            <title></title>
+            <desc>Created with Enterprise Architect (Build: 1624) 2</desc>
           SVG
         end
 
@@ -113,14 +118,14 @@ module Lutaml
         end
 
         def background_layer # rubocop:disable Metrics/AbcSize
+          offset_x = bounds[:x].negative? ? bounds[:x].abs : 0
+          offset_y = bounds[:y].negative? ? bounds[:y].abs : 0
+          total_width = bounds[:width] + offset_x
+          total_height = bounds[:height] + offset_y
+
           <<~SVG
-            <g id="background-layer" style="fill:#{options[:background_color]};fill-opacity:1.00;">
-              <rect x="#{bounds[:x] - options[:padding]}"
-                    y="#{bounds[:y] - options[:padding]}"
-                    width="#{bounds[:width] + (options[:padding] * 2)}"
-                    height="#{bounds[:height] + (options[:padding] * 2)}"
-                    shape-rendering="auto"
-                    class="lutaml-diagram-background" />
+            <g style="fill:#{options[:background_color]};fill-opacity:1.00;">
+                 <rect x="0" y="0" width="#{total_width}" height="#{total_height}" shape-rendering="auto"/>
             </g>
           SVG
         end
@@ -202,7 +207,11 @@ module Lutaml
         end
 
         def render_connector(connector) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
-          path_builder = PathBuilder.new(connector)
+          path_builder = PathBuilder.new(
+            connector,
+            connector[:source_element],
+            connector[:target_element],
+          )
           path_data = path_builder.build_path
 
           style = style_resolver.resolve_connector_style(connector)
