@@ -285,8 +285,6 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
     let(:test_lur) { File.join(__dir__, "../../../examples/lur/test.lur") }
 
     it "shows package information in text format" do
-      skip "LUR file deserialization issue: Tried to load unspecified class: " \
-           "Symbol"
       output = StringIO.new
       original_stdout = $stdout
       $stdout = output
@@ -301,8 +299,6 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
     end
 
     it "shows package information in JSON format" do
-      skip "LUR file deserialization issue: Tried to load unspecified class: " \
-           "Symbol"
       output = StringIO.new
       original_stdout = $stdout
       $stdout = output
@@ -316,8 +312,6 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
     end
 
     it "shows package information in YAML format" do
-      skip "LUR file deserialization issue: Tried to load unspecified class: " \
-           "Symbol"
       output = StringIO.new
       original_stdout = $stdout
       $stdout = output
