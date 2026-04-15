@@ -462,7 +462,9 @@ RSpec.describe Lutaml::ModelTransformations::FormatRegistry do
 
       threads.each(&:join)
 
+      # rubocop:disable Performance/RedundantEqualityComparisonBlock
       expect(results.all? { |r| r == MockParser1 }).to be true
+      # rubocop:enable Performance/RedundantEqualityComparisonBlock
     end
   end
 

@@ -14,6 +14,6 @@ on:
 
 jobs:
   rake:
-    uses: metanorma/ci/.github/workflows/generic-rake.yml@main
+    uses: metanorma/ci/.github/workflows/graphviz-rake.yml@main
     secrets:
       pat_token: ${{ secrets.LUTAML_CI_PAT_TOKEN }}
