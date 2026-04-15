@@ -263,14 +263,13 @@ module Lutaml
 
           return if xmi_count == qea_count
 
-          if qea_count < xmi_count
-            differences << "#{name}: #{xmi_count} (XMI) vs " \
-                           "#{qea_count} (QEA) - QEA has fewer"
-          else
-            # QEA having more is acceptable
-            differences << "#{name}: #{xmi_count} (XMI) vs " \
-                           "#{qea_count} (QEA) - QEA has more (acceptable)"
-          end
+          suffix = if qea_count < xmi_count
+                     "QEA has fewer"
+                   else
+                     "QEA has more (acceptable)"
+                   end
+          differences << "#{name}: #{xmi_count} (XMI) vs " \
+                         "#{qea_count} (QEA) - #{suffix}"
         end
 
         # Check if cardinalities are equal
