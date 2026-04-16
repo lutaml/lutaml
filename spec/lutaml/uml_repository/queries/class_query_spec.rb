@@ -69,9 +69,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::ClassQuery do
       if package_path
         classes = query.in_package(package_path)
         expect(classes).to be_an(Array)
-        classes.each do |klass|
-          expect(klass).to be_a(Lutaml::Uml::Class)
-        end
+        expect(classes).to all(be_a(Lutaml::Uml::Class))
       end
     end
 

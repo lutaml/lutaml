@@ -26,10 +26,10 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
   # Helper to get permitted classes for YAML loading
   def yaml_permitted_classes
     uml_constants = Lutaml::Uml.constants
-    uml_classes = uml_constants.map do |const_name|
+    uml_classes = uml_constants.filter_map do |const_name|
       constant_value = Lutaml::Uml.const_get(const_name)
       constant_value if constant_value.is_a?(Class)
-    end.compact
+    end
     [Symbol, Time, Date, DateTime, uml_classes].flatten
   end
 

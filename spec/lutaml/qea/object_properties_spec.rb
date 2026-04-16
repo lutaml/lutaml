@@ -18,7 +18,7 @@ RSpec.describe "Object Properties Support" do
           "Value" => "false",
           "Notes" => "Values: true,false\nDefault: false\nDescription: " \
                      "Identifies the class as a collection",
-          "ea_guid" => "{26B33348-88EC-9d88-8810-4D66A3769CC7}"
+          "ea_guid" => "{26B33348-88EC-9d88-8810-4D66A3769CC7}",
         }
 
         property = described_class.from_db_row(row)
@@ -161,7 +161,7 @@ RSpec.describe "Object Properties Support" do
     it "attaches object properties to UML classes as tagged values" do
       # Find an object that has properties
       object_with_props = database.objects.all.find do |obj|
-        database.object_properties.any? { |p| p.object_id == obj.object_id }
+        database.object_properties.any? { |p| p.equal?(obj) }
       end
 
       skip "No objects with properties found" unless object_with_props
@@ -174,7 +174,7 @@ RSpec.describe "Object Properties Support" do
       expect(uml_class.tagged_values).not_to be_empty
 
       property_tag_names = database.object_properties
-        .select { |p| p.object_id == object_with_props.object_id }
+        .select { |p| p.equal?(object_with_props) }
         .map(&:property)
 
       uml_tag_names = uml_class.tagged_values.map(&:name)

@@ -130,10 +130,8 @@ RSpec.describe Lutaml::Qea::Factory::PackageTransformer do
           "WHERE Start_Object_ID = ? AND Connector_Type = 'Generalization'", 10
         ).and_return([])
 
-      allow(database).to receive(:object_constraints).and_return([])
-      allow(database).to receive(:object_properties).and_return([])
-      allow(database).to receive(:packages).and_return([])
-      allow(database).to receive(:xrefs).and_return(nil)
+      allow(database).to receive_messages(object_constraints: [],
+                                          object_properties: [], packages: [], xrefs: nil)
 
       result = transformer.transform_with_hierarchy(ea_pkg)
 
@@ -171,10 +169,8 @@ RSpec.describe Lutaml::Qea::Factory::PackageTransformer do
       allow(connection).to receive(:execute)
         .with("SELECT * FROM t_diagramlinks WHERE DiagramID = ?", 5)
         .and_return([])
-      allow(database).to receive(:object_constraints).and_return([])
-      allow(database).to receive(:object_properties).and_return([])
-      allow(database).to receive(:packages).and_return([])
-      allow(database).to receive(:xrefs).and_return(nil)
+      allow(database).to receive_messages(object_constraints: [],
+                                          object_properties: [], packages: [], xrefs: nil)
 
       result = transformer.transform_with_hierarchy(ea_pkg)
 

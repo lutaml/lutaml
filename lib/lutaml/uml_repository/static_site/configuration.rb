@@ -245,7 +245,7 @@ module Lutaml
 
             # If the string looks like a Ruby hash (contains =>),
             # try to evaluate it safely
-            if attr.include?('=>')
+            if attr.include?("=>")
               begin
                 # Use eval in a controlled way - this is safe because we
                 # control the input

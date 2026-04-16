@@ -173,11 +173,11 @@ RSpec.describe Lutaml::Qea::Repositories::ObjectRepository do
     it "returns count by type" do
       stats = repository.type_statistics
       expect(stats).to eq({
-        "Class" => 2,
-        "Interface" => 1,
-        "Enumeration" => 1,
-        "Component" => 1
-      })
+                            "Class" => 2,
+                            "Interface" => 1,
+                            "Enumeration" => 1,
+                            "Component" => 1,
+                          })
     end
   end
 
@@ -185,9 +185,9 @@ RSpec.describe Lutaml::Qea::Repositories::ObjectRepository do
     it "returns count by package" do
       stats = repository.package_statistics
       expect(stats).to eq({
-        10 => 3,
-        20 => 2
-      })
+                            10 => 3,
+                            20 => 2,
+                          })
     end
   end
 

@@ -72,8 +72,9 @@ module Lutaml
         # @param connectors [Array] Array of connectors
         # @return [Array] Elements with calculated positions
         def apply_layout(elements, connectors = []) # rubocop:disable Metrics/MethodLength
-          positioned_elements = elements.select { |e| e[:x] && e[:y] }
-          unpositioned_elements = elements.reject { |e| e[:x] && e[:y] }
+          positioned_elements, unpositioned_elements = elements.partition do |e|
+            e[:x] && e[:y]
+          end
 
           # Apply force-directed layout for unpositioned elements
           if unpositioned_elements.any?
@@ -153,7 +154,38 @@ module Lutaml
           end
         end
 
+        # Calculate min/max bounds from connector endpoints
+        # @param connectors [Array] Array of connectors with geometry
+        # @return [Hash, nil] Bounds hash with min_x, max_x, min_y, max_y
+        def calculate_connector_bounds(connectors) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
+          return nil if connectors.empty?
+
+          valid = connectors.select do |c|
+            c[:source_element] && c[:target_element] && c[:geometry]
+          end
+          return nil if valid.empty?
+
+          points = valid.flat_map { |conn| connector_endpoints(conn) }
+          xs = points.map(&:first)
+          ys = points.map(&:last)
+
+          { min_x: xs.min, max_x: xs.max, min_y: ys.min, max_y: ys.max }
+        end
+
         private
+
+        def connector_endpoints(conn) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
+          src = conn[:source_element]
+          tgt = conn[:target_element]
+          sx, sy, ex, ey = parse_geometry_offsets(conn[:geometry])
+
+          src_point = [(src[:x] || 0) + (src[:width] || 120) + sx,
+                       (src[:y] || 0) + ((src[:height] || 80) / 2) + sy]
+          tgt_point = [(tgt[:x] || 0) + ex,
+                       (tgt[:y] || 0) + ((tgt[:height] || 80) / 2) + ey]
+
+          [src_point, tgt_point]
+        end
 
         def element_width_for(element) # rubocop:disable Metrics/MethodLength
           if element[:width]

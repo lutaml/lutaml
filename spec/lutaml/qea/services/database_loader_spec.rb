@@ -256,9 +256,9 @@ RSpec.describe Lutaml::Qea::Services::DatabaseLoader do
       end
 
       it "raises error for unconfigured table" do
-        expect {
+        expect do
           test_loader.load_table("t_nonexistent")
-        }.to raise_error(ArgumentError, /not configured/)
+        end.to raise_error(ArgumentError, /not configured/)
       end
 
       it "raises error for disabled table" do
@@ -267,9 +267,9 @@ RSpec.describe Lutaml::Qea::Services::DatabaseLoader do
           .to receive(:table_config_for).with("t_object")
           .and_return(double(enabled: false))
 
-        expect {
+        expect do
           test_loader.load_table("t_object")
-        }.to raise_error(ArgumentError, /not enabled/)
+        end.to raise_error(ArgumentError, /not enabled/)
       end
     end
 
@@ -301,9 +301,9 @@ RSpec.describe Lutaml::Qea::Services::DatabaseLoader do
   describe "error handling" do
     it "raises error for non-existent file" do
       bad_loader = described_class.new("nonexistent.qea")
-      expect {
+      expect do
         bad_loader.load
-      }.to raise_error(Errno::ENOENT)
+      end.to raise_error(Errno::ENOENT)
     end
 
     it "warns when individual records fail to load" do

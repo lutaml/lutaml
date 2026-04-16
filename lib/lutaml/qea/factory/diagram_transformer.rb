@@ -91,10 +91,10 @@ module Lutaml
           query = "SELECT * FROM t_diagramobjects WHERE Diagram_ID = ?"
           rows = database.connection.execute(query, diagram_id)
 
-          rows.map do |row|
+          rows.filter_map do |row|
             ea_obj = Models::EaDiagramObject.from_db_row(row)
             transform_diagram_object(ea_obj)
-          end.compact
+          end
         end
 
         # Transform EA diagram object to UML diagram object
@@ -133,10 +133,10 @@ module Lutaml
           query = "SELECT * FROM t_diagramlinks WHERE DiagramID = ?"
           rows = database.connection.execute(query, diagram_id)
 
-          rows.map do |row|
+          rows.filter_map do |row|
             ea_link = Models::EaDiagramLink.from_db_row(row)
             transform_diagram_link(ea_link)
-          end.compact
+          end
         end
 
         # Transform EA diagram link to UML diagram link

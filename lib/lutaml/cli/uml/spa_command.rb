@@ -168,7 +168,7 @@ module Lutaml
             output: output_path,
             title: options[:title] || "UML Model Browser",
             minify: options[:minify] || false,
-            theme: options[:theme] || "light"
+            theme: options[:theme] || "light",
           }
 
           Lutaml::UmlRepository::StaticSite.generate(repository,

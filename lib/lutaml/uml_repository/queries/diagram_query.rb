@@ -52,9 +52,9 @@ module Lutaml
         # @example
         #   diagram = query.find_by_name("Building Class Diagram")
         def find_by_name(diagram_name)
-          indexes[:diagram_index].values.map do |diagrams|
+          indexes[:diagram_index].values.filter_map do |diagrams|
             diagrams.select { |diagram| diagram.name == diagram_name }
-          end.compact.flatten.first
+          end.flatten.first
         end
 
         # Find diagrams containing a specific package by its XMI ID.
@@ -62,9 +62,9 @@ module Lutaml
         # @param package_id [String] The XMI ID of the package
         # @return [Array<Diagram>] Array of diagram objects
         def find_by_package(package_id)
-          indexes[:diagram_index].values.map do |diagrams|
+          indexes[:diagram_index].values.filter_map do |diagrams|
             diagrams.select { |diagram| diagram.package_id == package_id }
-          end.compact.flatten
+          end.flatten
         end
 
         # Find diagrams containing a specific class by its XMI ID.

@@ -155,7 +155,6 @@ RSpec.describe Lutaml::Qea::Validation::AttributeValidator do
               classifier: 226,
             ),
           ]
-
         end
 
         it "matches correctly with .to_s conversion" do

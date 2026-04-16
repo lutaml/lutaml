@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "expressir"
 require "expressir/express/cache"
 require_relative "xmi"
 require_relative "xml"
@@ -21,7 +22,7 @@ module Lutaml
     end
 
     def initialize(file_list, input_type)
-      @parse_type = input_type || File.extname(file_list.first.path)[1..-1]
+      @parse_type = input_type || File.extname(file_list.first.path)[1..]
       @file_list = file_list
     end
 

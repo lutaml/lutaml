@@ -253,7 +253,7 @@ RSpec.describe Lutaml::UmlRepository::QueryDSL::QueryBuilder do
         q.classes.where(stereotype: "featureType")
       end
 
-      expect(builder).to be_a(Lutaml::UmlRepository::QueryDSL::QueryBuilder)
+      expect(builder).to be_a(described_class)
 
       results = builder.execute
       expect(results.map(&:name)).to include("Building", "Vehicle")

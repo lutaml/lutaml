@@ -147,14 +147,14 @@ module Lutaml
           assoc_transformer = AssociationTransformer.new(database)
           normalized_xmi_id = normalize_guid_to_xmi_format(object_guid, "EAID")
 
-          rows.map do |row|
+          rows.filter_map do |row|
             ea_connector = Models::EaConnector.from_db_row(row)
             assoc = assoc_transformer.transform(ea_connector)
 
             next unless assoc && assoc.owner_end_xmi_id == normalized_xmi_id
 
             assoc
-          end.compact
+          end
         end
       end
     end

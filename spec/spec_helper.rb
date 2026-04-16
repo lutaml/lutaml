@@ -26,6 +26,6 @@ def by_name(entries, name)
   entries.detect { |n| n.name == name }
 end
 
-Dir[File.expand_path("./support/**/*.rb", __dir__)].sort.each do |f|
+Dir[File.expand_path("./support/**/*.rb", __dir__)].each do |f|
   require f
 end

@@ -19,13 +19,11 @@ RSpec.describe "Tagged Values Integration" do
     end
 
     # Log for debugging
-    puts "\nAssociations with tagged values: #{assocs_with_tags.size}"
+
     if assocs_with_tags.any?
       first_assoc = assocs_with_tags.first
-      puts "First association: #{first_assoc.name || first_assoc.xmi_id}"
-      puts "Tagged values count: #{first_assoc.tagged_values.size}"
+
       first_assoc.tagged_values.first(3).each do |tag|
-        puts "  - #{tag.name}: #{tag.value}"
       end
     end
 

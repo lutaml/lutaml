@@ -5,8 +5,8 @@ RSpec.describe Lutaml::Xml::Parsers::Xml do
   describe ".parse" do
     subject(:parse) { described_class.parse(xml_file_path) }
 
-    before(:each) do
-      Lutaml::Xml::Parsers::Xml.load_schema(schema, root_name)
+    before do
+      described_class.load_schema(schema, root_name)
     end
 
     let(:schema) do

@@ -106,17 +106,15 @@ module Lutaml
           return nil unless @config.templates
 
           templates_hash = case @config.templates
-                          when Hash
-                            @config.templates
-                          when String
-                            begin
-                              YAML.safe_load(@config.templates)
-                            rescue StandardError
-                              nil
-                            end
-                          else
-                            nil
-                          end
+                           when Hash
+                             @config.templates
+                           when String
+                             begin
+                               YAML.safe_load(@config.templates)
+                             rescue StandardError
+                               nil
+                             end
+                           end
 
           templates_hash&.dig("base_path")
         end

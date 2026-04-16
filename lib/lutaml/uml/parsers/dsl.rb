@@ -128,7 +128,7 @@ module Lutaml
         end
         rule(:attribute_keyword?) { attribute_keyword.maybe }
         rule(:attribute_type) do
-          (str(":") >>
+          str(":") >>
             spaces? >>
             attribute_keyword? >>
             spaces? >>
@@ -136,7 +136,6 @@ module Lutaml
             match['a-zA-Z0-9_\- \/\+'].repeat(1).as(:type) >>
             match['"\''].maybe >>
             spaces?
-          )
         end
         rule(:attribute_type?) do
           attribute_type.maybe

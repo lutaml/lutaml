@@ -73,7 +73,7 @@ RSpec.describe "QEA Full Parsing Integration", :integration do
         next if document.packages.empty?
 
         # Check if any package has children
-        has_nested = document.packages.any? do |pkg|
+        document.packages.any? do |pkg|
           pkg.packages && !pkg.packages.empty?
         end
 
@@ -135,12 +135,8 @@ RSpec.describe "QEA Full Parsing Integration", :integration do
 
     context "Data integrity" do
       it "has unique xmi_ids for all elements" do
-        all_xmi_ids = []
-
         # Collect all xmi_ids
-        document.packages.each do |pkg|
-          all_xmi_ids << pkg.xmi_id
-        end
+        all_xmi_ids = document.packages.map(&:xmi_id)
 
         document.classes.each do |klass|
           all_xmi_ids << klass.xmi_id
@@ -168,7 +164,7 @@ RSpec.describe "QEA Full Parsing Integration", :integration do
           pkg.classes.map(&:xmi_id)
         end.compact
 
-        document_class_ids = document.classes.map(&:xmi_id).compact
+        document_class_ids = document.classes.filter_map(&:xmi_id)
 
         # Package classes should be subset of document classes
         package_class_ids.each do |id|

@@ -23,7 +23,7 @@ module Lutaml
                                                            "EAID")
 
             # Map classifier (the class this is an instance of)
-            if ea_object.classifier && ea_object.classifier > 0
+            if ea_object.classifier&.positive?
               classifier_obj = find_classifier(ea_object.classifier)
               if classifier_obj
                 instance.classifier = classifier_obj.name

@@ -75,7 +75,7 @@ module Lutaml
         # Check if this xref is for connector properties
         # @return [Boolean]
         def connector_property?
-          xref_type&.include?("connector") && xref_type&.include?("property")
+          xref_type&.include?("connector") && xref_type.include?("property")
         end
 
         # Check if this xref is for diagram properties

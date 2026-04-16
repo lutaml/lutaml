@@ -67,7 +67,7 @@ RSpec.describe Lutaml::Ea::Diagram::PathBuilder do
         expect(path).to end_with("370,270")
       end
 
-      xit "includes waypoints in path when present" do
+      it "includes waypoints in path when present" do
         connector[:geometry] = "SX=0;SY=0;EX=0;EY=0;EDGE=1;EDGE1=250,125;"
 
         path = builder.build_path
@@ -78,7 +78,7 @@ RSpec.describe Lutaml::Ea::Diagram::PathBuilder do
         expect(path).to include("250,125")
       end
 
-      xit "handles multiple waypoints" do
+      it "handles multiple waypoints" do
         connector[:geometry] =
           "SX=0;SY=0;EX=0;EY=0;EDGE=1;EDGE1=200,100;" \
           "EDGE2=300,150;EDGE3=400,200;"

@@ -155,11 +155,11 @@ module Lutaml
           ids = []
 
           # Collect from top-level elements
-          ids.concat(@document.packages.map(&:xmi_id).compact)
-          ids.concat(@document.classes.map(&:xmi_id).compact)
-          ids.concat(@document.enums.map(&:xmi_id).compact)
-          ids.concat(@document.data_types.map(&:xmi_id).compact)
-          ids.concat(@document.instances.map(&:xmi_id).compact)
+          ids.concat(@document.packages.filter_map(&:xmi_id))
+          ids.concat(@document.classes.filter_map(&:xmi_id))
+          ids.concat(@document.enums.filter_map(&:xmi_id))
+          ids.concat(@document.data_types.filter_map(&:xmi_id))
+          ids.concat(@document.instances.filter_map(&:xmi_id))
 
           # Recursively collect from packages (where most classes actually are)
           @document.packages.each do |package|
@@ -176,13 +176,13 @@ module Lutaml
           ids = []
 
           # Collect from package's elements
-          ids.concat(package.classes.map(&:xmi_id).compact) if package.classes
-          ids.concat(package.enums.map(&:xmi_id).compact) if package.enums
+          ids.concat(package.classes.filter_map(&:xmi_id)) if package.classes
+          ids.concat(package.enums.filter_map(&:xmi_id)) if package.enums
           if package.data_types
-            ids.concat(package.data_types.map(&:xmi_id).compact)
+            ids.concat(package.data_types.filter_map(&:xmi_id))
           end
           if package.instances
-            ids.concat(package.instances.map(&:xmi_id).compact)
+            ids.concat(package.instances.filter_map(&:xmi_id))
           end
 
           # Recursively collect from child packages

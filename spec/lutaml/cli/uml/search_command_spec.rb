@@ -32,15 +32,15 @@ RSpec.describe Lutaml::Cli::Uml::SearchCommand do
       let(:options) { { format: "table", type: ["class"], in: ["name"] } }
 
       it "performs search" do
-        expect {
+        expect do
           command.run(test_lur.path, "Building")
-        }.not_to output(/ERROR/).to_stdout
+        end.not_to output(/ERROR/).to_stdout
       end
 
       it "shows results or no results message" do
-        expect {
+        expect do
           capture(:stdout) { command.run(test_lur.path, "NonExistent12345") }
-        }.not_to raise_error
+        end.not_to raise_error
       end
     end
 
@@ -48,9 +48,9 @@ RSpec.describe Lutaml::Cli::Uml::SearchCommand do
       let(:options) { { format: "table", type: ["class"], in: ["name"] } }
 
       it "treats query as regex" do
-        expect {
+        expect do
           command.run(test_lur.path, "^Building")
-        }.not_to output(/ERROR/).to_stdout
+        end.not_to output(/ERROR/).to_stdout
       end
     end
 
@@ -58,20 +58,19 @@ RSpec.describe Lutaml::Cli::Uml::SearchCommand do
       let(:options) { { format: "json", type: ["class"], in: ["name"] } }
 
       it "outputs JSON format" do
-        expect {
+        expect do
           command.run(test_lur.path, "Class A")
-        }.to output(/{|w+/).to_stdout
+        end.to output(/{|w+/).to_stdout
       end
     end
   end
 
   def capture(stream)
-    old_stream = stream == :stdout ? $stdout : $stderr
     stream_var = stream == :stdout ? :$stdout : :$stderr
+    old_stream = eval(stream_var.to_s)
     eval("#{stream_var} = StringIO.new")
     yield
-    eval("#{stream_var}.string")
   ensure
-    eval("#{stream_var} = old_stream")
+    eval("#{stream_var} = old_stream") if defined?(old_stream) && old_stream
   end
 end

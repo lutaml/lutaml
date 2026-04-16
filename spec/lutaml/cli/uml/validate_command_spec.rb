@@ -54,7 +54,7 @@ RSpec.describe "CLI UML Validate Command" do
       document = result[:document]
 
       # UML packages should be Lutaml::Uml::Package instances
-      if document.packages && document.packages.any?
+      if document.packages&.any?
         expect(document.packages.first).to be_a(Lutaml::Uml::Package)
         expect(document.packages.first).to respond_to(:name)
         expect(document.packages.first).to respond_to(:classes)
@@ -81,11 +81,11 @@ RSpec.describe "CLI UML Validate Command" do
       expect(context).to have_key(:db_objects)
 
       # They should be different types
-      if context[:db_packages] && context[:db_packages].any?
+      if context[:db_packages]&.any?
         expect(context[:db_packages].first.class.name).to eq("Lutaml::Qea::Models::EaPackage")
       end
 
-      if context[:packages] && context[:packages].any?
+      if context[:packages]&.any?
         expect(context[:packages].first).to be_a(Lutaml::Uml::Package)
       end
     end

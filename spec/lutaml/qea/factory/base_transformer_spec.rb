@@ -47,19 +47,19 @@ RSpec.describe Lutaml::Qea::Factory::BaseTransformer do
       items = [1, 2, 3]
       result = concrete_transformer.transform_collection(items)
       expect(result).to eq([
-        { transformed: 1 },
-        { transformed: 2 },
-        { transformed: 3 },
-      ])
+                             { transformed: 1 },
+                             { transformed: 2 },
+                             { transformed: 3 },
+                           ])
     end
 
     it "filters out nil results" do
       items = [1, nil, 3]
       result = concrete_transformer.transform_collection(items)
       expect(result).to eq([
-        { transformed: 1 },
-        { transformed: 3 },
-      ])
+                             { transformed: 1 },
+                             { transformed: 3 },
+                           ])
     end
   end
 

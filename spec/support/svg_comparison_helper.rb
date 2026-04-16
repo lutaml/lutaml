@@ -40,6 +40,7 @@ module SvgComparisonHelper
     return "" if svg_string.nil? || svg_string.empty?
 
     doc = Nokogiri::XML(svg_string)
+    doc.remove_namespaces!
 
     # Remove EA-specific metadata that varies between exports
     EA_METADATA_XPATHS.each do |xpath|
@@ -139,6 +140,7 @@ module SvgComparisonHelper
   # @return [Hash] Coordinates grouped by element type
   def extract_coordinates(svg_string) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
     doc = Nokogiri::XML(svg_string)
+    doc.remove_namespaces!
     coordinates = Hash.new { |h, k| h[k] = [] }
 
     # Extract from elements with x/y attributes

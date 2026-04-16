@@ -144,7 +144,7 @@ module Lutaml
           output_dir = merged_opts[:output_dir] || "."
 
           # Create output directory if needed
-          FileUtils.mkdir_p(output_dir) unless Dir.exist?(output_dir)
+          FileUtils.mkdir_p(output_dir)
 
           results = diagram_ids.map do |diagram_id|
             output_path = File.join(output_dir,
@@ -214,12 +214,17 @@ module Lutaml
 
         # Find diagram by ID or name
         def find_diagram(repository, diagram_id)
-          # Try exact match by XMI ID first
+          # Try exact match by name first
           diagram = repository.find_diagram(diagram_id)
           return diagram if diagram
 
-          # Try partial name match (case-insensitive)
           all_diagrams = repository.all_diagrams
+
+          # Try exact match by XMI ID
+          diagram = all_diagrams.find { |d| d.xmi_id == diagram_id }
+          return diagram if diagram
+
+          # Try partial name match (case-insensitive)
           all_diagrams.find do |d|
             d.name.downcase.include?(diagram_id.downcase)
           end
@@ -227,20 +232,104 @@ module Lutaml
 
         # Convert diagram to rendering format
         def convert_to_rendering_format(diagram, repository)
-          elements = build_elements(diagram, repository)
-          connectors = build_connectors(diagram, repository)
+          element_map = build_element_map(repository)
+          elements = build_elements(diagram, element_map)
+          connectors = build_connectors(diagram, repository, element_map)
+
+          # Normalize coordinates to EA SVG format (y-flipped, origin-based)
+          normalized = normalize_coordinates(elements, connectors)
 
           {
             name: diagram.name,
-            elements: elements,
-            connectors: connectors,
+            elements: normalized[:elements],
+            connectors: normalized[:connectors],
           }
         end
 
+        # Normalize EA coordinates to SVG coordinate system
+        # EA uses y-up convention; SVG uses y-down.
+        # Also shifts all coordinates so minimum x,y is at padding offset.
+        def normalize_coordinates(elements, connectors) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+          return { elements: elements, connectors: connectors } if elements.empty?
+
+          padding = 10
+
+          # Find bounding box in EA coordinate space
+          min_left = elements.map { |e| e[:x] }.min
+          max_top = elements.map { |e| e[:y] }.max
+
+          # In EA: y increases upward, top > bottom, height = top - bottom
+          # For SVG: flip y so y increases downward
+          # After negation, the element with max EA y maps to the smallest SVG y.
+          # Shift so that smallest SVG y maps to padding.
+          x_offset = min_left - padding
+          y_offset = -max_top - padding
+
+          normalized_elements = elements.map do |e|
+            e.merge(
+              x: e[:x] - x_offset,
+              y: -e[:y] - y_offset,
+            )
+          end
+
+          normalized_connectors = connectors.map do |c|
+            c = c.dup
+            if c[:source_element]
+              src = c[:source_element].dup
+              src[:x] = src[:x] - x_offset
+              src[:y] = -src[:y] - y_offset
+              c[:source_element] = src
+            end
+            if c[:target_element]
+              tgt = c[:target_element].dup
+              tgt[:x] = tgt[:x] - x_offset
+              tgt[:y] = -tgt[:y] - y_offset
+              c[:target_element] = tgt
+            end
+            c
+          end
+
+          { elements: normalized_elements, connectors: normalized_connectors }
+        end
+
+        # Build comprehensive element map keyed by XMI ID
+        # Handles classes, packages, instances, and EA prefix normalization
+        def build_element_map(repository) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+          map = {}
+          repository.classes_index.each { |c| map[c.xmi_id] = c }
+          repository.packages_index.each { |p| map[p.xmi_id] = p }
+
+          # Collect instances from packages recursively
+          document = repository.document
+          document.packages&.each { |pkg| collect_instances(pkg, map) }
+
+          # Add EA prefix-normalized entries (EAID_ <-> EAPK_ etc.)
+          prefix_normalized = {}
+          map.each do |xmi_id, element|
+            guid = ea_guid(xmi_id)
+            prefix_normalized["EAID_#{guid}"] = element
+            prefix_normalized["EAPK_#{guid}"] = element
+          end
+          map.merge!(prefix_normalized)
+
+          map
+        end
+
+        # Extract GUID portion from EA XMI ID (strip EAID_, EAPK_ prefix)
+        def ea_guid(xmi_id)
+          xmi_id.sub(/\A(EAID|EAPK)_/, "")
+        end
+
+        # Recursively collect instances from packages
+        def collect_instances(pkg, map)
+          pkg.instances&.each { |i| map[i.xmi_id] = i }
+          pkg.packages&.each { |p| collect_instances(p, map) }
+        end
+
         # Build element data from diagram objects
-        def build_elements(diagram, repository) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
-          diagram.diagram_objects.map do |obj|
-            uml_element = find_element(obj.object_xmi_id, repository)
+        def build_elements(diagram, element_map) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+          diagram.diagram_objects.filter_map do |obj|
+            uml_element = element_map[obj.object_xmi_id]
             next unless uml_element
 
             element_data = {
@@ -249,13 +338,13 @@ module Lutaml
               name: uml_element.name,
               x: obj.left || 0,
               y: obj.top || 0,
-              width: (obj.right - obj.left) || 120,
-              height: (obj.bottom - obj.top) || 80,
+              width: ((obj.right || 0) - (obj.left || 0)).abs.nonzero? || 120,
+              height: ((obj.bottom || 0) - (obj.top || 0)).abs.nonzero? || 80,
               style: obj.style,
             }
 
             # Add stereotype
-            if uml_element.respond_to?(:stereotype) && uml_element.stereotype
+            if uml_element.stereotype
               element_data[:stereotype] =
                 array_value(uml_element.stereotype).first
             end
@@ -267,22 +356,24 @@ module Lutaml
             end
 
             element_data
-          end.compact
+          end
         end
 
         # Build connector data from diagram links
-        def build_connectors(diagram, repository) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
-          diagram.diagram_links.map do |link| # rubocop:disable Metrics/BlockLength
+        def build_connectors(diagram, repository, element_map) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+          diagram.diagram_links.filter_map do |link| # rubocop:disable Metrics/BlockLength
             connector = find_connector(link.connector_xmi_id, repository)
             next unless connector
 
-            if connector.respond_to?(:source) && connector.source
-              source_obj = find_diagram_object(connector.source.xmi_id,
-                                               diagram)
+            if connector.owner_end_xmi_id
+              source_obj = find_diagram_object_by_element(
+                connector.owner_end_xmi_id, diagram, element_map
+              )
             end
-            if connector.respond_to?(:target) && connector.target
-              target_obj = find_diagram_object(connector.target.xmi_id,
-                                               diagram)
+            if connector.member_end_xmi_id
+              target_obj = find_diagram_object_by_element(
+                connector.member_end_xmi_id, diagram, element_map
+              )
             end
 
             connector_data = {
@@ -297,33 +388,23 @@ module Lutaml
 
             # Add source/target positions
             if source_obj
-              connector_data[:source_element] = {
-                left: source_obj.left,
-                top: source_obj.top,
-                right: source_obj.right,
-                bottom: source_obj.bottom,
-              }
+              connector_data[:source_element] = diagram_object_bounds(source_obj)
             end
 
             if target_obj
-              connector_data[:target_element] = {
-                left: target_obj.left,
-                top: target_obj.top,
-                right: target_obj.right,
-                bottom: target_obj.bottom,
-              }
+              connector_data[:target_element] = diagram_object_bounds(target_obj)
             end
 
             # Add role and multiplicity
             add_connector_metadata(connector_data, connector)
 
             connector_data
-          end.compact
+          end
         end
 
         # Add class attributes and operations
         def add_class_data(element_data, uml_element) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
-          if uml_element.respond_to?(:attributes) && uml_element.attributes
+          if uml_element.attributes
             element_data[:attributes] = uml_element.attributes.map do |attr|
               {
                 name: attr.name,
@@ -333,7 +414,7 @@ module Lutaml
             end
           end
 
-          if uml_element.respond_to?(:operations) && uml_element.operations
+          if uml_element.operations
             element_data[:operations] = uml_element.operations.map do |op|
               {
                 name: op.name,
@@ -349,39 +430,62 @@ module Lutaml
 
         # Add connector role and multiplicity information
         def add_connector_metadata(connector_data, connector) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength
-          if connector.respond_to?(:owner_end_attribute_name)
+          if connector.owner_end_attribute_name
             connector_data[:source_role] =
               connector.owner_end_attribute_name
           end
-          if connector.respond_to?(:member_end_attribute_name)
+          if connector.member_end_attribute_name
             connector_data[:target_role] =
               connector.member_end_attribute_name
           end
 
-          if connector.respond_to?(:owner_end_cardinality) &&
-              connector.owner_end_cardinality
+          if connector.owner_end_cardinality
             connector_data[:source_multiplicity] =
               format_cardinality(connector.owner_end_cardinality)
           end
 
-          if connector.respond_to?(:member_end_cardinality) &&
-              connector.member_end_cardinality
+          if connector.member_end_cardinality
             connector_data[:target_multiplicity] =
               format_cardinality(connector.member_end_cardinality)
           end
         end
 
         # Find UML element by XMI ID
-        def find_element(xmi_id, repository) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
+        def find_element(xmi_id, repository)
           repository.classes_index.find { |c| c.xmi_id == xmi_id } ||
-            repository.packages_index.find { |p| p.xmi_id == xmi_id } ||
-            repository.data_types_index.find { |d| d.xmi_id == xmi_id } ||
-            repository.enums_index.find { |e| e.xmi_id == xmi_id }
+            repository.packages_index.find { |p| p.xmi_id == xmi_id }
         end
 
         # Find connector by XMI ID
         def find_connector(xmi_id, repository)
           repository.associations_index.find { |a| a.xmi_id == xmi_id }
+        end
+
+        # Find diagram object for element, with EA prefix normalization
+        def find_diagram_object_by_element(element_xmi_id, diagram, element_map)
+          # The element_map has normalized keys, find the original XMI ID
+          element = element_map[element_xmi_id]
+          return nil unless element
+
+          # Find the diagram object that references this element
+          diagram.diagram_objects.find do |obj|
+            obj.object_xmi_id == element_xmi_id ||
+              element_map[obj.object_xmi_id] == element
+          end
+        end
+
+        # Convert diagram object bounds to x/y/width/height format
+        def diagram_object_bounds(obj)
+          left = obj.left || 0
+          top = obj.top || 0
+          right = obj.right || (left + 120)
+          bottom = obj.bottom || (top + 80)
+          {
+            x: left,
+            y: top,
+            width: (right - left).abs,
+            height: (bottom - top).abs,
+          }
         end
 
         # Find diagram object for element
@@ -391,13 +495,14 @@ module Lutaml
           end
         end
 
-        # Determine element type from UML class
+        # Determine element type from UML element
         def element_type(uml_element)
           case uml_element
           when Lutaml::Uml::Class then "class"
           when Lutaml::Uml::Package then "package"
           when Lutaml::Uml::DataType then "datatype"
           when Lutaml::Uml::Enum then "enumeration"
+          when Lutaml::Uml::Instance then "instance"
           else "unknown"
           end
         end
@@ -441,7 +546,7 @@ module Lutaml
 
         # Format cardinality for display
         def format_cardinality(cardinality)
-          cardinality.respond_to?(:to_s) ? cardinality.to_s : ""
+          cardinality.to_s
         end
 
         # Convert value to array

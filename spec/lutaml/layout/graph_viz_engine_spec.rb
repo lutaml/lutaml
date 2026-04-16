@@ -7,6 +7,7 @@ RSpec.describe Lutaml::Layout::GraphVizEngine do
     subject(:render) do
       described_class.new(input: input).render(type)
     end
+
     let(:input) do
       File.read(fixtures_path("generated_dot/AddressClassProfile.dot"))
     end

@@ -7,51 +7,46 @@ require_relative "../../../../lib/lutaml/uml_repository/" \
 RSpec.describe Lutaml::UmlRepository::StaticSite::SearchIndexBuilder do
   let(:repository) do
     double("UmlRepository",
-      packages_index: [test_package],
-      classes_index: [test_class],
-      associations_index: [test_association],
-    )
+           packages_index: [test_package],
+           classes_index: [test_class],
+           associations_index: [test_association])
   end
 
   let(:test_package) do
     double("Package",
-      xmi_id: "pkg_001",
-      name: "TestPackage",
-      definition: "Test package for search indexing",
-      stereotypes: ["ApplicationSchema"],
-      owner: nil,
-    )
+           xmi_id: "pkg_001",
+           name: "TestPackage",
+           definition: "Test package for search indexing",
+           stereotypes: ["ApplicationSchema"],
+           owner: nil)
   end
 
   let(:test_class) do
     double("Class",
-      xmi_id: "cls_001",
-      name: "Building",
-      definition: "A building class in urban planning",
-      stereotypes: ["FeatureType"],
-      owner: test_package,
-      attributes: [test_attribute],
-      operations: [],
-      class: Lutaml::Uml::TopElement,
-    )
+           xmi_id: "cls_001",
+           name: "Building",
+           definition: "A building class in urban planning",
+           stereotypes: ["FeatureType"],
+           owner: test_package,
+           attributes: [test_attribute],
+           operations: [],
+           class: Lutaml::Uml::TopElement)
   end
 
   let(:test_attribute) do
     double("Attribute",
-      name: "buildingID",
-      type: "String",
-      definition: "Unique identifier for building",
-      stereotypes: [],
-    )
+           name: "buildingID",
+           type: "String",
+           definition: "Unique identifier for building",
+           stereotypes: [])
   end
 
   let(:test_association) do
     double("Association",
-      xmi_id: "assoc_001",
-      name: "contains",
-      owner_end: "Building",
-      member_end: "BuildingPart",
-    )
+           xmi_id: "assoc_001",
+           name: "contains",
+           owner_end: "Building",
+           member_end: "BuildingPart")
   end
 
   let(:builder) { described_class.new(repository) }
@@ -221,21 +216,19 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::SearchIndexBuilder do
   describe "error handling" do
     it "handles missing attributes gracefully" do
       class_without_attrs = double("Class",
-        xmi_id: "cls_002",
-        name: "NoAttrs",
-        definition: nil,
-        stereotypes: nil,
-        owner: test_package,
-        attributes: nil,
-        operations: nil,
-        class: Lutaml::Uml::TopElement,
-      )
+                                   xmi_id: "cls_002",
+                                   name: "NoAttrs",
+                                   definition: nil,
+                                   stereotypes: nil,
+                                   owner: test_package,
+                                   attributes: nil,
+                                   operations: nil,
+                                   class: Lutaml::Uml::TopElement)
 
       repo_with_minimal = double("Repository",
-        packages_index: [],
-        classes_index: [class_without_attrs],
-        associations_index: [],
-      )
+                                 packages_index: [],
+                                 classes_index: [class_without_attrs],
+                                 associations_index: [])
 
       minimal_builder = described_class.new(repo_with_minimal)
 
@@ -252,22 +245,20 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::SearchIndexBuilder do
       # Create a larger repository
       large_classes = Array.new(100) do |i|
         double("Class#{i}",
-          xmi_id: "cls_#{i}",
-          name: "Class#{i}",
-          definition: "Description #{i}",
-          stereotypes: [],
-          owner: test_package,
-          attributes: [],
-          operations: nil,
-          class: Lutaml::Uml::TopElement,
-        )
+               xmi_id: "cls_#{i}",
+               name: "Class#{i}",
+               definition: "Description #{i}",
+               stereotypes: [],
+               owner: test_package,
+               attributes: [],
+               operations: nil,
+               class: Lutaml::Uml::TopElement)
       end
 
       large_repo = double("LargeRepository",
-        packages_index: [test_package],
-        classes_index: large_classes,
-        associations_index: [],
-      )
+                          packages_index: [test_package],
+                          classes_index: large_classes,
+                          associations_index: [])
 
       large_builder = described_class.new(large_repo)
 

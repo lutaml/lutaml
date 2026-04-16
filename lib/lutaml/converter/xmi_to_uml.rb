@@ -148,9 +148,9 @@ module Lutaml
           attr.type?("uml:Property")
         end
 
-        all_props.map do |oa|
+        all_props.filter_map do |oa|
           create_uml_attribute(oa)
-        end.compact
+        end
       end
 
       def create_uml_attribute(owned_attr) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
@@ -178,6 +178,8 @@ module Lutaml
       end
 
       def create_uml_cardinality(hash)
+        return nil unless hash
+
         ::Lutaml::Uml::Cardinality.new.tap do |cardinality|
           cardinality.min = hash[:min]
           cardinality.max = hash[:max]
@@ -347,7 +349,7 @@ module Lutaml
           links << link.association if link.association.any?
         end
 
-        links.flatten.compact.map do |assoc| # rubocop:disable Metrics/BlockLength
+        links.flatten.compact.filter_map do |assoc| # rubocop:disable Metrics/BlockLength
           link_member = assoc.start == xmi_id ? "end" : "start"
           link_owner = link_member == "start" ? "end" : "start"
 
@@ -384,7 +386,7 @@ module Lutaml
               association.definition = definition
             end
           end
-        end.compact
+        end
       end
 
       # Find the ownedAttribute name that references this association
@@ -403,7 +405,7 @@ module Lutaml
       def create_uml_operations(klass) # rubocop:disable Metrics/MethodLength,Metrics/AbcSize
         return [] if klass.owned_operation.nil?
 
-        klass.owned_operation.map do |operation|
+        klass.owned_operation.filter_map do |operation|
           uml_type = operation.uml_type.first
           uml_type_idref = uml_type.idref if uml_type
 
@@ -414,7 +416,7 @@ module Lutaml
               op.definition = lookup_attribute_documentation(operation.id)
             end
           end
-        end.compact
+        end
       end
 
       def create_uml_constraints(klass_id) # rubocop:disable Metrics/MethodLength,Metrics/AbcSize

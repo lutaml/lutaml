@@ -59,7 +59,7 @@ module Lutaml
 
           # Remaining parts contain additional metadata
           if parts.length > 4
-            result[:metadata] = parts[4..-1].join(",")
+            result[:metadata] = parts[4..].join(",")
           end
 
           result

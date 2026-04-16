@@ -176,9 +176,9 @@ RSpec.describe Lutaml::Cli::InteractiveShell do
       before do
         allow(mock_repo).to receive(:list_packages)
           .and_return([
-            double("Package", name: "Package1"),
-            double("Package", name: "Package2"),
-          ])
+                        double("Package", name: "Package1"),
+                        double("Package", name: "Package2"),
+                      ])
       end
 
       it "lists packages in current path" do

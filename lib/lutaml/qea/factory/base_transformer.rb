@@ -29,7 +29,7 @@ module Lutaml
         def transform_collection(collection)
           return [] if collection.nil? || collection.empty?
 
-          collection.map { |item| transform(item) }.compact
+          collection.filter_map { |item| transform(item) }
         end
 
         protected
@@ -88,7 +88,7 @@ module Lutaml
           return nil if ea_guid.nil? || ea_guid.empty?
 
           # Remove braces and replace hyphens with underscores
-          clean = ea_guid.tr('{}', '').tr('-', '_')
+          clean = ea_guid.tr("{}", "").tr("-", "_")
           "#{prefix}_#{clean}"
         end
 

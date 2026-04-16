@@ -46,9 +46,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::PackageQuery do
         root_path = Lutaml::Uml::PackagePath.new("ModelRoot")
         children = query.list(root_path, recursive: false)
         expect(children).to be_an(Array)
-        children.each do |pkg|
-          expect(pkg).to be_a(Lutaml::Uml::Package)
-        end
+        expect(children).to all(be_a(Lutaml::Uml::Package))
       end
 
       it "does not include nested children" do
@@ -68,9 +66,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::PackageQuery do
         root_path = Lutaml::Uml::PackagePath.new("ModelRoot")
         descendants = query.list(root_path, recursive: true)
         expect(descendants).to be_an(Array)
-        descendants.each do |pkg|
-          expect(pkg).to be_a(Lutaml::Uml::Package)
-        end
+        expect(descendants).to all(be_a(Lutaml::Uml::Package))
       end
 
       it "includes nested descendants" do

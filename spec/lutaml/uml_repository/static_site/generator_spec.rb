@@ -9,35 +9,32 @@ require "tempfile"
 RSpec.describe Lutaml::UmlRepository::StaticSite::Generator do
   let(:repository) do
     double("UmlRepository",
-      packages_index: [test_package],
-      classes_index: [test_class],
-      associations_index: [],
-    )
+           packages_index: [test_package],
+           classes_index: [test_class],
+           associations_index: [])
   end
 
   let(:test_package) do
     double("Package",
-      xmi_id: "pkg_001",
-      name: "TestPackage",
-      definition: "Test package",
-      stereotypes: [],
-      owner: nil,
-      packages: [],
-    )
+           xmi_id: "pkg_001",
+           name: "TestPackage",
+           definition: "Test package",
+           stereotypes: [],
+           owner: nil,
+           packages: [])
   end
 
   let(:test_class) do
     double("Class",
-      xmi_id: "cls_001",
-      name: "TestClass",
-      definition: "Test class",
-      stereotypes: [],
-      owner: test_package,
-      attributes: [],
-      operations: nil,
-      is_abstract: false,
-      class: Lutaml::Uml::TopElement,
-    )
+           xmi_id: "cls_001",
+           name: "TestClass",
+           definition: "Test class",
+           stereotypes: [],
+           owner: test_package,
+           attributes: [],
+           operations: nil,
+           is_abstract: false,
+           class: Lutaml::Uml::TopElement)
   end
 
   let(:output_file) { Tempfile.new(["test_output", ".html"]) }
@@ -46,7 +43,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Generator do
   after do
     output_file.close
     output_file.unlink
-    FileUtils.rm_rf(output_dir) if File.exist?(output_dir)
+    FileUtils.rm_rf(output_dir)
   end
 
   before do
@@ -93,9 +90,8 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Generator do
       mock_builder = double("SearchBuilder")
 
       generator = described_class.new(repository,
-        data_transformer: mock_transformer,
-        search_builder: mock_builder,
-      )
+                                      data_transformer: mock_transformer,
+                                      search_builder: mock_builder)
 
       expect(generator.instance_variable_get(:@data_transformer))
         .to eq(mock_transformer)
@@ -107,21 +103,15 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Generator do
   describe "#generate" do
     before do
       # Mock repository methods
-      allow(repository).to receive(:associations_of).and_return([])
-      allow(repository).to receive(:supertype_of).and_return(nil)
-      allow(repository).to receive(:subtypes_of).and_return([])
-      allow(repository).to receive(:diagrams_in_package).and_return([])
-      allow(repository).to receive(:diagrams_index).and_return([])
-      allow(repository).to receive(:document).and_return([])
-      allow(repository).to receive(:packages_index).and_return([])
+      allow(repository).to receive_messages(associations_of: [],
+                                            supertype_of: nil, subtypes_of: [], diagrams_in_package: [], diagrams_index: [], document: [], packages_index: [])
     end
 
     context "with single-file mode" do
       it "generates single HTML file" do
         generator = described_class.new(repository,
-          mode: :single_file,
-          output: output_file.path,
-        )
+                                        mode: :single_file,
+                                        output: output_file.path)
 
         # Mock Liquid rendering
         allow_any_instance_of(Liquid::Template)
@@ -135,17 +125,16 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Generator do
 
       it "embeds JSON data in HTML" do
         generator = described_class.new(repository,
-          mode: :single_file,
-          output: output_file.path,
-        )
+                                        mode: :single_file,
+                                        output: output_file.path)
 
         allow_any_instance_of(Liquid::Template)
-          .to receive(:render) do |template, context|
-            # Verify data is passed to template
-            # In single-file mode, data is JSON-serialized string
-            expect(context["data"]).to be_a(String)
-            expect(context["searchIndex"]).to be_a(String)
-            "<html>Data embedded</html>"
+          .to receive(:render) do |_template, context|
+          # Verify data is passed to template
+          # In single-file mode, data is JSON-serialized string
+          expect(context["data"]).to be_a(String)
+          expect(context["searchIndex"]).to be_a(String)
+          "<html>Data embedded</html>"
         end
 
         generator.generate
@@ -155,9 +144,8 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Generator do
     context "with multi-file mode" do
       it "generates multi-file site structure" do
         generator = described_class.new(repository,
-          mode: :multi_file,
-          output: output_dir,
-        )
+                                        mode: :multi_file,
+                                        output: output_dir)
 
         allow_any_instance_of(Liquid::Template)
           .to receive(:render).and_return("<html>Test</html>")
@@ -172,9 +160,8 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Generator do
 
       it "creates separate JSON data files" do
         generator = described_class.new(repository,
-          mode: :multi_file,
-          output: output_dir,
-        )
+                                        mode: :multi_file,
+                                        output: output_dir)
 
         allow_any_instance_of(Liquid::Template)
           .to receive(:render).and_return("<html>Test</html>")
@@ -189,9 +176,8 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Generator do
 
       it "creates separate asset files" do
         generator = described_class.new(repository,
-          mode: :multi_file,
-          output: output_dir,
-        )
+                                        mode: :multi_file,
+                                        output: output_dir)
 
         allow_any_instance_of(Liquid::Template)
           .to receive(:render).and_return("<html>Test</html>")
@@ -216,13 +202,12 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Generator do
     context "with invalid mode" do
       it "raises error for unsupported mode" do
         generator = described_class.new(repository,
-          mode: :invalid_mode,
-          output: output_file.path,
-        )
+                                        mode: :invalid_mode,
+                                        output: output_file.path)
 
-        expect {
+        expect do
           generator.generate
-        }.to raise_error(ArgumentError, /Invalid mode/)
+        end.to raise_error(ArgumentError, /Invalid mode/)
       end
     end
   end
@@ -238,9 +223,8 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Generator do
 
     it "allows user options to override configuration" do
       generator = described_class.new(repository,
-        title: "Custom Title",
-        minify: true,
-      )
+                                      title: "Custom Title",
+                                      minify: true)
 
       expect(generator.options[:title]).to eq("Custom Title")
       expect(generator.options[:minify]).to be true
@@ -252,8 +236,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Generator do
       custom_id_gen = Lutaml::UmlRepository::StaticSite::IDGenerator.new
 
       generator = described_class.new(repository,
-        id_generator: custom_id_gen,
-      )
+                                      id_generator: custom_id_gen)
 
       expect(generator.instance_variable_get(:@id_generator))
         .to eq(custom_id_gen)
@@ -263,8 +246,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Generator do
       mock_transformer = double("DataTransformer")
 
       generator = described_class.new(repository,
-        data_transformer: mock_transformer,
-      )
+                                      data_transformer: mock_transformer)
 
       expect(generator.instance_variable_get(:@data_transformer))
         .to eq(mock_transformer)
@@ -274,8 +256,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Generator do
       mock_builder = double("SearchBuilder")
 
       generator = described_class.new(repository,
-        search_builder: mock_builder,
-      )
+                                      search_builder: mock_builder)
 
       expect(generator.instance_variable_get(:@search_builder))
         .to eq(mock_builder)

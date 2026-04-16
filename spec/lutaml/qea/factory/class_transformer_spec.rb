@@ -37,8 +37,6 @@ RSpec.describe Lutaml::Qea::Factory::ClassTransformer do
       )
 
       allow(connection).to receive(:execute).and_return([])
-      allow(database).to receive(:xrefs).and_return(nil)
-      allow(database).to receive(:tagged_values).and_return([])
       allow(connection).to receive(:execute)
         .with(
           "SELECT * FROM t_connector WHERE " \
@@ -53,9 +51,8 @@ RSpec.describe Lutaml::Qea::Factory::ClassTransformer do
           "SELECT ea_guid, End_Object_ID FROM t_connector WHERE " \
           "Start_Object_ID = ? AND Connector_Type = 'Generalization'", 1
         ).and_return([])
-      allow(database).to receive(:attribute_tags).and_return([])
-      allow(database).to receive(:object_constraints).and_return([])
-      allow(database).to receive(:object_properties).and_return([])
+      allow(database).to receive_messages(xrefs: nil, tagged_values: [],
+                                          attribute_tags: [], object_constraints: [], object_properties: [])
 
       result = transformer.transform(ea_obj)
 
@@ -90,8 +87,6 @@ RSpec.describe Lutaml::Qea::Factory::ClassTransformer do
       )
 
       allow(connection).to receive(:execute).and_return([])
-      allow(database).to receive(:xrefs).and_return(nil)
-      allow(database).to receive(:tagged_values).and_return([])
       allow(connection).to receive(:execute)
         .with(
           "SELECT * FROM t_connector WHERE " \
@@ -106,9 +101,8 @@ RSpec.describe Lutaml::Qea::Factory::ClassTransformer do
           "SELECT ea_guid, End_Object_ID FROM t_connector WHERE " \
           "Start_Object_ID = ? AND Connector_Type = 'Generalization'", 1
         ).and_return([])
-      allow(database).to receive(:attribute_tags).and_return([])
-      allow(database).to receive(:object_constraints).and_return([])
-      allow(database).to receive(:object_properties).and_return([])
+      allow(database).to receive_messages(xrefs: nil, tagged_values: [],
+                                          attribute_tags: [], object_constraints: [], object_properties: [])
 
       result = transformer.transform(ea_obj)
 
@@ -151,9 +145,8 @@ RSpec.describe Lutaml::Qea::Factory::ClassTransformer do
           "SELECT ea_guid, End_Object_ID FROM t_connector WHERE " \
           "Start_Object_ID = ? AND Connector_Type = 'Generalization'", 1
         ).and_return([])
-      allow(database).to receive(:attribute_tags).and_return([])
-      allow(database).to receive(:object_constraints).and_return([])
-      allow(database).to receive(:object_properties).and_return([])
+      allow(database).to receive_messages(attribute_tags: [],
+                                          object_constraints: [], object_properties: [])
 
       result = transformer.transform(ea_obj)
 
@@ -202,9 +195,8 @@ RSpec.describe Lutaml::Qea::Factory::ClassTransformer do
           "SELECT ea_guid, End_Object_ID FROM t_connector WHERE " \
           "Start_Object_ID = ? AND Connector_Type = 'Generalization'", 1
         ).and_return([])
-      allow(database).to receive(:attribute_tags).and_return([])
-      allow(database).to receive(:object_constraints).and_return([])
-      allow(database).to receive(:object_properties).and_return([])
+      allow(database).to receive_messages(attribute_tags: [],
+                                          object_constraints: [], object_properties: [])
 
       result = transformer.transform(ea_obj)
 

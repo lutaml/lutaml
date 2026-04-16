@@ -48,8 +48,7 @@ RSpec.describe Lutaml::UmlRepository::Presenters::DiagramPresenter do
 
   describe "#svg_output" do
     it "generates SVG output" do
-      allow(diagram).to receive(:diagram_objects).and_return([])
-      allow(diagram).to receive(:diagram_links).and_return([])
+      allow(diagram).to receive_messages(diagram_objects: [], diagram_links: [])
 
       svg = presenter.svg_output
       expect(svg).to be_a(String)
@@ -59,24 +58,21 @@ RSpec.describe Lutaml::UmlRepository::Presenters::DiagramPresenter do
     it "passes config_path to renderer" do
       presenter_with_config = described_class
         .new(diagram, repository, config_path: "test/config.yml")
-      allow(diagram).to receive(:diagram_objects).and_return([])
-      allow(diagram).to receive(:diagram_links).and_return([])
+      allow(diagram).to receive_messages(diagram_objects: [], diagram_links: [])
 
       svg = presenter_with_config.svg_output
       expect(svg).to include("<svg")
     end
 
     it "accepts rendering options" do
-      allow(diagram).to receive(:diagram_objects).and_return([])
-      allow(diagram).to receive(:diagram_links).and_return([])
+      allow(diagram).to receive_messages(diagram_objects: [], diagram_links: [])
 
       svg = presenter.svg_output(padding: 30, background_color: "#f5f5f5")
       expect(svg).to include("<svg")
     end
 
     it "returns complete SVG string" do
-      allow(diagram).to receive(:diagram_objects).and_return([])
-      allow(diagram).to receive(:diagram_links).and_return([])
+      allow(diagram).to receive_messages(diagram_objects: [], diagram_links: [])
 
       svg = presenter.svg_output
       expect(svg).to start_with("<?xml")
@@ -109,8 +105,7 @@ RSpec.describe Lutaml::UmlRepository::Presenters::DiagramPresenter do
     end
 
     it "calls build_connectors_data" do
-      allow(diagram).to receive(:diagram_objects).and_return([])
-      allow(diagram).to receive(:diagram_links).and_return([])
+      allow(diagram).to receive_messages(diagram_objects: [], diagram_links: [])
       expect(presenter).to receive(:build_connectors_data).and_call_original
 
       presenter.connectors
@@ -200,8 +195,8 @@ RSpec.describe Lutaml::UmlRepository::Presenters::DiagramPresenter do
     end
 
     it "includes all diagram properties" do
-      allow(diagram).to receive(:diagram_objects).and_return([double])
-      allow(diagram).to receive(:diagram_links).and_return([double])
+      allow(diagram).to receive_messages(diagram_objects: [double],
+                                         diagram_links: [double])
 
       hash = presenter.to_hash
       expect(hash[:type]).to eq("Diagram")
@@ -331,8 +326,8 @@ RSpec.describe Lutaml::UmlRepository::Presenters::DiagramPresenter do
         end
 
         before do
-          allow(diagram).to receive(:diagram_objects).and_return([])
-          allow(diagram).to receive(:diagram_links).and_return([diagram_link])
+          allow(diagram).to receive_messages(diagram_objects: [],
+                                             diagram_links: [diagram_link])
           allow(repository)
             .to receive(:associations_index).and_return([mock_association])
           allow(mock_association).to receive(:xmi_id).and_return("ASSOC_001")
@@ -467,8 +462,8 @@ RSpec.describe Lutaml::UmlRepository::Presenters::DiagramPresenter do
       let(:mock_package) { double("Package", xmi_id: "PKG_001") }
 
       before do
-        allow(repository).to receive(:classes_index).and_return([mock_class])
-        allow(repository).to receive(:packages_index).and_return([mock_package])
+        allow(repository).to receive_messages(classes_index: [mock_class],
+                                              packages_index: [mock_package])
       end
 
       it "finds element in classes_index" do
@@ -508,9 +503,8 @@ RSpec.describe Lutaml::UmlRepository::Presenters::DiagramPresenter do
 
       before do
         allow(repository)
-          .to receive(:associations_index).and_return([mock_association])
-        allow(repository)
-          .to receive(:classes_index).and_return([mock_class_with_gen])
+          .to receive_messages(associations_index: [mock_association],
+                               classes_index: [mock_class_with_gen])
         allow(mock_class_with_gen)
           .to receive(:respond_to?).with(:generalization).and_return(true)
         allow(mock_generalization)
@@ -556,8 +550,8 @@ RSpec.describe Lutaml::UmlRepository::Presenters::DiagramPresenter do
       end
 
       it "returns nil when not found" do
-        allow(repository).to receive(:associations_index).and_return([])
-        allow(repository).to receive(:classes_index).and_return([])
+        allow(repository).to receive_messages(associations_index: [],
+                                              classes_index: [])
 
         connector = presenter.send(:find_connector_by_xmi_id, "NOT_FOUND")
         expect(connector).to be_nil

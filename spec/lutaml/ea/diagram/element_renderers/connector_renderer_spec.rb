@@ -223,7 +223,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ConnectorRenderer do
       expect { renderer.render }.not_to raise_error
     end
 
-    xit "handles connector with waypoints" do
+    it "handles connector with waypoints" do
       connector_data[:geometry] = "SX=0;SY=0;EX=0;EY=0;EDGE=1;EDGE1=250,125;"
 
       svg = renderer.render

@@ -186,7 +186,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::DataTransformer do
       classes = result[:classes]
 
       # Verify qualified names are strings
-      classes.values.each do |cls|
+      classes.each_value do |cls|
         expect(cls[:qualifiedName]).to be_a(String)
       end
     end

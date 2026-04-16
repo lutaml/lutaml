@@ -32,20 +32,20 @@ module Lutaml
         end
 
         def attributes
-          @owned_attributes.map do |owned_attr|
+          @owned_attributes.filter_map do |owned_attr|
             if @options[:with_assoc] || owned_attr.association.nil?
               ::Lutaml::Xmi::LiquidDrops::AttributeDrop.new(owned_attr,
                                                             @options)
             end
-          end.compact
+          end
         end
 
         def operations
-          @model.owned_operation.map do |operation|
+          @model.owned_operation.filter_map do |operation|
             if operation.association.nil?
               ::Lutaml::Xmi::LiquidDrops::OperationDrop.new(operation)
             end
-          end.compact
+          end
         end
 
         def associations # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity,Metrics/MethodLength
@@ -56,7 +56,7 @@ module Lutaml
             links << link.association if link.association.any?
           end
 
-          links.flatten.compact.map do |assoc|
+          links.flatten.compact.filter_map do |assoc|
             link_member = assoc.start == xmi_id ? "end" : "start"
             link_owner_name = link_member == "start" ? "end" : "start"
 
@@ -85,7 +85,7 @@ module Lutaml
                 options: @options,
               )
             end
-          end.compact
+          end
         end
 
         def constraints

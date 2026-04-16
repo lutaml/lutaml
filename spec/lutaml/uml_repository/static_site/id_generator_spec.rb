@@ -237,9 +237,9 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::IDGenerator do
     it "handles nil XMI IDs gracefully" do
       package_nil = double("PackageNil", xmi_id: nil)
 
-      expect {
+      expect do
         generator.package_id(package_nil)
-      }.not_to raise_error
+      end.not_to raise_error
     end
 
     it "handles empty XMI IDs" do

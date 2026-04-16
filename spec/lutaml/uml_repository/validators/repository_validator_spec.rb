@@ -87,7 +87,7 @@ RSpec.describe Lutaml::UmlRepository::Validators::RepositoryValidator do
         result = validator.validate
         circular_errors = result.errors.select do |e|
           e[:message].to_s.include?("circular") ||
-          e[:message].to_s.include?("cycle")
+            e[:message].to_s.include?("cycle")
         end
         expect(circular_errors).not_to be_empty
       end
@@ -99,9 +99,7 @@ RSpec.describe Lutaml::UmlRepository::Validators::RepositoryValidator do
       validator.send(:check_type_references)
       errors = validator.instance_variable_get(:@errors)
       expect(errors).to be_an(Array)
-      errors.each do |error|
-        expect(error).to be_a(String)
-      end
+      expect(errors).to all(be_a(String))
     end
   end
 

@@ -197,7 +197,7 @@ module Lutaml
       # @return [Boolean] true if segments match pattern
       def match_segments(path_segs, pattern_segs) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
         return path_segs.empty? if pattern_segs.empty?
-        return false if path_segs.empty? && !pattern_segs.all? { |s| s == "**" }
+        return false if path_segs.empty? && !pattern_segs.all?("**")
 
         pattern_seg = pattern_segs.first
 

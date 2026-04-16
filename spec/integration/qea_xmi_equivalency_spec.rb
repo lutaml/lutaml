@@ -23,21 +23,13 @@ RSpec.describe "QEA and XMI Equivalency", :integration do
       # Note: We can't use direct equality because QEA may have more data
       # that didn't export to XMI
 
-      puts "\nQEA (source) vs XMI (export) comparison:"
-      puts "  QEA packages: #{qea_document.packages&.size || 0}"
-      puts "  XMI packages: #{xmi_document.packages&.size || 0}"
-      puts "  QEA classes: #{count_all_classes(qea_document)}"
-      puts "  XMI classes: #{count_all_classes(xmi_document)}"
-      puts "  QEA associations: #{qea_document.associations&.size || 0}"
-      puts "  XMI associations: #{xmi_document.associations&.size || 0}"
-
       # XMI classes should be <= QEA classes (QEA is the source)
       xmi_class_count = count_all_classes(xmi_document)
       qea_class_count = count_all_classes(qea_document)
 
       expect(xmi_class_count).to be <= qea_class_count,
-        "XMI should have <= classes than QEA (XMI: #{xmi_class_count}, " \
-        "QEA: #{qea_class_count})"
+                                 "XMI should have <= classes than QEA (XMI: #{xmi_class_count}, " \
+                                 "QEA: #{qea_class_count})"
     end
 
     it "XMI classes are subset of QEA classes" do
@@ -54,24 +46,17 @@ RSpec.describe "QEA and XMI Equivalency", :integration do
       qea_class_names = collect_all_class_names(qea_document)
       xmi_class_names = collect_all_class_names(xmi_document)
 
-      puts "\nClass name comparison:"
-      puts "  QEA class names: #{qea_class_names.size}"
-      puts "  XMI class names: #{xmi_class_names.size}"
-
       # All XMI classes should exist in QEA (some may be missing if export was
       # filtered)
       missing_in_qea = xmi_class_names - qea_class_names
       extra_in_qea = qea_class_names - xmi_class_names
 
-      puts "  Classes in XMI but not in QEA: #{missing_in_qea.size}"
-      puts "  Classes in QEA but not in XMI: #{extra_in_qea.size}"
-
       if missing_in_qea.any?
-        puts "\n  Missing from QEA: #{missing_in_qea.first(5).join(', ')}"
+
       end
 
       if extra_in_qea.any?
-        puts "  Extra in QEA: #{extra_in_qea.first(5).join(', ')}"
+
       end
 
       # This is informational - we expect QEA to have more
@@ -110,14 +95,10 @@ RSpec.describe "QEA and XMI Equivalency", :integration do
       qea_assoc_count = qea_document.associations&.size || 0
       xmi_assoc_count = xmi_document.associations&.size || 0
 
-      puts "\nAssociation comparison:"
-      puts "  QEA associations: #{qea_assoc_count}"
-      puts "  XMI associations: #{xmi_assoc_count}"
-
       # QEA should have >= associations
       expect(qea_assoc_count).to be >= xmi_assoc_count,
-        "QEA should have >= associations (QEA: #{qea_assoc_count}, " \
-        "XMI: #{xmi_assoc_count})"
+                                 "QEA should have >= associations (QEA: #{qea_assoc_count}, " \
+                                 "XMI: #{xmi_assoc_count})"
     end
   end
 
@@ -148,7 +129,7 @@ RSpec.describe "QEA and XMI Equivalency", :integration do
   def collect_class_names_from_packages(packages)
     names = []
     packages.each do |pkg|
-      names += pkg.classes&.map(&:name) ||[]
+      names += pkg.classes&.map(&:name) || []
       names += collect_class_names_from_packages(pkg.packages || [])
     end
     names

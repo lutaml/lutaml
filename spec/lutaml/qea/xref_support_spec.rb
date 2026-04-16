@@ -184,7 +184,7 @@ RSpec.describe "QEA Cross-Reference Support" do
   describe "Cross-reference client relationships" do
     it "links to various EA entities" do
       # Xrefs should link to objects, attributes, connectors, diagrams
-      clients = database.xrefs.map(&:client).compact.uniq
+      clients = database.xrefs.filter_map(&:client).uniq
       expect(clients).not_to be_empty
       expect(clients.size).to be > 100
     end

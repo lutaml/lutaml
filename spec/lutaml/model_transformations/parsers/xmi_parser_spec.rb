@@ -49,6 +49,13 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::XmiParser do
       let(:xmi_content) do
         File.read(File.join(__dir__, "../../../../examples/xmi/basic.xmi"))
       end
+      let(:complex_file) do
+        file = Tempfile.new(["complex", ".xmi"])
+        file.write(xmi_content)
+        # file.write(complex_xmi)
+        file.close
+        file
+      end
 
       let(:xmi_file) do
         file = Tempfile.new(["test", ".xmi"])
@@ -57,7 +64,11 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::XmiParser do
         file
       end
 
-      after { xmi_file.unlink }
+      after do
+        xmi_file.unlink
+        complex_file.unlink
+        complex_file.unlink
+      end
 
       it "successfully parses XMI file" do
         result = parser.parse(xmi_file.path)
@@ -90,16 +101,6 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::XmiParser do
         attribute = klass.attributes.first
         expect(attribute.name).to eq("Attribute A")
       end
-
-      let(:complex_file) do
-        file = Tempfile.new(["complex", ".xmi"])
-        file.write(xmi_content)
-        # file.write(complex_xmi)
-        file.close
-        file
-      end
-
-      after { complex_file.unlink }
 
       it "handles nested package structure" do
         result = parser.parse(complex_file.path)
@@ -318,7 +319,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::XmiParser do
           p.format = "xmi"
           p.enabled = true
           p.options = { "strict_validation" => true }
-        end
+        end,
       ]
 
       expect(parser.configuration.parsers).not_to be_empty

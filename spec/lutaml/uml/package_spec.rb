@@ -48,7 +48,7 @@ RSpec.describe Lutaml::Uml::Package do
 
     it "contains children_packages" do
       expect(test_model.children_packages.count).to eq(2)
-      expect(test_model.children_packages.first).to be_instance_of(Lutaml::Uml::Package)
+      expect(test_model.children_packages.first).to be_instance_of(described_class)
     end
 
     it "outputs full yaml" do

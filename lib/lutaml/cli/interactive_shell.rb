@@ -80,7 +80,7 @@ module Lutaml
 
             # Don't save duplicates in history
             if Readline::HISTORY.length > 1 &&
-               Readline::HISTORY[-2] == input
+                Readline::HISTORY[-2] == input
               Readline::HISTORY.pop
             end
 
@@ -367,14 +367,14 @@ module Lutaml
       # @param _args [Array<String>] Command arguments (unused)
       # @return [void]
       def cmd_root(_args)
-        if @current_path != "ModelRoot"
+        if @current_path == "ModelRoot"
+          puts "Already at root"
+        else
           unless @path_history.last == @current_path
             @path_history << @current_path
           end
           @current_path = "ModelRoot"
           puts "Changed to: ModelRoot"
-        else
-          puts "Already at root"
         end
       end
 
@@ -664,7 +664,7 @@ module Lutaml
         end
 
         index = number - 1
-        if index < 0 || index >= @last_results.size
+        if index.negative? || index >= @last_results.size
           puts OutputFormatter.error("Invalid result number: #{number}")
           return
         end
@@ -894,7 +894,7 @@ module Lutaml
         if path.start_with?("../")
           # Go up and then navigate
           parts = @current_path.split("::")
-          path.scan(/\.\.\//).each { parts.pop }
+          path.scan("../").each { parts.pop }
           remaining = path.gsub(/^(\.\.\/)+/, "")
           new_path = parts + remaining.split("/")
           new_path.join("::")

@@ -7,7 +7,7 @@
 
 require "yaml"
 
-view_yaml = YAML.safe_load(File.read(ARGV[0]))
+view_yaml = YAML.safe_load_file(ARGV[0])
 models_path = File.expand_path("../../models", ARGV[0])
 
 def sync_puts(line, level = 0)
@@ -85,7 +85,7 @@ view_yaml["relations"]&.each do |values|
 end
 
 view_yaml["imports"]&.each_key do |entry| # rubocop:disable Metrics/BlockLength
-  import = YAML.safe_load(File.read(File.join(models_path, "#{entry}.yml")))
+  import = YAML.safe_load_file(File.join(models_path, "#{entry}.yml"))
   import_name = import["name"] || File.basename(entry)
   # Class notation
   sync_puts("#{import['modelType']} #{import_name} {", 2)

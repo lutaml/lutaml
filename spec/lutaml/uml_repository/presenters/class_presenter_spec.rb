@@ -80,7 +80,7 @@ RSpec.describe Lutaml::UmlRepository::Presenters::ClassPresenter do
       expect(hash[:name]).to eq("TestClass")
       expect(hash[:xmi_id]).to eq("CLASS_001")
       expect(hash[:stereotype]).to eq("entity")
-      expect(hash[:is_abstract]).to eq(false)
+      expect(hash[:is_abstract]).to be(false)
     end
 
     it "excludes xmi_id if not available" do
@@ -99,7 +99,7 @@ RSpec.describe Lutaml::UmlRepository::Presenters::ClassPresenter do
       allow(mock_class).to receive(:is_abstract).and_return(nil)
       hash = presenter.to_hash
       expect(hash).to have_key(:is_abstract)
-      expect(hash[:is_abstract]).to eq(false)
+      expect(hash[:is_abstract]).to be(false)
     end
 
     it "includes all available fields" do

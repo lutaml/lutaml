@@ -67,7 +67,7 @@ RSpec.describe Lutaml::Qea::Database do
     end
 
     it "is thread-safe" do
-      threads = 10.times.map do |i|
+      threads = Array.new(10) do |i|
         Thread.new do
           database.add_collection("collection_#{i}", [sample_object])
         end
@@ -127,10 +127,10 @@ RSpec.describe Lutaml::Qea::Database do
 
       stats = database.stats
       expect(stats).to eq({
-        "objects" => 2,
-        "packages" => 1,
-        "attributes" => 3
-      })
+                            "objects" => 2,
+                            "packages" => 1,
+                            "attributes" => 3,
+                          })
     end
   end
 
@@ -238,9 +238,9 @@ RSpec.describe Lutaml::Qea::Database do
 
     it "prevents adding new collections after freeze" do
       database.freeze
-      expect {
+      expect do
         database.add_collection(:new, [sample_object])
-      }.to raise_error(FrozenError)
+      end.to raise_error(FrozenError)
     end
   end
 end

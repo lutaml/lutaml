@@ -17,7 +17,8 @@ RSpec.describe Lutaml::Uml::Class do
         ---
         name: _Curve
         xmi_id: EAID_83B2B411_0579_4e2d_823D_D22BF0F06064
-        stereotype: Type
+        stereotype:
+        - Type
         visibility: public
         full_name: _Curve
         generalization:

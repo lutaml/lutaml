@@ -600,7 +600,7 @@ module Lutaml
       # Get all packages as an array (excluding root Document)
       # @return [Array<Lutaml::Uml::Package>] All packages
       def packages_index
-        (@indexes[:package_paths]&.values || []).select { |p| p.is_a?(Lutaml::Uml::Package) }
+        (@indexes[:package_paths]&.values || []).grep(Lutaml::Uml::Package)
       end
 
       # Get all classes (including datatypes and enums) as an array

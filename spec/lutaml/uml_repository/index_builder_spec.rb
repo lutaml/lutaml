@@ -77,9 +77,7 @@ RSpec.describe Lutaml::UmlRepository::IndexBuilder do
       qnames = qualified_names_index.keys.map(&:to_s)
 
       expect(qnames).not_to be_empty
-      qnames.each do |qname|
-        expect(qname).to be_a(String)
-      end
+      expect(qnames).to all(be_a(String))
     end
   end
 
@@ -109,11 +107,9 @@ RSpec.describe Lutaml::UmlRepository::IndexBuilder do
       stereotypes_index = indexes[:stereotypes]
 
       stereotypes_index.each_value do |classes|
-        classes.each do |klass|
-          expect(klass).to be_a(Lutaml::Uml::Class)
-            .or be_a(Lutaml::Uml::Enum)
-            .or be_a(Lutaml::Uml::DataType)
-        end
+        expect(classes).to all(be_a(Lutaml::Uml::Class)
+            .or(be_a(Lutaml::Uml::Enum)
+            .or(be_a(Lutaml::Uml::DataType))))
       end
     end
   end
@@ -130,9 +126,7 @@ RSpec.describe Lutaml::UmlRepository::IndexBuilder do
       inheritance_graph.each do |parent_id, children|
         expect(parent_id).to be_a(String)
         expect(children).to be_an(Array)
-        children.each do |child|
-          expect(child).to be_a(String)
-        end
+        expect(children).to all(be_a(String))
       end
     end
   end
@@ -163,9 +157,7 @@ RSpec.describe Lutaml::UmlRepository::IndexBuilder do
       diagram_index.each do |package_id, diagrams|
         expect(package_id).to be_a(String)
         expect(diagrams).to be_an(Array)
-        diagrams.each do |diagram|
-          expect(diagram).to be_a(Lutaml::Uml::Diagram)
-        end
+        expect(diagrams).to all(be_a(Lutaml::Uml::Diagram))
       end
     end
   end

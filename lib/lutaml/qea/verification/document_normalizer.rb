@@ -131,9 +131,6 @@ module Lutaml
         def process_enums(enums)
           enums.each do |enum|
             enum.xmi_id = nil if enum.respond_to?(:xmi_id=)
-            enum.owned_literals&.each do |literal|
-              literal.xmi_id = nil if literal.respond_to?(:xmi_id=)
-            end
           end
         end
 

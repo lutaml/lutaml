@@ -122,13 +122,13 @@ module Lutaml
         #
         # @return [Array<Lutaml::Uml::Association>] Array of all associations
         def resolve_all_associations
-          indexes[:qualified_names].values.map do |entity|
+          indexes[:qualified_names].values.filter_map do |entity|
             if entity.is_a?(Lutaml::Uml::Association)
               entity
             elsif entity.is_a?(Lutaml::Uml::Class) && entity.associations
               entity.associations
             end
-          end.compact.flatten
+          end.flatten
         end
 
         # Resolve a class or qualified name to a class object
