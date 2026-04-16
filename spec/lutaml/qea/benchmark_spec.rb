@@ -4,8 +4,8 @@ require "spec_helper"
 require_relative "../../../lib/lutaml/qea/benchmark"
 
 RSpec.describe Lutaml::Qea::Benchmark do
-  let(:qea_file_path) { File.join(__dir__, "../../fixtures/test.qea") }
-  let(:xmi_file_path) { File.join(__dir__, "../../fixtures/test.xmi") }
+  let(:qea_file_path) { File.expand_path("../../../examples/qea/test.qea", __dir__) }
+  let(:xmi_file_path) { File.expand_path("../../../examples/xmi/test.xmi", __dir__) }
 
   describe ".measure_qea" do
     after do

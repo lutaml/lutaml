@@ -1,8 +1,7 @@
 require "spec_helper"
 
 RSpec.describe Lutaml::Xmi::Parsers::Xml do
-  describe ".serialize_xmi_to_liquid",
-           skip: "Liquid feature deprecated - liquid gem not in Gemfile" do
+  describe ".serialize_xmi_to_liquid" do
     subject(:output) do
       described_class.serialize_xmi_to_liquid(file)
     end

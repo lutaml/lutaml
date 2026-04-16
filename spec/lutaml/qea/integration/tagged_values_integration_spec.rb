@@ -2,6 +2,7 @@
 
 require "spec_helper"
 require_relative "../../../../lib/lutaml/qea"
+require_relative "../../../../lib/lutaml/qea/parser"
 
 RSpec.describe "Tagged Values Integration" do
   let(:qea_file) { "examples/qea/20251010_current_plateau_v5.1.qea" }

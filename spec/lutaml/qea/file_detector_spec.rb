@@ -5,7 +5,7 @@ require_relative "../../../lib/lutaml/qea/file_detector"
 require "tempfile"
 
 RSpec.describe Lutaml::Qea::FileDetector do
-  let(:qea_file_path) { File.join(__dir__, "../../fixtures/test.qea") }
+  let(:qea_file_path) { File.expand_path("../../../examples/qea/test.qea", __dir__) }
 
   describe ".qea_file?" do
     it "returns true for valid QEA file" do
@@ -135,7 +135,7 @@ RSpec.describe Lutaml::Qea::FileDetector do
       info = described_class.file_info(qea_file_path)
 
       expect(info).to have_key(:has_ea_tables)
-      expect(info[:has_ea_tables]).to be_in([true, false])
+      expect(info[:has_ea_tables]).to(satisfy { |v| [true, false].include?(v) })
     end
 
     it "includes record counts for key tables" do

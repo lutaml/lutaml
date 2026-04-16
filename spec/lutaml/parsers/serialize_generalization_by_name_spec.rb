@@ -1,8 +1,7 @@
 require "spec_helper"
 
 RSpec.describe Lutaml::Xmi::Parsers::Xml do
-  describe ".serialize_generalization_by_name",
-           skip: "Liquid feature deprecated - liquid gem not in Gemfile" do
+  describe ".serialize_generalization_by_name" do
     subject(:output) do
       described_class.serialize_generalization_by_name(file, path)
     end
