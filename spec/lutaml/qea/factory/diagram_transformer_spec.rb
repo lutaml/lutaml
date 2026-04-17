@@ -27,6 +27,7 @@ RSpec.describe Lutaml::Qea::Factory::DiagramTransformer do
       package_row = {
         "Package_ID" => 5,
         "Name" => "Domain",
+        "ea_guid" => "{PKG-GUID}",
       }
 
       allow(connection).to receive(:execute)
@@ -44,7 +45,7 @@ RSpec.describe Lutaml::Qea::Factory::DiagramTransformer do
       expect(result).to be_a(Lutaml::Uml::Diagram)
       expect(result.name).to eq("Class Diagram")
       expect(result.xmi_id).to eq("EAID_DIAG_GUID")
-      expect(result.package_id).to eq("5")
+      expect(result.package_id).to eq("EAPK_PKG_GUID")
       expect(result.package_name).to eq("Domain")
       expect(result.definition).to eq("Main class diagram")
     end
@@ -80,7 +81,7 @@ RSpec.describe Lutaml::Qea::Factory::DiagramTransformer do
 
       result = transformer.transform(ea_diagram)
 
-      expect(result.package_id).to eq("99")
+      expect(result.package_id).to be_nil
       expect(result.package_name).to be_nil
     end
 
