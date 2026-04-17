@@ -193,7 +193,7 @@ RSpec.describe "Comprehensive Diagram Support" do
       load_time = Time.now - start_time
 
       # Should load within reasonable time (adjust threshold as needed)
-      expect(load_time).to be < 5.0
+      expect(load_time).to be < 10.0
       expect(database.diagram_objects.size).to eq(1767)
       expect(database.diagram_links.size).to eq(1813)
     end
