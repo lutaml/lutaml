@@ -216,7 +216,7 @@ RSpec.describe Lutaml::Qea::Factory::ClassTransformer do
 
       result = transformer.transform(ea_obj)
 
-      expect(result.stereotype).to eq("entity")
+      expect(result.stereotype).to eq(["entity"])
     end
   end
 end
