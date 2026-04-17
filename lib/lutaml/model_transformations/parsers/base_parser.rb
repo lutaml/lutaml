@@ -23,6 +23,9 @@ module Lutaml
         # @return [Hash] Parsing options
         attr_reader :options
 
+        # @return [Float, nil] Duration of last parse in seconds
+        attr_reader :last_duration
+
         # Initialize parser with configuration and options
         #
         # @param configuration [Configuration] Transformation configuration
@@ -32,6 +35,15 @@ module Lutaml
           @options = default_options.merge(options)
           @errors = []
           @warnings = []
+          @parse_stats = {
+            total_parses: 0,
+            successful_parses: 0,
+            failed_parses: 0,
+            total_duration: 0,
+            durations: [],
+          }
+          @last_duration = nil
+          @stats_mutex = Mutex.new
         end
 
         # Parse a model file into a UML document
@@ -44,25 +56,46 @@ module Lutaml
         # @return [Lutaml::Uml::Document] Parsed UML document
         # @raise [ParseError] if parsing fails
         def parse(file_path) # rubocop:disable Metrics/MethodLength
-          validate_file!(file_path) if should_validate_input?
-          clear_errors_and_warnings
+          start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+          @stats_mutex.synchronize { @parse_stats[:total_parses] += 1 }
+          parse_succeeded = false
+          parse_handled = false
 
           begin
-            # Pre-parsing hook
-            before_parse(file_path)
+            validate_file!(file_path) if should_validate_input?
+            clear_errors_and_warnings
 
-            # Core parsing (implemented by subclasses)
-            document = parse_internal(file_path)
+            begin
+              # Pre-parsing hook
+              before_parse(file_path)
 
-            # Post-parsing processing
-            document = after_parse(document, file_path)
+              # Core parsing (implemented by subclasses)
+              document = parse_internal(file_path)
 
-            # Validate output if requested
-            validate_output!(document) if should_validate_output?
+              # Post-parsing processing
+              document = after_parse(document, file_path)
 
-            document
-          rescue StandardError => e
-            handle_parsing_error(e, file_path)
+              # Validate output if requested
+              validate_output!(document) if should_validate_output?
+
+              parse_succeeded = true
+              @stats_mutex.synchronize { @parse_stats[:successful_parses] += 1 }
+              document
+            rescue StandardError => e
+              parse_handled = true
+              @stats_mutex.synchronize { @parse_stats[:failed_parses] += 1 }
+              handle_parsing_error(e, file_path)
+            end
+          ensure
+            unless parse_succeeded || parse_handled
+              @stats_mutex.synchronize { @parse_stats[:failed_parses] += 1 }
+            end
+            duration = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
+            @last_duration = duration
+            @stats_mutex.synchronize do
+              @parse_stats[:total_duration] += duration
+              @parse_stats[:durations] << duration
+            end
           end
         end
 
@@ -142,12 +175,36 @@ module Lutaml
         #
         # @return [Hash] Statistics about the parsing process
         def statistics
+          stats = @stats_mutex.synchronize { @parse_stats.dup }
+          durations = stats[:durations]
           {
             format: format_name,
             errors: @errors.size,
             warnings: @warnings.size,
             options: @options,
+            total_parses: stats[:total_parses],
+            successful_parses: stats[:successful_parses],
+            failed_parses: stats[:failed_parses],
+            success_rate: calculate_success_rate(stats),
+            average_duration: calculate_average_duration(durations),
+            total_duration: stats[:total_duration],
           }
+        end
+
+        # Reset all parsing statistics
+        #
+        # @return [void]
+        def reset_statistics
+          @stats_mutex.synchronize do
+            @parse_stats = {
+              total_parses: 0,
+              successful_parses: 0,
+              failed_parses: 0,
+              total_duration: 0,
+              durations: [],
+            }
+          end
+          @last_duration = nil
         end
 
         protected
@@ -259,6 +316,26 @@ module Lutaml
         end
 
         private
+
+        # Calculate success rate percentage
+        #
+        # @param stats [Hash] Stats hash
+        # @return [Float] Success rate as percentage
+        def calculate_success_rate(stats)
+          return 0.0 if stats[:total_parses].zero?
+
+          (stats[:successful_parses].to_f / stats[:total_parses]) * 100.0
+        end
+
+        # Calculate average parse duration
+        #
+        # @param durations [Array<Float>] List of parse durations
+        # @return [Float] Average duration
+        def calculate_average_duration(durations)
+          return 0.0 if durations.empty?
+
+          durations.sum / durations.size
+        end
 
         # Validate input file exists and is readable
         #

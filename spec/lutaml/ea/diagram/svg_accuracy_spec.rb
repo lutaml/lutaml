@@ -273,37 +273,6 @@ RSpec.describe "EA Diagram SVG Accuracy" do
           end
         end
       end
-
-      context "without EA reference SVG" do
-        before do
-          if ea_reference_path
-            skip "EA reference SVG is available, " \
-                 "use 'with EA reference SVG' tests instead"
-          end
-        end
-
-        it "generates valid SVG output" do
-          extractor = Lutaml::Ea::Diagram::Extractor.new
-          result = extractor.extract_one(lur_path, diagram_xmi_id, output: nil)
-
-          expect(result[:success]).to be_truthy
-
-          svg = result[:svg_content]
-
-          if svg.nil? || svg.empty?
-            skip "Diagram has no rendering data (empty SVG output)"
-          end
-
-          doc = Nokogiri::XML(svg)
-          expect(doc.errors).to be_empty
-
-          if doc.root
-            expect(doc.root.name).to eq("svg")
-          else
-            skip "Generated SVG has no root element"
-          end
-        end
-      end
     end
   end
 

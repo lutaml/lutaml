@@ -29,14 +29,9 @@ module Lutaml
             data_type.type = "DataType"
             data_type.visibility = map_visibility(ea_object.visibility)
 
-            # Set package path
-            data_type.package_path = calculate_package_path(
-              ea_object.package_id,
-            )
-
             # Map stereotype
             if ea_object.stereotype && !ea_object.stereotype.empty?
-              data_type.stereotype = ea_object.stereotype
+              data_type.stereotype = [ea_object.stereotype]
             end
 
             # Map definition/notes
@@ -44,9 +39,7 @@ module Lutaml
               ea_object.note.nil? || ea_object.note.empty?
 
             # Load and transform attributes
-            attts = load_attributes(ea_object.ea_object_id)
-            assoc_attts = load_association_attributes(ea_object.ea_object_id)
-            data_type.attributes = attts + assoc_attts
+            data_type.attributes = load_attributes(ea_object.ea_object_id)
 
             # Load and transform operations
             data_type.operations = load_operations(ea_object.ea_object_id)

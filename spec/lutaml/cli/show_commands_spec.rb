@@ -100,8 +100,11 @@ RSpec.describe "Inspect/Show Commands (via UmlCommands)" do
       end
     end
 
+    before do
+      skip "No attributes found in test data" unless sample_attribute_id
+    end
+
     it "shows attribute details" do
-      skip "Repository#find_attribute not yet implemented"
       expect do
         Lutaml::Cli::UmlCommands.start(["inspect",
                                         test_lur.path,

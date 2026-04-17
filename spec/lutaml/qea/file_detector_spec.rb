@@ -5,7 +5,9 @@ require_relative "../../../lib/lutaml/qea/file_detector"
 require "tempfile"
 
 RSpec.describe Lutaml::Qea::FileDetector do
-  let(:qea_file_path) { File.expand_path("../../../examples/qea/test.qea", __dir__) }
+  let(:qea_file_path) do
+    File.expand_path("../../../examples/qea/test.qea", __dir__)
+  end
 
   describe ".qea_file?" do
     it "returns true for valid QEA file" do

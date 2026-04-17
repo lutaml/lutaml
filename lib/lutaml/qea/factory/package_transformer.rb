@@ -3,6 +3,8 @@
 require_relative "base_transformer"
 require_relative "tagged_value_transformer"
 require_relative "instance_transformer"
+require_relative "enum_transformer"
+require_relative "data_type_transformer"
 require "lutaml/uml"
 
 module Lutaml
@@ -32,7 +34,7 @@ module Lutaml
 
             # Load stereotype from t_xref
             stereotype = load_stereotype(ea_package.ea_guid)
-            pkg.stereotype = stereotype if stereotype
+            pkg.stereotype = [stereotype] if stereotype
 
             # Note: Child packages and contents will be loaded separately
             # to avoid circular dependencies and allow lazy loading
@@ -97,30 +99,54 @@ module Lutaml
 
           ea_objects = rows.map { |row| Models::EaObject.from_db_row(row) }
 
-          # Transform classes - include ALL class-type objects,
-          # even without names
-          # Also include Text objects that appear on diagrams
-          # (EA exports these as classes in XMI)
           class_transformer = ClassTransformer.new(database)
-          ea_objects.each do |ea_obj|
-            is_class_type = ea_obj.uml_class? || ea_obj.interface?
-            is_text_on_diagram = ea_obj.object_type == "Text" &&
-              appears_on_diagram?(ea_obj.ea_object_id)
-
-            next unless is_class_type || is_text_on_diagram
-
-            uml_class = class_transformer.transform(ea_obj)
-            pkg.classes << uml_class if uml_class
-          end
-
-          # Transform instances (Object type)
+          enum_transformer = EnumTransformer.new(database)
+          data_type_transformer = DataTypeTransformer.new(database)
           instance_transformer = InstanceTransformer.new(database)
-          ea_objects.select(&:instance?).each do |ea_obj|
-            uml_instance = instance_transformer.transform(ea_obj)
-            pkg.instances << uml_instance if uml_instance
-          end
 
-          # Note: Enums and DataTypes could be added similarly
+          ea_objects.each do |ea_obj|
+            if enum_object?(ea_obj)
+              uml_enum = enum_transformer.transform(ea_obj)
+              pkg.enums << uml_enum if uml_enum
+            elsif data_type_object?(ea_obj)
+              uml_dt = data_type_transformer.transform(ea_obj)
+              pkg.data_types << uml_dt if uml_dt
+            elsif class_object?(ea_obj)
+              uml_class = class_transformer.transform(ea_obj)
+              pkg.classes << uml_class if uml_class
+            elsif ea_obj.instance?
+              uml_instance = instance_transformer.transform(ea_obj)
+              pkg.instances << uml_instance if uml_instance
+            end
+          end
+        end
+
+        # Check if an EA object should be classified as an enum.
+        # EA stores enums as either object_type="Enumeration" or
+        # object_type="Class" with stereotype="enumeration".
+        def enum_object?(ea_obj)
+          ea_obj.enumeration? || stereotype_is?(ea_obj, "enumeration")
+        end
+
+        # Check if an EA object should be classified as a data type.
+        def data_type_object?(ea_obj)
+          ea_obj.data_type?
+        end
+
+        # Check if an EA object should be classified as a class.
+        def class_object?(ea_obj)
+          return false if enum_object?(ea_obj) || data_type_object?(ea_obj)
+
+          ea_obj.uml_class? || ea_obj.interface? ||
+            ea_obj.object_type == "Text" ||
+            ea_obj.object_type == "ProxyConnector"
+        end
+
+        # Check if an object's stereotype matches (case-insensitive).
+        def stereotype_is?(ea_obj, expected)
+          return false unless ea_obj.stereotype
+
+          ea_obj.stereotype.downcase == expected
         end
 
         # Load diagrams for a package

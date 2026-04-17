@@ -158,7 +158,7 @@ module Lutaml
             .filter_map do |_stereotype, entities|
             entities.select do |entity|
               entity.respond_to?(:stereotype) &&
-                entity.stereotype&.match?(pattern)
+                Array(entity.stereotype).any? { |s| s&.match?(pattern) }
             end.uniq
           end.uniq.flatten
 

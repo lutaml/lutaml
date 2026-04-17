@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "set"
 require_relative "base_query"
 require_relative "../../uml/qualified_name"
 
@@ -171,7 +172,72 @@ module Lutaml
           qname.nil? ? nil : qname
         end
 
+        # Build inheritance tree for a class.
+        #
+        # @param class_or_id [Lutaml::Uml::Class, String] The class object,
+        #   qualified name, or xmi_id
+        # @return [Hash, nil] Tree structure with :class and :children keys
+        def inheritance_tree(class_or_id)
+          klass = resolve_by_id_or_qname(class_or_id)
+          return nil unless klass
+
+          qname = resolve_qname(klass)
+          return nil unless qname
+
+          child_qnames = indexes[:inheritance_graph][qname] || []
+          child_trees = child_qnames.filter_map do |child_qname|
+            inheritance_tree(child_qname)
+          end
+
+          {
+            class: klass,
+            children: child_trees,
+          }
+        end
+
+        # Check if a class has circular inheritance.
+        #
+        # @param class_or_id [Lutaml::Uml::Class, String] The class object,
+        #   qualified name, or xmi_id
+        # @return [Boolean] true if circular inheritance detected
+        def has_circular_inheritance?(class_or_id, visited: Set.new)
+          qname = if class_or_id.is_a?(String) &&
+              indexes[:qualified_names].key?(class_or_id)
+                    class_or_id
+                  else
+                    resolve_qname(class_or_id)
+                  end
+          return false unless qname
+
+          return true if visited.include?(qname)
+
+          visited.add(qname)
+          child_qnames = indexes[:inheritance_graph][qname] || []
+          child_qnames.any? do |child_qname|
+            has_circular_inheritance?(child_qname, visited: visited.dup)
+          end
+        end
+
         private
+
+        # Resolve a class by xmi_id or qualified name
+        #
+        # @param class_or_id [String] Qualified name or xmi_id
+        # @return [Lutaml::Uml::Class, nil] The resolved class
+        def resolve_by_id_or_qname(class_or_id)
+          # Try as qualified name first
+          klass = indexes[:qualified_names][class_or_id]
+          return klass if klass
+
+          # Try as xmi_id - search in qualified_names
+          indexes[:qualified_names].each_value do |entity|
+            next unless entity.respond_to?(:xmi_id)
+
+            return entity if entity.xmi_id == class_or_id
+          end
+
+          nil
+        end
 
         # Get direct subtypes of a class
         #

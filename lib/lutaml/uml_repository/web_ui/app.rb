@@ -76,13 +76,31 @@ module Lutaml
         # API: Package details (on-demand, optional optimization)
         get "/api/packages/:id" do
           content_type :json
-          params[:id]
+          requested_id = params[:id]
 
-          # Find package by generated ID
-          # This would require reverse lookup from ID to package
-          # For now, use the full data endpoint
-          halt 501, { error: "On-demand package loading not yet implemented. " \
-                             "Use /api/data" }.to_json
+          id_gen = UmlRepository::StaticSite::IDGenerator.new
+
+          # Search for package by matching generated ID
+          found_package = nil
+          repository.indexes[:package_paths].each_value do |package|
+            next unless package.is_a?(Lutaml::Uml::Package)
+
+            if id_gen.package_id(package) == requested_id
+              found_package = package
+              break
+            end
+          end
+
+          unless found_package
+            halt 404, { error: "Package not found: #{requested_id}" }.to_json
+          end
+
+          # Build package response
+          {
+            id: requested_id,
+            name: found_package.name,
+            xmi_id: found_package.xmi_id,
+          }.to_json
         end
 
         # API: Class details (on-demand, optional optimization)

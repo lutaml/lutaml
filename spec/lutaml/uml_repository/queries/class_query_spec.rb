@@ -47,7 +47,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::ClassQuery do
         classes = query.find_by_stereotype(stereotype)
         expect(classes).to be_an(Array)
         classes.each do |klass|
-          expect(klass.stereotype).to eq(stereotype)
+          expect(klass.stereotype).to include(stereotype)
         end
       end
     end

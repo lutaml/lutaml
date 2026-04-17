@@ -152,8 +152,7 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
       end
     end
 
-    # Skip YAML document serialization - has known issues unrelated to metadata
-    xit "includes serialized repository with yaml format" do
+    it "includes serialized repository with yaml format" do
       exporter = described_class.new(repository, serialization_format: :yaml)
       exporter.export(output_path.path)
 
@@ -248,8 +247,7 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
   end
 
   describe "backward compatibility" do
-    # Skip YAML backward compat test - has known issues unrelated to metadata
-    xit "works with old-style options" do
+    it "works with old-style options" do
       exporter = described_class.new(repository,
                                      name: "Legacy",
                                      version: "1.0",

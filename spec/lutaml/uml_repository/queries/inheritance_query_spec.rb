@@ -118,7 +118,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::InheritanceQuery do
     end
   end
 
-  xdescribe "#inheritance_tree" do
+  describe "#inheritance_tree" do
     it "builds inheritance tree for a class" do
       parent_classes = indexes[:inheritance_graph].keys.first
       if parent_classes
@@ -149,7 +149,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::InheritanceQuery do
     end
   end
 
-  xdescribe "#has_circular_inheritance?" do
+  describe "#has_circular_inheritance?" do
     it "detects circular inheritance" do
       parent_classes = indexes[:inheritance_graph].keys
       parent_classes.each do |parent_id|

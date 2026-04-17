@@ -27,7 +27,8 @@ module Lutaml
         pkg.xmi_id = package.id
         pkg.name = get_package_name(package)
         pkg.definition = doc_node_attribute_value(package.id, "documentation")
-        pkg.stereotype = doc_node_attribute_value(package.id, "stereotype")
+        st = doc_node_attribute_value(package.id, "stereotype")
+        pkg.stereotype = [st] if st
 
         pkg.packages = create_uml_packages(package)
         pkg.classes = create_uml_classes(package)
@@ -58,7 +59,8 @@ module Lutaml
           k.type = klass.type.split(":").last
           k.is_abstract = doc_node_attribute_value(klass.id, "isAbstract")
           k.definition = doc_node_attribute_value(klass.id, "documentation")
-          k.stereotype = doc_node_attribute_value(klass.id, "stereotype")
+          k_st = doc_node_attribute_value(klass.id, "stereotype")
+          k.stereotype = [k_st] if k_st
 
           k.attributes = create_uml_class_attributes(klass)
           k.associations = create_uml_associations(klass.id)
@@ -85,7 +87,8 @@ module Lutaml
             en.name = enum.name
             en.values = create_uml_values(enum)
             en.definition = doc_node_attribute_value(enum.id, "documentation")
-            en.stereotype = doc_node_attribute_value(enum.id, "stereotype")
+            en_st = doc_node_attribute_value(enum.id, "stereotype")
+            en.stereotype = [en_st] if en_st
           end
         end
       end
@@ -107,9 +110,10 @@ module Lutaml
             data_type.definition = doc_node_attribute_value(
               dt.id, "documentation"
             )
-            data_type.stereotype = doc_node_attribute_value(
+            dt_st = doc_node_attribute_value(
               dt.id, "stereotype"
             )
+            data_type.stereotype = [dt_st] if dt_st
 
             data_type.attributes = create_uml_class_attributes(dt)
             data_type.operations = create_uml_operations(dt)
@@ -246,7 +250,8 @@ module Lutaml
           gen.name = general_node.name
           gen.type = general_node.type
           gen.definition = lookup_element_prop_documentation(general_id)
-          gen.stereotype = doc_node_attribute_value(general_id, "stereotype")
+          gen_st = doc_node_attribute_value(general_id, "stereotype")
+          gen.stereotype = [gen_st] if gen_st
 
           if next_general_node_id
             gen.general = set_uml_generalization(

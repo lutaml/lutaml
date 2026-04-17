@@ -48,7 +48,7 @@ module Lutaml
 
           check_type_references
           check_generalization_references
-          # DISABLED: check_circular_inheritance - has bugs with name resolution
+          check_circular_inheritance
           check_association_references
           check_multiplicities
 

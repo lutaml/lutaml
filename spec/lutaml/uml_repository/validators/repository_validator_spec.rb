@@ -41,7 +41,7 @@ RSpec.describe Lutaml::UmlRepository::Validators::RepositoryValidator do
       end
     end
 
-    xcontext "with circular inheritance" do
+    context "with circular inheritance" do
       let(:document) do
         doc = Lutaml::Uml::Document.new
         doc.name = "TestModel"
@@ -86,8 +86,8 @@ RSpec.describe Lutaml::UmlRepository::Validators::RepositoryValidator do
       it "detects cycles" do
         result = validator.validate
         circular_errors = result.errors.select do |e|
-          e[:message].to_s.include?("circular") ||
-            e[:message].to_s.include?("cycle")
+          e.to_s.downcase.include?("circular") ||
+            e.to_s.downcase.include?("cycle")
         end
         expect(circular_errors).not_to be_empty
       end

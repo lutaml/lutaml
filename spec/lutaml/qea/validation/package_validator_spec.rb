@@ -98,7 +98,7 @@ RSpec.describe Lutaml::Qea::Validation::PackageValidator do
       end
     end
 
-    xcontext "with circular hierarchy" do
+    context "with circular hierarchy" do
       let(:packages) do
         [
           Lutaml::Qea::Models::EaPackage.new(

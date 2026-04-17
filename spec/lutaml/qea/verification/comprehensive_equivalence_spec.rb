@@ -12,8 +12,10 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
     test_files = [
       {
         name: "UmlModel Template",
-        xmi: File.join(__dir__, "../../../../examples/xmi/UmlModel_template.xmi"),
-        qea: File.join(__dir__, "../../../../examples/qea/UmlModel_template.qea"),
+        xmi: File.join(__dir__,
+                       "../../../../examples/xmi/UmlModel_template.xmi"),
+        qea: File.join(__dir__,
+                       "../../../../examples/qea/UmlModel_template.qea"),
       },
       {
         name: "Test Model",

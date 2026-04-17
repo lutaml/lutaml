@@ -83,12 +83,8 @@ module Lutaml
             }
 
             # Add stereotype if available
-            if uml_element.respond_to?(:stereotype) && uml_element.stereotype
-              element_data[:stereotype] = if uml_element.stereotype.is_a?(Array)
-                                            uml_element.stereotype.first
-                                          else
-                                            uml_element.stereotype
-                                          end
+            if uml_element.respond_to?(:stereotype) && uml_element.stereotype && !uml_element.stereotype.empty?
+              element_data[:stereotype] = uml_element.stereotype.first
             end
 
             # Add attributes and operations for classes

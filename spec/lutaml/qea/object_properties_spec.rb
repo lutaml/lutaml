@@ -159,9 +159,11 @@ RSpec.describe "Object Properties Support" do
     end
 
     it "attaches object properties to UML classes as tagged values" do
-      # Find an object that has properties
+      # Find an object that has properties (match by ea_object_id == obj.id)
       object_with_props = database.objects.all.find do |obj|
-        database.object_properties.any? { |p| p.equal?(obj) }
+        database.object_properties.any? do |p|
+          p.ea_object_id == obj.ea_object_id
+        end
       end
 
       skip "No objects with properties found" unless object_with_props
@@ -174,7 +176,7 @@ RSpec.describe "Object Properties Support" do
       expect(uml_class.tagged_values).not_to be_empty
 
       property_tag_names = database.object_properties
-        .select { |p| p.equal?(object_with_props) }
+        .select { |p| p.ea_object_id == object_with_props.ea_object_id }
         .map(&:property)
 
       uml_tag_names = uml_class.tagged_values.map(&:name)

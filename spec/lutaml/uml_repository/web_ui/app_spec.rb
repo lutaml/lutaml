@@ -49,15 +49,14 @@ RSpec.describe Lutaml::Xmi::WebUi::App do
     end
   end
 
-  # not yet implemented
   describe "GET /api/packages/:id" do
-    xit "returns package as JSON" do
+    it "returns package as JSON" do
       get "/api/packages/pkg_5b44a156"
       expect(last_response).to be_ok
       expect(last_response.content_type).to include("application/json")
 
       data = JSON.parse(last_response.body)
-      expect(data["name"]).to eq("ModelRoot")
+      expect(data["name"]).to eq("Model")
     end
   end
 
