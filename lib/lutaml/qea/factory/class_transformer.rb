@@ -21,10 +21,11 @@ module Lutaml
         def transform(ea_object) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           return nil if ea_object.nil?
 
-          # Allow Class, Interface, and Text objects that appear on diagrams
+          # Allow Class, Interface, ProxyConnector, and Text objects
           is_class_type = ea_object.uml_class? || ea_object.interface?
+          is_proxy = ea_object.object_type == "ProxyConnector"
           is_text_class = ea_object.object_type == "Text"
-          return nil unless is_class_type || is_text_class
+          return nil unless is_class_type || is_proxy || is_text_class
 
           Lutaml::Uml::Class.new.tap do |klass| # rubocop:disable Metrics/BlockLength
             # Map basic properties
@@ -33,7 +34,7 @@ module Lutaml
                                                         "EAID")
             klass.is_abstract = ea_object.abstract?
             # Text objects exported as Class in XMI
-            klass.type = is_text_class ? "Class" : "Class"
+            klass.type = "Class"
             klass.visibility = map_visibility(ea_object.visibility)
 
             # Map stereotype - return string if single, array if multiple
@@ -49,26 +50,14 @@ module Lutaml
               stereotypes << xref_stereotype
             end
 
-            # Return string if single stereotype, array if multiple, nil if none
+            # Assign stereotypes (always as array for collection: true)
             unless stereotypes.empty?
-              klass.stereotype = if stereotypes.size == 1
-                                   stereotypes.first
-                                 else
-                                   stereotypes
-                                 end
+              klass.stereotype = stereotypes
             end
 
             # Add "interface" stereotype if it's an interface
-            if ea_object.interface?
-              if klass.stereotype.nil?
-                klass.stereotype = "interface"
-              elsif klass.stereotype.is_a?(String)
-                klass.stereotype = [klass.stereotype, "interface"].uniq
-              elsif klass.stereotype.is_a?(Array)
-                unless klass.stereotype.include?("interface")
-                  klass.stereotype << "interface"
-                end
-              end
+            if ea_object.interface? && !klass.stereotype.include?("interface")
+              klass.stereotype << "interface"
             end
 
             # Map definition/notes

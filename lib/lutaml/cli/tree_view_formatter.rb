@@ -281,7 +281,7 @@ module Lutaml
       def determine_class_type(klass)
         return :enumeration if klass.class.name&.include?("Enum")
         return :interface if klass.respond_to?(:stereotype) &&
-          klass.stereotype&.downcase == "interface"
+          Array(klass.stereotype).any? { |s| s&.downcase == "interface" }
 
         :class
       end

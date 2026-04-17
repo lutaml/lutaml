@@ -5,7 +5,9 @@ require_relative "../../lib/lutaml/parser"
 require "tempfile"
 
 RSpec.describe Lutaml::Parser, "#parse with QEA files" do
-  let(:qea_file_path) { File.expand_path("../../examples/qea/test.qea", __dir__) }
+  let(:qea_file_path) do
+    File.expand_path("../../examples/qea/test.qea", __dir__)
+  end
 
   describe ".parse" do
     context "with QEA file" do

@@ -359,8 +359,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::XmiParser do
       expect(result).to be_a(Lutaml::Uml::Document)
     end
 
-    # Not implemented yet - placeholder for future memory limit tests
-    xit "respects memory limits from options" do
+    it "respects memory limits from options" do
       parser_with_limits = described_class.new(
         configuration: configuration,
         options: { memory_limit: 1 }, # Very low limit

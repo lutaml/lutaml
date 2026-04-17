@@ -388,20 +388,38 @@ module Lutaml
 
         classes.each do |klass|
           next unless klass.name
-          next unless klass.generalization
 
           child_qname = "#{package_path}::#{klass.name}"
 
-          # Handle generalization - it could have a general attribute
-          parent_name = extract_parent_name(klass.generalization)
-          next unless parent_name
+          # Handle generalization attribute
+          if klass.generalization
+            parent_name = extract_parent_name(klass.generalization)
+            if parent_name
+              parent_qname = resolve_qualified_name(parent_name, package_path)
+              if parent_qname && child_qname != parent_qname
+                @inheritance_graph[parent_qname] ||= []
+                @inheritance_graph[parent_qname] << child_qname
+              end
+            end
+          end
 
-          # Try to resolve parent qualified name
-          parent_qname = resolve_qualified_name(parent_name, package_path)
-          next unless parent_qname
+          # Handle inheritance associations
+          next unless klass.associations
 
-          # Avoid self-references
-          if child_qname != parent_qname
+          klass.associations.each do |assoc|
+            next unless assoc.respond_to?(:member_end_type)
+            next unless assoc.member_end_type == "inheritance"
+
+            parent_name = assoc.member_end
+            next unless parent_name
+
+            parent_name = parent_name.name if parent_name.respond_to?(:name)
+            next unless parent_name.is_a?(String) && !parent_name.empty?
+
+            parent_qname = resolve_qualified_name(parent_name, package_path)
+            next unless parent_qname
+            next if child_qname == parent_qname
+
             @inheritance_graph[parent_qname] ||= []
             @inheritance_graph[parent_qname] << child_qname
           end

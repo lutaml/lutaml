@@ -61,9 +61,6 @@ module Lutaml
 
             # Load diagram type
             diagram.diagram_type = ea_diagram.diagram_type
-
-            # Load diagram id
-            diagram.package_id = ea_diagram.package_id
           end
         end
 

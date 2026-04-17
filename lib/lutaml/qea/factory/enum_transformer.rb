@@ -15,7 +15,8 @@ module Lutaml
         # @return [Lutaml::Uml::Enum] UML enum
         def transform(ea_object) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength
           return nil if ea_object.nil?
-          return nil unless ea_object.enumeration?
+          return nil unless ea_object.enumeration? ||
+            (ea_object.stereotype && ea_object.stereotype.downcase == "enumeration")
 
           Lutaml::Uml::Enum.new.tap do |enum|
             # Map basic properties
@@ -24,12 +25,9 @@ module Lutaml
                                                        "EAID")
             enum.visibility = map_visibility(ea_object.visibility)
 
-            # Set package path
-            enum.package_path = calculate_package_path(ea_object.package_id)
-
             # Map stereotype
             if ea_object.stereotype && !ea_object.stereotype.empty?
-              enum.stereotype = ea_object.stereotype
+              enum.stereotype = [ea_object.stereotype]
             end
 
             # Map definition/notes

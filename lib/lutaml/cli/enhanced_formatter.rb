@@ -140,8 +140,10 @@ module Lutaml
         if klass.respond_to?(:xmi_id)
           lines << "  XMI ID:      #{klass.xmi_id}"
         end
-        if klass.respond_to?(:stereotype) && klass.stereotype
-          lines << "  Stereotype:  #{klass.stereotype}"
+        if klass.respond_to?(:stereotype) && klass.stereotype && !klass.stereotype.empty?
+          st = klass.stereotype
+          st_str = st.is_a?(Array) ? st.join(", ") : st
+          lines << "  Stereotype:  #{st_str}"
         end
         if klass.respond_to?(:is_abstract)
           lines << "  Abstract:    #{klass.is_abstract ? 'Yes' : 'No'}"

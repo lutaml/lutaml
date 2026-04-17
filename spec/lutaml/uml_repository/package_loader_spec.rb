@@ -216,13 +216,12 @@ RSpec.describe Lutaml::UmlRepository::PackageLoader do
       exporter.export(lur_path.path)
     end
 
-    # Skip YAML format tests - has known issues unrelated to metadata
-    xit "loads from YAML format" do
+    it "loads from YAML format" do
       loaded_repo = described_class.load(lur_path.path)
       expect(loaded_repo).to be_a(Lutaml::UmlRepository::Repository)
     end
 
-    xit "deserializes YAML document correctly" do
+    it "deserializes YAML document correctly" do
       loaded_repo = described_class.load(lur_path.path)
       expect(loaded_repo.document).to be_a(Lutaml::Uml::Document)
     end

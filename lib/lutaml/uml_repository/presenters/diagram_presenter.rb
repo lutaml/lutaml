@@ -424,14 +424,9 @@ module Lutaml
           return nil unless uml_element.respond_to?(:stereotype)
 
           stereotype = uml_element.stereotype
-          return nil unless stereotype
+          return nil unless stereotype && !stereotype.empty?
 
-          # Handle array of stereotypes
-          if stereotype.is_a?(Array)
-            stereotype.first
-          else
-            stereotype
-          end
+          stereotype.is_a?(Array) ? stereotype.first : stereotype
         end
 
         # Extract attributes from element

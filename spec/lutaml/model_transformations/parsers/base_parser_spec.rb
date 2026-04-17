@@ -148,12 +148,12 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::BaseParser do
       expect(parser.validate_input_called).to be_falsy
     end
 
-    xit "measures parsing duration" do
+    it "measures parsing duration" do
       parser.parse(test_file.path)
       expect(parser.last_duration).to be > 0
     end
 
-    xit "records transformation statistics" do
+    it "records transformation statistics" do
       parser.parse(test_file.path)
 
       stats = parser.statistics
@@ -183,7 +183,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::BaseParser do
         end.to raise_error(ArgumentError, /Invalid content/)
       end
 
-      xit "records failed parse in statistics" do
+      it "records failed parse in statistics" do
         begin
           parser.parse(invalid_file.path)
         rescue ArgumentError
@@ -218,7 +218,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::BaseParser do
         )
       end
 
-      xit "records failed parse in statistics" do
+      it "records failed parse in statistics" do
         begin
           parser.parse(test_file.path)
         rescue StandardError
@@ -324,7 +324,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::BaseParser do
       )
     end
 
-    xit "calculates success rate correctly" do
+    it "calculates success rate correctly" do
       # One success
       parser.parse(test_file.path)
 
@@ -344,7 +344,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::BaseParser do
       expect(failing_stats[:success_rate]).to eq(0.0)
     end
 
-    xit "calculates average duration" do
+    it "calculates average duration" do
       parser.parse(test_file.path)
       parser.parse(test_file.path)
 
@@ -364,7 +364,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::BaseParser do
 
     after { test_file.unlink }
 
-    xit "resets all statistics" do
+    it "resets all statistics" do
       parser.parse(test_file.path)
 
       stats_before = parser.statistics
@@ -533,7 +533,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::BaseParser do
 
     after { test_file.unlink }
 
-    xit "handles concurrent parsing safely" do
+    it "handles concurrent parsing safely" do
       threads = []
       results = []
 
@@ -547,7 +547,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::BaseParser do
       threads.each(&:join)
 
       expect(results.size).to eq(5)
-      expect(results.all?(&:present?)).to be true
+      expect(results.all? { |r| !r.nil? }).to be true
 
       stats = parser.statistics
       expect(stats[:total_parses]).to eq(5)

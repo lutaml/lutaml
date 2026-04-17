@@ -135,7 +135,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::SearchQuery do
           expect(result.element).not_to be_nil
           expect(result.element_type).not_to be_nil
           expect(result.match_field).to eq("stereotype")
-          expect(result.element.stereotype).to eq(stereotype)
+          expect(result.element.stereotype).to include(stereotype)
         end
       end
     end

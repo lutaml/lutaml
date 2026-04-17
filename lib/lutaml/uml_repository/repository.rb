@@ -345,6 +345,40 @@ module Lutaml
         @error_handler.class_not_found_error(qualified_name)
       end
 
+      # Find an attribute by its qualified name.
+      #
+      # The qualified name format is "PackagePath::ClassName::attributeName".
+      # Splits off the last segment as the attribute name, finds the containing
+      # class, then returns the matching attribute.
+      #
+      # @param qualified_name [String] Qualified name of the attribute
+      # @return [Lutaml::Uml::Attribute, nil] The attribute or nil
+      # @example
+      #   attr = repo.find_attribute("ModelRoot::Core::Building::name")
+      def find_attribute(qualified_name)
+        class_qname, _, attr_name = qualified_name.rpartition("::")
+        return nil if class_qname.empty?
+
+        klass = class_query.find_by_qname(class_qname)
+        return nil unless klass
+
+        attrs = klass.attributes
+        return nil unless attrs
+
+        attrs.find { |a| a.name == attr_name }
+      end
+
+      # Get all attributes across all classes in the repository.
+      #
+      # @return [Array<Lutaml::Uml::Attribute>] All attribute objects
+      def all_attributes
+        indexes[:qualified_names].flat_map do |_qname, entity|
+          next [] unless entity.respond_to?(:attributes) && entity.attributes
+
+          entity.attributes
+        end
+      end
+
       # Find all classes with a specific stereotype.
       #
       # @param stereotype [String] The stereotype to search for

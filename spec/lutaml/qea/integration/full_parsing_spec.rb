@@ -245,10 +245,19 @@ RSpec.describe "QEA Full Parsing Integration", :integration do
       end.to raise_error
     end
 
-    xit "handles empty database gracefully" do
-      # This test depends on having an empty QEA file
-      # Skip if not available
-      pending "Requires empty QEA test file"
+    it "handles empty database gracefully" do
+      require "sqlite3"
+      Tempfile.create(["empty", ".qea"]) do |f|
+        db = SQLite3::Database.new(f.path)
+        Lutaml::Qea::Services::DatabaseLoader::MODEL_CLASSES.each_key do |table|
+          db.execute("CREATE TABLE #{table} (id INTEGER PRIMARY KEY)")
+        end
+        db.close
+
+        document = Lutaml::Qea.parse(f.path)
+        expect(document).to be_a(Lutaml::Uml::Document)
+        expect(document.packages).to be_empty
+      end
     end
   end
 

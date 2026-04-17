@@ -38,7 +38,7 @@ module Lutaml
             end
 
             # Map stereotype from current object
-            gen.stereotype = current_object.stereotype unless
+            gen.stereotype = [current_object.stereotype] unless
               current_object.stereotype.nil? || current_object.stereotype.empty?
 
             # Find the package/upper class for the current object

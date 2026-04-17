@@ -250,7 +250,10 @@ module Lutaml
         # EA uses y-up convention; SVG uses y-down.
         # Also shifts all coordinates so minimum x,y is at padding offset.
         def normalize_coordinates(elements, connectors) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
-          return { elements: elements, connectors: connectors } if elements.empty?
+          if elements.empty?
+            return { elements: elements,
+                     connectors: connectors }
+          end
 
           padding = 10
 
@@ -388,11 +391,13 @@ module Lutaml
 
             # Add source/target positions
             if source_obj
-              connector_data[:source_element] = diagram_object_bounds(source_obj)
+              connector_data[:source_element] =
+                diagram_object_bounds(source_obj)
             end
 
             if target_obj
-              connector_data[:target_element] = diagram_object_bounds(target_obj)
+              connector_data[:target_element] =
+                diagram_object_bounds(target_obj)
             end
 
             # Add role and multiplicity
