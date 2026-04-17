@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "set"
 require_relative "validation_result"
 
 module Lutaml
@@ -247,9 +248,13 @@ module Lutaml
 
           path_parts = []
           current_id = package_id
+          visited = Set.new
 
           # Walk up the parent chain to build full path
           while current_id && !current_id.zero?
+            break if visited.include?(current_id)
+
+            visited.add(current_id)
             package = database.packages.find { |p| p.package_id == current_id }
 
             if package
