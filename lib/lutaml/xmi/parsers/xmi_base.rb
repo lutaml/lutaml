@@ -30,7 +30,7 @@ module Lutaml
           @xmi_root_model ||= xmi_model
 
           if @xmi_index.nil?
-            @xmi_index = ::Xmi::Index.new(@xmi_root_model)
+            @xmi_index = @xmi_root_model.index
             @id_name_mapping = id_name_mapping || @xmi_index.id_name_map
           end
         end
