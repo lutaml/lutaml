@@ -9,6 +9,7 @@ gem "parsanol", "1.3.9"
 
 gem "canon"
 gem "listen"
+gem "xmi", github: "lutaml/xmi", branch: "feat/xmi-index"
 gem "lutaml-model", github: "lutaml/lutaml-model", ref: "1dbe006"
 gem "openssl", "~> 3.0"
 gem "pry"
