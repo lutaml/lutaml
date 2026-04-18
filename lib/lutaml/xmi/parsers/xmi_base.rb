@@ -27,11 +27,11 @@ module Lutaml
         # @param id_name_mapping [Hash]
         # @return [Hash]
         def set_xmi_model(xmi_model, id_name_mapping = nil)
-          @id_name_mapping ||= id_name_mapping || {}
           @xmi_root_model ||= xmi_model
 
-          if @id_name_mapping.empty?
-            map_id_name(@id_name_mapping, @xmi_root_model)
+          if @xmi_index.nil?
+            @xmi_index = ::Xmi::Index.new(@xmi_root_model)
+            @id_name_mapping = id_name_mapping || @xmi_index.id_name_map
           end
         end
 
@@ -268,44 +268,38 @@ module Lutaml
           ]
         end
 
-        # Build a cache for packaged elements by ID
-        def build_packaged_element_cache
-          @packaged_element_cache = all_packaged_elements.to_h { |e| [e.id, e] }
-        end
-
         # @param id [String]
         # @return [Lutaml::Model::Serializable]
         def find_packaged_element_by_id(id)
-          build_packaged_element_cache unless @packaged_element_cache
-          @packaged_element_cache[id]
+          @xmi_index.find_packaged_element(id)
         end
 
         # @param id [String]
         # @return [Lutaml::Model::Serializable]
         def find_upper_level_packaged_element(klass_id)
-          build_upper_level_cache unless @upper_level_cache
-          @upper_level_cache[klass_id]
+          @xmi_index.find_parent(klass_id)
         end
 
-        def find_subtype_of_from_owned_attribute_type(id) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
-          @pkg_elements_owned_attributes ||= all_packaged_elements.map do |e|
-            {
-              name: e.name,
-              idrefs: e&.owned_attribute&.map do |oa|
-                        oa&.uml_type&.idref
-                      end || [],
-            }
-          end
-          result = @pkg_elements_owned_attributes.find do |e|
-            e[:idrefs].include?(id)
+        def find_subtype_of_from_owned_attribute_type(id) # rubocop:disable Metrics/AbcSize
+          @pkg_elements_owned_attributes ||= begin
+            cache = {}
+            all_packaged_elements.each do |e|
+              next unless e.owned_attribute
+
+              e.owned_attribute.each do |oa|
+                next unless oa.association && oa.uml_type && oa.uml_type.idref
+
+                cache[oa.uml_type.idref] = e.name
+              end
+            end
+            cache
           end
 
-          result[:name] if result
+          @pkg_elements_owned_attributes[id]
         end
 
         def find_subtype_of_from_generalization(id) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
-          matched_element = @xmi_root_model.extension.elements.element
-            .find { |e| e.idref == id }
+          matched_element = @xmi_index.find_element(id)
 
           return if !matched_element || !matched_element.links
 
@@ -320,17 +314,6 @@ module Lutaml
           return if matched_generalization&.end.nil?
 
           lookup_entity_name(matched_generalization.end)
-        end
-
-        # Build cache once for all packaged elements
-        def build_upper_level_cache
-          @upper_level_cache = {}
-
-          all_packaged_elements.each do |e|
-            e.packaged_element.each do |pe|
-              @upper_level_cache[pe.id] = e
-            end
-          end
         end
 
         # @param path [String]
@@ -359,10 +342,9 @@ module Lutaml
         # @param name_array [Array<String>]
         # @return [Lutaml::Model::Serializable]
         def iterate_relative_packaged_element(name_array)
-          # match the first element in the name_array
-          matched_elements = all_packaged_elements.select do |e|
-            e.type?("uml:Package") && e.name == name_array[0]
-          end
+          # match the first element in the name_array using index
+          matched_elements = @xmi_index.packaged_elements_of_type("uml:Package")
+            .select { |e| e.name == name_array[0] }
 
           # match the rest elements in the name_array
           result = matched_elements.map do |e|
@@ -395,44 +377,35 @@ module Lutaml
         # @param name [String]
         # @return [Lutaml::Model::Serializable]
         def find_klass_packaged_element_by_name(name)
-          all_packaged_elements.find do |e|
-            e.name == name &&
-              (
-                e.type?("uml:Class") ||
-                e.type?("uml:AssociationClass")
-              )
-          end
+          @xmi_index.find_packaged_by_name_and_types(name,
+            ["uml:Class", "uml:AssociationClass"])
         end
 
         # @param name [String]
         # @return [Lutaml::Model::Serializable]
         def find_enum_packaged_element_by_name(name)
-          all_packaged_elements.find do |e|
-            e.name == name && e.type?("uml:Enumeration")
-          end
+          @xmi_index.packaged_elements_of_type("uml:Enumeration")
+            .find { |e| e.name == name }
         end
 
         # @param supplier_id [String]
         # @return [Lutaml::Model::Serializable]
         def select_dependencies_by_supplier(supplier_id)
-          all_packaged_elements.select do |e|
-            e.supplier == supplier_id &&
-              e.type?("uml:Dependency")
-          end
+          @xmi_index.packaged_elements_of_type("uml:Dependency")
+            .select { |e| e.supplier == supplier_id }
         end
 
         # @param supplier_id [String]
         # @return [Lutaml::Model::Serializable]
         def select_dependencies_by_client(client_id)
-          all_packaged_elements.select do |e|
-            e.client == client_id && e.type?("uml:Dependency")
-          end
+          @xmi_index.packaged_elements_of_type("uml:Dependency")
+            .select { |e| e.client == client_id }
         end
 
         # @param name [String]
         # @return [Lutaml::Model::Serializable]
         def find_packaged_element_by_name(name)
-          all_packaged_elements.find { |e| e.name == name }
+          @xmi_index.packaged_elements.find { |e| e.name == name }
         end
 
         # @param package [Lutaml::Model::Serializable]
@@ -526,8 +499,7 @@ module Lutaml
         # @return [Array<Hash>]
         # @note xpath %(//element[@xmi:idref="#{xmi_id}"]/links/*)
         def serialize_model_associations(xmi_id) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
-          matched_element = @xmi_root_model.extension.elements.element
-            .find { |e| e.idref == xmi_id }
+          matched_element = @xmi_index.find_element(xmi_id)
 
           return if !matched_element || !matched_element.links
 
@@ -571,9 +543,7 @@ module Lutaml
         # @return [Lutaml::Model::Serializable]
         # @note xpath %(//connector[@xmi:idref="#{link_id}"])
         def fetch_connector(link_id)
-          @xmi_root_model.extension.connectors.connector.find do |con|
-            con.idref == link_id
-          end
+          @xmi_index.find_connector(link_id)
         end
 
         # @param link_id [String]
@@ -798,13 +768,9 @@ module Lutaml
         # @return [Array<Hash, String>]
         # @note xpath
         #   %(//ownedAttribute[@association]/type[@xmi:idref="#{xmi_id}"])
-        def fetch_owned_attribute_node(xmi_id) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
-          all_elements = all_packaged_elements
-
-          owned_attributes = all_elements.map(&:owned_attribute).flatten
-          oa = owned_attributes.find do |a|
-            !!a.association && a.uml_type && a.uml_type.idref == xmi_id
-          end
+        def fetch_owned_attribute_node(xmi_id)
+          oa = @xmi_index.find_owned_attrs_by_type(xmi_id)
+            .find { |a| !!a.association }
 
           if oa
             cardinality = cardinality_min_max_value(
@@ -820,9 +786,7 @@ module Lutaml
         # @return [Lutaml::Model::Serializable]
         # @note xpath %(//element[@xmi:idref="#{klass['xmi:id']}"])
         def fetch_element(klass_id)
-          @xmi_root_model.extension.elements.element.find do |e|
-            e.idref == klass_id
-          end
+          @xmi_index.find_element(klass_id)
         end
 
         # @param klass [Lutaml::Model::Serializable]
@@ -923,20 +887,7 @@ module Lutaml
         # @return [Lutaml::Model::Serializable]
         # @note xpath %(//attribute[@xmi:idref="#{xmi_id}"])
         def fetch_attribute_node(xmi_id)
-          @attribute_cache ||= build_attribute_cache
-          @attribute_cache[xmi_id]
-        end
-
-        def build_attribute_cache
-          cache = {}
-          @xmi_root_model.extension.elements.element.each do |e|
-            next unless e.attributes&.attribute
-
-            e.attributes.attribute.each do |a|
-              cache[a.idref] = a # Store in hash for quick lookup
-            end
-          end
-          cache
+          @xmi_index.find_attribute(xmi_id)
         end
 
         # @param xmi_id [String]
@@ -953,19 +904,16 @@ module Lutaml
         # @param xmi_id [String]
         # @return [String]
         def lookup_element_prop_documentation(xmi_id)
-          element_node = @xmi_root_model.extension.elements.element.find do |e|
-            e.idref == xmi_id
-          end
+          element_node = @xmi_index.find_element(xmi_id)
 
           return unless element_node&.properties
 
-          element_node&.properties&.documentation
+          element_node.properties.documentation
         end
 
         # @param xmi_id [String]
         # @return [String]
         def lookup_entity_name(xmi_id)
-          model_node_name_by_xmi_id(xmi_id) if @id_name_mapping.empty?
           @id_name_mapping[xmi_id]
         end
 
@@ -1016,31 +964,11 @@ module Lutaml
           connector_name_by_source_or_target(xmi_id, :target)
         end
 
-        # @param xmi_id [String]
-        # @return [String]
-        # @note xpath %(//*[@xmi:id="#{xmi_id}"])
-        def model_node_name_by_xmi_id(xmi_id)
-          id_name_mapping = Hash.new
-          map_id_name(id_name_mapping, @xmi_root_model)
-          @id_name_mapping = id_name_mapping
-          @id_name_mapping[xmi_id]
-        end
+        # @note Removed: model_node_name_by_xmi_id - replaced by Xmi::Index
 
         # @return [Array<::Xmi::Uml::PackagedElement>]
         def all_packaged_elements
-          return @all_packaged_elements_cache if @all_packaged_elements_cache
-
-          all_elements = []
-          packaged_element_roots = @xmi_root_model.model.packaged_element +
-            @xmi_root_model.extension.primitive_types.packaged_element +
-            @xmi_root_model.extension.profiles.profile.map(&:packaged_element)
-
-          packaged_element_roots.flatten.each do |e|
-            select_all_packaged_elements(all_elements, e, nil)
-          end
-
-          @all_packaged_elements_cache = all_elements
-          all_elements
+          @xmi_index.packaged_elements
         end
 
         # @param items [Array<Lutaml::Model::Serializable>]
@@ -1078,29 +1006,7 @@ module Lutaml
           end
         end
 
-        # @param result [Hash]
-        # @param node [Lutaml::Model::Serializable]
-        # @note set id as key and name as value into result
-        #       if id and name are found
-        def map_id_name(result, node) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
-          return if node.nil?
-
-          if node.is_a?(Array)
-            node.each do |arr_item|
-              map_id_name(result, arr_item)
-            end
-          elsif node.class.methods.include?(:attributes)
-            attrs = node.class.attributes
-
-            if attrs.has_key?(:id) && attrs.has_key?(:name)
-              result[node.id] = node.name
-            end
-
-            attrs.each_pair do |k, _v|
-              map_id_name(result, node.send(k))
-            end
-          end
-        end
+        # @note Removed: map_id_name - replaced by Xmi::Index
       end
     end
   end
