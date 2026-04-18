@@ -35,6 +35,15 @@ module Lutaml
           end
         end
 
+        # Access the index, auto-initializing from @xmi_root_model if needed
+        def xmi_index
+          if @xmi_index.nil? && @xmi_root_model
+            @xmi_index = @xmi_root_model.index
+            @id_name_mapping ||= @xmi_index.id_name_map
+          end
+          @xmi_index
+        end
+
         private
 
         # @param xmi_model [Lutaml::Model::Serializable]
@@ -271,13 +280,13 @@ module Lutaml
         # @param id [String]
         # @return [Lutaml::Model::Serializable]
         def find_packaged_element_by_id(id)
-          @xmi_index.find_packaged_element(id)
+          xmi_index.find_packaged_element(id)
         end
 
         # @param id [String]
         # @return [Lutaml::Model::Serializable]
         def find_upper_level_packaged_element(klass_id)
-          @xmi_index.find_parent(klass_id)
+          xmi_index.find_parent(klass_id)
         end
 
         def find_subtype_of_from_owned_attribute_type(id) # rubocop:disable Metrics/AbcSize
@@ -299,7 +308,7 @@ module Lutaml
         end
 
         def find_subtype_of_from_generalization(id) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
-          matched_element = @xmi_index.find_element(id)
+          matched_element = xmi_index.find_element(id)
 
           return if !matched_element || !matched_element.links
 
@@ -343,7 +352,7 @@ module Lutaml
         # @return [Lutaml::Model::Serializable]
         def iterate_relative_packaged_element(name_array)
           # match the first element in the name_array using index
-          matched_elements = @xmi_index.packaged_elements_of_type("uml:Package")
+          matched_elements = xmi_index.packaged_elements_of_type("uml:Package")
             .select { |e| e.name == name_array[0] }
 
           # match the rest elements in the name_array
@@ -377,35 +386,35 @@ module Lutaml
         # @param name [String]
         # @return [Lutaml::Model::Serializable]
         def find_klass_packaged_element_by_name(name)
-          @xmi_index.find_packaged_by_name_and_types(name,
+          xmi_index.find_packaged_by_name_and_types(name,
             ["uml:Class", "uml:AssociationClass"])
         end
 
         # @param name [String]
         # @return [Lutaml::Model::Serializable]
         def find_enum_packaged_element_by_name(name)
-          @xmi_index.packaged_elements_of_type("uml:Enumeration")
+          xmi_index.packaged_elements_of_type("uml:Enumeration")
             .find { |e| e.name == name }
         end
 
         # @param supplier_id [String]
         # @return [Lutaml::Model::Serializable]
         def select_dependencies_by_supplier(supplier_id)
-          @xmi_index.packaged_elements_of_type("uml:Dependency")
+          xmi_index.packaged_elements_of_type("uml:Dependency")
             .select { |e| e.supplier == supplier_id }
         end
 
         # @param supplier_id [String]
         # @return [Lutaml::Model::Serializable]
         def select_dependencies_by_client(client_id)
-          @xmi_index.packaged_elements_of_type("uml:Dependency")
+          xmi_index.packaged_elements_of_type("uml:Dependency")
             .select { |e| e.client == client_id }
         end
 
         # @param name [String]
         # @return [Lutaml::Model::Serializable]
         def find_packaged_element_by_name(name)
-          @xmi_index.packaged_elements.find { |e| e.name == name }
+          xmi_index.packaged_elements.find { |e| e.name == name }
         end
 
         # @param package [Lutaml::Model::Serializable]
@@ -499,7 +508,7 @@ module Lutaml
         # @return [Array<Hash>]
         # @note xpath %(//element[@xmi:idref="#{xmi_id}"]/links/*)
         def serialize_model_associations(xmi_id) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
-          matched_element = @xmi_index.find_element(xmi_id)
+          matched_element = xmi_index.find_element(xmi_id)
 
           return if !matched_element || !matched_element.links
 
@@ -543,7 +552,7 @@ module Lutaml
         # @return [Lutaml::Model::Serializable]
         # @note xpath %(//connector[@xmi:idref="#{link_id}"])
         def fetch_connector(link_id)
-          @xmi_index.find_connector(link_id)
+          xmi_index.find_connector(link_id)
         end
 
         # @param link_id [String]
@@ -769,7 +778,7 @@ module Lutaml
         # @note xpath
         #   %(//ownedAttribute[@association]/type[@xmi:idref="#{xmi_id}"])
         def fetch_owned_attribute_node(xmi_id)
-          oa = @xmi_index.find_owned_attrs_by_type(xmi_id)
+          oa = xmi_index.find_owned_attrs_by_type(xmi_id)
             .find { |a| !!a.association }
 
           if oa
@@ -786,7 +795,7 @@ module Lutaml
         # @return [Lutaml::Model::Serializable]
         # @note xpath %(//element[@xmi:idref="#{klass['xmi:id']}"])
         def fetch_element(klass_id)
-          @xmi_index.find_element(klass_id)
+          xmi_index.find_element(klass_id)
         end
 
         # @param klass [Lutaml::Model::Serializable]
@@ -887,7 +896,7 @@ module Lutaml
         # @return [Lutaml::Model::Serializable]
         # @note xpath %(//attribute[@xmi:idref="#{xmi_id}"])
         def fetch_attribute_node(xmi_id)
-          @xmi_index.find_attribute(xmi_id)
+          xmi_index.find_attribute(xmi_id)
         end
 
         # @param xmi_id [String]
@@ -904,7 +913,7 @@ module Lutaml
         # @param xmi_id [String]
         # @return [String]
         def lookup_element_prop_documentation(xmi_id)
-          element_node = @xmi_index.find_element(xmi_id)
+          element_node = xmi_index.find_element(xmi_id)
 
           return unless element_node&.properties
 
@@ -968,7 +977,7 @@ module Lutaml
 
         # @return [Array<::Xmi::Uml::PackagedElement>]
         def all_packaged_elements
-          @xmi_index.packaged_elements
+          xmi_index.packaged_elements
         end
 
         # @param items [Array<Lutaml::Model::Serializable>]
