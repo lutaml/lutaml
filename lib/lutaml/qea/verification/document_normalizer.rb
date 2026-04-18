@@ -11,11 +11,10 @@ module Lutaml
         # @param document [Lutaml::Uml::Document] The document to normalize
         # @return [Lutaml::Uml::Document] A normalized copy
         def normalize(document)
-          normalized = deep_copy(document)
-          remove_xmi_ids(normalized)
-          sort_collections(normalized)
-          normalize_strings_in_document(normalized)
-          normalized
+          remove_xmi_ids(document)
+          sort_collections(document)
+          normalize_strings_in_document(document)
+          document
         end
 
         # Remove all XMI IDs from document
@@ -70,13 +69,6 @@ module Lutaml
         end
 
         private
-
-        # Deep copy document to avoid modifying original
-        def deep_copy(document)
-          # Use YAML serialization for deep copy
-          yaml = document.to_yaml
-          Lutaml::Uml::Document.from_yaml(yaml)
-        end
 
         # Process packages recursively to remove XMI IDs
         def process_packages(packages) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity

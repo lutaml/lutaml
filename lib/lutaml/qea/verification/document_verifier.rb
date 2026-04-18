@@ -65,23 +65,29 @@ module Lutaml
           result
         end
 
+        # Reset cached match results (call between verifications)
+        def reset_cache
+          @cached_class_matches = nil
+          @cached_package_matches = nil
+        end
+
         # Compare element counts
         #
         # @param xmi_doc [Lutaml::Uml::Document] XMI document
         # @param qea_doc [Lutaml::Uml::Document] QEA document
         # @return [void]
         def verify_structure(xmi_doc, qea_doc) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
-          # Compare package counts
-          match_result = matcher.match_packages(xmi_doc, qea_doc)
-          result.add_matches(:packages, match_result[:matches].size)
-          result.add_xmi_only(:packages, match_result[:xmi_only])
-          result.add_qea_only(:packages, match_result[:qea_only])
+          # Compare package counts (cache for reuse in verify_properties)
+          @cached_package_matches = matcher.match_packages(xmi_doc, qea_doc)
+          result.add_matches(:packages, @cached_package_matches[:matches].size)
+          result.add_xmi_only(:packages, @cached_package_matches[:xmi_only])
+          result.add_qea_only(:packages, @cached_package_matches[:qea_only])
 
-          # Compare class counts
-          match_result = matcher.match_classes(xmi_doc, qea_doc)
-          result.add_matches(:classes, match_result[:matches].size)
-          result.add_xmi_only(:classes, match_result[:xmi_only])
-          result.add_qea_only(:classes, match_result[:qea_only])
+          # Compare class counts (cache for reuse in verify_properties)
+          @cached_class_matches = matcher.match_classes(xmi_doc, qea_doc)
+          result.add_matches(:classes, @cached_class_matches[:matches].size)
+          result.add_xmi_only(:classes, @cached_class_matches[:xmi_only])
+          result.add_qea_only(:classes, @cached_class_matches[:qea_only])
 
           # Compare enum counts
           xmi_enums = count_all_enums(xmi_doc)
@@ -130,12 +136,12 @@ module Lutaml
         # @param qea_doc [Lutaml::Uml::Document] QEA document
         # @return [void]
         def verify_properties(xmi_doc, qea_doc)
-          # Verify class properties
-          class_matches = matcher.match_classes(xmi_doc, qea_doc)
+          # Verify class properties (reuse cached matches from verify_structure)
+          class_matches = @cached_class_matches || matcher.match_classes(xmi_doc, qea_doc)
           verify_class_properties(class_matches[:matches])
 
-          # Verify package properties
-          package_matches = matcher.match_packages(xmi_doc, qea_doc)
+          # Verify package properties (reuse cached matches from verify_structure)
+          package_matches = @cached_package_matches || matcher.match_packages(xmi_doc, qea_doc)
           verify_package_properties(package_matches[:matches])
         end
 
