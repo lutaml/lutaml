@@ -289,7 +289,7 @@ module Lutaml
           xmi_index.find_parent(klass_id)
         end
 
-        def find_subtype_of_from_owned_attribute_type(id) # rubocop:disable Metrics/AbcSize
+        def find_subtype_of_from_owned_attribute_type(id) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
           @pkg_elements_owned_attributes ||= begin
             cache = {}
             all_packaged_elements.each do |e|
@@ -386,8 +386,10 @@ module Lutaml
         # @param name [String]
         # @return [Lutaml::Model::Serializable]
         def find_klass_packaged_element_by_name(name)
-          xmi_index.find_packaged_by_name_and_types(name,
-            ["uml:Class", "uml:AssociationClass"])
+          xmi_index.find_packaged_by_name_and_types(
+            name,
+            ["uml:Class", "uml:AssociationClass"],
+          )
         end
 
         # @param name [String]
