@@ -310,7 +310,7 @@ module Lutaml
         def find_subtype_of_from_generalization(id) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           matched_element = xmi_index.find_element(id)
 
-          return if !matched_element || !matched_element.links
+          return unless matched_element&.links&.any?
 
           matched_generalization = nil
           matched_element.links.each do |link|
@@ -512,7 +512,7 @@ module Lutaml
         def serialize_model_associations(xmi_id) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           matched_element = xmi_index.find_element(xmi_id)
 
-          return if !matched_element || !matched_element.links
+          return unless matched_element&.links&.any?
 
           links = []
           matched_element.links.each do |link|
@@ -626,10 +626,10 @@ module Lutaml
         # @param link_member_name [String]
         # @return [String]
         def serialize_owned_type(owner_xmi_id, link, linke_owner_name)
-          case link.name
-          when "NoteLink"
+          case link
+          when ::Xmi::Sparx::Element::NoteLink
             return
-          when "Generalization"
+          when ::Xmi::Sparx::Element::Generalization
             owner_end, _owner_end_type, _owner_xmi_id =
               generalization_association(owner_xmi_id, link)
             return owner_end
@@ -673,22 +673,22 @@ module Lutaml
           ea_type = connector&.properties&.ea_type
           member_end_type = ea_type&.downcase
 
-          member_end = member_end_name(xmi_id, source_or_target, link.name)
+          member_end = member_end_name(xmi_id, source_or_target, link)
           [member_end, member_end_type, xmi_id]
         end
 
         # @param xmi_id [String]
         # @param source_or_target [Symbol]
         # @return [String]
-        def member_end_name(xmi_id, source_or_target, link_name) # rubocop:disable Metrics/MethodLength
+        def member_end_name(xmi_id, source_or_target, link) # rubocop:disable Metrics/MethodLength
           connector_label = connector_labels(xmi_id, source_or_target)
           entity_name = lookup_entity_name(xmi_id)
           connector_name = connector_name_by_source_or_target(
             xmi_id, source_or_target
           )
 
-          case link_name
-          when "Aggregation"
+          case link
+          when ::Xmi::Sparx::Element::Aggregation
             connector_label || entity_name || connector_name
           else
             entity_name || connector_name
@@ -703,7 +703,7 @@ module Lutaml
           member_end, member_end_type, xmi_id =
             serialize_member_end(owner_xmi_id, link)
 
-          if link.name == "Association"
+          if link.is_a?(::Xmi::Sparx::Element::Association)
             connector_type = link_member_name == "start" ? "source" : "target"
             member_end_cardinality, member_end_attribute_name =
               fetch_assoc_connector(link.id, connector_type)
@@ -766,7 +766,7 @@ module Lutaml
             source_or_target = :target
           end
 
-          member_end = member_end_name(xmi_id, source_or_target, link.name)
+          member_end = member_end_name(xmi_id, source_or_target, link)
 
           # member_end_cardinality, _member_end_attribute_name =
           #   fetch_owned_attribute_node(xmi_id)

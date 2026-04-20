@@ -6,7 +6,7 @@ RSpec.describe Lutaml::Xml::Parsers::Xml do
     subject(:parse) { described_class.parse(xml_file_path) }
 
     before do
-      described_class.load_schema(schema, root_name)
+      described_class.load_schema(schema, root_name) unless defined?(Person)
     end
 
     let(:schema) do

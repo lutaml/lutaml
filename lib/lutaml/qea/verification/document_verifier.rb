@@ -137,11 +137,15 @@ module Lutaml
         # @return [void]
         def verify_properties(xmi_doc, qea_doc)
           # Verify class properties (reuse cached matches from verify_structure)
-          class_matches = @cached_class_matches || matcher.match_classes(xmi_doc, qea_doc)
+          class_matches = @cached_class_matches || matcher.match_classes(
+            xmi_doc, qea_doc
+          )
           verify_class_properties(class_matches[:matches])
 
           # Verify package properties (reuse cached matches from verify_structure)
-          package_matches = @cached_package_matches || matcher.match_packages(xmi_doc, qea_doc)
+          package_matches = @cached_package_matches || matcher.match_packages(
+            xmi_doc, qea_doc
+          )
           verify_package_properties(package_matches[:matches])
         end
 
