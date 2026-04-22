@@ -4,7 +4,31 @@ require "spec_helper"
 require_relative "../../../../lib/lutaml/qea/verification/document_verifier"
 
 RSpec.describe "XMI/QEA Equivalence Integration" do
-  let(:verifier) { Lutaml::Qea::Verification::DocumentVerifier.new }
+  # Parse and verify all file pairs once in before(:all) to avoid
+  # re-parsing 10MB XMI files for each it block (~5 times per file pair)
+  before(:all) do
+    @verifier = Lutaml::Qea::Verification::DocumentVerifier.new
+    qea_dir = File.join(__dir__, "../../../../examples/qea")
+    xmi_dir = File.join(__dir__, "../../../../examples/xmi")
+
+    file_pairs = [
+      ["UmlModel_template.xmi", "UmlModel_template.qea", "UmlModel_template"],
+      ["test.xmi", "test.qea", "test"],
+      ["ArcGISWorkspace_template.xmi", "ArcGISWorkspace_template.qea", "ArcGISWorkspace_template"],
+      ["20251010_current_plateau_v5.1.xmi", "20251010_current_plateau_v5.1.qea", "20251010_current_plateau_v5.1"],
+    ]
+
+    @cached_results = {}
+    file_pairs.each do |xmi_file, qea_file, key|
+      xmi_path = File.join(xmi_dir, xmi_file)
+      qea_path = File.join(qea_dir, qea_file)
+      next unless File.exist?(xmi_path) && File.exist?(qea_path)
+
+      @cached_results[key] = @verifier.verify(xmi_path, qea_path)
+    end
+  end
+
+  let(:verifier) { @verifier }
   let(:qea_dir) { File.join(__dir__, "../../../../examples/qea") }
   let(:xmi_dir) { File.join(__dir__, "../../../../examples/xmi") }
 
@@ -12,12 +36,15 @@ RSpec.describe "XMI/QEA Equivalence Integration" do
     describe description do
       let(:xmi_path) { File.join(xmi_dir, xmi_file) }
       let(:qea_path) { File.join(qea_dir, qea_file) }
-      let(:result) { verifier.verify(xmi_path, qea_path) }
+
+      # Use cached verification result — parsed once in before(:all)
+      let(:result) { @cached_results[description] }
 
       before do
         unless File.exist?(xmi_path) && File.exist?(qea_path)
           skip "Files not found"
         end
+        skip "No cached result" unless result
       end
 
       it "has same or more packages" do
@@ -88,7 +115,8 @@ RSpec.describe "XMI/QEA Equivalence Integration" do
   describe "detailed verification" do
     let(:xmi_path) { File.join(xmi_dir, "test.xmi") }
     let(:qea_path) { File.join(qea_dir, "test.qea") }
-    let(:result) { verifier.verify(xmi_path, qea_path) }
+    # Reuse cached result for test file pair
+    let(:result) { @cached_results["test"] }
 
     before do
       unless File.exist?(xmi_path) && File.exist?(qea_path)

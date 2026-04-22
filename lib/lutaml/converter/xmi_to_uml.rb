@@ -344,8 +344,7 @@ module Lutaml
       end
 
       def create_uml_associations(xmi_id) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
-        matched_element = @xmi_root_model.extension.elements.element
-          .find { |e| e.idref == xmi_id }
+        matched_element = xmi_index&.find_element(xmi_id)
 
         return if !matched_element || !matched_element.links
 
