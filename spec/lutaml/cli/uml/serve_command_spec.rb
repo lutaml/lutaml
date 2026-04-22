@@ -9,7 +9,10 @@ require "tempfile"
 RSpec.describe Lutaml::Cli::Uml::ServeCommand do
   let(:test_xmi) { File.join(__dir__, "../../../../examples/xmi/basic.xmi") }
   let(:test_lur) do
-    temp_lur = Tempfile.new(["serve_test", ".lur"]).path
+    tf = Tempfile.new(["serve_test", ".lur"])
+    temp_lur = tf.path
+    tf.close
+    tf.unlink
     repo = Lutaml::UmlRepository::Repository.from_xmi(test_xmi)
     repo.export_to_package(temp_lur)
     temp_lur
