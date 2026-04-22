@@ -4,9 +4,10 @@ require "spec_helper"
 require_relative "../../../../lib/lutaml/qea/verification/document_verifier"
 
 RSpec.describe "XMI/QEA Equivalence Integration" do
+  # rubocop:disable RSpec/BeforeAfterAll
   # Parse and verify all file pairs once in before(:all) to avoid
   # re-parsing 10MB XMI files for each it block (~5 times per file pair)
-  before(:all) do
+  before(:all) do # rubocop:disable RSpec/InstanceVariable
     @verifier = Lutaml::Qea::Verification::DocumentVerifier.new
     qea_dir = File.join(__dir__, "../../../../examples/qea")
     xmi_dir = File.join(__dir__, "../../../../examples/xmi")
@@ -24,11 +25,12 @@ RSpec.describe "XMI/QEA Equivalence Integration" do
       qea_path = File.join(qea_dir, qea_file)
       next unless File.exist?(xmi_path) && File.exist?(qea_path)
 
-      @cached_results[key] = @verifier.verify(xmi_path, qea_path)
+      @cached_results[key] = @verifier.verify(xmi_path, qea_path) # rubocop:disable RSpec/InstanceVariable
     end
   end
+  # rubocop:enable RSpec/BeforeAfterAll
 
-  let(:verifier) { @verifier }
+  let(:verifier) { @verifier } # rubocop:disable RSpec/InstanceVariable
   let(:qea_dir) { File.join(__dir__, "../../../../examples/qea") }
   let(:xmi_dir) { File.join(__dir__, "../../../../examples/xmi") }
 
@@ -38,7 +40,7 @@ RSpec.describe "XMI/QEA Equivalence Integration" do
       let(:qea_path) { File.join(qea_dir, qea_file) }
 
       # Use cached verification result — parsed once in before(:all)
-      let(:result) { @cached_results[description] }
+      let(:result) { @cached_results[description] } # rubocop:disable RSpec/InstanceVariable
 
       before do
         unless File.exist?(xmi_path) && File.exist?(qea_path)
@@ -116,7 +118,7 @@ RSpec.describe "XMI/QEA Equivalence Integration" do
     let(:xmi_path) { File.join(xmi_dir, "test.xmi") }
     let(:qea_path) { File.join(qea_dir, "test.qea") }
     # Reuse cached result for test file pair
-    let(:result) { @cached_results["test"] }
+    let(:result) { @cached_results["test"] } # rubocop:disable RSpec/InstanceVariable
 
     before do
       unless File.exist?(xmi_path) && File.exist?(qea_path)
