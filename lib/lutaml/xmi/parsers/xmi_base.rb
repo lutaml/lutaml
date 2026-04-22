@@ -19,7 +19,7 @@ module Lutaml
           # @param xml [String]
           # @return [Lutaml::Model::Serializable]
           def get_xmi_model(xml)
-            ::Xmi::Sparx::SparxRoot.parse_xml(File.read(xml))
+            ::Xmi::Sparx::Root.parse_xml(File.read(xml))
           end
         end
 
