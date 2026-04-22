@@ -9,7 +9,7 @@ gem "parsanol", "1.3.9"
 
 gem "canon"
 gem "lutaml-model", github: "lutaml/lutaml-model", branch: "main"
-gem "moxml", github: "lutaml/moxml", branch: "fix/whitespace-text-node-filtering"
+gem "moxml", github: "lutaml/moxml", branch: "main"
 gem "openssl", "~> 3.0"
 gem "rack-test"
 gem "rake"
