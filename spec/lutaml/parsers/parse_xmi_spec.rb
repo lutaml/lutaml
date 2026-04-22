@@ -161,7 +161,7 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
 
       before do
         xml_content = File.read(file)
-        @xmi_root_model = Xmi::Sparx::SparxRoot.parse_xml(xml_content)
+        @xmi_root_model = Xmi::Sparx::Root.parse_xml(xml_content)
         new_parser.send(:parse, @xmi_root_model)
       end
 
