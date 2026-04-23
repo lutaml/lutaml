@@ -76,9 +76,22 @@ module Lutaml
       # @raise [ArgumentError] If serialization format is invalid
       # @example
       #   exporter.export("model.lur")
-      def export(output_path)
+      def export(output_path) # rubocop:disable Metrics/MethodLength
         validate_options!
 
+        retries = 0
+        begin
+          write_lur_package(output_path)
+        rescue Errno::EACCES
+          retries += 1
+          retry if retries < 3
+          raise
+        end
+      end
+
+      private
+
+      def write_lur_package(output_path)
         Zip::File.open(output_path, create: true) do |zip|
           write_metadata(zip)
           write_document(zip)
@@ -87,8 +100,6 @@ module Lutaml
           write_statistics(zip)
         end
       end
-
-      private
 
       # Get default export options.
       #
