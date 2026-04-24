@@ -4,15 +4,14 @@ require "spec_helper"
 require_relative "../../../../lib/lutaml/cli/uml/repl_command"
 require_relative "../../../../lib/lutaml/uml_repository"
 require_relative "../../../../lib/lutaml/cli/uml_commands"
-require "tempfile"
 
 RSpec.describe Lutaml::Cli::Uml::ReplCommand do
   let(:test_xmi) { File.join(__dir__, "../../../../examples/xmi/basic.xmi") }
   let(:test_lur) do
-    temp_lur = Tempfile.new(["repl_test", ".lur"]).path
+    path = temp_lur_path(prefix: "repl_test")
     repo = Lutaml::UmlRepository::Repository.from_xmi(test_xmi)
-    repo.export_to_package(temp_lur)
-    temp_lur
+    repo.export_to_package(path)
+    path
   end
   let(:command) { described_class.new(options) }
 

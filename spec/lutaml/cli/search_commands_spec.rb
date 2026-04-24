@@ -3,48 +3,44 @@
 require "spec_helper"
 require_relative "../../../lib/lutaml/cli/uml_commands"
 require_relative "../../../lib/lutaml/uml_repository/repository"
-require "tempfile"
-
 RSpec.describe "Search and Find Commands (via UmlCommands)" do
   let(:xmi_file) { File.join(__dir__, "../../../examples/xmi/basic.xmi") }
   let(:lur_file) do
-    Tempfile.new(["test_search", ".lur"]).tap do |f|
-      f.close
-      # Build LUR package for testing
-      repo = Lutaml::UmlRepository::Repository.from_xmi(xmi_file)
-      repo.export_to_package(f.path)
-    end
+    path = temp_lur_path(prefix: "test_search")
+    repo = Lutaml::UmlRepository::Repository.from_xmi(xmi_file)
+    repo.export_to_package(path)
+    path
   end
 
   after do
-    lur_file.unlink if File.exist?(lur_file.path)
+    FileUtils.rm_f(lur_file)
   end
 
   describe "search command" do
     it "searches and returns results" do
       expect do
         Lutaml::Cli::UmlCommands
-          .start(["search", lur_file.path, "Class", "--limit", "5"])
+          .start(["search", lur_file, "Class", "--limit", "5"])
       end.not_to output(/ERROR/).to_stdout
     end
 
     it "filters by element type" do
       expect do
-        Lutaml::Cli::UmlCommands.start(["search", lur_file.path, "Class",
+        Lutaml::Cli::UmlCommands.start(["search", lur_file, "Class",
                                         "--type", "class", "--limit", "5"])
       end.not_to output(/ERROR/).to_stdout
     end
 
     it "supports package filtering" do
       expect do
-        Lutaml::Cli::UmlCommands.start(["search", lur_file.path, "building",
+        Lutaml::Cli::UmlCommands.start(["search", lur_file, "building",
                                         "--package", "Model", "--limit", "5"])
       end.not_to output(/ERROR/).to_stdout
     end
 
     it "searches with regex pattern" do
       expect do
-        Lutaml::Cli::UmlCommands.start(["search", lur_file.path, "^Building",
+        Lutaml::Cli::UmlCommands.start(["search", lur_file, "^Building",
                                         "--regex", "--type", "class",
                                         "--limit", "5"])
       end.not_to output(/ERROR/).to_stdout
@@ -52,14 +48,14 @@ RSpec.describe "Search and Find Commands (via UmlCommands)" do
 
     it "searches in name field by default" do
       expect do
-        Lutaml::Cli::UmlCommands.start(["search", lur_file.path, "Class",
+        Lutaml::Cli::UmlCommands.start(["search", lur_file, "Class",
                                         "--in", "name", "--limit", "5"])
       end.not_to output(/ERROR/).to_stdout
     end
 
     it "accepts documentation field option" do
       expect do
-        Lutaml::Cli::UmlCommands.start(["search", lur_file.path, "Class",
+        Lutaml::Cli::UmlCommands.start(["search", lur_file, "Class",
                                         "--in", "name", "documentation",
                                         "--limit", "5"])
       end.not_to output(/ERROR/).to_stdout
@@ -67,28 +63,28 @@ RSpec.describe "Search and Find Commands (via UmlCommands)" do
 
     it "outputs JSON format" do
       expect do
-        Lutaml::Cli::UmlCommands.start(["search", lur_file.path, "Class",
+        Lutaml::Cli::UmlCommands.start(["search", lur_file, "Class",
                                         "--format", "json", "--limit", "2"])
       end.to output(/\[/).to_stdout
     end
 
     it "outputs YAML format" do
       expect do
-        Lutaml::Cli::UmlCommands.start(["search", lur_file.path, "Class",
+        Lutaml::Cli::UmlCommands.start(["search", lur_file, "Class",
                                         "--format", "yaml", "--limit", "2"])
       end.to output(/---/).to_stdout
     end
 
     it "outputs table format" do
       expect do
-        Lutaml::Cli::UmlCommands.start(["search", lur_file.path, "Class",
+        Lutaml::Cli::UmlCommands.start(["search", lur_file, "Class",
                                         "--format", "table", "--limit", "5"])
       end.not_to output(/ERROR/).to_stdout
     end
 
     it "respects limit parameter" do
       expect do
-        Lutaml::Cli::UmlCommands.start(["search", lur_file.path, "building",
+        Lutaml::Cli::UmlCommands.start(["search", lur_file, "building",
                                         "--limit", "3"])
       end.not_to output(/ERROR/).to_stdout
     end
@@ -101,7 +97,7 @@ RSpec.describe "Search and Find Commands (via UmlCommands)" do
 
     it "handles empty search results" do
       expect do
-        Lutaml::Cli::UmlCommands.start(["search", lur_file.path,
+        Lutaml::Cli::UmlCommands.start(["search", lur_file,
                                         "XyZabc123NotFound"])
       end.to output(/No results found/).to_stdout
     end
@@ -110,14 +106,14 @@ RSpec.describe "Search and Find Commands (via UmlCommands)" do
   describe "find command" do
     it "finds by stereotype" do
       expect do
-        Lutaml::Cli::UmlCommands.start(["find", lur_file.path, "--stereotype",
+        Lutaml::Cli::UmlCommands.start(["find", lur_file, "--stereotype",
                                         "interface"])
       end.not_to output(/ERROR/).to_stdout
     end
 
     it "finds by package" do
       expect do
-        Lutaml::Cli::UmlCommands.start(["find", lur_file.path, "--package",
+        Lutaml::Cli::UmlCommands.start(["find", lur_file, "--package",
                                         "Model"])
       end.not_to output(/ERROR/).to_stdout
     end
@@ -125,7 +121,7 @@ RSpec.describe "Search and Find Commands (via UmlCommands)" do
     it "finds by pattern" do
       expect do
         Lutaml::Cli::UmlCommands
-          .start(["find", lur_file.path, "--pattern", "^Building.*"])
+          .start(["find", lur_file, "--pattern", "^Building.*"])
       end.not_to output(/ERROR/).to_stdout
     end
 
@@ -134,7 +130,7 @@ RSpec.describe "Search and Find Commands (via UmlCommands)" do
         Lutaml::Cli::UmlCommands
           .start(
             [
-              "find", lur_file.path, "--package",
+              "find", lur_file, "--package",
               "Basic Class Diagram with Multiplicities",
               "--format", "json"
             ],
@@ -148,7 +144,7 @@ RSpec.describe "Search and Find Commands (via UmlCommands)" do
           .start(
             [
               "find",
-              lur_file.path,
+              lur_file,
               "--package",
               "Basic Class Diagram with Multiplicities",
               "--format",
@@ -160,7 +156,7 @@ RSpec.describe "Search and Find Commands (via UmlCommands)" do
 
     it "requires at least one filter" do
       expect do
-        Lutaml::Cli::UmlCommands.start(["find", lur_file.path])
+        Lutaml::Cli::UmlCommands.start(["find", lur_file])
       end.to output(/Please specify at least one filter/).to_stdout
     end
 
@@ -168,7 +164,7 @@ RSpec.describe "Search and Find Commands (via UmlCommands)" do
       expect do
         Lutaml::Cli::UmlCommands
           .start(
-            ["find", lur_file.path, "--stereotype", "NonExistent"],
+            ["find", lur_file, "--stereotype", "NonExistent"],
           )
       end.to output(/No elements found matching stereotype: NonExistent/)
         .to_stdout

@@ -42,21 +42,10 @@ RSpec.describe Lutaml::UmlRepository::Repository do
 
   describe ".from_file" do
     let(:xmi_file) { xmi_path }
-    let(:lur_file) do
-      temp_lur = Tempfile.new(["test_package", ".lur"])
-      temp_lur.close
-      temp_lur
-    end
+    let(:lur_file) { temp_lur_path(prefix: "test_package") }
 
     after do
-      if File.exist?(lur_file.path)
-        begin
-          lur_file.close if !lur_file.closed?
-          lur_file.unlink
-        rescue Errno::EACCES
-        end
-      end
-
+      FileUtils.rm_f(lur_file)
       FileUtils.rm_f("spec/tmp")
     end
 
@@ -65,8 +54,7 @@ RSpec.describe Lutaml::UmlRepository::Repository do
 
       # Create a temporary LUR file for testing
       repo = described_class.from_xmi(xmi_path)
-      lur_file.close
-      repo.export_to_package(lur_file.path)
+      repo.export_to_package(lur_file)
     end
 
     it "loads XMI file when given .xmi extension" do
@@ -75,7 +63,7 @@ RSpec.describe Lutaml::UmlRepository::Repository do
     end
 
     it "loads LUR file when given .lur extension" do
-      repo = described_class.from_file(lur_file.path)
+      repo = described_class.from_file(lur_file)
       expect(repo).to be_a(described_class)
     end
 
@@ -92,20 +80,10 @@ RSpec.describe Lutaml::UmlRepository::Repository do
 
   describe ".from_file_cached" do
     let(:xmi_file) { xmi_path }
-    let(:lur_cache) do
-      temp_lur = Tempfile.new(["cached_model", ".lur"])
-      temp_lur.close
-      temp_lur
-    end
+    let(:lur_cache) { temp_lur_path(prefix: "cached_model") }
 
     after do
-      if File.exist?(lur_cache.path)
-        begin
-          lur_cache.close if !lur_cache.closed?
-          lur_cache.unlink
-        rescue Errno::EACCES
-        end
-      end
+      FileUtils.rm_f(lur_cache)
     end
 
     context "when cache does not exist" do
@@ -123,16 +101,16 @@ RSpec.describe Lutaml::UmlRepository::Repository do
       before do
         # Create cache
         repo = described_class.from_xmi(xmi_file)
-        repo.export_to_package(lur_cache.path)
+        repo.export_to_package(lur_cache)
         # Ensure cache is newer
         sleep 0.1
-        FileUtils.touch(lur_cache.path)
+        FileUtils.touch(lur_cache)
       end
 
       it "uses cache instead of rebuilding" do
         expect(described_class).not_to receive(:from_xmi)
         repo = described_class.from_file_cached(xmi_file,
-                                                lur_path: lur_cache.path)
+                                                lur_path: lur_cache)
         expect(repo).to be_a(described_class)
       end
     end
@@ -141,7 +119,7 @@ RSpec.describe Lutaml::UmlRepository::Repository do
       before do
         # Create old cache
         repo = described_class.from_xmi(xmi_file)
-        repo.export_to_package(lur_cache.path)
+        repo.export_to_package(lur_cache)
         # Make XMI newer
         sleep 0.1
         FileUtils.touch(xmi_file)
@@ -149,9 +127,9 @@ RSpec.describe Lutaml::UmlRepository::Repository do
 
       it "rebuilds from XMI and updates cache" do
         repo = described_class.from_file_cached(xmi_file,
-                                                lur_path: lur_cache.path)
+                                                lur_path: lur_cache)
         expect(repo).to be_a(described_class)
-        expect(File.mtime(lur_cache.path)).to be >= File.mtime(xmi_file)
+        expect(File.mtime(lur_cache)).to be >= File.mtime(xmi_file)
       end
     end
 
@@ -374,30 +352,20 @@ RSpec.describe Lutaml::UmlRepository::Repository do
 
   describe "#export" do
     let(:repo) { described_class.from_xmi(xmi_path) }
-    let(:output_path) do
-      temp_lur = Tempfile.new(["test_export", ".lur"])
-      temp_lur.close
-      temp_lur
-    end
+    let(:output_path) { temp_lur_path(prefix: "test_export") }
 
     after do
-      if File.exist?(output_path.path)
-        begin
-          output_path.close if !output_path.closed?
-          output_path.unlink
-        rescue Errno::EACCES
-        end
-      end
+      FileUtils.rm_f(output_path)
     end
 
     it "exports to LUR file" do
-      repo.export(output_path.path)
-      expect(File.exist?(output_path.path)).to be true
+      repo.export(output_path)
+      expect(File.exist?(output_path)).to be true
     end
 
     it "creates valid ZIP file" do
-      repo.export(output_path.path)
-      expect { Zip::File.open(output_path.path) {} }.not_to raise_error
+      repo.export(output_path)
+      expect { Zip::File.open(output_path) {} }.not_to raise_error
     end
   end
 

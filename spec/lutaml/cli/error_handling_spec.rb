@@ -2,7 +2,6 @@
 
 require "spec_helper"
 require_relative "../../../lib/lutaml/cli/uml_commands"
-require "tempfile"
 
 RSpec.describe "CLI Error Handling and Edge Cases (via UmlCommands)" do
   let(:test_lur) { File.join(__dir__, "../../../plateau_all_packages.lur") }
@@ -16,7 +15,7 @@ RSpec.describe "CLI Error Handling and Edge Cases (via UmlCommands)" do
 
   after do
     FileUtils.rm_rf(output_dir)
-    invalid_file.unlink if File.exist?(invalid_file.path)
+    FileUtils.rm_f(invalid_file)
   end
 
   # describe "file handling errors" do
@@ -132,7 +131,7 @@ RSpec.describe "CLI Error Handling and Edge Cases (via UmlCommands)" do
   describe "build command edge cases" do
     it "handles invalid XMI input for build" do
       expect do
-        Lutaml::Cli::UmlCommands.start(["build", invalid_file.path,
+        Lutaml::Cli::UmlCommands.start(["build", invalid_file,
                                         "-o", File.join(output_dir, "test.lur")])
       end.to output(/Failed to build|Unsupported file format/).to_stdout
     end
@@ -154,7 +153,7 @@ RSpec.describe "CLI Error Handling and Edge Cases (via UmlCommands)" do
 
     it "handles invalid LUR file" do
       expect do
-        Lutaml::Cli::UmlCommands.start(["info", invalid_file.path])
+        Lutaml::Cli::UmlCommands.start(["info", invalid_file])
       end.to output(/Failed to read|Invalid/).to_stdout
     end
   end
@@ -251,9 +250,8 @@ RSpec.describe "CLI Error Handling and Edge Cases (via UmlCommands)" do
   private
 
   def create_invalid_file
-    tempfile = Tempfile.new(["invalid", ".lur"])
-    tempfile.write("This is not a valid LUR file")
-    tempfile.close
-    tempfile
+    path = temp_lur_path(prefix: "invalid")
+    File.write(path, "This is not a valid LUR file")
+    path
   end
 end
