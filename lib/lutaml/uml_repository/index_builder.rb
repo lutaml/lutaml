@@ -42,18 +42,8 @@ module Lutaml
       #   - :class_to_qname - Maps class XMI IDs to qualified names
       #   - :classes - Maps class XMI IDs to Class objects
       #   - :associations - Maps association XMI IDs to Association objects
-      def self.build_all(document) # rubocop:disable Metrics/MethodLength
-        {
-          package_paths: build_package_paths(document),
-          qualified_names: build_qualified_names(document),
-          stereotypes: build_stereotypes(document),
-          inheritance_graph: build_inheritance_graph(document, nil),
-          diagram_index: build_diagram_index(document, nil),
-          package_to_path: build_package_to_path(document),
-          class_to_qname: build_class_to_qname(document),
-          classes: build_classes(document),
-          associations: build_associations(document),
-        }.freeze
+      def self.build_all(document)
+        new(document).build_all
       end
 
       # Build package paths index
@@ -160,6 +150,8 @@ module Lutaml
         @class_to_qname = {}
         @classes = {}
         @associations = {}
+        @simple_name_to_qnames = {}
+        @package_to_classes = {}
       end
 
       # Build all indexes and return them as a frozen hash
@@ -183,6 +175,7 @@ module Lutaml
           class_to_qname: @class_to_qname.freeze,
           classes: @classes.freeze,
           associations: @associations.freeze,
+          package_to_classes: plain_hash(@package_to_classes).freeze,
         }.freeze
       end
 
@@ -358,6 +351,9 @@ module Lutaml
               qualified_name
           end
           @classes[classifier.xmi_id] = classifier if classifier.xmi_id
+          @simple_name_to_qnames[classifier.name] ||= []
+          @simple_name_to_qnames[classifier.name] << qualified_name
+          (@package_to_classes[package_path] ||= []) << classifier
         end
       end
 
@@ -466,12 +462,18 @@ module Lutaml
         local_qname = "#{current_package_path}::#{name}"
         return local_qname if @qualified_names.key?(local_qname)
 
-        # Try to find in all qualified names (simple name match)
-        @qualified_names.each_key do |qname|
-          return qname if qname.end_with?("::#{name}")
-        end
+        # O(1) lookup using reverse index instead of O(n) scan
+        candidates = @simple_name_to_qnames[name]
+        candidates&.first
+      end
 
-        nil
+      private
+
+      # Convert a hash with default proc to a plain hash (Marshal-safe)
+      # @param hash [Hash] Hash possibly with default proc
+      # @return [Hash] Plain hash without default proc
+      def plain_hash(hash_with_default)
+        hash_with_default.each_with_object({}) { |(k, v), h| h[k] = v }
       end
     end
   end

@@ -262,12 +262,14 @@ module Lutaml
       def max_inheritance_depth
         return 0 if @indexes[:inheritance_graph].empty?
 
-        max = 0
+        @inheritance_depth_cache ||= {}
+        max_depth = 0
+
         @indexes[:qualified_names].each_key do |qname|
-          depth = calculate_inheritance_depth(qname)
-          max = depth if depth > max
+          depth = memoized_inheritance_depth(qname)
+          max_depth = depth if depth > max_depth
         end
-        max
+        max_depth
       end
 
       # Calculate inheritance depth for a class
@@ -275,23 +277,35 @@ module Lutaml
       # @param qname [String] Qualified name of the class
       # @param visited [Set] Set of visited classes (to detect cycles)
       # @return [Integer] Depth of inheritance chain
-      def calculate_inheritance_depth(qname, visited = Set.new) # rubocop:disable Metrics/MethodLength
+      def calculate_inheritance_depth(qname, visited = Set.new)
+        memoized_inheritance_depth(qname, visited)
+      end
+
+      private
+
+      # Build reverse index: child_qname => parent_qname
+      def child_to_parent_index
+        @child_to_parent_index ||= begin
+          idx = {}
+          @indexes[:inheritance_graph].each do |parent, children|
+            children.each { |child| idx[child] = parent }
+          end
+          idx
+        end
+      end
+
+      # Memoized inheritance depth calculation using reverse index
+      def memoized_inheritance_depth(qname, visited = Set.new)
         return 0 if visited.include?(qname)
+        return @inheritance_depth_cache[qname] if @inheritance_depth_cache.key?(qname)
+
+        parent = child_to_parent_index[qname]
+        return 0 unless parent
 
         visited.add(qname)
-
-        # Find parent
-        parent_qname = nil
-        @indexes[:inheritance_graph].each do |parent, children|
-          if children.include?(qname)
-            parent_qname = parent
-            break
-          end
-        end
-
-        return 0 unless parent_qname
-
-        1 + calculate_inheritance_depth(parent_qname, visited)
+        depth = 1 + memoized_inheritance_depth(parent, visited)
+        @inheritance_depth_cache[qname] = depth
+        depth
       end
 
       # Get count of abstract classes

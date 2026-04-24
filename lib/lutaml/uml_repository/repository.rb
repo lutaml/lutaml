@@ -646,25 +646,29 @@ module Lutaml
       # Get all associations as an array
       # Collects from both document-level (XMI) and class-level (QEA/EA)
       # @return [Array<Lutaml::Uml::Association>] All associations
-      def associations_index # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+      def associations_index # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics:MethodLength,Metrics:PerceivedComplexity
         # Use cached index if available (built by IndexBuilder)
         return @indexes[:associations].values if @indexes[:associations]
 
         # Fallback for edge cases: collect from document and classes
+        seen = Set.new
         associations = []
 
-        # Document-level associations (XMI format)
-        associations.concat(@document.associations) if @document.associations
+        (@document.associations || []).each do |assoc|
+          if assoc.xmi_id && !seen.include?(assoc.xmi_id)
+            seen << assoc.xmi_id
+            associations << assoc
+          end
+        end
 
-        # Class-level associations (QEA/EA format)
         classes_index.each do |klass|
           next unless klass.respond_to?(:associations) && klass.associations
 
           klass.associations.each do |assoc|
-            # Avoid duplicates - check xmi_id
-            next if associations.any? { |a| a.xmi_id == assoc.xmi_id }
-
-            associations << assoc
+            if assoc.xmi_id && !seen.include?(assoc.xmi_id)
+              seen << assoc.xmi_id
+              associations << assoc
+            end
           end
         end
 

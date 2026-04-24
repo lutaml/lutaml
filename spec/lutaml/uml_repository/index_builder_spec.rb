@@ -29,6 +29,7 @@ RSpec.describe Lutaml::UmlRepository::IndexBuilder do
       expect(indexes[:stereotypes]).to be_a(Hash)
       expect(indexes[:inheritance_graph]).to be_a(Hash)
       expect(indexes[:diagram_index]).to be_a(Hash)
+      expect(indexes[:package_to_classes]).to be_a(Hash)
     end
   end
 
@@ -158,6 +159,35 @@ RSpec.describe Lutaml::UmlRepository::IndexBuilder do
         expect(package_id).to be_a(String)
         expect(diagrams).to be_an(Array)
         expect(diagrams).to all(be_a(Lutaml::Uml::Diagram))
+      end
+    end
+  end
+
+  describe "package_to_classes index" do
+    it "maps package paths to arrays of classes" do
+      pkg_to_classes = indexes[:package_to_classes]
+      expect(pkg_to_classes).to be_a(Hash)
+
+      pkg_to_classes.each do |path, classes|
+        expect(path).to be_a(String)
+        expect(classes).to be_an(Array)
+        expect(classes).to all(be_a(Lutaml::Uml::Class)
+          .or(be_a(Lutaml::Uml::DataType))
+          .or(be_a(Lutaml::Uml::Enum)))
+      end
+    end
+
+    it "is consistent with qualified_names" do
+      pkg_to_classes = indexes[:package_to_classes]
+      qualified_names = indexes[:qualified_names]
+
+      qualified_names.each do |qname, klass|
+        pkg_path = qname.include?("::") ? qname.sub(/::[^:]+$/, "") : ""
+        next if pkg_path.empty?
+
+        expect(pkg_to_classes[pkg_path]).to include(klass),
+                                            "package_to_classes[#{pkg_path}] should include " \
+                                            "#{klass.name} (from qname #{qname})"
       end
     end
   end

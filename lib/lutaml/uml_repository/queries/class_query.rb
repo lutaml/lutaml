@@ -69,38 +69,74 @@ module Lutaml
         def in_package(package_path_string, recursive: false) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           return [] if package_path_string.nil? || package_path_string.empty?
 
+          pkg_to_classes = indexes[:package_to_classes]
+          if pkg_to_classes
+            in_package_indexed(package_path_string, pkg_to_classes,
+                               recursive: recursive)
+          else
+            in_package_scan(package_path_string, recursive: recursive)
+          end
+        end
+
+        private
+
+        # O(1) indexed lookup for in_package
+        def in_package_indexed(package_path_string, pkg_to_classes, recursive:) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
+          is_absolute = package_path_string.start_with?("::")
+          search_segs = package_path_string.split("::").reject(&:empty?)
+
+          results = []
+          pkg_to_classes.each do |path, classes|
+            path_segs = path.split("::")
+            matched = if is_absolute
+                        if recursive
+                          path == package_path_string ||
+                            path.start_with?("#{package_path_string}::")
+                        else
+                          path == package_path_string
+                        end
+                      else
+                        # Relative: match when path ends with search segments
+                        if recursive
+                          (0..(path_segs.size - search_segs.size)).any? do |i|
+                            path_segs[i, search_segs.size] == search_segs
+                          end
+                        else
+                          path_segs.size >= search_segs.size &&
+                            path_segs[-search_segs.size..] == search_segs
+                        end
+                      end
+
+            results.concat(classes) if matched
+          end
+          results
+        end
+
+        # Fallback: original O(n) scan
+        def in_package_scan(package_path_string, recursive:)
           package_path = Lutaml::Uml::PackagePath.new(package_path_string)
           results = []
-
-          # Check if the path is absolute (starts with ModelRoot)
           is_absolute = package_path.absolute?
 
-          indexes[:qualified_names].each do |qname_string, klass| # rubocop:disable Metrics/BlockLength
+          indexes[:qualified_names].each do |qname_string, klass|
             qname = Lutaml::Uml::QualifiedName.new(qname_string)
 
             matched = if is_absolute
-                        # Absolute path - exact match
                         if recursive
                           qname.package_path.starts_with?(package_path)
                         else
                           qname.package_path == package_path
                         end
                       else
-                        # Relative path - match if the class's package path ends with
-                        # the given path
                         class_pkg_segs = qname.package_path.segments
                         search_segs = package_path.segments
 
                         if recursive
-                          # For recursive, check if any suffix of the class path
-                          # starts with search_segs
                           (0..(class_pkg_segs.size - search_segs.size))
                             .any? do |i|
                             class_pkg_segs[i, search_segs.size] == search_segs
                           end
                         else
-                          # For non-recursive, check if class path ends with
-                          # search_segs
                           class_pkg_segs.size >= search_segs.size &&
                             class_pkg_segs[-search_segs.size..] == search_segs
                         end
