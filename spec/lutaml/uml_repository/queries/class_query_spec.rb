@@ -130,5 +130,18 @@ RSpec.describe Lutaml::UmlRepository::Queries::ClassQuery do
       expect(classes.length).to eq(2)
       expect(classes.map(&:name)).to contain_exactly("TestClass", "TestEnum")
     end
+
+    it "finds class by relative package path" do
+      # Relative path — matches package whose last segment is "RootPackage"
+      classes = query.in_package("RootPackage", recursive: false)
+      expect(classes.length).to eq(2)
+      expect(classes.map(&:name)).to contain_exactly("TestClass", "TestEnum")
+    end
+
+    it "finds class by relative multi-segment path" do
+      classes = query.in_package("RootPackage", recursive: true)
+      direct = query.in_package("ModelRoot::RootPackage", recursive: true)
+      expect(classes.length).to eq(direct.length)
+    end
   end
 end

@@ -485,9 +485,7 @@ module Lutaml
         # @return [Array<Hash>]
         # @note xpath %(//diagrams/diagram/model[@package="#{node['xmi:id']}"])
         def serialize_model_diagrams(node_id, with_package: false) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
-          diagrams = @xmi_root_model.extension.diagrams.diagram.select do |d|
-            d.model.package == node_id
-          end
+          diagrams = diagram_lookup[node_id]
 
           diagrams.map do |diagram|
             h = {
@@ -503,6 +501,17 @@ module Lutaml
             end
 
             h
+          end
+        end
+
+        # Lazy-built hash index for O(1) diagram lookups by package
+        # @return [Hash] Mapping of package_id => [diagrams]
+        def diagram_lookup
+          @diagram_lookup ||= begin
+            idx = Hash.new { |h, k| h[k] = [] }
+            diagrams = @xmi_root_model.extension&.diagrams&.diagram || []
+            diagrams.each { |d| idx[d.model.package] << d if d.model&.package }
+            idx
           end
         end
 
@@ -932,8 +941,22 @@ module Lutaml
         # @param source_or_target [String]
         # @return [String]
         def connector_node_by_id(xmi_id, source_or_target)
-          @xmi_root_model.extension.connectors.connector.find do |con|
-            con.send(source_or_target.to_sym).idref == xmi_id
+          connector_lookup[[source_or_target.to_sym, xmi_id]]
+        end
+
+        # Lazy-built hash index for O(1) connector lookups
+        # @return [Hash] Mapping of [direction, idref] => connector
+        def connector_lookup
+          @connector_lookup ||= begin
+            lookup = {}
+            connectors = @xmi_root_model.extension&.connectors&.connector || []
+            connectors.each do |con|
+              [:source, :target].each do |dir|
+                idref = con.send(dir)&.idref
+                lookup[[dir, idref]] = con if idref
+              end
+            end
+            lookup
           end
         end
 
