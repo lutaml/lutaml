@@ -14,16 +14,10 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
   let(:test_qea) do
     File.expand_path(File.join(__dir__, "../../../examples/qea/test.qea"))
   end
-  let(:output_lur) { Tempfile.new(["package_test", ".lur"]) }
+  let(:output_lur) { temp_lur_path(prefix: "package_test") }
 
   after do
-    if File.exist?(output_lur.path)
-      begin
-        output_lur.close if !output_lur.closed?
-        output_lur.unlink
-      rescue Errno::EACCES
-      end
-    end
+    FileUtils.rm_f(output_lur)
   end
 
   describe "build command" do
@@ -36,9 +30,8 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
         begin
           # Disable validation for this test since the test XMI has many
           # validation errors
-          output_lur.close
           Lutaml::Cli::UmlCommands.start(["build", test_xmi,
-                                          "-o", output_lur.path,
+                                          "-o", output_lur,
                                           "--name", "TestPackage",
                                           "--version", "2.0",
                                           "--no-validate"])
@@ -53,12 +46,12 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
         expect(output.string)
           .to include("Package built successfully")
           .or include("Exporting to LUR package... ✓")
-        expect(File.exist?(output_lur.path)).to be true
+        expect(File.exist?(output_lur)).to be true
 
         # Verify package structure - be more flexible about what files might
         # be present
         expect do
-          Zip::File.open(output_lur.path) do |zip|
+          Zip::File.open(output_lur) do |zip|
             # Check for at least one of the expected files
             has_metadata = !zip.find_entry("metadata.yaml").nil?
             has_repository = !zip.find_entry("repository.marshal").nil? ||
@@ -74,9 +67,8 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
         $stdout = output
 
         begin
-          output_lur.close
           Lutaml::Cli::UmlCommands.start(["build", test_xmi,
-                                          "-o", output_lur.path,
+                                          "-o", output_lur,
                                           "--validate"])
         rescue SystemExit
           # Expected to exit due to validation errors
@@ -97,9 +89,8 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
         $stdout = output
 
         begin
-          output_lur.close
           Lutaml::Cli::UmlCommands.start(["build", test_xmi,
-                                          "-o", output_lur.path,
+                                          "-o", output_lur,
                                           "--no-validate"])
         rescue SystemExit
           # If build fails, we still want to check the output
@@ -109,7 +100,7 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
 
         expect(output.string).not_to include("Validating repository")
         expect(output.string).to include("Package built successfully")
-        expect(File.exist?(output_lur.path)).to be true
+        expect(File.exist?(output_lur)).to be true
       end
 
       it "builds package with YAML serialization" do
@@ -121,7 +112,7 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
           # Disable validation for this test since the test XMI has many
           # validation errors
           Lutaml::Cli::UmlCommands.start(["build", test_xmi,
-                                          "-o", output_lur.path,
+                                          "-o", output_lur,
                                           "--format", "yaml",
                                           "--no-validate"])
         rescue SystemExit
@@ -134,11 +125,11 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
         expect(output.string)
           .to include("Package built successfully")
           .or include("Exporting to LUR package")
-        expect(File.exist?(output_lur.path)).to be true
+        expect(File.exist?(output_lur)).to be true
 
         # If the build succeeded, verify YAML format was used
         if output.string.include?("Package built successfully")
-          Zip::File.open(output_lur.path) do |zip|
+          Zip::File.open(output_lur) do |zip|
             expect(zip.find_entry("repository.yaml")).not_to be_nil
             expect(zip.find_entry("repository.marshal")).to be_nil
           end
@@ -153,9 +144,8 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
         begin
           # Disable validation for this test since the test XMI has many
           # validation errors
-          output_lur.close
           Lutaml::Cli::UmlCommands
-            .start(["build", test_xmi, "-o", output_lur.path, "--no-validate"])
+            .start(["build", test_xmi, "-o", output_lur, "--no-validate"])
         rescue SystemExit
           # If build fails, we still want to check the output
         end
@@ -198,9 +188,8 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
 
         # This test should show validation errors in strict mode
         expect do
-          output_lur.close
           Lutaml::Cli::UmlCommands.start(["build", invalid_xmi.path,
-                                          "-o", output_lur.path,
+                                          "-o", output_lur,
                                           "--strict"])
         end.to output(/Failed to build package/).to_stdout
 
@@ -219,9 +208,8 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
         $stdout = output
 
         begin
-          output_lur.close
           Lutaml::Cli::UmlCommands.start(["build", test_qea,
-                                          "-o", output_lur.path,
+                                          "-o", output_lur,
                                           "--name", "QEATestPackage"])
         rescue SystemExit
           # If build fails, we still want to check the output
@@ -232,7 +220,7 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
         expect(output.string)
           .to include("Parsing QEA file")
           .or include("Package built successfully")
-        expect(File.exist?(output_lur.path)).to be true
+        expect(File.exist?(output_lur)).to be true
       end
     end
 
@@ -243,9 +231,8 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
         $stdout = output
 
         begin
-          output_lur.close
           Lutaml::Cli::UmlCommands.start(["build", "nonexistent.xmi",
-                                          "-o", output_lur.path])
+                                          "-o", output_lur])
         rescue Thor::Error
           # Expected to raise Thor::Error
         end
@@ -265,9 +252,8 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
         $stdout = output
 
         begin
-          output_lur.close
           Lutaml::Cli::UmlCommands.start(["build", invalid_xmi.path,
-                                          "-o", output_lur.path])
+                                          "-o", output_lur])
         rescue Thor::Error
           # Expected to raise Thor::Error
         end
@@ -341,16 +327,15 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
     end
 
     it "handles invalid LUR file" do
-      invalid_lur = Tempfile.new(["invalid", ".lur"])
-      invalid_lur.write("not a zip file")
-      invalid_lur.close
+      invalid_lur_path = temp_lur_path(prefix: "invalid")
+      File.write(invalid_lur_path, "not a zip file")
 
       output = StringIO.new
       original_stdout = $stdout
       $stdout = output
 
       begin
-        Lutaml::Cli::UmlCommands.start(["info", invalid_lur.path])
+        Lutaml::Cli::UmlCommands.start(["info", invalid_lur_path])
       rescue Thor::Error
         # Expected to raise Thor::Error
       end
@@ -359,7 +344,7 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
 
       expect(output.string).to include("Failed to read package info")
 
-      invalid_lur.unlink
+      FileUtils.rm_f(invalid_lur_path)
     end
   end
 

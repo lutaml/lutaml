@@ -4,38 +4,26 @@ require "spec_helper"
 require_relative "../../../../lib/lutaml/cli/uml/build_command"
 require_relative "../../../../lib/lutaml/uml_repository"
 require_relative "../../../../lib/lutaml/cli/uml_commands"
-require "tempfile"
-
 RSpec.describe Lutaml::Cli::Uml::BuildCommand do
   let(:test_xmi) { File.join(__dir__, "../../../../examples/xmi/basic.xmi") }
-  let(:output_lur) { Tempfile.new(["build_test", ".lur"]) }
+  let(:output_lur) { temp_lur_path(prefix: "build_test") }
   let(:command) { described_class.new(options) }
 
-  before do
-    output_lur.close
-  end
-
   after do
-    if File.exist?(output_lur.path)
-      begin
-        output_lur.close if !output_lur.closed?
-        output_lur.unlink
-      rescue Errno::EACCES
-      end
-    end
+    FileUtils.rm_f(output_lur)
   end
 
   describe "#run" do
     context "with XMI input" do
       let(:options) do
-        { output: output_lur.path, name: "TestPackage", version: "1.0" }
+        { output: output_lur, name: "TestPackage", version: "1.0" }
       end
 
       it "builds LUR package successfully" do
         expect do
           command.run(test_xmi)
         end.to output(/Package built successfully/).to_stdout
-        expect(File.exist?(output_lur.path)).to be true
+        expect(File.exist?(output_lur)).to be true
       end
 
       it "displays package statistics" do
@@ -46,7 +34,7 @@ RSpec.describe Lutaml::Cli::Uml::BuildCommand do
     end
 
     context "with validation enabled" do
-      let(:options) { { output: output_lur.path, validate: true } }
+      let(:options) { { output: output_lur, validate: true } }
 
       it "validates before building" do
         expect do
@@ -56,7 +44,7 @@ RSpec.describe Lutaml::Cli::Uml::BuildCommand do
     end
 
     context "with validation disabled" do
-      let(:options) { { output: output_lur.path, validate: false } }
+      let(:options) { { output: output_lur, validate: false } }
 
       it "skips validation" do
         expect do
@@ -66,7 +54,7 @@ RSpec.describe Lutaml::Cli::Uml::BuildCommand do
     end
 
     context "error handling" do
-      let(:options) { { output: output_lur.path } }
+      let(:options) { { output: output_lur } }
 
       it "handles missing input file" do
         expect do

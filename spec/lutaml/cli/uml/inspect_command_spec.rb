@@ -4,27 +4,18 @@ require "spec_helper"
 require_relative "../../../../lib/lutaml/cli/uml/inspect_command"
 require_relative "../../../../lib/lutaml/uml_repository"
 require_relative "../../../../lib/lutaml/cli/uml_commands"
-require "tempfile"
-
 RSpec.describe Lutaml::Cli::Uml::InspectCommand do
   let(:test_xmi) { File.join(__dir__, "../../../../examples/xmi/basic.xmi") }
   let(:test_lur) do
-    temp_lur = Tempfile.new(["inspect_test", ".lur"])
-    temp_lur.close
+    path = temp_lur_path(prefix: "inspect_test")
     repo = Lutaml::UmlRepository::Repository.from_xmi(test_xmi)
-    repo.export_to_package(temp_lur.path)
-    temp_lur
+    repo.export_to_package(path)
+    path
   end
   let(:command) { described_class.new(options) }
 
   after do
-    if File.exist?(test_lur.path)
-      begin
-        test_lur.close if !test_lur.closed?
-        test_lur.unlink
-      rescue Errno::EACCES
-      end
-    end
+    FileUtils.rm_f(test_lur)
   end
 
   describe "#run" do
@@ -33,7 +24,7 @@ RSpec.describe Lutaml::Cli::Uml::InspectCommand do
 
       it "displays package details" do
         expect do
-          command.run(test_lur.path, "package:ModelRoot")
+          command.run(test_lur, "package:ModelRoot")
         end.not_to output(/ERROR/).to_stdout
       end
     end
@@ -43,7 +34,7 @@ RSpec.describe Lutaml::Cli::Uml::InspectCommand do
 
       it "outputs JSON format" do
         expect do
-          command.run(test_lur.path, "package:ModelRoot")
+          command.run(test_lur, "package:ModelRoot")
         end.to output(/{/).to_stdout
       end
     end
@@ -53,7 +44,7 @@ RSpec.describe Lutaml::Cli::Uml::InspectCommand do
 
       it "handles non-existent element" do
         expect do
-          command.run(test_lur.path,
+          command.run(test_lur,
                       "class:NonExistent")
         end.to raise_error(/Element not found/)
       end

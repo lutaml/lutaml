@@ -3,13 +3,12 @@
 require "spec_helper"
 require_relative "../../../lib/lutaml/cli/uml_commands"
 require_relative "../../../lib/lutaml/uml_repository/repository"
-require "tempfile"
 require "json"
 
 RSpec.describe "Inspect/Show Commands (via UmlCommands)" do
   let(:test_xmi) { File.join(__dir__, "../../../examples/xmi/basic.xmi") }
   # Helper to find real elements from the test data
-  let(:test_repo) { Lutaml::UmlRepository::Repository.from_package(test_lur.path) }
+  let(:test_repo) { Lutaml::UmlRepository::Repository.from_package(test_lur) }
   let(:sample_class_id) do
     # Get a real class identifier
     classes = test_repo.all_classes
@@ -22,16 +21,14 @@ RSpec.describe "Inspect/Show Commands (via UmlCommands)" do
     "package:ModelRoot"
   end
   let(:test_lur) do
-    Tempfile.new(["show_test", ".lur"]).tap do |f|
-      f.close
-      # Build LUR package for testing
-      repo = Lutaml::UmlRepository::Repository.from_xmi(test_xmi)
-      repo.export_to_package(f.path)
-    end
+    path = temp_lur_path(prefix: "show_test")
+    repo = Lutaml::UmlRepository::Repository.from_xmi(test_xmi)
+    repo.export_to_package(path)
+    path
   end
 
   after do
-    test_lur.unlink if File.exist?(test_lur.path)
+    FileUtils.rm_f(test_lur)
   end
 
   describe "inspect command for classes" do
@@ -42,7 +39,7 @@ RSpec.describe "Inspect/Show Commands (via UmlCommands)" do
     it "shows class details in text format" do
       expect do
         Lutaml::Cli::UmlCommands.start(["inspect",
-                                        test_lur.path,
+                                        test_lur,
                                         sample_class_id])
       end.to output(/Class:|Name:/).to_stdout
     end
@@ -50,7 +47,7 @@ RSpec.describe "Inspect/Show Commands (via UmlCommands)" do
     it "shows class details in JSON format" do
       expect do
         Lutaml::Cli::UmlCommands.start(["inspect",
-                                        test_lur.path,
+                                        test_lur,
                                         sample_class_id,
                                         "--format",
                                         "json"])
@@ -60,7 +57,7 @@ RSpec.describe "Inspect/Show Commands (via UmlCommands)" do
     it "shows class details in YAML format" do
       expect do
         Lutaml::Cli::UmlCommands.start(["inspect",
-                                        test_lur.path,
+                                        test_lur,
                                         sample_class_id,
                                         "--format",
                                         "yaml"])
@@ -72,7 +69,7 @@ RSpec.describe "Inspect/Show Commands (via UmlCommands)" do
     it "shows package details for root" do
       expect do
         Lutaml::Cli::UmlCommands.start(["inspect",
-                                        test_lur.path,
+                                        test_lur,
                                         sample_package_id])
       end.to output(/Package:|Name:/).to_stdout
     end
@@ -80,7 +77,7 @@ RSpec.describe "Inspect/Show Commands (via UmlCommands)" do
     it "shows package details in JSON format" do
       expect do
         Lutaml::Cli::UmlCommands.start(["inspect",
-                                        test_lur.path,
+                                        test_lur,
                                         sample_package_id,
                                         "--format",
                                         "json"])
@@ -107,7 +104,7 @@ RSpec.describe "Inspect/Show Commands (via UmlCommands)" do
     it "shows attribute details" do
       expect do
         Lutaml::Cli::UmlCommands.start(["inspect",
-                                        test_lur.path,
+                                        test_lur,
                                         sample_attribute_id])
       end.to output(/Attribute:|Name:/).to_stdout
     end
@@ -125,7 +122,7 @@ RSpec.describe "Inspect/Show Commands (via UmlCommands)" do
     it "handles non-existent elements" do
       expect do
         Lutaml::Cli::UmlCommands.start(["inspect",
-                                        test_lur.path,
+                                        test_lur,
                                         "class:NonExistentClass"])
       end.to output(/Element not found/).to_stdout
     end
@@ -133,7 +130,7 @@ RSpec.describe "Inspect/Show Commands (via UmlCommands)" do
     it "handles invalid element identifiers" do
       expect do
         Lutaml::Cli::UmlCommands.start(["inspect",
-                                        test_lur.path,
+                                        test_lur,
                                         "invalid_format"])
       end.to output(/Element not found|Invalid/).to_stdout
     end
@@ -147,7 +144,7 @@ RSpec.describe "Inspect/Show Commands (via UmlCommands)" do
     it "includes attributes when requested" do
       expect do
         Lutaml::Cli::UmlCommands.start(["inspect",
-                                        test_lur.path,
+                                        test_lur,
                                         sample_class_id,
                                         "--include",
                                         "attributes"])
@@ -157,7 +154,7 @@ RSpec.describe "Inspect/Show Commands (via UmlCommands)" do
     it "includes associations when requested" do
       expect do
         Lutaml::Cli::UmlCommands.start(["inspect",
-                                        test_lur.path,
+                                        test_lur,
                                         sample_class_id,
                                         "--include",
                                         "associations"])
@@ -167,7 +164,7 @@ RSpec.describe "Inspect/Show Commands (via UmlCommands)" do
     it "includes operations when requested" do
       expect do
         Lutaml::Cli::UmlCommands.start(["inspect",
-                                        test_lur.path,
+                                        test_lur,
                                         sample_class_id,
                                         "--include",
                                         "operations"])

@@ -4,18 +4,13 @@ require "spec_helper"
 require_relative "../../../../lib/lutaml/cli/uml/serve_command"
 require_relative "../../../../lib/lutaml/uml_repository"
 require_relative "../../../../lib/lutaml/cli/uml_commands"
-require "tempfile"
-
 RSpec.describe Lutaml::Cli::Uml::ServeCommand do
   let(:test_xmi) { File.join(__dir__, "../../../../examples/xmi/basic.xmi") }
   let(:test_lur) do
-    tf = Tempfile.new(["serve_test", ".lur"])
-    temp_lur = tf.path
-    tf.close
-    tf.unlink
+    path = temp_lur_path(prefix: "serve_test")
     repo = Lutaml::UmlRepository::Repository.from_xmi(test_xmi)
-    repo.export_to_package(temp_lur)
-    temp_lur
+    repo.export_to_package(path)
+    path
   end
   let(:command) { described_class.new(options) }
 

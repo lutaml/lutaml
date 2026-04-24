@@ -4,27 +4,18 @@ require "spec_helper"
 require_relative "../../../../lib/lutaml/cli/uml/info_command"
 require_relative "../../../../lib/lutaml/uml_repository"
 require_relative "../../../../lib/lutaml/cli/uml_commands"
-require "tempfile"
-
 RSpec.describe Lutaml::Cli::Uml::InfoCommand do
   let(:test_xmi) { File.join(__dir__, "../../../../examples/xmi/basic.xmi") }
   let(:test_lur) do
-    temp_lur = Tempfile.new(["info_test", ".lur"])
+    path = temp_lur_path(prefix: "info_test")
     repo = Lutaml::UmlRepository::Repository.from_xmi(test_xmi)
-    temp_lur.close
-    repo.export_to_package(temp_lur.path, name: "InfoTest", version: "1.5")
-    temp_lur
+    repo.export_to_package(path, name: "InfoTest", version: "1.5")
+    path
   end
   let(:command) { described_class.new(options) }
 
   after do
-    if File.exist?(test_lur.path)
-      begin
-        test_lur.close if !test_lur.closed?
-        test_lur.unlink
-      rescue Errno::EACCES
-      end
-    end
+    FileUtils.rm_f(test_lur)
   end
 
   describe "#run" do
@@ -33,21 +24,21 @@ RSpec.describe Lutaml::Cli::Uml::InfoCommand do
 
       it "displays package information" do
         expect do
-          command.run(test_lur.path)
+          command.run(test_lur)
         end.to output(/Package Information/).to_stdout
       end
 
       it "shows package name and version" do
         expect do
-          command.run(test_lur.path)
+          command.run(test_lur)
         end.to output(/Name:.*InfoTest/).to_stdout
         expect do
-          command.run(test_lur.path)
+          command.run(test_lur)
         end.to output(/Version:.*1.5/).to_stdout
       end
 
       it "shows package contents" do
-        expect { command.run(test_lur.path) }.to output(/Contents:/).to_stdout
+        expect { command.run(test_lur) }.to output(/Contents:/).to_stdout
       end
     end
 
@@ -55,7 +46,7 @@ RSpec.describe Lutaml::Cli::Uml::InfoCommand do
       let(:options) { { format: "json" } }
 
       it "outputs valid JSON" do
-        expect { command.run(test_lur.path) }.to output(/"name"/).to_stdout
+        expect { command.run(test_lur) }.to output(/"name"/).to_stdout
       end
     end
 
@@ -63,7 +54,7 @@ RSpec.describe Lutaml::Cli::Uml::InfoCommand do
       let(:options) { { format: "yaml" } }
 
       it "outputs YAML format" do
-        expect { command.run(test_lur.path) }.to output(/name:/).to_stdout
+        expect { command.run(test_lur) }.to output(/name:/).to_stdout
       end
     end
 

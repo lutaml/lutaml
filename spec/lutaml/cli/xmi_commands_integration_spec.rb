@@ -3,80 +3,61 @@
 require "spec_helper"
 require_relative "../../../lib/lutaml/cli/uml_commands"
 require_relative "../../../lib/lutaml/uml_repository/repository"
-require "tempfile"
 require "json"
 require "yaml"
 
 RSpec.describe "UmlCommands Integration Tests" do
   let(:test_xmi) { File.join(__dir__, "../../../examples/xmi/basic.xmi") }
   let(:test_lur) do
-    temp_lur = Tempfile.new(["integration_test", ".lur"])
-    # Build LUR package for testing
+    path = temp_lur_path(prefix: "integration_test")
     repo = Lutaml::UmlRepository::Repository.from_xmi(test_xmi)
-    temp_lur.close
-    repo.export_to_package(temp_lur.path)
-    temp_lur
+    repo.export_to_package(path)
+    path
   end
 
   after do
-    if File.exist?(test_lur.path)
-      begin
-        test_lur.close if !test_lur.closed?
-        test_lur.unlink
-      rescue Errno::EACCES
-      end
-    end
+    FileUtils.rm_f(test_lur)
   end
 
   describe "build -> info workflow" do
     it "builds a package and retrieves its info" do
-      temp_lur = Tempfile.new(["workflow_test", ".lur"])
-      temp_lur.close
+      workflow_lur = temp_lur_path(prefix: "workflow_test")
 
       # Build package
       expect do
         Lutaml::Cli::UmlCommands.start(["build", test_xmi,
-                                        "-o", temp_lur.path,
+                                        "-o", workflow_lur,
                                         "--name", "WorkflowTest"])
       end.to output(/Package built successfully/).to_stdout
-      expect(File.exist?(temp_lur.path)).to be true
+      expect(File.exist?(workflow_lur)).to be true
 
       # Get info
       expect do
-        Lutaml::Cli::UmlCommands.start(["info", temp_lur.path])
+        Lutaml::Cli::UmlCommands.start(["info", workflow_lur])
       end.to output(/WorkflowTest/).to_stdout
       expect do
-        Lutaml::Cli::UmlCommands.start(["info", temp_lur.path])
+        Lutaml::Cli::UmlCommands.start(["info", workflow_lur])
       end.to output(/Package Information/).to_stdout
 
-      begin
-        temp_lur.close if !temp_lur.closed?
-        temp_lur.unlink
-      rescue Errno::EACCES
-      end
+      FileUtils.rm_f(workflow_lur)
     end
   end
 
   describe "build -> validate workflow" do
     it "builds and validates a package" do
-      temp_lur = Tempfile.new(["validate_workflow", ".lur"])
-      temp_lur.close
+      validate_lur = temp_lur_path(prefix: "validate_workflow")
 
       # Build
       expect do
-        Lutaml::Cli::UmlCommands.start(["build", test_xmi, "-o", temp_lur.path])
+        Lutaml::Cli::UmlCommands.start(["build", test_xmi, "-o", validate_lur])
       end.to output(/Package built successfully/).to_stdout
 
       # Validate
       expect do
-        Lutaml::Cli::UmlCommands.start(["validate", temp_lur.path])
+        Lutaml::Cli::UmlCommands.start(["validate", validate_lur])
       end.to output(/Validating repository/).to_stdout
 
-      begin
-        temp_lur.close if !temp_lur.closed?
-        temp_lur.unlink
-      rescue Errno::EACCES
-      end
+      FileUtils.rm_f(validate_lur)
     end
   end
 
@@ -84,7 +65,7 @@ RSpec.describe "UmlCommands Integration Tests" do
     it "builds a package and searches it" do
       # Search in pre-built package
       expect do
-        Lutaml::Cli::UmlCommands.start(["search", test_lur.path, "building",
+        Lutaml::Cli::UmlCommands.start(["search", test_lur, "building",
                                         "--limit", "5"])
       end.not_to output(/ERROR/).to_stdout
     end
@@ -94,7 +75,7 @@ RSpec.describe "UmlCommands Integration Tests" do
     it "builds a package and inspects elements" do
       # Inspect package
       expect do
-        Lutaml::Cli::UmlCommands.start(["inspect", test_lur.path,
+        Lutaml::Cli::UmlCommands.start(["inspect", test_lur,
                                         "package:ModelRoot"])
       end.not_to output(/ERROR/).to_stdout
     end
@@ -103,10 +84,10 @@ RSpec.describe "UmlCommands Integration Tests" do
   describe "build -> stats workflow" do
     it "builds a package and displays statistics" do
       expect do
-        Lutaml::Cli::UmlCommands.start(["stats", test_lur.path])
+        Lutaml::Cli::UmlCommands.start(["stats", test_lur])
       end.to output(/Packages:/).to_stdout
       expect do
-        Lutaml::Cli::UmlCommands.start(["stats", test_lur.path])
+        Lutaml::Cli::UmlCommands.start(["stats", test_lur])
       end.to output(/Classes:/).to_stdout
     end
   end
@@ -114,55 +95,50 @@ RSpec.describe "UmlCommands Integration Tests" do
   describe "build -> tree workflow" do
     it "builds a package and displays tree" do
       expect do
-        Lutaml::Cli::UmlCommands.start(["tree", test_lur.path])
+        Lutaml::Cli::UmlCommands.start(["tree", test_lur])
       end.not_to output(/ERROR/).to_stdout
     end
   end
 
   describe "build -> export workflow" do
     it "builds a package and exports it" do
-      export_file = Tempfile.new(["export_test", ".json"])
-      export_file.close
+      export_file = temp_lur_path(prefix: "export_test").sub(/\.lur$/, ".json")
 
       expect do
-        Lutaml::Cli::UmlCommands.start(["export", test_lur.path,
+        Lutaml::Cli::UmlCommands.start(["export", test_lur,
                                         "--format", "json",
-                                        "-o", export_file.path])
+                                        "-o", export_file])
       end.to output(/Exported to/).to_stdout
-      expect(File.exist?(export_file.path)).to be true
+      expect(File.exist?(export_file)).to be true
 
-      begin
-        export_file.close if !export_file.closed?
-        export_file.unlink
-      rescue Errno::EACCES
-      end
+      FileUtils.rm_f(export_file)
     end
   end
 
   describe "ls command variations" do
     it "lists packages" do
       expect do
-        Lutaml::Cli::UmlCommands.start(["ls", test_lur.path])
+        Lutaml::Cli::UmlCommands.start(["ls", test_lur])
       end.not_to output(/ERROR/).to_stdout
     end
 
     it "lists classes" do
       expect do
-        Lutaml::Cli::UmlCommands.start(["ls", test_lur.path, "--type",
+        Lutaml::Cli::UmlCommands.start(["ls", test_lur, "--type",
                                         "classes"])
       end.not_to output(/ERROR/).to_stdout
     end
 
     it "lists diagrams" do
       expect do
-        Lutaml::Cli::UmlCommands.start(["ls", test_lur.path, "--type",
+        Lutaml::Cli::UmlCommands.start(["ls", test_lur, "--type",
                                         "diagrams"])
       end.not_to output(/ERROR/).to_stdout
     end
 
     it "lists all elements" do
       expect do
-        Lutaml::Cli::UmlCommands.start(["ls", test_lur.path, "--type", "all"])
+        Lutaml::Cli::UmlCommands.start(["ls", test_lur, "--type", "all"])
       end.not_to output(/ERROR/).to_stdout
     end
   end
@@ -170,21 +146,21 @@ RSpec.describe "UmlCommands Integration Tests" do
   describe "find command variations" do
     it "finds by stereotype" do
       expect do
-        Lutaml::Cli::UmlCommands.start(["find", test_lur.path, "--stereotype",
+        Lutaml::Cli::UmlCommands.start(["find", test_lur, "--stereotype",
                                         "interface"])
       end.not_to output(/ERROR/).to_stdout
     end
 
     it "finds by package" do
       expect do
-        Lutaml::Cli::UmlCommands.start(["find", test_lur.path, "--package",
+        Lutaml::Cli::UmlCommands.start(["find", test_lur, "--package",
                                         "ModelRoot"])
       end.not_to output(/ERROR/).to_stdout
     end
 
     it "finds by pattern" do
       expect do
-        Lutaml::Cli::UmlCommands.start(["find", test_lur.path, "--pattern",
+        Lutaml::Cli::UmlCommands.start(["find", test_lur, "--pattern",
                                         "^Building"])
       end.not_to output(/ERROR/).to_stdout
     end
@@ -193,9 +169,9 @@ RSpec.describe "UmlCommands Integration Tests" do
   describe "output format consistency" do
     it "supports text format across commands" do
       commands = [
-        ["stats", test_lur.path],
-        ["tree", test_lur.path],
-        ["ls", test_lur.path],
+        ["stats", test_lur],
+        ["tree", test_lur],
+        ["ls", test_lur],
       ]
 
       commands.each do |cmd|
@@ -207,9 +183,9 @@ RSpec.describe "UmlCommands Integration Tests" do
 
     it "supports JSON format across commands" do
       commands = [
-        ["stats", test_lur.path, "--format", "json"],
-        ["tree", test_lur.path, "--format", "json"],
-        ["ls", test_lur.path, "--format", "json"],
+        ["stats", test_lur, "--format", "json"],
+        ["tree", test_lur, "--format", "json"],
+        ["ls", test_lur, "--format", "json"],
       ]
 
       commands.each do |cmd|
@@ -221,9 +197,9 @@ RSpec.describe "UmlCommands Integration Tests" do
 
     it "supports YAML format across commands" do
       commands = [
-        ["stats", test_lur.path, "--format", "yaml"],
-        ["tree", test_lur.path, "--format", "yaml"],
-        ["ls", test_lur.path, "--format", "yaml"],
+        ["stats", test_lur, "--format", "yaml"],
+        ["tree", test_lur, "--format", "yaml"],
+        ["ls", test_lur, "--format", "yaml"],
       ]
 
       commands.each do |cmd|
@@ -253,47 +229,32 @@ RSpec.describe "UmlCommands Integration Tests" do
 
   describe "complex workflows" do
     it "builds, validates, searches, and exports" do
-      temp_lur = Tempfile.new(["complex_workflow", ".lur"])
-      export_file = Tempfile.new(["complex_export", ".json"])
-      temp_lur.close
-      export_file.close
+      complex_lur = temp_lur_path(prefix: "complex_workflow")
+      export_file = temp_lur_path(prefix: "complex_export").sub(/\.lur$/, ".json")
 
       # Build
       expect do
         Lutaml::Cli::UmlCommands.start(["build", test_xmi,
-                                        "-o", temp_lur.path,
+                                        "-o", complex_lur,
                                         "--validate"])
       end.to output(/Package built successfully/).to_stdout
 
       # Search
       expect do
         Lutaml::Cli::UmlCommands.start(["search",
-                                        temp_lur.path, "building", "--limit", "3"])
+                                        complex_lur, "building", "--limit", "3"])
       end.not_to output(/ERROR/).to_stdout
 
       # Export
       expect do
-        Lutaml::Cli::UmlCommands.start(["export", temp_lur.path,
+        Lutaml::Cli::UmlCommands.start(["export", complex_lur,
                                         "--format", "json",
-                                        "-o", export_file.path])
+                                        "-o", export_file])
       end.to output(/Exported to/).to_stdout
-      expect(File.exist?(export_file.path)).to be true
+      expect(File.exist?(export_file)).to be true
 
-      if File.exist?(temp_lur.path)
-        begin
-          temp_lur.close if !temp_lur.closed?
-          temp_lur.unlink
-        rescue Errno::EACCES
-        end
-      end
-
-      if File.exist?(export_file.path)
-        begin
-          export_file.close if !export_file.closed?
-          export_file.unlink
-        rescue Errno::EACCES
-        end
-      end
+      FileUtils.rm_f(complex_lur)
+      FileUtils.rm_f(export_file)
     end
   end
 end
