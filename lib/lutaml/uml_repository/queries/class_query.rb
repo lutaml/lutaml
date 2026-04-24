@@ -95,16 +95,14 @@ module Lutaml
                         else
                           path == package_path_string
                         end
-                      else
+                      elsif recursive
                         # Relative: match when path ends with search segments
-                        if recursive
-                          (0..(path_segs.size - search_segs.size)).any? do |i|
-                            path_segs[i, search_segs.size] == search_segs
-                          end
-                        else
-                          path_segs.size >= search_segs.size &&
-                            path_segs[-search_segs.size..] == search_segs
+                        (0..(path_segs.size - search_segs.size)).any? do |i|
+                          path_segs[i, search_segs.size] == search_segs
                         end
+                      else
+                        path_segs.size >= search_segs.size &&
+                          path_segs[-search_segs.size..] == search_segs
                       end
 
             results.concat(classes) if matched

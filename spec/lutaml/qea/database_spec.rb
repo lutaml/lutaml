@@ -307,7 +307,8 @@ RSpec.describe Lutaml::Qea::Database do
     end
 
     before do
-      database.add_collection(:operations, [op_for_target_obj, op_for_other_obj])
+      database.add_collection(:operations,
+                              [op_for_target_obj, op_for_other_obj])
     end
 
     it "returns operations for the given object_id" do
@@ -388,7 +389,8 @@ RSpec.describe Lutaml::Qea::Database do
     end
 
     before do
-      database.add_collection(:packages, [root_pkg, child_pkg_alpha, child_pkg_beta])
+      database.add_collection(:packages,
+                              [root_pkg, child_pkg_alpha, child_pkg_beta])
     end
 
     it "returns packages with matching parent_id" do

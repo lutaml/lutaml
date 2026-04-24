@@ -281,8 +281,6 @@ module Lutaml
         memoized_inheritance_depth(qname, visited)
       end
 
-      private
-
       # Build reverse index: child_qname => parent_qname
       def child_to_parent_index
         @child_to_parent_index ||= begin

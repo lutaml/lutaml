@@ -268,7 +268,8 @@ module Lutaml
       # @param id [Integer] Package ID
       # @return [Models::EaPackage, nil] The package or nil if not found
       def find_package(id)
-        @packages_by_id ||= build_group_index(packages, :package_id, single: true)
+        @packages_by_id ||= build_group_index(packages, :package_id,
+                                              single: true)
         @packages_by_id[id]
       end
 
@@ -296,7 +297,8 @@ module Lutaml
       # @param id [Integer] Diagram ID
       # @return [Models::EaDiagram, nil] The diagram or nil if not found
       def find_diagram(id)
-        @diagrams_by_id ||= build_group_index(diagrams, :diagram_id, single: true)
+        @diagrams_by_id ||= build_group_index(diagrams, :diagram_id,
+                                              single: true)
         @diagrams_by_id[id]
       end
 
@@ -328,7 +330,8 @@ module Lutaml
       # @param object_id [Integer] Object ID
       # @return [Array<Models::EaAttribute>] Attributes for the object
       def attributes_for_object(object_id)
-        @attributes_by_object_id ||= build_group_index(attributes, :ea_object_id)
+        @attributes_by_object_id ||= build_group_index(attributes,
+                                                       :ea_object_id)
         @attributes_by_object_id[object_id] || []
       end
 
@@ -337,7 +340,8 @@ module Lutaml
       # @param object_id [Integer] Object ID
       # @return [Array<Models::EaOperation>] Operations for the object
       def operations_for_object(object_id)
-        @operations_by_object_id ||= build_group_index(operations, :ea_object_id)
+        @operations_by_object_id ||= build_group_index(operations,
+                                                       :ea_object_id)
         @operations_by_object_id[object_id] || []
       end
 

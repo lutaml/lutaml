@@ -15,8 +15,10 @@ RSpec.describe "XMI/QEA Equivalence Integration" do
     file_pairs = [
       ["UmlModel_template.xmi", "UmlModel_template.qea", "UmlModel_template"],
       ["test.xmi", "test.qea", "test"],
-      ["ArcGISWorkspace_template.xmi", "ArcGISWorkspace_template.qea", "ArcGISWorkspace_template"],
-      ["20251010_current_plateau_v5.1.xmi", "20251010_current_plateau_v5.1.qea", "20251010_current_plateau_v5.1"],
+      ["ArcGISWorkspace_template.xmi", "ArcGISWorkspace_template.qea",
+       "ArcGISWorkspace_template"],
+      ["20251010_current_plateau_v5.1.xmi",
+       "20251010_current_plateau_v5.1.qea", "20251010_current_plateau_v5.1"],
     ]
 
     @cached_results = {}
@@ -71,7 +73,9 @@ RSpec.describe "XMI/QEA Equivalence Integration" do
         end
 
         expect(element_diffs).to be_empty,
-                                 "Element property differences: #{element_diffs.map { |d| d[:name] }.join(', ')}"
+                                 "Element property differences: #{element_diffs.map do |d|
+                                   d[:name]
+                                 end.join(', ')}"
       end
 
       it "does not lose critical information" do
