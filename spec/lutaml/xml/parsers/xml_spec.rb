@@ -25,6 +25,8 @@ RSpec.describe Lutaml::Xml::Parsers::Xml do
             "zip" => ["E1 6AN"],
             "content" => [
               "\n    Oxford Street\n    ",
+              "\n    ",
+              "\n  ",
             ],
           },
         ],
