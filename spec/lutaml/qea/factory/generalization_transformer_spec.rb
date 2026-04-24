@@ -20,7 +20,14 @@ RSpec.describe Lutaml::Qea::Factory::GeneralizationTransformer do
         connector_type: "Association",
       )
 
-      result = transformer.transform(ea_conn, nil)
+      current_obj = Lutaml::Qea::Models::EaObject.new(
+        ea_object_id: 10,
+        name: "SomeClass",
+        object_type: "Class",
+        ea_guid: "{SOME-GUID}",
+      )
+
+      result = transformer.transform(ea_conn, current_obj)
 
       expect(result).to be_nil
     end
@@ -29,32 +36,32 @@ RSpec.describe Lutaml::Qea::Factory::GeneralizationTransformer do
       ea_conn = Lutaml::Qea::Models::EaConnector.new(
         connector_id: 1,
         connector_type: "Generalization",
-        start_object_id: 10,  # subtype
-        end_object_id: 20,    # supertype
+        start_object_id: 10,
+        end_object_id: 20,
         notes: "Inheritance relationship",
       )
 
-      subtype_row = {
-        "Object_ID" => 10,
-        "Name" => "Car",
-        "Object_Type" => "Class",
-        "ea_guid" => "{CAR-GUID}",
-      }
+      subtype_obj = Lutaml::Qea::Models::EaObject.new(
+        ea_object_id: 10,
+        name: "Car",
+        object_type: "Class",
+        ea_guid: "{CAR-GUID}",
+      )
 
-      supertype_row = {
-        "Object_ID" => 20,
-        "Name" => "Vehicle",
-        "ea_guid" => "{VEHICLE-GUID}",
-      }
+      supertype_obj = Lutaml::Qea::Models::EaObject.new(
+        ea_object_id: 20,
+        name: "Vehicle",
+        ea_guid: "{VEHICLE-GUID}",
+      )
 
-      allow(connection).to receive(:execute)
-        .with(/SELECT.*t_object.*Object_ID = \?/, 10)
-        .and_return([subtype_row])
-      allow(connection).to receive(:execute)
-        .with(/SELECT.*t_object.*Object_ID = \?/, 20)
-        .and_return([supertype_row])
+      # The transformer calls find_package for the current object's package_id
+      allow(database).to receive(:find_package).and_return(nil)
 
-      current_obj = transformer.send(:find_object_by_id, 20)
+      # find_object_by_id is inherited from BaseTransformer which calls database.find_object
+      allow(database).to receive(:find_object).with(20).and_return(supertype_obj)
+      allow(database).to receive(:find_object).with(10).and_return(subtype_obj)
+
+      current_obj = database.find_object(20)
       result = transformer.transform(ea_conn, current_obj)
 
       expect(result).to be_a(Lutaml::Uml::Generalization)
@@ -73,21 +80,18 @@ RSpec.describe Lutaml::Qea::Factory::GeneralizationTransformer do
         end_object_id: 99,
       )
 
-      subtype_row = {
-        "Object_ID" => 10,
-        "Name" => "Subclass",
-        "Object_Type" => "Class",
-        "ea_guid" => "{SUB-GUID}",
-      }
+      subtype_obj = Lutaml::Qea::Models::EaObject.new(
+        ea_object_id: 10,
+        name: "Subclass",
+        object_type: "Class",
+        ea_guid: "{SUB-GUID}",
+      )
 
-      allow(connection).to receive(:execute)
-        .with(/SELECT.*t_object.*Object_ID = \?/, 10)
-        .and_return([subtype_row])
-      allow(connection).to receive(:execute)
-        .with(/SELECT.*t_object.*Object_ID = \?/, 99)
-        .and_return([])
+      allow(database).to receive(:find_package).and_return(nil)
+      allow(database).to receive(:find_object).with(99).and_return(nil)
+      allow(database).to receive(:find_object).with(10).and_return(subtype_obj)
 
-      current_obj = transformer.send(:find_object_by_id, 99)
+      current_obj = database.find_object(99)
       result = transformer.transform(ea_conn, current_obj)
 
       expect(result).to be_nil

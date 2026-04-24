@@ -60,14 +60,8 @@ module Lutaml
         def load_parameters(operation_id)
           return [] if operation_id.nil?
 
-          # Query t_operationparams table
-          query = "SELECT * FROM t_operationparams WHERE OperationID = ? " \
-                  "ORDER BY Pos"
-          rows = database.connection.execute(query, operation_id)
-
-          rows.map do |row|
-            Models::EaOperationParam.from_db_row(row)
-          end
+          database.operation_params_for(operation_id)
+            .sort_by { |p| p.pos || 0 }
         end
       end
     end

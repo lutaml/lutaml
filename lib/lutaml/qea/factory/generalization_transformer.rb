@@ -72,11 +72,7 @@ module Lutaml
         def find_object(object_id)
           return nil if object_id.nil?
 
-          query = "SELECT * FROM t_object WHERE Object_ID = ?"
-          rows = database.connection.execute(query, object_id)
-          return nil if rows.empty?
-
-          Models::EaObject.from_db_row(rows.first)
+          database.find_object(object_id)
         end
 
         # Find package by ID
@@ -84,9 +80,8 @@ module Lutaml
         # @return [EaPackage, nil] EA package or nil if not found
         def find_package(package_id)
           return nil if package_id.nil?
-          return nil unless database.packages
 
-          database.packages.find { |pkg| pkg.package_id == package_id }
+          database.find_package(package_id)
         end
 
         # Extract package prefix from package

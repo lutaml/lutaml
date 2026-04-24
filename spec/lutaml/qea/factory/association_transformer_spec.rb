@@ -40,24 +40,20 @@ RSpec.describe Lutaml::Qea::Factory::AssociationTransformer do
         notes: "Ownership relationship",
       )
 
-      source_obj_row = {
-        "Object_ID" => 10,
-        "Name" => "Person",
-        "ea_guid" => "{PERSON-GUID}",
-      }
+      source_obj = Lutaml::Qea::Models::EaObject.new(
+        ea_object_id: 10,
+        name: "Person",
+        ea_guid: "{PERSON-GUID}",
+      )
 
-      dest_obj_row = {
-        "Object_ID" => 20,
-        "Name" => "Building",
-        "ea_guid" => "{BUILDING-GUID}",
-      }
+      dest_obj = Lutaml::Qea::Models::EaObject.new(
+        ea_object_id: 20,
+        name: "Building",
+        ea_guid: "{BUILDING-GUID}",
+      )
 
-      allow(connection).to receive(:execute)
-        .with(/SELECT.*t_object.*Object_ID = \?/, 10)
-        .and_return([source_obj_row])
-      allow(connection).to receive(:execute)
-        .with(/SELECT.*t_object.*Object_ID = \?/, 20)
-        .and_return([dest_obj_row])
+      allow(database).to receive(:find_object).with(10).and_return(source_obj)
+      allow(database).to receive(:find_object).with(20).and_return(dest_obj)
       allow(database).to receive(:tagged_values).and_return([])
 
       result = transformer.transform(ea_conn)
@@ -80,24 +76,20 @@ RSpec.describe Lutaml::Qea::Factory::AssociationTransformer do
         sourcecard: "1..*",
       )
 
-      source_obj_row = {
-        "Object_ID" => 10,
-        "Name" => "Class1",
-        "ea_guid" => "{GUID1}",
-      }
+      source_obj = Lutaml::Qea::Models::EaObject.new(
+        ea_object_id: 10,
+        name: "Class1",
+        ea_guid: "{GUID1}",
+      )
 
-      dest_obj_row = {
-        "Object_ID" => 20,
-        "Name" => "Class2",
-        "ea_guid" => "{GUID2}",
-      }
+      dest_obj = Lutaml::Qea::Models::EaObject.new(
+        ea_object_id: 20,
+        name: "Class2",
+        ea_guid: "{GUID2}",
+      )
 
-      allow(connection).to receive(:execute)
-        .with(/SELECT.*t_object.*Object_ID = \?/, 10)
-        .and_return([source_obj_row])
-      allow(connection).to receive(:execute)
-        .with(/SELECT.*t_object.*Object_ID = \?/, 20)
-        .and_return([dest_obj_row])
+      allow(database).to receive(:find_object).with(10).and_return(source_obj)
+      allow(database).to receive(:find_object).with(20).and_return(dest_obj)
 
       result = transformer.transform(ea_conn)
 
@@ -113,7 +105,7 @@ RSpec.describe Lutaml::Qea::Factory::AssociationTransformer do
         end_object_id: nil,
       )
 
-      allow(connection).to receive(:execute).and_return([])
+      allow(database).to receive(:find_object).with(99).and_return(nil)
 
       result = transformer.transform(ea_conn)
 
@@ -130,7 +122,8 @@ RSpec.describe Lutaml::Qea::Factory::AssociationTransformer do
         stereotype: "create",
       )
 
-      allow(connection).to receive(:execute).and_return([])
+      allow(database).to receive(:find_object).with(10).and_return(nil)
+      allow(database).to receive(:find_object).with(20).and_return(nil)
 
       result = transformer.transform(ea_conn)
 

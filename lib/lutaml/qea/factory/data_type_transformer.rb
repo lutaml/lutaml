@@ -64,12 +64,8 @@ module Lutaml
         def load_attributes(object_id)
           return [] if object_id.nil?
 
-          query = "SELECT * FROM t_attribute WHERE Object_ID = ? ORDER BY Pos"
-          rows = database.connection.execute(query, object_id)
-
-          ea_attributes = rows.map do |row|
-            Models::EaAttribute.from_db_row(row)
-          end
+          ea_attributes = database.attributes_for_object(object_id)
+            .sort_by { |a| a.pos || 0 }
 
           attribute_transformer = AttributeTransformer.new(database)
           attribute_transformer.transform_collection(ea_attributes)
@@ -81,12 +77,8 @@ module Lutaml
         def load_operations(object_id)
           return [] if object_id.nil?
 
-          query = "SELECT * FROM t_operation WHERE Object_ID = ? ORDER BY Pos"
-          rows = database.connection.execute(query, object_id)
-
-          ea_operations = rows.map do |row|
-            Models::EaOperation.from_db_row(row)
-          end
+          ea_operations = database.operations_for_object(object_id)
+            .sort_by { |op| op.pos || 0 }
 
           operation_transformer = OperationTransformer.new(database)
           operation_transformer.transform_collection(ea_operations)
@@ -129,19 +121,13 @@ module Lutaml
         def load_associations(object_id, object_guid) # rubocop:disable Metrics/MethodLength
           return [] if object_id.nil?
 
-          query = <<-SQL
-            SELECT * FROM t_connector
-            WHERE Connector_Type = 'Association'
-            AND (Start_Object_ID = ? OR End_Object_ID = ?)
-          SQL
-
-          rows = database.connection.execute(query, [object_id, object_id])
+          assoc_connectors = database.connectors_for_object(object_id)
+            .select { |c| c.connector_type == "Association" }
 
           assoc_transformer = AssociationTransformer.new(database)
           normalized_xmi_id = normalize_guid_to_xmi_format(object_guid, "EAID")
 
-          rows.filter_map do |row|
-            ea_connector = Models::EaConnector.from_db_row(row)
+          assoc_connectors.filter_map do |ea_connector|
             assoc = assoc_transformer.transform(ea_connector)
 
             next unless assoc && assoc.owner_end_xmi_id == normalized_xmi_id

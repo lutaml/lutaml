@@ -71,7 +71,7 @@ RSpec.describe "XMI/QEA Equivalence Integration" do
         end
 
         expect(element_diffs).to be_empty,
-                                 "Element property differences: #{element_diffs.map(&:name).join(', ')}"
+                                 "Element property differences: #{element_diffs.map { |d| d[:name] }.join(', ')}"
       end
 
       it "does not lose critical information" do

@@ -54,26 +54,16 @@ RSpec.describe Lutaml::Qea::Factory::PackageTransformer do
         name: "Root",
       )
 
-      child_row = {
-        "Package_ID" => 2,
-        "Name" => "Child",
-        "Parent_ID" => 1,
-        "ea_guid" => "{CHILD-GUID}",
-      }
+      child_pkg = Lutaml::Qea::Models::EaPackage.new(
+        package_id: 2,
+        name: "Child",
+        parent_id: 1,
+        ea_guid: "{CHILD-GUID}",
+      )
 
-      allow(connection).to receive(:execute)
-        .with(/SELECT.*t_package.*Parent_ID/, 1)
-        .and_return([child_row])
-      allow(connection).to receive(:execute)
-        .with(/SELECT.*t_package.*Parent_ID/, 2)
-        .and_return([])
-      allow(connection).to receive(:execute)
-        .with(/SELECT.*t_object/, anything)
-        .and_return([])
-      allow(connection).to receive(:execute)
-        .with(/SELECT.*t_diagram/, anything)
-        .and_return([])
-      allow(database).to receive(:xrefs).and_return(nil)
+      allow(database).to receive(:child_packages_for).with(1).and_return([child_pkg])
+      allow(database).to receive(:child_packages_for).with(2).and_return([])
+      allow(database).to receive_messages(objects_in_package: [], diagrams_in_package: [], xrefs: nil)
 
       result = transformer.transform_with_hierarchy(ea_pkg)
 
@@ -87,51 +77,21 @@ RSpec.describe Lutaml::Qea::Factory::PackageTransformer do
         name: "Models",
       )
 
-      class_row = {
-        "Object_ID" => 10,
-        "Object_Type" => "Class",
-        "Name" => "Entity",
-        "Package_ID" => 1,
-      }
+      ea_obj = Lutaml::Qea::Models::EaObject.new(
+        ea_object_id: 10,
+        object_type: "Class",
+        name: "Entity",
+        package_id: 1,
+      )
 
-      allow(connection).to receive(:execute)
-        .with(/SELECT.*t_package/, 1)
-        .and_return([])
-      allow(connection).to receive(:execute)
-        .with(/SELECT.*t_object.*Package_ID/, 1)
-        .and_return([class_row])
-      allow(connection).to receive(:execute)
-        .with(/SELECT.*t_attribute/, 10)
-        .and_return([])
-      allow(connection).to receive(:execute)
-        .with(/SELECT.*t_operation/, 10)
-        .and_return([])
-      allow(connection).to receive(:execute)
-        .with(/SELECT.*t_diagram/, 1)
-        .and_return([])
-      allow(connection).to receive(:execute)
-        .with(/SELECT.*t_connector/, [10, 10])
-        .and_return([])
-      allow(connection).to receive(:execute)
-        .with("SELECT * FROM t_object WHERE Object_ID = ?", 10)
-        .and_return([class_row])
-      allow(connection).to receive(:execute)
-        .with("SELECT NAME FROM t_package WHERE Package_ID = ?", [1])
-        .and_return([])
-      allow(connection).to receive(:execute)
-        .with(
-          "SELECT * FROM t_connector WHERE Start_Object_ID = ? " \
-          "AND Connector_Type = 'Generalization' LIMIT 1", 10
-        ).and_return([])
-      allow(connection)
-        .to receive(:execute)
-        .with(
-          "SELECT ea_guid, End_Object_ID FROM t_connector " \
-          "WHERE Start_Object_ID = ? AND Connector_Type = 'Generalization'", 10
-        ).and_return([])
-
-      allow(database).to receive_messages(object_constraints: [],
-                                          object_properties: [], packages: [], xrefs: nil)
+      allow(database).to receive(:child_packages_for).with(1).and_return([])
+      allow(database).to receive(:objects_in_package).with(1).and_return([ea_obj])
+      allow(database).to receive(:attributes_for_object).with(10).and_return([])
+      allow(database).to receive(:operations_for_object).with(10).and_return([])
+      allow(database).to receive(:connectors_for_object).with(10).and_return([])
+      allow(database).to receive(:diagrams_in_package).with(1).and_return([])
+      allow(database).to receive(:find_object).with(10).and_return(ea_obj)
+      allow(database).to receive_messages(xrefs: nil, object_constraints: [], object_properties: [], attribute_tags: [], tagged_values: [], find_package: nil)
 
       result = transformer.transform_with_hierarchy(ea_pkg)
 
@@ -145,32 +105,18 @@ RSpec.describe Lutaml::Qea::Factory::PackageTransformer do
         name: "Views",
       )
 
-      diagram_row = {
-        "Diagram_ID" => 5,
-        "Package_ID" => 1,
-        "Name" => "Class Diagram",
-      }
+      ea_diagram = Lutaml::Qea::Models::EaDiagram.new(
+        diagram_id: 5,
+        package_id: 1,
+        name: "Class Diagram",
+      )
 
-      allow(connection).to receive(:execute)
-        .with(/SELECT.*t_package/, 1)
-        .and_return([])
-      allow(connection).to receive(:execute)
-        .with(/SELECT.*t_object/, 1)
-        .and_return([])
-      allow(connection).to receive(:execute)
-        .with(/SELECT.*t_diagram.*Package_ID/, 1)
-        .and_return([diagram_row])
-      allow(connection).to receive(:execute)
-        .with(/SELECT.*t_package.*Package_ID/, 1)
-        .and_return([])
-      allow(connection).to receive(:execute)
-        .with("SELECT * FROM t_diagramobjects WHERE Diagram_ID = ?", 5)
-        .and_return([])
-      allow(connection).to receive(:execute)
-        .with("SELECT * FROM t_diagramlinks WHERE DiagramID = ?", 5)
-        .and_return([])
-      allow(database).to receive_messages(object_constraints: [],
-                                          object_properties: [], packages: [], xrefs: nil)
+      allow(database).to receive(:child_packages_for).with(1).and_return([])
+      allow(database).to receive(:objects_in_package).with(1).and_return([])
+      allow(database).to receive(:diagrams_in_package).with(1).and_return([ea_diagram])
+      allow(database).to receive(:find_package).with(1).and_return(nil)
+      allow(database).to receive(:diagram_objects_for).with(5).and_return([])
+      allow(database).to receive(:diagram_links_for).with(5).and_return([])
 
       result = transformer.transform_with_hierarchy(ea_pkg)
 

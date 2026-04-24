@@ -268,7 +268,8 @@ module Lutaml
       # @param id [Integer] Package ID
       # @return [Models::EaPackage, nil] The package or nil if not found
       def find_package(id)
-        packages.find { |pkg| pkg.package_id == id }
+        @packages_by_id ||= build_group_index(packages, :package_id, single: true)
+        @packages_by_id[id]
       end
 
       # Find an attribute by ID
@@ -276,7 +277,8 @@ module Lutaml
       # @param id [Integer] Attribute ID
       # @return [Models::EaAttribute, nil] The attribute or nil if not found
       def find_attribute(id)
-        attributes.find { |attr| attr.id == id }
+        @attributes_by_id ||= build_group_index(attributes, :id, single: true)
+        @attributes_by_id[id]
       end
 
       # Find a connector by ID
@@ -284,7 +286,9 @@ module Lutaml
       # @param id [Integer] Connector ID
       # @return [Models::EaConnector, nil] The connector or nil if not found
       def find_connector(id)
-        connectors.find { |conn| conn.connector_id == id }
+        @connectors_by_id ||= build_group_index(connectors, :connector_id,
+                                                single: true)
+        @connectors_by_id[id]
       end
 
       # Find a diagram by ID
@@ -292,7 +296,8 @@ module Lutaml
       # @param id [Integer] Diagram ID
       # @return [Models::EaDiagram, nil] The diagram or nil if not found
       def find_diagram(id)
-        diagrams.find { |diag| diag.diagram_id == id }
+        @diagrams_by_id ||= build_group_index(diagrams, :diagram_id, single: true)
+        @diagrams_by_id[id]
       end
 
       # Check if database is empty
@@ -309,6 +314,100 @@ module Lutaml
         @collections.keys
       end
 
+      # Find object by ea_guid
+      #
+      # @param ea_guid [String] Object GUID
+      # @return [Models::EaObject, nil] The object or nil if not found
+      def find_object_by_guid(ea_guid)
+        @objects_by_guid ||= build_group_index(objects, :ea_guid, single: true)
+        @objects_by_guid[ea_guid]
+      end
+
+      # Get attributes for a specific object
+      #
+      # @param object_id [Integer] Object ID
+      # @return [Array<Models::EaAttribute>] Attributes for the object
+      def attributes_for_object(object_id)
+        @attributes_by_object_id ||= build_group_index(attributes, :ea_object_id)
+        @attributes_by_object_id[object_id] || []
+      end
+
+      # Get operations for a specific object
+      #
+      # @param object_id [Integer] Object ID
+      # @return [Array<Models::EaOperation>] Operations for the object
+      def operations_for_object(object_id)
+        @operations_by_object_id ||= build_group_index(operations, :ea_object_id)
+        @operations_by_object_id[object_id] || []
+      end
+
+      # Get operation parameters for a specific operation
+      #
+      # @param operation_id [Integer] Operation ID
+      # @return [Array<Models::EaOperationParam>] Parameters for the operation
+      def operation_params_for(operation_id)
+        @operation_params_by_id ||= build_group_index(operation_params,
+                                                      :operationid)
+        @operation_params_by_id[operation_id] || []
+      end
+
+      # Get connectors involving a specific object (start or end)
+      #
+      # @param object_id [Integer] Object ID
+      # @return [Array<Models::EaConnector>] Connectors for the object
+      def connectors_for_object(object_id)
+        @connectors_by_start ||= build_group_index(connectors, :start_object_id)
+        @connectors_by_end ||= build_group_index(connectors, :end_object_id)
+        (@connectors_by_start[object_id] || []) +
+          (@connectors_by_end[object_id] || [])
+      end
+
+      # Get child packages for a parent
+      #
+      # @param parent_id [Integer] Parent package ID
+      # @return [Array<Models::EaPackage>] Child packages
+      def child_packages_for(parent_id)
+        @packages_by_parent ||= build_group_index(packages, :parent_id)
+        @packages_by_parent[parent_id] || []
+      end
+
+      # Get objects in a specific package
+      #
+      # @param package_id [Integer] Package ID
+      # @return [Array<Models::EaObject>] Objects in the package
+      def objects_in_package(package_id)
+        @objects_by_package_id ||= build_group_index(objects, :package_id)
+        @objects_by_package_id[package_id] || []
+      end
+
+      # Get diagrams in a specific package
+      #
+      # @param package_id [Integer] Package ID
+      # @return [Array<Models::EaDiagram>] Diagrams in the package
+      def diagrams_in_package(package_id)
+        @diagrams_by_package_id ||= build_group_index(diagrams, :package_id)
+        @diagrams_by_package_id[package_id] || []
+      end
+
+      # Get diagram objects for a specific diagram
+      #
+      # @param diagram_id [Integer] Diagram ID
+      # @return [Array<Models::EaDiagramObject>] Diagram objects
+      def diagram_objects_for(diagram_id)
+        @diagram_objects_by_id ||= build_group_index(diagram_objects,
+                                                     :diagram_id)
+        @diagram_objects_by_id[diagram_id] || []
+      end
+
+      # Get diagram links for a specific diagram
+      #
+      # @param diagram_id [Integer] Diagram ID
+      # @return [Array<Models::EaDiagramLink>] Diagram links
+      def diagram_links_for(diagram_id)
+        @diagram_links_by_id ||= build_group_index(diagram_links, :diagramid)
+        @diagram_links_by_id[diagram_id] || []
+      end
+
       # Freeze all collections to make database immutable
       #
       # @return [self]
@@ -316,8 +415,58 @@ module Lutaml
         # Memoize repositories before freezing
         objects
 
+        # Eagerly build all lookup indexes before freezing
+        build_lookup_indexes
+
         @collections.freeze
         super
+      end
+
+      private
+
+      # Build a group index from a collection by a given attribute.
+      # BaseRepository overrides group_by to take a symbol (not a block),
+      # so we use each_with_object instead.
+      #
+      # @param collection [Array] Collection to index
+      # @param method [Symbol] Attribute method to group by
+      # @param single [Boolean] If true, return single object (last match)
+      #   instead of array
+      # @return [Hash] Group index
+      def build_group_index(collection, method, single: false)
+        if single
+          collection.each_with_object({}) do |item, hash|
+            key = item.send(method)
+            hash[key] = item if key
+          end
+        else
+          collection.each_with_object({}) do |item, hash|
+            key = item.send(method)
+            (hash[key] ||= []) << item if key
+          end
+        end
+      end
+
+      # Eagerly build all lazy lookup indexes before freezing
+      def build_lookup_indexes
+        @objects_by_guid = build_group_index(objects, :ea_guid, single: true)
+        @attributes_by_object_id = build_group_index(attributes, :ea_object_id)
+        @operations_by_object_id = build_group_index(operations, :ea_object_id)
+        @operation_params_by_id = build_group_index(operation_params,
+                                                    :operationid)
+        @connectors_by_start = build_group_index(connectors, :start_object_id)
+        @connectors_by_end = build_group_index(connectors, :end_object_id)
+        @packages_by_parent = build_group_index(packages, :parent_id)
+        @objects_by_package_id = build_group_index(objects, :package_id)
+        @diagrams_by_package_id = build_group_index(diagrams, :package_id)
+        @diagram_objects_by_id = build_group_index(diagram_objects, :diagram_id)
+        @diagram_links_by_id = build_group_index(diagram_links, :diagramid)
+        # Also build hash indexes for find_* methods
+        @packages_by_id = build_group_index(packages, :package_id, single: true)
+        @connectors_by_id = build_group_index(connectors, :connector_id,
+                                              single: true)
+        @diagrams_by_id = build_group_index(diagrams, :diagram_id, single: true)
+        @attributes_by_id = build_group_index(attributes, :id, single: true)
       end
     end
   end

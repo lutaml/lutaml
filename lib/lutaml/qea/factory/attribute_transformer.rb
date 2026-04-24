@@ -55,16 +55,10 @@ module Lutaml
         def lookup_type_xmi_id(classifier_id) # rubocop:disable Metrics/AbcSize
           return nil if classifier_id.nil? || classifier_id.to_i.zero?
 
-          query = "SELECT ea_guid FROM t_object WHERE Object_ID = ?"
-          rows = database.connection.execute(query, [classifier_id])
-          return nil if rows.empty?
+          obj = database.find_object(classifier_id.to_i)
+          return nil unless obj
 
-          ea_guid = if rows.first.is_a?(Hash)
-                      rows.first["ea_guid"] || rows.first[:ea_guid]
-                    else
-                      rows.first[0]
-                    end
-          normalize_guid_to_xmi_format(ea_guid, "EAID")
+          normalize_guid_to_xmi_format(obj.ea_guid, "EAID")
         end
 
         # Build cardinality from lower and upper bounds

@@ -71,11 +71,7 @@ module Lutaml
         def find_object(object_id)
           return nil if object_id.nil?
 
-          query = "SELECT * FROM t_object WHERE Object_ID = ?"
-          rows = database.connection.execute(query, object_id)
-          return nil if rows.empty?
-
-          Models::EaObject.from_db_row(rows.first)
+          database.find_object(object_id)
         end
 
         # Build cardinality from string

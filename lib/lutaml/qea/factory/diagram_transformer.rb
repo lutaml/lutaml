@@ -72,11 +72,7 @@ module Lutaml
         def find_package(package_id)
           return nil if package_id.nil?
 
-          query = "SELECT * FROM t_package WHERE Package_ID = ?"
-          rows = database.connection.execute(query, package_id)
-          return nil if rows.empty?
-
-          Models::EaPackage.from_db_row(rows.first)
+          database.find_package(package_id)
         end
 
         # Load diagram objects for a diagram
@@ -85,11 +81,8 @@ module Lutaml
         def load_diagram_objects(diagram_id)
           return [] if diagram_id.nil?
 
-          query = "SELECT * FROM t_diagramobjects WHERE Diagram_ID = ?"
-          rows = database.connection.execute(query, diagram_id)
-
-          rows.filter_map do |row|
-            ea_obj = Models::EaDiagramObject.from_db_row(row)
+          ea_objects = database.diagram_objects_for(diagram_id)
+          ea_objects.filter_map do |ea_obj|
             transform_diagram_object(ea_obj)
           end
         end
@@ -127,11 +120,8 @@ module Lutaml
         def load_diagram_links(diagram_id)
           return [] if diagram_id.nil?
 
-          query = "SELECT * FROM t_diagramlinks WHERE DiagramID = ?"
-          rows = database.connection.execute(query, diagram_id)
-
-          rows.filter_map do |row|
-            ea_link = Models::EaDiagramLink.from_db_row(row)
+          ea_links = database.diagram_links_for(diagram_id)
+          ea_links.filter_map do |ea_link|
             transform_diagram_link(ea_link)
           end
         end
@@ -167,11 +157,7 @@ module Lutaml
         def find_connector_by_id(connector_id)
           return nil if connector_id.nil?
 
-          query = "SELECT * FROM t_connector WHERE Connector_ID = ?"
-          rows = database.connection.execute(query, connector_id)
-          return nil if rows.empty?
-
-          Models::EaConnector.from_db_row(rows.first)
+          database.find_connector(connector_id)
         end
       end
     end
