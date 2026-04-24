@@ -239,16 +239,15 @@ module Lutaml
           # 3. Create generalization object for current class
           # Even if no parent exists, we need a Generalization
           # representing this class
-          if ea_connector.nil?
+          gen_transformer = GeneralizationTransformer.new(database)
+          generalization = if ea_connector.nil?
             # No parent - create terminal generalization
-            gen_transformer = GeneralizationTransformer.new(database)
-            generalization = gen_transformer.transform(nil, current_obj)
+            gen_transformer.transform(nil, current_obj)
           else
             # Has parent - create generalization with parent connector
-            gen_transformer = GeneralizationTransformer.new(database)
-            generalization = gen_transformer
+            gen_transformer
               .transform(ea_connector, current_obj)
-          end
+                           end
           return nil unless generalization
 
           # 4. Load CURRENT object attributes and convert to GeneralAttribute
@@ -582,7 +581,6 @@ module Lutaml
           obj_pkg_name = find_package_name(obj&.package_id)
 
           assoc_connectors.each do |ea_connector| # rubocop:disable Metrics/BlockLength
-
             # Check if this object is the source (owner) or target (member)
             if ea_connector.start_object_id == object_id
               # This class is the source - check for dest role

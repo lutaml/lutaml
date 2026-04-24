@@ -54,7 +54,6 @@ module Lutaml
             .sort_by { |a| a.pos || 0 }
 
           ea_attrs.filter_map do |ea_attr|
-
             Lutaml::Uml::Value.new.tap do |value|
               value.name = ea_attr.name
               value.id = normalize_guid_to_xmi_format(ea_attr.ea_guid, "EAID")

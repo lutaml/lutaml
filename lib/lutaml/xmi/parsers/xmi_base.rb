@@ -951,7 +951,7 @@ module Lutaml
             lookup = {}
             connectors = @xmi_root_model.extension&.connectors&.connector || []
             connectors.each do |con|
-              [:source, :target].each do |dir|
+              %i[source target].each do |dir|
                 idref = con.send(dir)&.idref
                 lookup[[dir, idref]] = con if idref
               end

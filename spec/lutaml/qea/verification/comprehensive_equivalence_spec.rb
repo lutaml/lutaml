@@ -73,7 +73,8 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
           lookup = build_lookup(qea_packages, :name, :qualified_name)
 
           xmi_packages.each do |xmi_package|
-            matching_qea = find_matching_package(qea_packages, xmi_package, lookup: lookup)
+            matching_qea = find_matching_package(qea_packages, xmi_package,
+                                                 lookup: lookup)
 
             expect(matching_qea).not_to be_nil,
                                         "Package '#{xmi_package.name}' (#{xmi_package.qualified_name}) " \
@@ -111,7 +112,8 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
           lookup = build_lookup(qea_classes, :name, :package_name)
 
           xmi_classes.each do |xmi_class|
-            matching_qea = find_matching_class(qea_classes, xmi_class, lookup: lookup)
+            matching_qea = find_matching_class(qea_classes, xmi_class,
+                                               lookup: lookup)
 
             expect(matching_qea).not_to be_nil,
                                         "Class '#{xmi_class.name}' from " \
@@ -151,7 +153,8 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
           lookup = build_lookup(qea_attributes, :name, :owner_name)
 
           xmi_attributes.each do |xmi_attr|
-            matching_qea = find_matching_attribute(qea_attributes, xmi_attr, lookup: lookup)
+            matching_qea = find_matching_attribute(qea_attributes, xmi_attr,
+                                                   lookup: lookup)
 
             expect(matching_qea).not_to be_nil,
                                         "Attribute '#{xmi_attr.name}' in " \
@@ -233,7 +236,8 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
           lookup = build_lookup(qea_enums, :name, :package_name)
 
           xmi_enums.each do |xmi_enum|
-            matching_qea = find_matching_enum(qea_enums, xmi_enum, lookup: lookup)
+            matching_qea = find_matching_enum(qea_enums, xmi_enum,
+                                              lookup: lookup)
 
             expect(matching_qea).not_to be_nil,
                                         "Enumeration '#{xmi_enum.name}' from " \
@@ -269,7 +273,8 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
           lookup = build_lookup(qea_datatypes, :name, :package_name)
 
           xmi_datatypes.each do |xmi_dt|
-            matching_qea = find_matching_datatype(qea_datatypes, xmi_dt, lookup: lookup)
+            matching_qea = find_matching_datatype(qea_datatypes, xmi_dt,
+                                                  lookup: lookup)
 
             expect(matching_qea).not_to be_nil,
                                         "Data type '#{xmi_dt.name}' from " \
@@ -305,7 +310,8 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
           lookup = build_lookup(qea_operations, :name, :owner_name)
 
           xmi_operations.each do |xmi_op|
-            matching_qea = find_matching_operation(qea_operations, xmi_op, lookup: lookup)
+            matching_qea = find_matching_operation(qea_operations, xmi_op,
+                                                   lookup: lookup)
 
             expect(matching_qea).not_to be_nil,
                                         "Operation '#{xmi_op.name}' in class '#{xmi_op.owner_name}' " \

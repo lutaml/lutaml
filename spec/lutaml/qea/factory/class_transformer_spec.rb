@@ -40,7 +40,8 @@ RSpec.describe Lutaml::Qea::Factory::ClassTransformer do
       allow(database).to receive(:operations_for_object).with(1).and_return([])
       allow(database).to receive(:connectors_for_object).with(1).and_return([])
       allow(database).to receive(:find_object).with(1).and_return(ea_obj)
-      allow(database).to receive_messages(xrefs: nil, tagged_values: [], attribute_tags: [], object_constraints: [], object_properties: [], find_package: nil)
+      allow(database).to receive_messages(xrefs: nil, tagged_values: [],
+                                          attribute_tags: [], object_constraints: [], object_properties: [], find_package: nil)
 
       result = transformer.transform(ea_obj)
 
@@ -64,7 +65,8 @@ RSpec.describe Lutaml::Qea::Factory::ClassTransformer do
       allow(database).to receive(:operations_for_object).with(1).and_return([])
       allow(database).to receive(:connectors_for_object).with(1).and_return([])
       allow(database).to receive(:find_object).with(1).and_return(ea_obj)
-      allow(database).to receive_messages(xrefs: nil, tagged_values: [], attribute_tags: [], object_constraints: [], object_properties: [], find_package: nil)
+      allow(database).to receive_messages(xrefs: nil, tagged_values: [],
+                                          attribute_tags: [], object_constraints: [], object_properties: [], find_package: nil)
 
       result = transformer.transform(ea_obj)
 
@@ -82,7 +84,8 @@ RSpec.describe Lutaml::Qea::Factory::ClassTransformer do
       allow(database).to receive(:operations_for_object).with(1).and_return([])
       allow(database).to receive(:connectors_for_object).with(1).and_return([])
       allow(database).to receive(:find_object).with(1).and_return(ea_obj)
-      allow(database).to receive_messages(xrefs: nil, tagged_values: [], attribute_tags: [], object_constraints: [], object_properties: [], find_package: nil)
+      allow(database).to receive_messages(xrefs: nil, tagged_values: [],
+                                          attribute_tags: [], object_constraints: [], object_properties: [], find_package: nil)
 
       result = transformer.transform(ea_obj)
 
@@ -109,7 +112,8 @@ RSpec.describe Lutaml::Qea::Factory::ClassTransformer do
       allow(database).to receive(:operations_for_object).with(1).and_return([])
       allow(database).to receive(:connectors_for_object).with(1).and_return([])
       allow(database).to receive(:find_object).with(1).and_return(ea_obj)
-      allow(database).to receive_messages(xrefs: nil, attribute_tags: [], object_constraints: [], object_properties: [], find_package: nil)
+      allow(database).to receive_messages(xrefs: nil, attribute_tags: [],
+                                          object_constraints: [], object_properties: [], find_package: nil)
 
       result = transformer.transform(ea_obj)
 
@@ -138,7 +142,8 @@ RSpec.describe Lutaml::Qea::Factory::ClassTransformer do
       allow(database).to receive(:operation_params_for).with(1).and_return([])
       allow(database).to receive(:connectors_for_object).with(1).and_return([])
       allow(database).to receive(:find_object).with(1).and_return(ea_obj)
-      allow(database).to receive_messages(xrefs: nil, attribute_tags: [], object_constraints: [], object_properties: [], find_package: nil)
+      allow(database).to receive_messages(xrefs: nil, attribute_tags: [],
+                                          object_constraints: [], object_properties: [], find_package: nil)
 
       result = transformer.transform(ea_obj)
 
@@ -158,7 +163,8 @@ RSpec.describe Lutaml::Qea::Factory::ClassTransformer do
       allow(database).to receive(:operations_for_object).with(1).and_return([])
       allow(database).to receive(:connectors_for_object).with(1).and_return([])
       allow(database).to receive(:find_object).with(1).and_return(ea_obj)
-      allow(database).to receive_messages(xrefs: nil, tagged_values: [], attribute_tags: [], object_constraints: [], object_properties: [], find_package: nil)
+      allow(database).to receive_messages(xrefs: nil, tagged_values: [],
+                                          attribute_tags: [], object_constraints: [], object_properties: [], find_package: nil)
 
       result = transformer.transform(ea_obj)
 
