@@ -70,11 +70,8 @@ module Lutaml
         def load_child_packages(parent_id)
           return [] if parent_id.nil?
 
-          query = "SELECT * FROM t_package WHERE Parent_ID = ? " \
-                  "ORDER BY TPos"
-          rows = database.connection.execute(query, parent_id)
-
-          rows.map { |row| Models::EaPackage.from_db_row(row) }
+          database.child_packages_for(parent_id)
+            .sort_by { |p| p.tpos || 0 }
         end
 
         # Load package contents (objects and diagrams)
@@ -94,10 +91,7 @@ module Lutaml
         # @param pkg [Lutaml::Uml::Package] UML package
         # @param package_id [Integer] Package ID
         def load_package_objects(pkg, package_id) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
-          query = "SELECT * FROM t_object WHERE Package_ID = ?"
-          rows = database.connection.execute(query, package_id)
-
-          ea_objects = rows.map { |row| Models::EaObject.from_db_row(row) }
+          ea_objects = database.objects_in_package(package_id)
 
           class_transformer = ClassTransformer.new(database)
           enum_transformer = EnumTransformer.new(database)
@@ -155,10 +149,7 @@ module Lutaml
         def load_package_diagrams(pkg, package_id)
           diagram_transformer = DiagramTransformer.new(database)
 
-          query = "SELECT * FROM t_diagram WHERE Package_ID = ?"
-          rows = database.connection.execute(query, package_id)
-
-          ea_diagrams = rows.map { |row| Models::EaDiagram.from_db_row(row) }
+          ea_diagrams = database.diagrams_in_package(package_id)
           pkg.diagrams = diagram_transformer.transform_collection(ea_diagrams)
         end
 

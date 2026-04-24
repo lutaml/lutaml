@@ -50,11 +50,10 @@ module Lutaml
         def load_enum_values(object_id) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           return [] if object_id.nil?
 
-          query = "SELECT * FROM t_attribute WHERE Object_ID = ? ORDER BY Pos"
-          rows = database.connection.execute(query, object_id)
+          ea_attrs = database.attributes_for_object(object_id)
+            .sort_by { |a| a.pos || 0 }
 
-          rows.filter_map do |row|
-            ea_attr = Models::EaAttribute.from_db_row(row)
+          ea_attrs.filter_map do |ea_attr|
 
             Lutaml::Uml::Value.new.tap do |value|
               value.name = ea_attr.name

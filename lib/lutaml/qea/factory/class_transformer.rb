@@ -108,15 +108,9 @@ module Lutaml
         def load_attributes(object_id)
           return [] if object_id.nil?
 
-          # Query t_attribute table
-          query = "SELECT * FROM t_attribute WHERE Object_ID = ? ORDER BY Pos"
-          rows = database.connection.execute(query, object_id)
+          ea_attributes = database.attributes_for_object(object_id)
+            .sort_by { |a| a.pos || 0 }
 
-          ea_attributes = rows.map do |row|
-            Models::EaAttribute.from_db_row(row)
-          end
-
-          # Transform to UML attributes
           attribute_transformer = AttributeTransformer.new(database)
           attribute_transformer.transform_collection(ea_attributes)
         end
@@ -127,15 +121,9 @@ module Lutaml
         def load_operations(object_id)
           return [] if object_id.nil?
 
-          # Query t_operation table
-          query = "SELECT * FROM t_operation WHERE Object_ID = ? ORDER BY Pos"
-          rows = database.connection.execute(query, object_id)
+          ea_operations = database.operations_for_object(object_id)
+            .sort_by { |op| op.pos || 0 }
 
-          ea_operations = rows.map do |row|
-            Models::EaOperation.from_db_row(row)
-          end
-
-          # Transform to UML operations
           operation_transformer = OperationTransformer.new(database)
           operation_transformer.transform_collection(ea_operations)
         end
@@ -245,20 +233,18 @@ module Lutaml
           return nil unless current_obj
 
           # 2. Find generalization connector where this class is the subtype
-          query = "SELECT * FROM t_connector WHERE Start_Object_ID = ? " \
-                  "AND Connector_Type = 'Generalization' LIMIT 1"
-          rows = database.connection.execute(query, object_id)
+          ea_connector = database.connectors_for_object(object_id)
+            .find { |c| c.generalization? && c.start_object_id == object_id }
 
           # 3. Create generalization object for current class
           # Even if no parent exists, we need a Generalization
           # representing this class
-          if rows.empty?
+          if ea_connector.nil?
             # No parent - create terminal generalization
             gen_transformer = GeneralizationTransformer.new(database)
             generalization = gen_transformer.transform(nil, current_obj)
           else
             # Has parent - create generalization with parent connector
-            ea_connector = Models::EaConnector.from_db_row(rows.first)
             gen_transformer = GeneralizationTransformer.new(database)
             generalization = gen_transformer
               .transform(ea_connector, current_obj)
@@ -452,19 +438,13 @@ module Lutaml
         def load_association_generalizations(object_id) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           return [] if object_id.nil?
 
-          # Query for ALL generalization connectors for this class
-          query = "SELECT ea_guid, End_Object_ID FROM t_connector " \
-                  "WHERE Start_Object_ID = ? " \
-                  "AND Connector_Type = 'Generalization'"
-          rows = database.connection.execute(query, object_id)
+          # Find ALL generalization connectors for this class
+          gen_connectors = database.connectors_for_object(object_id)
+            .select { |c| c.generalization? && c.start_object_id == object_id }
 
-          rows.filter_map do |row|
-            guid = row.is_a?(Hash) ? (row["ea_guid"] || row[:ea_guid]) : row[0]
-            parent_object_id = if row.is_a?(Hash)
-                                 row["End_Object_ID"] || row[:End_Object_ID]
-                               else
-                                 row[1]
-                               end
+          gen_connectors.filter_map do |ea_connector|
+            guid = ea_connector.ea_guid
+            parent_object_id = ea_connector.end_object_id
 
             # Find parent object to get its GUID
             parent_obj = find_object_by_id(parent_object_id)
@@ -493,16 +473,11 @@ module Lutaml
           normalized_owner_xmi_id = normalize_guid_to_xmi_format(object_guid,
                                                                  "EAID")
 
-          # Find all association-type connectors where this class participates
-          query = "SELECT * FROM t_connector " \
-                  "WHERE (Start_Object_ID = ? OR End_Object_ID = ?) " \
-                  "AND Connector_Type IN " \
-                  "('Association', 'Aggregation', 'Composition')"
-          rows = database.connection.execute(query, [object_id, object_id])
+          assoc_types = ["Association", "Aggregation", "Composition"].freeze
+          assoc_connectors = database.connectors_for_object(object_id)
+            .select { |c| assoc_types.include?(c.connector_type) }
 
-          rows.each do |row| # rubocop:disable Metrics/BlockLength
-            ea_connector = Models::EaConnector.from_db_row(row)
-
+          assoc_connectors.each do |ea_connector| # rubocop:disable Metrics/BlockLength
             # Determine which end this class is on
             is_start = ea_connector.start_object_id == object_id
 
@@ -600,18 +575,13 @@ module Lutaml
 
           attributes = []
 
-          # Find all association-type connectors
-          # (Association, Aggregation, Composition)
-          query = "SELECT * FROM t_connector " \
-                  "WHERE (Start_Object_ID = ? OR End_Object_ID = ?) " \
-                  "AND Connector_Type IN " \
-                  "('Association', 'Aggregation', 'Composition')"
-          rows = database.connection.execute(query, [object_id, object_id])
+          assoc_types = ["Association", "Aggregation", "Composition"].freeze
+          assoc_connectors = database.connectors_for_object(object_id)
+            .select { |c| assoc_types.include?(c.connector_type) }
           obj = find_object_by_id(object_id)
           obj_pkg_name = find_package_name(obj&.package_id)
 
-          rows.each do |row| # rubocop:disable Metrics/BlockLength
-            ea_connector = Models::EaConnector.from_db_row(row)
+          assoc_connectors.each do |ea_connector| # rubocop:disable Metrics/BlockLength
 
             # Check if this object is the source (owner) or target (member)
             if ea_connector.start_object_id == object_id
@@ -711,11 +681,7 @@ module Lutaml
         def find_package_name(package_id)
           return nil if package_id.nil?
 
-          query = "SELECT NAME FROM t_package WHERE Package_ID = ?"
-          rows = database.connection.execute(query, [package_id])
-          return nil if rows.empty?
-
-          rows.first["Name"]
+          database.find_package(package_id)&.name
         end
       end
     end

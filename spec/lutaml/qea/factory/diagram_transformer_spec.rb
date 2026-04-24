@@ -24,21 +24,15 @@ RSpec.describe Lutaml::Qea::Factory::DiagramTransformer do
         notes: "Main class diagram",
       )
 
-      package_row = {
-        "Package_ID" => 5,
-        "Name" => "Domain",
-        "ea_guid" => "{PKG-GUID}",
-      }
+      ea_package = Lutaml::Qea::Models::EaPackage.new(
+        package_id: 5,
+        name: "Domain",
+        ea_guid: "{PKG-GUID}",
+      )
 
-      allow(connection).to receive(:execute)
-        .with(/SELECT.*t_package.*Package_ID/, 5)
-        .and_return([package_row])
-      allow(connection).to receive(:execute)
-        .with("SELECT * FROM t_diagramobjects WHERE Diagram_ID = ?", 1)
-        .and_return([])
-      allow(connection).to receive(:execute)
-        .with("SELECT * FROM t_diagramlinks WHERE DiagramID = ?", 1)
-        .and_return([])
+      allow(database).to receive(:find_package).with(5).and_return(ea_package)
+      allow(database).to receive(:diagram_objects_for).with(1).and_return([])
+      allow(database).to receive(:diagram_links_for).with(1).and_return([])
 
       result = transformer.transform(ea_diagram)
 
@@ -57,12 +51,8 @@ RSpec.describe Lutaml::Qea::Factory::DiagramTransformer do
         package_id: nil,
       )
 
-      allow(connection).to receive(:execute)
-        .with("SELECT * FROM t_diagramobjects WHERE Diagram_ID = ?", 1)
-        .and_return([])
-      allow(connection).to receive(:execute)
-        .with("SELECT * FROM t_diagramlinks WHERE DiagramID = ?", 1)
-        .and_return([])
+      allow(database).to receive(:diagram_objects_for).with(1).and_return([])
+      allow(database).to receive(:diagram_links_for).with(1).and_return([])
 
       result = transformer.transform(ea_diagram)
 
@@ -77,7 +67,9 @@ RSpec.describe Lutaml::Qea::Factory::DiagramTransformer do
         package_id: 99,
       )
 
-      allow(connection).to receive(:execute).and_return([])
+      allow(database).to receive(:find_package).with(99).and_return(nil)
+      allow(database).to receive(:diagram_objects_for).with(1).and_return([])
+      allow(database).to receive(:diagram_links_for).with(1).and_return([])
 
       result = transformer.transform(ea_diagram)
 
@@ -92,7 +84,8 @@ RSpec.describe Lutaml::Qea::Factory::DiagramTransformer do
         stereotype: "logical",
       )
 
-      allow(connection).to receive(:execute).and_return([])
+      allow(database).to receive(:diagram_objects_for).with(1).and_return([])
+      allow(database).to receive(:diagram_links_for).with(1).and_return([])
 
       result = transformer.transform(ea_diagram)
 
@@ -106,7 +99,8 @@ RSpec.describe Lutaml::Qea::Factory::DiagramTransformer do
         notes: "",
       )
 
-      allow(connection).to receive(:execute).and_return([])
+      allow(database).to receive(:diagram_objects_for).with(1).and_return([])
+      allow(database).to receive(:diagram_links_for).with(1).and_return([])
 
       result = transformer.transform(ea_diagram)
 

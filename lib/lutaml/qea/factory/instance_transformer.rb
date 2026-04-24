@@ -54,11 +54,7 @@ module Lutaml
         def find_classifier(classifier_id)
           return nil if classifier_id.nil? || classifier_id.zero?
 
-          query = "SELECT * FROM t_object WHERE Object_ID = ?"
-          rows = database.connection.execute(query, classifier_id)
-          return nil if rows.empty?
-
-          Models::EaObject.from_db_row(rows.first)
+          database.find_object(classifier_id)
         end
 
         # Find classifier object by GUID
@@ -67,11 +63,7 @@ module Lutaml
         def find_classifier_by_guid(classifier_guid)
           return nil if classifier_guid.nil? || classifier_guid.empty?
 
-          query = "SELECT * FROM t_object WHERE ea_guid = ?"
-          rows = database.connection.execute(query, classifier_guid)
-          return nil if rows.empty?
-
-          Models::EaObject.from_db_row(rows.first)
+          database.find_object_by_guid(classifier_guid)
         end
 
         # Load and transform tagged values for an instance

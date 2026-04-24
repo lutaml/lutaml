@@ -26,7 +26,7 @@ RSpec.describe Lutaml::Qea::Factory::OperationTransformer do
         notes: "Returns the name",
       )
 
-      allow(connection).to receive(:execute).and_return([])
+      allow(database).to receive(:operation_params_for).with(1).and_return([])
 
       result = transformer.transform(ea_op)
 
@@ -44,17 +44,15 @@ RSpec.describe Lutaml::Qea::Factory::OperationTransformer do
         name: "setName",
       )
 
-      param_row = {
-        "OperationID" => 1,
-        "Name" => "newName",
-        "Type" => "String",
-        "Kind" => "in",
-        "Pos" => 0,
-      }
+      param = Lutaml::Qea::Models::EaOperationParam.new(
+        operationid: 1,
+        name: "newName",
+        type: "String",
+        kind: "in",
+        pos: 0,
+      )
 
-      allow(connection).to receive(:execute)
-        .with(/SELECT.*t_operationparams/, 1)
-        .and_return([param_row])
+      allow(database).to receive(:operation_params_for).with(1).and_return([param])
 
       result = transformer.transform(ea_op)
 
@@ -67,24 +65,24 @@ RSpec.describe Lutaml::Qea::Factory::OperationTransformer do
         name: "calculate",
       )
 
-      param_rows = [
-        {
-          "OperationID" => 1,
-          "Name" => "x",
-          "Type" => "Integer",
-          "Kind" => "in",
-          "Pos" => 0,
-        },
-        {
-          "OperationID" => 1,
-          "Name" => "y",
-          "Type" => "Integer",
-          "Kind" => "in",
-          "Pos" => 1,
-        },
+      params = [
+        Lutaml::Qea::Models::EaOperationParam.new(
+          operationid: 1,
+          name: "x",
+          type: "Integer",
+          kind: "in",
+          pos: 0,
+        ),
+        Lutaml::Qea::Models::EaOperationParam.new(
+          operationid: 1,
+          name: "y",
+          type: "Integer",
+          kind: "in",
+          pos: 1,
+        ),
       ]
 
-      allow(connection).to receive(:execute).and_return(param_rows)
+      allow(database).to receive(:operation_params_for).with(1).and_return(params)
 
       result = transformer.transform(ea_op)
 
@@ -97,17 +95,17 @@ RSpec.describe Lutaml::Qea::Factory::OperationTransformer do
         name: "getValue",
       )
 
-      param_rows = [
-        {
-          "OperationID" => 1,
-          "Name" => "return",
-          "Type" => "String",
-          "Kind" => "return",
-          "Pos" => 0,
-        },
+      params = [
+        Lutaml::Qea::Models::EaOperationParam.new(
+          operationid: 1,
+          name: "return",
+          type: "String",
+          kind: "return",
+          pos: 0,
+        ),
       ]
 
-      allow(connection).to receive(:execute).and_return(param_rows)
+      allow(database).to receive(:operation_params_for).with(1).and_return(params)
 
       result = transformer.transform(ea_op)
 
@@ -121,7 +119,7 @@ RSpec.describe Lutaml::Qea::Factory::OperationTransformer do
         stereotype: "constructor",
       )
 
-      allow(connection).to receive(:execute).and_return([])
+      allow(database).to receive(:operation_params_for).with(1).and_return([])
 
       result = transformer.transform(ea_op)
 
