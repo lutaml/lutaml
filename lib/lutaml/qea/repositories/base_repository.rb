@@ -118,8 +118,8 @@ module Lutaml
         # @example
         #   repository.find_first(name: "Test")
         #   repository.find_first { |r| r.name.start_with?("Test") }
-        def find_first(conditions = nil, &block)
-          where(conditions, &block).first
+        def find_first(conditions = nil, &)
+          where(conditions, &).first
         end
 
         # Check if any records match conditions
@@ -127,8 +127,8 @@ module Lutaml
         # @param conditions [Hash, nil] Optional conditions
         # @yield [record] Optional block for custom filtering
         # @return [Boolean] true if any records match
-        def any?(conditions = nil, &block)
-          !where(conditions, &block).empty?
+        def any?(conditions = nil, &)
+          !where(conditions, &).empty?
         end
 
         # Check if no records match conditions
@@ -136,8 +136,8 @@ module Lutaml
         # @param conditions [Hash, nil] Optional conditions
         # @yield [record] Optional block for custom filtering
         # @return [Boolean] true if no records match
-        def none?(conditions = nil, &block)
-          where(conditions, &block).empty?
+        def none?(conditions = nil, &)
+          where(conditions, &).empty?
         end
 
         # Select specific attributes from records

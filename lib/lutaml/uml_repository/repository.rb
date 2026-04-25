@@ -625,8 +625,8 @@ module Lutaml
       #   results = repo.query! do |q|
       #     q.classes.where(stereotype: 'featureType')
       #   end
-      def query!(&block)
-        query(&block).execute
+      def query!(&)
+        query(&).execute
       end
 
       # Convenience methods for SPA data transformer

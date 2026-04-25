@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "set"
 require_relative "validation_result"
 
 module Lutaml
@@ -233,8 +232,8 @@ module Lutaml
         # @param entities [Array] Collection of entities to validate
         # @yield [entity] Validation block for each entity
         # @return [ValidationResult]
-        def validate_each(entities, &block)
-          entities.each(&block)
+        def validate_each(entities, &)
+          entities.each(&)
           @result
         end
 
