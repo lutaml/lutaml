@@ -268,7 +268,7 @@ module Lutaml
         end
 
         # Custom validation error
-        class ValidationError < StandardError; end
+        class ValidationError < Lutaml::Error; end
       end
     end
   end

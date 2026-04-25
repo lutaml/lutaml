@@ -3,7 +3,7 @@
 module Lutaml
   module Uml
     module HasMembers
-      class UnknownMemberTypeError < StandardError; end
+      class UnknownMemberTypeError < Lutaml::Error; end
 
       # TODO: move to Parslet::Transform
       def members=(value) # rubocop:disable Metrics/AbcSize

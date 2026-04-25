@@ -421,7 +421,7 @@ module Lutaml
       end
 
       # Custom error class for parsing failures
-      class ParseError < StandardError
+      class ParseError < Lutaml::Error
         # @return [StandardError] Original error that caused parsing failure
         attr_reader :original_error
 

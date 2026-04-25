@@ -1,10 +1,12 @@
 # frozen_string_literal: true
 
 require_relative "lutaml/version"
-require_relative "lutaml/parser"
 
 module Lutaml
+  class Error < StandardError; end
 end
+
+require_relative "lutaml/parser"
 
 require_relative "lutaml/express"
 require_relative "lutaml/formatter"
