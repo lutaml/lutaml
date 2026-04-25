@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "set"
 require_relative "../../../../lib/lutaml/uml_repository/repository"
 require_relative "../../../../lib/lutaml/qea/parser"
 

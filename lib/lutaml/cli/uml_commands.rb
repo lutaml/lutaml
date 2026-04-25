@@ -139,8 +139,8 @@ module Lutaml
 
       desc "diagram ACTION", "Diagram rendering commands"
       Uml::DiagramCommand.add_options_to(self, :diagram)
-      def diagram(action, *args)
-        Uml::DiagramCommand.new(options.to_h).run(action, *args)
+      def diagram(action, *)
+        Uml::DiagramCommand.new(options.to_h).run(action, *)
       end
 
       # ===================================================================
