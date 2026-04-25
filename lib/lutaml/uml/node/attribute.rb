@@ -23,8 +23,10 @@ module Lutaml
           @static = !!value
         end
 
+        VALID_ACCESS = %w[public private protected package].freeze
+
         def access=(value)
-          @access = value.to_s # TODO: Validate?
+          @access = value.to_s
         end
       end
     end

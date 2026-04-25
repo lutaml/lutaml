@@ -16,13 +16,13 @@ module Lutaml
         attr_reader :modifier, :members
 
         def modifier=(value)
-          @modifier = value.to_s # TODO: Validate?
+          @modifier = value.to_s
         end
 
         def members=(value) # rubocop:disable Metrics/MethodLength
           @members = value.to_a.map do |member|
-            type       = member.to_a[0][0] # TODO: This is dumb
-            attributes = member.to_a[0][1]
+            type       = member.keys.first
+            attributes = member.values.first
             attributes[:parent] = self
 
             case type
