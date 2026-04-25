@@ -8,7 +8,7 @@ RSpec.describe Lutaml::UmlRepository::IndexBuilder do
   let(:indexes) { described_class.build_all(document) }
 
   describe ".build_all" do
-    it "builds all indexes" do
+    it "builds all indexes", :aggregate_failures do
       expect(indexes).to be_a(Hash)
       expect(indexes.keys).to include(
         :package_paths,
@@ -23,7 +23,7 @@ RSpec.describe Lutaml::UmlRepository::IndexBuilder do
       expect(indexes).to be_frozen
     end
 
-    it "includes all index types" do
+    it "includes all index types", :aggregate_failures do
       expect(indexes[:package_paths]).to be_a(Hash)
       expect(indexes[:qualified_names]).to be_a(Hash)
       expect(indexes[:stereotypes]).to be_a(Hash)
@@ -39,7 +39,7 @@ RSpec.describe Lutaml::UmlRepository::IndexBuilder do
       expect(package_paths_index).to be_a(Hash)
     end
 
-    it "handles nested packages" do
+    it "handles nested packages", :aggregate_failures do
       package_paths_index = indexes[:package_paths]
       package_paths_index.each do |path, package|
         expect(path).to be_a(String)
@@ -48,7 +48,7 @@ RSpec.describe Lutaml::UmlRepository::IndexBuilder do
       end
     end
 
-    it "creates correct paths for nested packages" do
+    it "creates correct paths for nested packages", :aggregate_failures do
       package_paths_index = indexes[:package_paths]
       paths = package_paths_index.keys.map(&:to_s)
 
@@ -63,7 +63,7 @@ RSpec.describe Lutaml::UmlRepository::IndexBuilder do
       expect(qualified_names_index).to be_a(Hash)
     end
 
-    it "includes data types and enums" do
+    it "includes data types and enums", :aggregate_failures do
       qualified_names_index = indexes[:qualified_names]
       qualified_names_index.each do |qname, entity|
         expect(qname).to be_a(String)
@@ -73,7 +73,7 @@ RSpec.describe Lutaml::UmlRepository::IndexBuilder do
       end
     end
 
-    it "creates correct qualified names" do
+    it "creates correct qualified names", :aggregate_failures do
       qualified_names_index = indexes[:qualified_names]
       qnames = qualified_names_index.keys.map(&:to_s)
 
@@ -88,7 +88,7 @@ RSpec.describe Lutaml::UmlRepository::IndexBuilder do
       expect(stereotypes_index).to be_a(Hash)
     end
 
-    it "handles classes without stereotypes" do
+    it "handles classes without stereotypes", :aggregate_failures do
       stereotypes_index = indexes[:stereotypes]
 
       stereotypes_index.each do |stereotype, classes|
@@ -121,7 +121,7 @@ RSpec.describe Lutaml::UmlRepository::IndexBuilder do
       expect(inheritance_graph).to be_a(Hash)
     end
 
-    it "handles multiple inheritance levels" do
+    it "handles multiple inheritance levels", :aggregate_failures do
       inheritance_graph = indexes[:inheritance_graph]
 
       inheritance_graph.each do |parent_id, children|
@@ -152,7 +152,7 @@ RSpec.describe Lutaml::UmlRepository::IndexBuilder do
       expect(diagram_index).to be_a(Hash)
     end
 
-    it "groups diagrams correctly" do
+    it "groups diagrams correctly", :aggregate_failures do
       diagram_index = indexes[:diagram_index]
 
       diagram_index.each do |package_id, diagrams|
@@ -164,7 +164,7 @@ RSpec.describe Lutaml::UmlRepository::IndexBuilder do
   end
 
   describe "package_to_classes index" do
-    it "maps package paths to arrays of classes" do
+    it "maps package paths to arrays of classes", :aggregate_failures do
       pkg_to_classes = indexes[:package_to_classes]
       expect(pkg_to_classes).to be_a(Hash)
 
@@ -195,7 +195,7 @@ RSpec.describe Lutaml::UmlRepository::IndexBuilder do
   describe "with simple document" do
     let(:document) { create_simple_test_document }
 
-    it "builds indexes for simple document" do
+    it "builds indexes for simple document", :aggregate_failures do
       expect(indexes).to be_a(Hash)
       expect(indexes.keys).to include(
         :package_paths,
@@ -204,7 +204,7 @@ RSpec.describe Lutaml::UmlRepository::IndexBuilder do
       )
     end
 
-    it "indexes simple package structure" do
+    it "indexes simple package structure", :aggregate_failures do
       package_paths_index = indexes[:package_paths]
       paths = package_paths_index.keys.map(&:to_s)
 
@@ -227,7 +227,7 @@ RSpec.describe Lutaml::UmlRepository::IndexBuilder do
       expect(qnames).to include("ModelRoot::RootPackage::TestEnum")
     end
 
-    it "groups by stereotype correctly" do
+    it "groups by stereotype correctly", :aggregate_failures do
       stereotypes_index = indexes[:stereotypes]
 
       expect(stereotypes_index).to have_key("TestStereotype")

@@ -5,7 +5,8 @@ require_relative "../../../../lib/lutaml/qea/models/ea_object_constraint"
 
 RSpec.describe Lutaml::Qea::Models::EaObjectConstraint do
   describe ".from_db_row" do
-    it "creates constraint from database row with all fields" do
+    it "creates constraint from database row with all fields",
+       :aggregate_failures do
       row = {
         "ConstraintID" => 1,
         "Object_ID" => 4,
@@ -27,7 +28,7 @@ RSpec.describe Lutaml::Qea::Models::EaObjectConstraint do
       expect(constraint.status).to eq("Approved")
     end
 
-    it "creates constraint with nil optional fields" do
+    it "creates constraint with nil optional fields", :aggregate_failures do
       row = {
         "ConstraintID" => 2,
         "Object_ID" => 5,

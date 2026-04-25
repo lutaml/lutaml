@@ -20,7 +20,7 @@ RSpec.describe Lutaml::Qea::Validation::ValidationMessage do
   end
 
   describe "#initialize" do
-    it "creates a message with all attributes" do
+    it "creates a message with all attributes", :aggregate_failures do
       msg = described_class.new(**message_attributes)
 
       expect(msg.severity).to eq(:error)
@@ -35,7 +35,7 @@ RSpec.describe Lutaml::Qea::Validation::ValidationMessage do
       expect(msg.context).to eq({ table: "t_object" })
     end
 
-    it "creates a message without optional fields" do
+    it "creates a message without optional fields", :aggregate_failures do
       msg = described_class.new(
         severity: :warning,
         category: :orphaned,
@@ -53,21 +53,21 @@ RSpec.describe Lutaml::Qea::Validation::ValidationMessage do
   end
 
   describe "severity checks" do
-    it "identifies error messages" do
+    it "identifies error messages", :aggregate_failures do
       msg = described_class.new(**message_attributes, severity: :error)
       expect(msg.error?).to be true
       expect(msg.warning?).to be false
       expect(msg.info?).to be false
     end
 
-    it "identifies warning messages" do
+    it "identifies warning messages", :aggregate_failures do
       msg = described_class.new(**message_attributes, severity: :warning)
       expect(msg.error?).to be false
       expect(msg.warning?).to be true
       expect(msg.info?).to be false
     end
 
-    it "identifies info messages" do
+    it "identifies info messages", :aggregate_failures do
       msg = described_class.new(**message_attributes, severity: :info)
       expect(msg.error?).to be false
       expect(msg.warning?).to be false
@@ -76,7 +76,7 @@ RSpec.describe Lutaml::Qea::Validation::ValidationMessage do
   end
 
   describe "#to_s" do
-    it "returns a formatted string representation" do
+    it "returns a formatted string representation", :aggregate_failures do
       msg = described_class.new(**message_attributes)
       result = msg.to_s
 
@@ -88,7 +88,7 @@ RSpec.describe Lutaml::Qea::Validation::ValidationMessage do
       expect(result).to include("Location: Package::SubPackage")
     end
 
-    it "handles missing optional fields" do
+    it "handles missing optional fields", :aggregate_failures do
       msg = described_class.new(
         severity: :info,
         category: :orphaned,
@@ -107,7 +107,7 @@ RSpec.describe Lutaml::Qea::Validation::ValidationMessage do
   end
 
   describe "#to_h" do
-    it "returns a hash representation with all fields" do
+    it "returns a hash representation with all fields", :aggregate_failures do
       msg = described_class.new(**message_attributes)
       hash = msg.to_h
 
@@ -123,7 +123,7 @@ RSpec.describe Lutaml::Qea::Validation::ValidationMessage do
       expect(hash[:context]).to eq({ table: "t_object" })
     end
 
-    it "omits nil optional fields" do
+    it "omits nil optional fields", :aggregate_failures do
       msg = described_class.new(
         severity: :info,
         category: :orphaned,
@@ -141,7 +141,7 @@ RSpec.describe Lutaml::Qea::Validation::ValidationMessage do
   end
 
   describe "#to_json" do
-    it "returns a JSON representation" do
+    it "returns a JSON representation", :aggregate_failures do
       msg = described_class.new(**message_attributes)
       json = msg.to_json
       parsed = JSON.parse(json)

@@ -12,7 +12,9 @@ RSpec.describe Lutaml::Cli::Uml::ExportCommand do
     repo.export_to_package(path)
     path
   end
-  let(:output_file) { temp_lur_path(prefix: "export_output").sub(/\.lur$/, ".csv") }
+  let(:output_file) do
+    temp_lur_path(prefix: "export_output").sub(/\.lur$/, ".csv")
+  end
   let(:command) { described_class.new(options) }
 
   after do
@@ -22,14 +24,16 @@ RSpec.describe Lutaml::Cli::Uml::ExportCommand do
 
   describe "#run" do
     context "exporting to JSON" do
-      let(:output_json) { temp_lur_path(prefix: "export_output").sub(/\.lur$/, ".json") }
+      let(:output_json) do
+        temp_lur_path(prefix: "export_output").sub(/\.lur$/, ".json")
+      end
       let(:options) { { format: "json", output: output_json } }
 
       after do
         FileUtils.rm_f(output_json)
       end
 
-      it "exports to JSON format" do
+      it "exports to JSON format", :aggregate_failures do
         expect { command.run(test_lur) }.to output(/Exported to/).to_stdout
         expect(File.exist?(output_json)).to be true
       end

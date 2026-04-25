@@ -33,7 +33,7 @@ RSpec.describe Lutaml::Uml::Package do
       YAML
     end
 
-    it "contains nested packages" do
+    it "contains nested packages", :aggregate_failures do
       expect(YAML.safe_load(output)["packages"]).to be_an(Array)
       expect(YAML.safe_load(output)["packages"].size).to eq(1)
       expect(YAML.safe_load(output)["packages"].first["name"])
@@ -46,7 +46,7 @@ RSpec.describe Lutaml::Uml::Package do
       ).to eq("DeepNestedPackage")
     end
 
-    it "contains children_packages" do
+    it "contains children_packages", :aggregate_failures do
       expect(test_model.children_packages.count).to eq(2)
       expect(test_model.children_packages.first).to be_instance_of(described_class)
     end

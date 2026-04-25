@@ -31,7 +31,7 @@ RSpec.describe Lutaml::UmlRepository::PackageLoader do
       expect(loaded_repo.document).to be_a(Lutaml::Uml::Document)
     end
 
-    it "loads indexes" do
+    it "loads indexes", :aggregate_failures do
       loaded_repo = described_class.load(lur_path)
       expect(loaded_repo.indexes).to be_a(Hash)
       expect(loaded_repo.indexes.keys).to include(
@@ -43,7 +43,7 @@ RSpec.describe Lutaml::UmlRepository::PackageLoader do
       )
     end
 
-    it "loads metadata as PackageMetadata object" do
+    it "loads metadata as PackageMetadata object", :aggregate_failures do
       loaded_repo = described_class.load(lur_path)
       expect(loaded_repo.metadata).to be_a(Lutaml::UmlRepository::PackageMetadata)
       expect(loaded_repo.metadata.name).to eq("UML Model")
@@ -58,7 +58,7 @@ RSpec.describe Lutaml::UmlRepository::PackageLoader do
       expect(packages).to be_an(Array)
     end
 
-    it "preserves document structure" do
+    it "preserves document structure", :aggregate_failures do
       original_doc = repository.document
       loaded_repo = described_class.load(lur_path)
       loaded_doc = loaded_repo.document
@@ -93,27 +93,29 @@ RSpec.describe Lutaml::UmlRepository::PackageLoader do
   describe "metadata loading" do
     it "loads custom metadata from package" do
       # Create package with custom metadata
-      metadata = Lutaml::UmlRepository::PackageMetadata.new(
-        name: "Test Model",
-        version: "2.0",
-        publisher: "Test Publisher",
-        license: "MIT",
-      )
-      exporter = Lutaml::UmlRepository::PackageExporter.new(
-        repository,
-        metadata: metadata,
-      )
-      exporter.export(lur_path)
+      aggregate_failures do
+        metadata = Lutaml::UmlRepository::PackageMetadata.new(
+          name: "Test Model",
+          version: "2.0",
+          publisher: "Test Publisher",
+          license: "MIT",
+        )
+        exporter = Lutaml::UmlRepository::PackageExporter.new(
+          repository,
+          metadata: metadata,
+        )
+        exporter.export(lur_path)
 
-      # Load and verify
-      loaded_repo = described_class.load(lur_path)
-      expect(loaded_repo.metadata.name).to eq("Test Model")
-      expect(loaded_repo.metadata.version).to eq("2.0")
-      expect(loaded_repo.metadata.publisher).to eq("Test Publisher")
-      expect(loaded_repo.metadata.license).to eq("MIT")
+        # Load and verify
+        loaded_repo = described_class.load(lur_path)
+        expect(loaded_repo.metadata.name).to eq("Test Model")
+        expect(loaded_repo.metadata.version).to eq("2.0")
+        expect(loaded_repo.metadata.publisher).to eq("Test Publisher")
+        expect(loaded_repo.metadata.license).to eq("MIT")
+      end
     end
 
-    it "preserves all metadata fields" do
+    it "preserves all metadata fields", :aggregate_failures do
       metadata = Lutaml::UmlRepository::PackageMetadata.new(
         name: "Full Model",
         version: "3.0",
@@ -149,21 +151,23 @@ RSpec.describe Lutaml::UmlRepository::PackageLoader do
   describe "round-trip test" do
     it "preserves data through export and load cycle" do
       # Export
-      exporter = Lutaml::UmlRepository::PackageExporter.new(repository)
-      exporter.export(lur_path)
+      aggregate_failures do
+        exporter = Lutaml::UmlRepository::PackageExporter.new(repository)
+        exporter.export(lur_path)
 
-      # Load
-      loaded_repo = described_class.load(lur_path)
+        # Load
+        loaded_repo = described_class.load(lur_path)
 
-      # Compare
-      expect(loaded_repo.document.name).to eq(repository.document.name)
-      expect(loaded_repo.statistics[:total_packages])
-        .to eq(repository.statistics[:total_packages])
-      expect(loaded_repo.statistics[:total_classes])
-        .to eq(repository.statistics[:total_classes])
+        # Compare
+        expect(loaded_repo.document.name).to eq(repository.document.name)
+        expect(loaded_repo.statistics[:total_packages])
+          .to eq(repository.statistics[:total_packages])
+        expect(loaded_repo.statistics[:total_classes])
+          .to eq(repository.statistics[:total_classes])
+      end
     end
 
-    it "maintains query functionality" do
+    it "maintains query functionality", :aggregate_failures do
       loaded_repo = described_class.load(lur_path)
 
       # Test various queries
@@ -175,7 +179,7 @@ RSpec.describe Lutaml::UmlRepository::PackageLoader do
       expect(all_classes).to be_an(Array)
     end
 
-    it "preserves metadata through round-trip" do
+    it "preserves metadata through round-trip", :aggregate_failures do
       metadata = Lutaml::UmlRepository::PackageMetadata.new(
         name: "Round Trip Test",
         version: "1.5",

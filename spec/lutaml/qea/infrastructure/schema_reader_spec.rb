@@ -17,7 +17,7 @@ RSpec.describe Lutaml::Qea::Infrastructure::SchemaReader do
   end
 
   describe "#initialize" do
-    it "creates a new schema reader instance" do
+    it "creates a new schema reader instance", :aggregate_failures do
       expect(reader).to be_a(described_class)
       expect(reader.database).to eq(database)
     end
@@ -31,7 +31,7 @@ RSpec.describe Lutaml::Qea::Infrastructure::SchemaReader do
   end
 
   describe "#tables" do
-    it "returns list of table names" do
+    it "returns list of table names", :aggregate_failures do
       tables = reader.tables
       expect(tables).to be_an(Array)
       expect(tables).not_to be_empty
@@ -60,13 +60,13 @@ RSpec.describe Lutaml::Qea::Infrastructure::SchemaReader do
   end
 
   describe "#columns" do
-    it "returns column information for a table" do
+    it "returns column information for a table", :aggregate_failures do
       columns = reader.columns("t_object")
       expect(columns).to be_an(Array)
       expect(columns).not_to be_empty
     end
 
-    it "includes column metadata" do
+    it "includes column metadata", :aggregate_failures do
       columns = reader.columns("t_object")
       first_col = columns.first
 
@@ -76,7 +76,7 @@ RSpec.describe Lutaml::Qea::Infrastructure::SchemaReader do
       expect(first_col).to have_key("pk")
     end
 
-    it "identifies primary key column" do
+    it "identifies primary key column", :aggregate_failures do
       columns = reader.columns("t_object")
       pk_column = columns.find { |col| col["pk"] == 1 }
 
@@ -109,7 +109,7 @@ RSpec.describe Lutaml::Qea::Infrastructure::SchemaReader do
   end
 
   describe "#column_names" do
-    it "returns array of column names" do
+    it "returns array of column names", :aggregate_failures do
       names = reader.column_names("t_object")
       expect(names).to be_an(Array)
       expect(names).to all(be_a(String))
@@ -167,7 +167,7 @@ RSpec.describe Lutaml::Qea::Infrastructure::SchemaReader do
   end
 
   describe "#table_schema" do
-    it "returns CREATE TABLE statement" do
+    it "returns CREATE TABLE statement", :aggregate_failures do
       schema = reader.table_schema("t_object")
       expect(schema).to be_a(String)
       expect(schema).to start_with("CREATE TABLE")
@@ -190,7 +190,7 @@ RSpec.describe Lutaml::Qea::Infrastructure::SchemaReader do
       expect(indexes).to be_an(Array)
     end
 
-    it "returns index information with name and sql" do
+    it "returns index information with name and sql", :aggregate_failures do
       indexes = reader.indexes("t_object")
       if indexes.any?
         index = indexes.first
@@ -201,7 +201,7 @@ RSpec.describe Lutaml::Qea::Infrastructure::SchemaReader do
   end
 
   describe "#row_count" do
-    it "returns integer count" do
+    it "returns integer count", :aggregate_failures do
       count = reader.row_count("t_object")
       expect(count).to be_an(Integer)
       expect(count).to be >= 0
@@ -234,7 +234,7 @@ RSpec.describe Lutaml::Qea::Infrastructure::SchemaReader do
       end
     end
 
-    it "has integer values" do
+    it "has integer values", :aggregate_failures do
       stats = reader.statistics
       stats.each_value do |count|
         expect(count).to be_an(Integer)
@@ -242,7 +242,7 @@ RSpec.describe Lutaml::Qea::Infrastructure::SchemaReader do
       end
     end
 
-    it "includes expected EA tables in statistics" do
+    it "includes expected EA tables in statistics", :aggregate_failures do
       stats = reader.statistics
       expect(stats).to have_key("t_object")
       expect(stats).to have_key("t_package")
@@ -251,7 +251,7 @@ RSpec.describe Lutaml::Qea::Infrastructure::SchemaReader do
   end
 
   describe "integration" do
-    it "can read complete schema information" do
+    it "can read complete schema information", :aggregate_failures do
       tables = reader.tables
       expect(tables.size).to be > 10
 
@@ -267,7 +267,7 @@ RSpec.describe Lutaml::Qea::Infrastructure::SchemaReader do
       end
     end
 
-    it "provides consistent schema information" do
+    it "provides consistent schema information", :aggregate_failures do
       # Column names should match columns
       table = "t_object"
       columns = reader.columns(table)

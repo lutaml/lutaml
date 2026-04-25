@@ -10,7 +10,7 @@ RSpec.describe Lutaml::Qea::Validation::ValidationEngine do
   let(:database) { double("Database") }
 
   describe "#initialize" do
-    it "creates an engine with document and database" do
+    it "creates an engine with document and database", :aggregate_failures do
       engine = described_class.new(document, database: database)
 
       expect(engine.document).to eq(document)
@@ -25,7 +25,7 @@ RSpec.describe Lutaml::Qea::Validation::ValidationEngine do
       expect(engine.options).to include(strict: true, verbose: true)
     end
 
-    it "sets up default validators" do
+    it "sets up default validators", :aggregate_failures do
       engine = described_class.new(document, database: database)
 
       expect(engine.registry.registered?(:package)).to be true
@@ -150,7 +150,7 @@ RSpec.describe Lutaml::Qea::Validation::ValidationEngine do
                                           objects: double("ObjectRepository", all: []), attributes: [], operations: [], connectors: [], diagrams: [], diagram_objects: [], diagram_links: [])
     end
 
-    it "validates and returns result" do
+    it "validates and returns result", :aggregate_failures do
       result = nil
 
       expect do

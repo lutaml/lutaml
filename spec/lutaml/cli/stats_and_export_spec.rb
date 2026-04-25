@@ -52,7 +52,7 @@ RSpec.describe "Stats and Export Commands (via UmlCommands)" do
   end
 
   describe "export command" do
-    it "exports to JSON format" do
+    it "exports to JSON format", :aggregate_failures do
       output_file = File.join(output_dir, "export.json")
 
       expect do
@@ -76,7 +76,7 @@ RSpec.describe "Stats and Export Commands (via UmlCommands)" do
       end.to output(/Exported to|Failed to load|Export failed/).to_stdout
     end
 
-    it "exports with package filter" do
+    it "exports with package filter", :aggregate_failures do
       output_file = File.join(output_dir, "filtered.json")
 
       expect do
@@ -89,7 +89,7 @@ RSpec.describe "Stats and Export Commands (via UmlCommands)" do
       # expect(File.exist?(output_file)).to be true
     end
 
-    it "exports recursively by default" do
+    it "exports recursively by default", :aggregate_failures do
       output_file = File.join(output_dir, "recursive.json")
 
       expect do
@@ -164,7 +164,7 @@ RSpec.describe "Stats and Export Commands (via UmlCommands)" do
   end
 
   describe "performance with large files" do
-    it "completes stats command within reasonable time" do
+    it "completes stats command within reasonable time", :aggregate_failures do
       start_time = Time.now
 
       expect do
@@ -175,7 +175,7 @@ RSpec.describe "Stats and Export Commands (via UmlCommands)" do
       expect(duration).to be < 10.0  # Should complete within 10 seconds
     end
 
-    it "completes export command within reasonable time" do
+    it "completes export command within reasonable time", :aggregate_failures do
       output_file = File.join(output_dir, "performance_test.json")
       start_time = Time.now
 

@@ -176,7 +176,7 @@ RSpec.describe Lutaml::Qea::Models::EaConnector do
   end
 
   describe ".from_db_row" do
-    it "creates instance from database row" do
+    it "creates instance from database row", :aggregate_failures do
       row = {
         "Connector_ID" => 123,
         "Name" => "association",

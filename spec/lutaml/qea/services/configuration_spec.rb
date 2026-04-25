@@ -27,7 +27,7 @@ RSpec.describe Lutaml::Qea::Services::Configuration do
   end
 
   describe ".default_config_path" do
-    it "returns path to default config file" do
+    it "returns path to default config file", :aggregate_failures do
       path = described_class.default_config_path
       expect(path).to end_with("config/qea_schema.yml")
       expect(File.exist?(path)).to be true
@@ -38,7 +38,7 @@ RSpec.describe Lutaml::Qea::Services::Configuration do
     let(:config) { described_class.load(config_path) }
 
     describe "basic attributes" do
-      it "has version" do
+      it "has version", :aggregate_failures do
         expect(config.version).to be_a(String)
         expect(config.version).not_to be_empty
       end
@@ -47,7 +47,7 @@ RSpec.describe Lutaml::Qea::Services::Configuration do
         expect(config.description).to be_a(String)
       end
 
-      it "has boolean_fields list" do
+      it "has boolean_fields list", :aggregate_failures do
         expect(config.boolean_fields).to be_an(Array)
         expect(config.boolean_fields).to include("IsStatic", "IsCollection")
       end
@@ -56,7 +56,7 @@ RSpec.describe Lutaml::Qea::Services::Configuration do
         expect(config.null_handling).to be_a(described_class::NullHandling)
       end
 
-      it "has tables configuration" do
+      it "has tables configuration", :aggregate_failures do
         expect(config.tables).to be_an(Array)
         expect(config.tables).not_to be_empty
         expect(config.tables.first).to be_a(described_class::TableDefinition)
@@ -64,7 +64,7 @@ RSpec.describe Lutaml::Qea::Services::Configuration do
     end
 
     describe "#enabled_tables" do
-      it "returns array of enabled table definitions" do
+      it "returns array of enabled table definitions", :aggregate_failures do
         tables = config.enabled_tables
         expect(tables).to be_an(Array)
         expect(tables).to all(be_a(described_class::TableDefinition))
@@ -84,7 +84,7 @@ RSpec.describe Lutaml::Qea::Services::Configuration do
     end
 
     describe "#table_config_for" do
-      it "returns table configuration by name" do
+      it "returns table configuration by name", :aggregate_failures do
         table = config.table_config_for("t_object")
         expect(table).to be_a(described_class::TableDefinition)
         expect(table.table_name).to eq("t_object")
@@ -95,7 +95,7 @@ RSpec.describe Lutaml::Qea::Services::Configuration do
         expect(table).to be_nil
       end
 
-      it "returns table with correct attributes" do
+      it "returns table with correct attributes", :aggregate_failures do
         table = config.table_config_for("t_object")
         expect(table.primary_key).to eq("Object_ID")
         expect(table.collection_name).to eq("objects")
@@ -114,7 +114,7 @@ RSpec.describe Lutaml::Qea::Services::Configuration do
     end
 
     describe "#enabled_table_names" do
-      it "returns array of table names" do
+      it "returns array of table names", :aggregate_failures do
         names = config.enabled_table_names
         expect(names).to be_an(Array)
         expect(names).to all(be_a(String))
@@ -127,12 +127,12 @@ RSpec.describe Lutaml::Qea::Services::Configuration do
     end
 
     describe "#boolean_field?" do
-      it "returns true for boolean fields" do
+      it "returns true for boolean fields", :aggregate_failures do
         expect(config.boolean_field?("IsStatic")).to be true
         expect(config.boolean_field?("IsCollection")).to be true
       end
 
-      it "returns false for non-boolean fields" do
+      it "returns false for non-boolean fields", :aggregate_failures do
         expect(config.boolean_field?("Name")).to be false
         expect(config.boolean_field?("Object_ID")).to be false
       end
@@ -209,20 +209,20 @@ RSpec.describe Lutaml::Qea::Services::Configuration do
     let(:table) { config.table_config_for("t_object") }
 
     describe "#columns" do
-      it "has column definitions" do
+      it "has column definitions", :aggregate_failures do
         expect(table.columns).to be_an(Array)
         expect(table.columns).not_to be_empty
         expect(table.columns.first).to be_a(described_class::ColumnDefinition)
       end
 
-      it "includes Object_ID column" do
+      it "includes Object_ID column", :aggregate_failures do
         column = table.columns.find { |c| c.name == "Object_ID" }
         expect(column).not_to be_nil
         expect(column.type).to eq("INTEGER")
         expect(column.primary).to be true
       end
 
-      it "includes Name column" do
+      it "includes Name column", :aggregate_failures do
         column = table.columns.find { |c| c.name == "Name" }
         expect(column).not_to be_nil
         expect(column.type).to eq("TEXT")
@@ -230,7 +230,7 @@ RSpec.describe Lutaml::Qea::Services::Configuration do
     end
 
     describe "#column_for" do
-      it "returns column definition by name" do
+      it "returns column definition by name", :aggregate_failures do
         column = table.column_for("Object_ID")
         expect(column).to be_a(described_class::ColumnDefinition)
         expect(column.name).to eq("Object_ID")
@@ -248,7 +248,7 @@ RSpec.describe Lutaml::Qea::Services::Configuration do
         expect(table.boolean_column?("IsRoot")).to be true
       end
 
-      it "returns false for non-boolean columns" do
+      it "returns false for non-boolean columns", :aggregate_failures do
         expect(table.boolean_column?("Name")).to be false
         expect(table.boolean_column?("Object_ID")).to be false
       end
@@ -299,7 +299,7 @@ RSpec.describe Lutaml::Qea::Services::Configuration do
   end
 
   describe "integration" do
-    it "can load and access complete configuration" do
+    it "can load and access complete configuration", :aggregate_failures do
       config = described_class.load
 
       # Verify structure
@@ -323,7 +323,7 @@ RSpec.describe Lutaml::Qea::Services::Configuration do
       expect(config.collection_name_for("t_object")).to eq("objects")
     end
 
-    it "provides consistent data across methods" do
+    it "provides consistent data across methods", :aggregate_failures do
       config = described_class.load
 
       enabled_names = config.enabled_table_names

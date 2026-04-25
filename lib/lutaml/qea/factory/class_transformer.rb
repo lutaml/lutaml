@@ -241,12 +241,12 @@ module Lutaml
           # representing this class
           gen_transformer = GeneralizationTransformer.new(database)
           generalization = if ea_connector.nil?
-            # No parent - create terminal generalization
-            gen_transformer.transform(nil, current_obj)
-          else
-            # Has parent - create generalization with parent connector
-            gen_transformer
-              .transform(ea_connector, current_obj)
+                             # No parent - create terminal generalization
+                             gen_transformer.transform(nil, current_obj)
+                           else
+                             # Has parent - create generalization with parent connector
+                             gen_transformer
+                               .transform(ea_connector, current_obj)
                            end
           return nil unless generalization
 

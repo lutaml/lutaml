@@ -47,7 +47,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ClassRenderer do
       }
     end
 
-    it "renders rectangle for class box" do
+    it "renders rectangle for class box", :aggregate_failures do
       shape = renderer.send(:render_shape, style)
 
       expect(shape).to include("<rect")
@@ -80,7 +80,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ClassRenderer do
       expect(shape).to include("rx=\"5\"")
     end
 
-    it "includes name compartment separator" do
+    it "includes name compartment separator", :aggregate_failures do
       shape = renderer.send(:render_shape, style)
 
       # Name compartment at y + 25
@@ -129,7 +129,8 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ClassRenderer do
       end
     end
 
-    it "uses default values when style properties missing" do
+    it "uses default values when style properties missing",
+       :aggregate_failures do
       shape = renderer.send(:render_shape, {})
 
       expect(shape).to include("<rect")
@@ -148,14 +149,14 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ClassRenderer do
       }
     end
 
-    it "renders class name centered in name compartment" do
+    it "renders class name centered in name compartment", :aggregate_failures do
       label = renderer.send(:render_label, style)
 
       expect(label).to include("Person")
       expect(label).to include("text-anchor=\"middle\"")
     end
 
-    it "applies font style to class name" do
+    it "applies font style to class name", :aggregate_failures do
       label = renderer.send(:render_label, style)
 
       expect(label).to include("font-family:Arial, sans-serif")
@@ -202,7 +203,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ClassRenderer do
         ]
       end
 
-      it "renders all attributes" do
+      it "renders all attributes", :aggregate_failures do
         label = renderer.send(:render_label, style)
 
         expect(label).to include("-name: String")
@@ -240,7 +241,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ClassRenderer do
         ]
       end
 
-      it "renders all operations" do
+      it "renders all operations", :aggregate_failures do
         label = renderer.send(:render_label, style)
 
         expect(label).to include("+getName(): String")
@@ -260,7 +261,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ClassRenderer do
       end
     end
 
-    it "wraps all text in styled group" do
+    it "wraps all text in styled group", :aggregate_failures do
       label = renderer.send(:render_label, style)
 
       expect(label).to start_with("<g style=")
@@ -484,7 +485,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ClassRenderer do
         }
       end
 
-      it "renders SVG text element" do
+      it "renders SVG text element", :aggregate_failures do
         text = renderer.send(:render_text_element, "Test", 100, 50, style,
                              "test-class")
 
@@ -492,7 +493,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ClassRenderer do
         expect(text).to include("</text>")
       end
 
-      it "positions text at specified coordinates" do
+      it "positions text at specified coordinates", :aggregate_failures do
         text = renderer.send(:render_text_element, "Test", 100, 50, style,
                              "test-class")
 
@@ -507,7 +508,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ClassRenderer do
         expect(text).to include('class="my-class"')
       end
 
-      it "applies font styles" do
+      it "applies font styles", :aggregate_failures do
         text = renderer.send(:render_text_element, "Test", 100, 50, style,
                              "test-class")
 

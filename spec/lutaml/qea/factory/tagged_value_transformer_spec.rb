@@ -20,7 +20,7 @@ RSpec.describe Lutaml::Qea::Factory::TaggedValueTransformer do
         )
       end
 
-      it "transforms to UML TaggedValue" do
+      it "transforms to UML TaggedValue", :aggregate_failures do
         result = transformer.transform(ea_tag)
 
         expect(result).to be_a(Lutaml::Uml::TaggedValue)
@@ -41,7 +41,7 @@ RSpec.describe Lutaml::Qea::Factory::TaggedValueTransformer do
         )
       end
 
-      it "transforms with empty value" do
+      it "transforms with empty value", :aggregate_failures do
         result = transformer.transform(ea_tag)
 
         expect(result).to be_a(Lutaml::Uml::TaggedValue)
@@ -92,7 +92,7 @@ RSpec.describe Lutaml::Qea::Factory::TaggedValueTransformer do
       ]
     end
 
-    it "transforms collection of tagged values" do
+    it "transforms collection of tagged values", :aggregate_failures do
       results = transformer.transform_collection(ea_tags)
 
       expect(results).to be_an(Array)

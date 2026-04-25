@@ -10,7 +10,7 @@ RSpec.describe Lutaml::Qea::Factory::ConstraintTransformer do
   let(:transformer) { described_class.new(database) }
 
   describe "#transform" do
-    it "transforms EA constraint to UML Constraint" do
+    it "transforms EA constraint to UML Constraint", :aggregate_failures do
       ea_constraint = Lutaml::Qea::Models::EaObjectConstraint.new(
         constraint_id: 1,
         object_id: 4,
@@ -46,7 +46,8 @@ RSpec.describe Lutaml::Qea::Factory::ConstraintTransformer do
       expect(uml_constraint.name).to eq("count")
     end
 
-    it "handles constraint with special characters in body" do
+    it "handles constraint with special characters in body",
+       :aggregate_failures do
       ea_constraint = Lutaml::Qea::Models::EaObjectConstraint.new(
         constraint_id: 3,
         object_id: 5,
@@ -98,7 +99,7 @@ RSpec.describe Lutaml::Qea::Factory::ConstraintTransformer do
   end
 
   describe "#transform_collection" do
-    it "transforms multiple constraints" do
+    it "transforms multiple constraints", :aggregate_failures do
       ea_constraints = [
         Lutaml::Qea::Models::EaObjectConstraint.new(
           constraint_id: 1,

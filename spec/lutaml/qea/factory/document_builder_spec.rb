@@ -29,7 +29,7 @@ RSpec.describe Lutaml::Qea::Factory::DocumentBuilder do
   end
 
   describe "#initialize" do
-    it "creates new document builder with default name" do
+    it "creates new document builder with default name", :aggregate_failures do
       builder = described_class.new
       expect(builder.document).to be_a(Lutaml::Uml::Document)
       expect(builder.document.name).to eq("EA Model")
@@ -39,7 +39,7 @@ RSpec.describe Lutaml::Qea::Factory::DocumentBuilder do
       expect(builder.document.name).to eq("Test Model")
     end
 
-    it "initializes empty collections" do
+    it "initializes empty collections", :aggregate_failures do
       expect(builder.document.packages).to eq([])
       expect(builder.document.classes).to eq([])
       expect(builder.document.enums).to eq([])
@@ -137,7 +137,7 @@ RSpec.describe Lutaml::Qea::Factory::DocumentBuilder do
       expect(builder.document.caption).to eq("Test Caption")
     end
 
-    it "sets both title and caption" do
+    it "sets both title and caption", :aggregate_failures do
       builder.set_metadata(title: "Title", caption: "Caption")
       expect(builder.document.title).to eq("Title")
       expect(builder.document.caption).to eq("Caption")
@@ -150,7 +150,7 @@ RSpec.describe Lutaml::Qea::Factory::DocumentBuilder do
   end
 
   describe "#stats" do
-    it "returns document statistics" do
+    it "returns document statistics", :aggregate_failures do
       stats = builder.stats
       expect(stats).to have_key(:packages)
       expect(stats).to have_key(:classes)
@@ -159,7 +159,7 @@ RSpec.describe Lutaml::Qea::Factory::DocumentBuilder do
       expect(stats).to have_key(:associations)
     end
 
-    it "reflects current state" do
+    it "reflects current state", :aggregate_failures do
       builder.add_packages([mock_package])
       builder.add_classes([mock_class])
       builder.add_enums([mock_enum])
@@ -174,7 +174,7 @@ RSpec.describe Lutaml::Qea::Factory::DocumentBuilder do
 
   describe "#build" do
     context "without validation" do
-      it "returns the document" do
+      it "returns the document", :aggregate_failures do
         doc = builder.build(validate: false)
         expect(doc).to be_a(Lutaml::Uml::Document)
         expect(doc.name).to eq("Test Model")
@@ -291,7 +291,8 @@ RSpec.describe Lutaml::Qea::Factory::DocumentBuilder do
     end
 
     context "with invalid association references" do
-      it "removes associations with invalid member_end_xmi_id" do
+      it "removes associations with invalid member_end_xmi_id",
+         :aggregate_failures do
         assoc = double("Assoc",
                        xmi_id: "ASSOC-001",
                        member_end: "InvalidClass",
@@ -308,7 +309,8 @@ RSpec.describe Lutaml::Qea::Factory::DocumentBuilder do
         expect(builder.document.associations).to be_empty
       end
 
-      it "removes associations with invalid owner_end_xmi_id" do
+      it "removes associations with invalid owner_end_xmi_id",
+         :aggregate_failures do
         class1 = double("Class", xmi_id: "CLASS-001")
         assoc = double("Assoc",
                        xmi_id: "ASSOC-001",
@@ -330,7 +332,7 @@ RSpec.describe Lutaml::Qea::Factory::DocumentBuilder do
   end
 
   describe "method chaining" do
-    it "supports fluent interface" do
+    it "supports fluent interface", :aggregate_failures do
       doc = builder
         .add_packages([mock_package])
         .add_classes([mock_class])

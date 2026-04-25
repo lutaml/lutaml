@@ -11,7 +11,7 @@ RSpec.describe Lutaml::Qea::Validation::Formatters::JsonFormatter do
   let(:result) { Lutaml::Qea::Validation::ValidationResult.new }
 
   describe "#initialize" do
-    it "creates formatter with result" do
+    it "creates formatter with result", :aggregate_failures do
       formatter = described_class.new(result: result)
 
       expect(formatter.result).to eq(result)
@@ -27,7 +27,7 @@ RSpec.describe Lutaml::Qea::Validation::Formatters::JsonFormatter do
 
   describe "#format" do
     context "with no messages" do
-      it "returns valid JSON" do
+      it "returns valid JSON", :aggregate_failures do
         formatter = described_class.new(result: result)
         output = formatter.format
         data = JSON.parse(output)
@@ -40,7 +40,7 @@ RSpec.describe Lutaml::Qea::Validation::Formatters::JsonFormatter do
         expect(data["summary"]["info_count"]).to eq(0)
       end
 
-      it "includes all required sections" do
+      it "includes all required sections", :aggregate_failures do
         formatter = described_class.new(result: result)
         output = formatter.format
         data = JSON.parse(output)
@@ -63,7 +63,7 @@ RSpec.describe Lutaml::Qea::Validation::Formatters::JsonFormatter do
         )
       end
 
-      it "includes error in summary" do
+      it "includes error in summary", :aggregate_failures do
         formatter = described_class.new(result: result)
         output = formatter.format
         data = JSON.parse(output)
@@ -73,7 +73,7 @@ RSpec.describe Lutaml::Qea::Validation::Formatters::JsonFormatter do
         expect(data["summary"]["total_messages"]).to eq(1)
       end
 
-      it "includes error details in messages array" do
+      it "includes error details in messages array", :aggregate_failures do
         formatter = described_class.new(result: result)
         output = formatter.format
         data = JSON.parse(output)
@@ -90,7 +90,7 @@ RSpec.describe Lutaml::Qea::Validation::Formatters::JsonFormatter do
         expect(msg["message"]).to eq("Class not found")
       end
 
-      it "groups by category" do
+      it "groups by category", :aggregate_failures do
         formatter = described_class.new(result: result)
         output = formatter.format
         data = JSON.parse(output)
@@ -101,7 +101,7 @@ RSpec.describe Lutaml::Qea::Validation::Formatters::JsonFormatter do
         expect(category_data["messages"]).to include("Class not found")
       end
 
-      it "groups by severity" do
+      it "groups by severity", :aggregate_failures do
         formatter = described_class.new(result: result)
         output = formatter.format
         data = JSON.parse(output)
@@ -141,7 +141,7 @@ RSpec.describe Lutaml::Qea::Validation::Formatters::JsonFormatter do
     end
 
     context "with pretty printing" do
-      it "formats JSON with indentation" do
+      it "formats JSON with indentation", :aggregate_failures do
         result.add_error(
           category: :missing_reference,
           entity_type: :class,
@@ -202,7 +202,7 @@ RSpec.describe Lutaml::Qea::Validation::Formatters::JsonFormatter do
         )
       end
 
-      it "includes all severities in summary" do
+      it "includes all severities in summary", :aggregate_failures do
         formatter = described_class.new(result: result)
         output = formatter.format
         data = JSON.parse(output)
@@ -213,7 +213,7 @@ RSpec.describe Lutaml::Qea::Validation::Formatters::JsonFormatter do
         expect(data["summary"]["total_messages"]).to eq(3)
       end
 
-      it "separates by severity" do
+      it "separates by severity", :aggregate_failures do
         formatter = described_class.new(result: result)
         output = formatter.format
         data = JSON.parse(output)

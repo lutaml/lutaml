@@ -93,19 +93,19 @@ RSpec.describe Lutaml::Ea::Diagram::Configuration do
   end
 
   describe "#initialize" do
-    it "loads configuration from file" do
+    it "loads configuration from file", :aggregate_failures do
       expect(config.config_data).to be_a(Hash)
       expect(config.config_data["defaults"]).to be_a(Hash)
     end
 
-    it "uses built-in defaults when no file exists" do
+    it "uses built-in defaults when no file exists", :aggregate_failures do
       config_no_file = described_class.new("nonexistent.yml")
       expect(config_no_file.config_data["defaults"]).to be_a(Hash)
       expect(config_no_file.config_data["defaults"]["colors"]["background"])
         .to eq("#FFFFFF")
     end
 
-    it "merges configuration with defaults" do
+    it "merges configuration with defaults", :aggregate_failures do
       expect(config.config_data["defaults"]["colors"]["background"])
         .to eq("#FFFFFF")
       expect(config.config_data["stereotypes"]["DataType"]["colors"]["fill"])
@@ -245,7 +245,7 @@ RSpec.describe Lutaml::Ea::Diagram::Configuration do
   end
 
   describe "#legend_config" do
-    it "returns legend configuration" do
+    it "returns legend configuration", :aggregate_failures do
       legend = config.legend_config
       expect(legend).to be_a(Hash)
       expect(legend["enabled"]).to be true
@@ -260,7 +260,7 @@ RSpec.describe Lutaml::Ea::Diagram::Configuration do
   end
 
   describe "#to_h" do
-    it "returns complete configuration data" do
+    it "returns complete configuration data", :aggregate_failures do
       data = config.to_h
       expect(data).to be_a(Hash)
       expect(data).to have_key("defaults")
@@ -329,7 +329,7 @@ RSpec.describe Lutaml::Ea::Diagram::Configuration do
     end
 
     describe "#deep_merge" do
-      it "merges nested hashes" do
+      it "merges nested hashes", :aggregate_failures do
         hash1 = { "a" => { "b" => 1, "c" => 2 } }
         hash2 = { "a" => { "b" => 3, "d" => 4 } }
         result = config.send(:deep_merge, hash1, hash2)

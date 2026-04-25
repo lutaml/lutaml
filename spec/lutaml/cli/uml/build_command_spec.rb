@@ -19,7 +19,7 @@ RSpec.describe Lutaml::Cli::Uml::BuildCommand do
         { output: output_lur, name: "TestPackage", version: "1.0" }
       end
 
-      it "builds LUR package successfully" do
+      it "builds LUR package successfully", :aggregate_failures do
         expect do
           command.run(test_xmi)
         end.to output(/Package built successfully/).to_stdout

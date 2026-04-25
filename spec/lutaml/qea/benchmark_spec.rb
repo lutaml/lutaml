@@ -21,12 +21,14 @@ RSpec.describe Lutaml::Qea::Benchmark do
 
       result = described_class.measure_qea(qea_file_path)
 
-      expect(result).to be_a(Hash)
-      expect(result[:file]).to eq(qea_file_path)
-      expect(result[:format]).to eq("QEA")
-      expect(result[:time]).to be_a(Numeric)
-      expect(result[:time]).to be > 0
-      expect(result[:file_size_mb]).to be > 0
+      aggregate_failures do
+        expect(result).to be_a(Hash)
+        expect(result[:file]).to eq(qea_file_path)
+        expect(result[:format]).to eq("QEA")
+        expect(result[:time]).to be_a(Numeric)
+        expect(result[:time]).to be > 0
+        expect(result[:file_size_mb]).to be > 0
+      end
     end
 
     it "includes parsing statistics" do
@@ -34,11 +36,13 @@ RSpec.describe Lutaml::Qea::Benchmark do
 
       result = described_class.measure_qea(qea_file_path)
 
-      expect(result[:stats]).to be_a(Hash)
-      expect(result[:stats]).to have_key(:packages)
-      expect(result[:stats]).to have_key(:classes)
-      expect(result[:stats]).to have_key(:associations)
-      expect(result[:stats]).to have_key(:diagrams)
+      aggregate_failures do
+        expect(result[:stats]).to be_a(Hash)
+        expect(result[:stats]).to have_key(:packages)
+        expect(result[:stats]).to have_key(:classes)
+        expect(result[:stats]).to have_key(:associations)
+        expect(result[:stats]).to have_key(:diagrams)
+      end
     end
 
     it "calculates throughput" do
@@ -47,8 +51,10 @@ RSpec.describe Lutaml::Qea::Benchmark do
       result = described_class.measure_qea(qea_file_path)
 
       if result[:file_size_mb] > 0
-        expect(result[:throughput_mb_per_sec]).to be_a(Numeric)
-        expect(result[:throughput_mb_per_sec]).to be > 0
+        aggregate_failures do
+          expect(result[:throughput_mb_per_sec]).to be_a(Numeric)
+          expect(result[:throughput_mb_per_sec]).to be > 0
+        end
       end
     end
 
@@ -74,11 +80,13 @@ RSpec.describe Lutaml::Qea::Benchmark do
 
       result = described_class.measure_xmi(xmi_file_path)
 
-      expect(result).to be_a(Hash)
-      expect(result[:file]).to eq(xmi_file_path)
-      expect(result[:format]).to eq("XMI")
-      expect(result[:time]).to be_a(Numeric)
-      expect(result[:time]).to be > 0
+      aggregate_failures do
+        expect(result).to be_a(Hash)
+        expect(result[:file]).to eq(xmi_file_path)
+        expect(result[:format]).to eq("XMI")
+        expect(result[:time]).to be_a(Numeric)
+        expect(result[:time]).to be > 0
+      end
     end
 
     it "handles non-existent files gracefully" do
@@ -96,11 +104,13 @@ RSpec.describe Lutaml::Qea::Benchmark do
 
       result = described_class.compare(qea_file_path, xmi_file_path)
 
-      expect(result).to be_a(Hash)
-      expect(result).to have_key(:qea)
-      expect(result).to have_key(:xmi)
-      expect(result).to have_key(:speedup)
-      expect(result).to have_key(:improvement_percent)
+      aggregate_failures do
+        expect(result).to be_a(Hash)
+        expect(result).to have_key(:qea)
+        expect(result).to have_key(:xmi)
+        expect(result).to have_key(:speedup)
+        expect(result).to have_key(:improvement_percent)
+      end
     end
 
     it "calculates speedup correctly" do
@@ -110,11 +120,13 @@ RSpec.describe Lutaml::Qea::Benchmark do
 
       result = described_class.compare(qea_file_path, xmi_file_path)
 
-      expect(result[:speedup]).to be_a(Numeric)
-      expect(result[:speedup]).to be > 0
+      aggregate_failures do
+        expect(result[:speedup]).to be_a(Numeric)
+        expect(result[:speedup]).to be > 0
 
-      # Speedup is xmi_time / qea_time; varies by platform/load
-      expect(result[:speedup]).to be_positive
+        # Speedup is xmi_time / qea_time; varies by platform/load
+        expect(result[:speedup]).to be_positive
+      end
     end
 
     it "calculates improvement percentage" do
@@ -137,11 +149,13 @@ RSpec.describe Lutaml::Qea::Benchmark do
       results = described_class.compare(qea_file_path, xmi_file_path)
       formatted = described_class.format_results(results)
 
-      expect(formatted).to be_a(String)
-      expect(formatted).to include("QEA vs XMI Performance Comparison")
-      expect(formatted).to include("QEA File:")
-      expect(formatted).to include("XMI File:")
-      expect(formatted).to include("Performance Improvement:")
+      aggregate_failures do
+        expect(formatted).to be_a(String)
+        expect(formatted).to include("QEA vs XMI Performance Comparison")
+        expect(formatted).to include("QEA File:")
+        expect(formatted).to include("XMI File:")
+        expect(formatted).to include("Performance Improvement:")
+      end
     end
 
     it "includes speedup information" do
@@ -152,8 +166,10 @@ RSpec.describe Lutaml::Qea::Benchmark do
       results = described_class.compare(qea_file_path, xmi_file_path)
       formatted = described_class.format_results(results)
 
-      expect(formatted).to match(/faster than XMI/)
-      expect(formatted).to match(/Improvement:/)
+      aggregate_failures do
+        expect(formatted).to match(/faster than XMI/)
+        expect(formatted).to match(/Improvement:/)
+      end
     end
 
     it "handles errors in results" do

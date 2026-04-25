@@ -21,7 +21,7 @@ RSpec.describe Lutaml::UmlRepository::SearchResult do
       expect(result).to be_frozen
     end
 
-    it "sets all attributes correctly" do
+    it "sets all attributes correctly", :aggregate_failures do
       expect(result.element).to eq(mock_element)
       expect(result.element_type).to eq("class")
       expect(result.qualified_name).to eq("ModelRoot::Package::TestClass")
@@ -43,7 +43,7 @@ RSpec.describe Lutaml::UmlRepository::SearchResult do
   end
 
   describe "#to_yaml_hash" do
-    it "returns hash representation" do
+    it "returns hash representation", :aggregate_failures do
       hash = result.to_yaml_hash
       expect(hash).to be_a(Hash)
       expect(hash["element_type"]).to eq("class")
@@ -53,7 +53,7 @@ RSpec.describe Lutaml::UmlRepository::SearchResult do
       expect(hash["match_context"]).to eq({ query: "Test" })
     end
 
-    it "converts symbols to strings" do
+    it "converts symbols to strings", :aggregate_failures do
       hash = result.to_yaml_hash
       expect(hash["element_type"]).to be_a(String)
       expect(hash["match_field"]).to be_a(String)

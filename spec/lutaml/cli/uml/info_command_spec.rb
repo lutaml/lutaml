@@ -28,7 +28,7 @@ RSpec.describe Lutaml::Cli::Uml::InfoCommand do
         end.to output(/Package Information/).to_stdout
       end
 
-      it "shows package name and version" do
+      it "shows package name and version", :aggregate_failures do
         expect do
           command.run(test_lur)
         end.to output(/Name:.*InfoTest/).to_stdout

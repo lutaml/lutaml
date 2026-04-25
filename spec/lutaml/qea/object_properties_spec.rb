@@ -10,7 +10,7 @@ RSpec.describe "Object Properties Support" do
 
   describe Lutaml::Qea::Models::EaObjectProperty do
     describe ".from_db_row" do
-      it "creates object property from database row" do
+      it "creates object property from database row", :aggregate_failures do
         row = {
           "PropertyID" => 1,
           "Object_ID" => 684,
@@ -96,7 +96,8 @@ RSpec.describe "Object Properties Support" do
     let(:transformer) { described_class.new(database) }
 
     describe "#transform" do
-      it "transforms EA object property to UML TaggedValue" do
+      it "transforms EA object property to UML TaggedValue",
+         :aggregate_failures do
         ea_prop = Lutaml::Qea::Models::EaObjectProperty.new(
           property_id: 1,
           object_id: 684,
@@ -136,12 +137,12 @@ RSpec.describe "Object Properties Support" do
     let(:loader) { Lutaml::Qea::Services::DatabaseLoader.new(qea_file) }
     let(:database) { loader.load }
 
-    it "loads object properties from database" do
+    it "loads object properties from database", :aggregate_failures do
       expect(database.object_properties).not_to be_empty
       expect(database.object_properties.size).to eq(1537)
     end
 
-    it "loads object properties with correct structure" do
+    it "loads object properties with correct structure", :aggregate_failures do
       property = database.object_properties.first
 
       expect(property).to be_a(Lutaml::Qea::Models::EaObjectProperty)
@@ -150,7 +151,7 @@ RSpec.describe "Object Properties Support" do
       expect(property.property).not_to be_nil
     end
 
-    it "includes common property types" do
+    it "includes common property types", :aggregate_failures do
       property_names = database.object_properties.map(&:property).uniq
 
       expect(property_names).to include("isCollection")
@@ -160,29 +161,31 @@ RSpec.describe "Object Properties Support" do
 
     it "attaches object properties to UML classes as tagged values" do
       # Find an object that has properties (match by ea_object_id == obj.id)
-      object_with_props = database.objects.all.find do |obj|
-        database.object_properties.any? do |p|
-          p.ea_object_id == obj.ea_object_id
+      aggregate_failures do
+        object_with_props = database.objects.all.find do |obj|
+          database.object_properties.any? do |p|
+            p.ea_object_id == obj.ea_object_id
+          end
         end
-      end
 
-      skip "No objects with properties found" unless object_with_props
+        skip "No objects with properties found" unless object_with_props
 
-      # Transform to UML using class transformer directly
-      class_transformer = Lutaml::Qea::Factory::ClassTransformer.new(database)
-      uml_class = class_transformer.transform(object_with_props)
+        # Transform to UML using class transformer directly
+        class_transformer = Lutaml::Qea::Factory::ClassTransformer.new(database)
+        uml_class = class_transformer.transform(object_with_props)
 
-      # Check that tagged values include object properties
-      expect(uml_class.tagged_values).not_to be_empty
+        # Check that tagged values include object properties
+        expect(uml_class.tagged_values).not_to be_empty
 
-      property_tag_names = database.object_properties
-        .select { |p| p.ea_object_id == object_with_props.ea_object_id }
-        .map(&:property)
+        property_tag_names = database.object_properties
+          .select { |p| p.ea_object_id == object_with_props.ea_object_id }
+          .map(&:property)
 
-      uml_tag_names = uml_class.tagged_values.map(&:name)
+        uml_tag_names = uml_class.tagged_values.map(&:name)
 
-      property_tag_names.each do |prop_name|
-        expect(uml_tag_names).to include(prop_name)
+        property_tag_names.each do |prop_name|
+          expect(uml_tag_names).to include(prop_name)
+        end
       end
     end
   end
@@ -191,7 +194,7 @@ RSpec.describe "Object Properties Support" do
     let(:loader) { Lutaml::Qea::Services::DatabaseLoader.new(qea_file) }
     let(:database) { loader.load }
 
-    it "includes object_properties in database stats" do
+    it "includes object_properties in database stats", :aggregate_failures do
       stats = database.stats
 
       expect(stats).to have_key("object_properties")

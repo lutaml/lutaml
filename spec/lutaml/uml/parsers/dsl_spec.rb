@@ -33,7 +33,8 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
         File.new(fixtures_path("dsl/diagram_attributes.lutaml"))
       end
 
-      it "creates Lutaml::Uml::Document object and sets its attributes" do
+      it "creates Lutaml::Uml::Document object and sets its attributes",
+         :aggregate_failures do
         expect(parse).to be_instance_of(Lutaml::Uml::Document)
         expect(parse.title).to eq("my diagram, another symbols: text.")
         expect(parse.caption)
@@ -50,7 +51,8 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
         File.new(fixtures_path("dsl/diagram_multiply_classes.lutaml"))
       end
 
-      it "creates Lutaml::Uml::Document object and creates dependent classes" do
+      it "creates Lutaml::Uml::Document object and creates dependent classes",
+         :aggregate_failures do
         classes = parse.classes
         expect(parse).to be_instance_of(Lutaml::Uml::Document)
         expect(parse.classes.length).to eq(4)
@@ -65,7 +67,8 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
         File.new(fixtures_path("dsl/diagram_class_fields.lutaml"))
       end
 
-      it "creates the correct classes and sets the correct number of attributes" do
+      it "creates the correct classes and sets the correct number of attributes",
+         :aggregate_failures do
         classes = parse.classes
         expect(by_name(classes, "Component").attributes).to be_nil
         expect(by_name(classes, "AddressClassProfile")
@@ -89,7 +92,8 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
                   "application/x-isodoc+xml"]))
       end
 
-      it "creates the correct attributes with the correct visibility" do
+      it "creates the correct attributes with the correct visibility",
+         :aggregate_failures do
         attributes = by_name(parse.classes, "AttributeProfile").attributes
         expect(by_name(attributes, "imlicistAttributeProfile").visibility)
           .to be_nil
@@ -130,7 +134,8 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
           by_name(parse.associations, "BidirectionalAsscoiation")
         end
 
-        it "creates associations with the correct attributes" do
+        it "creates associations with the correct attributes",
+           :aggregate_failures do
           expect(association.owner_end_type).to(eq("aggregation"))
           expect(association.member_end_type).to(eq("direct"))
           expect(association.owner_end).to(eq("AddressClassProfile"))
@@ -149,7 +154,8 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
           by_name(parse.associations, "DirectAsscoiation")
         end
 
-        it "creates associations with the correct attributes" do
+        it "creates associations with the correct attributes",
+           :aggregate_failures do
           expect(association.owner_end_type).to(be_nil)
           expect(association.member_end_type).to(eq("direct"))
           expect(association.owner_end).to(eq("AddressClassProfile"))
@@ -166,7 +172,8 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
           by_name(parse.associations, "ReverseAsscoiation")
         end
 
-        it "creates associations with the correct attributes" do
+        it "creates associations with the correct attributes",
+           :aggregate_failures do
           expect(association.owner_end_type).to(eq("aggregation"))
           expect(association.member_end_type).to(be_nil)
           expect(association.owner_end).to(eq("AddressClassProfile"))
@@ -184,7 +191,7 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
         File.new(fixtures_path("dsl/diagram_data_types.lutaml"))
       end
 
-      it "Generates the correct nodes for enums" do
+      it "Generates the correct nodes for enums", :aggregate_failures do
         enums = parse.enums
         expect(by_name(enums, "MyEnum").attributes).to be_empty
         expect(by_name(enums, "AddressClassProfile")
@@ -213,14 +220,15 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
         File.new(fixtures_path("dsl/diagram_concept_model.lutaml"))
       end
 
-      it "Generates the correct class/enums/associations list" do
+      it "Generates the correct class/enums/associations list",
+         :aggregate_failures do
         document = parse
         expect(document.classes.length).to(eq(9))
         expect(document.enums.length).to(eq(3))
         expect(document.associations.length).to(eq(16))
       end
 
-      it "Generates the correct attributes list" do
+      it "Generates the correct attributes list", :aggregate_failures do
         attributes = by_name(parse.classes, "ExpressionDesignation").attributes
         expect(attributes.length).to(eq(5))
         expect(attributes.map(&:name))
@@ -241,7 +249,7 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
         File.new(fixtures_path("dsl/diagram_includes.lutaml"))
       end
 
-      it "includes supplied files into the document" do
+      it "includes supplied files into the document", :aggregate_failures do
         expect(parse.classes.map(&:name))
           .to(eq(%w[Foo Doo Koo AttributeProfile]))
         expect(by_name(parse.classes, "AttributeProfile")
@@ -257,7 +265,7 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
         File.new(fixtures_path("dsl/diagram_comments.lutaml"))
       end
 
-      it "create comments for document and classes" do
+      it "create comments for document and classes", :aggregate_failures do
         expect(parse.comments).to(eq(["My comment",
                                       "this is multiline\n    comment with " \
                                       "{} special\n    chars/\n\n    +-|/"]))
@@ -281,7 +289,7 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
           "\n{foo} {name}\nend definition"
       end
 
-      it "create comments for document and classes" do
+      it "create comments for document and classes", :aggregate_failures do
         expect(by_name(parse.classes, "AddressClassProfile").definition)
           .to(eq(class_definition))
         expect(by_name(parse.classes, "AttributeProfile")

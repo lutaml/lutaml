@@ -139,7 +139,7 @@ RSpec.describe Lutaml::Qea::Models::EaXref do
 
   describe "#parsed_description" do
     context "with @STEREO format" do
-      it "parses stereotype description" do
+      it "parses stereotype description", :aggregate_failures do
         xref = described_class.new(
           description: "@STEREO;Name=FeatureType;GUID={ABC-123};",
         )
@@ -153,7 +153,7 @@ RSpec.describe Lutaml::Qea::Models::EaXref do
     end
 
     context "with @TAG format" do
-      it "parses tag description" do
+      it "parses tag description", :aggregate_failures do
         xref = described_class.new(
           description: "@TAG;Name=author;Value=John;GUID={DEF-456};",
         )
@@ -168,7 +168,7 @@ RSpec.describe Lutaml::Qea::Models::EaXref do
     end
 
     context "with key=value format" do
-      it "parses key-value description" do
+      it "parses key-value description", :aggregate_failures do
         xref = described_class.new(
           description: "aggregation=composite;direction=source;",
         )
@@ -206,7 +206,7 @@ RSpec.describe Lutaml::Qea::Models::EaXref do
   end
 
   describe ".from_db_row" do
-    it "creates instance from database row" do
+    it "creates instance from database row", :aggregate_failures do
       row = {
         "XrefID" => "{GUID-123}",
         "Name" => "Stereotypes",

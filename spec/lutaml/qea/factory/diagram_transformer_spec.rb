@@ -15,7 +15,7 @@ RSpec.describe Lutaml::Qea::Factory::DiagramTransformer do
       expect(result).to be_nil
     end
 
-    it "transforms EA diagram to UML diagram" do
+    it "transforms EA diagram to UML diagram", :aggregate_failures do
       ea_diagram = Lutaml::Qea::Models::EaDiagram.new(
         diagram_id: 1,
         name: "Class Diagram",
@@ -44,7 +44,7 @@ RSpec.describe Lutaml::Qea::Factory::DiagramTransformer do
       expect(result.definition).to eq("Main class diagram")
     end
 
-    it "handles nil package_id" do
+    it "handles nil package_id", :aggregate_failures do
       ea_diagram = Lutaml::Qea::Models::EaDiagram.new(
         diagram_id: 1,
         name: "Diagram",
@@ -60,7 +60,7 @@ RSpec.describe Lutaml::Qea::Factory::DiagramTransformer do
       expect(result.package_name).to be_nil
     end
 
-    it "handles missing package" do
+    it "handles missing package", :aggregate_failures do
       ea_diagram = Lutaml::Qea::Models::EaDiagram.new(
         diagram_id: 1,
         name: "Diagram",

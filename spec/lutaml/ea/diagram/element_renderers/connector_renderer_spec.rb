@@ -64,7 +64,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ConnectorRenderer do
   end
 
   describe "#render" do
-    it "returns SVG path element" do
+    it "returns SVG path element", :aggregate_failures do
       svg = renderer.render
 
       expect(svg).to include("<path")
@@ -163,7 +163,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ConnectorRenderer do
 
   describe "private methods" do
     describe "#style_to_css" do
-      it "converts style hash to CSS string" do
+      it "converts style hash to CSS string", :aggregate_failures do
         style_hash = {
           stroke: "#000000",
           "stroke-width": 2,
@@ -234,7 +234,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ConnectorRenderer do
   end
 
   describe "integration with StyleParser" do
-    it "parses connector styles" do
+    it "parses connector styles", :aggregate_failures do
       allow(style_parser).to receive(:parse_connector_style)
         .with(connector_data)
         .and_return({ stroke: "#000", "stroke-width": 1 })

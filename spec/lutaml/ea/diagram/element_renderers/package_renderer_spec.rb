@@ -39,7 +39,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::PackageRenderer do
       }
     end
 
-    it "renders package body as polygon" do
+    it "renders package body as polygon", :aggregate_failures do
       shape = renderer.send(:render_shape, style)
 
       expect(shape).to include("<polygon")
@@ -120,7 +120,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::PackageRenderer do
       }
     end
 
-    it "renders package name in tab area" do
+    it "renders package name in tab area", :aggregate_failures do
       label = renderer.send(:render_label, style)
 
       expect(label).to include("CoreModel")

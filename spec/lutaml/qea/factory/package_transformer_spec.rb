@@ -15,7 +15,7 @@ RSpec.describe Lutaml::Qea::Factory::PackageTransformer do
       expect(result).to be_nil
     end
 
-    it "transforms EA package to UML package" do
+    it "transforms EA package to UML package", :aggregate_failures do
       ea_pkg = Lutaml::Qea::Models::EaPackage.new(
         package_id: 1,
         name: "Domain",
@@ -48,7 +48,7 @@ RSpec.describe Lutaml::Qea::Factory::PackageTransformer do
   end
 
   describe "#transform_with_hierarchy" do
-    it "loads child packages" do
+    it "loads child packages", :aggregate_failures do
       ea_pkg = Lutaml::Qea::Models::EaPackage.new(
         package_id: 1,
         name: "Root",
@@ -72,7 +72,7 @@ RSpec.describe Lutaml::Qea::Factory::PackageTransformer do
       expect(result.packages.first.name).to eq("Child")
     end
 
-    it "loads package objects as classes" do
+    it "loads package objects as classes", :aggregate_failures do
       ea_pkg = Lutaml::Qea::Models::EaPackage.new(
         package_id: 1,
         name: "Models",
@@ -101,7 +101,7 @@ RSpec.describe Lutaml::Qea::Factory::PackageTransformer do
       expect(result.classes.first.name).to eq("Entity")
     end
 
-    it "loads package diagrams" do
+    it "loads package diagrams", :aggregate_failures do
       ea_pkg = Lutaml::Qea::Models::EaPackage.new(
         package_id: 1,
         name: "Views",

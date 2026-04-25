@@ -5,7 +5,7 @@ require "lutaml/uml_repository/package_metadata"
 
 RSpec.describe Lutaml::UmlRepository::PackageMetadata do
   describe "#initialize" do
-    it "creates metadata with required fields" do
+    it "creates metadata with required fields", :aggregate_failures do
       metadata = described_class.new(
         name: "Test Model",
         version: "1.0.0",
@@ -15,7 +15,7 @@ RSpec.describe Lutaml::UmlRepository::PackageMetadata do
       expect(metadata.version).to eq("1.0.0")
     end
 
-    it "creates metadata with all fields" do
+    it "creates metadata with all fields", :aggregate_failures do
       metadata = described_class.new(
         name: "Urban Planning",
         version: "2.3.0",
@@ -50,19 +50,22 @@ RSpec.describe Lutaml::UmlRepository::PackageMetadata do
       expect(metadata.authors).to eq([])
     end
 
-    it "allows creation with missing name (validation happens later)" do
+    it "allows creation with missing name (validation happens later)",
+       :aggregate_failures do
       metadata = described_class.new(version: "1.0")
       expect(metadata.name).to be_nil
       expect(metadata.version).to eq("1.0")
     end
 
-    it "allows creation with missing version (validation happens later)" do
+    it "allows creation with missing version (validation happens later)",
+       :aggregate_failures do
       metadata = described_class.new(name: "Test")
       expect(metadata.name).to eq("Test")
       expect(metadata.version).to be_nil
     end
 
-    it "allows creation with empty strings (validation happens later)" do
+    it "allows creation with empty strings (validation happens later)",
+       :aggregate_failures do
       metadata = described_class.new(name: "", version: "")
       expect(metadata.name).to eq("")
       expect(metadata.version).to eq("")
@@ -76,35 +79,36 @@ RSpec.describe Lutaml::UmlRepository::PackageMetadata do
       expect(errors).to be_empty
     end
 
-    it "returns error when name is nil" do
+    it "returns error when name is nil", :aggregate_failures do
       metadata = described_class.new(name: nil, version: "1.0")
       errors = metadata.validate
       expect(errors.size).to eq(1)
       expect(errors.first.message).to match(/name is required/)
     end
 
-    it "returns error when name is empty string" do
+    it "returns error when name is empty string", :aggregate_failures do
       metadata = described_class.new(name: "", version: "1.0")
       errors = metadata.validate
       expect(errors.size).to eq(1)
       expect(errors.first.message).to match(/name is required/)
     end
 
-    it "returns error when version is nil" do
+    it "returns error when version is nil", :aggregate_failures do
       metadata = described_class.new(name: "Test", version: nil)
       errors = metadata.validate
       expect(errors.size).to eq(1)
       expect(errors.first.message).to match(/version is required/)
     end
 
-    it "returns error when version is empty string" do
+    it "returns error when version is empty string", :aggregate_failures do
       metadata = described_class.new(name: "Test", version: "")
       errors = metadata.validate
       expect(errors.size).to eq(1)
       expect(errors.first.message).to match(/version is required/)
     end
 
-    it "returns multiple errors when both required fields missing" do
+    it "returns multiple errors when both required fields missing",
+       :aggregate_failures do
       metadata = described_class.new(publisher: "ACME")
       errors = metadata.validate
       expect(errors.size).to eq(2)
@@ -143,7 +147,7 @@ RSpec.describe Lutaml::UmlRepository::PackageMetadata do
   end
 
   describe "YAML serialization" do
-    it "round-trips through YAML with all fields" do
+    it "round-trips through YAML with all fields", :aggregate_failures do
       original = described_class.new(
         name: "Urban Planning",
         version: "2.3.0",
@@ -172,7 +176,7 @@ RSpec.describe Lutaml::UmlRepository::PackageMetadata do
       expect(restored.serialization_format).to eq(original.serialization_format)
     end
 
-    it "round-trips through YAML with minimal metadata" do
+    it "round-trips through YAML with minimal metadata", :aggregate_failures do
       original = described_class.new(
         name: "Simple",
         version: "1.0",

@@ -20,7 +20,7 @@ RSpec.describe Lutaml::UmlRepository::Presenters::ClassPresenter do
   let(:presenter) { described_class.new(mock_class, mock_repository) }
 
   describe "#to_text" do
-    it "generates formatted text output" do
+    it "generates formatted text output", :aggregate_failures do
       text = presenter.to_text
       expect(text).to include("Class: TestClass")
       expect(text).to include("=" * 50)
@@ -44,7 +44,7 @@ RSpec.describe Lutaml::UmlRepository::Presenters::ClassPresenter do
   end
 
   describe "#to_table_row" do
-    it "generates table row hash" do
+    it "generates table row hash", :aggregate_failures do
       row = presenter.to_table_row
       expect(row).to be_a(Hash)
       expect(row[:type]).to eq("Class")
@@ -73,7 +73,7 @@ RSpec.describe Lutaml::UmlRepository::Presenters::ClassPresenter do
   end
 
   describe "#to_hash" do
-    it "generates structured hash" do
+    it "generates structured hash", :aggregate_failures do
       hash = presenter.to_hash
       expect(hash).to be_a(Hash)
       expect(hash[:type]).to eq("Class")
@@ -95,7 +95,7 @@ RSpec.describe Lutaml::UmlRepository::Presenters::ClassPresenter do
       expect(hash).not_to have_key(:stereotype)
     end
 
-    it "excludes is_abstract if not available" do
+    it "excludes is_abstract if not available", :aggregate_failures do
       allow(mock_class).to receive(:is_abstract).and_return(nil)
       hash = presenter.to_hash
       expect(hash).to have_key(:is_abstract)

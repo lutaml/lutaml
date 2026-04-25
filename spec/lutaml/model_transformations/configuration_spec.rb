@@ -57,7 +57,7 @@ RSpec.describe Lutaml::ModelTransformations::Configuration do
 
       after { config_file.unlink }
 
-      it "loads configuration from YAML file" do
+      it "loads configuration from YAML file", :aggregate_failures do
         config = described_class.load(config_file.path)
 
         expect(config.version).to eq("1.0")
@@ -65,7 +65,7 @@ RSpec.describe Lutaml::ModelTransformations::Configuration do
         expect(config.parsers.size).to eq(2)
       end
 
-      it "parses parser configurations correctly" do
+      it "parses parser configurations correctly", :aggregate_failures do
         config = described_class.load(config_file.path)
 
         xmi_parser = config.parser_config_for("xmi")
@@ -76,7 +76,7 @@ RSpec.describe Lutaml::ModelTransformations::Configuration do
         expect(xmi_parser.priority).to eq(100)
       end
 
-      it "parses transformation options correctly" do
+      it "parses transformation options correctly", :aggregate_failures do
         config = described_class.load(config_file.path)
 
         options = config.transformation_options
@@ -85,7 +85,7 @@ RSpec.describe Lutaml::ModelTransformations::Configuration do
         expect(options.preserve_ids).to be true
       end
 
-      it "parses format detection settings correctly" do
+      it "parses format detection settings correctly", :aggregate_failures do
         config = described_class.load(config_file.path)
 
         detection = config.format_detection
@@ -94,7 +94,7 @@ RSpec.describe Lutaml::ModelTransformations::Configuration do
         expect(detection.fallback_parser).to eq("TestFallbackParser")
       end
 
-      it "parses error handling settings correctly" do
+      it "parses error handling settings correctly", :aggregate_failures do
         config = described_class.load(config_file.path)
 
         error_handling = config.error_handling
@@ -106,7 +106,7 @@ RSpec.describe Lutaml::ModelTransformations::Configuration do
     end
 
     context "with missing configuration file" do
-      it "creates default configuration" do
+      it "creates default configuration", :aggregate_failures do
         config = described_class.load("nonexistent.yml")
 
         expect(config.version).to eq("1.0")
@@ -137,7 +137,7 @@ RSpec.describe Lutaml::ModelTransformations::Configuration do
   describe ".create_default_configuration" do
     let(:config) { described_class.create_default_configuration }
 
-    it "creates valid default configuration" do
+    it "creates valid default configuration", :aggregate_failures do
       expect(config.version).to eq("1.0")
       expect(config.parsers.size).to eq(2)
       expect(config.transformation_options)
@@ -146,7 +146,7 @@ RSpec.describe Lutaml::ModelTransformations::Configuration do
       expect(config.error_handling).to be_a(described_class::ErrorHandling)
     end
 
-    it "includes XMI parser configuration" do
+    it "includes XMI parser configuration", :aggregate_failures do
       xmi_parser = config.parser_config_for("xmi")
       expect(xmi_parser).not_to be_nil
       expect(xmi_parser.format).to eq("xmi")
@@ -154,7 +154,7 @@ RSpec.describe Lutaml::ModelTransformations::Configuration do
       expect(xmi_parser.enabled).to be true
     end
 
-    it "includes QEA parser configuration" do
+    it "includes QEA parser configuration", :aggregate_failures do
       qea_parser = config.parser_config_for("qea")
       expect(qea_parser).not_to be_nil
       expect(qea_parser.format).to eq("qea")
@@ -166,7 +166,7 @@ RSpec.describe Lutaml::ModelTransformations::Configuration do
   describe "#enabled_parsers" do
     let(:config) { described_class.from_yaml(sample_config_yaml) }
 
-    it "returns only enabled parsers" do
+    it "returns only enabled parsers", :aggregate_failures do
       enabled = config.enabled_parsers
       expect(enabled.size).to eq(1)
       expect(enabled.first.format).to eq("xmi")
@@ -174,15 +174,17 @@ RSpec.describe Lutaml::ModelTransformations::Configuration do
 
     it "sorts parsers by priority (highest first)" do
       # Add another enabled parser with higher priority
-      high_priority_yaml = sample_config_yaml
-        .gsub("enabled: false", "enabled: true")
-        .gsub("priority: 90", "priority: 150")
+      aggregate_failures do
+        high_priority_yaml = sample_config_yaml
+          .gsub("enabled: false", "enabled: true")
+          .gsub("priority: 90", "priority: 150")
 
-      config = described_class.from_yaml(high_priority_yaml)
-      enabled = config.enabled_parsers
+        config = described_class.from_yaml(high_priority_yaml)
+        enabled = config.enabled_parsers
 
-      expect(enabled.size).to eq(2)
-      expect(enabled.first.priority).to be > enabled.last.priority
+        expect(enabled.size).to eq(2)
+        expect(enabled.first.priority).to be > enabled.last.priority
+      end
     end
   end
 
@@ -283,7 +285,7 @@ RSpec.describe Lutaml::ModelTransformations::Configuration do
     end
     let(:other_config) { described_class.from_yaml(other_config_yaml) }
 
-    it "merges configurations with precedence" do
+    it "merges configurations with precedence", :aggregate_failures do
       merged = base_config.merge(other_config)
 
       expect(merged.version).to eq("1.0") # base takes precedence
@@ -321,7 +323,8 @@ RSpec.describe Lutaml::ModelTransformations::Configuration do
   describe "default options integration" do
     let(:config) { described_class.create_default_configuration }
 
-    it "provides sensible defaults for transformation options" do
+    it "provides sensible defaults for transformation options",
+       :aggregate_failures do
       options = config.transformation_options
       expect(options.validate_output)
         .to be false # Don't validate by default for performance
@@ -335,7 +338,7 @@ RSpec.describe Lutaml::ModelTransformations::Configuration do
         .to be false # Don't use strict mode by default
     end
 
-    it "provides sensible defaults for format detection" do
+    it "provides sensible defaults for format detection", :aggregate_failures do
       detection = config.format_detection
       expect(detection.use_file_extension)
         .to be true # Use extension-based detection
@@ -343,7 +346,7 @@ RSpec.describe Lutaml::ModelTransformations::Configuration do
         .to be true # Use content detection as fallback
     end
 
-    it "provides sensible defaults for error handling" do
+    it "provides sensible defaults for error handling", :aggregate_failures do
       error_handling = config.error_handling
       expect(error_handling.strategy)
         .to eq("continue") # Continue on errors by default

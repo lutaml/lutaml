@@ -10,7 +10,7 @@ RSpec.describe Lutaml::UmlRepository::LazyRepository do
   let(:repo) { described_class.new(document: document, lazy: true) }
 
   describe "initialization" do
-    it "creates a repository without building indexes" do
+    it "creates a repository without building indexes", :aggregate_failures do
       expect(repo.pending_indexes).to include(:package_paths, :qualified_names,
                                               :stereotypes, :inheritance_graph,
                                               :diagram_index)
@@ -25,7 +25,7 @@ RSpec.describe Lutaml::UmlRepository::LazyRepository do
 
   describe "lazy index building" do
     describe "#find_class" do
-      it "builds qualified_names index on first call" do
+      it "builds qualified_names index on first call", :aggregate_failures do
         expect(repo.index_built?(:qualified_names)).to be false
         repo.find_class("ModelRoot")
         expect(repo.index_built?(:qualified_names)).to be true
@@ -45,7 +45,7 @@ RSpec.describe Lutaml::UmlRepository::LazyRepository do
     end
 
     describe "#find_package" do
-      it "builds package_paths index on first call" do
+      it "builds package_paths index on first call", :aggregate_failures do
         expect(repo.index_built?(:package_paths)).to be false
         repo.find_package("ModelRoot")
         expect(repo.index_built?(:package_paths)).to be true
@@ -58,7 +58,7 @@ RSpec.describe Lutaml::UmlRepository::LazyRepository do
     end
 
     describe "#find_classes_by_stereotype" do
-      it "builds stereotypes index on first call" do
+      it "builds stereotypes index on first call", :aggregate_failures do
         expect(repo.index_built?(:stereotypes)).to be false
         repo.find_classes_by_stereotype("featureType")
         expect(repo.index_built?(:stereotypes)).to be true
@@ -71,7 +71,8 @@ RSpec.describe Lutaml::UmlRepository::LazyRepository do
     end
 
     describe "#supertype_of" do
-      it "builds qualified_names and inheritance_graph indexes" do
+      it "builds qualified_names and inheritance_graph indexes",
+         :aggregate_failures do
         expect(repo.index_built?(:qualified_names)).to be false
         expect(repo.index_built?(:inheritance_graph)).to be false
 
@@ -90,7 +91,7 @@ RSpec.describe Lutaml::UmlRepository::LazyRepository do
     end
 
     describe "#subtypes_of" do
-      it "builds inheritance_graph index on first call" do
+      it "builds inheritance_graph index on first call", :aggregate_failures do
         expect(repo.index_built?(:inheritance_graph)).to be false
         repo.subtypes_of("ModelRoot")
         expect(repo.index_built?(:inheritance_graph)).to be true
@@ -98,7 +99,8 @@ RSpec.describe Lutaml::UmlRepository::LazyRepository do
     end
 
     describe "#ancestors_of" do
-      it "builds qualified_names and inheritance_graph indexes" do
+      it "builds qualified_names and inheritance_graph indexes",
+         :aggregate_failures do
         expect(repo.index_built?(:qualified_names)).to be false
         expect(repo.index_built?(:inheritance_graph)).to be false
 
@@ -110,7 +112,7 @@ RSpec.describe Lutaml::UmlRepository::LazyRepository do
     end
 
     describe "#descendants_of" do
-      it "builds inheritance_graph index on first call" do
+      it "builds inheritance_graph index on first call", :aggregate_failures do
         expect(repo.index_built?(:inheritance_graph)).to be false
         repo.descendants_of("ModelRoot")
         expect(repo.index_built?(:inheritance_graph)).to be true
@@ -118,7 +120,7 @@ RSpec.describe Lutaml::UmlRepository::LazyRepository do
     end
 
     describe "#diagrams_in_package" do
-      it "builds diagram_index on first call" do
+      it "builds diagram_index on first call", :aggregate_failures do
         expect(repo.index_built?(:diagram_index)).to be false
         repo.diagrams_in_package("ModelRoot")
         expect(repo.index_built?(:diagram_index)).to be true
@@ -132,7 +134,7 @@ RSpec.describe Lutaml::UmlRepository::LazyRepository do
   end
 
   describe "#build_all_indexes" do
-    it "builds all remaining indexes" do
+    it "builds all remaining indexes", :aggregate_failures do
       expect(repo.pending_indexes.size).to be > 0
 
       repo.build_all_indexes
@@ -166,7 +168,7 @@ RSpec.describe Lutaml::UmlRepository::LazyRepository do
   end
 
   describe "#index_built?" do
-    it "returns false for unbuilt indexes" do
+    it "returns false for unbuilt indexes", :aggregate_failures do
       expect(repo.index_built?(:package_paths)).to be false
       expect(repo.index_built?(:qualified_names)).to be false
     end
@@ -182,7 +184,7 @@ RSpec.describe Lutaml::UmlRepository::LazyRepository do
   end
 
   describe "#pending_indexes" do
-    it "returns array of pending index names" do
+    it "returns array of pending index names", :aggregate_failures do
       pending = repo.pending_indexes
       expect(pending).to be_an(Array)
       expect(pending).to include(:package_paths, :qualified_names)
@@ -202,7 +204,7 @@ RSpec.describe Lutaml::UmlRepository::LazyRepository do
 
   describe "factory methods" do
     describe ".from_xmi_lazy" do
-      it "creates a lazy repository from XMI file" do
+      it "creates a lazy repository from XMI file", :aggregate_failures do
         lazy_repo = Lutaml::UmlRepository::Repository.from_xmi_lazy(xmi_path)
 
         expect(lazy_repo).to be_a(described_class)
@@ -211,7 +213,7 @@ RSpec.describe Lutaml::UmlRepository::LazyRepository do
     end
 
     describe ".from_file_lazy" do
-      it "creates a lazy repository from XMI file" do
+      it "creates a lazy repository from XMI file", :aggregate_failures do
         lazy_repo = Lutaml::UmlRepository::Repository.from_file_lazy(xmi_path)
 
         expect(lazy_repo).to be_a(described_class)
@@ -226,20 +228,22 @@ RSpec.describe Lutaml::UmlRepository::LazyRepository do
 
     it "provides same find_class results" do
       # Build all indexes first
-      lazy_repo.build_all_indexes
+      aggregate_failures do
+        lazy_repo.build_all_indexes
 
-      normal_result = normal_repo.find_class("ModelRoot")
-      lazy_result = lazy_repo.find_class("ModelRoot")
+        normal_result = normal_repo.find_class("ModelRoot")
+        lazy_result = lazy_repo.find_class("ModelRoot")
 
-      if normal_result && lazy_result
-        expect(lazy_result.name).to eq(normal_result.name)
-        expect(lazy_result.xmi_id).to eq(normal_result.xmi_id)
-      else
-        expect(lazy_result).to eq(normal_result)
+        if normal_result && lazy_result
+          expect(lazy_result.name).to eq(normal_result.name)
+          expect(lazy_result.xmi_id).to eq(normal_result.xmi_id)
+        else
+          expect(lazy_result).to eq(normal_result)
+        end
       end
     end
 
-    it "provides same find_package results" do
+    it "provides same find_package results", :aggregate_failures do
       lazy_repo.build_all_indexes
 
       normal_result = normal_repo.find_package("ModelRoot")
@@ -251,7 +255,7 @@ RSpec.describe Lutaml::UmlRepository::LazyRepository do
   end
 
   describe "index dependencies" do
-    it "builds qualified_names before inheritance_graph" do
+    it "builds qualified_names before inheritance_graph", :aggregate_failures do
       expect(repo.index_built?(:qualified_names)).to be false
       expect(repo.index_built?(:inheritance_graph)).to be false
 
@@ -262,7 +266,7 @@ RSpec.describe Lutaml::UmlRepository::LazyRepository do
       expect(repo.index_built?(:inheritance_graph)).to be true
     end
 
-    it "builds package_paths before diagram_index" do
+    it "builds package_paths before diagram_index", :aggregate_failures do
       expect(repo.index_built?(:package_paths)).to be false
       expect(repo.index_built?(:diagram_index)).to be false
 

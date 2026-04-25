@@ -27,7 +27,7 @@ RSpec.describe Lutaml::Cli::InteractiveShell do
   let(:config) { { color: false, icons: false } }
 
   describe "#initialize" do
-    it "initializes with a repository object" do
+    it "initializes with a repository object", :aggregate_failures do
       shell = described_class.new(mock_repo, config: config)
 
       expect(shell.repository).to eq(mock_repo)
@@ -35,7 +35,7 @@ RSpec.describe Lutaml::Cli::InteractiveShell do
       expect(shell.bookmarks).to be_empty
     end
 
-    it "sets up default configuration" do
+    it "sets up default configuration", :aggregate_failures do
       shell = described_class.new(mock_repo)
 
       expect(shell.config[:color]).to be true
@@ -65,7 +65,7 @@ RSpec.describe Lutaml::Cli::InteractiveShell do
           .and_return(double("Package", name: "package"))
       end
 
-      it "changes to specified package" do
+      it "changes to specified package", :aggregate_failures do
         output = StringIO.new
         original_stdout = $stdout
         $stdout = output
@@ -108,7 +108,7 @@ RSpec.describe Lutaml::Cli::InteractiveShell do
         shell.instance_variable_set(:@current_path, "ModelRoot::Package::SubPackage")
       end
 
-      it "goes up one level" do
+      it "goes up one level", :aggregate_failures do
         output = StringIO.new
         original_stdout = $stdout
         $stdout = output
@@ -120,7 +120,7 @@ RSpec.describe Lutaml::Cli::InteractiveShell do
         expect(shell.current_path).to eq("ModelRoot::Package")
       end
 
-      it "stays at root when already there" do
+      it "stays at root when already there", :aggregate_failures do
         shell.instance_variable_set(:@current_path, "ModelRoot")
 
         output = StringIO.new
@@ -140,7 +140,7 @@ RSpec.describe Lutaml::Cli::InteractiveShell do
         shell.instance_variable_set(:@current_path, "ModelRoot::Package")
       end
 
-      it "navigates to root" do
+      it "navigates to root", :aggregate_failures do
         output = StringIO.new
         original_stdout = $stdout
         $stdout = output
@@ -159,7 +159,7 @@ RSpec.describe Lutaml::Cli::InteractiveShell do
         shell.instance_variable_set(:@current_path, "ModelRoot::Package")
       end
 
-      it "goes back to previous location" do
+      it "goes back to previous location", :aggregate_failures do
         output = StringIO.new
         original_stdout = $stdout
         $stdout = output
@@ -181,7 +181,7 @@ RSpec.describe Lutaml::Cli::InteractiveShell do
                       ])
       end
 
-      it "lists packages in current path" do
+      it "lists packages in current path", :aggregate_failures do
         output = StringIO.new
         original_stdout = $stdout
         $stdout = output
@@ -214,7 +214,7 @@ RSpec.describe Lutaml::Cli::InteractiveShell do
           .and_return(class: ["TestClass", "AnotherClass"])
       end
 
-      it "finds classes and stores results" do
+      it "finds classes and stores results", :aggregate_failures do
         output = StringIO.new
         original_stdout = $stdout
         $stdout = output
@@ -254,7 +254,7 @@ RSpec.describe Lutaml::Cli::InteractiveShell do
 
     describe "bookmark management" do
       describe "#bookmark_add" do
-        it "adds bookmark for current path" do
+        it "adds bookmark for current path", :aggregate_failures do
           output = StringIO.new
           original_stdout = $stdout
           $stdout = output
@@ -279,7 +279,7 @@ RSpec.describe Lutaml::Cli::InteractiveShell do
       end
 
       describe "#bookmark_list" do
-        it "lists all bookmarks" do
+        it "lists all bookmarks", :aggregate_failures do
           shell.instance_variable_set(:@bookmarks,
                                       { "bm1" => "Path1", "bm2" => "Path2" })
 
@@ -316,7 +316,7 @@ RSpec.describe Lutaml::Cli::InteractiveShell do
             .and_return(double("Package", name: "Package"))
         end
 
-        it "jumps to bookmarked location" do
+        it "jumps to bookmarked location", :aggregate_failures do
           output = StringIO.new
           original_stdout = $stdout
           $stdout = output
@@ -345,7 +345,7 @@ RSpec.describe Lutaml::Cli::InteractiveShell do
           shell.instance_variable_set(:@bookmarks, { "test" => "Path" })
         end
 
-        it "removes bookmark" do
+        it "removes bookmark", :aggregate_failures do
           output = StringIO.new
           original_stdout = $stdout
           $stdout = output
@@ -371,7 +371,7 @@ RSpec.describe Lutaml::Cli::InteractiveShell do
     end
 
     describe "#cmd_results" do
-      it "shows last results" do
+      it "shows last results", :aggregate_failures do
         shell.instance_variable_set(:@last_results, ["Class1", "Class2"])
 
         output = StringIO.new
@@ -398,7 +398,7 @@ RSpec.describe Lutaml::Cli::InteractiveShell do
     end
 
     describe "#cmd_stats" do
-      it "displays repository statistics" do
+      it "displays repository statistics", :aggregate_failures do
         output = StringIO.new
         original_stdout = $stdout
         $stdout = output
@@ -412,7 +412,7 @@ RSpec.describe Lutaml::Cli::InteractiveShell do
     end
 
     describe "#cmd_config" do
-      it "displays current configuration" do
+      it "displays current configuration", :aggregate_failures do
         output = StringIO.new
         original_stdout = $stdout
         $stdout = output
@@ -440,7 +440,7 @@ RSpec.describe Lutaml::Cli::InteractiveShell do
     end
 
     describe "#cmd_help" do
-      it "displays general help" do
+      it "displays general help", :aggregate_failures do
         output = StringIO.new
         original_stdout = $stdout
         $stdout = output

@@ -16,7 +16,7 @@ RSpec.describe Lutaml::Qea::Factory::OperationTransformer do
       expect(result).to be_nil
     end
 
-    it "transforms EA operation to UML operation" do
+    it "transforms EA operation to UML operation", :aggregate_failures do
       ea_op = Lutaml::Qea::Models::EaOperation.new(
         operationid: 1,
         name: "getName",

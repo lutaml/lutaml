@@ -25,7 +25,7 @@ RSpec.describe Lutaml::Qea::Factory::AssociationTransformer do
       expect(result).to be_nil
     end
 
-    it "transforms EA association to UML association" do
+    it "transforms EA association to UML association", :aggregate_failures do
       ea_conn = Lutaml::Qea::Models::EaConnector.new(
         connector_id: 1,
         connector_type: "Association",
@@ -68,7 +68,7 @@ RSpec.describe Lutaml::Qea::Factory::AssociationTransformer do
       expect(result.definition).to eq("Ownership relationship")
     end
 
-    it "builds cardinality for source end" do
+    it "builds cardinality for source end", :aggregate_failures do
       ea_conn = Lutaml::Qea::Models::EaConnector.new(
         connector_type: "Association",
         start_object_id: 10,
@@ -98,7 +98,7 @@ RSpec.describe Lutaml::Qea::Factory::AssociationTransformer do
       expect(result.owner_end_cardinality.max).to eq("*")
     end
 
-    it "handles missing object gracefully" do
+    it "handles missing object gracefully", :aggregate_failures do
       ea_conn = Lutaml::Qea::Models::EaConnector.new(
         connector_type: "Association",
         start_object_id: 99,

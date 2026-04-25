@@ -47,7 +47,7 @@ RSpec.describe Lutaml::UmlRepository::Presenters::PresenterFactory do
       expect(described_class.presenters[TestElement]).to eq(TestPresenter)
     end
 
-    it "allows multiple registrations" do
+    it "allows multiple registrations", :aggregate_failures do
       described_class.register(TestElement, TestPresenter)
       described_class.register(TestElementChild, TestPresenter)
       expect(described_class.presenters).to have_key(TestElement)
@@ -60,7 +60,7 @@ RSpec.describe Lutaml::UmlRepository::Presenters::PresenterFactory do
       expect(described_class.presenters).to eq({})
     end
 
-    it "returns all registered presenters" do
+    it "returns all registered presenters", :aggregate_failures do
       described_class.register(TestElement, TestPresenter)
       presenters = described_class.presenters
       expect(presenters).to be_a(Hash)
@@ -74,7 +74,7 @@ RSpec.describe Lutaml::UmlRepository::Presenters::PresenterFactory do
         described_class.register(TestElement, TestPresenter)
       end
 
-      it "creates presenter instance" do
+      it "creates presenter instance", :aggregate_failures do
         presenter = described_class.create(test_element)
         expect(presenter).to be_a(TestPresenter)
         expect(presenter.element).to eq(test_element)
@@ -92,7 +92,7 @@ RSpec.describe Lutaml::UmlRepository::Presenters::PresenterFactory do
         described_class.register(TestElement, TestPresenter)
       end
 
-      it "finds presenter through inheritance" do
+      it "finds presenter through inheritance", :aggregate_failures do
         presenter = described_class.create(test_child)
         expect(presenter).to be_a(TestPresenter)
         expect(presenter.element).to eq(test_child)
@@ -124,7 +124,7 @@ RSpec.describe Lutaml::UmlRepository::Presenters::PresenterFactory do
       described_class.register(TestElement, TestPresenter)
     end
 
-    it "creates functional presenter" do
+    it "creates functional presenter", :aggregate_failures do
       presenter = described_class.create(test_element)
       expect(presenter.to_text).to eq("Test: TestItem")
       expect(presenter.to_table_row).to eq({ type: "Test",

@@ -71,7 +71,7 @@ RSpec.describe Lutaml::UmlRepository::Exporters::MarkdownExporter do
   end
 
   describe "#export" do
-    it "creates the directory structure" do
+    it "creates the directory structure", :aggregate_failures do
       exporter.export(temp_dir)
 
       expect(File.directory?(temp_dir)).to be true
@@ -79,7 +79,7 @@ RSpec.describe Lutaml::UmlRepository::Exporters::MarkdownExporter do
       expect(File.directory?(File.join(temp_dir, "classes"))).to be true
     end
 
-    it "generates index page" do
+    it "generates index page", :aggregate_failures do
       exporter.export(temp_dir)
 
       index_path = File.join(temp_dir, "index.md")

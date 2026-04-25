@@ -143,7 +143,7 @@ RSpec.describe Lutaml::Qea::Models::EaOperationParam do
   end
 
   describe ".from_db_row" do
-    it "creates instance from database row" do
+    it "creates instance from database row", :aggregate_failures do
       row = {
         "OperationID" => 123,
         "Name" => "myParam",

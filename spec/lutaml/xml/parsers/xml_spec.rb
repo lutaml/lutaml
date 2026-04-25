@@ -28,7 +28,7 @@ RSpec.describe Lutaml::Xml::Parsers::Xml do
         expect(formatted_xml).to be_xml_equivalent_to(input_xml)
       end
 
-      it "parses xml file and able to output hash" do
+      it "parses xml file and able to output hash", :aggregate_failures do
         parsed = parse
         result = JSON.parse(parsed.to_json)
 

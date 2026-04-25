@@ -37,7 +37,7 @@ RSpec.describe Lutaml::Ea::Diagram::PathBuilder do
 
   describe "#build_path" do
     context "with EA geometry" do
-      it "builds path from EA geometry data" do
+      it "builds path from EA geometry data", :aggregate_failures do
         connector[:geometry] = "SX=10;SY=5;EX=-10;EY=-5;EDGE=1;"
 
         path = builder.build_path
@@ -78,7 +78,7 @@ RSpec.describe Lutaml::Ea::Diagram::PathBuilder do
         expect(path).to include("250,125")
       end
 
-      it "handles multiple waypoints" do
+      it "handles multiple waypoints", :aggregate_failures do
         connector[:geometry] =
           "SX=0;SY=0;EX=0;EY=0;EDGE=1;EDGE1=200,100;" \
           "EDGE2=300,150;EDGE3=400,200;"
@@ -104,7 +104,7 @@ RSpec.describe Lutaml::Ea::Diagram::PathBuilder do
         expect(path).to eq("M 160,90 L 475,250")
       end
 
-      it "uses manhattan routing by default" do
+      it "uses manhattan routing by default", :aggregate_failures do
         connector[:geometry] = nil
         connector[:routing_type] = nil
 
@@ -143,13 +143,13 @@ RSpec.describe Lutaml::Ea::Diagram::PathBuilder do
     context "with missing elements" do
       let(:builder_no_elements) { described_class.new(connector, nil, nil) }
 
-      it "handles missing source element gracefully" do
+      it "handles missing source element gracefully", :aggregate_failures do
         connector[:geometry] = "SX=10;SY=5;EX=0;EY=0;"
 
         expect { builder_no_elements.build_path }.not_to raise_error
       end
 
-      it "falls back to default coordinates" do
+      it "falls back to default coordinates", :aggregate_failures do
         path = builder_no_elements.build_path
 
         expect(path).to be_a(String)
@@ -160,7 +160,7 @@ RSpec.describe Lutaml::Ea::Diagram::PathBuilder do
 
   describe "EA geometry parsing" do
     describe "#parse_ea_geometry" do
-      it "parses SX/SY source offsets" do
+      it "parses SX/SY source offsets", :aggregate_failures do
         connector[:geometry] = "SX=50;SY=25;EX=0;EY=0;EDGE=1;"
 
         geometry_data = builder.send(:parse_ea_geometry, connector[:geometry])
@@ -169,7 +169,7 @@ RSpec.describe Lutaml::Ea::Diagram::PathBuilder do
         expect(geometry_data[:source_offset_y]).to eq(25)
       end
 
-      it "parses EX/EY target offsets" do
+      it "parses EX/EY target offsets", :aggregate_failures do
         connector[:geometry] = "SX=0;SY=0;EX=-30;EY=20;EDGE=1;"
 
         geometry_data = builder.send(:parse_ea_geometry, connector[:geometry])
@@ -186,7 +186,7 @@ RSpec.describe Lutaml::Ea::Diagram::PathBuilder do
         expect(geometry_data[:edge]).to eq(1)
       end
 
-      it "parses waypoints from EDGE1, EDGE2, etc." do
+      it "parses waypoints from EDGE1, EDGE2, etc.", :aggregate_failures do
         connector[:geometry] =
           "SX=0;SY=0;EX=0;EY=0;EDGE=1;EDGE1=100,50;EDGE2=200,100;"
 
@@ -206,7 +206,7 @@ RSpec.describe Lutaml::Ea::Diagram::PathBuilder do
         expect(geometry_data[:has_relative_coords]).to be_truthy
       end
 
-      it "handles missing offsets with nil values" do
+      it "handles missing offsets with nil values", :aggregate_failures do
         connector[:geometry] = "EDGE=1;"
 
         geometry_data = builder.send(:parse_ea_geometry, connector[:geometry])
@@ -241,7 +241,7 @@ RSpec.describe Lutaml::Ea::Diagram::PathBuilder do
         expect(geometry_data.keys).not_to include(:$LLB)
       end
 
-      it "handles geometry with extra whitespace" do
+      it "handles geometry with extra whitespace", :aggregate_failures do
         connector[:geometry] = " SX = 10 ; SY = 5 ; "
 
         geometry_data = builder.send(:parse_ea_geometry, connector[:geometry])
@@ -409,7 +409,7 @@ RSpec.describe Lutaml::Ea::Diagram::PathBuilder do
     end
 
     describe "#bezier_path" do
-      it "creates smooth curved path" do
+      it "creates smooth curved path", :aggregate_failures do
         path = builder.send(:bezier_path)
 
         expect(path).to start_with("M ")
@@ -417,7 +417,7 @@ RSpec.describe Lutaml::Ea::Diagram::PathBuilder do
         expect(path).not_to include(" L ") # No straight lines
       end
 
-      it "includes control points for curve" do
+      it "includes control points for curve", :aggregate_failures do
         path = builder.send(:bezier_path)
 
         # Format: M x1,y1 C cp1x,cp1y cp2x,cp2y x2,y2
@@ -440,7 +440,7 @@ RSpec.describe Lutaml::Ea::Diagram::PathBuilder do
     end
 
     describe "#calculate_orthogonal_points" do
-      it "generates points for horizontal-first routing" do
+      it "generates points for horizontal-first routing", :aggregate_failures do
         points = builder.send(:calculate_orthogonal_points)
 
         expect(points).to be_an(Array)
@@ -486,7 +486,8 @@ RSpec.describe Lutaml::Ea::Diagram::PathBuilder do
         expect(point).to eq([150, 75])
       end
 
-      it "calculates from element when coordinates not in connector" do
+      it "calculates from element when coordinates not in connector",
+         :aggregate_failures do
         point = builder.send(:source_point)
 
         # Should calculate connection point from element
@@ -505,7 +506,8 @@ RSpec.describe Lutaml::Ea::Diagram::PathBuilder do
         expect(point).to eq([450, 250])
       end
 
-      it "calculates from element when coordinates not in connector" do
+      it "calculates from element when coordinates not in connector",
+         :aggregate_failures do
         point = builder.send(:target_point)
 
         # Should calculate connection point from element

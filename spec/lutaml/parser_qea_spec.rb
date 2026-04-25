@@ -11,7 +11,7 @@ RSpec.describe Lutaml::Parser, "#parse with QEA files" do
 
   describe ".parse" do
     context "with QEA file" do
-      it "detects QEA file type from extension" do
+      it "detects QEA file type from extension", :aggregate_failures do
         skip "QEA test file not available" unless File.exist?(qea_file_path)
 
         file = File.new(qea_file_path)
@@ -22,7 +22,8 @@ RSpec.describe Lutaml::Parser, "#parse with QEA files" do
         expect(result.first).to be_a(Lutaml::Uml::Document)
       end
 
-      it "returns array with single document for consistency with XMI" do
+      it "returns array with single document for consistency with XMI",
+         :aggregate_failures do
         skip "QEA test file not available" unless File.exist?(qea_file_path)
 
         file = File.new(qea_file_path)
@@ -32,7 +33,7 @@ RSpec.describe Lutaml::Parser, "#parse with QEA files" do
         expect(result.length).to eq(1)
       end
 
-      it "parses QEA file and creates valid document" do
+      it "parses QEA file and creates valid document", :aggregate_failures do
         skip "QEA test file not available" unless File.exist?(qea_file_path)
 
         file = File.new(qea_file_path)
@@ -58,7 +59,7 @@ RSpec.describe Lutaml::Parser, "#parse with QEA files" do
     end
 
     context "with explicit type override" do
-      it "can force QEA parsing with type parameter" do
+      it "can force QEA parsing with type parameter", :aggregate_failures do
         skip "QEA test file not available" unless File.exist?(qea_file_path)
 
         file = File.new(qea_file_path)
@@ -80,7 +81,7 @@ RSpec.describe Lutaml::Parser, "#parse with QEA files" do
 
         expect do
           described_class.parse([file])
-        end.to raise_error
+        end.to raise_error(StandardError)
       end
 
       it "handles invalid QEA file gracefully" do
@@ -97,7 +98,7 @@ RSpec.describe Lutaml::Parser, "#parse with QEA files" do
   end
 
   describe "integration with UmlRepository" do
-    it "parsed document works with UmlRepository" do
+    it "parsed document works with UmlRepository", :aggregate_failures do
       skip "QEA test file not available" unless File.exist?(qea_file_path)
 
       file = File.new(qea_file_path)

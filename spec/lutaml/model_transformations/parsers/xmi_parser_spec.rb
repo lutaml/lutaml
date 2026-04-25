@@ -27,7 +27,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::XmiParser do
   end
 
   describe "#content_patterns" do
-    it "returns XMI content detection patterns" do
+    it "returns XMI content detection patterns", :aggregate_failures do
       patterns = parser.content_patterns
       expect(patterns).to be_an(Array)
       expect(patterns).not_to be_empty
@@ -75,7 +75,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::XmiParser do
         expect(result).to be_a(Lutaml::Uml::Document)
       end
 
-      it "extracts packages from XMI" do
+      it "extracts packages from XMI", :aggregate_failures do
         result = parser.parse(xmi_file.path)
         expect(result.packages).not_to be_empty
 
@@ -83,7 +83,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::XmiParser do
         expect(package.name).to eq("Model")
       end
 
-      it "extracts classes from packages" do
+      it "extracts classes from packages", :aggregate_failures do
         result = parser.parse(xmi_file.path)
         package = result.packages.first.packages[3]
         expect(package.classes).not_to be_empty
@@ -92,7 +92,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::XmiParser do
         expect(klass.name).to eq("Class A")
       end
 
-      it "extracts attributes from classes" do
+      it "extracts attributes from classes", :aggregate_failures do
         result = parser.parse(xmi_file.path)
         package = result.packages.first.packages[7]
         klass = package.classes.first
@@ -102,7 +102,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::XmiParser do
         expect(attribute.name).to eq("Attribute A")
       end
 
-      it "handles nested package structure" do
+      it "handles nested package structure", :aggregate_failures do
         result = parser.parse(complex_file.path)
         expect(result.packages).not_to be_empty
 
@@ -116,7 +116,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::XmiParser do
         expect(sub_package).not_to be_nil
       end
 
-      it "extracts inheritance relationships" do
+      it "extracts inheritance relationships", :aggregate_failures do
         result = parser.parse(complex_file.path)
         root_package = result.packages.first.packages.find do |p|
           p.name == "Two Level Class Type Hierarchy with Attributes"
@@ -127,7 +127,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::XmiParser do
         expect(derived_class.generalization).not_to be_nil
       end
 
-      it "extracts associations" do
+      it "extracts associations", :aggregate_failures do
         result = parser.parse(complex_file.path)
         root_package = result.packages.first.packages.find do |p|
           p.name == "Basic Class Diagram with Attributes and Operations"
@@ -229,7 +229,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::XmiParser do
         expect(parser.can_parse?("test.uml")).to be false
       end
 
-      it "returns false for unsupported extensions" do
+      it "returns false for unsupported extensions", :aggregate_failures do
         expect(parser.can_parse?("test.txt")).to be false
         expect(parser.can_parse?("test.json")).to be false
       end
@@ -283,7 +283,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::XmiParser do
       it "raises error for invalid XMI content" do
         expect do
           parser.parse(invalid_file.path)
-        end.to raise_error
+        end.to raise_error(StandardError)
       end
     end
   end

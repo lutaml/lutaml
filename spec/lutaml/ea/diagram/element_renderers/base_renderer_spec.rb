@@ -35,7 +35,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::BaseRenderer do
   end
 
   describe "#render" do
-    it "returns SVG group element" do
+    it "returns SVG group element", :aggregate_failures do
       svg = renderer.render
 
       expect(svg).to include("<g")
@@ -49,14 +49,15 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::BaseRenderer do
         .to include('class="lutaml-diagram-element lutaml-diagram-class"')
     end
 
-    it "includes data attributes for element ID and type" do
+    it "includes data attributes for element ID and type",
+       :aggregate_failures do
       svg = renderer.render
 
       expect(svg).to include('data-element-id="test-1"')
       expect(svg).to include('data-element-type="class"')
     end
 
-    it "calls render_shape method" do
+    it "calls render_shape method", :aggregate_failures do
       allow(renderer).to receive(:render_shape).and_return("<rect />")
 
       svg = renderer.render
@@ -65,7 +66,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::BaseRenderer do
       expect(svg).to include("<rect />")
     end
 
-    it "calls render_label method" do
+    it "calls render_label method", :aggregate_failures do
       allow(renderer).to receive(:render_label).and_return("<text>Label</text>")
 
       svg = renderer.render
@@ -97,14 +98,14 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::BaseRenderer do
       }
     end
 
-    it "returns SVG text element" do
+    it "returns SVG text element", :aggregate_failures do
       label = renderer.send(:render_label, style)
 
       expect(label).to include("<text")
       expect(label).to include("</text>")
     end
 
-    it "centers text at element center" do
+    it "centers text at element center", :aggregate_failures do
       label = renderer.send(:render_label, style)
 
       # Element center: x=100 + 120/2 = 160, y=50 + 80/2 = 90
@@ -196,7 +197,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::BaseRenderer do
       expect(label).to include("<text")
     end
 
-    it "handles missing coordinates by using zero" do
+    it "handles missing coordinates by using zero", :aggregate_failures do
       element_data.delete(:x)
       element_data.delete(:y)
       label = renderer.send(:render_label, style)

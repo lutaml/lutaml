@@ -9,7 +9,7 @@ RSpec.describe Lutaml::Qea do
   end
 
   describe "VERSION" do
-    it "has a version number" do
+    it "has a version number", :aggregate_failures do
       expect(described_class::VERSION).to be_a(String)
       expect(described_class::VERSION).to match(/^\d+\.\d+\.\d+$/)
     end
@@ -60,7 +60,7 @@ RSpec.describe Lutaml::Qea do
   end
 
   describe ".connect" do
-    it "returns database connection" do
+    it "returns database connection", :aggregate_failures do
       conn = described_class.connect(test_qea_file)
       expect(conn).to be_a(Lutaml::Qea::Infrastructure::DatabaseConnection)
       expect(conn.file_path).to eq(test_qea_file)
@@ -81,7 +81,7 @@ RSpec.describe Lutaml::Qea do
       expect(yielded).to be_a(Lutaml::Qea::Infrastructure::DatabaseConnection)
     end
 
-    it "allows database operations in block" do
+    it "allows database operations in block", :aggregate_failures do
       result = nil
       described_class.open(test_qea_file) do |conn|
         conn.with_connection do |db|
@@ -93,7 +93,7 @@ RSpec.describe Lutaml::Qea do
       expect(result).to be >= 0
     end
 
-    it "closes connection after block" do
+    it "closes connection after block", :aggregate_failures do
       connection = nil
       described_class.open(test_qea_file) do |conn|
         connection = conn
@@ -103,7 +103,7 @@ RSpec.describe Lutaml::Qea do
       expect(connection.connected?).to be false
     end
 
-    it "closes connection even if block raises error" do
+    it "closes connection even if block raises error", :aggregate_failures do
       connection = nil
       expect do
         described_class.open(test_qea_file) do |conn|
@@ -118,21 +118,21 @@ RSpec.describe Lutaml::Qea do
   end
 
   describe ".schema_info" do
-    it "returns hash with schema information" do
+    it "returns hash with schema information", :aggregate_failures do
       info = described_class.schema_info(test_qea_file)
       expect(info).to be_a(Hash)
       expect(info).to have_key(:tables)
       expect(info).to have_key(:statistics)
     end
 
-    it "includes table list" do
+    it "includes table list", :aggregate_failures do
       info = described_class.schema_info(test_qea_file)
       tables = info[:tables]
       expect(tables).to be_an(Array)
       expect(tables).to include("t_object", "t_package", "t_attribute")
     end
 
-    it "includes statistics" do
+    it "includes statistics", :aggregate_failures do
       info = described_class.schema_info(test_qea_file)
       stats = info[:statistics]
       expect(stats).to be_a(Hash)
@@ -140,7 +140,7 @@ RSpec.describe Lutaml::Qea do
       expect(stats["t_object"]).to be_an(Integer)
     end
 
-    it "closes connection after retrieving info" do
+    it "closes connection after retrieving info", :aggregate_failures do
       # This test ensures no connections are left open
       info = described_class.schema_info(test_qea_file)
       expect(info).not_to be_nil
@@ -193,7 +193,7 @@ RSpec.describe Lutaml::Qea do
       end
     end
 
-    it "can read table data using TableReader" do
+    it "can read table data using TableReader", :aggregate_failures do
       described_class.open(test_qea_file) do |conn|
         conn.with_connection do |db|
           reader = Lutaml::Qea::Infrastructure::TableReader.new(db, "t_object")
@@ -209,7 +209,7 @@ RSpec.describe Lutaml::Qea do
       end
     end
 
-    it "provides complete foundation for QEA parsing" do
+    it "provides complete foundation for QEA parsing", :aggregate_failures do
       # Test that all Phase 1 components work together
       config = described_class.configuration
       expect(config.enabled_tables).not_to be_empty

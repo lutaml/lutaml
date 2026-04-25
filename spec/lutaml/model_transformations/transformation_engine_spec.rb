@@ -111,7 +111,7 @@ RSpec.describe Lutaml::ModelTransformations::TransformationEngine do
       expect(engine.current_parser.parse_called_with).to eq(test_file.path)
     end
 
-    it "records successful transformation in history" do
+    it "records successful transformation in history", :aggregate_failures do
       engine.parse(test_file.path)
 
       history = engine.transformation_history
@@ -157,7 +157,7 @@ RSpec.describe Lutaml::ModelTransformations::TransformationEngine do
         engine.register_parser(".fail", FailingMockParser)
       end
 
-      it "records failed transformation in history" do
+      it "records failed transformation in history", :aggregate_failures do
         expect do
           engine.parse(failing_file.path)
         end.to raise_error(StandardError)
@@ -289,7 +289,7 @@ RSpec.describe Lutaml::ModelTransformations::TransformationEngine do
       engine.register_parser(".test", MockParser)
     end
 
-    it "unregisters parser from format registry" do
+    it "unregisters parser from format registry", :aggregate_failures do
       result = engine.unregister_parser(".test")
       expect(result).to eq(MockParser)
 
@@ -305,7 +305,7 @@ RSpec.describe Lutaml::ModelTransformations::TransformationEngine do
       config
     end
 
-    it "updates configuration and reloads parsers" do
+    it "updates configuration and reloads parsers", :aggregate_failures do
       original_config = engine.configuration
 
       engine.configuration = new_config
@@ -331,50 +331,54 @@ RSpec.describe Lutaml::ModelTransformations::TransformationEngine do
 
     it "returns comprehensive statistics" do
       # Perform some transformations
-      engine.parse(test_file.path)
+      aggregate_failures do
+        engine.parse(test_file.path)
 
-      stats = engine.statistics
+        stats = engine.statistics
 
-      expect(stats).to include(
-        :total_transformations,
-        :successful_transformations,
-        :failed_transformations,
-        :success_rate,
-        :average_duration,
-        :supported_extensions,
-        :registered_parsers,
-        :configuration_version,
-      )
+        expect(stats).to include(
+          :total_transformations,
+          :successful_transformations,
+          :failed_transformations,
+          :success_rate,
+          :average_duration,
+          :supported_extensions,
+          :registered_parsers,
+          :configuration_version,
+        )
 
-      expect(stats[:total_transformations]).to eq(1)
-      expect(stats[:successful_transformations]).to eq(1)
-      expect(stats[:success_rate]).to eq(100.0)
+        expect(stats[:total_transformations]).to eq(1)
+        expect(stats[:successful_transformations]).to eq(1)
+        expect(stats[:success_rate]).to eq(100.0)
+      end
     end
 
     it "calculates success rate correctly with mixed results" do
       # Register failing parser
-      engine.register_parser(".fail", FailingMockParser)
+      aggregate_failures do
+        engine.register_parser(".fail", FailingMockParser)
 
-      failing_file = Tempfile.new(["test", ".fail"])
-      failing_file.write("content")
-      failing_file.close
+        failing_file = Tempfile.new(["test", ".fail"])
+        failing_file.write("content")
+        failing_file.close
 
-      begin
-        # One success, one failure
-        engine.parse(test_file.path)
         begin
-          engine.parse(failing_file.path)
-        rescue StandardError
-          # Expected failure
-        end
+          # One success, one failure
+          engine.parse(test_file.path)
+          begin
+            engine.parse(failing_file.path)
+          rescue StandardError
+            # Expected failure
+          end
 
-        stats = engine.statistics
-        expect(stats[:total_transformations]).to eq(2)
-        expect(stats[:successful_transformations]).to eq(1)
-        expect(stats[:failed_transformations]).to eq(1)
-        expect(stats[:success_rate]).to eq(50.0)
-      ensure
-        failing_file.unlink
+          stats = engine.statistics
+          expect(stats[:total_transformations]).to eq(2)
+          expect(stats[:successful_transformations]).to eq(1)
+          expect(stats[:failed_transformations]).to eq(1)
+          expect(stats[:success_rate]).to eq(50.0)
+        ensure
+          failing_file.unlink
+        end
       end
     end
   end
@@ -393,7 +397,7 @@ RSpec.describe Lutaml::ModelTransformations::TransformationEngine do
       engine.register_parser(".mock", MockParser)
     end
 
-    it "clears transformation history" do
+    it "clears transformation history", :aggregate_failures do
       engine.parse(test_file.path)
       expect(engine.transformation_history).not_to be_empty
 
@@ -416,7 +420,7 @@ RSpec.describe Lutaml::ModelTransformations::TransformationEngine do
       engine.register_parser(".mock", MockParser)
     end
 
-    it "returns history entries for specific file" do
+    it "returns history entries for specific file", :aggregate_failures do
       engine.parse(test_file.path)
       engine.parse(test_file.path) # Parse twice
 
@@ -438,7 +442,7 @@ RSpec.describe Lutaml::ModelTransformations::TransformationEngine do
       engine.register_parser(".fail", FailingMockParser)
     end
 
-    it "returns recent failed transformations" do
+    it "returns recent failed transformations", :aggregate_failures do
       failing_file = Tempfile.new(["test", ".fail"])
       failing_file.write("content")
       failing_file.close
@@ -485,7 +489,7 @@ RSpec.describe Lutaml::ModelTransformations::TransformationEngine do
       engine.register_parser(".mock", MockParser)
     end
 
-    it "validates configuration and parsers" do
+    it "validates configuration and parsers", :aggregate_failures do
       results = engine.validate_setup
 
       expect(results).to include(

@@ -8,7 +8,7 @@ RSpec.describe "CLI UML Validate Command" do
   let(:qea_file) { "examples/qea/test.qea" }
 
   describe "validate command" do
-    it "runs without errors on valid QEA file" do
+    it "runs without errors on valid QEA file", :aggregate_failures do
       # This is a regression test for the bug:
       # "undefined method `root?` for an instance of Lutaml::Uml::Package"
       #
@@ -36,7 +36,7 @@ RSpec.describe "CLI UML Validate Command" do
       end.not_to raise_error
     end
 
-    it "validates database models have expected methods" do
+    it "validates database models have expected methods", :aggregate_failures do
       parser = Lutaml::Qea::Parser.new
       result = parser.parse(qea_file)
       database = result[:database]
@@ -48,7 +48,7 @@ RSpec.describe "CLI UML Validate Command" do
       expect(database.packages.first).to respond_to(:parent_id)
     end
 
-    it "validates UML models have expected structure" do
+    it "validates UML models have expected structure", :aggregate_failures do
       parser = Lutaml::Qea::Parser.new
       result = parser.parse(qea_file)
       document = result[:document]
@@ -64,7 +64,8 @@ RSpec.describe "CLI UML Validate Command" do
       end
     end
 
-    it "properly separates database and UML validation contexts" do
+    it "properly separates database and UML validation contexts",
+       :aggregate_failures do
       parser = Lutaml::Qea::Parser.new
       result = parser.parse(qea_file)
 
@@ -90,7 +91,7 @@ RSpec.describe "CLI UML Validate Command" do
       end
     end
 
-    it "runs all validators without method errors" do
+    it "runs all validators without method errors", :aggregate_failures do
       parser = Lutaml::Qea::Parser.new
       result = parser.parse(qea_file)
 
@@ -139,7 +140,7 @@ RSpec.describe "CLI UML Validate Command" do
   end
 
   describe "validation result format" do
-    it "provides structured validation results" do
+    it "provides structured validation results", :aggregate_failures do
       parser = Lutaml::Qea::Parser.new
       result = parser.parse(qea_file)
 
@@ -156,7 +157,7 @@ RSpec.describe "CLI UML Validate Command" do
       expect(validation_result.summary).to be_a(String)
     end
 
-    it "categorizes messages correctly" do
+    it "categorizes messages correctly", :aggregate_failures do
       parser = Lutaml::Qea::Parser.new
       result = parser.parse(qea_file)
 

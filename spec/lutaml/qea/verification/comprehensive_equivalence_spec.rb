@@ -5,6 +5,9 @@ require_relative "../../../../lib/lutaml/uml_repository/repository"
 require_relative "../../../../lib/lutaml/qea/parser"
 
 RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
+  # rubocop:disable RSpec/InstanceVariable
+  # Instance variables are required with before(:all) because `let` is per-example
+  # and would re-parse the ~10MB XMI/QEA files for each of the ~100+ examples.
   # Skip tests if files don't exist
   before(:all) do
     # Test file pairs - each QEA should contain all information from
@@ -577,4 +580,5 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
     lookup ||= build_lookup(qea_operations, :name, :owner_name)
     lookup[[xmi_op.name, xmi_op.owner_name]]&.first
   end
+  # rubocop:enable RSpec/InstanceVariable
 end

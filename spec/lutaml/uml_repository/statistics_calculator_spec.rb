@@ -15,7 +15,7 @@ RSpec.describe Lutaml::UmlRepository::StatisticsCalculator do
       expect(stats).to be_a(Hash)
     end
 
-    it "includes basic counts" do
+    it "includes basic counts", :aggregate_failures do
       expect(stats).to have_key(:total_packages)
       expect(stats).to have_key(:total_classes)
       expect(stats).to have_key(:total_enums)
@@ -24,17 +24,17 @@ RSpec.describe Lutaml::UmlRepository::StatisticsCalculator do
       expect(stats).to have_key(:total_associations)
     end
 
-    it "includes packages_by_depth" do
+    it "includes packages_by_depth", :aggregate_failures do
       expect(stats).to have_key(:packages_by_depth)
       expect(stats[:packages_by_depth]).to be_a(Hash)
     end
 
-    it "includes classes_by_stereotype" do
+    it "includes classes_by_stereotype", :aggregate_failures do
       expect(stats).to have_key(:classes_by_stereotype)
       expect(stats[:classes_by_stereotype]).to be_a(Hash)
     end
 
-    it "includes most_complex_classes" do
+    it "includes most_complex_classes", :aggregate_failures do
       expect(stats).to have_key(:most_complex_classes)
       expect(stats[:most_complex_classes]).to be_an(Array)
     end
@@ -65,7 +65,7 @@ RSpec.describe Lutaml::UmlRepository::StatisticsCalculator do
       expect(stats[:total_data_types]).to eq(total_data_types)
     end
 
-    it "calculates packages by depth correctly" do
+    it "calculates packages by depth correctly", :aggregate_failures do
       packages_by_depth = stats[:packages_by_depth]
 
       packages_by_depth.each do |depth, count|
@@ -75,7 +75,7 @@ RSpec.describe Lutaml::UmlRepository::StatisticsCalculator do
       end
     end
 
-    it "groups classes by stereotype correctly" do
+    it "groups classes by stereotype correctly", :aggregate_failures do
       classes_by_stereotype = stats[:classes_by_stereotype]
 
       classes_by_stereotype.each_value do |count|
@@ -84,7 +84,7 @@ RSpec.describe Lutaml::UmlRepository::StatisticsCalculator do
       end
     end
 
-    it "identifies most complex classes" do
+    it "identifies most complex classes", :aggregate_failures do
       most_complex = stats[:most_complex_classes]
 
       most_complex.each do |item|
@@ -106,14 +106,14 @@ RSpec.describe Lutaml::UmlRepository::StatisticsCalculator do
     let(:document) { create_simple_test_document }
     let(:stats) { calculator.calculate }
 
-    it "calculates statistics for simple document" do
+    it "calculates statistics for simple document", :aggregate_failures do
       expect(stats).to be_a(Hash)
       expect(stats[:total_packages]).to eq(3)
       expect(stats[:total_classes]).to eq(1)
       expect(stats[:total_enums]).to eq(1)
     end
 
-    it "groups packages by depth" do
+    it "groups packages by depth", :aggregate_failures do
       packages_by_depth = stats[:packages_by_depth]
 
       expect(packages_by_depth[0]).to eq(1)
@@ -127,7 +127,7 @@ RSpec.describe Lutaml::UmlRepository::StatisticsCalculator do
       expect(classes_by_stereotype["TestStereotype"]).to eq(1)
     end
 
-    it "calculates complexity correctly" do
+    it "calculates complexity correctly", :aggregate_failures do
       most_complex = stats[:most_complex_classes]
 
       expect(most_complex.length).to eq(1)
@@ -136,7 +136,7 @@ RSpec.describe Lutaml::UmlRepository::StatisticsCalculator do
   end
 
   describe "#total_attributes" do
-    it "counts total attributes across all classes" do
+    it "counts total attributes across all classes", :aggregate_failures do
       total = calculator.send(:total_attributes)
       expect(total).to be_an(Integer)
       expect(total).to be >= 0
@@ -144,7 +144,7 @@ RSpec.describe Lutaml::UmlRepository::StatisticsCalculator do
   end
 
   describe "#total_operations" do
-    it "counts total operations across all classes" do
+    it "counts total operations across all classes", :aggregate_failures do
       total = calculator.send(:total_operations)
       expect(total).to be_an(Integer)
       expect(total).to be >= 0
@@ -152,7 +152,7 @@ RSpec.describe Lutaml::UmlRepository::StatisticsCalculator do
   end
 
   describe "#class_complexity" do
-    it "calculates complexity for a class" do
+    it "calculates complexity for a class", :aggregate_failures do
       klass = indexes[:qualified_names].values.find do |e|
         e.is_a?(Lutaml::Uml::Class)
       end

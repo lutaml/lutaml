@@ -22,290 +22,192 @@ RSpec.describe Lutaml::UmlRepository::Presenters::DiagramPresenter do
 
   let(:presenter) { described_class.new(diagram, repository) }
 
-  describe "#initialize" do
-    it "stores diagram reference" do
-      expect(presenter.element).to eq(diagram)
-    end
+  before do
+    allow(diagram).to receive_messages(diagram_objects: [],
+                                       diagram_links: [])
+  end
 
-    it "stores repository reference" do
-      expect(presenter.repository).to eq(repository)
-    end
+  describe "#initialize" do
+    it { expect(presenter.element).to eq(diagram) }
+    it { expect(presenter.repository).to eq(repository) }
 
     it "accepts config_path option" do
-      presenter_with_config = described_class
-        .new(diagram, repository, config_path: "custom/config.yml")
-      expect(presenter_with_config.config_path).to eq("custom/config.yml")
+      pwc = described_class.new(diagram, repository,
+                                config_path: "custom/config.yml")
+      expect(pwc.config_path).to eq("custom/config.yml")
     end
 
     it "creates layout engine" do
-      expect(presenter.instance_variable_get(:@layout_engine)).to be_a(Lutaml::Ea::Diagram::LayoutEngine)
+      expect(presenter.instance_variable_get(:@layout_engine))
+        .to be_a(Lutaml::Ea::Diagram::LayoutEngine)
     end
 
-    it "defaults config_path to nil" do
-      expect(presenter.config_path).to be_nil
-    end
+    it { expect(presenter.config_path).to be_nil }
   end
 
   describe "#svg_output" do
-    it "generates SVG output" do
-      allow(diagram).to receive_messages(diagram_objects: [], diagram_links: [])
-
-      svg = presenter.svg_output
-      expect(svg).to be_a(String)
-      expect(svg).to include("<svg")
-    end
+    it { expect(presenter.svg_output).to be_a(String) }
+    it { expect(presenter.svg_output).to include("<svg") }
 
     it "passes config_path to renderer" do
-      presenter_with_config = described_class
-        .new(diagram, repository, config_path: "test/config.yml")
-      allow(diagram).to receive_messages(diagram_objects: [], diagram_links: [])
-
-      svg = presenter_with_config.svg_output
-      expect(svg).to include("<svg")
+      pwc = described_class.new(diagram, repository,
+                                config_path: "test/config.yml")
+      expect(pwc.svg_output).to include("<svg")
     end
 
     it "accepts rendering options" do
-      allow(diagram).to receive_messages(diagram_objects: [], diagram_links: [])
-
       svg = presenter.svg_output(padding: 30, background_color: "#f5f5f5")
       expect(svg).to include("<svg")
     end
 
-    it "returns complete SVG string" do
-      allow(diagram).to receive_messages(diagram_objects: [], diagram_links: [])
-
-      svg = presenter.svg_output
-      expect(svg).to start_with("<?xml")
-      expect(svg).to end_with("</svg>\n")
-    end
+    it { expect(presenter.svg_output).to start_with("<?xml") }
+    it { expect(presenter.svg_output).to end_with("</svg>\n") }
   end
 
   describe "#elements" do
-    it "returns array of element data" do
-      allow(diagram).to receive(:diagram_objects).and_return([])
-
-      elements = presenter.elements
-      expect(elements).to be_an(Array)
-    end
+    it { expect(presenter.elements).to be_an(Array) }
 
     it "calls build_elements_data" do
-      allow(diagram).to receive(:diagram_objects).and_return([])
       expect(presenter).to receive(:build_elements_data).and_call_original
-
       presenter.elements
     end
   end
 
   describe "#connectors" do
-    it "returns array of connector data" do
-      allow(diagram).to receive(:diagram_links).and_return([])
-
-      connectors = presenter.connectors
-      expect(connectors).to be_an(Array)
-    end
+    it { expect(presenter.connectors).to be_an(Array) }
 
     it "calls build_connectors_data" do
-      allow(diagram).to receive_messages(diagram_objects: [], diagram_links: [])
       expect(presenter).to receive(:build_connectors_data).and_call_original
-
       presenter.connectors
     end
   end
 
   describe "#to_text" do
-    it "generates text representation" do
-      text = presenter.to_text
-      expect(text).to be_a(String)
-    end
+    let(:text) { presenter.to_text }
 
-    it "includes diagram name" do
-      text = presenter.to_text
-      expect(text).to include("Test Diagram")
-    end
-
-    it "includes diagram type" do
-      text = presenter.to_text
-      expect(text).to include("Class")
-    end
-
-    it "includes package name" do
-      text = presenter.to_text
-      expect(text).to include("TestPackage")
-    end
+    it { expect(text).to be_a(String) }
+    it { expect(text).to include("Test Diagram") }
+    it { expect(text).to include("Class") }
+    it { expect(text).to include("TestPackage") }
 
     it "includes element count" do
       allow(diagram).to receive(:diagram_objects).and_return([double, double])
-      text = presenter.to_text
-      expect(text).to include("Elements:")
-      expect(text).to include("2")
+      expect(presenter.to_text).to include("Elements:")
+    end
+
+    it "shows 2 elements" do
+      allow(diagram).to receive(:diagram_objects).and_return([double, double])
+      expect(presenter.to_text).to include("2")
     end
 
     it "includes connector count" do
-      allow(diagram).to receive(:diagram_links).and_return([double, double,
-                                                            double])
-      text = presenter.to_text
-      expect(text).to include("Connectors:")
-      expect(text).to include("3")
+      allow(diagram).to receive(:diagram_links)
+        .and_return([double, double, double])
+      expect(presenter.to_text).to include("Connectors:")
+    end
+
+    it "shows 3 connectors" do
+      allow(diagram).to receive(:diagram_links)
+        .and_return([double, double, double])
+      expect(presenter.to_text).to include("3")
     end
 
     it "handles unknown package name" do
       allow(diagram).to receive(:package_name).and_return(nil)
-      text = presenter.to_text
-      expect(text).to include("Unknown")
+      expect(presenter.to_text).to include("Unknown")
     end
   end
 
   describe "#to_table_row" do
-    it "returns hash with type, name, details" do
-      row = presenter.to_table_row
-      expect(row).to be_a(Hash)
-      expect(row).to have_key(:type)
-      expect(row).to have_key(:name)
-      expect(row).to have_key(:details)
-    end
+    let(:row) { presenter.to_table_row }
 
-    it "sets type to Diagram" do
-      row = presenter.to_table_row
-      expect(row[:type]).to eq("Diagram")
-    end
+    it { expect(row).to be_a(Hash) }
+    it { expect(row).to have_key(:type) }
+    it { expect(row).to have_key(:name) }
+    it { expect(row).to have_key(:details) }
+    it { expect(row[:type]).to eq("Diagram") }
+    it { expect(row[:name]).to eq("Test Diagram") }
 
-    it "includes diagram name" do
-      row = presenter.to_table_row
-      expect(row[:name]).to eq("Test Diagram")
-    end
-
-    it "includes diagram type and count in details" do
+    it "includes diagram type in details" do
       allow(diagram).to receive(:diagram_objects).and_return([double, double])
-      row = presenter.to_table_row
       expect(row[:details]).to include("Class")
+    end
+
+    it "includes element count in details" do
+      allow(diagram).to receive(:diagram_objects).and_return([double, double])
       expect(row[:details]).to include("2")
     end
 
     it "handles unnamed diagram" do
       allow(diagram).to receive(:name).and_return(nil)
-      row = presenter.to_table_row
-      expect(row[:name]).to eq("(unnamed)")
+      expect(presenter.to_table_row[:name]).to eq("(unnamed)")
     end
   end
 
   describe "#to_hash" do
-    it "returns hash representation" do
-      hash = presenter.to_hash
-      expect(hash).to be_a(Hash)
-    end
-
-    it "includes all diagram properties" do
+    before do
       allow(diagram).to receive_messages(diagram_objects: [double],
                                          diagram_links: [double])
-
-      hash = presenter.to_hash
-      expect(hash[:type]).to eq("Diagram")
-      expect(hash[:name]).to eq("Test Diagram")
-      expect(hash[:diagram_type]).to eq("Class")
-      expect(hash[:package_name]).to eq("TestPackage")
-      expect(hash[:elements_count]).to eq(1)
-      expect(hash[:connectors_count]).to eq(1)
     end
+
+    let(:hash) { presenter.to_hash }
+
+    it { expect(hash).to be_a(Hash) }
+    it { expect(hash[:type]).to eq("Diagram") }
+    it { expect(hash[:name]).to eq("Test Diagram") }
+    it { expect(hash[:diagram_type]).to eq("Class") }
+    it { expect(hash[:package_name]).to eq("TestPackage") }
+    it { expect(hash[:elements_count]).to eq(1) }
+    it { expect(hash[:connectors_count]).to eq(1) }
   end
 
   describe "private methods" do
     describe "#build_elements_data" do
       context "with diagram_objects" do
         let(:mock_class) do
-          double("Class",
-                 name: "TestClass",
-                 stereotype: "entity",
-                 attributes: [],
-                 operations: [])
+          double("Class", name: "TestClass", stereotype: "entity",
+                          attributes: [], operations: [])
         end
 
         let(:diagram_object) do
-          double("DiagramObject",
-                 object_xmi_id: "CLASS_001",
-                 left: 100,
-                 top: 50,
-                 right: 220,
-                 bottom: 130,
-                 style: nil)
+          double("DiagramObject", object_xmi_id: "CLASS_001",
+                                  left: 100, top: 50, right: 220, bottom: 130, style: nil)
         end
 
+        let(:elements) { presenter.send(:build_elements_data) }
+
         before do
-          allow(diagram)
-            .to receive(:diagram_objects).and_return([diagram_object])
-          allow(repository).to receive(:classes_index).and_return([mock_class])
+          allow(diagram).to receive(:diagram_objects)
+            .and_return([diagram_object])
+          allow(repository).to receive(:classes_index)
+            .and_return([mock_class])
           allow(mock_class).to receive(:xmi_id).and_return("CLASS_001")
         end
 
-        it "converts each diagram_object to element data" do
-          elements = presenter.send(:build_elements_data)
-          expect(elements).to be_an(Array)
-          expect(elements.size).to eq(1)
-        end
+        it { expect(elements).to be_an(Array) }
+        it { expect(elements.size).to eq(1) }
+        it { expect(elements.first[:name]).to eq("TestClass") }
+        it { expect(elements.first[:x]).to eq(100) }
+        it { expect(elements.first[:y]).to eq(50) }
+        it { expect(elements.first[:width]).to eq(120) }
+        it { expect(elements.first[:height]).to eq(80) }
+        it { expect(elements.first[:type]).to be_a(String) }
+        it { expect(elements.first[:stereotype]).to eq("entity") }
+        it { expect(elements.first[:attributes]).to be_an(Array) }
+        it { expect(elements.first[:operations]).to be_an(Array) }
+        it { expect(elements.first[:element]).to eq(mock_class) }
+        it { expect(elements.first[:diagram_object]).to eq(diagram_object) }
 
-        it "looks up UML element by XMI ID" do
-          elements = presenter.send(:build_elements_data)
-          expect(elements.first[:name]).to eq("TestClass")
-        end
-
-        it "converts EA coordinates to SVG" do
-          elements = presenter.send(:build_elements_data)
-          expect(elements.first[:x]).to eq(100)
-          expect(elements.first[:y]).to eq(50)
-          expect(elements.first[:width]).to eq(120)
-          expect(elements.first[:height]).to eq(80)
-        end
-
-        it "extracts element name" do
-          elements = presenter.send(:build_elements_data)
-          expect(elements.first[:name]).to eq("TestClass")
-        end
-
-        it "determines element type" do
-          elements = presenter.send(:build_elements_data)
-          expect(elements.first[:type]).to be_a(String)
-        end
-
-        it "extracts stereotype" do
-          elements = presenter.send(:build_elements_data)
-          expect(elements.first[:stereotype]).to eq("entity")
-        end
-
-        it "extracts attributes" do
-          elements = presenter.send(:build_elements_data)
-          expect(elements.first[:attributes]).to be_an(Array)
-        end
-
-        it "extracts operations" do
-          elements = presenter.send(:build_elements_data)
-          expect(elements.first[:operations]).to be_an(Array)
-        end
-
-        it "includes original element" do
-          elements = presenter.send(:build_elements_data)
-          expect(elements.first[:element]).to eq(mock_class)
-        end
-
-        it "includes original diagram_object" do
-          elements = presenter.send(:build_elements_data)
-          expect(elements.first[:diagram_object]).to eq(diagram_object)
-        end
-
-        it "filters out nil elements when lookup fails" do
+        it "filters nil elements when lookup fails" do
           allow(repository).to receive(:classes_index).and_return([])
-          elements = presenter.send(:build_elements_data)
-          expect(elements).to be_empty
+          expect(presenter.send(:build_elements_data)).to be_empty
         end
       end
 
       context "without diagram_objects" do
-        before do
-          allow(diagram).to receive(:diagram_objects).and_return(nil)
-        end
+        before { allow(diagram).to receive(:diagram_objects).and_return(nil) }
 
-        it "returns empty array" do
-          elements = presenter.send(:build_elements_data)
-          expect(elements).to eq([])
-        end
+        it { expect(presenter.send(:build_elements_data)).to eq([]) }
       end
     end
 
@@ -318,634 +220,497 @@ RSpec.describe Lutaml::UmlRepository::Presenters::DiagramPresenter do
         end
 
         let(:diagram_link) do
-          double("DiagramLink",
-                 connector_xmi_id: "ASSOC_001",
-                 geometry: "SX=0;SY=0;EX=0;EY=0;",
-                 style: "SOID=OBJ1;EOID=OBJ2;",
-                 hidden: false)
+          double("DiagramLink", connector_xmi_id: "ASSOC_001",
+                                geometry: "SX=0;SY=0;EX=0;EY=0;",
+                                style: "SOID=OBJ1;EOID=OBJ2;", hidden: false)
         end
+
+        let(:connectors) { presenter.send(:build_connectors_data) }
 
         before do
           allow(diagram).to receive_messages(diagram_objects: [],
                                              diagram_links: [diagram_link])
-          allow(repository)
-            .to receive(:associations_index).and_return([mock_association])
+          allow(repository).to receive(:associations_index)
+            .and_return([mock_association])
           allow(mock_association).to receive(:xmi_id).and_return("ASSOC_001")
         end
 
-        it "converts each diagram_link to connector data" do
-          connectors = presenter.send(:build_connectors_data)
-          expect(connectors).to be_an(Array)
-          expect(connectors.size).to eq(1)
-        end
+        it { expect(connectors).to be_an(Array) }
+        it { expect(connectors.size).to eq(1) }
+        it { expect(connectors.first[:element]).to eq(mock_association) }
+        it { expect(connectors.first[:type]).to eq("association") }
+        it { expect(connectors.first[:geometry]).to eq("SX=0;SY=0;EX=0;EY=0;") }
+        it { expect(connectors.first[:diagram_link]).to eq(diagram_link) }
 
-        it "looks up connector by XMI ID" do
-          connectors = presenter.send(:build_connectors_data)
-          expect(connectors.first[:element]).to eq(mock_association)
-        end
-
-        it "determines connector type" do
-          connectors = presenter.send(:build_connectors_data)
-          expect(connectors.first[:type]).to eq("association")
-        end
-
-        it "includes geometry from diagram_link" do
-          connectors = presenter.send(:build_connectors_data)
-          expect(connectors.first[:geometry]).to eq("SX=0;SY=0;EX=0;EY=0;")
-        end
-
-        it "includes original element" do
-          connectors = presenter.send(:build_connectors_data)
-          expect(connectors.first[:element]).to eq(mock_association)
-        end
-
-        it "includes original diagram_link" do
-          connectors = presenter.send(:build_connectors_data)
-          expect(connectors.first[:diagram_link]).to eq(diagram_link)
-        end
-
-        it "filters out hidden connectors" do
+        it "filters hidden connectors" do
           allow(diagram_link).to receive(:hidden).and_return(true)
-          connectors = presenter.send(:build_connectors_data)
-          expect(connectors).to be_empty
+          expect(presenter.send(:build_connectors_data)).to be_empty
         end
 
-        it "handles missing connector gracefully" do
+        it "handles missing connector" do
           allow(repository).to receive(:associations_index).and_return([])
-          connectors = presenter.send(:build_connectors_data)
-          expect(connectors.first[:type]).to eq("association") # default type
+          expect(connectors.first[:type]).to eq("association")
         end
       end
 
       context "without diagram_links" do
-        before do
-          allow(diagram).to receive(:diagram_links).and_return(nil)
-        end
+        before { allow(diagram).to receive(:diagram_links).and_return(nil) }
 
-        it "returns empty array" do
-          connectors = presenter.send(:build_connectors_data)
-          expect(connectors).to eq([])
-        end
+        it { expect(presenter.send(:build_connectors_data)).to eq([]) }
       end
     end
 
     describe "#parse_diagram_link_style" do
-      it "parses SOID from style string" do
-        result = presenter.send(:parse_diagram_link_style,
-                                "SOID=12345;EOID=67890;")
-        expect(result[:soid]).to eq("12345")
+      it "parses SOID" do
+        r = presenter.send(:parse_diagram_link_style, "SOID=12345;EOID=67890;")
+        expect(r[:soid]).to eq("12345")
       end
 
-      it "parses EOID from style string" do
-        result = presenter.send(:parse_diagram_link_style,
-                                "SOID=12345;EOID=67890;")
-        expect(result[:eoid]).to eq("67890")
+      it "parses EOID" do
+        r = presenter.send(:parse_diagram_link_style, "SOID=12345;EOID=67890;")
+        expect(r[:eoid]).to eq("67890")
       end
 
-      it "handles nil style string" do
-        result = presenter.send(:parse_diagram_link_style, nil)
-        expect(result).to eq({})
-      end
+      it { expect(presenter.send(:parse_diagram_link_style, nil)).to eq({}) }
+      it { expect(presenter.send(:parse_diagram_link_style, "")).to eq({}) }
 
-      it "handles empty style string" do
-        result = presenter.send(:parse_diagram_link_style, "")
-        expect(result).to eq({})
-      end
-
-      it "handles malformed style string" do
-        result = presenter.send(:parse_diagram_link_style, "INVALID;SOID=123;")
-        expect(result[:soid]).to eq("123")
+      it "handles malformed style" do
+        r = presenter.send(:parse_diagram_link_style, "INVALID;SOID=123;")
+        expect(r[:soid]).to eq("123")
       end
 
       it "ignores unknown properties" do
-        result = presenter.send(:parse_diagram_link_style,
-                                "UNKNOWN=999;SOID=123;")
-        expect(result).not_to have_key(:unknown)
-        expect(result[:soid]).to eq("123")
+        r = presenter.send(:parse_diagram_link_style, "UNKNOWN=999;SOID=123;")
+        expect(r[:soid]).to eq("123")
       end
     end
 
     describe "#extract_ea_id" do
-      let(:diagram_object_with_duid) do
+      let(:obj_with_duid) do
         double("DiagramObject", style: "NSL=0;DUID=ABC123;BCol=123;")
       end
 
-      it "extracts DUID from diagram object style" do
-        ea_id = presenter.send(:extract_ea_id, diagram_object_with_duid)
-        expect(ea_id).to eq("ABC123")
-      end
+      it {
+        expect(presenter.send(:extract_ea_id, obj_with_duid)).to eq("ABC123")
+      }
 
       it "returns nil for missing style" do
-        object_without_style = double("DiagramObject")
-        allow(object_without_style)
-          .to receive(:respond_to?).with(:style).and_return(false)
-
-        ea_id = presenter.send(:extract_ea_id, object_without_style)
-        expect(ea_id).to be_nil
+        obj = double("DiagramObject")
+        allow(obj).to receive(:respond_to?).with(:style).and_return(false)
+        expect(presenter.send(:extract_ea_id, obj)).to be_nil
       end
 
-      it "returns nil for nil style" do
-        object_with_nil_style = double("DiagramObject", style: nil)
-        ea_id = presenter.send(:extract_ea_id, object_with_nil_style)
-        expect(ea_id).to be_nil
+      it do
+        expect(presenter.send(:extract_ea_id,
+                              double("DiagramObject", style: nil))).to be_nil
       end
 
-      it "returns nil for missing DUID" do
-        object_without_duid = double("DiagramObject", style: "NSL=0;BCol=123;")
-        ea_id = presenter.send(:extract_ea_id, object_without_duid)
-        expect(ea_id).to be_nil
+      it do
+        expect(presenter.send(:extract_ea_id,
+                              double("DiagramObject",
+                                     style: "NSL=0;BCol=123;"))).to be_nil
       end
     end
 
     describe "#find_element_by_xmi_id" do
-      let(:mock_class) { double("Class", xmi_id: "CLASS_001") }
-      let(:mock_package) { double("Package", xmi_id: "PKG_001") }
+      let(:mock_cls) { double("Class", xmi_id: "CLASS_001") }
+      let(:mock_pkg) { double("Package", xmi_id: "PKG_001") }
 
       before do
-        allow(repository).to receive_messages(classes_index: [mock_class],
-                                              packages_index: [mock_package])
+        allow(repository).to receive_messages(classes_index: [mock_cls],
+                                              packages_index: [mock_pkg])
       end
 
-      it "finds element in classes_index" do
-        element = presenter.send(:find_element_by_xmi_id, "CLASS_001")
-        expect(element).to eq(mock_class)
-      end
+      it {
+        expect(presenter.send(:find_element_by_xmi_id,
+                              "CLASS_001")).to eq(mock_cls)
+      }
 
-      it "finds element in packages_index" do
-        element = presenter.send(:find_element_by_xmi_id, "PKG_001")
-        expect(element).to eq(mock_package)
-      end
+      it {
+        expect(presenter.send(:find_element_by_xmi_id,
+                              "PKG_001")).to eq(mock_pkg)
+      }
 
-      it "returns nil when not found" do
-        element = presenter.send(:find_element_by_xmi_id, "NOT_FOUND")
-        expect(element).to be_nil
-      end
+      it {
+        expect(presenter.send(:find_element_by_xmi_id, "NOT_FOUND")).to be_nil
+      }
 
-      it "returns nil for nil xmi_id" do
-        element = presenter.send(:find_element_by_xmi_id, nil)
-        expect(element).to be_nil
-      end
+      it { expect(presenter.send(:find_element_by_xmi_id, nil)).to be_nil }
 
       it "returns nil when repository is nil" do
-        presenter_without_repo = described_class.new(diagram, nil)
-        element = presenter_without_repo.send(:find_element_by_xmi_id,
-                                              "CLASS_001")
-        expect(element).to be_nil
+        pnr = described_class.new(diagram, nil)
+        expect(pnr.send(:find_element_by_xmi_id, "CLASS_001")).to be_nil
       end
     end
 
     describe "#find_connector_by_xmi_id" do
-      let(:mock_association) { double("Association", xmi_id: "ASSOC_001") }
-      let(:mock_generalization) { double("Generalization", xmi_id: "GEN_001") }
-      let(:mock_class_with_gen) do
-        double("Class", generalization: mock_generalization)
-      end
+      let(:mock_assoc) { double("Association", xmi_id: "ASSOC_001") }
+      let(:mock_gen) { double("Generalization", xmi_id: "GEN_001") }
+      let(:mock_class_gen) { double("Class", generalization: mock_gen) }
 
       before do
-        allow(repository)
-          .to receive_messages(associations_index: [mock_association],
-                               classes_index: [mock_class_with_gen])
-        allow(mock_class_with_gen)
-          .to receive(:respond_to?).with(:generalization).and_return(true)
-        allow(mock_generalization)
-          .to receive(:respond_to?).with(:xmi_id).and_return(true)
+        allow(repository).to receive_messages(
+          associations_index: [mock_assoc], classes_index: [mock_class_gen],
+        )
+        allow(mock_class_gen).to receive(:respond_to?)
+          .with(:generalization).and_return(true)
+        allow(mock_gen).to receive(:respond_to?)
+          .with(:xmi_id).and_return(true)
       end
 
-      it "finds connector in associations_index" do
-        connector = presenter.send(:find_connector_by_xmi_id, "ASSOC_001")
-        expect(connector).to eq(mock_association)
-      end
+      it {
+        expect(presenter.send(:find_connector_by_xmi_id,
+                              "ASSOC_001")).to eq(mock_assoc)
+      }
 
-      it "finds generalization in class" do
-        connector = presenter.send(:find_connector_by_xmi_id, "GEN_001")
-        expect(connector).to eq(mock_generalization)
-      end
+      it {
+        expect(presenter.send(:find_connector_by_xmi_id,
+                              "GEN_001")).to eq(mock_gen)
+      }
 
       it "handles array of generalizations" do
-        gen_array = [mock_generalization]
-        allow(mock_class_with_gen)
-          .to receive(:generalization).and_return(gen_array)
-
-        connector = presenter.send(:find_connector_by_xmi_id, "GEN_001")
-        expect(connector).to eq(mock_generalization)
+        allow(mock_class_gen).to receive(:generalization).and_return([mock_gen])
+        expect(presenter.send(:find_connector_by_xmi_id,
+                              "GEN_001")).to eq(mock_gen)
       end
 
-      it "finds association in class" do
-        mock_class_assoc = double("Association", xmi_id: "CLASS_ASSOC")
-        mock_class_with_assoc = double("Class",
-                                       associations: [mock_class_assoc])
-        allow(repository)
-          .to receive(:classes_index).and_return([mock_class_with_assoc])
-        allow(mock_class_with_assoc)
-          .to receive(:respond_to?).with(:generalization).and_return(false)
-        allow(mock_class_with_assoc)
-          .to receive(:generalization).and_return(nil)
-        allow(mock_class_with_assoc)
-          .to receive(:respond_to?).with(:associations).and_return(true)
-        allow(mock_class_assoc)
-          .to receive(:respond_to?).with(:xmi_id).and_return(true)
+      context "with class associations" do
+        let(:mca) { double("Association", xmi_id: "CLASS_ASSOC") }
+        let(:mcwa) { double("Class", associations: [mca]) }
 
-        connector = presenter.send(:find_connector_by_xmi_id, "CLASS_ASSOC")
-        expect(connector).to eq(mock_class_assoc)
+        before do
+          allow(repository).to receive(:classes_index).and_return([mcwa])
+          allow(mcwa).to receive(:respond_to?).with(:generalization).and_return(false)
+          allow(mcwa).to receive(:generalization).and_return(nil)
+          allow(mcwa).to receive(:respond_to?).with(:associations).and_return(true)
+          allow(mca).to receive(:respond_to?).with(:xmi_id).and_return(true)
+        end
+
+        it {
+          expect(presenter.send(:find_connector_by_xmi_id,
+                                "CLASS_ASSOC")).to eq(mca)
+        }
       end
 
       it "returns nil when not found" do
         allow(repository).to receive_messages(associations_index: [],
                                               classes_index: [])
-
-        connector = presenter.send(:find_connector_by_xmi_id, "NOT_FOUND")
-        expect(connector).to be_nil
+        expect(presenter.send(:find_connector_by_xmi_id, "NOT_FOUND")).to be_nil
       end
     end
 
     describe "#find_connector_target" do
-      let(:elements_map) do
-        { "TARGET_ID" => { id: "TARGET_ID", name: "Target" } }
+      let(:elements_map) { { "TARGET_ID" => { id: "TARGET_ID" } } }
+      let(:target_result) do
+        presenter.send(:find_connector_target, conn, elements_map)
       end
 
-      it "uses target property when available" do
-        connector = double("Connector", target: "TARGET_ID")
-        allow(connector).to receive(:respond_to?).with(:target).and_return(true)
+      context "with target property" do
+        let(:conn) { double("Connector", target: "TARGET_ID") }
 
-        target = presenter.send(:find_connector_target, connector, elements_map)
-        expect(target[:id]).to eq("TARGET_ID")
+        before do
+          allow(conn).to receive(:respond_to?).with(:target).and_return(true)
+        end
+
+        it { expect(target_result[:id]).to eq("TARGET_ID") }
       end
 
-      it "uses supplier property when available" do
-        connector = double("Connector", supplier: "TARGET_ID")
-        allow(connector)
-          .to receive(:respond_to?).with(:target).and_return(false)
-        allow(connector)
-          .to receive(:respond_to?).with(:supplier).and_return(true)
+      context "with supplier property" do
+        let(:conn) { double("Connector", supplier: "TARGET_ID") }
 
-        target = presenter.send(:find_connector_target, connector, elements_map)
-        expect(target[:id]).to eq("TARGET_ID")
+        before do
+          allow(conn).to receive(:respond_to?).with(:target).and_return(false)
+          allow(conn).to receive(:respond_to?).with(:supplier).and_return(true)
+        end
+
+        it { expect(target_result[:id]).to eq("TARGET_ID") }
       end
 
-      it "uses general property when available" do
-        connector = double("Connector", general: "TARGET_ID")
-        allow(connector)
-          .to receive(:respond_to?).with(:target).and_return(false)
-        allow(connector)
-          .to receive(:respond_to?).with(:supplier).and_return(false)
-        allow(connector)
-          .to receive(:respond_to?).with(:general).and_return(true)
+      context "with general property" do
+        let(:conn) { double("Connector", general: "TARGET_ID") }
 
-        target = presenter.send(:find_connector_target, connector, elements_map)
-        expect(target[:id]).to eq("TARGET_ID")
+        before do
+          allow(conn).to receive(:respond_to?).with(:target).and_return(false)
+          allow(conn).to receive(:respond_to?).with(:supplier).and_return(false)
+          allow(conn).to receive(:respond_to?).with(:general).and_return(true)
+        end
+
+        it { expect(target_result[:id]).to eq("TARGET_ID") }
       end
 
-      it "uses second member_end when available" do
-        connector = double("Connector", member_end: ["SRC_ID", "TARGET_ID"])
-        allow(connector)
-          .to receive(:respond_to?).with(:target).and_return(false)
-        allow(connector)
-          .to receive(:respond_to?).with(:supplier).and_return(false)
-        allow(connector)
-          .to receive(:respond_to?).with(:general).and_return(false)
-        allow(connector)
-          .to receive(:respond_to?).with(:member_end).and_return(true)
+      context "with member_end" do
+        let(:conn) { double("Connector", member_end: ["SRC", "TARGET_ID"]) }
 
-        target = presenter.send(:find_connector_target, connector, elements_map)
-        expect(target[:id]).to eq("TARGET_ID")
+        before do
+          allow(conn).to receive(:respond_to?).with(:target).and_return(false)
+          allow(conn).to receive(:respond_to?).with(:supplier).and_return(false)
+          allow(conn).to receive(:respond_to?).with(:general).and_return(false)
+          allow(conn).to receive(:respond_to?).with(:member_end).and_return(true)
+        end
+
+        it { expect(target_result[:id]).to eq("TARGET_ID") }
       end
 
-      it "returns nil when not found" do
-        connector = double("Connector")
-        allow(connector).to receive(:respond_to?).and_return(false)
+      context "with no matching property" do
+        let(:conn) { double("Connector") }
 
-        target = presenter.send(:find_connector_target, connector, elements_map)
-        expect(target).to be_nil
+        before { allow(conn).to receive(:respond_to?).and_return(false) }
+
+        it { expect(target_result).to be_nil }
       end
     end
 
     describe "#find_connector_source" do
-      let(:elements_map) do
-        { "SOURCE_ID" => { id: "SOURCE_ID", name: "Source" } }
+      let(:elements_map) { { "SOURCE_ID" => { id: "SOURCE_ID" } } }
+      let(:source_result) do
+        presenter.send(:find_connector_source, conn, elements_map)
       end
 
-      it "uses source property when available" do
-        connector = double("Connector", source: "SOURCE_ID")
-        allow(connector).to receive(:respond_to?).with(:source).and_return(true)
+      context "with source property" do
+        let(:conn) { double("Connector", source: "SOURCE_ID") }
 
-        source = presenter.send(:find_connector_source, connector, elements_map)
-        expect(source[:id]).to eq("SOURCE_ID")
+        before do
+          allow(conn).to receive(:respond_to?).with(:source).and_return(true)
+        end
+
+        it { expect(source_result[:id]).to eq("SOURCE_ID") }
       end
 
-      it "uses client property when available" do
-        connector = double("Connector", client: "SOURCE_ID")
-        allow(connector)
-          .to receive(:respond_to?).with(:source).and_return(false)
-        allow(connector)
-          .to receive(:respond_to?).with(:client).and_return(true)
+      context "with client property" do
+        let(:conn) { double("Connector", client: "SOURCE_ID") }
 
-        source = presenter.send(:find_connector_source, connector, elements_map)
-        expect(source[:id]).to eq("SOURCE_ID")
+        before do
+          allow(conn).to receive(:respond_to?).with(:source).and_return(false)
+          allow(conn).to receive(:respond_to?).with(:client).and_return(true)
+        end
+
+        it { expect(source_result[:id]).to eq("SOURCE_ID") }
       end
 
-      it "uses specific property when available" do
-        connector = double("Connector", specific: "SOURCE_ID")
-        allow(connector)
-          .to receive(:respond_to?).with(:source).and_return(false)
-        allow(connector)
-          .to receive(:respond_to?).with(:client).and_return(false)
-        allow(connector)
-          .to receive(:respond_to?).with(:specific).and_return(true)
+      context "with specific property" do
+        let(:conn) { double("Connector", specific: "SOURCE_ID") }
 
-        source = presenter.send(:find_connector_source, connector, elements_map)
-        expect(source[:id]).to eq("SOURCE_ID")
+        before do
+          allow(conn).to receive(:respond_to?).with(:source).and_return(false)
+          allow(conn).to receive(:respond_to?).with(:client).and_return(false)
+          allow(conn).to receive(:respond_to?).with(:specific).and_return(true)
+        end
+
+        it { expect(source_result[:id]).to eq("SOURCE_ID") }
       end
 
-      it "uses owner_end property when available" do
-        connector = double("Connector", owner_end: "SOURCE_ID")
-        allow(connector)
-          .to receive(:respond_to?).with(:source).and_return(false)
-        allow(connector)
-          .to receive(:respond_to?).with(:client).and_return(false)
-        allow(connector)
-          .to receive(:respond_to?).with(:specific).and_return(false)
-        allow(connector)
-          .to receive(:respond_to?).with(:owner_end).and_return(true)
+      context "with owner_end property" do
+        let(:conn) { double("Connector", owner_end: "SOURCE_ID") }
 
-        source = presenter.send(:find_connector_source, connector, elements_map)
-        expect(source[:id]).to eq("SOURCE_ID")
+        before do
+          allow(conn).to receive(:respond_to?).with(:source).and_return(false)
+          allow(conn).to receive(:respond_to?).with(:client).and_return(false)
+          allow(conn).to receive(:respond_to?).with(:specific).and_return(false)
+          allow(conn).to receive(:respond_to?).with(:owner_end).and_return(true)
+        end
+
+        it { expect(source_result[:id]).to eq("SOURCE_ID") }
       end
 
-      it "uses first member_end when available" do
-        connector = double("Connector", member_end: ["SOURCE_ID", "TARGET_ID"])
-        allow(connector)
-          .to receive(:respond_to?).with(:source).and_return(false)
-        allow(connector)
-          .to receive(:respond_to?).with(:client).and_return(false)
-        allow(connector)
-          .to receive(:respond_to?).with(:specific).and_return(false)
-        allow(connector)
-          .to receive(:respond_to?).with(:owner_end).and_return(false)
-        allow(connector)
-          .to receive(:respond_to?).with(:member_end).and_return(true)
+      context "with member_end" do
+        let(:conn) { double("Connector", member_end: ["SOURCE_ID", "TGT"]) }
 
-        source = presenter.send(:find_connector_source, connector, elements_map)
-        expect(source[:id]).to eq("SOURCE_ID")
+        before do
+          allow(conn).to receive(:respond_to?).with(:source).and_return(false)
+          allow(conn).to receive(:respond_to?).with(:client).and_return(false)
+          allow(conn).to receive(:respond_to?).with(:specific).and_return(false)
+          allow(conn).to receive(:respond_to?).with(:owner_end).and_return(false)
+          allow(conn).to receive(:respond_to?).with(:member_end).and_return(true)
+        end
+
+        it { expect(source_result[:id]).to eq("SOURCE_ID") }
       end
 
-      it "returns nil when not found" do
-        connector = double("Connector")
-        allow(connector).to receive(:respond_to?).and_return(false)
+      context "with no matching property" do
+        let(:conn) { double("Connector") }
 
-        source = presenter.send(:find_connector_source, connector, elements_map)
-        expect(source).to be_nil
+        before { allow(conn).to receive(:respond_to?).and_return(false) }
+
+        it { expect(source_result).to be_nil }
       end
     end
 
     describe "#determine_element_type" do
-      it "returns 'datatype' for DataType class" do
-        element = double("Element", class: double(name: "Lutaml::Uml::DataType"))
-        type = presenter.send(:determine_element_type, element)
-        expect(type).to eq("datatype")
+      it "returns 'datatype' for DataType" do
+        el = double("Element", class: double(name: "Lutaml::Uml::DataType"))
+        expect(presenter.send(:determine_element_type, el)).to eq("datatype")
       end
 
-      it "returns 'enum' for Enum class" do
-        element = double("Element", class: double(name: "Lutaml::Uml::Enum"))
-        type = presenter.send(:determine_element_type, element)
-        expect(type).to eq("enum")
+      it "returns 'enum' for Enum" do
+        el = double("Element", class: double(name: "Lutaml::Uml::Enum"))
+        expect(presenter.send(:determine_element_type, el)).to eq("enum")
       end
 
-      it "returns 'class' for Class class" do
-        element = double("Element", class: double(name: "Lutaml::Uml::Class"))
-        type = presenter.send(:determine_element_type, element)
-        expect(type).to eq("class")
+      it "returns 'class' for Class" do
+        el = double("Element", class: double(name: "Lutaml::Uml::Class"))
+        expect(presenter.send(:determine_element_type, el)).to eq("class")
       end
 
-      it "returns 'package' for Package class" do
-        element = double("Element", class: double(name: "Lutaml::Uml::Package"))
-        type = presenter.send(:determine_element_type, element)
-        expect(type).to eq("package")
+      it "returns 'package' for Package" do
+        el = double("Element", class: double(name: "Lutaml::Uml::Package"))
+        expect(presenter.send(:determine_element_type, el)).to eq("package")
       end
 
-      it "defaults to 'class' for unknown types" do
-        element = double("Element", class: double(name: "Unknown::Type"))
-        type = presenter.send(:determine_element_type, element)
-        expect(type).to eq("class")
+      it "defaults to 'class' for unknown" do
+        el = double("Element", class: double(name: "Unknown::Type"))
+        expect(presenter.send(:determine_element_type, el)).to eq("class")
       end
     end
 
     describe "#determine_connector_type" do
-      it "returns 'generalization' for Generalization class" do
-        connector = double("Connector", class: double(name: "Lutaml::Uml::Generalization"))
-        type = presenter.send(:determine_connector_type, connector)
-        expect(type).to eq("generalization")
-      end
+      let(:gen_type) { double(name: "Lutaml::Uml::Generalization") }
+      let(:assoc_type) { double(name: "Lutaml::Uml::Association") }
+      let(:dep_type) { double(name: "Lutaml::Uml::Dependency") }
+      let(:real_type) { double(name: "Lutaml::Uml::Realization") }
+      let(:unknown_type) { double(name: "Unknown::Type") }
 
-      it "returns 'association' for Association class" do
-        connector = double("Connector", class: double(name: "Lutaml::Uml::Association"))
-        type = presenter.send(:determine_connector_type, connector)
-        expect(type).to eq("association")
-      end
+      it {
+        expect(presenter.send(:determine_connector_type,
+                              double(class: gen_type))).to eq("generalization")
+      }
 
-      it "returns 'dependency' for Dependency class" do
-        connector = double("Connector", class: double(name: "Lutaml::Uml::Dependency"))
-        type = presenter.send(:determine_connector_type, connector)
-        expect(type).to eq("dependency")
-      end
+      it {
+        expect(presenter.send(:determine_connector_type,
+                              double(class: assoc_type))).to eq("association")
+      }
 
-      it "returns 'realization' for Realization class" do
-        connector = double("Connector", class: double(name: "Lutaml::Uml::Realization"))
-        type = presenter.send(:determine_connector_type, connector)
-        expect(type).to eq("realization")
-      end
+      it {
+        expect(presenter.send(:determine_connector_type,
+                              double(class: dep_type))).to eq("dependency")
+      }
 
-      it "defaults to 'association' for unknown types" do
-        connector = double("Connector", class: double(name: "Unknown::Type"))
-        type = presenter.send(:determine_connector_type, connector)
-        expect(type).to eq("association")
-      end
+      it {
+        expect(presenter.send(:determine_connector_type,
+                              double(class: real_type))).to eq("realization")
+      }
+
+      it {
+        expect(presenter.send(:determine_connector_type,
+                              double(class: unknown_type))).to eq("association")
+      }
     end
 
     describe "#extract_stereotype" do
       it "extracts stereotype string" do
-        element = double("Element", stereotype: "entity")
-        allow(element)
-          .to receive(:respond_to?).with(:stereotype).and_return(true)
-
-        stereotype = presenter.send(:extract_stereotype, element)
-        expect(stereotype).to eq("entity")
+        el = double("Element", stereotype: "entity")
+        allow(el).to receive(:respond_to?).with(:stereotype).and_return(true)
+        expect(presenter.send(:extract_stereotype, el)).to eq("entity")
       end
 
       it "handles array of stereotypes" do
-        element = double("Element", stereotype: ["entity", "feature"])
-        allow(element)
-          .to receive(:respond_to?).with(:stereotype).and_return(true)
-
-        stereotype = presenter.send(:extract_stereotype, element)
-        expect(stereotype).to eq("entity")
+        el = double("Element", stereotype: ["entity", "feature"])
+        allow(el).to receive(:respond_to?).with(:stereotype).and_return(true)
+        expect(presenter.send(:extract_stereotype, el)).to eq("entity")
       end
 
       it "returns nil when not available" do
-        element = double("Element")
-        allow(element)
-          .to receive(:respond_to?).with(:stereotype).and_return(false)
-
-        stereotype = presenter.send(:extract_stereotype, element)
-        expect(stereotype).to be_nil
+        el = double("Element")
+        allow(el).to receive(:respond_to?).with(:stereotype).and_return(false)
+        expect(presenter.send(:extract_stereotype, el)).to be_nil
       end
 
       it "returns nil for nil stereotype" do
-        element = double("Element", stereotype: nil)
-        allow(element)
-          .to receive(:respond_to?).with(:stereotype).and_return(true)
-
-        stereotype = presenter.send(:extract_stereotype, element)
-        expect(stereotype).to be_nil
+        el = double("Element", stereotype: nil)
+        allow(el).to receive(:respond_to?).with(:stereotype).and_return(true)
+        expect(presenter.send(:extract_stereotype, el)).to be_nil
       end
     end
 
     describe "#extract_attributes" do
-      let(:mock_attribute) do
+      let(:mock_attr) do
         double("Attribute", name: "id", type: "Integer", visibility: "public")
       end
 
-      it "extracts array of attribute data" do
-        element = double("Element", attributes: [mock_attribute])
-        allow(element)
-          .to receive(:respond_to?).with(:attributes).and_return(true)
-        allow(mock_attribute)
-          .to receive(:respond_to?).with(:visibility).and_return(true)
-
-        attributes = presenter.send(:extract_attributes, element)
-        expect(attributes).to be_an(Array)
-        expect(attributes.size).to eq(1)
+      let(:element) do
+        el = double("Element", attributes: [mock_attr])
+        allow(el).to receive(:respond_to?).with(:attributes).and_return(true)
+        allow(mock_attr).to receive(:respond_to?).with(:visibility).and_return(true)
+        el
       end
 
-      it "includes name, type, visibility" do
-        element = double("Element", attributes: [mock_attribute])
-        allow(element)
-          .to receive(:respond_to?).with(:attributes).and_return(true)
-        allow(mock_attribute)
-          .to receive(:respond_to?).with(:visibility).and_return(true)
+      let(:attrs) { presenter.send(:extract_attributes, element) }
 
-        attributes = presenter.send(:extract_attributes, element)
-        expect(attributes.first[:name]).to eq("id")
-        expect(attributes.first[:type]).to eq("Integer")
-        expect(attributes.first[:visibility]).to eq("public")
-      end
+      it { expect(attrs).to be_an(Array) }
+      it { expect(attrs.size).to eq(1) }
+      it { expect(attrs.first[:name]).to eq("id") }
+      it { expect(attrs.first[:type]).to eq("Integer") }
+      it { expect(attrs.first[:visibility]).to eq("public") }
 
       it "returns empty array when not available" do
-        element = double("Element")
-        allow(element)
-          .to receive(:respond_to?).with(:attributes).and_return(false)
-
-        attributes = presenter.send(:extract_attributes, element)
-        expect(attributes).to eq([])
+        el = double("Element")
+        allow(el).to receive(:respond_to?).with(:attributes).and_return(false)
+        expect(presenter.send(:extract_attributes, el)).to eq([])
       end
 
       it "returns empty array for nil attributes" do
-        element = double("Element", attributes: nil)
-        allow(element)
-          .to receive(:respond_to?).with(:attributes).and_return(true)
-
-        attributes = presenter.send(:extract_attributes, element)
-        expect(attributes).to eq([])
+        el = double("Element", attributes: nil)
+        allow(el).to receive(:respond_to?).with(:attributes).and_return(true)
+        expect(presenter.send(:extract_attributes, el)).to eq([])
       end
     end
 
     describe "#extract_operations" do
-      let(:mock_parameter) do
-        double("Parameter", name: "value", type: "String")
+      let(:mock_param) { double("Parameter", name: "value", type: "String") }
+      let(:mock_op) do
+        double("Operation", name: "setValue", visibility: "public",
+                            return_type: "void", owned_parameter: [mock_param])
       end
 
-      let(:mock_operation) do
-        double("Operation",
-               name: "setValue",
-               visibility: "public",
-               return_type: "void",
-               owned_parameter: [mock_parameter])
+      let(:element) do
+        el = double("Element", operations: [mock_op])
+        allow(el).to receive(:respond_to?).with(:operations).and_return(true)
+        allow(mock_op).to receive(:respond_to?).with(:visibility).and_return(true)
+        allow(mock_op).to receive(:respond_to?).with(:return_type).and_return(true)
+        allow(mock_op).to receive(:respond_to?).with(:owned_parameter).and_return(true)
+        el
       end
 
-      it "extracts array of operation data" do
-        element = double("Element", operations: [mock_operation])
-        allow(element)
-          .to receive(:respond_to?).with(:operations).and_return(true)
-        allow(mock_operation)
-          .to receive(:respond_to?).with(:visibility).and_return(true)
-        allow(mock_operation)
-          .to receive(:respond_to?).with(:return_type).and_return(true)
-        allow(mock_operation)
-          .to receive(:respond_to?).with(:owned_parameter).and_return(true)
+      let(:ops) { presenter.send(:extract_operations, element) }
 
-        operations = presenter.send(:extract_operations, element)
-        expect(operations).to be_an(Array)
-        expect(operations.size).to eq(1)
-      end
-
-      it "includes name, visibility, return_type, parameters" do
-        element = double("Element", operations: [mock_operation])
-        allow(element)
-          .to receive(:respond_to?).with(:operations).and_return(true)
-        allow(mock_operation)
-          .to receive(:respond_to?).with(:visibility).and_return(true)
-        allow(mock_operation)
-          .to receive(:respond_to?).with(:return_type).and_return(true)
-        allow(mock_operation)
-          .to receive(:respond_to?).with(:owned_parameter).and_return(true)
-
-        operations = presenter.send(:extract_operations, element)
-        expect(operations.first[:name]).to eq("setValue")
-        expect(operations.first[:visibility]).to eq("public")
-        expect(operations.first[:return_type]).to eq("void")
-        expect(operations.first[:parameters]).to be_an(Array)
-      end
+      it { expect(ops).to be_an(Array) }
+      it { expect(ops.size).to eq(1) }
+      it { expect(ops.first[:name]).to eq("setValue") }
+      it { expect(ops.first[:visibility]).to eq("public") }
+      it { expect(ops.first[:return_type]).to eq("void") }
+      it { expect(ops.first[:parameters]).to be_an(Array) }
 
       it "returns empty array when not available" do
-        element = double("Element")
-        allow(element)
-          .to receive(:respond_to?).with(:operations).and_return(false)
-
-        operations = presenter.send(:extract_operations, element)
-        expect(operations).to eq([])
+        el = double("Element")
+        allow(el).to receive(:respond_to?).with(:operations).and_return(false)
+        expect(presenter.send(:extract_operations, el)).to eq([])
       end
     end
 
     describe "#extract_parameters" do
-      let(:mock_parameter) do
-        double("Parameter", name: "value", type: "String")
+      let(:mock_param) { double("Parameter", name: "value", type: "String") }
+      let(:operation) do
+        op = double("Operation", owned_parameter: [mock_param])
+        allow(op).to receive(:respond_to?).with(:owned_parameter).and_return(true)
+        op
       end
 
-      it "extracts array of parameter data" do
-        operation = double("Operation", owned_parameter: [mock_parameter])
-        allow(operation)
-          .to receive(:respond_to?).with(:owned_parameter).and_return(true)
+      let(:params) { presenter.send(:extract_parameters, operation) }
 
-        parameters = presenter.send(:extract_parameters, operation)
-        expect(parameters).to be_an(Array)
-        expect(parameters.size).to eq(1)
-      end
-
-      it "includes name and type" do
-        operation = double("Operation", owned_parameter: [mock_parameter])
-        allow(operation)
-          .to receive(:respond_to?).with(:owned_parameter).and_return(true)
-
-        parameters = presenter.send(:extract_parameters, operation)
-        expect(parameters.first[:name]).to eq("value")
-        expect(parameters.first[:type]).to eq("String")
-      end
+      it { expect(params).to be_an(Array) }
+      it { expect(params.size).to eq(1) }
+      it { expect(params.first[:name]).to eq("value") }
+      it { expect(params.first[:type]).to eq("String") }
 
       it "returns empty array when not available" do
-        operation = double("Operation")
-        allow(operation)
-          .to receive(:respond_to?).with(:owned_parameter).and_return(false)
-
-        parameters = presenter.send(:extract_parameters, operation)
-        expect(parameters).to eq([])
+        op = double("Operation")
+        allow(op).to receive(:respond_to?).with(:owned_parameter).and_return(false)
+        expect(presenter.send(:extract_parameters, op)).to eq([])
       end
 
       it "returns empty array for nil parameters" do
-        operation = double("Operation", owned_parameter: nil)
-        allow(operation)
-          .to receive(:respond_to?).with(:owned_parameter).and_return(true)
-
-        parameters = presenter.send(:extract_parameters, operation)
-        expect(parameters).to eq([])
+        op = double("Operation", owned_parameter: nil)
+        allow(op).to receive(:respond_to?).with(:owned_parameter).and_return(true)
+        expect(presenter.send(:extract_parameters, op)).to eq([])
       end
     end
   end
@@ -953,72 +718,42 @@ RSpec.describe Lutaml::UmlRepository::Presenters::DiagramPresenter do
   describe "DiagramRendererWrapper" do
     let(:layout_engine) { Lutaml::Ea::Diagram::LayoutEngine.new }
     let(:diagram_data) do
-      {
-        name: "Test",
-        elements: [
-          { id: "1", x: 0, y: 0, width: 100, height: 80 },
-        ],
-        connectors: [
-          { id: "c1", type: "association" },
-        ],
-      }
+      { name: "Test",
+        elements: [{ id: "1", x: 0, y: 0, width: 100, height: 80 }],
+        connectors: [{ id: "c1", type: "association" }] }
     end
     let(:wrapper) do
       described_class::DiagramRendererWrapper.new(diagram_data, layout_engine)
     end
 
     describe "#initialize" do
-      it "stores diagram_data" do
-        expect(wrapper.diagram_data).to eq(diagram_data)
-      end
-
-      it "stores elements from diagram_data" do
-        expect(wrapper.elements).to eq(diagram_data[:elements])
-      end
-
-      it "stores connectors from diagram_data" do
-        expect(wrapper.connectors).to eq(diagram_data[:connectors])
-      end
-
-      it "calculates bounds using layout_engine" do
-        expect(wrapper.bounds).to be_a(Hash)
-        expect(wrapper.bounds).to have_key(:x)
-        expect(wrapper.bounds).to have_key(:y)
-        expect(wrapper.bounds).to have_key(:width)
-        expect(wrapper.bounds).to have_key(:height)
-      end
+      it { expect(wrapper.diagram_data).to eq(diagram_data) }
+      it { expect(wrapper.elements).to eq(diagram_data[:elements]) }
+      it { expect(wrapper.connectors).to eq(diagram_data[:connectors]) }
+      it { expect(wrapper.bounds).to be_a(Hash) }
+      it { expect(wrapper.bounds).to have_key(:x) }
+      it { expect(wrapper.bounds).to have_key(:y) }
+      it { expect(wrapper.bounds).to have_key(:width) }
+      it { expect(wrapper.bounds).to have_key(:height) }
 
       it "handles empty elements" do
-        empty_data = { name: "Empty", elements: [], connectors: [] }
-        empty_wrapper = described_class::DiagramRendererWrapper
-          .new(empty_data, layout_engine)
-        expect(empty_wrapper.elements).to eq([])
+        d = { name: "Empty", elements: [], connectors: [] }
+        w = described_class::DiagramRendererWrapper.new(d, layout_engine)
+        expect(w.elements).to eq([])
       end
 
       it "handles nil elements" do
-        nil_data = { name: "Nil", elements: nil, connectors: nil }
-        nil_wrapper = described_class::DiagramRendererWrapper
-          .new(nil_data, layout_engine)
-        expect(nil_wrapper.elements).to eq([])
+        d = { name: "Nil", elements: nil, connectors: nil }
+        w = described_class::DiagramRendererWrapper.new(d, layout_engine)
+        expect(w.elements).to eq([])
       end
     end
 
     describe "accessors" do
-      it "provides diagram_data accessor" do
-        expect(wrapper).to respond_to(:diagram_data)
-      end
-
-      it "provides bounds accessor" do
-        expect(wrapper).to respond_to(:bounds)
-      end
-
-      it "provides elements accessor" do
-        expect(wrapper).to respond_to(:elements)
-      end
-
-      it "provides connectors accessor" do
-        expect(wrapper).to respond_to(:connectors)
-      end
+      it { expect(wrapper).to respond_to(:diagram_data) }
+      it { expect(wrapper).to respond_to(:bounds) }
+      it { expect(wrapper).to respond_to(:elements) }
+      it { expect(wrapper).to respond_to(:connectors) }
     end
   end
 end

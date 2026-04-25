@@ -115,18 +115,19 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
           .to be_empty
       end
 
-      it "correctly parses package classes" do
+      it "correctly parses package classes", :aggregate_failures do
         expect(first_package.classes.map(&:name)).to(eq(expected_class_names))
         expect(first_package.classes.map(&:xmi_id))
           .to(eq(expected_class_xmi_ids))
       end
 
-      it "correctly parses entities of enums type" do
+      it "correctly parses entities of enums type", :aggregate_failures do
         expect(first_package.enums.map(&:name)).to(eq(expected_enum_names))
         expect(first_package.enums.map(&:xmi_id)).to(eq(expected_enum_xmi_ids))
       end
 
-      it "correctly parses entities and attributes for class" do
+      it "correctly parses entities and attributes for class",
+         :aggregate_failures do
         klass = first_package.classes.find do |entity|
           entity.name == "RequirementType"
         end
@@ -144,7 +145,7 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
           .to(eq(expected_association_names))
       end
 
-      it "correctly parses diagrams for package" do
+      it "correctly parses diagrams for package", :aggregate_failures do
         root_package = output.packages.first
         expect(root_package.diagrams.length).to(eq(1))
         expect(root_package.diagrams.map(&:name))
@@ -153,7 +154,7 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
           .to(eq(["aada\n"]))
       end
 
-      it "correctly parses connector for class" do
+      it "correctly parses connector for class", :aggregate_failures do
         root_package = output.packages.first
         test_class = root_package.classes.first
         expect(test_class.associations.count).to eq(1)
@@ -176,7 +177,7 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
     context "when parsing xmi with generalization" do
       let(:file) { File.new(fixtures_path("plateau_all_packages_export.xmi")) }
 
-      it "outputs attributes correctly" do
+      it "outputs attributes correctly", :aggregate_failures do
         test_package = output.packages.first.packages[2].packages[9]
         gen_obj = test_package.classes[3].generalization
         expect(test_package.name).to eq("bldg")
@@ -221,7 +222,7 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
       let(:file) { File.new(fixtures_path("plateau_all_packages_export.xmi")) }
       let(:guidance) { YAML.load_file(fixtures_path("guidance/guidance.yaml")) }
 
-      it "outputs attributes correctly" do
+      it "outputs attributes correctly", :aggregate_failures do
         test_package = output.packages.first.packages[2].packages[9]
         test_klass = test_package.classes[3]
         gen_obj = test_package.classes[3].generalization
@@ -275,7 +276,7 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
     context "when parsing xmi with generalization and sorted props" do
       let(:file) { File.new(fixtures_path("plateau_all_packages_export.xmi")) }
 
-      it "outputs attributes correctly" do
+      it "outputs attributes correctly", :aggregate_failures do
         test_package = output.packages.first.packages[1].packages[0]
           .packages[1].classes[144]
         gen_obj = test_package.generalization

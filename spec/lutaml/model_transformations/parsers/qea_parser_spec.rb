@@ -27,7 +27,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::QeaParser do
   end
 
   describe "#content_patterns" do
-    it "returns QEA content detection patterns" do
+    it "returns QEA content detection patterns", :aggregate_failures do
       patterns = parser.content_patterns
       expect(patterns).to be_an(Array)
       expect(patterns).not_to be_empty
@@ -122,7 +122,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::QeaParser do
         expect(parser.can_parse?("test.eapx")).to be true
       end
 
-      it "returns false for unsupported extensions" do
+      it "returns false for unsupported extensions", :aggregate_failures do
         expect(parser.can_parse?("test.txt")).to be false
         expect(parser.can_parse?("test.xml")).to be false
         expect(parser.can_parse?("test.json")).to be false
@@ -193,7 +193,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::QeaParser do
       it "raises error for invalid QEA content during parsing" do
         expect do
           parser.parse(invalid_file.path)
-        end.to raise_error
+        end.to raise_error(StandardError)
       end
     end
   end
@@ -213,7 +213,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::QeaParser do
       it "raises error for invalid output" do
         expect do
           parser.send(:validate_output!, nil)
-        end.to raise_error
+        end.to raise_error(ArgumentError)
       end
     end
   end
@@ -221,15 +221,17 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::QeaParser do
   describe "database connection handling" do
     it "provides methods for database interaction" do
       # These are internal methods that should exist
-      expect(parser.private_methods.include?(:load_qea_database)).to be true
-      expect(parser.private_methods.include?(:detect_qea_version)).to be true
-      expect(parser.private_methods.include?(:get_quick_database_stats))
-        .to be true
+      aggregate_failures do
+        expect(parser.private_methods.include?(:load_qea_database)).to be true
+        expect(parser.private_methods.include?(:detect_qea_version)).to be true
+        expect(parser.private_methods.include?(:get_quick_database_stats))
+          .to be true
+      end
     end
   end
 
   describe "QEA-specific parsing methods" do
-    it "provides methods for QEA structure extraction" do
+    it "provides methods for QEA structure extraction", :aggregate_failures do
       expect(parser.private_methods.include?(:extract_document_name)).to be true
       expect(parser.private_methods.include?(:validate_qea_transformation))
         .to be true
@@ -278,7 +280,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::QeaParser do
       end.to raise_error(StandardError)
     end
 
-    it "provides detailed error information" do
+    it "provides detailed error information", :aggregate_failures do
       parser.parse(corrupted_file.path)
     rescue StandardError => e
       # Error should contain useful information
@@ -325,7 +327,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::QeaParser do
   end
 
   describe "statistics and monitoring" do
-    it "tracks QEA-specific metrics" do
+    it "tracks QEA-specific metrics", :aggregate_failures do
       stats = parser.statistics
 
       expect(stats).to include(
@@ -342,8 +344,10 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::QeaParser do
   describe "integration with existing QEA parsing" do
     it "maintains compatibility with current QEA parsing" do
       # Ensure that new parser doesn't break existing functionality
-      expect(parser.format_name).to include("QEA")
-      expect(parser.supported_extensions).to include(".qea")
+      aggregate_failures do
+        expect(parser.format_name).to include("QEA")
+        expect(parser.supported_extensions).to include(".qea")
+      end
     end
   end
 end

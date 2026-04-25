@@ -23,7 +23,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::IDGenerator do
   end
 
   describe "#package_id" do
-    it "generates stable ID for package" do
+    it "generates stable ID for package", :aggregate_failures do
       id = generator.package_id(package)
       expect(id).to start_with("pkg_")
       expect(id.length).to eq(12) # "pkg_" + 8 char hash
@@ -35,7 +35,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::IDGenerator do
       expect(id1).to eq(id2)
     end
 
-    it "uses cache for subsequent calls" do
+    it "uses cache for subsequent calls", :aggregate_failures do
       id1 = generator.package_id(package)
 
       #  Cache should be populated
@@ -57,7 +57,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::IDGenerator do
   end
 
   describe "#class_id" do
-    it "generates stable ID for class" do
+    it "generates stable ID for class", :aggregate_failures do
       id = generator.class_id(klass)
       expect(id).to start_with("cls_")
       expect(id.length).to eq(12)
@@ -80,7 +80,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::IDGenerator do
   end
 
   describe "#attribute_id" do
-    it "generates stable ID for attribute" do
+    it "generates stable ID for attribute", :aggregate_failures do
       id = generator.attribute_id(attribute, owner)
       expect(id).to start_with("attr_")
       expect(id.length).to eq(13) # "attr_" + 8 char hash
@@ -104,7 +104,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::IDGenerator do
   end
 
   describe "#association_id" do
-    it "generates stable ID for association" do
+    it "generates stable ID for association", :aggregate_failures do
       id = generator.association_id(association)
       expect(id).to start_with("assoc_")
       expect(id.length).to eq(14)  # "assoc_" + 8 char hash
@@ -118,7 +118,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::IDGenerator do
   end
 
   describe "#operation_id" do
-    it "generates stable ID for operation" do
+    it "generates stable ID for operation", :aggregate_failures do
       id = generator.operation_id(operation, owner)
       expect(id).to start_with("op_")
       expect(id.length).to eq(11)  # "op_" + 8 char hash
@@ -135,7 +135,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::IDGenerator do
   end
 
   describe "#diagram_id" do
-    it "generates stable ID for diagram" do
+    it "generates stable ID for diagram", :aggregate_failures do
       id = generator.diagram_id(diagram)
       expect(id).to start_with("diag_")
       expect(id.length).to eq(13)  # "diag_" + 8 char hash
@@ -154,7 +154,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::IDGenerator do
       expect(id).to start_with("doc_class_")
     end
 
-    it "includes document type in ID" do
+    it "includes document type in ID", :aggregate_failures do
       id1 = generator.document_id("class", "xmi_123")
       id2 = generator.document_id("attribute", "xmi_123")
 
@@ -173,17 +173,19 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::IDGenerator do
   describe "#clear_cache" do
     it "clears the internal cache" do
       # Generate some IDs to populate cache
-      generator.package_id(package)
-      generator.class_id(klass)
+      aggregate_failures do
+        generator.package_id(package)
+        generator.class_id(klass)
 
-      cache = generator.instance_variable_get(:@cache)
-      expect(cache).not_to be_empty
+        cache = generator.instance_variable_get(:@cache)
+        expect(cache).not_to be_empty
 
-      # Clear cache
-      generator.clear_cache
+        # Clear cache
+        generator.clear_cache
 
-      cache_after = generator.instance_variable_get(:@cache)
-      expect(cache_after).to be_empty
+        cache_after = generator.instance_variable_get(:@cache)
+        expect(cache_after).to be_empty
+      end
     end
 
     it "allows regeneration of IDs after cache clear" do
@@ -242,7 +244,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::IDGenerator do
       end.not_to raise_error
     end
 
-    it "handles empty XMI IDs" do
+    it "handles empty XMI IDs", :aggregate_failures do
       package_empty = double("PackageEmpty", xmi_id: "")
 
       id = generator.package_id(package_empty)

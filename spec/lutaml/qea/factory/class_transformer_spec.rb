@@ -25,7 +25,7 @@ RSpec.describe Lutaml::Qea::Factory::ClassTransformer do
       expect(result).to be_nil
     end
 
-    it "transforms EA class object to UML class" do
+    it "transforms EA class object to UML class", :aggregate_failures do
       ea_obj = Lutaml::Qea::Models::EaObject.new(
         ea_object_id: 1,
         object_type: "Class",
@@ -92,7 +92,7 @@ RSpec.describe Lutaml::Qea::Factory::ClassTransformer do
       expect(result.stereotype).to include("interface")
     end
 
-    it "loads and transforms attributes" do
+    it "loads and transforms attributes", :aggregate_failures do
       ea_obj = Lutaml::Qea::Models::EaObject.new(
         ea_object_id: 1,
         object_type: "Class",
@@ -121,7 +121,7 @@ RSpec.describe Lutaml::Qea::Factory::ClassTransformer do
       expect(result.attributes.first.name).to eq("firstName")
     end
 
-    it "loads and transforms operations" do
+    it "loads and transforms operations", :aggregate_failures do
       ea_obj = Lutaml::Qea::Models::EaObject.new(
         ea_object_id: 1,
         object_type: "Class",

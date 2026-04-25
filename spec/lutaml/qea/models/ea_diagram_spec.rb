@@ -183,7 +183,7 @@ RSpec.describe Lutaml::Qea::Models::EaDiagram do
   end
 
   describe ".from_db_row" do
-    it "creates instance from database row" do
+    it "creates instance from database row", :aggregate_failures do
       row = {
         "Diagram_ID" => 123,
         "Package_ID" => 456,

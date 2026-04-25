@@ -24,7 +24,7 @@ RSpec.describe Lutaml::UmlRepository::Presenters::AttributePresenter do
   let(:repository) { nil }
 
   describe "#initialize" do
-    it "accepts an element, repository, and context" do
+    it "accepts an element, repository, and context", :aggregate_failures do
       presenter = described_class.new(attribute, repository, context)
       expect(presenter.element).to eq(attribute)
       expect(presenter.context).to eq(context)
@@ -37,7 +37,7 @@ RSpec.describe Lutaml::UmlRepository::Presenters::AttributePresenter do
   end
 
   describe "#to_text" do
-    it "formats attribute details as text" do
+    it "formats attribute details as text", :aggregate_failures do
       presenter = described_class.new(attribute, repository, context)
       result = presenter.to_text
 
@@ -57,7 +57,7 @@ RSpec.describe Lutaml::UmlRepository::Presenters::AttributePresenter do
   end
 
   describe "#to_table_row" do
-    it "returns a hash suitable for table display" do
+    it "returns a hash suitable for table display", :aggregate_failures do
       presenter = described_class.new(attribute, repository, context)
       result = presenter.to_table_row
 
@@ -77,7 +77,7 @@ RSpec.describe Lutaml::UmlRepository::Presenters::AttributePresenter do
   end
 
   describe "#to_hash" do
-    it "returns a hash with attribute data" do
+    it "returns a hash with attribute data", :aggregate_failures do
       presenter = described_class.new(attribute, repository, context)
       result = presenter.to_hash
 

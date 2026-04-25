@@ -9,7 +9,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::SearchQuery do
   let(:query) { described_class.new(document, indexes) }
 
   describe "#search_classes" do
-    it "searches classes by exact match" do
+    it "searches classes by exact match", :aggregate_failures do
       results = query.search_classes("RequirementType")
 
       expect(results).to be_an(Array)
@@ -27,7 +27,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::SearchQuery do
       end
     end
 
-    it "searches classes by wildcard pattern" do
+    it "searches classes by wildcard pattern", :aggregate_failures do
       results = query.search_classes("*")
 
       expect(results).to be_an(Array)
@@ -38,7 +38,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::SearchQuery do
       expect(results.count).to eq(8)
     end
 
-    it "searches with glob patterns" do
+    it "searches with glob patterns", :aggregate_failures do
       results = query.search_classes("*Type")
 
       expect(results).to be_an(Array)
@@ -51,7 +51,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::SearchQuery do
       expect(results.count).to eq(2)
     end
 
-    it "searches with regex patterns" do
+    it "searches with regex patterns", :aggregate_failures do
       results = query.search_classes(".*Type")
 
       expect(results).to be_an(Array)
@@ -69,13 +69,13 @@ RSpec.describe Lutaml::UmlRepository::Queries::SearchQuery do
       expect(results).to eq([])
     end
 
-    it "handles case-sensitive search" do
+    it "handles case-sensitive search", :aggregate_failures do
       results = query.search_classes("requirement", case_sensitive: true)
       expect(results).to be_an(Array)
       expect(results.empty?).to be(true)
     end
 
-    it "handles case-insensitive search" do
+    it "handles case-insensitive search", :aggregate_failures do
       results = query.search_classes("requirement", case_sensitive: false)
       expect(results).to be_an(Array)
       expect(results.empty?).to be(false)
@@ -83,7 +83,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::SearchQuery do
   end
 
   describe "#search_packages" do
-    it "searches packages by path pattern" do
+    it "searches packages by path pattern", :aggregate_failures do
       results = query.search_packages("*")
 
       expect(results).to be_an(Array)
@@ -101,14 +101,14 @@ RSpec.describe Lutaml::UmlRepository::Queries::SearchQuery do
         .to eq("ModelRoot::requirement type class diagram")
     end
 
-    it "searches with glob patterns" do
+    it "searches with glob patterns", :aggregate_failures do
       results = query.search_packages("ModelRoot*")
 
       expect(results).to be_an(Array)
       expect(results.count).to eq(2)
     end
 
-    it "searches with regex patterns" do
+    it "searches with regex patterns", :aggregate_failures do
       results = query.search_packages("ModelRoot.*")
 
       expect(results).to be_an(Array)
@@ -122,7 +122,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::SearchQuery do
   end
 
   describe "#search_by_stereotype" do
-    it "searches classes by stereotype pattern" do
+    it "searches classes by stereotype pattern", :aggregate_failures do
       stereotypes = indexes[:stereotypes].keys.compact
 
       stereotypes.each do |stereotype|
@@ -140,7 +140,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::SearchQuery do
       end
     end
 
-    it "handles wildcard patterns" do
+    it "handles wildcard patterns", :aggregate_failures do
       results = query.search_by_stereotype("*")
 
       expect(results).to be_an(Array)
@@ -154,7 +154,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::SearchQuery do
   end
 
   describe "#search_attributes" do
-    it "searches attributes across all classes" do
+    it "searches attributes across all classes", :aggregate_failures do
       results = query.search_attributes("*")
 
       expect(results).to be_an(Array)
@@ -182,7 +182,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::SearchQuery do
         )
     end
 
-    it "finds attributes by name pattern" do
+    it "finds attributes by name pattern", :aggregate_failures do
       results = query.search_attributes("id")
 
       expect(results).to be_an(Array)
@@ -199,7 +199,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::SearchQuery do
   end
 
   describe "#search_associations" do
-    it "searches associations across all classes" do
+    it "searches associations across all classes", :aggregate_failures do
       results = query.search_associations("*")
 
       expect(results).to be_an(Array)
@@ -219,14 +219,14 @@ RSpec.describe Lutaml::UmlRepository::Queries::SearchQuery do
       )
     end
 
-    it "searches associations by exact match" do
+    it "searches associations by exact match", :aggregate_failures do
       results = query.search_associations("ClassificationType")
 
       expect(results).to be_an(Array)
       expect(results.count).to eq(2)
     end
 
-    it "finds associations by glob pattern" do
+    it "finds associations by glob pattern", :aggregate_failures do
       results = query.search_associations("*Item")
 
       expect(results).to be_an(Array)
@@ -244,7 +244,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::SearchQuery do
   end
 
   describe "#full_text_search" do
-    it "searches across all text fields" do
+    it "searches across all text fields", :aggregate_failures do
       results = query.full_text_search("requirement")
       expect(results).to be_a(Hash)
       expect(results).to have_key(:classes)
@@ -262,26 +262,26 @@ RSpec.describe Lutaml::UmlRepository::Queries::SearchQuery do
         .to be_a(Lutaml::Uml::Package)
     end
 
-    it "searches in class names" do
+    it "searches in class names", :aggregate_failures do
       results = query.full_text_search("Requirement")
       expect(results[:classes]).to be_an(Array)
       expect(results[:classes].size).to eq(3)
     end
 
-    it "searches in package names" do
+    it "searches in package names", :aggregate_failures do
       results = query.full_text_search("Model")
       expect(results[:packages]).to be_an(Array)
       expect(results[:packages].size).to eq(2)
     end
 
-    it "returns empty results when no matches" do
+    it "returns empty results when no matches", :aggregate_failures do
       results = query.full_text_search("XyzNonExistent123")
       expect(results[:classes]).to eq([])
       expect(results[:packages]).to eq([])
       expect(results[:total]).to eq(0)
     end
 
-    it "handles case-sensitive search" do
+    it "handles case-sensitive search", :aggregate_failures do
       results = query.full_text_search("requirement", case_sensitive: true)
       expect(results).to be_a(Hash)
       expect(results[:classes].size).to eq(0)
@@ -291,7 +291,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::SearchQuery do
   describe "with simple document" do
     let(:document) { create_simple_test_document }
 
-    it "searches for test class" do
+    it "searches for test class", :aggregate_failures do
       results = query.search_classes("TestClass")
       expect(results.length).to eq(1)
       expect(results[0]).to be_a(Lutaml::UmlRepository::SearchResult)
@@ -299,7 +299,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::SearchQuery do
       expect(results[0].element.name).to eq("TestClass")
     end
 
-    it "searches for test package" do
+    it "searches for test package", :aggregate_failures do
       results = query.search_packages("*::RootPackage")
       expect(results.length).to eq(2)
       expect(results[0]).to be_a(Lutaml::UmlRepository::SearchResult)
@@ -307,7 +307,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::SearchQuery do
       expect(results[0].element.name).to eq("RootPackage")
     end
 
-    it "searches by test stereotype" do
+    it "searches by test stereotype", :aggregate_failures do
       results = query.search_by_stereotype("TestStereotype")
       expect(results.length).to eq(1)
       expect(results[0]).to be_a(Lutaml::UmlRepository::SearchResult)
@@ -315,7 +315,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::SearchQuery do
       expect(results[0].element.name).to eq("TestClass")
     end
 
-    it "performs full text search" do
+    it "performs full text search", :aggregate_failures do
       results = query.full_text_search("Test")
       expect(results[:classes]).not_to be_empty
       expect(results[:packages]).to be_empty

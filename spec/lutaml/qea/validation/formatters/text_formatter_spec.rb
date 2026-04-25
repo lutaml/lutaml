@@ -10,7 +10,7 @@ RSpec.describe Lutaml::Qea::Validation::Formatters::TextFormatter do
   let(:result) { Lutaml::Qea::Validation::ValidationResult.new }
 
   describe "#initialize" do
-    it "creates formatter with result" do
+    it "creates formatter with result", :aggregate_failures do
       formatter = described_class.new(result: result)
 
       expect(formatter.result).to eq(result)
@@ -39,7 +39,7 @@ RSpec.describe Lutaml::Qea::Validation::Formatters::TextFormatter do
 
   describe "#format" do
     context "with no messages" do
-      it "shows valid status" do
+      it "shows valid status", :aggregate_failures do
         formatter = described_class.new(result: result, color: false)
         output = formatter.format
 
@@ -61,7 +61,7 @@ RSpec.describe Lutaml::Qea::Validation::Formatters::TextFormatter do
         )
       end
 
-      it "shows error status" do
+      it "shows error status", :aggregate_failures do
         formatter = described_class.new(result: result, color: false)
         output = formatter.format
 
@@ -70,7 +70,7 @@ RSpec.describe Lutaml::Qea::Validation::Formatters::TextFormatter do
         expect(output).to include("Warnings: 0")
       end
 
-      it "displays error messages" do
+      it "displays error messages", :aggregate_failures do
         formatter = described_class.new(result: result, color: false)
         output = formatter.format
 
@@ -89,7 +89,7 @@ RSpec.describe Lutaml::Qea::Validation::Formatters::TextFormatter do
         expect(output).to match(/\e\[\d+m/)
       end
 
-      it "limits messages when specified" do
+      it "limits messages when specified", :aggregate_failures do
         5.times do |i|
           result.add_error(
             category: :missing_reference,
@@ -119,7 +119,7 @@ RSpec.describe Lutaml::Qea::Validation::Formatters::TextFormatter do
         )
       end
 
-      it "shows warning status" do
+      it "shows warning status", :aggregate_failures do
         formatter = described_class.new(result: result, color: false)
         output = formatter.format
 
@@ -128,7 +128,7 @@ RSpec.describe Lutaml::Qea::Validation::Formatters::TextFormatter do
         expect(output).to include("Warnings: 1")
       end
 
-      it "displays warning messages" do
+      it "displays warning messages", :aggregate_failures do
         formatter = described_class.new(result: result, color: false)
         output = formatter.format
 
@@ -149,7 +149,7 @@ RSpec.describe Lutaml::Qea::Validation::Formatters::TextFormatter do
         )
       end
 
-      it "hides info by default" do
+      it "hides info by default", :aggregate_failures do
         formatter = described_class.new(result: result, color: false,
                                         verbose: false)
         output = formatter.format
@@ -158,7 +158,7 @@ RSpec.describe Lutaml::Qea::Validation::Formatters::TextFormatter do
         expect(output).not_to include("Consider adding more classes")
       end
 
-      it "shows info when verbose" do
+      it "shows info when verbose", :aggregate_failures do
         formatter = described_class.new(result: result, color: false,
                                         verbose: true)
         output = formatter.format
@@ -187,7 +187,7 @@ RSpec.describe Lutaml::Qea::Validation::Formatters::TextFormatter do
         )
       end
 
-      it "displays all severity levels" do
+      it "displays all severity levels", :aggregate_failures do
         formatter = described_class.new(result: result, color: false)
         output = formatter.format
 
