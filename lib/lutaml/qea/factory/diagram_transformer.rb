@@ -25,9 +25,6 @@ module Lutaml
             diagram.name = ea_diagram.name
             diagram.xmi_id = normalize_guid_to_xmi_format(ea_diagram.ea_guid,
                                                           "EAID")
-            # TODO: Fix diagram_type assignment -
-            # lutaml-model compatibility issue
-            # diagram.diagram_type = ea_diagram.diagram_type
 
             # Map package relationship - use GUID not numeric ID
             if ea_diagram.package_id

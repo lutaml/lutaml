@@ -24,6 +24,7 @@ RSpec.describe Lutaml::Qea::Factory::PackageTransformer do
       )
 
       allow(database).to receive(:xrefs).and_return(nil)
+      allow(database).to receive(:tagged_values).and_return([])
       result = transformer.transform(ea_pkg)
 
       expect(result).to be_a(Lutaml::Uml::Package)
@@ -64,7 +65,8 @@ RSpec.describe Lutaml::Qea::Factory::PackageTransformer do
       allow(database).to receive(:child_packages_for).with(1).and_return([child_pkg])
       allow(database).to receive(:child_packages_for).with(2).and_return([])
       allow(database).to receive_messages(objects_in_package: [],
-                                          diagrams_in_package: [], xrefs: nil)
+                                          diagrams_in_package: [], xrefs: nil,
+                                          tagged_values: [])
 
       result = transformer.transform_with_hierarchy(ea_pkg)
 

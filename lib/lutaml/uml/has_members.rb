@@ -5,7 +5,6 @@ module Lutaml
     module HasMembers
       class UnknownMemberTypeError < Lutaml::Error; end
 
-      # TODO: move to Parslet::Transform
       def members=(value) # rubocop:disable Metrics/AbcSize
         value.group_by { |member| member.keys.first }
           .each do |(type, group)|

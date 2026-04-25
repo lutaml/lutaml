@@ -53,8 +53,7 @@ module Lutaml
         @graph["ranksep"] = "1.2.equally"
         # Padding between nodes
         @graph["nodesep"] = "1.2.equally"
-        # TODO: set rankdir
-        # @graph['rankdir'] = 'BT'
+        @graph["rankdir"] = "BT"
 
         @edge = Attributes.new
         @edge["color"] = "gray50"
