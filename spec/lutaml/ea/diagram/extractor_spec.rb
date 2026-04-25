@@ -75,7 +75,7 @@ RSpec.describe Lutaml::Ea::Diagram::Extractor do
 
   describe "#extract_one" do
     context "with non-existent file" do
-      it "returns failure result" do
+      it "returns failure result", :aggregate_failures do
         result = extractor.extract_one("nonexistent.lur", "diagram1")
 
         expect(result[:success]).to be false
@@ -87,7 +87,7 @@ RSpec.describe Lutaml::Ea::Diagram::Extractor do
       let(:diagram_name) { "TestSchema" }
       let(:output_path) { File.join(temp_dir, "output.svg") }
 
-      it "extracts diagram successfully" do
+      it "extracts diagram successfully", :aggregate_failures do
         result = extractor.extract_one(lur_path, diagram_name,
                                        output: output_path)
 
@@ -98,7 +98,8 @@ RSpec.describe Lutaml::Ea::Diagram::Extractor do
         expect(File.exist?(output_path)).to be true
       end
 
-      it "outputs SVG content if output path not specified" do
+      it "outputs SVG content if output path not specified",
+         :aggregate_failures do
         result = extractor.extract_one(lur_path, diagram_name)
 
         expect(result[:success]).to be true
@@ -108,18 +109,20 @@ RSpec.describe Lutaml::Ea::Diagram::Extractor do
 
     context "with non-existent diagram" do
       it "returns failure with available diagrams", :requires_fixtures do
-        result = extractor.extract_one(lur_path, "nonexistent_diagram")
+        aggregate_failures do
+          result = extractor.extract_one(lur_path, "nonexistent_diagram")
 
-        expect(result[:success]).to be false
-        expect(result[:message]).to include("Diagram not found")
-        expect(result[:available]).to be_an(Array)
+          expect(result[:success]).to be false
+          expect(result[:message]).to include("Diagram not found")
+          expect(result[:available]).to be_an(Array)
+        end
       end
     end
   end
 
   describe "#list_diagrams" do
     context "with non-existent file" do
-      it "returns failure result" do
+      it "returns failure result", :aggregate_failures do
         result = extractor.list_diagrams("nonexistent.lur")
 
         expect(result[:success]).to be false
@@ -128,7 +131,7 @@ RSpec.describe Lutaml::Ea::Diagram::Extractor do
     end
 
     context "with valid LUR file", :requires_fixtures do
-      it "lists all diagrams" do
+      it "lists all diagrams", :aggregate_failures do
         result = extractor.list_diagrams(lur_path)
 
         expect(result[:success]).to be true
@@ -167,7 +170,7 @@ RSpec.describe Lutaml::Ea::Diagram::Extractor do
     end
 
     context "with valid LUR file", :requires_fixtures do
-      it "creates output directory if it doesn't exist" do
+      it "creates output directory if it doesn't exist", :aggregate_failures do
         expect(Dir.exist?(output_dir)).to be false
 
         extractor.extract_batch(lur_path, diagram_ids, output_dir: output_dir)
@@ -175,7 +178,7 @@ RSpec.describe Lutaml::Ea::Diagram::Extractor do
         expect(Dir.exist?(output_dir)).to be true
       end
 
-      it "extracts multiple diagrams" do
+      it "extracts multiple diagrams", :aggregate_failures do
         result = extractor.extract_batch(lur_path, diagram_ids,
                                          output_dir: output_dir)
 

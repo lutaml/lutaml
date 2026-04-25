@@ -7,163 +7,112 @@ RSpec.describe Lutaml::UmlRepository::Queries::InheritanceQuery do
   let(:document) { create_test_document }
   let(:indexes) { Lutaml::UmlRepository::IndexBuilder.build_all(document) }
   let(:query) { described_class.new(document, indexes) }
+  let(:parent_ids) { indexes[:inheritance_graph].keys }
 
   describe "#find_children" do
     it "finds direct children of a class" do
-      parent_classes = indexes[:inheritance_graph].keys
-
-      parent_classes.each do |parent_id|
+      parent_ids.each do |parent_id|
         children = query.find_children(parent_id)
-        expect(children).to be_an(Array)
         expect(children).to all(be_a(Lutaml::Uml::Class))
       end
     end
 
-    it "returns empty array for class without children" do
-      leaf_class_id = "nonexistent_id"
-      children = query.find_children(leaf_class_id)
-      expect(children).to eq([])
+    it "returns empty array for nonexistent id" do
+      expect(query.find_children("nonexistent_id")).to eq([])
     end
 
-    it "returns only direct children when recursive is false" do
-      parent_classes = indexes[:inheritance_graph].keys.first
-      if parent_classes
-        direct_children = query.find_children(parent_classes, recursive: false)
-        expect(direct_children).to be_an(Array)
-      end
+    it "returns array for non-recursive" do
+      id = parent_ids.first
+      next unless id
+
+      expect(query.find_children(id, recursive: false)).to be_an(Array)
     end
 
-    context "with recursive option" do
-      it "includes all descendants when recursive is true" do
-        parent_classes = indexes[:inheritance_graph].keys.first
-        if parent_classes
-          all_descendants = query.find_children(parent_classes, recursive: true)
-          direct_children = query.find_children(parent_classes,
-                                                recursive: false)
+    it "recursive includes at least direct children" do
+      id = parent_ids.first
+      next unless id
 
-          expect(all_descendants.length).to be >= direct_children.length
-        end
-      end
+      all = query.find_children(id, recursive: true)
+      direct = query.find_children(id, recursive: false)
+      expect(all.length).to be >= direct.length
     end
   end
 
   describe "#find_parent" do
+    let(:child_ids) { indexes[:inheritance_graph].values.flatten }
+    let(:child_classes) do
+      child_ids.filter_map do |q|
+        indexes[:qualified_names][q]
+      end
+    end
+
     it "finds parent class" do
-      classes_with_parents = []
-      indexes[:qualified_names].each_value do |klass|
-        next unless klass.is_a?(Lutaml::Uml::Class)
-
-        klass.associations.each do |assoc|
-          if ["inheritance", "generalization"].include?(assoc.member_end_type)
-            classes_with_parents << klass
-            break
-          end
-        end
-      end
-
-      classes_with_parents.each do |klass|
+      child_classes.each do |klass|
         parent = query.find_parent(klass.xmi_id)
-        if parent
-          expect(parent).to be_a(Lutaml::Uml::Class)
-        end
+        expect(parent).to be_a(Lutaml::Uml::Class) if parent
       end
     end
 
-    it "returns nil for class without parent" do
-      parent = query.find_parent("nonexistent_id")
-      expect(parent).to be_nil
-    end
+    it { expect(query.find_parent("nonexistent_id")).to be_nil }
   end
 
   describe "#find_ancestors" do
-    it "finds all ancestors of a class" do
-      classes_names_with_parents = indexes[:inheritance_graph].values.flatten
-      classes_with_parents = classes_names_with_parents.filter_map do |qname|
-        indexes[:qualified_names][qname]
+    let(:child_ids) { indexes[:inheritance_graph].values.flatten }
+    let(:child_classes) do
+      child_ids.filter_map do |q|
+        indexes[:qualified_names][q]
       end
+    end
 
-      classes_with_parents.each do |klass|
+    it "finds all ancestors" do
+      child_classes.each do |klass|
         ancestors = query.find_ancestors(klass.xmi_id)
-        expect(ancestors).to be_an(Array)
         expect(ancestors).to all(be_a(Lutaml::Uml::Class))
       end
     end
 
-    it "returns empty array for class without ancestors" do
-      ancestors = query.find_ancestors("nonexistent_id")
-      expect(ancestors).to eq([])
-    end
+    it { expect(query.find_ancestors("nonexistent_id")).to eq([]) }
 
-    it "includes all levels of inheritance" do
-      classes_with_parents = []
-      indexes[:qualified_names].each_value do |klass|
-        next unless klass.is_a?(Lutaml::Uml::Class)
-
-        klass.associations.each do |assoc|
-          if ["inheritance", "generalization"].include?(assoc.member_end_type)
-            classes_with_parents << klass
-            break
-          end
-        end
-      end
-
-      classes_with_parents.each do |klass|
-        ancestors = query.find_ancestors(klass.xmi_id)
+    it "includes parent in ancestors" do
+      child_classes.each do |klass|
         parent = query.find_parent(klass.xmi_id)
-
-        if parent
-          expect(ancestors).to include(parent)
-        end
+        expect(query.find_ancestors(klass.xmi_id)).to include(parent) if parent
       end
     end
   end
 
   describe "#inheritance_tree" do
-    it "builds inheritance tree for a class" do
-      parent_classes = indexes[:inheritance_graph].keys.first
-      if parent_classes
-        tree = query.inheritance_tree(parent_classes)
+    it "builds tree for a class", :aggregate_failures do
+      id = parent_ids.first
+      next unless id
 
-        expect(tree).to be_a(Hash)
-        expect(tree).to have_key(:class)
-        expect(tree).to have_key(:children)
-      end
+      tree = query.inheritance_tree(id)
+      expect(tree).to have_key(:class)
+      expect(tree).to have_key(:children)
     end
 
-    it "includes nested inheritance relationships" do
-      parent_classes = indexes[:inheritance_graph].keys.first
-      if parent_classes
-        tree = query.inheritance_tree(parent_classes)
+    it "tree children have correct structure", :aggregate_failures do
+      id = parent_ids.first
+      next unless id
 
-        tree[:children].each do |child_tree|
-          expect(child_tree).to be_a(Hash)
-          expect(child_tree).to have_key(:class)
-          expect(child_tree).to have_key(:children)
-        end
-      end
+      children = query.inheritance_tree(id)[:children]
+        expect(children).to all(have_key(:class))
+        expect(children).to all(have_key(:children))
     end
 
-    it "returns nil for non-existent class" do
-      tree = query.inheritance_tree("nonexistent_id")
-      expect(tree).to be_nil
-    end
+    it { expect(query.inheritance_tree("nonexistent_id")).to be_nil }
   end
 
   describe "#has_circular_inheritance?" do
-    it "detects circular inheritance" do
-      parent_classes = indexes[:inheritance_graph].keys
-      parent_classes.each do |parent_id|
-        result = query.has_circular_inheritance?(parent_id)
-        expect(result).to be(true).or be(false)
+    it "returns boolean for all parents" do
+      parent_ids.each do |parent_id|
+        expect(query.has_circular_inheritance?(parent_id)).to be(true).or be(false)
       end
     end
 
-    it "returns false for valid inheritance hierarchy" do
-      classes = indexes[:qualified_names].values.grep(Lutaml::Uml::Class)
-
-      classes.each do |klass|
-        result = query.has_circular_inheritance?(klass.xmi_id)
-        expect(result).to be false
+    it "returns false for valid hierarchy" do
+      indexes[:qualified_names].values.grep(Lutaml::Uml::Class).each do |klass|
+        expect(query.has_circular_inheritance?(klass.xmi_id)).to be false
       end
     end
   end

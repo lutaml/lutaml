@@ -20,7 +20,7 @@ RSpec.describe "UmlCommands Integration Tests" do
   end
 
   describe "build -> info workflow" do
-    it "builds a package and retrieves its info" do
+    it "builds a package and retrieves its info", :aggregate_failures do
       workflow_lur = temp_lur_path(prefix: "workflow_test")
 
       # Build package
@@ -44,7 +44,7 @@ RSpec.describe "UmlCommands Integration Tests" do
   end
 
   describe "build -> validate workflow" do
-    it "builds and validates a package" do
+    it "builds and validates a package", :aggregate_failures do
       validate_lur = temp_lur_path(prefix: "validate_workflow")
 
       # Build
@@ -82,7 +82,7 @@ RSpec.describe "UmlCommands Integration Tests" do
   end
 
   describe "build -> stats workflow" do
-    it "builds a package and displays statistics" do
+    it "builds a package and displays statistics", :aggregate_failures do
       expect do
         Lutaml::Cli::UmlCommands.start(["stats", test_lur])
       end.to output(/Packages:/).to_stdout
@@ -101,7 +101,7 @@ RSpec.describe "UmlCommands Integration Tests" do
   end
 
   describe "build -> export workflow" do
-    it "builds a package and exports it" do
+    it "builds a package and exports it", :aggregate_failures do
       export_file = temp_lur_path(prefix: "export_test").sub(/\.lur$/, ".json")
 
       expect do
@@ -228,9 +228,10 @@ RSpec.describe "UmlCommands Integration Tests" do
   end
 
   describe "complex workflows" do
-    it "builds, validates, searches, and exports" do
+    it "builds, validates, searches, and exports", :aggregate_failures do
       complex_lur = temp_lur_path(prefix: "complex_workflow")
-      export_file = temp_lur_path(prefix: "complex_export").sub(/\.lur$/, ".json")
+      export_file = temp_lur_path(prefix: "complex_export").sub(/\.lur$/,
+                                                                ".json")
 
       # Build
       expect do

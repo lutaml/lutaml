@@ -63,7 +63,7 @@ RSpec.describe "QEA and XMI Equivalency", :integration do
       expect(extra_in_qea.size).to be >= 0
     end
 
-    it "has compatible package structure" do
+    it "has compatible package structure", :aggregate_failures do
       skip "QEA file not found" unless File.exist?(qea_path)
       skip "XMI file not found" unless File.exist?(xmi_path)
 

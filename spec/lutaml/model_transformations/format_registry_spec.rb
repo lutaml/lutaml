@@ -90,21 +90,21 @@ RSpec.describe Lutaml::ModelTransformations::FormatRegistry do
   let(:registry) { described_class.new }
 
   describe "#initialize" do
-    it "initializes with empty registry" do
+    it "initializes with empty registry", :aggregate_failures do
       expect(registry.all_parsers).to be_empty
       expect(registry.all_extensions).to be_empty
     end
   end
 
   describe "#register" do
-    it "registers parser for single extension" do
+    it "registers parser for single extension", :aggregate_failures do
       registry.register(".test", MockParser1)
 
       expect(registry.parser_for_extension(".test")).to eq(MockParser1)
       expect(registry.all_extensions).to include(".test")
     end
 
-    it "registers parser for multiple extensions" do
+    it "registers parser for multiple extensions", :aggregate_failures do
       registry.register([".test1", ".test2"], MockParser1)
 
       expect(registry.parser_for_extension(".test1")).to eq(MockParser1)
@@ -112,7 +112,8 @@ RSpec.describe Lutaml::ModelTransformations::FormatRegistry do
       expect(registry.all_extensions).to include(".test1", ".test2")
     end
 
-    it "normalizes extensions to lowercase with leading dot" do
+    it "normalizes extensions to lowercase with leading dot",
+       :aggregate_failures do
       registry.register("TEST", MockParser1)
       registry.register(".TEST2", MockParser1)
       registry.register("test3", MockParser1)
@@ -159,7 +160,7 @@ RSpec.describe Lutaml::ModelTransformations::FormatRegistry do
       registry.register(".test", MockParser1)
     end
 
-    it "unregisters parser and returns it" do
+    it "unregisters parser and returns it", :aggregate_failures do
       result = registry.unregister(".test")
       expect(result).to eq(MockParser1)
       expect(registry.parser_for_extension(".test")).to be_nil
@@ -185,7 +186,7 @@ RSpec.describe Lutaml::ModelTransformations::FormatRegistry do
       expect(registry.parser_for_extension(".test")).to eq(MockParser1)
     end
 
-    it "normalizes extension before lookup" do
+    it "normalizes extension before lookup", :aggregate_failures do
       expect(registry.parser_for_extension("TEST")).to eq(MockParser1)
       expect(registry.parser_for_extension("test")).to eq(MockParser1)
       expect(registry.parser_for_extension(".TEST")).to eq(MockParser1)
@@ -266,7 +267,7 @@ RSpec.describe Lutaml::ModelTransformations::FormatRegistry do
       expect(registry.supports_extension?(".test")).to be true
     end
 
-    it "normalizes extension before checking" do
+    it "normalizes extension before checking", :aggregate_failures do
       expect(registry.supports_extension?("TEST")).to be true
       expect(registry.supports_extension?("test")).to be true
     end
@@ -348,7 +349,7 @@ RSpec.describe Lutaml::ModelTransformations::FormatRegistry do
       registry.register(".test2", MockParser2)
     end
 
-    it "removes all registered parsers" do
+    it "removes all registered parsers", :aggregate_failures do
       registry.clear
 
       expect(registry.all_parsers).to be_empty
@@ -362,7 +363,7 @@ RSpec.describe Lutaml::ModelTransformations::FormatRegistry do
       registry.register(".m3", MockParser2)
     end
 
-    it "returns comprehensive statistics" do
+    it "returns comprehensive statistics", :aggregate_failures do
       stats = registry.statistics
 
       expect(stats).to include(
@@ -377,7 +378,7 @@ RSpec.describe Lutaml::ModelTransformations::FormatRegistry do
       expect(stats[:extensions_per_parser]).to eq(1.5)
     end
 
-    it "includes parser details with priorities" do
+    it "includes parser details with priorities", :aggregate_failures do
       stats = registry.statistics
 
       parser_details = stats[:parser_details]
@@ -390,7 +391,7 @@ RSpec.describe Lutaml::ModelTransformations::FormatRegistry do
   end
 
   describe "#auto_register_from_parser" do
-    it "registers parser for its supported extensions" do
+    it "registers parser for its supported extensions", :aggregate_failures do
       registry.auto_register_from_parser(MockParser1)
 
       expect(registry.parser_for_extension(".mock1")).to eq(MockParser1)
@@ -410,7 +411,7 @@ RSpec.describe Lutaml::ModelTransformations::FormatRegistry do
       registry.register(".mock2", MockParser2)
     end
 
-    it "exports registry configuration" do
+    it "exports registry configuration", :aggregate_failures do
       config = registry.export_configuration
 
       expect(config).to include(:parsers, :exported_at)

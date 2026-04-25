@@ -33,7 +33,7 @@ RSpec.describe Lutaml::Qea::Validation::PackageValidator do
         ]
       end
 
-      it "passes validation" do
+      it "passes validation", :aggregate_failures do
         validator.validate
         expect(result.valid?).to be true
         expect(result.errors).to be_empty
@@ -52,7 +52,7 @@ RSpec.describe Lutaml::Qea::Validation::PackageValidator do
         ]
       end
 
-      it "reports missing parent error" do
+      it "reports missing parent error", :aggregate_failures do
         validator.validate
         expect(result.valid?).to be false
         expect(result.errors.size).to eq(1)
@@ -87,7 +87,7 @@ RSpec.describe Lutaml::Qea::Validation::PackageValidator do
         ]
       end
 
-      it "reports duplicate name warnings" do
+      it "reports duplicate name warnings", :aggregate_failures do
         validator.validate
         expect(result.warnings.size).to eq(2)
 
@@ -119,7 +119,7 @@ RSpec.describe Lutaml::Qea::Validation::PackageValidator do
         ]
       end
 
-      it "reports circular reference error" do
+      it "reports circular reference error", :aggregate_failures do
         validator.validate
         expect(result.valid?).to be false
 
@@ -152,7 +152,7 @@ RSpec.describe Lutaml::Qea::Validation::PackageValidator do
         ]
       end
 
-      it "reports all issues" do
+      it "reports all issues", :aggregate_failures do
         validator.validate
         expect(result.errors.size).to eq(1)
         expect(result.warnings.size).to eq(2)

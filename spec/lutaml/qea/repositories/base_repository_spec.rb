@@ -185,7 +185,7 @@ RSpec.describe Lutaml::Qea::Repositories::BaseRepository do
   end
 
   describe "#group_by" do
-    it "groups records by attribute" do
+    it "groups records by attribute", :aggregate_failures do
       result = repository.group_by(:object_type)
       expect(result.keys).to contain_exactly("Class", "Interface")
       expect(result["Class"]).to contain_exactly(object1, object3)

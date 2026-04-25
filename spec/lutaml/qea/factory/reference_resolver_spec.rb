@@ -16,7 +16,7 @@ RSpec.describe Lutaml::Qea::Factory::ReferenceResolver do
   end
 
   describe "#initialize" do
-    it "creates empty resolver" do
+    it "creates empty resolver", :aggregate_failures do
       expect(resolver).to be_a(described_class)
       expect(resolver.stats[:total_elements]).to eq(0)
       expect(resolver.stats[:total_objects]).to eq(0)
@@ -29,24 +29,24 @@ RSpec.describe Lutaml::Qea::Factory::ReferenceResolver do
       expect(resolver.resolve("{GUID-1234-5678}")).to eq(mock_element)
     end
 
-    it "normalizes GUID (removes braces, upcases)" do
+    it "normalizes GUID (removes braces, upcases)", :aggregate_failures do
       resolver.register("{guid-1234-5678}", mock_element)
       expect(resolver.resolve("GUID-1234-5678")).to eq(mock_element)
       expect(resolver.resolve("{GUID-1234-5678}")).to eq(mock_element)
       expect(resolver.resolve("guid-1234-5678")).to eq(mock_element)
     end
 
-    it "handles nil GUID gracefully" do
+    it "handles nil GUID gracefully", :aggregate_failures do
       expect { resolver.register(nil, mock_element) }.not_to raise_error
       expect(resolver.stats[:total_elements]).to eq(0)
     end
 
-    it "handles nil element gracefully" do
+    it "handles nil element gracefully", :aggregate_failures do
       expect { resolver.register("{GUID-1234}", nil) }.not_to raise_error
       expect(resolver.stats[:total_elements]).to eq(0)
     end
 
-    it "can register multiple elements" do
+    it "can register multiple elements", :aggregate_failures do
       resolver.register("{GUID-1234}", mock_element)
       resolver.register("{GUID-ABCD}", mock_element2)
 
@@ -62,12 +62,12 @@ RSpec.describe Lutaml::Qea::Factory::ReferenceResolver do
       expect(resolver.resolve_object_name(123)).to eq("Building")
     end
 
-    it "handles nil object ID gracefully" do
+    it "handles nil object ID gracefully", :aggregate_failures do
       expect { resolver.register_object_name(nil, "Test") }.not_to raise_error
       expect(resolver.stats[:total_objects]).to eq(0)
     end
 
-    it "can register multiple object names" do
+    it "can register multiple object names", :aggregate_failures do
       resolver.register_object_name(123, "Building")
       resolver.register_object_name(456, "Person")
 
@@ -86,7 +86,7 @@ RSpec.describe Lutaml::Qea::Factory::ReferenceResolver do
       expect(resolver.resolve("{GUID-1234-5678}")).to eq(mock_element)
     end
 
-    it "normalizes GUID before resolving" do
+    it "normalizes GUID before resolving", :aggregate_failures do
       expect(resolver.resolve("guid-1234-5678")).to eq(mock_element)
       expect(resolver.resolve("GUID-1234-5678")).to eq(mock_element)
     end
@@ -141,7 +141,7 @@ RSpec.describe Lutaml::Qea::Factory::ReferenceResolver do
       resolver.register("{GUID-1234}", mock_element)
     end
 
-    it "returns true for registered GUID" do
+    it "returns true for registered GUID", :aggregate_failures do
       expect(resolver.registered?("{GUID-1234}")).to be true
       expect(resolver.registered?("guid-1234")).to be true
     end
@@ -161,7 +161,7 @@ RSpec.describe Lutaml::Qea::Factory::ReferenceResolver do
       resolver.register_object_name(123, "Building")
     end
 
-    it "clears all mappings" do
+    it "clears all mappings", :aggregate_failures do
       expect(resolver.stats[:total_elements]).to eq(1)
       expect(resolver.stats[:total_objects]).to eq(1)
 
@@ -175,7 +175,7 @@ RSpec.describe Lutaml::Qea::Factory::ReferenceResolver do
   end
 
   describe "#stats" do
-    it "returns statistics about registered elements" do
+    it "returns statistics about registered elements", :aggregate_failures do
       stats = resolver.stats
       expect(stats).to have_key(:total_elements)
       expect(stats).to have_key(:total_objects)
@@ -183,7 +183,7 @@ RSpec.describe Lutaml::Qea::Factory::ReferenceResolver do
       expect(stats[:total_objects]).to eq(0)
     end
 
-    it "reflects current state" do
+    it "reflects current state", :aggregate_failures do
       resolver.register("{GUID-1}", mock_element)
       resolver.register("{GUID-2}", mock_element2)
       resolver.register_object_name(123, "Building")

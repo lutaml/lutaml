@@ -11,7 +11,7 @@ RSpec.describe Lutaml::UmlRepository::Repository do
       expect(repo).to be_a(described_class)
     end
 
-    it "builds indexes automatically" do
+    it "builds indexes automatically", :aggregate_failures do
       repo = described_class.from_xmi(xmi_path)
       expect(repo.indexes).to be_a(Hash)
       expect(repo.indexes).to be_frozen
@@ -87,7 +87,7 @@ RSpec.describe Lutaml::UmlRepository::Repository do
     end
 
     context "when cache does not exist" do
-      it "builds from XMI and creates cache" do
+      it "builds from XMI and creates cache", :aggregate_failures do
         repo = described_class.from_file_cached(
           xmi_file,
           lur_path: "spec/tmp/cached_model_nonexist.lur",
@@ -107,7 +107,7 @@ RSpec.describe Lutaml::UmlRepository::Repository do
         FileUtils.touch(lur_cache)
       end
 
-      it "uses cache instead of rebuilding" do
+      it "uses cache instead of rebuilding", :aggregate_failures do
         expect(described_class).not_to receive(:from_xmi)
         repo = described_class.from_file_cached(xmi_file,
                                                 lur_path: lur_cache)
@@ -125,7 +125,7 @@ RSpec.describe Lutaml::UmlRepository::Repository do
         FileUtils.touch(xmi_file)
       end
 
-      it "rebuilds from XMI and updates cache" do
+      it "rebuilds from XMI and updates cache", :aggregate_failures do
         repo = described_class.from_file_cached(xmi_file,
                                                 lur_path: lur_cache)
         expect(repo).to be_a(described_class)
@@ -155,7 +155,7 @@ RSpec.describe Lutaml::UmlRepository::Repository do
       expect(repo).to be_a(described_class)
     end
 
-    it "builds indexes from document" do
+    it "builds indexes from document", :aggregate_failures do
       repo = described_class.new(document: document)
       expect(repo.indexes).to be_a(Hash)
       expect(repo.indexes.keys).to include(
@@ -320,7 +320,7 @@ RSpec.describe Lutaml::UmlRepository::Repository do
       expect(stats).to be_a(Hash)
     end
 
-    it "includes basic counts" do
+    it "includes basic counts", :aggregate_failures do
       stats = repo.statistics
       expect(stats).to have_key(:total_packages)
       expect(stats).to have_key(:total_classes)
@@ -343,7 +343,7 @@ RSpec.describe Lutaml::UmlRepository::Repository do
       expect(result).to be_a(Lutaml::UmlRepository::Validators::ValidationResult)
     end
 
-    it "includes validation status" do
+    it "includes validation status", :aggregate_failures do
       result = repo.validate
       expect(result).to respond_to(:valid?)
       expect(result).to respond_to(:errors)
@@ -377,19 +377,19 @@ RSpec.describe Lutaml::UmlRepository::Repository do
       expect(repo).to be_a(described_class)
     end
 
-    it "finds simple package" do
+    it "finds simple package", :aggregate_failures do
       pkg = repo.find_package("ModelRoot::RootPackage")
       expect(pkg).to be_a(Lutaml::Uml::Package)
       expect(pkg.name).to eq("RootPackage")
     end
 
-    it "finds simple class" do
+    it "finds simple class", :aggregate_failures do
       klass = repo.find_class("ModelRoot::RootPackage::TestClass")
       expect(klass).to be_a(Lutaml::Uml::Class)
       expect(klass.name).to eq("TestClass")
     end
 
-    it "generates statistics" do
+    it "generates statistics", :aggregate_failures do
       stats = repo.statistics
       expect(stats[:total_packages]).to eq(3)
       expect(stats[:total_classes]).to eq(1)

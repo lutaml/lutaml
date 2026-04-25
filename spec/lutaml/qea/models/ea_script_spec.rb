@@ -129,7 +129,7 @@ RSpec.describe Lutaml::Qea::Models::EaScript do
   end
 
   describe ".from_db_row" do
-    it "creates instance from database row" do
+    it "creates instance from database row", :aggregate_failures do
       row = {
         "ScriptID" => 123,
         "ScriptCategory" => "ScriptDebugging",

@@ -5,7 +5,7 @@ require_relative "../../../lib/lutaml/cli/enhanced_formatter"
 
 RSpec.describe Lutaml::Cli::EnhancedFormatter do
   describe ".format_tree_with_icons" do
-    it "formats a simple tree with icons" do
+    it "formats a simple tree with icons", :aggregate_failures do
       tree = {
         name: "Root",
         type: :package,
@@ -24,7 +24,7 @@ RSpec.describe Lutaml::Cli::EnhancedFormatter do
       expect(result).to include(described_class::ICONS[:class])
     end
 
-    it "respects show_icons configuration" do
+    it "respects show_icons configuration", :aggregate_failures do
       tree = {
         name: "Root",
         type: :package,
@@ -56,7 +56,7 @@ RSpec.describe Lutaml::Cli::EnhancedFormatter do
       expect(result).to include("10 classes")
     end
 
-    it "handles nested structures correctly" do
+    it "handles nested structures correctly", :aggregate_failures do
       tree = {
         name: "Root",
         type: :package,
@@ -85,7 +85,7 @@ RSpec.describe Lutaml::Cli::EnhancedFormatter do
       (1..100).map { |i| ["Class#{i}", "Type#{i}", i.to_s] }
     end
 
-    it "formats small tables without pagination" do
+    it "formats small tables without pagination", :aggregate_failures do
       small_rows = rows.first(10)
       result = described_class.format_table_with_pagination(
         headers,
@@ -100,7 +100,7 @@ RSpec.describe Lutaml::Cli::EnhancedFormatter do
       expect(result).to include("Class10")
     end
 
-    it "paginates large tables" do
+    it "paginates large tables", :aggregate_failures do
       result = described_class.format_table_with_pagination(
         headers,
         rows,
@@ -112,7 +112,7 @@ RSpec.describe Lutaml::Cli::EnhancedFormatter do
       expect(result).to include("100 total rows")
     end
 
-    it "shows specified page" do
+    it "shows specified page", :aggregate_failures do
       result = described_class.format_table_with_pagination(
         headers,
         rows,
@@ -147,7 +147,7 @@ RSpec.describe Lutaml::Cli::EnhancedFormatter do
       )
     end
 
-    it "formats class details with box" do
+    it "formats class details with box", :aggregate_failures do
       result = described_class.format_class_details_enhanced(mock_class)
 
       expect(result).to include("TestClass")
@@ -157,7 +157,7 @@ RSpec.describe Lutaml::Cli::EnhancedFormatter do
       expect(result).to include("No")
     end
 
-    it "includes attributes section" do
+    it "includes attributes section", :aggregate_failures do
       result = described_class.format_class_details_enhanced(mock_class)
 
       expect(result).to include("Attributes")
@@ -165,7 +165,7 @@ RSpec.describe Lutaml::Cli::EnhancedFormatter do
       expect(result).to include("Integer")
     end
 
-    it "handles classes without attributes" do
+    it "handles classes without attributes", :aggregate_failures do
       empty_class = double(
         "Class",
         name: "EmptyClass",
@@ -181,7 +181,7 @@ RSpec.describe Lutaml::Cli::EnhancedFormatter do
   end
 
   describe ".format_box" do
-    it "creates a box around text" do
+    it "creates a box around text", :aggregate_failures do
       result = described_class.format_box("Test Content", width: 30)
 
       expect(result).to include("┌")
@@ -191,7 +191,7 @@ RSpec.describe Lutaml::Cli::EnhancedFormatter do
       expect(result).to include("Test Content")
     end
 
-    it "handles multi-line text" do
+    it "handles multi-line text", :aggregate_failures do
       result = described_class.format_box("Line 1\nLine 2", width: 30)
 
       expect(result).to include("Line 1")
@@ -218,7 +218,7 @@ RSpec.describe Lutaml::Cli::EnhancedFormatter do
       }
     end
 
-    it "formats statistics with icons" do
+    it "formats statistics with icons", :aggregate_failures do
       result = described_class.format_stats_enhanced(stats)
 
       expect(result).to include("Repository Statistics")
@@ -228,7 +228,7 @@ RSpec.describe Lutaml::Cli::EnhancedFormatter do
       expect(result).to include("Classes")
     end
 
-    it "includes complexity metrics when requested" do
+    it "includes complexity metrics when requested", :aggregate_failures do
       stats_with_complexity = stats.merge(
         most_complex_classes: [
           { name: "Complex1", total_complexity: 15 },
@@ -246,7 +246,7 @@ RSpec.describe Lutaml::Cli::EnhancedFormatter do
   end
 
   describe "icon constants" do
-    it "defines expected icons" do
+    it "defines expected icons", :aggregate_failures do
       expect(described_class::ICONS[:package]).to eq("📦")
       expect(described_class::ICONS[:class]).to eq("📋")
       expect(described_class::ICONS[:enum]).to eq("🔢")

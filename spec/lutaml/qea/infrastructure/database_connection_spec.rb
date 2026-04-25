@@ -12,7 +12,7 @@ RSpec.describe Lutaml::Qea::Infrastructure::DatabaseConnection do
   let(:nonexistent_file) { "nonexistent.qea" }
 
   describe "#initialize" do
-    it "creates a new connection instance" do
+    it "creates a new connection instance", :aggregate_failures do
       conn = described_class.new(test_qea_file)
       expect(conn).to be_a(described_class)
       expect(conn.file_path).to eq(test_qea_file)
@@ -40,13 +40,13 @@ RSpec.describe Lutaml::Qea::Infrastructure::DatabaseConnection do
       connection.close if connection.connected?
     end
 
-    it "opens a connection to the database" do
+    it "opens a connection to the database", :aggregate_failures do
       db = connection.connect
       expect(db).to be_a(SQLite3::Database)
       expect(connection.connected?).to be true
     end
 
-    it "sets results_as_hash to true" do
+    it "sets results_as_hash to true", :aggregate_failures do
       connection.connect
       result = connection.connection.execute("SELECT 1 as test").first
       expect(result).to be_a(Hash)
@@ -71,7 +71,7 @@ RSpec.describe Lutaml::Qea::Infrastructure::DatabaseConnection do
   describe "#close" do
     let(:connection) { described_class.new(test_qea_file) }
 
-    it "closes an open connection" do
+    it "closes an open connection", :aggregate_failures do
       connection.connect
       expect(connection.connected?).to be true
 
@@ -119,7 +119,7 @@ RSpec.describe Lutaml::Qea::Infrastructure::DatabaseConnection do
       expect(result).to be_a(SQLite3::Database)
     end
 
-    it "automatically opens and closes connection" do
+    it "automatically opens and closes connection", :aggregate_failures do
       expect(connection.connected?).to be false
 
       connection.with_connection do |db|
@@ -130,7 +130,7 @@ RSpec.describe Lutaml::Qea::Infrastructure::DatabaseConnection do
       expect(connection.connected?).to be false
     end
 
-    it "reuses existing connection" do
+    it "reuses existing connection", :aggregate_failures do
       connection.connect
       original_conn = connection.connection
 
@@ -149,7 +149,7 @@ RSpec.describe Lutaml::Qea::Infrastructure::DatabaseConnection do
       expect(result).to be_a(Integer)
     end
 
-    it "allows database queries" do
+    it "allows database queries", :aggregate_failures do
       connection.with_connection do |db|
         tables = db.execute(
           "SELECT name FROM sqlite_master WHERE type='table' " \
@@ -160,7 +160,7 @@ RSpec.describe Lutaml::Qea::Infrastructure::DatabaseConnection do
       end
     end
 
-    it "closes connection even if block raises error" do
+    it "closes connection even if block raises error", :aggregate_failures do
       expect do
         connection.with_connection do |_db|
           raise StandardError, "test error"
@@ -170,7 +170,7 @@ RSpec.describe Lutaml::Qea::Infrastructure::DatabaseConnection do
       expect(connection.connected?).to be false
     end
 
-    it "does not close pre-existing connection on error" do
+    it "does not close pre-existing connection on error", :aggregate_failures do
       connection.connect
 
       expect do
@@ -185,7 +185,7 @@ RSpec.describe Lutaml::Qea::Infrastructure::DatabaseConnection do
   end
 
   describe "integration" do
-    it "can read actual QEA file data" do
+    it "can read actual QEA file data", :aggregate_failures do
       conn = described_class.new(test_qea_file)
       conn.with_connection do |db|
         # Verify we can read tables

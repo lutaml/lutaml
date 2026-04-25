@@ -124,7 +124,7 @@ RSpec.describe Lutaml::Qea::Models::EaDocument do
   end
 
   describe ".from_db_row" do
-    it "creates instance from database row" do
+    it "creates instance from database row", :aggregate_failures do
       row = {
         "DocID" => "DOC123",
         "DocName" => "TestDoc",

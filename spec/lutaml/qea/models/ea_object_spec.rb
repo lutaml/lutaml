@@ -180,7 +180,7 @@ RSpec.describe Lutaml::Qea::Models::EaObject do
   end
 
   describe ".from_db_row" do
-    it "creates instance from database row" do
+    it "creates instance from database row", :aggregate_failures do
       row = {
         "Object_ID" => 123,
         "Object_Type" => "Class",

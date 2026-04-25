@@ -244,7 +244,7 @@ RSpec.describe Lutaml::Qea::Services::DatabaseLoader do
     end
 
     describe "#load_table" do
-      it "loads a single table" do
+      it "loads a single table", :aggregate_failures do
         objects = test_loader.load_table("t_object")
         expect(objects).to be_an(Array)
         expect(objects.size).to eq(2)
@@ -284,7 +284,7 @@ RSpec.describe Lutaml::Qea::Services::DatabaseLoader do
         expect(stats.keys).to include("objects", "packages")
       end
 
-      it "has correct counts" do
+      it "has correct counts", :aggregate_failures do
         stats = test_loader.quick_stats
         expect(stats["objects"]).to eq(2)
         expect(stats["packages"]).to eq(1)

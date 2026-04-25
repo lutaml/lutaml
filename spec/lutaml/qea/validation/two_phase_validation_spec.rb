@@ -15,13 +15,14 @@ RSpec.describe "Two-Phase Validation System" do
   end
 
   describe "Validation Engine Initialization" do
-    it "creates validation engine with document and database" do
+    it "creates validation engine with document and database",
+       :aggregate_failures do
       expect(engine).to be_a(Lutaml::Qea::Validation::ValidationEngine)
       expect(engine.document).to eq(document)
       expect(engine.database).to eq(database)
     end
 
-    it "sets up default validators in registry" do
+    it "sets up default validators in registry", :aggregate_failures do
       expect(engine.registry).to be_a(Lutaml::Qea::Validation::ValidatorRegistry)
 
       # Phase 1: Database validators
@@ -41,14 +42,14 @@ RSpec.describe "Two-Phase Validation System" do
   end
 
   describe "Phase 1: QEA Database Validation" do
-    it "validates database referential integrity" do
+    it "validates database referential integrity", :aggregate_failures do
       result = engine.validate_qea_database(engine.send(:build_context))
 
       expect(result).to be_a(Lutaml::Qea::Validation::ValidationResult)
       expect(result.messages).to be_an(Array)
     end
 
-    it "uses db_packages not UML packages" do
+    it "uses db_packages not UML packages", :aggregate_failures do
       context = engine.send(:build_context)
 
       expect(context[:db_packages]).to be_an(Array)
@@ -57,7 +58,7 @@ RSpec.describe "Two-Phase Validation System" do
       expect(context[:db_packages].first).to respond_to(:package_id)
     end
 
-    it "uses db_objects not UML classes" do
+    it "uses db_objects not UML classes", :aggregate_failures do
       context = engine.send(:build_context)
 
       expect(context[:db_objects]).to be_an(Array)
@@ -79,14 +80,14 @@ RSpec.describe "Two-Phase Validation System" do
   end
 
   describe "Phase 2: UML Tree Validation" do
-    it "validates UML document structure" do
+    it "validates UML document structure", :aggregate_failures do
       result = engine.validate_uml_tree(engine.send(:build_context))
 
       expect(result).to be_a(Lutaml::Qea::Validation::ValidationResult)
       expect(result.messages).to be_an(Array)
     end
 
-    it "uses UML packages not database packages" do
+    it "uses UML packages not database packages", :aggregate_failures do
       context = engine.send(:build_context)
 
       expect(context[:packages]).to be_an(Array)
@@ -109,7 +110,7 @@ RSpec.describe "Two-Phase Validation System" do
   end
 
   describe "Full Two-Phase Validation" do
-    it "runs both phases and merges results" do
+    it "runs both phases and merges results", :aggregate_failures do
       result = engine.validate
 
       expect(result).to be_a(Lutaml::Qea::Validation::ValidationResult)
@@ -118,7 +119,7 @@ RSpec.describe "Two-Phase Validation System" do
         .to eq(result.messages.size)
     end
 
-    it "reports validation summary" do
+    it "reports validation summary", :aggregate_failures do
       result = engine.validate
       summary = result.summary
 
@@ -127,7 +128,7 @@ RSpec.describe "Two-Phase Validation System" do
       expect(summary).to include("Warnings:")
     end
 
-    it "categorizes messages by severity" do
+    it "categorizes messages by severity", :aggregate_failures do
       result = engine.validate
 
       expect(result.errors).to all(have_attributes(severity: :error))
@@ -137,7 +138,7 @@ RSpec.describe "Two-Phase Validation System" do
   end
 
   describe "Validator Separation" do
-    it "Phase 1 validators work with database models" do
+    it "Phase 1 validators work with database models", :aggregate_failures do
       # Test that database validators use EaPackage which has root? method
       context = engine.send(:build_context)
       db_packages = context[:db_packages]
@@ -147,7 +148,7 @@ RSpec.describe "Two-Phase Validation System" do
       expect(db_packages.first.class.name).to eq("Lutaml::Qea::Models::EaPackage")
     end
 
-    it "Phase 2 validators work with UML models" do
+    it "Phase 2 validators work with UML models", :aggregate_failures do
       # Test that UML validators use Lutaml::Uml::Package
       context = engine.send(:build_context)
       uml_packages = context[:packages]

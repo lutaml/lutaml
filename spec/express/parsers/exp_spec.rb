@@ -15,7 +15,7 @@ RSpec.describe Lutaml::Express::Parsers::Exp do
         expect(parse).to be_instance_of(Expressir::Model::Repository)
       end
 
-      it "correctly reads schema attributes" do
+      it "correctly reads schema attributes", :aggregate_failures do
         expect(parse.schemas.first.id)
           .to(eq("annotated_3d_model_data_quality_criteria_schema"))
         expect(parse.schemas.first.entities.map(&:id))

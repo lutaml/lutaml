@@ -31,7 +31,7 @@ RSpec.describe Lutaml::Ea::Diagram::StyleResolver do
     end
 
     context "without diagram object" do
-      it "returns style hash with basic properties" do
+      it "returns style hash with basic properties", :aggregate_failures do
         style = resolver.resolve_element_style(element)
 
         expect(style).to be_a(Hash)
@@ -40,7 +40,7 @@ RSpec.describe Lutaml::Ea::Diagram::StyleResolver do
         expect(style).to have_key(:stroke_width)
       end
 
-      it "includes font properties" do
+      it "includes font properties", :aggregate_failures do
         style = resolver.resolve_element_style(element)
 
         expect(style).to have_key(:font_family)
@@ -48,7 +48,7 @@ RSpec.describe Lutaml::Ea::Diagram::StyleResolver do
         expect(style).to have_key(:font_weight)
       end
 
-      it "includes box properties" do
+      it "includes box properties", :aggregate_failures do
         style = resolver.resolve_element_style(element)
 
         expect(style).to have_key(:stroke_linecap)
@@ -69,14 +69,14 @@ RSpec.describe Lutaml::Ea::Diagram::StyleResolver do
                style: "BCol=16764159;LCol=0;LWth=2;")
       end
 
-      it "merges EA style with configuration defaults" do
+      it "merges EA style with configuration defaults", :aggregate_failures do
         style = resolver.resolve_element_style(element, diagram_object)
 
         expect(style).to have_key(:fill)
         expect(style).to have_key(:stroke)
       end
 
-      it "gives priority to EA colors over config" do
+      it "gives priority to EA colors over config", :aggregate_failures do
         style = resolver.resolve_element_style(element, diagram_object)
 
         # Should have colors from EA data
@@ -130,14 +130,14 @@ RSpec.describe Lutaml::Ea::Diagram::StyleResolver do
                class: double(name: "Lutaml::Uml::Generalization"))
       end
 
-      it "returns generalization style" do
+      it "returns generalization style", :aggregate_failures do
         style = resolver.resolve_connector_style(connector)
 
         expect(style).to have_key(:arrow_type)
         expect(style[:arrow_type]).to eq("hollow_triangle")
       end
 
-      it "includes line properties" do
+      it "includes line properties", :aggregate_failures do
         style = resolver.resolve_connector_style(connector)
 
         expect(style).to have_key(:stroke)
@@ -158,7 +158,7 @@ RSpec.describe Lutaml::Ea::Diagram::StyleResolver do
                member_end: [])
       end
 
-      it "returns association style" do
+      it "returns association style", :aggregate_failures do
         style = resolver.resolve_connector_style(connector)
 
         expect(style).to have_key(:arrow_type)
@@ -178,7 +178,7 @@ RSpec.describe Lutaml::Ea::Diagram::StyleResolver do
                style: "LCol=255;LWth=3;LStyle=1;")
       end
 
-      it "merges EA style with defaults" do
+      it "merges EA style with defaults", :aggregate_failures do
         style = resolver.resolve_connector_style(connector, diagram_link)
 
         expect(style[:stroke_width]).to eq(3)
@@ -187,7 +187,7 @@ RSpec.describe Lutaml::Ea::Diagram::StyleResolver do
     end
 
     context "with nil connector" do
-      it "defaults to association type" do
+      it "defaults to association type", :aggregate_failures do
         style = resolver.resolve_connector_style(nil)
 
         expect(style).to be_a(Hash)
@@ -204,7 +204,7 @@ RSpec.describe Lutaml::Ea::Diagram::StyleResolver do
              stereotype: nil)
     end
 
-    it "returns configuration fill color" do
+    it "returns configuration fill color", :aggregate_failures do
       color = resolver.resolve_fill_color(element)
 
       expect(color).to be_a(String)
@@ -217,7 +217,7 @@ RSpec.describe Lutaml::Ea::Diagram::StyleResolver do
                style: "BCol=16764159;")
       end
 
-      it "prioritizes EA fill color over config" do
+      it "prioritizes EA fill color over config", :aggregate_failures do
         color = resolver.resolve_fill_color(element, diagram_object)
 
         expect(color).to be_a(String)
@@ -242,7 +242,7 @@ RSpec.describe Lutaml::Ea::Diagram::StyleResolver do
              stereotype: nil)
     end
 
-    it "returns configuration stroke color" do
+    it "returns configuration stroke color", :aggregate_failures do
       color = resolver.resolve_stroke_color(element)
 
       expect(color).to be_a(String)
@@ -271,7 +271,7 @@ RSpec.describe Lutaml::Ea::Diagram::StyleResolver do
              stereotype: nil)
     end
 
-    it "returns font properties hash" do
+    it "returns font properties hash", :aggregate_failures do
       font = resolver.resolve_font(element)
 
       expect(font).to be_a(Hash)
@@ -285,7 +285,7 @@ RSpec.describe Lutaml::Ea::Diagram::StyleResolver do
       expect(font[:weight]).to eq(700) # Bold for class names
     end
 
-    it "accepts different context types" do
+    it "accepts different context types", :aggregate_failures do
       attribute_font = resolver.resolve_font(element, :attribute)
       operation_font = resolver.resolve_font(element, :operation)
       stereotype_font = resolver.resolve_font(element, :stereotype)
@@ -304,7 +304,7 @@ RSpec.describe Lutaml::Ea::Diagram::StyleResolver do
 
   describe "private methods" do
     describe "#parse_diagram_object_style" do
-      it "parses BCol (fill color)" do
+      it "parses BCol (fill color)", :aggregate_failures do
         style_string = "BCol=16764159;"
         result = resolver.send(:parse_diagram_object_style, style_string)
 
@@ -312,7 +312,7 @@ RSpec.describe Lutaml::Ea::Diagram::StyleResolver do
         expect(result[:fill]).to match(/^#[0-9A-F]{6}$/i)
       end
 
-      it "parses LCol (stroke color)" do
+      it "parses LCol (stroke color)", :aggregate_failures do
         style_string = "LCol=255;"
         result = resolver.send(:parse_diagram_object_style, style_string)
 
@@ -327,7 +327,7 @@ RSpec.describe Lutaml::Ea::Diagram::StyleResolver do
         expect(result[:stroke_width]).to eq(3)
       end
 
-      it "parses BFol (bold font)" do
+      it "parses BFol (bold font)", :aggregate_failures do
         bold_style = "BFol=1;"
         normal_style = "BFol=0;"
 
@@ -338,7 +338,7 @@ RSpec.describe Lutaml::Ea::Diagram::StyleResolver do
         expect(normal_result[:font_weight]).to eq(400)
       end
 
-      it "parses IFol (italic font)" do
+      it "parses IFol (italic font)", :aggregate_failures do
         italic_style = "IFol=1;"
         normal_style = "IFol=0;"
 
@@ -349,7 +349,7 @@ RSpec.describe Lutaml::Ea::Diagram::StyleResolver do
         expect(normal_result[:font_style]).to eq("normal")
       end
 
-      it "parses multiple properties" do
+      it "parses multiple properties", :aggregate_failures do
         style_string = "BCol=16764159;LCol=255;LWth=2;BFol=1;IFol=1;"
         result = resolver.send(:parse_diagram_object_style, style_string)
 
@@ -372,7 +372,7 @@ RSpec.describe Lutaml::Ea::Diagram::StyleResolver do
         expect(result).to eq({})
       end
 
-      it "ignores unknown properties" do
+      it "ignores unknown properties", :aggregate_failures do
         style_string = "UNKNOWN=123;BCol=16764159;"
         result = resolver.send(:parse_diagram_object_style, style_string)
 
@@ -389,7 +389,7 @@ RSpec.describe Lutaml::Ea::Diagram::StyleResolver do
     end
 
     describe "#parse_diagram_link_style" do
-      it "parses LCol (line color)" do
+      it "parses LCol (line color)", :aggregate_failures do
         style_string = "LCol=255;"
         result = resolver.send(:parse_diagram_link_style, style_string)
 

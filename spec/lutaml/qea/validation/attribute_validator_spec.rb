@@ -58,7 +58,7 @@ RSpec.describe Lutaml::Qea::Validation::AttributeValidator do
         ]
       end
 
-      it "passes validation" do
+      it "passes validation", :aggregate_failures do
         validator.validate
         expect(result.valid?).to be true
         expect(result.errors).to be_empty
@@ -94,7 +94,7 @@ RSpec.describe Lutaml::Qea::Validation::AttributeValidator do
         ]
       end
 
-      it "finds classifier by object_id (not name)" do
+      it "finds classifier by object_id (not name)", :aggregate_failures do
         validator.validate
         expect(result.warnings).to be_empty
         expect(result.valid?).to be true
@@ -186,7 +186,7 @@ RSpec.describe Lutaml::Qea::Validation::AttributeValidator do
         ]
       end
 
-      it "reports missing classifier warning" do
+      it "reports missing classifier warning", :aggregate_failures do
         validator.validate
         expect(result.warnings.size).to eq(1)
 
@@ -233,7 +233,7 @@ RSpec.describe Lutaml::Qea::Validation::AttributeValidator do
         ]
       end
 
-      it "does not warn about primitive types" do
+      it "does not warn about primitive types", :aggregate_failures do
         validator.validate
         expect(result.warnings).to be_empty
         expect(result.valid?).to be true
@@ -253,7 +253,7 @@ RSpec.describe Lutaml::Qea::Validation::AttributeValidator do
         ]
       end
 
-      it "reports missing parent error" do
+      it "reports missing parent error", :aggregate_failures do
         validator.validate
         expect(result.valid?).to be false
         expect(result.errors.size).to eq(1)
@@ -294,7 +294,7 @@ RSpec.describe Lutaml::Qea::Validation::AttributeValidator do
         ]
       end
 
-      it "does not validate nil or empty classifiers" do
+      it "does not validate nil or empty classifiers", :aggregate_failures do
         validator.validate
         expect(result.warnings).to be_empty
         expect(result.valid?).to be true
@@ -363,7 +363,7 @@ RSpec.describe Lutaml::Qea::Validation::AttributeValidator do
         ]
       end
 
-      it "reports all issues" do
+      it "reports all issues", :aggregate_failures do
         validator.validate
         expect(result.errors.size).to eq(1)
         expect(result.warnings.size).to eq(1)

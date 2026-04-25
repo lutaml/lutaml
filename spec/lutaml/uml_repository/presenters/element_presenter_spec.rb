@@ -10,12 +10,12 @@ RSpec.describe Lutaml::UmlRepository::Presenters::ElementPresenter do
   let(:presenter) { described_class.new(mock_element, mock_repository) }
 
   describe "#initialize" do
-    it "stores element and repository" do
+    it "stores element and repository", :aggregate_failures do
       expect(presenter.element).to eq(mock_element)
       expect(presenter.repository).to eq(mock_repository)
     end
 
-    it "allows nil repository" do
+    it "allows nil repository", :aggregate_failures do
       presenter_without_repo = described_class.new(mock_element)
       expect(presenter_without_repo.element).to eq(mock_element)
       expect(presenter_without_repo.repository).to be_nil
@@ -105,7 +105,7 @@ RSpec.describe Lutaml::UmlRepository::Presenters::ElementPresenter do
       expect(result).to eq(text)
     end
 
-    it "truncates long text with ellipsis" do
+    it "truncates long text with ellipsis", :aggregate_failures do
       text = "a" * 100
       result = presenter.send(:truncate, text, 50)
       expect(result).to eq("#{'a' * 47}...")

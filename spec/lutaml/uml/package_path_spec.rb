@@ -88,7 +88,7 @@ RSpec.describe Lutaml::Uml::PackagePath do
       expect(parent).to be_nil
     end
 
-    it "returns correct parent for multi-level path" do
+    it "returns correct parent for multi-level path", :aggregate_failures do
       path = described_class.new("ModelRoot::A::B::C")
       expect(path.parent.to_s).to eq("ModelRoot::A::B")
       expect(path.parent.parent.to_s).to eq("ModelRoot::A")
@@ -163,7 +163,7 @@ RSpec.describe Lutaml::Uml::PackagePath do
       expect(path.matches_glob?("ModelRoot::*::Class1")).to be false
     end
 
-    it "matches complex glob patterns" do
+    it "matches complex glob patterns", :aggregate_failures do
       path = described_class.new("ModelRoot::Package1::Sub1::Sub2::Class1")
       expect(path.matches_glob?("ModelRoot::**::Class1")).to be true
       expect(path.matches_glob?("ModelRoot::Package1::**")).to be true

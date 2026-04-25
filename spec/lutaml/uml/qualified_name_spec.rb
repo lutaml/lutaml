@@ -48,21 +48,22 @@ RSpec.describe Lutaml::Uml::QualifiedName do
   end
 
   describe "#package_path" do
-    it "returns PackagePath for packages" do
+    it "returns PackagePath for packages", :aggregate_failures do
       qname = described_class.new("Package1::Package2::ClassName")
       path = qname.package_path
       expect(path).to be_a(Lutaml::Uml::PackagePath)
       expect(path.to_s).to eq("Package1::Package2")
     end
 
-    it "returns empty PackagePath for unqualified name" do
+    it "returns empty PackagePath for unqualified name", :aggregate_failures do
       qname = described_class.new("ClassName")
       path = qname.package_path
       expect(path).to be_a(Lutaml::Uml::PackagePath)
       expect(path.to_s).to eq("")
     end
 
-    it "returns empty PackagePath for empty qualified name" do
+    it "returns empty PackagePath for empty qualified name",
+       :aggregate_failures do
       qname = described_class.new("")
       path = qname.package_path
       expect(path).to be_a(Lutaml::Uml::PackagePath)
@@ -113,7 +114,7 @@ RSpec.describe Lutaml::Uml::QualifiedName do
       expect(qname.matches_glob?("Package1::Class*")).to be true
     end
 
-    it "matches complex glob patterns" do
+    it "matches complex glob patterns", :aggregate_failures do
       qname = described_class.new("Package1::Sub1::Sub2::ClassName")
       expect(qname.matches_glob?("Package1::**::ClassName")).to be true
       expect(qname.matches_glob?("Package1::*::**")).to be true

@@ -38,14 +38,15 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
       expect(exporter.metadata).to eq(metadata)
     end
 
-    it "accepts metadata as hash" do
+    it "accepts metadata as hash", :aggregate_failures do
       exporter = described_class.new(repository,
                                      metadata: { name: "Test", version: "1.0" })
       expect(exporter.metadata).to be_a(Lutaml::UmlRepository::PackageMetadata)
       expect(exporter.metadata.name).to eq("Test")
     end
 
-    it "accepts old-style name/version options (backward compatible)" do
+    it "accepts old-style name/version options (backward compatible)",
+       :aggregate_failures do
       exporter = described_class.new(repository,
                                      name: "Legacy Model",
                                      version: "2.0")
@@ -53,7 +54,7 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
       expect(exporter.metadata.version).to eq("2.0")
     end
 
-    it "defaults to UML Model v1.0" do
+    it "defaults to UML Model v1.0", :aggregate_failures do
       exporter = described_class.new(repository)
       expect(exporter.metadata.name).to eq("UML Model")
       expect(exporter.metadata.version).to eq("1.0")
@@ -79,7 +80,7 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
       expect { Zip::File.open(output_path) {} }.not_to raise_error
     end
 
-    it "includes metadata.yaml" do
+    it "includes metadata.yaml", :aggregate_failures do
       exporter = described_class.new(repository,
                                      name: "Test Model",
                                      version: "1.2.3")
@@ -102,7 +103,8 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
       end
     end
 
-    it "includes PackageMetadata fields in metadata.yaml" do
+    it "includes PackageMetadata fields in metadata.yaml",
+       :aggregate_failures do
       metadata = Lutaml::UmlRepository::PackageMetadata.new(
         name: "Urban Model",
         version: "2.0",
@@ -129,7 +131,8 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
       end
     end
 
-    it "includes serialized repository with marshal format" do
+    it "includes serialized repository with marshal format",
+       :aggregate_failures do
       exporter = described_class.new(repository)
       exporter.export(output_path)
 
@@ -142,7 +145,7 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
       end
     end
 
-    it "includes serialized repository with yaml format" do
+    it "includes serialized repository with yaml format", :aggregate_failures do
       exporter = described_class.new(repository, serialization_format: :yaml)
       exporter.export(output_path)
 
@@ -159,7 +162,7 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
       end
     end
 
-    it "includes indexes" do
+    it "includes indexes", :aggregate_failures do
       exporter = described_class.new(repository)
       exporter.export(output_path)
 
@@ -172,7 +175,7 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
       end
     end
 
-    it "includes index_tree.yaml" do
+    it "includes index_tree.yaml", :aggregate_failures do
       exporter = described_class.new(repository)
       exporter.export(output_path)
 
@@ -191,7 +194,7 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
       end
     end
 
-    it "includes statistics.yaml" do
+    it "includes statistics.yaml", :aggregate_failures do
       exporter = described_class.new(repository)
       exporter.export(output_path)
 
@@ -223,7 +226,7 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
         .to raise_error(Errno::ENOENT)
     end
 
-    it "overwrites existing file" do
+    it "overwrites existing file", :aggregate_failures do
       exporter = described_class.new(repository)
       exporter.export(output_path)
 
@@ -237,7 +240,7 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
   end
 
   describe "backward compatibility" do
-    it "works with old-style options" do
+    it "works with old-style options", :aggregate_failures do
       exporter = described_class.new(repository,
                                      name: "Legacy",
                                      version: "1.0",
@@ -261,7 +264,7 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
       end
     end
 
-    it "works with old-style options (marshal format)" do
+    it "works with old-style options (marshal format)", :aggregate_failures do
       exporter = described_class.new(repository,
                                      name: "Legacy",
                                      version: "1.0",
@@ -285,7 +288,8 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
       end
     end
 
-    it "metadata hash takes precedence over old-style options" do
+    it "metadata hash takes precedence over old-style options",
+       :aggregate_failures do
       exporter = described_class.new(repository,
                                      name: "Old",
                                      version: "1.0",
@@ -297,7 +301,7 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
   end
 
   describe "metadata priority" do
-    it "PackageMetadata object has highest priority" do
+    it "PackageMetadata object has highest priority", :aggregate_failures do
       metadata_obj = Lutaml::UmlRepository::PackageMetadata.new(
         name: "Object",
         version: "3.0",
@@ -311,7 +315,7 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
       expect(exporter.metadata.version).to eq("3.0")
     end
 
-    it "metadata hash has second priority" do
+    it "metadata hash has second priority", :aggregate_failures do
       exporter = described_class.new(repository,
                                      metadata: { name: "Hash", version: "2.0" },
                                      name: "Options",
@@ -321,7 +325,7 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
       expect(exporter.metadata.version).to eq("2.0")
     end
 
-    it "old-style options have lowest priority" do
+    it "old-style options have lowest priority", :aggregate_failures do
       exporter = described_class.new(repository,
                                      name: "Options",
                                      version: "1.0")

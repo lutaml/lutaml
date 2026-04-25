@@ -90,7 +90,7 @@ RSpec.describe "EA Diagram SVG Accuracy" do
       expect(File.exist?(lur_path)).to be true
     end
 
-    it "loads repository successfully" do
+    it "loads repository successfully", :aggregate_failures do
       expect { repository }.not_to raise_error
     end
 
@@ -285,7 +285,7 @@ RSpec.describe "EA Diagram SVG Accuracy" do
         expect(xmi_id_to_ea_filename(xmi_id)).to eq(expected)
       end
 
-      it "handles lowercase XMI IDs" do
+      it "handles lowercase XMI IDs", :aggregate_failures do
         xmi_id = "{b58d1a53-e860-41a3-8352-11c274093e83}"
         result = xmi_id_to_ea_filename(xmi_id)
 
@@ -296,7 +296,7 @@ RSpec.describe "EA Diagram SVG Accuracy" do
     end
 
     describe "#find_ea_reference_svg" do
-      it "finds existing EA reference SVG" do
+      it "finds existing EA reference SVG", :aggregate_failures do
         xmi_id = "{B58D1A53-E860-41a3-8352-11C274093E83}"
         path = find_ea_reference_svg(xmi_id)
 

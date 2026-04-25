@@ -17,3 +17,13 @@ plugins:
 
 AllCops:
   TargetRubyVersion: 3.2
+
+# VerifiedDoubles is disabled because many spec files use double() to mock
+# UML model classes (Lutaml::Uml::Class, Package, etc.) that don't implement
+# all stubbed methods as real Ruby methods (they use Lutaml::Model::Serializable
+# attribute declarations). Converting to instance_double would cause test failures
+# due to method verification.
+RSpec/VerifiedDoubles:
+  Enabled: false
+  Exclude:
+    - 'spec/**/*'

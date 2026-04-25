@@ -112,7 +112,7 @@ RSpec.describe "CLI Error Handling and Edge Cases (via UmlCommands)" do
       end.to output(/Unknown format|Failed to load/).to_stdout
     end
 
-    it "handles very large exports" do
+    it "handles very large exports", :aggregate_failures do
       output_file = File.join(output_dir, "large_export.json")
 
       begin
@@ -236,14 +236,16 @@ RSpec.describe "CLI Error Handling and Edge Cases (via UmlCommands)" do
   describe "concurrent and performance scenarios" do
     it "handles reasonable timeouts gracefully" do
       # Just ensure stats command completes in reasonable time
-      start_time = Time.now
+      aggregate_failures do
+        start_time = Time.now
 
-      expect do
-        Lutaml::Cli::UmlCommands.start(["stats", test_lur])
-      end.not_to output(/ERROR/).to_stdout
+        expect do
+          Lutaml::Cli::UmlCommands.start(["stats", test_lur])
+        end.not_to output(/ERROR/).to_stdout
 
-      duration = Time.now - start_time
-      expect(duration).to be < 30.0 # Should complete within 30 seconds
+        duration = Time.now - start_time
+        expect(duration).to be < 30.0 # Should complete within 30 seconds
+      end
     end
   end
 

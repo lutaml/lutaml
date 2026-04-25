@@ -32,7 +32,8 @@ RSpec.describe Lutaml::Qea::Factory::GeneralizationTransformer do
       expect(result).to be_nil
     end
 
-    it "transforms EA generalization to UML generalization" do
+    it "transforms EA generalization to UML generalization",
+       :aggregate_failures do
       ea_conn = Lutaml::Qea::Models::EaConnector.new(
         connector_id: 1,
         connector_type: "Generalization",

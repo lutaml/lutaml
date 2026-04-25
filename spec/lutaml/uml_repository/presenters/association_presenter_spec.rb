@@ -24,7 +24,7 @@ RSpec.describe Lutaml::UmlRepository::Presenters::AssociationPresenter do
   let(:repository) { nil }
 
   describe "#initialize" do
-    it "accepts an element, repository, and context" do
+    it "accepts an element, repository, and context", :aggregate_failures do
       presenter = described_class.new(association, repository, context)
       expect(presenter.element).to eq(association)
       expect(presenter.context).to eq(context)
@@ -37,7 +37,7 @@ RSpec.describe Lutaml::UmlRepository::Presenters::AssociationPresenter do
   end
 
   describe "#to_text" do
-    it "formats association details as text" do
+    it "formats association details as text", :aggregate_failures do
       presenter = described_class.new(association, repository, context)
       result = presenter.to_text
 
@@ -47,7 +47,7 @@ RSpec.describe Lutaml::UmlRepository::Presenters::AssociationPresenter do
       expect(result).to include("Target:        CityObject")
     end
 
-    it "handles unnamed associations" do
+    it "handles unnamed associations", :aggregate_failures do
       association.name = nil
       presenter = described_class.new(association, repository, context)
       result = presenter.to_text
@@ -58,7 +58,7 @@ RSpec.describe Lutaml::UmlRepository::Presenters::AssociationPresenter do
   end
 
   describe "#to_table_row" do
-    it "returns a hash suitable for table display" do
+    it "returns a hash suitable for table display", :aggregate_failures do
       presenter = described_class.new(association, repository, context)
       result = presenter.to_table_row
 
@@ -78,7 +78,7 @@ RSpec.describe Lutaml::UmlRepository::Presenters::AssociationPresenter do
   end
 
   describe "#to_hash" do
-    it "returns a hash with association data" do
+    it "returns a hash with association data", :aggregate_failures do
       presenter = described_class.new(association, repository, context)
       result = presenter.to_hash
 
@@ -89,7 +89,7 @@ RSpec.describe Lutaml::UmlRepository::Presenters::AssociationPresenter do
       expect(result[:target]).to eq("CityObject")
     end
 
-    it "includes xmi_id when present" do
+    it "includes xmi_id when present", :aggregate_failures do
       association.instance_variable_set(:@xmi_id, "EAID_12345")
       presenter = described_class.new(association, repository, context)
       result = presenter.to_hash

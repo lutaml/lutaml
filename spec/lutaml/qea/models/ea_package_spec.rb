@@ -121,7 +121,7 @@ RSpec.describe Lutaml::Qea::Models::EaPackage do
   end
 
   describe ".from_db_row" do
-    it "creates instance from database row" do
+    it "creates instance from database row", :aggregate_failures do
       row = {
         "Package_ID" => 123,
         "Name" => "MyPackage",

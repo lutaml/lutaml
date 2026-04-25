@@ -9,7 +9,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::AssociationQuery do
   let(:query) { described_class.new(document, indexes) }
 
   describe "#find_for_class" do
-    it "finds associations for a class" do
+    it "finds associations for a class", :aggregate_failures do
       classes = indexes[:qualified_names].values.grep(Lutaml::Uml::Class)
 
       classes.each do |klass|
@@ -37,7 +37,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::AssociationQuery do
   end
 
   describe "#find_by_type" do
-    it "finds associations of specific type" do
+    it "finds associations of specific type", :aggregate_failures do
       association_types = %w[aggregation composition association]
 
       association_types.each do |type|
@@ -95,7 +95,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::AssociationQuery do
       expect(associations).to eq([])
     end
 
-    it "finds bidirectional associations" do
+    it "finds bidirectional associations", :aggregate_failures do
       classes_with_assocs = indexes[:qualified_names].values.select do |e|
         e.is_a?(Lutaml::Uml::Class) && !e.associations.empty?
       end
@@ -121,7 +121,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::AssociationQuery do
   end
 
   describe "#all" do
-    it "returns all associations" do
+    it "returns all associations", :aggregate_failures do
       associations = query.all
       expect(associations).to be_an(Array)
       expect(associations).to all(be_a(Lutaml::Uml::Association))
@@ -142,7 +142,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::AssociationQuery do
   end
 
   describe "#find_aggregations" do
-    it "finds all aggregation associations" do
+    it "finds all aggregation associations", :aggregate_failures do
       aggregations = query.find_aggregations
       expect(aggregations).to be_an(Array)
       aggregations.each do |assoc|
@@ -152,7 +152,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::AssociationQuery do
   end
 
   describe "#find_compositions" do
-    it "finds all composition associations" do
+    it "finds all composition associations", :aggregate_failures do
       compositions = query.find_compositions
       expect(compositions).to be_an(Array)
       compositions.each do |assoc|

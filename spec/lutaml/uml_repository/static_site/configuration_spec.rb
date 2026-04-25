@@ -8,14 +8,14 @@ require "tempfile"
 RSpec.describe Lutaml::UmlRepository::StaticSite::Configuration do
   describe ".load" do
     context "with default configuration file" do
-      it "loads configuration from default path" do
+      it "loads configuration from default path", :aggregate_failures do
         config = described_class.load
 
         expect(config).to be_a(described_class)
         expect(config.version).to eq("1.0")
       end
 
-      it "parses all configuration sections" do
+      it "parses all configuration sections", :aggregate_failures do
         config = described_class.load
 
         expect(config.output).to be_a(described_class::OutputConfig)
@@ -66,14 +66,14 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Configuration do
 
       after { custom_config_file.unlink }
 
-      it "loads custom configuration from file" do
+      it "loads custom configuration from file", :aggregate_failures do
         config = described_class.load(custom_config_file.path)
 
         expect(config.version).to eq("2.0")
         expect(config.description).to eq("Custom test configuration")
       end
 
-      it "parses search field configurations" do
+      it "parses search field configurations", :aggregate_failures do
         config = described_class.load(custom_config_file.path)
 
         expect(config.search.fields).to be_an(Array)
@@ -82,7 +82,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Configuration do
         expect(config.search.fields.first.boost).to eq(15)
       end
 
-      it "parses document type configurations" do
+      it "parses document type configurations", :aggregate_failures do
         config = described_class.load(custom_config_file.path)
 
         expect(config.search.document_types).to be_an(Array)
@@ -94,7 +94,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Configuration do
     end
 
     context "when configuration file doesn't exist" do
-      it "creates default configuration" do
+      it "creates default configuration", :aggregate_failures do
         config = described_class.load("nonexistent.yml")
 
         expect(config).to be_a(described_class)
@@ -104,7 +104,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Configuration do
   end
 
   describe ".default_config_path" do
-    it "returns path to default configuration file" do
+    it "returns path to default configuration file", :aggregate_failures do
       path = described_class.default_config_path
 
       expect(path).to include("config/static_site.yml")
@@ -113,7 +113,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Configuration do
   end
 
   describe ".create_default_configuration" do
-    it "creates valid default configuration" do
+    it "creates valid default configuration", :aggregate_failures do
       config = described_class.create_default_configuration
 
       expect(config).to be_a(described_class)
@@ -179,12 +179,12 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Configuration do
   describe "OutputMode" do
     let(:output_mode) { described_class::OutputMode.new }
 
-    it "has sensible defaults" do
+    it "has sensible defaults", :aggregate_failures do
       expect(output_mode.enabled).to be true
       expect(output_mode.minify).to be false
     end
 
-    it "can be configured" do
+    it "can be configured", :aggregate_failures do
       output_mode.enabled = false
       output_mode.default_filename = "test.html"
       output_mode.minify = true
@@ -198,12 +198,12 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Configuration do
   describe "SearchField" do
     let(:search_field) { described_class::SearchField.new }
 
-    it "has sensible defaults" do
+    it "has sensible defaults", :aggregate_failures do
       expect(search_field.boost).to eq(1)
       expect(search_field.searchable).to be true
     end
 
-    it "can be configured" do
+    it "can be configured", :aggregate_failures do
       search_field.name = "testField"
       search_field.boost = 5
       search_field.searchable = false
@@ -217,12 +217,12 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Configuration do
   describe "DocumentType" do
     let(:doc_type) { described_class::DocumentType.new }
 
-    it "has sensible defaults" do
+    it "has sensible defaults", :aggregate_failures do
       expect(doc_type.boost).to eq(1.0)
       expect(doc_type.enabled).to be true
     end
 
-    it "can be configured" do
+    it "can be configured", :aggregate_failures do
       doc_type.type = "class"
       doc_type.boost = 1.5
       doc_type.enabled = false
@@ -234,7 +234,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Configuration do
   end
 
   describe "integration" do
-    it "loads and validates complete configuration" do
+    it "loads and validates complete configuration", :aggregate_failures do
       config = described_class.load
 
       expect(config.version).to be_a(String)
@@ -243,7 +243,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Configuration do
       expect(config.ui).to be_a(described_class::UIConfig)
     end
 
-    it "provides access to all configuration sections" do
+    it "provides access to all configuration sections", :aggregate_failures do
       config = described_class.load
 
       expect(config.transformation_options).to be_a(Hash)

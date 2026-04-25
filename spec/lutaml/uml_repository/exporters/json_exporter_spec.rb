@@ -53,7 +53,7 @@ RSpec.describe Lutaml::UmlRepository::Exporters::JsonExporter do
   end
 
   describe "#export" do
-    it "exports repository to JSON" do
+    it "exports repository to JSON", :aggregate_failures do
       exporter.export(output_path)
 
       data = JSON.parse(File.read(output_path))
@@ -63,7 +63,7 @@ RSpec.describe Lutaml::UmlRepository::Exporters::JsonExporter do
       expect(data).to have_key("associations")
     end
 
-    it "includes metadata" do
+    it "includes metadata", :aggregate_failures do
       exporter.export(output_path)
 
       data = JSON.parse(File.read(output_path))
@@ -71,7 +71,7 @@ RSpec.describe Lutaml::UmlRepository::Exporters::JsonExporter do
       expect(data["metadata"]["total_packages"]).to eq(3)
     end
 
-    it "exports classes with details" do
+    it "exports classes with details", :aggregate_failures do
       exporter.export(output_path)
 
       data = JSON.parse(File.read(output_path))
@@ -81,7 +81,7 @@ RSpec.describe Lutaml::UmlRepository::Exporters::JsonExporter do
         .to eq("ModelRoot::i-UR::urf::Building")
     end
 
-    it "supports pretty printing" do
+    it "supports pretty printing", :aggregate_failures do
       exporter.export(output_path, pretty: true)
 
       content = File.read(output_path)

@@ -52,7 +52,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::SearchIndexBuilder do
   let(:builder) { described_class.new(repository) }
 
   describe "#initialize" do
-    it "initializes with repository and default options" do
+    it "initializes with repository and default options", :aggregate_failures do
       expect(builder.repository).to eq(repository)
       expect(builder.options).to be_a(Hash)
     end
@@ -63,7 +63,8 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::SearchIndexBuilder do
   end
 
   describe "#build" do
-    it "returns lunr.js-compatible search index structure" do
+    it "returns lunr.js-compatible search index structure",
+       :aggregate_failures do
       index = builder.build
 
       expect(index).to be_a(Hash)
@@ -77,7 +78,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::SearchIndexBuilder do
       expect(index[:version]).to eq("1.0.0")
     end
 
-    it "defines searchable fields with boost values" do
+    it "defines searchable fields with boost values", :aggregate_failures do
       index = builder.build
       fields = index[:fields]
 
@@ -95,7 +96,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::SearchIndexBuilder do
       expect(index[:ref]).to eq("id")
     end
 
-    it "builds document store with all entity types" do
+    it "builds document store with all entity types", :aggregate_failures do
       index = builder.build
       docs = index[:documentStore]
 
@@ -119,7 +120,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::SearchIndexBuilder do
     let(:index) { builder.build }
     let(:documents) { index[:documentStore] }
 
-    it "creates documents for classes" do
+    it "creates documents for classes", :aggregate_failures do
       class_docs = documents.select { |d| d[:type] == "class" }
 
       expect(class_docs).not_to be_empty
@@ -130,10 +131,10 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::SearchIndexBuilder do
         :qualifiedName, :package, :content, :boost
       )
       expect(doc[:type]).to eq("class")
-      expect(doc[:boost]).to eq(1.5)  # Classes have higher boost
+      expect(doc[:boost]).to eq(1.5) # Classes have higher boost
     end
 
-    it "creates documents for attributes" do
+    it "creates documents for attributes", :aggregate_failures do
       attr_docs = documents.select { |d| d[:type] == "attribute" }
 
       expect(attr_docs).not_to be_empty
@@ -146,15 +147,17 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::SearchIndexBuilder do
     it "creates documents for
 
  associations" do
-      assoc_docs = documents.select { |d| d[:type] == "association" }
+      aggregate_failures do
+        assoc_docs = documents.select { |d| d[:type] == "association" }
 
-      expect(assoc_docs).not_to be_empty
+        expect(assoc_docs).not_to be_empty
 
-      doc = assoc_docs.first
-      expect(doc[:boost]).to eq(0.8)  # Associations have lower boost
+        doc = assoc_docs.first
+        expect(doc[:boost]).to eq(0.8) # Associations have lower boost
+      end
     end
 
-    it "creates documents for packages" do
+    it "creates documents for packages", :aggregate_failures do
       pkg_docs = documents.select { |d| d[:type] == "package" }
 
       expect(pkg_docs).not_to be_empty
@@ -163,7 +166,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::SearchIndexBuilder do
       expect(doc[:boost]).to eq(1.2)
     end
 
-    it "builds searchable content for each document" do
+    it "builds searchable content for each document", :aggregate_failures do
       doc = documents.first
 
       expect(doc[:content]).to be_a(String)
@@ -172,7 +175,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::SearchIndexBuilder do
       expect(doc[:content]).to eq(doc[:content].downcase)
     end
 
-    it "includes entity metadata in documents" do
+    it "includes entity metadata in documents", :aggregate_failures do
       class_doc = documents.find { |d| d[:type] == "class" }
 
       expect(class_doc[:entityId]).to be_a(String)
@@ -243,31 +246,33 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::SearchIndexBuilder do
   describe "performance" do
     it "handles large repositories efficiently" do
       # Create a larger repository
-      large_classes = Array.new(100) do |i|
-        double("Class#{i}",
-               xmi_id: "cls_#{i}",
-               name: "Class#{i}",
-               definition: "Description #{i}",
-               stereotypes: [],
-               owner: test_package,
-               attributes: [],
-               operations: nil,
-               class: Lutaml::Uml::TopElement)
+      aggregate_failures do
+        large_classes = Array.new(100) do |i|
+          double("Class#{i}",
+                 xmi_id: "cls_#{i}",
+                 name: "Class#{i}",
+                 definition: "Description #{i}",
+                 stereotypes: [],
+                 owner: test_package,
+                 attributes: [],
+                 operations: nil,
+                 class: Lutaml::Uml::TopElement)
+        end
+
+        large_repo = double("LargeRepository",
+                            packages_index: [test_package],
+                            classes_index: large_classes,
+                            associations_index: [])
+
+        large_builder = described_class.new(large_repo)
+
+        start_time = Time.now
+        index = large_builder.build
+        duration = Time.now - start_time
+
+        expect(duration).to be < 1.0 # Should complete in under 1 second
+        expect(index[:documentStore].size).to be >= 100
       end
-
-      large_repo = double("LargeRepository",
-                          packages_index: [test_package],
-                          classes_index: large_classes,
-                          associations_index: [])
-
-      large_builder = described_class.new(large_repo)
-
-      start_time = Time.now
-      index = large_builder.build
-      duration = Time.now - start_time
-
-      expect(duration).to be < 1.0 # Should complete in under 1 second
-      expect(index[:documentStore].size).to be >= 100
     end
   end
 end

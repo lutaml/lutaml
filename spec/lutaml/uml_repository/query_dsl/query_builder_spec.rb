@@ -65,7 +65,7 @@ RSpec.describe Lutaml::UmlRepository::QueryDSL::QueryBuilder do
   end
 
   describe "#where with hash conditions" do
-    it "filters by exact match" do
+    it "filters by exact match", :aggregate_failures do
       results = repository.query do |q|
         q.classes.where(stereotype: "featureType")
       end.all
@@ -74,7 +74,7 @@ RSpec.describe Lutaml::UmlRepository::QueryDSL::QueryBuilder do
       expect(results.map(&:name)).not_to include("Person")
     end
 
-    it "filters by multiple conditions" do
+    it "filters by multiple conditions", :aggregate_failures do
       results = repository.query do |q|
         q.classes.where(stereotype: "featureType", name: "Building")
       end.all
@@ -141,7 +141,7 @@ RSpec.describe Lutaml::UmlRepository::QueryDSL::QueryBuilder do
   end
 
   describe "#limit" do
-    it "limits results" do
+    it "limits results", :aggregate_failures do
       results = repository.query do |q|
         q.classes.order_by(:name).limit(2)
       end.all
@@ -248,7 +248,7 @@ RSpec.describe Lutaml::UmlRepository::QueryDSL::QueryBuilder do
       expect(results.map(&:name)).to include("Building", "Vehicle")
     end
 
-    it "uses query for deferred execution" do
+    it "uses query for deferred execution", :aggregate_failures do
       builder = repository.query do |q|
         q.classes.where(stereotype: "featureType")
       end

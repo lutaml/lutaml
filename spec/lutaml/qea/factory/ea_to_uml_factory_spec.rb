@@ -15,7 +15,8 @@ RSpec.describe Lutaml::Qea::Factory::EaToUmlFactory do
   end
 
   describe "#create_document" do
-    it "creates a document with packages but no classes at document level" do
+    it "creates a document with packages but no classes at document level",
+       :aggregate_failures do
       document = factory.create_document
 
       expect(document).to be_a(Lutaml::Uml::Document)
@@ -74,7 +75,8 @@ RSpec.describe Lutaml::Qea::Factory::EaToUmlFactory do
       expect(result[:path].size).to be > 1 # Should have parent packages
     end
 
-    it "creates associations that reference classes by xmi_id" do
+    it "creates associations that reference classes by xmi_id",
+       :aggregate_failures do
       document = factory.create_document
 
       expect(document.associations).not_to be_empty

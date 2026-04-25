@@ -90,7 +90,7 @@ RSpec.describe Lutaml::ModelTransformations do
   end
 
   describe ".supported_extensions" do
-    it "returns list of supported file extensions" do
+    it "returns list of supported file extensions", :aggregate_failures do
       extensions = described_class.supported_extensions
       expect(extensions).to be_an(Array)
       expect(extensions).to include(".xmi", ".qea")
@@ -203,7 +203,7 @@ RSpec.describe Lutaml::ModelTransformations do
 
     after { config_file.unlink }
 
-    it "loads configuration from YAML file" do
+    it "loads configuration from YAML file", :aggregate_failures do
       described_class.load_configuration(config_file.path)
       config = described_class.configuration
       expect(config.version).to eq("test_config")
@@ -231,7 +231,7 @@ RSpec.describe Lutaml::ModelTransformations do
       begin
         expect do
           described_class.load_configuration(invalid_file.path)
-        end.to raise_error
+        end.to raise_error(StandardError)
       ensure
         invalid_file.unlink
       end
@@ -239,7 +239,7 @@ RSpec.describe Lutaml::ModelTransformations do
   end
 
   describe ".validate_setup" do
-    it "validates current configuration and parsers" do
+    it "validates current configuration and parsers", :aggregate_failures do
       results = described_class.validate_setup
 
       expect(results).to include(
@@ -279,7 +279,7 @@ RSpec.describe Lutaml::ModelTransformations do
       expect(results.uniq.size).to eq(1)
     end
 
-    it "handles concurrent parsing requests" do
+    it "handles concurrent parsing requests", :aggregate_failures do
       files = []
       threads = []
       results = []
@@ -325,7 +325,7 @@ RSpec.describe Lutaml::ModelTransformations do
   end
 
   describe "configuration presets" do
-    it "provides default preset" do
+    it "provides default preset", :aggregate_failures do
       config = described_class.configuration
       expect(config.version).to be_a(String)
       expect(config.parsers).to be_an(Array)
@@ -361,8 +361,10 @@ RSpec.describe Lutaml::ModelTransformations do
 
     it "supports plugin architecture" do
       # Framework should support plugin-like extensions
-      expect(described_class.engine.format_registry).to respond_to(:register)
-      expect(described_class.engine.format_registry).to respond_to(:all_parsers)
+      aggregate_failures do
+        expect(described_class.engine.format_registry).to respond_to(:register)
+        expect(described_class.engine.format_registry).to respond_to(:all_parsers)
+      end
     end
   end
 
@@ -380,7 +382,7 @@ RSpec.describe Lutaml::ModelTransformations do
 
     after { xmi_file.unlink }
 
-    it "tracks parsing performance" do
+    it "tracks parsing performance", :aggregate_failures do
       start_time = Time.now
       described_class.reset_statistics
       described_class.parse(xmi_file.path)

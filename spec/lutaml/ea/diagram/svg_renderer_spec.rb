@@ -117,7 +117,7 @@ RSpec.describe Lutaml::Ea::Diagram::SvgRenderer do
     let(:renderer) { described_class.new(diagram_renderer) }
     let(:svg_output) { renderer.render }
 
-    it "generates complete SVG document" do
+    it "generates complete SVG document", :aggregate_failures do
       expect(svg_output).to be_a(String)
       expect(svg_output).not_to be_empty
     end
@@ -138,7 +138,7 @@ RSpec.describe Lutaml::Ea::Diagram::SvgRenderer do
       expect(svg_output).to include("<title>")
     end
 
-    it "includes description element" do
+    it "includes description element", :aggregate_failures do
       expect(svg_output).to include("<desc>")
       expect(svg_output).to include("Created with")
     end
@@ -147,7 +147,7 @@ RSpec.describe Lutaml::Ea::Diagram::SvgRenderer do
       expect(svg_output).to include("<defs>")
     end
 
-    it "includes background layer" do
+    it "includes background layer", :aggregate_failures do
       expect(svg_output).to include("fill:#ffffff")
       expect(svg_output).to include("fill-opacity:1.00")
     end
@@ -217,7 +217,7 @@ RSpec.describe Lutaml::Ea::Diagram::SvgRenderer do
       expect(svg_output).to include("viewBox=")
     end
 
-    it "includes xmlns attributes" do
+    it "includes xmlns attributes", :aggregate_failures do
       expect(svg_output).to include('xmlns="http://www.w3.org/2000/svg"')
       expect(svg_output).to include('xmlns:xlink="http://www.w3.org/1999/xlink"')
     end
@@ -248,7 +248,7 @@ RSpec.describe Lutaml::Ea::Diagram::SvgRenderer do
         expect(renderer.options[:padding]).to eq(50)
       end
 
-      it "uses viewBox for dimensions" do
+      it "uses viewBox for dimensions", :aggregate_failures do
         expect(svg_output).to include("viewBox=")
         expect(svg_output).to match(/width="[^"]+cm"/)
       end
@@ -263,7 +263,7 @@ RSpec.describe Lutaml::Ea::Diagram::SvgRenderer do
       expect(svg_output).to include('<style type="text/css">')
     end
 
-    it "wraps CSS in CDATA" do
+    it "wraps CSS in CDATA", :aggregate_failures do
       expect(svg_output).to include("<![CDATA[")
       expect(svg_output).to include("]]>")
     end
@@ -338,7 +338,7 @@ RSpec.describe Lutaml::Ea::Diagram::SvgRenderer do
     let(:renderer) { described_class.new(diagram_renderer) }
     let(:svg_output) { renderer.render }
 
-    it "creates background rectangle" do
+    it "creates background rectangle", :aggregate_failures do
       expect(svg_output).to include("<rect")
       expect(svg_output).to include("shape-rendering=")
     end
@@ -434,7 +434,7 @@ RSpec.describe Lutaml::Ea::Diagram::SvgRenderer do
       expect(svg_output).to include('<g id="elements-layer"')
     end
 
-    it "renders all elements" do
+    it "renders all elements", :aggregate_failures do
       expect(svg_output).to include('data-element-id="1"')
       expect(svg_output).to include('data-element-id="2"')
     end
@@ -492,12 +492,12 @@ RSpec.describe Lutaml::Ea::Diagram::SvgRenderer do
       expect(svg_output).to include("<path d=")
     end
 
-    it "includes connector CSS classes" do
+    it "includes connector CSS classes", :aggregate_failures do
       expect(svg_output).to include('class="lutaml-diagram-connector')
       expect(svg_output).to include("lutaml-diagram-connector-association")
     end
 
-    it "includes data attributes" do
+    it "includes data attributes", :aggregate_failures do
       expect(svg_output).to include('data-connector-id="c1"')
       expect(svg_output).to include('data-connector-type="association"')
     end
@@ -568,22 +568,22 @@ RSpec.describe Lutaml::Ea::Diagram::SvgRenderer do
 
     let(:svg_for_types) { renderer_for_types.render }
 
-    it "selects ClassRenderer for class type" do
+    it "selects ClassRenderer for class type", :aggregate_failures do
       expect(svg_for_types).to include("MyClass")
       expect(svg_for_types).to include('data-element-id="class1"')
     end
 
-    it "selects ClassRenderer for datatype type" do
+    it "selects ClassRenderer for datatype type", :aggregate_failures do
       expect(svg_for_types).to include("MyDataType")
       expect(svg_for_types).to include('data-element-id="datatype1"')
     end
 
-    it "selects PackageRenderer for package type" do
+    it "selects PackageRenderer for package type", :aggregate_failures do
       expect(svg_for_types).to include("MyPackage")
       expect(svg_for_types).to include('data-element-id="package1"')
     end
 
-    it "selects BaseRenderer for unknown types" do
+    it "selects BaseRenderer for unknown types", :aggregate_failures do
       expect(svg_for_types).to include("Unknown")
       expect(svg_for_types).to include('data-element-id="unknown1"')
     end
@@ -609,13 +609,15 @@ RSpec.describe Lutaml::Ea::Diagram::SvgRenderer do
       expect(marker[:start]).to be_nil
     end
 
-    it "returns aggregation marker at start for aggregation type" do
+    it "returns aggregation marker at start for aggregation type",
+       :aggregate_failures do
       marker = renderer.send(:determine_marker_type, "aggregation")
       expect(marker[:start]).to eq("url(#aggregation-arrow)")
       expect(marker[:end]).to be_nil
     end
 
-    it "returns composition marker at start for composition type" do
+    it "returns composition marker at start for composition type",
+       :aggregate_failures do
       marker = renderer.send(:determine_marker_type, "composition")
       expect(marker[:start]).to eq("url(#composition-arrow)")
       expect(marker[:end]).to be_nil
@@ -656,7 +658,7 @@ RSpec.describe Lutaml::Ea::Diagram::SvgRenderer do
   describe "style to CSS conversion" do
     let(:renderer) { described_class.new(diagram_renderer) }
 
-    it "converts style hash to CSS string" do
+    it "converts style hash to CSS string", :aggregate_failures do
       style_hash = { stroke: "#000000", "stroke-width": "2" }
       css = renderer.send(:style_to_css, style_hash)
       expect(css).to include("stroke:#000000")
@@ -679,24 +681,24 @@ RSpec.describe Lutaml::Ea::Diagram::SvgRenderer do
     let(:renderer) { described_class.new(diagram_renderer) }
     let(:svg_output) { renderer.render }
 
-    it "generates valid SVG with all components" do
+    it "generates valid SVG with all components", :aggregate_failures do
       expect(svg_output).to start_with("<?xml")
       expect(svg_output).to include("<svg")
       expect(svg_output).to include("<defs>")
       expect(svg_output).to include("</svg>")
     end
 
-    it "properly integrates element renderers" do
+    it "properly integrates element renderers", :aggregate_failures do
       expect(svg_output).to include("TestClass")
       expect(svg_output).to include("TestPackage")
     end
 
-    it "properly integrates path builder for connectors" do
+    it "properly integrates path builder for connectors", :aggregate_failures do
       expect(svg_output).to include("<path d=")
       expect(svg_output).to include("M ") # SVG path command
     end
 
-    it "properly integrates style resolver" do
+    it "properly integrates style resolver", :aggregate_failures do
       expect(svg_output).to include("stroke:")
       expect(svg_output).to include("fill:")
     end

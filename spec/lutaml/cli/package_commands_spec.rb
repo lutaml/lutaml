@@ -22,7 +22,7 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
 
   describe "build command" do
     context "with XMI input" do
-      it "builds LUR package from XMI file" do
+      it "builds LUR package from XMI file", :aggregate_failures do
         output = StringIO.new
         original_stdout = $stdout
         $stdout = output
@@ -61,7 +61,7 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
         end.not_to raise_error
       end
 
-      it "builds package with validation" do
+      it "builds package with validation", :aggregate_failures do
         output = StringIO.new
         original_stdout = $stdout
         $stdout = output
@@ -83,7 +83,7 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
         # Don't expect success message since validation fails
       end
 
-      it "builds package without validation" do
+      it "builds package without validation", :aggregate_failures do
         output = StringIO.new
         original_stdout = $stdout
         $stdout = output
@@ -103,7 +103,7 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
         expect(File.exist?(output_lur)).to be true
       end
 
-      it "builds package with YAML serialization" do
+      it "builds package with YAML serialization", :aggregate_failures do
         output = StringIO.new
         original_stdout = $stdout
         $stdout = output
@@ -136,7 +136,7 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
         end
       end
 
-      it "includes statistics in output" do
+      it "includes statistics in output", :aggregate_failures do
         output = StringIO.new
         original_stdout = $stdout
         $stdout = output
@@ -202,7 +202,7 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
         skip "QEA test file not available" unless File.exist?(test_qea)
       end
 
-      it "builds LUR package from QEA file" do
+      it "builds LUR package from QEA file", :aggregate_failures do
         output = StringIO.new
         original_stdout = $stdout
         $stdout = output
@@ -270,7 +270,7 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
   describe "info command" do
     let(:test_lur) { File.join(__dir__, "../../../examples/lur/test.lur") }
 
-    it "shows package information in text format" do
+    it "shows package information in text format", :aggregate_failures do
       output = StringIO.new
       original_stdout = $stdout
       $stdout = output
@@ -284,7 +284,7 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
       expect(output.string).to include("Contents:")
     end
 
-    it "shows package information in JSON format" do
+    it "shows package information in JSON format", :aggregate_failures do
       output = StringIO.new
       original_stdout = $stdout
       $stdout = output
@@ -297,7 +297,7 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
       expect(output.string).to include("\"name\"")
     end
 
-    it "shows package information in YAML format" do
+    it "shows package information in YAML format", :aggregate_failures do
       output = StringIO.new
       original_stdout = $stdout
       $stdout = output
@@ -351,7 +351,7 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
   describe "validate command" do
     let(:test_lur) { File.join(__dir__, "../../../examples/lur/test.lur") }
 
-    it "validates a valid package" do
+    it "validates a valid package", :aggregate_failures do
       output = StringIO.new
       original_stdout = $stdout
       $stdout = output
@@ -402,7 +402,7 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
   describe "integration with other commands" do
     let(:test_lur) { File.join(__dir__, "../../../examples/lur/test.lur") }
 
-    it "creates packages that work with search commands" do
+    it "creates packages that work with search commands", :aggregate_failures do
       output = StringIO.new
       original_stdout = $stdout
       $stdout = output

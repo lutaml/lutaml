@@ -10,17 +10,17 @@ RSpec.describe "Comprehensive Diagram Support" do
   let(:database) { loader.load }
 
   describe "Phase 1: Database Loading" do
-    it "loads diagram objects table successfully" do
+    it "loads diagram objects table successfully", :aggregate_failures do
       expect(database.diagram_objects).to be_an(Array)
       expect(database.diagram_objects.size).to eq(1767)
     end
 
-    it "loads diagram links table successfully" do
+    it "loads diagram links table successfully", :aggregate_failures do
       expect(database.diagram_links).to be_an(Array)
       expect(database.diagram_links.size).to eq(1813)
     end
 
-    it "loads diagram objects with correct attributes" do
+    it "loads diagram objects with correct attributes", :aggregate_failures do
       obj = database.diagram_objects.first
       expect(obj).to be_a(Lutaml::Qea::Models::EaDiagramObject)
       expect(obj.diagram_id).to be_a(Integer)
@@ -28,7 +28,7 @@ RSpec.describe "Comprehensive Diagram Support" do
       expect(obj.instance_id).to be_a(Integer)
     end
 
-    it "loads diagram links with correct attributes" do
+    it "loads diagram links with correct attributes", :aggregate_failures do
       link = database.diagram_links.first
       expect(link).to be_a(Lutaml::Qea::Models::EaDiagramLink)
       expect(link.diagramid).to be_a(Integer)
@@ -41,7 +41,7 @@ RSpec.describe "Comprehensive Diagram Support" do
     describe "EaDiagramObject" do
       let(:diagram_object) { database.diagram_objects.first }
 
-      it "calculates bounding box correctly" do
+      it "calculates bounding box correctly", :aggregate_failures do
         bbox = diagram_object.bounding_box
         expect(bbox).to have_key(:top)
         expect(bbox).to have_key(:left)
@@ -54,7 +54,7 @@ RSpec.describe "Comprehensive Diagram Support" do
         expect(bbox[:height]).to eq(bbox[:bottom] - bbox[:top])
       end
 
-      it "calculates center point correctly" do
+      it "calculates center point correctly", :aggregate_failures do
         center = diagram_object.center_point
         expect(center).to have_key(:x)
         expect(center).to have_key(:y)
@@ -64,7 +64,7 @@ RSpec.describe "Comprehensive Diagram Support" do
         expect(center[:y]).to eq((bbox[:top] + bbox[:bottom]) / 2)
       end
 
-      it "parses style string into hash" do
+      it "parses style string into hash", :aggregate_failures do
         style = diagram_object.parsed_style
         expect(style).to be_a(Hash)
         # ObjectStyle format: "DUID=98A7EF40;"
@@ -89,7 +89,7 @@ RSpec.describe "Comprehensive Diagram Support" do
         expect(geometry).to be_a(Hash)
       end
 
-      it "extracts object IDs from style" do
+      it "extracts object IDs from style", :aggregate_failures do
         ids = diagram_link.object_ids
         expect(ids).to have_key(:source_oid)
         expect(ids).to have_key(:dest_oid)
@@ -104,7 +104,7 @@ RSpec.describe "Comprehensive Diagram Support" do
     let(:ea_diagram) { database.diagrams.first }
     let(:uml_diagram) { transformer.transform(ea_diagram) }
 
-    it "transforms EA diagram to UML diagram" do
+    it "transforms EA diagram to UML diagram", :aggregate_failures do
       expect(uml_diagram).to be_a(Lutaml::Uml::Diagram)
       expect(uml_diagram.name).to eq(ea_diagram.name)
       expect(uml_diagram.xmi_id)
@@ -115,7 +115,7 @@ RSpec.describe "Comprehensive Diagram Support" do
       expect(uml_diagram.diagram_type).to eq(ea_diagram.diagram_type)
     end
 
-    it "loads diagram objects for the diagram" do
+    it "loads diagram objects for the diagram", :aggregate_failures do
       expect(uml_diagram.diagram_objects).to be_an(Array)
       expect(uml_diagram.diagram_objects).not_to be_empty
 
@@ -123,7 +123,7 @@ RSpec.describe "Comprehensive Diagram Support" do
       expect(obj).to be_a(Lutaml::Uml::DiagramObject)
     end
 
-    it "loads diagram links for the diagram" do
+    it "loads diagram links for the diagram", :aggregate_failures do
       expect(uml_diagram.diagram_links).to be_an(Array)
       expect(uml_diagram.diagram_links).not_to be_empty
 
@@ -131,7 +131,7 @@ RSpec.describe "Comprehensive Diagram Support" do
       expect(link).to be_a(Lutaml::Uml::DiagramLink)
     end
 
-    it "preserves diagram object properties" do
+    it "preserves diagram object properties", :aggregate_failures do
       obj = uml_diagram.diagram_objects.first
       expect(obj.object_id).to be_a(Integer)
       expect(obj.left).to be_a(Integer)
@@ -140,7 +140,7 @@ RSpec.describe "Comprehensive Diagram Support" do
       expect(obj.bottom).to be_a(Integer)
     end
 
-    it "preserves diagram link properties" do
+    it "preserves diagram link properties", :aggregate_failures do
       link = uml_diagram.diagram_links.first
       expect(link.connector_id).to be_a(String)
       expect([true, false]).to include(link.hidden)
@@ -160,7 +160,7 @@ RSpec.describe "Comprehensive Diagram Support" do
   end
 
   describe "Phase 4: Integration with Full Pipeline" do
-    it "includes diagrams in database statistics" do
+    it "includes diagrams in database statistics", :aggregate_failures do
       stats = database.stats
       expect(stats).to have_key("diagram_objects")
       expect(stats).to have_key("diagram_links")
@@ -170,12 +170,14 @@ RSpec.describe "Comprehensive Diagram Support" do
 
     it "maintains referential integrity" do
       # Check that diagram objects reference valid diagrams and objects
-      diagram_object = database.diagram_objects.first
-      diagram = database.find_diagram(diagram_object.diagram_id)
-      expect(diagram).to be_a(Lutaml::Qea::Models::EaDiagram)
+      aggregate_failures do
+        diagram_object = database.diagram_objects.first
+        diagram = database.find_diagram(diagram_object.diagram_id)
+        expect(diagram).to be_a(Lutaml::Qea::Models::EaDiagram)
 
-      object = database.find_object(diagram_object.ea_object_id)
-      expect(object).to be_a(Lutaml::Qea::Models::EaObject)
+        object = database.find_object(diagram_object.ea_object_id)
+        expect(object).to be_a(Lutaml::Qea::Models::EaObject)
+      end
     end
 
     it "maintains connector references in diagram links" do
@@ -187,7 +189,7 @@ RSpec.describe "Comprehensive Diagram Support" do
   end
 
   describe "Phase 5: Performance and Data Integrity" do
-    it "loads all diagram data efficiently" do
+    it "loads all diagram data efficiently", :aggregate_failures do
       start_time = Time.now
       database = loader.load
       load_time = Time.now - start_time
@@ -198,7 +200,7 @@ RSpec.describe "Comprehensive Diagram Support" do
       expect(database.diagram_links.size).to eq(1813)
     end
 
-    it "freezes collections after loading" do
+    it "freezes collections after loading", :aggregate_failures do
       database = loader.load
       expect(database.diagram_objects).to be_frozen
       expect(database.diagram_links).to be_frozen

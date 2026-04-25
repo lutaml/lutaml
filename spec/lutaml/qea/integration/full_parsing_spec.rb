@@ -9,7 +9,7 @@ RSpec.describe "QEA Full Parsing Integration", :integration do
   end
 
   describe "Lutaml::Qea.parse" do
-    it "parses QEA file to complete UML Document" do
+    it "parses QEA file to complete UML Document", :aggregate_failures do
       document = Lutaml::Qea.parse(qea_path)
 
       expect(document).to be_a(Lutaml::Uml::Document)
@@ -55,7 +55,7 @@ RSpec.describe "QEA Full Parsing Integration", :integration do
     let(:document) { Lutaml::Qea.parse(qea_path) }
 
     context "Package hierarchy" do
-      it "maintains package structure" do
+      it "maintains package structure", :aggregate_failures do
         next if document.packages.empty?
 
         # Root packages should exist
@@ -83,7 +83,7 @@ RSpec.describe "QEA Full Parsing Integration", :integration do
     end
 
     context "Class transformation" do
-      it "transforms classes with all properties" do
+      it "transforms classes with all properties", :aggregate_failures do
         next if document.classes.empty?
 
         klass = document.classes.first
@@ -124,7 +124,7 @@ RSpec.describe "QEA Full Parsing Integration", :integration do
     end
 
     context "Association transformation" do
-      it "transforms associations with proper ends" do
+      it "transforms associations with proper ends", :aggregate_failures do
         next if document.associations.empty?
 
         assoc = document.associations.first
@@ -184,7 +184,7 @@ RSpec.describe "QEA Full Parsing Integration", :integration do
       end.not_to raise_error
     end
 
-    it "supports repository operations" do
+    it "supports repository operations", :aggregate_failures do
       document = Lutaml::Qea.parse(qea_path)
       repo = Lutaml::UmlRepository::Repository.new(document: document)
 
@@ -194,7 +194,7 @@ RSpec.describe "QEA Full Parsing Integration", :integration do
       expect(repo).to respond_to(:search)
     end
 
-    it "can search parsed document" do
+    it "can search parsed document", :aggregate_failures do
       document = Lutaml::Qea.parse(qea_path)
       repo = Lutaml::UmlRepository::Repository.new(document: document)
 
@@ -218,7 +218,7 @@ RSpec.describe "QEA Full Parsing Integration", :integration do
       end.not_to raise_error
     end
 
-    it "produces document with expected element counts" do
+    it "produces document with expected element counts", :aggregate_failures do
       document = Lutaml::Qea.parse(qea_path)
 
       # Get raw database stats for comparison
@@ -242,10 +242,10 @@ RSpec.describe "QEA Full Parsing Integration", :integration do
     it "raises error for non-existent file" do
       expect do
         Lutaml::Qea.parse("/non/existent/file.qea")
-      end.to raise_error
+      end.to raise_error(StandardError)
     end
 
-    it "handles empty database gracefully" do
+    it "handles empty database gracefully", :aggregate_failures do
       require "sqlite3"
       Tempfile.create(["empty", ".qea"]) do |f|
         db = SQLite3::Database.new(f.path)
@@ -268,7 +268,7 @@ RSpec.describe "QEA Full Parsing Integration", :integration do
         Dir.glob(File.join(examples_dir, "*.qea"))
       end
 
-      it "can parse all example files" do
+      it "can parse all example files", :aggregate_failures do
         skip "No example files found" if example_files.empty?
 
         example_files.each do |file_path|

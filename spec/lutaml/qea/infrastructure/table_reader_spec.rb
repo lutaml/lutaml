@@ -18,10 +18,12 @@ RSpec.describe Lutaml::Qea::Infrastructure::TableReader do
   end
 
   describe "#initialize" do
-    it "creates a new table reader instance" do
-      expect(reader).to be_a(described_class)
-      expect(reader.database).to eq(database)
-      expect(reader.table_name).to eq(table_name)
+    it "creates a new table reader instance", :aggregate_failures do
+      aggregate_failures do
+        expect(reader).to be_a(described_class)
+        expect(reader.database).to eq(database)
+        expect(reader.table_name).to eq(table_name)
+      end
     end
 
     it "raises ArgumentError when database is nil" do
@@ -77,7 +79,7 @@ RSpec.describe Lutaml::Qea::Infrastructure::TableReader do
   end
 
   describe "#where" do
-    it "filters records by condition" do
+    it "filters records by condition", :aggregate_failures do
       # Find all records first to get a valid value
       all_results = reader.all(limit: 1)
       if all_results.any? && all_results.first["Object_Type"]
@@ -90,7 +92,7 @@ RSpec.describe Lutaml::Qea::Infrastructure::TableReader do
       end
     end
 
-    it "handles multiple conditions" do
+    it "handles multiple conditions", :aggregate_failures do
       all_results = reader.all(limit: 1)
       if all_results.any?
         obj_type = all_results.first["Object_Type"]
@@ -119,10 +121,12 @@ RSpec.describe Lutaml::Qea::Infrastructure::TableReader do
   end
 
   describe "#count" do
-    it "returns total record count" do
+    it "returns total record count", :aggregate_failures do
       count = reader.count
-      expect(count).to be_an(Integer)
-      expect(count).to be >= 0
+      aggregate_failures do
+        expect(count).to be_an(Integer)
+        expect(count).to be >= 0
+      end
     end
 
     it "matches size of all records" do
@@ -133,17 +137,19 @@ RSpec.describe Lutaml::Qea::Infrastructure::TableReader do
   end
 
   describe "#count_where" do
-    it "counts records matching condition" do
+    it "counts records matching condition", :aggregate_failures do
       all_results = reader.all(limit: 1)
       if all_results.any? && all_results.first["Object_Type"]
         obj_type = all_results.first["Object_Type"]
         count = reader.count_where("Object_Type = ?", obj_type)
-        expect(count).to be_an(Integer)
-        expect(count).to be > 0
+        aggregate_failures do
+          expect(count).to be_an(Integer)
+          expect(count).to be > 0
 
-        # Verify count matches actual results
-        matching = reader.where("Object_Type = ?", obj_type)
-        expect(matching.size).to eq(count)
+          # Verify count matches actual results
+          matching = reader.where("Object_Type = ?", obj_type)
+          expect(matching.size).to eq(count)
+        end
       end
     end
 
@@ -154,13 +160,15 @@ RSpec.describe Lutaml::Qea::Infrastructure::TableReader do
   end
 
   describe "#find_by_pk" do
-    it "finds record by primary key" do
+    it "finds record by primary key", :aggregate_failures do
       all_results = reader.all(limit: 1)
       if all_results.any?
         pk_value = all_results.first["Object_ID"]
         result = reader.find_by_pk("Object_ID", pk_value)
-        expect(result).to be_a(Hash)
-        expect(result["Object_ID"]).to eq(pk_value)
+        aggregate_failures do
+          expect(result).to be_a(Hash)
+          expect(result["Object_ID"]).to eq(pk_value)
+        end
       end
     end
 
@@ -171,13 +179,15 @@ RSpec.describe Lutaml::Qea::Infrastructure::TableReader do
   end
 
   describe "#find_first" do
-    it "finds first matching record" do
+    it "finds first matching record", :aggregate_failures do
       all_results = reader.all(limit: 1)
       if all_results.any? && all_results.first["Object_Type"]
         obj_type = all_results.first["Object_Type"]
         result = reader.find_first("Object_Type = ?", obj_type)
-        expect(result).to be_a(Hash)
-        expect(result["Object_Type"]).to eq(obj_type)
+        aggregate_failures do
+          expect(result).to be_a(Hash)
+          expect(result["Object_Type"]).to eq(obj_type)
+        end
       end
     end
 
@@ -203,11 +213,13 @@ RSpec.describe Lutaml::Qea::Infrastructure::TableReader do
       expect(results).to be_an(Array)
     end
 
-    it "handles parameterized queries" do
+    it "handles parameterized queries", :aggregate_failures do
       sql = "SELECT * FROM #{table_name} WHERE Object_ID > ? LIMIT ?"
       results = reader.execute_query(sql, [0, 5])
-      expect(results).to be_an(Array)
-      expect(results.size).to be <= 5
+      aggregate_failures do
+        expect(results).to be_an(Array)
+        expect(results.size).to be <= 5
+      end
     end
   end
 
@@ -228,7 +240,7 @@ RSpec.describe Lutaml::Qea::Infrastructure::TableReader do
   end
 
   describe "#select" do
-    it "selects specific columns" do
+    it "selects specific columns", :aggregate_failures do
       results = reader.select(["Object_ID", "Name"], nil, limit: 5)
       expect(results).to be_an(Array)
       if results.any?
@@ -262,12 +274,14 @@ RSpec.describe Lutaml::Qea::Infrastructure::TableReader do
     context "with t_package table" do
       let(:package_reader) { described_class.new(database, "t_package") }
 
-      it "reads package records" do
+      it "reads package records", :aggregate_failures do
         results = package_reader.all(limit: 5)
-        expect(results).to be_an(Array)
-        if results.any?
-          expect(results.first).to have_key("Package_ID")
-          expect(results.first).to have_key("Name")
+        aggregate_failures do
+          expect(results).to be_an(Array)
+          if results.any?
+            expect(results.first).to have_key("Package_ID")
+            expect(results.first).to have_key("Name")
+          end
         end
       end
 
@@ -280,12 +294,14 @@ RSpec.describe Lutaml::Qea::Infrastructure::TableReader do
     context "with t_attribute table" do
       let(:attr_reader) { described_class.new(database, "t_attribute") }
 
-      it "reads attribute records" do
+      it "reads attribute records", :aggregate_failures do
         results = attr_reader.all(limit: 5)
-        expect(results).to be_an(Array)
-        if results.any?
-          expect(results.first).to have_key("ID")
-          expect(results.first).to have_key("Name")
+        aggregate_failures do
+          expect(results).to be_an(Array)
+          if results.any?
+            expect(results.first).to have_key("ID")
+            expect(results.first).to have_key("Name")
+          end
         end
       end
     end
@@ -293,7 +309,7 @@ RSpec.describe Lutaml::Qea::Infrastructure::TableReader do
     context "with t_connector table" do
       let(:conn_reader) { described_class.new(database, "t_connector") }
 
-      it "reads connector records" do
+      it "reads connector records", :aggregate_failures do
         results = conn_reader.all(limit: 5)
         expect(results).to be_an(Array)
         if results.any?

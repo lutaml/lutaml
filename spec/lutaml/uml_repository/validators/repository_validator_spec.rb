@@ -34,7 +34,7 @@ RSpec.describe Lutaml::UmlRepository::Validators::RepositoryValidator do
         doc
       end
 
-      it "detects unresolved types" do
+      it "detects unresolved types", :aggregate_failures do
         result = validator.validate
         expect(result.errors).to be_an(Array)
         expect(result.errors.first).to include("Unresolved type reference")
@@ -95,7 +95,7 @@ RSpec.describe Lutaml::UmlRepository::Validators::RepositoryValidator do
   end
 
   describe "#check_type_references" do
-    it "validates type references in attributes" do
+    it "validates type references in attributes", :aggregate_failures do
       validator.send(:check_type_references)
       errors = validator.instance_variable_get(:@errors)
       expect(errors).to be_an(Array)
@@ -134,17 +134,17 @@ RSpec.describe Lutaml::UmlRepository::Validators::RepositoryValidator do
       expect(result).to respond_to(:valid?)
     end
 
-    it "responds to errors" do
+    it "responds to errors", :aggregate_failures do
       expect(result).to respond_to(:errors)
       expect(result.errors).to be_an(Array)
     end
 
-    it "responds to warnings" do
+    it "responds to warnings", :aggregate_failures do
       expect(result).to respond_to(:warnings)
       expect(result.warnings).to be_an(Array)
     end
 
-    it "responds to external_references" do
+    it "responds to external_references", :aggregate_failures do
       expect(result).to respond_to(:external_references)
       expect(result.external_references).to be_an(Array)
     end

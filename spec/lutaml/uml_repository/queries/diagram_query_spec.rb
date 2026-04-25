@@ -9,7 +9,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::DiagramQuery do
   let(:query) { described_class.new(document, indexes) }
 
   describe "#find_by_package" do
-    it "finds diagrams in a package" do
+    it "finds diagrams in a package", :aggregate_failures do
       package_ids = indexes[:diagram_index].keys
 
       package_ids.each do |package_id|
@@ -33,7 +33,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::DiagramQuery do
   end
 
   describe "#find_by_name" do
-    it "finds a diagram by name" do
+    it "finds a diagram by name", :aggregate_failures do
       all_diagrams = query.all
 
       all_diagrams.each do |diagram|
@@ -60,7 +60,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::DiagramQuery do
   end
 
   describe "#all" do
-    it "returns all diagrams" do
+    it "returns all diagrams", :aggregate_failures do
       diagrams = query.all
       expect(diagrams).to be_an(Array)
       expect(diagrams).to all(be_a(Lutaml::Uml::Diagram))
@@ -96,7 +96,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::DiagramQuery do
       expect(all_diagrams).to be_an(Array)
     end
 
-    it "indexes diagrams correctly" do
+    it "indexes diagrams correctly", :aggregate_failures do
       indexes[:diagram_index].each do |package_id, diagrams|
         expect(package_id).to be_a(String)
         expect(diagrams).to be_an(Array)

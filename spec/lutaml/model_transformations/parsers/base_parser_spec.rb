@@ -99,12 +99,12 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::BaseParser do
   end
 
   describe "#initialize" do
-    it "initializes with configuration and options" do
+    it "initializes with configuration and options", :aggregate_failures do
       expect(parser.configuration).to eq(configuration)
       expect(parser.options).to eq(described_class.new.options.merge(options))
     end
 
-    it "merges options with defaults" do
+    it "merges options with defaults", :aggregate_failures do
       custom_options = { validate_input: false }
       parser = TestParser.new(configuration: configuration,
                               options: custom_options)
@@ -124,7 +124,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::BaseParser do
 
     after { test_file.unlink }
 
-    it "successfully parses valid file" do
+    it "successfully parses valid file", :aggregate_failures do
       result = parser.parse(test_file.path)
       expect(result).to be_truthy
       expect(parser.parse_internal_called_with).to eq(test_file.path)
@@ -153,7 +153,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::BaseParser do
       expect(parser.last_duration).to be > 0
     end
 
-    it "records transformation statistics" do
+    it "records transformation statistics", :aggregate_failures do
       parser.parse(test_file.path)
 
       stats = parser.statistics
@@ -183,7 +183,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::BaseParser do
         end.to raise_error(ArgumentError, /Invalid content/)
       end
 
-      it "records failed parse in statistics" do
+      it "records failed parse in statistics", :aggregate_failures do
         begin
           parser.parse(invalid_file.path)
         rescue ArgumentError
@@ -326,25 +326,27 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::BaseParser do
 
     it "calculates success rate correctly" do
       # One success
-      parser.parse(test_file.path)
+      aggregate_failures do
+        parser.parse(test_file.path)
 
-      # One failure
-      failing_parser = FailingTestParser.new(configuration: configuration,
-                                             options: options)
-      begin
-        failing_parser.parse(test_file.path)
-      rescue StandardError
-        # Expected failure
+        # One failure
+        failing_parser = FailingTestParser.new(configuration: configuration,
+                                               options: options)
+        begin
+          failing_parser.parse(test_file.path)
+        rescue StandardError
+          # Expected failure
+        end
+
+        stats = parser.statistics
+        expect(stats[:success_rate]).to eq(100.0)
+
+        failing_stats = failing_parser.statistics
+        expect(failing_stats[:success_rate]).to eq(0.0)
       end
-
-      stats = parser.statistics
-      expect(stats[:success_rate]).to eq(100.0)
-
-      failing_stats = failing_parser.statistics
-      expect(failing_stats[:success_rate]).to eq(0.0)
     end
 
-    it "calculates average duration" do
+    it "calculates average duration", :aggregate_failures do
       parser.parse(test_file.path)
       parser.parse(test_file.path)
 
@@ -364,7 +366,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::BaseParser do
 
     after { test_file.unlink }
 
-    it "resets all statistics" do
+    it "resets all statistics", :aggregate_failures do
       parser.parse(test_file.path)
 
       stats_before = parser.statistics
@@ -473,7 +475,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::BaseParser do
       )
     end
 
-    it "allows option overrides" do
+    it "allows option overrides", :aggregate_failures do
       custom_options = {
         validate_input: false,
         timeout: 30,
@@ -500,15 +502,17 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::BaseParser do
 
     it "handles file reading errors gracefully" do
       # Mock File.read to raise an error
-      allow(File).to receive(:read).with(test_file.path).and_raise(IOError,
-                                                                   "Read error")
+      aggregate_failures do
+        allow(File).to receive(:read).with(test_file.path).and_raise(IOError,
+                                                                     "Read error")
 
-      expect do
-        parser.can_parse?(test_file.path)
-      end.not_to raise_error
+        expect do
+          parser.can_parse?(test_file.path)
+        end.not_to raise_error
 
-      # Should fall back to extension-based detection
-      expect(parser.can_parse?(test_file.path)).to be true
+        # Should fall back to extension-based detection
+        expect(parser.can_parse?(test_file.path)).to be true
+      end
     end
 
     it "preserves original errors from parse_internal" do
@@ -533,7 +537,7 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::BaseParser do
 
     after { test_file.unlink }
 
-    it "handles concurrent parsing safely" do
+    it "handles concurrent parsing safely", :aggregate_failures do
       threads = []
       results = []
 

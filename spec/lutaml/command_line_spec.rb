@@ -13,7 +13,7 @@ RSpec.describe Lutaml::CommandLine do
         File.read(fixtures_path("help_message.txt"))
       end
 
-      it "returns help message" do
+      it "returns help message", :aggregate_failures do
         expect do
           # rubocop:disable Lint/RescueException
 

@@ -23,13 +23,13 @@ RSpec.describe Lutaml::Cli::TreeViewFormatter do
         )
       end
 
-      it "formats the repository as a tree" do
+      it "formats the repository as a tree", :aggregate_failures do
         output = formatter.format(repository)
         expect(output).to include("ModelRoot")
         expect(output).to include("Statistics")
       end
 
-      it "includes statistics at the end" do
+      it "includes statistics at the end", :aggregate_failures do
         output = formatter.format(repository)
         expect(output).to include("Total Packages: 5")
         expect(output).to include("Total Classes: 20")

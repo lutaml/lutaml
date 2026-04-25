@@ -14,7 +14,7 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
   end
 
   describe "#initialize" do
-    it "uses default values when no options provided" do
+    it "uses default values when no options provided", :aggregate_failures do
       expect(engine.spacing).to eq(50)
       expect(engine.element_width).to eq(120)
       expect(engine.element_height).to eq(80)
@@ -24,7 +24,7 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
       expect(custom_engine.spacing).to eq(100)
     end
 
-    it "accepts custom element dimensions" do
+    it "accepts custom element dimensions", :aggregate_failures do
       expect(custom_engine.element_width).to eq(200)
       expect(custom_engine.element_height).to eq(150)
     end
@@ -155,7 +155,8 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
     end
 
     context "with negative x coordinates" do
-      it "shifts all elements to make x coordinates positive" do
+      it "shifts all elements to make x coordinates positive",
+         :aggregate_failures do
         elements = [
           { x: -100, y: 50, width: 200, height: 100 },
           { x: 0, y: 200, width: 150, height: 80 },
@@ -171,7 +172,8 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
     end
 
     context "with negative y coordinates" do
-      it "shifts all elements to make y coordinates positive" do
+      it "shifts all elements to make y coordinates positive",
+         :aggregate_failures do
         elements = [
           { x: 100, y: -50, width: 200, height: 100 },
           { x: 400, y: 100, width: 150, height: 80 },
@@ -187,7 +189,8 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
     end
 
     context "with both negative x and y coordinates" do
-      it "shifts all elements to make both coordinates positive" do
+      it "shifts all elements to make both coordinates positive",
+         :aggregate_failures do
         elements = [
           { x: -100, y: -50, width: 200, height: 100 },
           { x: 50, y: 30, width: 150, height: 80 },
@@ -221,7 +224,8 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
         expect(result[0][:height]).to eq(100)
       end
 
-      it "converts nil width/height to zero during normalization" do
+      it "converts nil width/height to zero during normalization",
+         :aggregate_failures do
         elements = [
           { x: -10, y: 50, width: nil, height: nil },
         ]
@@ -240,7 +244,8 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
     end
 
     context "with missing x/y values" do
-      it "treats missing values as zero during normalization" do
+      it "treats missing values as zero during normalization",
+         :aggregate_failures do
         elements = [
           { width: 200, height: 100 },
         ]
@@ -254,7 +259,8 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
         expect(result[0][:y]).to be_nil
       end
 
-      it "normalizes when one element has negative coords" do
+      it "normalizes when one element has negative coords",
+         :aggregate_failures do
         elements = [
           { width: 200, height: 100 },
           { x: -50, y: 10, width: 150, height: 80 },
@@ -288,7 +294,7 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
     end
 
     context "with single element" do
-      it "calculates bounds including padding" do
+      it "calculates bounds including padding", :aggregate_failures do
         diagram_data = {
           elements: [
             { id: "1", x: 100, y: 50, width: 200, height: 100 },
@@ -307,7 +313,7 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
     end
 
     context "with multiple elements" do
-      it "calculates bounds including all elements" do
+      it "calculates bounds including all elements", :aggregate_failures do
         diagram_data = {
           elements: [
             { id: "1", x: 100, y: 50, width: 200, height: 100 },
@@ -327,7 +333,7 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
     end
 
     context "with connectors" do
-      it "includes connector endpoints in bounds" do
+      it "includes connector endpoints in bounds", :aggregate_failures do
         source_element = { id: "1", x: 100, y: 50, width: 200, height: 100 }
         target_element = { id: "2", x: 400, y: 200, width: 150, height: 80 }
 
@@ -370,7 +376,8 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
     end
 
     context "with negative coordinates" do
-      it "normalizes negative coordinates before calculating bounds" do
+      it "normalizes negative coordinates before calculating bounds",
+         :aggregate_failures do
         diagram_data = {
           elements: [
             { id: "1", x: -100, y: -50, width: 200, height: 100 },
@@ -389,7 +396,7 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
     end
 
     context "with padding calculation" do
-      it "uses 5% padding for large diagrams" do
+      it "uses 5% padding for large diagrams", :aggregate_failures do
         diagram_data = {
           elements: [
             { id: "1", x: 0, y: 0, width: 1000, height: 800 },
@@ -404,7 +411,7 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
         expect(result[:y]).to eq(-40) # 5% of 800 = 40
       end
 
-      it "uses minimum 20px padding for small diagrams" do
+      it "uses minimum 20px padding for small diagrams", :aggregate_failures do
         diagram_data = {
           elements: [
             { id: "1", x: 0, y: 0, width: 100, height: 80 },
@@ -436,7 +443,7 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
     end
 
     context "with unpositioned elements" do
-      it "calculates positions for elements without x/y" do
+      it "calculates positions for elements without x/y", :aggregate_failures do
         elements = [
           { id: "1", x: 100, y: 50 },
           { id: "2" }, # No position
@@ -451,7 +458,8 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
         expect(result[1][:y]).to be_a(Numeric)
       end
 
-      it "positions multiple unpositioned elements in a grid" do
+      it "positions multiple unpositioned elements in a grid",
+         :aggregate_failures do
         elements = [
           { id: "1" },
           { id: "2" },
@@ -462,10 +470,8 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
         result = engine.apply_layout(elements, [])
 
         expect(result.size).to eq(4)
-        result.each do |element|
-          expect(element).to have_key(:x)
-          expect(element).to have_key(:y)
-        end
+        expect(result).to all(have_key(:x))
+        expect(result).to all(have_key(:y))
       end
     end
 
@@ -491,7 +497,7 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
     end
 
     context "without position and no related elements" do
-      it "positions at origin" do
+      it "positions at origin", :aggregate_failures do
         element = { id: "1" }
 
         result = engine.calculate_element_position(element, [])
@@ -502,7 +508,7 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
     end
 
     context "without position but with related elements" do
-      it "positions to the right of related elements" do
+      it "positions to the right of related elements", :aggregate_failures do
         element = { id: "2" }
         related = [{ id: "1", x: 100, y: 50, width: 120 }]
 
@@ -513,7 +519,8 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
         expect(result[:y]).to eq(50) # Same y as related
       end
 
-      it "uses element_width_for when related element has no width" do
+      it "uses element_width_for when related element has no width",
+         :aggregate_failures do
         element = { id: "2" }
         related = [{ id: "1", x: 100, y: 50, type: "class" }]
 
@@ -598,7 +605,8 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
         expect(result).to be_nil
       end
 
-      it "calculates bounds for connectors with geometry" do
+      it "calculates bounds for connectors with geometry",
+         :aggregate_failures do
         source = { id: "1", x: 100, y: 50, width: 200, height: 100 }
         target = { id: "2", x: 400, y: 200, width: 150, height: 80 }
 
@@ -622,7 +630,7 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
     end
 
     describe "#parse_geometry_offsets" do
-      it "parses EA geometry string correctly" do
+      it "parses EA geometry string correctly", :aggregate_failures do
         geometry = "SX=10;SY=5;EX=-10;EY=-5;EDGE=1;"
         sx, sy, ex, ey = engine.send(:parse_geometry_offsets, geometry)
 
@@ -632,7 +640,7 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
         expect(ey).to eq(-5)
       end
 
-      it "handles missing values with defaults" do
+      it "handles missing values with defaults", :aggregate_failures do
         geometry = "SX=10;EDGE=1;"
         sx, sy, ex, ey = engine.send(:parse_geometry_offsets, geometry)
 
@@ -661,7 +669,7 @@ RSpec.describe Lutaml::Ea::Diagram::LayoutEngine do
         expect([sx, sy, ex, ey]).to eq([0, 0, 0, 0])
       end
 
-      it "handles geometry with extra whitespace" do
+      it "handles geometry with extra whitespace", :aggregate_failures do
         geometry = " SX = 10 ; SY = 5 ; "
         sx, sy, _ex, _ey = engine.send(:parse_geometry_offsets, geometry)
 

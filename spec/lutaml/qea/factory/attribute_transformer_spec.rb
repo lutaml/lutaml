@@ -14,7 +14,7 @@ RSpec.describe Lutaml::Qea::Factory::AttributeTransformer do
       expect(result).to be_nil
     end
 
-    it "transforms EA attribute to UML attribute" do
+    it "transforms EA attribute to UML attribute", :aggregate_failures do
       ea_attr = Lutaml::Qea::Models::EaAttribute.new(
         name: "firstName",
         type: "String",
@@ -60,7 +60,7 @@ RSpec.describe Lutaml::Qea::Factory::AttributeTransformer do
       expect(result.is_derived).to be true
     end
 
-    it "builds cardinality from bounds" do
+    it "builds cardinality from bounds", :aggregate_failures do
       ea_attr = Lutaml::Qea::Models::EaAttribute.new(
         name: "tags",
         lowerbound: "0",

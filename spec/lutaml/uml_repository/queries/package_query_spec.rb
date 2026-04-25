@@ -9,7 +9,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::PackageQuery do
   let(:query) { described_class.new(document, indexes) }
 
   describe "#find_by_path" do
-    it "finds package by exact path" do
+    it "finds package by exact path", :aggregate_failures do
       path = Lutaml::Uml::PackagePath
         .new("ModelRoot::requirement type class diagram")
       package = query.find_by_path(path)
@@ -42,7 +42,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::PackageQuery do
 
   describe "#list" do
     context "when not recursive" do
-      it "lists direct children" do
+      it "lists direct children", :aggregate_failures do
         root_path = Lutaml::Uml::PackagePath.new("ModelRoot")
         children = query.list(root_path, recursive: false)
         expect(children).to be_an(Array)
@@ -62,7 +62,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::PackageQuery do
     end
 
     context "when recursive" do
-      it "lists all descendants" do
+      it "lists all descendants", :aggregate_failures do
         root_path = Lutaml::Uml::PackagePath.new("ModelRoot")
         descendants = query.list(root_path, recursive: true)
         expect(descendants).to be_an(Array)
@@ -91,7 +91,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::PackageQuery do
   end
 
   describe "#tree" do
-    it "builds hierarchical tree" do
+    it "builds hierarchical tree", :aggregate_failures do
       root_path = Lutaml::Uml::PackagePath.new("ModelRoot")
       tree = query.tree(root_path)
 
@@ -105,7 +105,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::PackageQuery do
       expect(tree[:children]).to be_an(Array)
     end
 
-    it "includes nested packages in tree" do
+    it "includes nested packages in tree", :aggregate_failures do
       root_path = Lutaml::Uml::PackagePath.new("ModelRoot")
       tree = query.tree(root_path)
 
@@ -118,7 +118,7 @@ RSpec.describe Lutaml::UmlRepository::Queries::PackageQuery do
     end
 
     context "with max_depth" do
-      it "respects max_depth" do
+      it "respects max_depth", :aggregate_failures do
         root_path = Lutaml::Uml::PackagePath.new("ModelRoot")
         tree = query.tree(root_path, max_depth: 1)
 
@@ -151,28 +151,28 @@ RSpec.describe Lutaml::UmlRepository::Queries::PackageQuery do
   describe "with simple document" do
     let(:document) { create_simple_test_document }
 
-    it "finds root package" do
+    it "finds root package", :aggregate_failures do
       path = Lutaml::Uml::PackagePath.new("ModelRoot::RootPackage")
       package = query.find_by_path(path)
       expect(package).to be_a(Lutaml::Uml::Package)
       expect(package.name).to eq("RootPackage")
     end
 
-    it "finds nested package" do
+    it "finds nested package", :aggregate_failures do
       path = Lutaml::Uml::PackagePath.new("ModelRoot::RootPackage::NestedPackage")
       package = query.find_by_path(path)
       expect(package).to be_a(Lutaml::Uml::Package)
       expect(package.name).to eq("NestedPackage")
     end
 
-    it "lists direct children correctly" do
+    it "lists direct children correctly", :aggregate_failures do
       path = Lutaml::Uml::PackagePath.new("ModelRoot::RootPackage")
       children = query.list(path, recursive: false)
       expect(children.length).to eq(1)
       expect(children.first.name).to eq("NestedPackage")
     end
 
-    it "builds correct tree structure" do
+    it "builds correct tree structure", :aggregate_failures do
       path = Lutaml::Uml::PackagePath.new("ModelRoot::RootPackage")
       tree = query.tree(path)
 

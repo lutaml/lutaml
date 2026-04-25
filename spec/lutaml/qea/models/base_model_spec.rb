@@ -63,7 +63,8 @@ RSpec.describe Lutaml::Qea::Models::BaseModel do
   end
 
   describe ".from_db_row" do
-    it "creates instance from database row with string keys" do
+    it "creates instance from database row with string keys",
+       :aggregate_failures do
       row = { "id" => 456, "name" => "From DB" }
       instance = test_class.from_db_row(row)
 
@@ -72,7 +73,8 @@ RSpec.describe Lutaml::Qea::Models::BaseModel do
       expect(instance.name).to eq("From DB")
     end
 
-    it "creates instance from database row with symbol keys" do
+    it "creates instance from database row with symbol keys",
+       :aggregate_failures do
       row = { id: 789, name: "Symbol Keys" }
       instance = test_class.from_db_row(row)
 
@@ -81,7 +83,7 @@ RSpec.describe Lutaml::Qea::Models::BaseModel do
       expect(instance.name).to eq("Symbol Keys")
     end
 
-    it "handles mixed case column names" do
+    it "handles mixed case column names", :aggregate_failures do
       row = { "ID" => 111, "Name" => "Mixed Case" }
       instance = test_class.from_db_row(row)
 

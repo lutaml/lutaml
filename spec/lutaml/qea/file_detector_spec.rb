@@ -41,7 +41,7 @@ RSpec.describe Lutaml::Qea::FileDetector do
   end
 
   describe ".validate_qea" do
-    it "validates a proper QEA file" do
+    it "validates a proper QEA file", :aggregate_failures do
       skip "QEA test file not available" unless File.exist?(qea_file_path)
 
       result = described_class.validate_qea(qea_file_path)
@@ -52,14 +52,14 @@ RSpec.describe Lutaml::Qea::FileDetector do
       expect(result).to have_key(:warnings)
     end
 
-    it "returns errors for non-existent file" do
+    it "returns errors for non-existent file", :aggregate_failures do
       result = described_class.validate_qea("nonexistent.qea")
 
       expect(result[:valid]).to be false
       expect(result[:errors]).to include(a_string_matching(/not found/i))
     end
 
-    it "returns errors for non-SQLite file" do
+    it "returns errors for non-SQLite file", :aggregate_failures do
       Tempfile.create(["invalid", ".qea"]) do |f|
         f.write("not a SQLite file")
         f.flush
@@ -86,7 +86,7 @@ RSpec.describe Lutaml::Qea::FileDetector do
       end
     end
 
-    it "checks for required EA tables" do
+    it "checks for required EA tables", :aggregate_failures do
       skip "QEA test file not available" unless File.exist?(qea_file_path)
 
       result = described_class.validate_qea(qea_file_path)
@@ -101,7 +101,7 @@ RSpec.describe Lutaml::Qea::FileDetector do
   end
 
   describe ".file_info" do
-    it "returns file information for valid QEA file" do
+    it "returns file information for valid QEA file", :aggregate_failures do
       skip "QEA test file not available" unless File.exist?(qea_file_path)
 
       info = described_class.file_info(qea_file_path)
@@ -115,14 +115,14 @@ RSpec.describe Lutaml::Qea::FileDetector do
       expect(info[:is_sqlite]).to be true
     end
 
-    it "returns error for non-existent file" do
+    it "returns error for non-existent file", :aggregate_failures do
       info = described_class.file_info("nonexistent.qea")
 
       expect(info).to have_key(:error)
       expect(info[:error]).to match(/not found/i)
     end
 
-    it "includes table count for SQLite files" do
+    it "includes table count for SQLite files", :aggregate_failures do
       skip "QEA test file not available" unless File.exist?(qea_file_path)
 
       info = described_class.file_info(qea_file_path)
@@ -131,7 +131,7 @@ RSpec.describe Lutaml::Qea::FileDetector do
       expect(info[:table_count]).to be > 0
     end
 
-    it "includes EA table validation" do
+    it "includes EA table validation", :aggregate_failures do
       skip "QEA test file not available" unless File.exist?(qea_file_path)
 
       info = described_class.file_info(qea_file_path)
@@ -140,7 +140,7 @@ RSpec.describe Lutaml::Qea::FileDetector do
       expect(info[:has_ea_tables]).to(satisfy { |v| [true, false].include?(v) })
     end
 
-    it "includes record counts for key tables" do
+    it "includes record counts for key tables", :aggregate_failures do
       skip "QEA test file not available" unless File.exist?(qea_file_path)
 
       info = described_class.file_info(qea_file_path)

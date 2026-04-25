@@ -10,12 +10,12 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::DataTransformer do
   let(:transformer) { described_class.new(repository) }
 
   describe "#initialize" do
-    it "initializes with repository and default options" do
+    it "initializes with repository and default options", :aggregate_failures do
       expect(transformer.repository).to eq(repository)
       expect(transformer.options).to be_a(Hash)
     end
 
-    it "merges provided options with defaults" do
+    it "merges provided options with defaults", :aggregate_failures do
       custom_transformer = described_class.new(repository,
                                                include_diagrams: false,
                                                max_definition_length: 100)
@@ -30,7 +30,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::DataTransformer do
   end
 
   describe "#transform" do
-    it "returns a hash with all expected sections" do
+    it "returns a hash with all expected sections", :aggregate_failures do
       result = transformer.transform
 
       expect(result).to be_a(Hash)
@@ -46,7 +46,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::DataTransformer do
       )
     end
 
-    it "builds metadata section" do
+    it "builds metadata section", :aggregate_failures do
       result = transformer.transform
 
       expect(result[:metadata]).to include(:generated, :generator, :version,
@@ -56,7 +56,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::DataTransformer do
         .to eq("LutaML Static Site Generator")
     end
 
-    it "builds statistics" do
+    it "builds statistics", :aggregate_failures do
       result = transformer.transform
       stats = result[:metadata][:statistics]
 
@@ -65,7 +65,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::DataTransformer do
       expect(stats[:classes]).to be >= 1
     end
 
-    it "builds hierarchical package tree" do
+    it "builds hierarchical package tree", :aggregate_failures do
       result = transformer.transform
       tree = result[:packageTree]
 
@@ -73,7 +73,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::DataTransformer do
       expect(tree).to include(:id, :name, :path, :classCount)
     end
 
-    it "builds packages map with stable IDs" do
+    it "builds packages map with stable IDs", :aggregate_failures do
       result = transformer.transform
       packages = result[:packages]
 
@@ -86,7 +86,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::DataTransformer do
                              :stereotypes, :classes)
     end
 
-    it "builds classes map" do
+    it "builds classes map", :aggregate_failures do
       result = transformer.transform
       classes = result[:classes]
 

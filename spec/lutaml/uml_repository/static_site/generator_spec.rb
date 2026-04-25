@@ -53,7 +53,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Generator do
   end
 
   describe "#initialize" do
-    it "initializes with repository and options" do
+    it "initializes with repository and options", :aggregate_failures do
       generator = described_class.new(repository, output: output_file.path)
 
       expect(generator.repository).to eq(repository)
@@ -85,7 +85,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Generator do
       expect(generator.config).to eq(custom_config)
     end
 
-    it "supports dependency injection for testing" do
+    it "supports dependency injection for testing", :aggregate_failures do
       mock_transformer = double("DataTransformer")
       mock_builder = double("SearchBuilder")
 
@@ -108,7 +108,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Generator do
     end
 
     context "with single-file mode" do
-      it "generates single HTML file" do
+      it "generates single HTML file", :aggregate_failures do
         generator = described_class.new(repository,
                                         mode: :single_file,
                                         output: output_file.path)
@@ -123,7 +123,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Generator do
         expect(File.exist?(output_file.path)).to be true
       end
 
-      it "embeds JSON data in HTML" do
+      it "embeds JSON data in HTML", :aggregate_failures do
         generator = described_class.new(repository,
                                         mode: :single_file,
                                         output: output_file.path)
@@ -142,7 +142,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Generator do
     end
 
     context "with multi-file mode" do
-      it "generates multi-file site structure" do
+      it "generates multi-file site structure", :aggregate_failures do
         generator = described_class.new(repository,
                                         mode: :multi_file,
                                         output: output_dir)
@@ -158,7 +158,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Generator do
         expect(File.exist?(File.join(output_dir, "assets"))).to be true
       end
 
-      it "creates separate JSON data files" do
+      it "creates separate JSON data files", :aggregate_failures do
         generator = described_class.new(repository,
                                         mode: :multi_file,
                                         output: output_dir)
@@ -174,7 +174,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Generator do
           .to be true
       end
 
-      it "creates separate asset files" do
+      it "creates separate asset files", :aggregate_failures do
         generator = described_class.new(repository,
                                         mode: :multi_file,
                                         output: output_dir)
@@ -213,7 +213,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Generator do
   end
 
   describe "configuration integration" do
-    it "uses configuration for default values" do
+    it "uses configuration for default values", :aggregate_failures do
       generator = described_class.new(repository)
 
       # Should use config defaults
@@ -221,7 +221,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Generator do
       expect(generator.options).to include(:title)
     end
 
-    it "allows user options to override configuration" do
+    it "allows user options to override configuration", :aggregate_failures do
       generator = described_class.new(repository,
                                       title: "Custom Title",
                                       minify: true)

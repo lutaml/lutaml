@@ -39,7 +39,7 @@ RSpec.describe Lutaml::UmlRepository::ErrorHandler do
       expect(error_handler.levenshtein_distance("cats", "cat")).to eq(1)
     end
 
-    it "calculates distance for empty strings" do
+    it "calculates distance for empty strings", :aggregate_failures do
       expect(error_handler.levenshtein_distance("", "test")).to eq(4)
       expect(error_handler.levenshtein_distance("test", "")).to eq(4)
       expect(error_handler.levenshtein_distance("", "")).to eq(0)
@@ -98,7 +98,7 @@ RSpec.describe Lutaml::UmlRepository::ErrorHandler do
 
   describe "#class_not_found_error" do
     context "with suggestions available" do
-      it "raises NameError with suggestions" do
+      it "raises NameError with suggestions", :aggregate_failures do
         allow(error_handler).to receive(:suggest_similar_classes)
           .and_return(["ModelRoot::Building", "ModelRoot::BuildingPart"])
 
@@ -114,7 +114,7 @@ RSpec.describe Lutaml::UmlRepository::ErrorHandler do
     end
 
     context "without suggestions" do
-      it "raises NameError with helpful tip" do
+      it "raises NameError with helpful tip", :aggregate_failures do
         allow(error_handler).to receive(:suggest_similar_classes).and_return([])
 
         expect do
@@ -130,7 +130,7 @@ RSpec.describe Lutaml::UmlRepository::ErrorHandler do
 
   describe "#package_not_found_error" do
     context "with suggestions available" do
-      it "raises NameError with suggestions" do
+      it "raises NameError with suggestions", :aggregate_failures do
         allow(error_handler).to receive(:suggest_similar_packages)
           .and_return(["ModelRoot::i-UR", "ModelRoot::core"])
 
@@ -146,7 +146,7 @@ RSpec.describe Lutaml::UmlRepository::ErrorHandler do
     end
 
     context "without suggestions" do
-      it "raises NameError with helpful tip" do
+      it "raises NameError with helpful tip", :aggregate_failures do
         allow(error_handler)
           .to receive(:suggest_similar_packages).and_return([])
 

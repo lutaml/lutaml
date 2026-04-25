@@ -65,7 +65,7 @@ RSpec.describe Lutaml::Qea::Factory::TransformerRegistry do
   end
 
   describe ".all_transformers" do
-    it "returns all registered transformers" do
+    it "returns all registered transformers", :aggregate_failures do
       transformers = described_class.all_transformers
 
       expect(transformers).to be_a(Hash)
@@ -93,7 +93,7 @@ RSpec.describe Lutaml::Qea::Factory::TransformerRegistry do
   end
 
   describe ".reset_defaults" do
-    it "restores default registrations" do
+    it "restores default registrations", :aggregate_failures do
       described_class.clear
       expect(described_class.all_transformers).to be_empty
 

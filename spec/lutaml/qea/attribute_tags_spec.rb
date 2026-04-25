@@ -10,7 +10,7 @@ RSpec.describe "Attribute Tags Support" do
 
   describe Lutaml::Qea::Models::EaAttributeTag do
     describe ".from_db_row" do
-      it "creates attribute tag from database row" do
+      it "creates attribute tag from database row", :aggregate_failures do
         row = {
           "PropertyID" => 1,
           "ElementID" => 367,
@@ -89,7 +89,8 @@ RSpec.describe "Attribute Tags Support" do
     let(:transformer) { described_class.new(database) }
 
     describe "#transform" do
-      it "transforms EA attribute tag to UML TaggedValue" do
+      it "transforms EA attribute tag to UML TaggedValue",
+         :aggregate_failures do
         ea_tag = Lutaml::Qea::Models::EaAttributeTag.new(
           property_id: 1,
           element_id: 367,
@@ -127,12 +128,12 @@ RSpec.describe "Attribute Tags Support" do
     let(:loader) { Lutaml::Qea::Services::DatabaseLoader.new(qea_file) }
     let(:database) { loader.load }
 
-    it "loads attribute tags from database" do
+    it "loads attribute tags from database", :aggregate_failures do
       expect(database.attribute_tags).not_to be_empty
       expect(database.attribute_tags.size).to eq(129)
     end
 
-    it "loads attribute tags with correct structure" do
+    it "loads attribute tags with correct structure", :aggregate_failures do
       tag = database.attribute_tags.first
 
       expect(tag).to be_a(Lutaml::Qea::Models::EaAttributeTag)
@@ -141,7 +142,7 @@ RSpec.describe "Attribute Tags Support" do
       expect(tag.property).not_to be_nil
     end
 
-    it "includes expected property types" do
+    it "includes expected property types", :aggregate_failures do
       property_names = database.attribute_tags.map(&:property).uniq
 
       expect(property_names).to include("isMetadata")
@@ -151,27 +152,29 @@ RSpec.describe "Attribute Tags Support" do
 
     it "attaches attribute tags to UML attributes as tagged values" do
       # Find an attribute that has tags
-      attr_with_tags = database.attributes.find do |attr|
-        database.attribute_tags.any? { |t| t.element_id == attr.id }
-      end
+      aggregate_failures do
+        attr_with_tags = database.attributes.find do |attr|
+          database.attribute_tags.any? { |t| t.element_id == attr.id }
+        end
 
-      skip "No attributes with tags found" unless attr_with_tags
+        skip "No attributes with tags found" unless attr_with_tags
 
-      # Transform to UML
-      attr_transformer = Lutaml::Qea::Factory::AttributeTransformer.new(database)
-      uml_attr = attr_transformer.transform(attr_with_tags)
+        # Transform to UML
+        attr_transformer = Lutaml::Qea::Factory::AttributeTransformer.new(database)
+        uml_attr = attr_transformer.transform(attr_with_tags)
 
-      # Check that tagged values include attribute tags
-      expect(uml_attr.tagged_values).not_to be_empty
+        # Check that tagged values include attribute tags
+        expect(uml_attr.tagged_values).not_to be_empty
 
-      tag_names = database.attribute_tags
-        .select { |t| t.element_id == attr_with_tags.id }
-        .map(&:property)
+        tag_names = database.attribute_tags
+          .select { |t| t.element_id == attr_with_tags.id }
+          .map(&:property)
 
-      uml_tag_names = uml_attr.tagged_values.map(&:name)
+        uml_tag_names = uml_attr.tagged_values.map(&:name)
 
-      tag_names.each do |tag_name|
-        expect(uml_tag_names).to include(tag_name)
+        tag_names.each do |tag_name|
+          expect(uml_tag_names).to include(tag_name)
+        end
       end
     end
   end
@@ -180,7 +183,7 @@ RSpec.describe "Attribute Tags Support" do
     let(:loader) { Lutaml::Qea::Services::DatabaseLoader.new(qea_file) }
     let(:database) { loader.load }
 
-    it "includes attribute_tags in database stats" do
+    it "includes attribute_tags in database stats", :aggregate_failures do
       stats = database.stats
 
       expect(stats).to have_key("attribute_tags")
