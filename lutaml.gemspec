@@ -4,7 +4,7 @@ Gem::Specification.new do |spec|
   spec.name          = "lutaml"
   spec.version       = Lutaml::VERSION
   spec.authors       = ["Ribose Inc."]
-  spec.email         = ["open.source@ribose.com'"]
+  spec.email         = ["open.source@ribose.com"]
 
   spec.summary       = "LutaML: data models in textual form"
   spec.description   = "LutaML: data models in textual form"
@@ -27,7 +27,7 @@ Gem::Specification.new do |spec|
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
-  spec.required_ruby_version = ">= 2.7.0" # rubocop:disable Gemspec/RequiredRubyVersion
+  spec.required_ruby_version = ">= 3.2.0"
 
   spec.add_dependency "expressir", "~> 2.3"
   # TODO: remove once reline declares fiddle as a dependency
