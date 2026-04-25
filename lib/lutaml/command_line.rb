@@ -10,7 +10,7 @@ require_relative "uml/parsers/yaml"
 
 module Lutaml
   class CommandLine
-    class Error < StandardError; end
+    class Error < Lutaml::Error; end
     class FileError < Error; end
     class NotSupportedInputFormat < Error; end
 

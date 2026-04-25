@@ -392,7 +392,7 @@ module Lutaml
     end
 
     # Error class for unsupported file formats
-    class UnsupportedFormatError < StandardError
+    class UnsupportedFormatError < Lutaml::Error
       # @return [String] Path to the unsupported file
       attr_reader :file_path
 

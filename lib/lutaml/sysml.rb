@@ -5,7 +5,7 @@ require "nokogiri"
 
 module Lutaml
   module Sysml
-    class Error < StandardError; end
+    class Error < Lutaml::Error; end
     # Your code goes here...
   end
 end

@@ -4,7 +4,7 @@ require "lutaml/model"
 
 module Lutaml
   module Uml
-    class Error < StandardError; end
+    class Error < Lutaml::Error; end
 
     # Base modules and mixins
     autoload :HasAttributes, "lutaml/uml/has_attributes"

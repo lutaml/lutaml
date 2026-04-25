@@ -10,7 +10,7 @@ require "lutaml/converter/dsl_to_uml"
 module Lutaml
   module Uml
     module Parsers
-      class ParsingError < StandardError; end
+      class ParsingError < Lutaml::Error; end
 
       # Class for parsing LutaML dsl into Lutaml::Uml::Document
       class Dsl < Parslet::Parser
