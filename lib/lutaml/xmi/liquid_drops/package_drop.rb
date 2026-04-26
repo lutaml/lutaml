@@ -4,49 +4,29 @@ module Lutaml
   module Xmi
     module LiquidDrops
       class PackageDrop < Liquid::Drop
-        include Parsers::XmiBase
-
-        def initialize(model, guidance = nil, options = {}) # rubocop:disable Lint/MissingSuper,Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+        def initialize(model, guidance = nil, options = {}) # rubocop:disable Lint/MissingSuper
           @model = model
           @guidance = guidance
-
           @options = options
+          @lookup = options[:lookup]
           @xmi_root_model = options[:xmi_root_model]
-          @id_name_mapping = options[:id_name_mapping]
-
-          @packages = model.packaged_element.select do |e|
-            e.type?("uml:Package")
-          end
-
-          @klasses = model.packaged_element.select do |e|
-            e.type?("uml:Class") || e.type?("uml:AssociationClass") ||
-              e.type?("uml:Interface")
-          end
-
-          @all_data_type_elements = []
-          select_all_packaged_elements(@all_data_type_elements, model,
-                                       "uml:DataType")
-
-          @children_packages ||= packages.map do |pkg|
-            [pkg, pkg.packages, pkg.packages.map(&:children_packages)]
-          end.flatten.uniq
         end
 
         def xmi_id
-          @model.id
+          @model.xmi_id
         end
 
         def name
-          get_package_name(@model)
+          @model.name
         end
 
         def absolute_path
           absolute_path_arr = [@model.name]
-          e = find_upper_level_packaged_element(@model.id)
+          e = @lookup.find_upper_level_packaged_element(@model.xmi_id)
           absolute_path_arr << e.name if e
 
           while e
-            e = find_upper_level_packaged_element(e.id)
+            e = @lookup.find_upper_level_packaged_element(e.id)
             absolute_path_arr << e.name if e
           end
 
@@ -54,8 +34,8 @@ module Lutaml
           absolute_path_arr.reverse.join("::")
         end
 
-        def klasses # rubocop:disable Metrics/MethodLength
-          @klasses.map do |klass|
+        def klasses
+          @model.classes.map do |klass|
             ::Lutaml::Xmi::LiquidDrops::KlassDrop.new(
               klass,
               @guidance,
@@ -70,33 +50,25 @@ module Lutaml
         alias classes klasses
 
         def enums
-          enums = @model.packaged_element.select do |e|
-            e.type?("uml:Enumeration")
-          end
-
-          enums.map do |enum|
+          @model.enums.map do |enum|
             ::Lutaml::Xmi::LiquidDrops::EnumDrop.new(enum, @options)
           end
         end
 
         def data_types
-          @all_data_type_elements.map do |data_type|
+          @model.data_types.map do |data_type|
             ::Lutaml::Xmi::LiquidDrops::DataTypeDrop.new(data_type, @options)
           end
         end
 
         def diagrams
-          diagrams = @xmi_root_model.extension.diagrams.diagram.select do |d|
-            d.model.package == @model.id
-          end
-
-          diagrams.map do |diagram|
+          @model.diagrams.map do |diagram|
             ::Lutaml::Xmi::LiquidDrops::DiagramDrop.new(diagram, @options)
           end
         end
 
-        def packages # rubocop:disable Metrics/MethodLength
-          @packages.map do |package|
+        def packages
+          @model.packages.map do |package|
             ::Lutaml::Xmi::LiquidDrops::PackageDrop.new(
               package,
               @guidance,
@@ -110,15 +82,15 @@ module Lutaml
         end
 
         def children_packages
-          @children_packages
+          @model.children_packages
         end
 
         def definition
-          doc_node_attribute_value(@model.id, "documentation")
+          @model.definition
         end
 
         def stereotype
-          doc_node_attribute_value(@model.id, "stereotype")
+          @model.stereotype&.first
         end
       end
     end

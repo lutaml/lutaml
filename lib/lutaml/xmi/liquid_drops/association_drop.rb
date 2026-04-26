@@ -4,72 +4,50 @@ module Lutaml
   module Xmi
     module LiquidDrops
       class AssociationDrop < Liquid::Drop
-        include Parsers::XmiBase
-
-        def initialize( # rubocop:disable Lint/MissingSuper,Metrics/ParameterLists,Metrics/MethodLength
-          xmi_id:,
-          member_end:,
-          member_end_type:,
-          member_end_cardinality:,
-          member_end_attribute_name:,
-          member_end_xmi_id:,
-          owner_end:,
-          owner_end_xmi_id:,
-          definition:,
-          options:
-        )
-          @xmi_id = xmi_id
-          @member_end = member_end
-          @member_end_type = member_end_type
-          @member_end_cardinality = member_end_cardinality
-          @member_end_attribute_name = member_end_attribute_name
-          @member_end_xmi_id = member_end_xmi_id
-          @owner_end = owner_end
-          @owner_end_xmi_id = owner_end_xmi_id
-          @definition = definition
+        def initialize(association, options = {}) # rubocop:disable Lint/MissingSuper
+          @model = association
           @options = options
-          @xmi_root_model = options[:xmi_root_model]
-          @id_name_mapping = options[:id_name_mapping]
+          @lookup = options[:lookup]
         end
 
         def xmi_id
-          @xmi_id
+          @model.xmi_id
         end
 
         def member_end
-          @member_end
+          @model.member_end
         end
 
         def member_end_type
-          @member_end_type
+          @model.member_end_type
         end
 
         def member_end_cardinality
-          ::Lutaml::Xmi::LiquidDrops::CardinalityDrop.new(@member_end_cardinality)
+          ::Lutaml::Xmi::LiquidDrops::CardinalityDrop.new(@model.member_end_cardinality)
         end
 
         def member_end_attribute_name
-          @member_end_attribute_name
+          @model.member_end_attribute_name
         end
 
         def member_end_xmi_id
-          @member_end_xmi_id
+          @model.member_end_xmi_id
         end
 
         def owner_end
-          @owner_end
+          @model.owner_end
         end
 
         def owner_end_xmi_id
-          @owner_end_xmi_id
+          @model.owner_end_xmi_id
         end
 
         def definition
-          @definition
+          @model.definition
         end
 
         def connector
-          connector = fetch_connector(@xmi_id)
+          connector = @lookup.fetch_connector(@model.xmi_id)
           ::Lutaml::Xmi::LiquidDrops::ConnectorDrop.new(connector, @options)
         end
       end

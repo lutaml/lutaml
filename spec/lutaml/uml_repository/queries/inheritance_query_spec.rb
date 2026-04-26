@@ -96,8 +96,8 @@ RSpec.describe Lutaml::UmlRepository::Queries::InheritanceQuery do
       next unless id
 
       children = query.inheritance_tree(id)[:children]
-        expect(children).to all(have_key(:class))
-        expect(children).to all(have_key(:children))
+      expect(children).to all(have_key(:class))
+      expect(children).to all(have_key(:children))
     end
 
     it { expect(query.inheritance_tree("nonexistent_id")).to be_nil }

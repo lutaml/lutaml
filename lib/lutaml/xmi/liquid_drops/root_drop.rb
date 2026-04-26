@@ -4,7 +4,7 @@ module Lutaml
   module Xmi
     module LiquidDrops
       class RootDrop < Liquid::Drop
-        def initialize(model, guidance = nil, options = {}) # rubocop:disable Lint/MissingSuper,Metrics/AbcSize,Metrics/MethodLength,Metrics/CyclomaticComplexity
+        def initialize(model, guidance = nil, options = {}) # rubocop:disable Lint/MissingSuper
           @model = model
           @guidance = guidance
           @options = options
@@ -12,14 +12,6 @@ module Lutaml
           @id_name_mapping = options[:id_name_mapping]
 
           @options[:absolute_path] = "::#{model.name}"
-
-          @packages = model&.packaged_element&.select do |e|
-            e.type?("uml:Package")
-          end
-
-          @children_packages ||= packages.map do |pkg|
-            [pkg, pkg.packages, pkg.packages.map(&:children_packages)]
-          end.flatten.uniq
         end
 
         def name
@@ -27,14 +19,14 @@ module Lutaml
         end
 
         def packages
-          @packages.map do |package|
+          @model.packages.map do |package|
             ::Lutaml::Xmi::LiquidDrops::PackageDrop.new(package, @guidance,
                                                         @options)
           end
         end
 
         def children_packages
-          @children_packages
+          @model.packages.flat_map(&:children_packages).uniq
         end
       end
     end

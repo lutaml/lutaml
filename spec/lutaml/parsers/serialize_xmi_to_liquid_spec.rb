@@ -183,27 +183,27 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
         expect(test_package.name).to eq("bldg")
         expect(gen_obj.name).to eq("Building")
 
-        expect(gen_obj.general.attributes[0][:name]).to eq("class")
-        expect(gen_obj.general.attributes[0][:id]).to eq(
+        expect(gen_obj.general.attributes[0].name).to eq("class")
+        expect(gen_obj.general.attributes[0].id).to eq(
           "EAID_FDC435D4_544B_4122_BEA1_7C0B55136938",
         )
-        expect(gen_obj.general.attributes[0][:type]).to eq("gml::CodeType")
-        expect(gen_obj.general.attributes[0][:xmi_id]).to eq(
+        expect(gen_obj.general.attributes[0].type).to eq("gml::CodeType")
+        expect(gen_obj.general.attributes[0].xmi_id).to eq(
           "EAJava_gml__CodeType",
         )
-        expect(gen_obj.general.attributes[0][:is_derived]).to be_nil
-        expect(gen_obj.general.attributes[0][:association]).to be_nil
-        expect(gen_obj.general.attributes[0][:definition]).to eq(
+        expect(gen_obj.general.attributes[0].is_derived).to be(false)
+        expect(gen_obj.general.attributes[0].association).to be_nil
+        expect(gen_obj.general.attributes[0].definition).to eq(
           "建築物の形態による区分。コードリスト(&lt;&lt;Building_class.xml&gt;&gt;)より選択する。",
         )
-        expect(gen_obj.general.attributes[28][:association]).to eq(
+        expect(gen_obj.general.attributes[28].association).to eq(
           "EAID_99ADD620_BC08_4adc_80A1_A8EB2A1B2E2F",
         )
 
         expect(gen_obj.inherited_props[0].name).to eq("description")
         expect(gen_obj.inherited_props[0].type).to eq("gml::StringOrRefType")
         expect(gen_obj.inherited_props[0].type_ns).to be_nil
-        expect(gen_obj.inherited_props[0].upper_klass.name).to eq("gml")
+        expect(gen_obj.inherited_props[0].upper_klass).to eq("gml")
         expect(gen_obj.inherited_props[0].gen_name).to eq("_Feature")
         expect(gen_obj.inherited_props[0].name_ns).to eq("gml")
         expect(gen_obj.inherited_props[0].association).to be_nil
@@ -238,20 +238,20 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
       end
 
       it "verifies general attribute details", :aggregate_failures do
-        expect(gen_obj.general.attributes[0][:name]).to eq("class")
-        expect(gen_obj.general.attributes[0][:id]).to eq(
+        expect(gen_obj.general.attributes[0].name).to eq("class")
+        expect(gen_obj.general.attributes[0].id).to eq(
           "EAID_FDC435D4_544B_4122_BEA1_7C0B55136938",
         )
-        expect(gen_obj.general.attributes[0][:type]).to eq("gml::CodeType")
-        expect(gen_obj.general.attributes[0][:xmi_id]).to eq(
+        expect(gen_obj.general.attributes[0].type).to eq("gml::CodeType")
+        expect(gen_obj.general.attributes[0].xmi_id).to eq(
           "EAJava_gml__CodeType",
         )
-        expect(gen_obj.general.attributes[0][:is_derived]).to be_nil
-        expect(gen_obj.general.attributes[0][:association]).to be_nil
-        expect(gen_obj.general.attributes[0][:definition]).to eq(
+        expect(gen_obj.general.attributes[0].is_derived).to be(false)
+        expect(gen_obj.general.attributes[0].association).to be_nil
+        expect(gen_obj.general.attributes[0].definition).to eq(
           "建築物の形態による区分。コードリスト(&lt;&lt;Building_class.xml&gt;&gt;)より選択する。",
         )
-        expect(gen_obj.general.attributes[28][:association]).to eq(
+        expect(gen_obj.general.attributes[28].association).to eq(
           "EAID_99ADD620_BC08_4adc_80A1_A8EB2A1B2E2F",
         )
       end
@@ -264,7 +264,7 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
         expect(gen_obj.inherited_props[0].name).to eq("description")
         expect(gen_obj.inherited_props[0].type).to eq("gml::StringOrRefType")
         expect(gen_obj.inherited_props[0].type_ns).to be_nil
-        expect(gen_obj.inherited_props[0].upper_klass.name).to eq("gml")
+        expect(gen_obj.inherited_props[0].upper_klass).to eq("gml")
         expect(gen_obj.inherited_props[0].gen_name).to eq("_Feature")
         expect(gen_obj.inherited_props[0].name_ns).to eq("gml")
         expect(gen_obj.inherited_props[0].association).to be_nil

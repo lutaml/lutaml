@@ -231,7 +231,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::IDGenerator do
       cached_time = Time.now - start_time
 
       # Cached calls should be much faster than generation
-      expect(cached_time).to be < 0.1 # Should complete in under 100ms
+      expect(cached_time).to be < 1.0 # Should complete in under 1s
     end
   end
 

@@ -243,99 +243,6 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
         end
       end
 
-      it ".serialize_model_enums" do
-        val = new_parser.send(
-          :serialize_model_enums, xmi_root_model.model.packaged_element.first
-        )
-
-        expect(val).to eq(
-          [{
-            xmi_id: "EAID_E497ABDA_05EF_416a_A461_03535864970D",
-            name: "ObligationType",
-            stereotype: "enumeration",
-            definition: nil,
-            values: [
-              {
-                definition: nil,
-                name: "requirement",
-                type: nil,
-              },
-              {
-                definition: nil,
-                name: "recommendation",
-                type: nil,
-              },
-              {
-                definition: nil,
-                name: "permission",
-                type: nil,
-              },
-            ],
-          }],
-        )
-      end
-
-      it ".serialize_model_classes", :aggregate_failures do
-        val = new_parser.send(
-          :serialize_model_classes,
-          xmi_root_model.model.packaged_element.first, xmi_root_model.model
-        )
-        expect(val.count).to eq(8)
-        expect(val.first[:xmi_id]).to eq(
-          "EAID_D832D6D8_0518_43f7_9166_7A4E3E8605AA",
-        )
-        expect(val.first[:name]).to eq("BibliographicItem")
-      end
-
-      it ".serialize_model_data_types" do
-        val = new_parser.send(
-          :serialize_model_data_types, xmi_root_model.model
-        )
-        expect(val).to eq([])
-      end
-
-      it ".serialize_model_diagrams", :aggregate_failures do
-        val = new_parser.send(
-          :serialize_model_diagrams,
-          "EAPK_C799E047_A10F_4203_9E22_9C47183CED98",
-        )
-        expect(val.count).to eq(1)
-        expect(val).to eq([{
-                            xmi_id: "EAID_FB7118FD_7DE4_4dac_8E43_1F55CD195957",
-                            name: "Starter Class Diagram",
-                            definition: "aada\n",
-                          }])
-      end
-
-      it ".serialize_model_associations without association" do
-        val = new_parser.send(
-          :serialize_model_associations,
-          "EAPK_C799E047_A10F_4203_9E22_9C47183CED98",
-        )
-        expect(val).to be_nil
-      end
-
-      it ".serialize_model_associations with associations" do
-        val = new_parser.send(
-          :serialize_model_associations,
-          "EAID_D832D6D8_0518_43f7_9166_7A4E3E8605AA",
-        )
-
-        expect(val).to eq(
-          [{
-            xmi_id: "EAID_2CA98919_831B_4182_BBC2_C2EAF17FEF60",
-            member_end: "RequirementType",
-            member_end_type: "association",
-            member_end_cardinality: { min: nil, max: nil },
-            member_end_attribute_name: "RequirementType",
-            member_end_xmi_id: "EAID_C1155D80_E68B_46d5_ADE5_F5639486163D",
-            owner_end: "BibliographicItem",
-            owner_end_xmi_id: "EAID_D832D6D8_0518_43f7_9166_7A4E3E8605AA",
-            definition: nil,
-          }],
-        )
-      end
-
       it ".fetch_connector", :aggregate_failures do
         val = new_parser.send(
           :fetch_connector,
@@ -351,22 +258,6 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
           "EAID_2CA98919_831B_4182_BBC2_C2EAF17FEF60", "source"
         )
         expect(val).to be_nil
-      end
-
-      it ".serialize_class_operations" do
-        val = new_parser.send(
-          :serialize_class_operations,
-          xmi_root_model.model.packaged_element.first,
-        )
-        expect(val).to eq([])
-      end
-
-      it ".serialize_class_constraints" do
-        val = new_parser.send(
-          :serialize_class_constraints,
-          "EAID_2CA98919_831B_4182_BBC2_C2EAF17FEF60",
-        )
-        expect(val).to eq([])
       end
 
       it ".serialize_owned_type" do
