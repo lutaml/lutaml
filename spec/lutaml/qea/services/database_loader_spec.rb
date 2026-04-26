@@ -307,125 +307,56 @@ RSpec.describe Lutaml::Qea::Services::DatabaseLoader do
     end
 
     it "warns when individual records fail to load" do
-      # Test that individual record errors are caught and warned
-      # We'll test this by mocking from_db_row to fail
       temp_db = Tempfile.new(["test", ".qea"])
       db = SQLite3::Database.new(temp_db.path)
       db.results_as_hash = true
 
-      # Create all required tables
-      db.execute(
-        "CREATE TABLE " \
-        "t_object (Object_ID INTEGER PRIMARY KEY, Name TEXT)",
-      )
-      db.execute(
-        "CREATE TABLE " \
-        "t_attribute (ID INTEGER PRIMARY KEY, Name TEXT)",
-      )
-      db.execute(
-        "CREATE TABLE " \
-        "t_operation (OperationID INTEGER PRIMARY KEY, Name TEXT)",
-      )
-      db.execute(
-        "CREATE TABLE " \
-        "t_operationparams (OperationID INTEGER, Name TEXT)",
-      )
-      db.execute(
-        "CREATE TABLE " \
-        "t_connector (Connector_ID INTEGER PRIMARY KEY, Name TEXT)",
-      )
-      db.execute(
-        "CREATE TABLE " \
-        "t_package (Package_ID INTEGER PRIMARY KEY, Name TEXT)",
-      )
-      db.execute(
-        "CREATE TABLE " \
-        "t_diagram (Diagram_ID INTEGER PRIMARY KEY, Name TEXT)",
-      )
-      db.execute(
-        "CREATE TABLE " \
-        "t_objectconstraint (ConstraintID INTEGER, Constraint TEXT)",
-      )
-      db.execute(
-        "CREATE TABLE " \
-        "t_objectproperties (PropertyID INTEGER, Object_ID INTEGER)",
-      )
-      db.execute(
-        "CREATE TABLE " \
-        "t_connectortypes (Connector_Type TEXT PRIMARY KEY, Description TEXT)",
-      )
-      db.execute(
-        "CREATE TABLE " \
-        "t_diagramobjects (Instance_ID INTEGER PRIMARY KEY, Object_ID INTEGER)",
-      )
-      db.execute(
-        "CREATE TABLE " \
-        "t_diagramlinks (Instance_ID INTEGER PRIMARY KEY, Path TEXT)",
-      )
-      db.execute(
-        "CREATE TABLE " \
-        "t_diagramtypes (Diagram_Type TEXT PRIMARY KEY, Name TEXT)",
-      )
-      db.execute(
-        "CREATE TABLE " \
-        "t_taggedvalue (PropertyID INTEGER PRIMARY KEY, TagValue TEXT)",
-      )
-      db.execute(
-        "CREATE TABLE " \
-        "t_attributetag (PropertyID INTEGER PRIMARY KEY, Property TEXT)",
-      )
-      db.execute(
-        "CREATE TABLE " \
-        "t_xref (XrefID TEXT PRIMARY KEY, Name TEXT)",
-      )
-      db.execute(
-        "CREATE TABLE " \
-        "t_stereotypes (Stereotype TEXT)",
-      )
-      db.execute(
-        "CREATE TABLE " \
-        "t_datatypes (DatatypeID INTEGER PRIMARY KEY, DataType TEXT)",
-      )
-      db.execute(
-        "CREATE TABLE " \
-        "t_constrainttypes ('Constraint' TEXT PRIMARY KEY, Description TEXT)",
-      )
-      db.execute(
-        "CREATE TABLE " \
-        "t_objecttypes (Object_Type TEXT PRIMARY KEY, Description TEXT)",
-      )
-      db.execute(
-        "CREATE TABLE " \
-        "t_statustypes (Status TEXT PRIMARY KEY, Description TEXT)",
-      )
-      db.execute(
-        "CREATE TABLE " \
-        "t_complexitytypes (Complexity TEXT PRIMARY KEY, " \
-        "NumericWeight INTEGER)",
-      )
-      db.execute(
-        "CREATE TABLE " \
-        "t_document (DocID TEXT PRIMARY KEY, DocName TEXT)",
-      )
-      db.execute(
-        "CREATE TABLE " \
-        "t_script (ScriptID INTEGER PRIMARY KEY, ScriptName TEXT)",
-      )
-
+      create_minimal_qea_schema(db)
       db.execute("INSERT INTO t_object (Object_ID, Name) VALUES (1, 'Test')")
       db.close
 
       loader = described_class.new(temp_db.path)
-
-      # Mock from_db_row to fail for one call
       allow(Lutaml::Qea::Models::EaObject)
         .to receive(:from_db_row).and_raise(StandardError.new("Test error"))
 
-      # Should not raise error, just warn
       expect { loader.load }.not_to raise_error
 
       temp_db.close
       temp_db.unlink
+    end
+  end
+
+  def create_minimal_qea_schema(db)
+    tables = {
+      "t_object" => "Object_ID INTEGER PRIMARY KEY, Name TEXT",
+      "t_attribute" => "ID INTEGER PRIMARY KEY, Name TEXT",
+      "t_operation" => "OperationID INTEGER PRIMARY KEY, Name TEXT",
+      "t_operationparams" => "OperationID INTEGER, Name TEXT",
+      "t_connector" => "Connector_ID INTEGER PRIMARY KEY, Name TEXT",
+      "t_package" => "Package_ID INTEGER PRIMARY KEY, Name TEXT",
+      "t_diagram" => "Diagram_ID INTEGER PRIMARY KEY, Name TEXT",
+      "t_objectconstraint" => "ConstraintID INTEGER, Constraint TEXT",
+      "t_objectproperties" => "PropertyID INTEGER, Object_ID INTEGER",
+      "t_connectortypes" => "Connector_Type TEXT PRIMARY KEY, Description TEXT",
+      "t_diagramobjects" =>
+        "Instance_ID INTEGER PRIMARY KEY, Object_ID INTEGER",
+      "t_diagramlinks" => "Instance_ID INTEGER PRIMARY KEY, Path TEXT",
+      "t_diagramtypes" => "Diagram_Type TEXT PRIMARY KEY, Name TEXT",
+      "t_taggedvalue" => "PropertyID INTEGER PRIMARY KEY, TagValue TEXT",
+      "t_attributetag" => "PropertyID INTEGER PRIMARY KEY, Property TEXT",
+      "t_xref" => "XrefID TEXT PRIMARY KEY, Name TEXT",
+      "t_stereotypes" => "Stereotype TEXT",
+      "t_datatypes" => "DatatypeID INTEGER PRIMARY KEY, DataType TEXT",
+      "t_constrainttypes" => "'Constraint' TEXT PRIMARY KEY, Description TEXT",
+      "t_objecttypes" => "Object_Type TEXT PRIMARY KEY, Description TEXT",
+      "t_statustypes" => "Status TEXT PRIMARY KEY, Description TEXT",
+      "t_complexitytypes" =>
+        "Complexity TEXT PRIMARY KEY, NumericWeight INTEGER",
+      "t_document" => "DocID TEXT PRIMARY KEY, DocName TEXT",
+      "t_script" => "ScriptID INTEGER PRIMARY KEY, ScriptName TEXT",
+    }
+    tables.each do |name, cols|
+      db.execute("CREATE TABLE #{name} (#{cols})")
     end
   end
 end

@@ -1,5 +1,5 @@
 digraph G {
-  graph [splines="ortho" pad=0.5 ranksep="1.2.equally" nodesep="1.2.equally"]
+  graph [splines="ortho" pad=0.5 ranksep="1.2.equally" nodesep="1.2.equally" rankdir="BT"]
   edge [color="gray50"]
   node [shape="box" fontname="Helvetica-bold"]
 

@@ -279,21 +279,27 @@ RSpec.describe Lutaml::UmlRepository::LazyRepository do
   end
 
   describe "performance characteristics" do
-    it "has faster initial load than normal repository" do
+    it "has faster initial load than normal repository", :aggregate_failures do
       # load document first
       document
 
-      start_time = Time.now
-      described_class.new(document: document, lazy: true)
-      lazy_time = Time.now - start_time
+      # Run multiple iterations to reduce timing flakiness
+      lazy_times = Array.new(5) do
+        start_time = Time.now
+        described_class.new(document: document, lazy: true)
+        Time.now - start_time
+      end
 
-      start_time = Time.now
-      Lutaml::UmlRepository::Repository.new(document: document)
-      normal_time = Time.now - start_time
+      normal_times = Array.new(5) do
+        start_time = Time.now
+        Lutaml::UmlRepository::Repository.new(document: document)
+        Time.now - start_time
+      end
 
-      # Lazy loading should be significantly faster
-      # This is a rough check - actual speedup depends on model size
-      expect(lazy_time).to be < normal_time
+      avg_lazy = lazy_times.sum / lazy_times.size
+      avg_normal = normal_times.sum / normal_times.size
+
+      expect(avg_lazy).to be < avg_normal
     end
 
     it "uses less memory initially" do
