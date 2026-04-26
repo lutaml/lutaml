@@ -158,35 +158,8 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
       end
 
       it "handles strict validation mode" do
-        # Create a test XMI with validation errors
-        invalid_xmi = Tempfile.new(["invalid", ".xmi"])
-        invalid_xmi.write(<<~XML)
-          <?xml version="1.0" encoding="UTF-8"?>
-          <XMI xmi.version="1.1" xmlns:UML="org.omg/UML1.3">
-            <XMI.content>
-              <UML:Model name="TestModel" xmi.id="model1">
-                <UML:Namespace.ownedElement>
-                  <UML:Package name="TestPackage" xmi.id="pkg1">
-                    <UML:Namespace.ownedElement>
-                      <UML:Class name="InvalidClass" xmi.id="cls1">
-                        <UML:Classifier.feature>
-                          <UML:Attribute name="attr1" xmi.id="attr1">
-                            <UML:StructuralFeature.type>
-                              <UML:DataType xmi.idref="NonExistentType"/>
-                            </UML:StructuralFeature.type>
-                          </UML:Attribute>
-                        </UML:Classifier.feature>
-                      </UML:Class>
-                    </UML:Namespace.ownedElement>
-                  </UML:Package>
-                </UML:Namespace.ownedElement>
-              </UML:Model>
-            </XMI.content>
-          </XMI>
-        XML
-        invalid_xmi.close
+        invalid_xmi = create_invalid_xmi_file
 
-        # This test should show validation errors in strict mode
         expect do
           Lutaml::Cli::UmlCommands.start(["build", invalid_xmi.path,
                                           "-o", output_lur,
@@ -443,5 +416,35 @@ RSpec.describe "Package Lifecycle Commands (via UmlCommands)" do
 
       expect(output.string).to include("Packages:")
     end
+  end
+
+  def create_invalid_xmi_file
+    invalid_xmi = Tempfile.new(["invalid", ".xmi"])
+    invalid_xmi.write(<<~XML)
+      <?xml version="1.0" encoding="UTF-8"?>
+      <XMI xmi.version="1.1" xmlns:UML="org.omg/UML1.3">
+        <XMI.content>
+          <UML:Model name="TestModel" xmi.id="model1">
+            <UML:Namespace.ownedElement>
+              <UML:Package name="TestPackage" xmi.id="pkg1">
+                <UML:Namespace.ownedElement>
+                  <UML:Class name="InvalidClass" xmi.id="cls1">
+                    <UML:Classifier.feature>
+                      <UML:Attribute name="attr1" xmi.id="attr1">
+                        <UML:StructuralFeature.type>
+                          <UML:DataType xmi.idref="NonExistentType"/>
+                        </UML:StructuralFeature.type>
+                      </UML:Attribute>
+                    </UML:Classifier.feature>
+                  </UML:Class>
+                </UML:Namespace.ownedElement>
+              </UML:Package>
+            </UML:Namespace.ownedElement>
+          </UML:Model>
+        </XMI.content>
+      </XMI>
+    XML
+    invalid_xmi.close
+    invalid_xmi
   end
 end

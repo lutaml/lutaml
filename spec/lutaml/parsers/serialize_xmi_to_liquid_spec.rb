@@ -221,11 +221,11 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
 
       let(:file) { File.new(fixtures_path("plateau_all_packages_export.xmi")) }
       let(:guidance) { YAML.load_file(fixtures_path("guidance/guidance.yaml")) }
+      let(:test_package) { output.packages.first.packages[2].packages[9] }
+      let(:test_klass) { test_package.classes[3] }
+      let(:gen_obj) { test_klass.generalization }
 
-      it "outputs attributes correctly", :aggregate_failures do
-        test_package = output.packages.first.packages[2].packages[9]
-        test_klass = test_package.classes[3]
-        gen_obj = test_package.classes[3].generalization
+      it "verifies package and class metadata", :aggregate_failures do
         expect(test_package.name).to eq("bldg")
         expect(gen_obj.name).to eq("Building")
         expect(test_package.absolute_path).to eq(
@@ -235,7 +235,9 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
         expect(test_klass.absolute_path).to eq(
           "::EA_Model::Conceptual Models::CityGML2.0::bldg::Building",
         )
+      end
 
+      it "verifies general attribute details", :aggregate_failures do
         expect(gen_obj.general.attributes[0][:name]).to eq("class")
         expect(gen_obj.general.attributes[0][:id]).to eq(
           "EAID_FDC435D4_544B_4122_BEA1_7C0B55136938",
@@ -252,7 +254,9 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
         expect(gen_obj.general.attributes[28][:association]).to eq(
           "EAID_99ADD620_BC08_4adc_80A1_A8EB2A1B2E2F",
         )
+      end
 
+      it "verifies inherited properties", :aggregate_failures do
         expect(gen_obj.inherited_props[2].name).to eq("boundedBy")
         expect(gen_obj.inherited_props[2].used?).to be(false)
         expect(gen_obj.inherited_props[2].guidance).to eq("この属性は使用されていません。\n")
@@ -266,7 +270,9 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
         expect(gen_obj.inherited_props[0].association).to be_nil
         expect(gen_obj.inherited_props[0].used?).to be(true)
         expect(gen_obj.inherited_props[0].guidance).to be_nil
+      end
 
+      it "verifies inherited association properties" do
         expect(gen_obj.inherited_assoc_props[0].association).to eq(
           "EAID_98F26EAF_7E3C_48b2_AAE7_4769CF1AAFD6",
         )
@@ -275,56 +281,62 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
 
     context "when parsing xmi with generalization and sorted props" do
       let(:file) { File.new(fixtures_path("plateau_all_packages_export.xmi")) }
+      let(:test_package) do
+        output.packages.first.packages[1].packages[0]
+          .packages[1].classes[144]
+      end
+      let(:gen_obj) { test_package.generalization }
+
+      let(:expected_inherited_assoc) do
+        %w[
+          core:core::外部参照[_CityObject]
+          gen:_genericAttribute[_CityObject]
+          urf:lod0MultiCurve[_UrbanFunction]
+          urf:lod0MultiSurface[_UrbanFunction]
+          urf:lod1MultiSurface[_UrbanFunction]
+          urf:lod0MultiPoint[_UrbanFunction]
+          uro:dataQualityAttribute[_UrbanFunction]
+          urf:table[_UrbanFunction]
+          urf:attributes[_UrbanFunction]
+          uro:keyValuePairAttribute[_UrbanFunction]
+          urf:urbanParkAttribute[Zone]
+          urf:boundary[Zone]
+          urf:threeDimensionalExtent[UrbanFacility]
+        ]
+      end
+
+      let(:expected_sorted_assoc) do
+        %w[
+          core:core::外部参照[_CityObject]
+          gen:_genericAttribute[_CityObject]
+          urf:attributes[_UrbanFunction]
+          urf:lod0MultiCurve[_UrbanFunction]
+          urf:lod0MultiPoint[_UrbanFunction]
+          urf:lod0MultiSurface[_UrbanFunction]
+          urf:lod1MultiSurface[_UrbanFunction]
+          urf:table[_UrbanFunction]
+          uro:dataQualityAttribute[_UrbanFunction]
+          uro:keyValuePairAttribute[_UrbanFunction]
+          urf:boundary[Zone]
+          urf:urbanParkAttribute[Zone]
+          urf:threeDimensionalExtent[UrbanFacility]
+        ]
+      end
+
+      def format_assoc_prop(p)
+        "#{p.name_ns}:#{p.name}[#{p.gen_name}]"
+      end
 
       it "outputs attributes correctly", :aggregate_failures do
-        test_package = output.packages.first.packages[1].packages[0]
-          .packages[1].classes[144]
-        gen_obj = test_package.generalization
         expect(test_package.name).to eq("TrafficFacility")
 
         expect(
-          gen_obj.inherited_assoc_props.map do |p|
-            "#{p.name_ns}:#{p.name}[#{p.gen_name}]"
-          end,
-        ).to eq(
-          [
-            "core:core::外部参照[_CityObject]",
-            "gen:_genericAttribute[_CityObject]",
-            "urf:lod0MultiCurve[_UrbanFunction]",
-            "urf:lod0MultiSurface[_UrbanFunction]",
-            "urf:lod1MultiSurface[_UrbanFunction]",
-            "urf:lod0MultiPoint[_UrbanFunction]",
-            "uro:dataQualityAttribute[_UrbanFunction]",
-            "urf:table[_UrbanFunction]",
-            "urf:attributes[_UrbanFunction]",
-            "uro:keyValuePairAttribute[_UrbanFunction]",
-            "urf:urbanParkAttribute[Zone]",
-            "urf:boundary[Zone]",
-            "urf:threeDimensionalExtent[UrbanFacility]",
-          ],
-        )
+          gen_obj.inherited_assoc_props.map { |p| format_assoc_prop(p) },
+        ).to eq(expected_inherited_assoc)
 
         expect(
-          gen_obj.sorted_inherited_assoc_props.map do |p|
-            "#{p.name_ns}:#{p.name}[#{p.gen_name}]"
-          end,
-        ).to eq(
-          [
-            "core:core::外部参照[_CityObject]",
-            "gen:_genericAttribute[_CityObject]",
-            "urf:attributes[_UrbanFunction]",
-            "urf:lod0MultiCurve[_UrbanFunction]",
-            "urf:lod0MultiPoint[_UrbanFunction]",
-            "urf:lod0MultiSurface[_UrbanFunction]",
-            "urf:lod1MultiSurface[_UrbanFunction]",
-            "urf:table[_UrbanFunction]",
-            "uro:dataQualityAttribute[_UrbanFunction]",
-            "uro:keyValuePairAttribute[_UrbanFunction]",
-            "urf:boundary[Zone]",
-            "urf:urbanParkAttribute[Zone]",
-            "urf:threeDimensionalExtent[UrbanFacility]",
-          ],
-        )
+          gen_obj.sorted_inherited_assoc_props.map { |p| format_assoc_prop(p) },
+        ).to eq(expected_sorted_assoc)
       end
     end
   end

@@ -10,6 +10,38 @@ RSpec.describe Lutaml::Qea::Factory::AssociationTransformer do
   let(:transformer) { described_class.new(database) }
 
   describe "#transform" do
+    let(:source_obj) do
+      Lutaml::Qea::Models::EaObject.new(
+        ea_object_id: 10, name: "Person", ea_guid: "{PERSON-GUID}",
+      )
+    end
+    let(:dest_obj) do
+      Lutaml::Qea::Models::EaObject.new(
+        ea_object_id: 20, name: "Building", ea_guid: "{BUILDING-GUID}",
+      )
+    end
+    let(:ea_conn) do
+      Lutaml::Qea::Models::EaConnector.new(
+        connector_id: 1,
+        connector_type: "Association",
+        name: "owns",
+        ea_guid: "{ASSOC-GUID}",
+        start_object_id: 10,
+        end_object_id: 20,
+        sourcerole: "owner",
+        destrole: "property",
+        sourcecard: "1",
+        destcard: "0..*",
+        notes: "Ownership relationship",
+      )
+    end
+
+    before do
+      allow(database).to receive(:find_object).with(10).and_return(source_obj)
+      allow(database).to receive(:find_object).with(20).and_return(dest_obj)
+      allow(database).to receive(:tagged_values).and_return([])
+    end
+
     it "returns nil for nil input" do
       result = transformer.transform(nil)
       expect(result).to be_nil
@@ -26,36 +58,6 @@ RSpec.describe Lutaml::Qea::Factory::AssociationTransformer do
     end
 
     it "transforms EA association to UML association", :aggregate_failures do
-      ea_conn = Lutaml::Qea::Models::EaConnector.new(
-        connector_id: 1,
-        connector_type: "Association",
-        name: "owns",
-        ea_guid: "{ASSOC-GUID}",
-        start_object_id: 10,
-        end_object_id: 20,
-        sourcerole: "owner",
-        destrole: "property",
-        sourcecard: "1",
-        destcard: "0..*",
-        notes: "Ownership relationship",
-      )
-
-      source_obj = Lutaml::Qea::Models::EaObject.new(
-        ea_object_id: 10,
-        name: "Person",
-        ea_guid: "{PERSON-GUID}",
-      )
-
-      dest_obj = Lutaml::Qea::Models::EaObject.new(
-        ea_object_id: 20,
-        name: "Building",
-        ea_guid: "{BUILDING-GUID}",
-      )
-
-      allow(database).to receive(:find_object).with(10).and_return(source_obj)
-      allow(database).to receive(:find_object).with(20).and_return(dest_obj)
-      allow(database).to receive(:tagged_values).and_return([])
-
       result = transformer.transform(ea_conn)
 
       expect(result).to be_a(Lutaml::Uml::Association)
