@@ -5,9 +5,6 @@ require "htmlentities"
 require "xmi"
 require "digest"
 require_relative "xmi_connector"
-require_relative "xmi_diagram"
-require_relative "xmi_generalization"
-require_relative "xmi_enum_data_type"
 require_relative "xmi_class_members"
 
 module Lutaml
@@ -51,74 +48,6 @@ module Lutaml
 
         private
 
-        # @param xmi_model [Lutaml::Model::Serializable]
-        # @param with_gen: [Boolean]
-        # @param with_absolute_path: [Boolean]
-        # @return [Hash]
-        # @note xpath: //uml:Model[@xmi:type="uml:Model"]
-        def serialize_to_hash(xmi_model,
-          with_gen: false, with_absolute_path: false)
-          model = xmi_model.model
-          {
-            name: model.name,
-            packages: serialize_model_packages(
-              model,
-              with_gen: with_gen,
-              with_absolute_path: with_absolute_path,
-            ),
-          }
-        end
-
-        # @param model [Lutaml::Model::Serializable]
-        # @param with_gen: [Boolean]
-        # @param with_absolute_path: [Boolean]
-        # @param absolute_path: [String]
-        # @return [Array<Hash>]
-        # @note xpath ./packagedElement[@xmi:type="uml:Package"]
-        def serialize_model_packages(model, # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
-          with_gen: false, with_absolute_path: false, absolute_path: "")
-          packages = model.packaged_element.select do |e|
-            e.type?("uml:Package")
-          end
-
-          if with_absolute_path
-            absolute_path = "#{absolute_path}::#{model.name}"
-          end
-
-          packages.map do |package| # rubocop:disable Metrics/BlockLength
-            h = {
-              xmi_id: package.id,
-              name: get_package_name(package),
-              classes: serialize_model_classes(
-                package, model,
-                with_gen: with_gen,
-                with_absolute_path: with_absolute_path,
-                absolute_path: "#{absolute_path}::#{package.name}"
-              ),
-              enums: serialize_model_enums(package),
-              data_types: serialize_model_data_types(package),
-              diagrams: serialize_model_diagrams(
-                package.id,
-                with_package: with_gen,
-              ),
-              packages: serialize_model_packages(
-                package,
-                with_gen: with_gen,
-                with_absolute_path: with_absolute_path,
-                absolute_path: absolute_path,
-              ),
-              definition: doc_node_attribute_value(package.id, "documentation"),
-              stereotype: doc_node_attribute_value(package.id, "stereotype"),
-            }
-
-            if with_absolute_path
-              h[:absolute_path] = "#{absolute_path}::#{package.name}"
-            end
-
-            h
-          end
-        end
-
         # @param package [Lutaml::Model::Serializable]
         # @return [String]
         def get_package_name(package) # rubocop:disable Metrics/AbcSize
@@ -131,71 +60,6 @@ module Lutaml
           end
 
           "unnamed"
-        end
-
-        # @param package [Lutaml::Model::Serializable]
-        # @param model [Lutaml::Model::Serializable]
-        # @param with_gen: [Boolean]
-        # @param with_absolute_path: [Boolean]
-        # @return [Array<Hash>]
-        # @note xpath ./packagedElement[@xmi:type="uml:Class" or
-        #                               @xmi:type="uml:AssociationClass"]
-        def serialize_model_classes(package, model, # rubocop:disable Metrics/MethodLength
-          with_gen: false, with_absolute_path: false, absolute_path: "")
-          klasses = package.packaged_element.select do |e|
-            e.type?("uml:Class") || e.type?("uml:AssociationClass") ||
-              e.type?("uml:Interface")
-          end
-
-          klasses.map do |klass|
-            build_klass_hash(
-              klass, model,
-              with_gen: with_gen,
-              with_absolute_path: with_absolute_path,
-              absolute_path: absolute_path
-            )
-          end
-        end
-
-        # @param klass [Lutaml::Model::Serializable]
-        # @param model [Lutaml::Model::Serializable]
-        # @param with_gen: [Boolean]
-        # @param with_absolute_path: [Boolean]
-        # @return [Hash]
-        def build_klass_hash(klass, model, # rubocop:disable Metrics/AbcSize,Metrics/MethodLength,Metrics/CyclomaticComplexity
-          with_gen: false, with_absolute_path: false, absolute_path: "")
-          klass_hash = {
-            xmi_id: klass.id,
-            name: klass.name,
-            package: model,
-            type: klass.type.split(":").last,
-            attributes: serialize_class_attributes(klass),
-            associations: serialize_model_associations(klass.id),
-            operations: serialize_class_operations(klass),
-            constraints: serialize_class_constraints(klass.id),
-            is_abstract: doc_node_attribute_value(klass.id, "isAbstract"),
-            definition: doc_node_attribute_value(klass.id, "documentation"),
-            stereotype: doc_node_attribute_value(klass.id, "stereotype"),
-          }
-
-          klass_hash[:absolute_path] = absolute_path if with_absolute_path
-
-          if with_gen && klass.type?("uml:Class")
-            klass_hash[:generalization] = serialize_generalization(klass)
-          end
-
-          if klass.generalization && !klass.generalization.empty?
-            klass_hash[:association_generalization] = []
-            klass.generalization.each do |gen|
-              klass_hash[:association_generalization] << {
-                id: gen.id,
-                type: gen.type,
-                general: gen.general,
-              }
-            end
-          end
-
-          klass_hash
         end
 
         # @param id [String]

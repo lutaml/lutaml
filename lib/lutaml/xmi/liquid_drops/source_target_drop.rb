@@ -4,13 +4,10 @@ module Lutaml
   module Xmi
     module LiquidDrops
       class SourceTargetDrop < Liquid::Drop
-        include Parsers::XmiBase
-
         def initialize(model, options = {}) # rubocop:disable Lint/MissingSuper
           @model = model
           @options = options
-          @xmi_root_model = options[:xmi_root_model]
-          @id_name_mapping = options[:id_name_mapping]
+          @lookup = options[:lookup]
         end
 
         def idref
@@ -38,7 +35,7 @@ module Lutaml
         end
 
         def stereotype
-          doc_node_attribute_value(@model.idref, "stereotype")
+          @lookup.doc_node_attribute_value(@model.idref, "stereotype")
         end
       end
     end

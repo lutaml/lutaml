@@ -4,13 +4,8 @@ module Lutaml
   module Xmi
     module LiquidDrops
       class EnumOwnedLiteralDrop < Liquid::Drop
-        include Parsers::XmiBase
-
-        def initialize(model, options = {}) # rubocop:disable Lint/MissingSuper
+        def initialize(model) # rubocop:disable Lint/MissingSuper
           @model = model
-          @options = options
-          @xmi_root_model = options[:xmi_root_model]
-          @id_name_mapping = options[:id_name_mapping]
         end
 
         def name
@@ -18,12 +13,11 @@ module Lutaml
         end
 
         def type
-          uml_type_id = @model&.uml_type&.idref
-          lookup_entity_name(uml_type_id) || uml_type_id
+          @model.type
         end
 
         def definition
-          lookup_attribute_documentation(@model.id)
+          @model.definition
         end
       end
     end

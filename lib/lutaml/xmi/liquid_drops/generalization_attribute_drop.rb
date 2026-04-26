@@ -4,8 +4,6 @@ module Lutaml
   module Xmi
     module LiquidDrops
       class GeneralizationAttributeDrop < Liquid::Drop
-        include Parsers::XmiBase
-
         def initialize(attr, upper_klass, gen_name, guidance = nil) # rubocop:disable Lint/MissingSuper,Metrics/ParameterLists,Layout/LineLength
           @attr = attr
           @upper_klass = upper_klass
@@ -14,43 +12,43 @@ module Lutaml
         end
 
         def id
-          @attr[:id]
+          @attr.id
         end
 
         def name
-          @attr[:name]
+          @attr.name
         end
 
         def type
-          @attr[:type]
+          @attr.type
         end
 
         def xmi_id
-          @attr[:xmi_id]
+          @attr.xmi_id
         end
 
         def is_derived # rubocop:disable Naming/PredicateName,Naming/PredicatePrefix
-          @attr[:is_derived]
+          @attr.is_derived
         end
 
         def cardinality
-          ::Lutaml::Xmi::LiquidDrops::CardinalityDrop.new(@attr[:cardinality])
+          ::Lutaml::Xmi::LiquidDrops::CardinalityDrop.new(@attr.cardinality)
         end
 
         def definition
-          @attr[:definition]
+          @attr.definition
         end
 
         def association
-          @attr[:association]
+          @attr.association
         end
 
         def has_association?
-          !!@attr[:association]
+          !!@attr.association
         end
 
         def type_ns
-          @attr[:type_ns]
+          @attr.type_ns
         end
 
         def upper_klass
@@ -62,7 +60,7 @@ module Lutaml
         end
 
         def name_ns
-          @attr[:name_ns]
+          @attr.name_ns
         end
 
         def used?

@@ -23,8 +23,7 @@ RSpec.describe Lutaml::Qea::Factory::PackageTransformer do
         notes: "Domain model package",
       )
 
-      allow(database).to receive(:xrefs).and_return(nil)
-      allow(database).to receive(:tagged_values).and_return([])
+      allow(database).to receive_messages(xrefs: nil, tagged_values: [])
       result = transformer.transform(ea_pkg)
 
       expect(result).to be_a(Lutaml::Uml::Package)

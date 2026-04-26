@@ -4,12 +4,9 @@ module Lutaml
   module Xmi
     module LiquidDrops
       class ConnectorDrop < Liquid::Drop
-        include Parsers::XmiBase
-
         def initialize(model, options = {}) # rubocop:disable Lint/MissingSuper
           @model = model
           @options = options
-          @xmi_root_model = options[:xmi_root_model]
           @id_name_mapping = options[:id_name_mapping]
         end
 

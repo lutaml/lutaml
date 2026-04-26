@@ -4,49 +4,7 @@ module Lutaml
   module Xmi
     module Parsers
       module XmiBase
-        # @param xmi_id [String]
-        # @return [Array<Hash>]
-        # @note xpath %(//element[@xmi:idref="#{xmi_id}"]/links/*)
-        def serialize_model_associations(xmi_id) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
-          matched_element = xmi_index.find_element(xmi_id)
-
-          return unless matched_element&.links&.any?
-
-          links = []
-          matched_element.links.each do |link|
-            links << link.association if link.association.any?
-          end
-
-          links.flatten.compact.map do |assoc|
-            link_member = assoc.start == xmi_id ? "end" : "start"
-            linke_owner_name = link_member == "start" ? "end" : "start"
-
-            member_end, member_end_type, member_end_cardinality,
-              member_end_attribute_name, member_end_xmi_id =
-              serialize_member_type(xmi_id, assoc, link_member)
-
-            owner_end = serialize_owned_type(xmi_id, assoc, linke_owner_name)
-
-            if member_end && ((member_end_type != "aggregation") ||
-              (member_end_type == "aggregation" && member_end_attribute_name))
-
-              doc_node_name = (link_member == "start" ? "source" : "target")
-              definition = fetch_definition_node_value(assoc.id, doc_node_name)
-
-              {
-                xmi_id: assoc.id,
-                member_end: member_end,
-                member_end_type: member_end_type,
-                member_end_cardinality: member_end_cardinality,
-                member_end_attribute_name: member_end_attribute_name,
-                member_end_xmi_id: member_end_xmi_id,
-                owner_end: owner_end,
-                owner_end_xmi_id: xmi_id,
-                definition: definition,
-              }
-            end
-          end
-        end
+        # Association/connector serialization helpers used by Pipeline C
 
         # @param link_id [String]
         # @return [Lutaml::Model::Serializable]
@@ -286,13 +244,6 @@ module Lutaml
         # @note xpath %(//source[@xmi:idref="#{xmi_id}"]/model)
         def connector_source_name(xmi_id)
           connector_name_by_source_or_target(xmi_id, :source)
-        end
-
-        # @param xmi_id [String]
-        # @return [String]
-        # @note xpath %(//target[@xmi:idref="#{xmi_id}"]/model)
-        def connector_target_name(xmi_id)
-          connector_name_by_source_or_target(xmi_id, :target)
         end
       end
     end

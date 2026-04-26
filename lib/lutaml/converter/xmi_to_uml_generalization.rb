@@ -53,6 +53,10 @@ module Lutaml
         uml_general_obj
       end
 
+      def get_next_general_node_id(general_node)
+        general_node.generalization.first&.general
+      end
+
       def get_uml_general(general_id) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
         general_node = find_packaged_element_by_id(general_id)
         return [] unless general_node
@@ -71,19 +75,22 @@ module Lutaml
         [uml_general, next_general_node_id]
       end
 
-      def build_uml_general_node(general_id, general_node, attrs, upper_klass, next_id)
+      def build_uml_general_node(general_id, general_node, attrs, upper_klass,
+next_id)
         gen = ::Lutaml::Uml::Generalization.new
-        assign_general_basic_props(gen, general_id, general_node, attrs, upper_klass)
+        assign_general_basic_props(gen, general_id, general_node, attrs,
+                                   upper_klass)
         assign_stereotype(gen, general_id)
         assign_parent_generalization(gen, general_node, next_id)
         gen
       end
 
-      def assign_general_basic_props(gen, general_id, general_node, attrs, upper_klass)
+      def assign_general_basic_props(gen, general_id, general_node, attrs,
+upper_klass)
         gen.general_id = general_id
         gen.general_name = general_node.name
         gen.general_attributes = attrs
-        gen.general_upper_klass = upper_klass&.name
+        gen.general_upper_klass = upper_klass ? get_package_name(upper_klass) : nil
         gen.name = general_node.name
         gen.type = general_node.type
         gen.definition = lookup_element_prop_documentation(general_id)
@@ -114,7 +121,7 @@ module Lutaml
       def get_uml_general_attributes(general_node) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
         attrs = create_uml_class_attributes(general_node)
 
-        attrs.sort_by { |a| [a.name.to_s, a.id] }.map do |attr|
+        attrs.map do |attr|
           ::Lutaml::Uml::GeneralAttribute.new.tap do |gen_attr|
             gen_attr.id = attr.id
             gen_attr.name = attr.name
