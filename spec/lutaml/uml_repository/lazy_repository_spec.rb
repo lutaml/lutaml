@@ -284,13 +284,13 @@ RSpec.describe Lutaml::UmlRepository::LazyRepository do
       document
 
       # Run multiple iterations to reduce timing flakiness
-      lazy_times = 5.times.map do
+      lazy_times = Array.new(5) do
         start_time = Time.now
         described_class.new(document: document, lazy: true)
         Time.now - start_time
       end
 
-      normal_times = 5.times.map do
+      normal_times = Array.new(5) do
         start_time = Time.now
         Lutaml::UmlRepository::Repository.new(document: document)
         Time.now - start_time
