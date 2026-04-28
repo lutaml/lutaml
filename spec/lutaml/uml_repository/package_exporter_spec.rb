@@ -131,17 +131,21 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
       end
     end
 
-    it "includes serialized repository with marshal format",
+    it "includes serialized repository in yaml format (default)",
        :aggregate_failures do
       exporter = described_class.new(repository)
       exporter.export(output_path)
 
       Zip::File.open(output_path) do |zip_file|
-        doc_entry = zip_file.find_entry("repository.marshal")
+        doc_entry = zip_file.find_entry("repository.yaml")
         expect(doc_entry).not_to be_nil
 
-        serialized = doc_entry.get_input_stream.read
-        expect { Marshal.load(serialized) }.not_to raise_error
+        yaml_content = doc_entry.get_input_stream.read
+        expect do
+          YAML.safe_load(yaml_content,
+                         permitted_classes: yaml_permitted_classes)
+        end
+          .not_to raise_error
       end
     end
 
@@ -167,11 +171,11 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
       exporter.export(output_path)
 
       Zip::File.open(output_path) do |zip_file|
-        indexes_entry = zip_file.find_entry("indexes/all.marshal")
+        indexes_entry = zip_file.find_entry("indexes/all.yaml")
         expect(indexes_entry).not_to be_nil
 
         serialized = indexes_entry.get_input_stream.read
-        expect { Marshal.load(serialized) }.not_to raise_error
+        expect { YAML.safe_load(serialized, permitted_classes: yaml_permitted_classes, aliases: true) }.not_to raise_error
       end
     end
 
@@ -264,28 +268,14 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
       end
     end
 
-    it "works with old-style options (marshal format)", :aggregate_failures do
-      exporter = described_class.new(repository,
-                                     name: "Legacy",
-                                     version: "1.0",
-                                     serialization_format: :marshal)
-      exporter.export(output_path)
-
-      Zip::File.open(output_path) do |zip_file|
-        # Check metadata
-        metadata_entry = zip_file.find_entry("metadata.yaml")
-        metadata = YAML.safe_load(
-          metadata_entry.get_input_stream.read,
-          permitted_classes: yaml_permitted_classes,
-          aliases: true,
-        )
-        expect(metadata["name"]).to eq("Legacy")
-        expect(metadata["version"]).to eq("1.0")
-
-        # Check document format
-        doc_entry = zip_file.find_entry("repository.marshal")
-        expect(doc_entry).not_to be_nil
-      end
+    it "rejects marshal format (removed)", :aggregate_failures do
+      expect do
+        described_class.new(repository,
+                            name: "Legacy",
+                            version: "1.0",
+                            serialization_format: :marshal)
+          .export(output_path)
+      end.to raise_error(ArgumentError, /Invalid serialization format/)
     end
 
     it "metadata hash takes precedence over old-style options",

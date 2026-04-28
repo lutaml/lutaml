@@ -92,7 +92,6 @@ module Lutaml
           report_data = result.to_report
           ext = File.extname(report_path).downcase
           report_format = case ext
-                          when ".json" then :json
                           when ".yaml", ".yml" then :yaml
                           else :json
                           end

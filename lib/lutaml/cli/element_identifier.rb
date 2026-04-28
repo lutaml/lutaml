@@ -112,12 +112,9 @@ module Lutaml
             # Lowercase start - could be attribute or diagram name
             :diagram
           end
-        when 1
-          # One separator - likely Package::Class
-          :class
-        when 2..Float::INFINITY
-          # Multiple separators - likely fully qualified class name
-          # e.g., ModelRoot::Package::Class
+        when 1..Float::INFINITY
+          # One or more separators - likely qualified class name
+          # e.g., Package::Class or ModelRoot::Package::Class
           :class
         else
           # Default

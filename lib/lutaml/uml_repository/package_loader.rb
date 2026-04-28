@@ -155,13 +155,29 @@ module Lutaml
                  end
 
         case format.to_s
-        when "yaml"
+        when "yaml", ""
           load_yaml_document(zip)
         when "marshal"
           load_marshal_document(zip)
         else
           raise "Unknown serialization format: #{format}"
         end
+      end
+
+      # Load Document from Marshal format (legacy backward compatibility).
+      #
+      # @param zip [Zip::File] The ZIP archive
+      # @return [Lutaml::Uml::Document] The loaded document
+      # @raise [RuntimeError] If document file is missing
+      def self.load_marshal_document(zip)
+        entry = zip.find_entry("repository.marshal")
+        unless entry
+          raise "Invalid LUR package: missing repository.marshal"
+        end
+
+        Marshal.load(entry.get_input_stream.read)
+      rescue StandardError => e
+        raise "Failed to load Marshal document: #{e.message}"
       end
 
       # Load Document from YAML format.
@@ -180,37 +196,41 @@ module Lutaml
         raise "Failed to load YAML document: #{e.message}"
       end
 
-      # Load Document from Marshal format.
-      #
-      # @param zip [Zip::File] The ZIP archive
-      # @return [Lutaml::Uml::Document] The loaded document
-      # @raise [RuntimeError] If document file is missing
-      def self.load_marshal_document(zip)
-        entry = zip.find_entry("repository.marshal")
-        unless entry
-          raise "Invalid LUR package: missing repository.marshal"
-        end
-
-        Marshal.load(entry.get_input_stream.read)
-      rescue StandardError => e
-        raise "Failed to load Marshal document: #{e.message}"
-      end
-
       # Load indexes from the package.
       #
       # @param zip [Zip::File] The ZIP archive
       # @return [Hash] The loaded indexes
       # @raise [RuntimeError] If indexes are missing
       def self.load_indexes(zip)
-        entry = zip.find_entry("indexes/all.marshal")
-        unless entry
-          raise "Invalid LUR package: missing indexes/all.marshal"
+        # Try YAML first, fall back to Marshal for legacy packages
+        yaml_entry = zip.find_entry("indexes/all.yaml")
+        if yaml_entry
+          permitted = index_permitted_classes
+          return YAML.safe_load(yaml_entry.get_input_stream.read,
+                                permitted_classes: permitted,
+                                aliases: true)
         end
 
-        Marshal.load(entry.get_input_stream.read)
+        marshal_entry = zip.find_entry("indexes/all.marshal")
+        if marshal_entry
+          return Marshal.load(marshal_entry.get_input_stream.read)
+        end
+
+        raise "Invalid LUR package: missing indexes/all.yaml"
       rescue StandardError => e
         raise "Failed to load indexes: #{e.message}"
       end
+
+      # Build permitted classes list for YAML index loading.
+      def self.index_permitted_classes
+        uml_constants = Lutaml::Uml.constants
+        uml_classes = uml_constants.filter_map do |const_name|
+          constant_value = Lutaml::Uml.const_get(const_name)
+          constant_value if constant_value.is_a?(Class)
+        end
+        [Symbol, Time, Date, DateTime, uml_classes].flatten
+      end
+      private_class_method :index_permitted_classes
 
       private_class_method :load_metadata, :load_document,
                            :load_yaml_document, :load_marshal_document,

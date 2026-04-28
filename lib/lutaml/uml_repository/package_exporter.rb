@@ -53,8 +53,8 @@ module Lutaml
       # @param options [Hash] Export options
       # @option options [PackageMetadata, Hash] :metadata Package metadata
       #   (can be PackageMetadata object or Hash)
-      # @option options [Symbol] :serialization_format (:marshal) Format for
-      #   Document serialization (:marshal or :yaml)
+      # @option options [Symbol] :serialization_format (:yaml) Format for
+      #   Document serialization (:yaml)
       # @option options [Boolean] :include_xmi (false) Include source XMI
       #   in package
       # @option options [Integer] :compression_level (6) ZIP compression level
@@ -106,7 +106,7 @@ module Lutaml
       # @return [Hash] Default options
       def default_options
         {
-          serialization_format: :marshal,
+          serialization_format: :yaml,
           include_xmi: false,
           compression_level: 6,
           name: "UML Model",
@@ -154,10 +154,9 @@ module Lutaml
       # @raise [ArgumentError] If options are invalid
       def validate_options!
         format = @options[:serialization_format]
-        unless %i[marshal yaml].include?(format)
+        unless format == :yaml
           raise ArgumentError,
-                "Invalid serialization format: #{format}. " \
-                "Must be :marshal or :yaml"
+                "Invalid serialization format: #{format}. Must be :yaml"
         end
       end
 
@@ -191,18 +190,9 @@ module Lutaml
       #
       # @param zip [Zip::File] The ZIP archive
       # @return [void]
-      def write_document(zip) # rubocop:disable Metrics/MethodLength
-        format = @options[:serialization_format]
-
-        case format
-        when :yaml
-          zip.get_output_stream("repository.yaml") do |io|
-            io.write(@repository.document.to_yaml)
-          end
-        when :marshal
-          zip.get_output_stream("repository.marshal") do |io|
-            io.write(Marshal.dump(@repository.document))
-          end
+      def write_document(zip)
+        zip.get_output_stream("repository.yaml") do |io|
+          io.write(@repository.document.to_yaml)
         end
       end
 
@@ -211,8 +201,8 @@ module Lutaml
       # @param zip [Zip::File] The ZIP archive
       # @return [void]
       def write_indexes(zip)
-        zip.get_output_stream("indexes/all.marshal") do |io|
-          io.write(Marshal.dump(@repository.indexes))
+        zip.get_output_stream("indexes/all.yaml") do |io|
+          io.write(YAML.dump(@repository.indexes))
         end
       end
 

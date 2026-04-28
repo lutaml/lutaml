@@ -433,8 +433,6 @@ module Lutaml
         # @return [void]
         def display_result(result, formatter)
           case formatter
-          when :text
-            display_text_result(result)
           when :json
             puts result.to_json
           else

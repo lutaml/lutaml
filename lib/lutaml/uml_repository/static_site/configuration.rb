@@ -258,8 +258,6 @@ module Lutaml
             end
 
             {}
-          when NilClass
-            {}
           else
             {}
           end
