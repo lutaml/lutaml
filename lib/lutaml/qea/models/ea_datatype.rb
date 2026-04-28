@@ -80,8 +80,6 @@ module Lutaml
         # @return [String]
         def type_signature
           case size
-          when 0
-            datatype
           when 1
             "#{datatype}(#{defaultlen})"
           when 2

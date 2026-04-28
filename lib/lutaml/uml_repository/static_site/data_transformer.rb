@@ -1,36 +1,27 @@
 # frozen_string_literal: true
 
 require_relative "id_generator"
+require_relative "../../uml/model_helpers"
+require_relative "../class_lookup_index"
 require_relative "association_serialization"
+require_relative "serializers/metadata_builder"
+require_relative "serializers/package_tree_builder"
+require_relative "serializers/package_serializer"
+require_relative "serializers/class_serializer"
+require_relative "serializers/attribute_serializer"
+require_relative "serializers/operation_serializer"
+require_relative "serializers/diagram_serializer"
+require_relative "serializers/inheritance_resolver"
 
 module Lutaml
   module UmlRepository
     module StaticSite
-      # Transforms a UmlRepository into a normalized JSON data structure
-      # optimized for client-side navigation and search.
-      #
-      # The output follows a normalized structure with:
-      # - Flat maps for packages, classes, attributes, associations
-      # - References by stable IDs
-      # - Hierarchical package tree for navigation
-      #
-      # @example
-      #   repository = UmlRepository.from_package("model.lur")
-      #   transformer = DataTransformer.new(repository)
-      #   json_data = transformer.transform
       class DataTransformer
         include AssociationSerialization
+        include Lutaml::Uml::ModelHelpers
 
         attr_reader :repository, :id_generator, :options
 
-        # Initialize transformer
-        #
-        # @param repository [UmlRepository] The repository to transform
-        # @param options [Hash] Transformation options
-        # @option options [Boolean] :include_diagrams Include diagram
-        # information
-        # @option options [Boolean] :format_definitions Format definitions
-        # as markdown
         def initialize(repository, options = {})
           @repository = repository
           @options = default_options.merge(options)
@@ -38,19 +29,16 @@ module Lutaml
           @generalization_map = build_generalization_map
         end
 
-        # Transform repository to JSON structure
-        #
-        # @return [Hash] Normalized JSON data structure
         def transform
           {
-            metadata: build_metadata,
-            packageTree: build_package_tree,
-            packages: build_packages_map,
-            classes: build_classes_map,
-            attributes: build_attributes_map,
+            metadata: Serializers::MetadataBuilder.new(repository).build,
+            packageTree: Serializers::PackageTreeBuilder.new(repository, id_generator).build,
+            packages: Serializers::PackageSerializer.new(repository, id_generator, options).build_map,
+            classes: Serializers::ClassSerializer.new(repository, id_generator, options, inheritance_resolver).build_map,
+            attributes: Serializers::AttributeSerializer.new(repository, id_generator, options).build_map,
             associations: build_associations_map,
-            operations: build_operations_map,
-            diagrams: (@options[:include_diagrams] ? build_diagrams_map : {}),
+            operations: Serializers::OperationSerializer.new(repository, id_generator).build_map,
+            diagrams: (options[:include_diagrams] ? Serializers::DiagramSerializer.new(repository, id_generator, options).build_map : {}),
           }
         end
 
@@ -64,34 +52,29 @@ module Lutaml
           }
         end
 
-        # Build generalization map for multiple inheritance
-        def build_generalization_map # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+        def inheritance_resolver
+          @inheritance_resolver ||= Serializers::InheritanceResolver.new(
+            repository, id_generator, options, @generalization_map
+          )
+        end
+
+        def build_generalization_map
           map = Hash.new { |h, k| h[k] = [] }
 
-          # Scan all classes for generalization relationships
           repository.classes_index.each do |klass|
             next unless klass.respond_to?(:association_generalization)
-            unless klass.association_generalization &&
-                !klass.association_generalization.empty?
+            unless klass.association_generalization && !klass.association_generalization.empty?
               next
             end
 
-            # Each class has an association_generalization array with
-            # AssociationGeneralization objects
             klass.association_generalization.each do |assoc_gen|
-              # Access lutaml-model object attributes directly
               next unless assoc_gen.respond_to?(:parent_object_id)
-
               parent_object_id = assoc_gen.parent_object_id
               next unless parent_object_id
 
-              # Find the parent class by object_id and get its XMI ID
-              parent_class = find_class_by_object_id(parent_object_id)
+              parent_class = class_lookup.by_object_id(parent_object_id)
               if parent_class&.xmi_id
-                # Skip self-referential generalization
-                # (class can't be its own parent)
                 next if parent_class.xmi_id == klass.xmi_id
-
                 unless map[klass.xmi_id].include?(parent_class.xmi_id)
                   map[klass.xmi_id] << parent_class.xmi_id
                 end
@@ -102,406 +85,20 @@ module Lutaml
           map
         end
 
-        # Build metadata section
-        def build_metadata
-          {
-            generated: Time.now.utc.iso8601,
-            generator: "LutaML Static Site Generator",
-            version: "1.0",
-            statistics: build_statistics,
-          }
+        def class_lookup
+          @class_lookup ||= ClassLookupIndex.new(repository.classes_index)
         end
 
-        # Build statistics
-        def build_statistics
-          {
-            packages: repository.packages_index.size,
-            classes: repository.classes_index.size,
-            associations: repository.associations_index.size,
-            attributes: count_total_attributes,
-            operations: count_total_operations,
-          }
-        end
-
-        def count_total_attributes
-          repository.classes_index.sum do |klass|
-            klass.attributes&.size || 0
-          end
-        end
-
-        def count_total_operations
-          repository.classes_index.sum do |klass|
-            (klass.respond_to?(:operations) ? klass.operations&.size : 0) || 0
-          end
-        end
-
-        # Build hierarchical package tree
-        def build_package_tree # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
-          # Get root packages from document.packages (not from index)
-          root_packages = if repository.document.respond_to?(:packages) &&
-              repository.document.packages
-                            repository.document.packages
-                          else
-                            # Fallback: find packages without parent namespace
-                            repository.packages_index.select do |pkg|
-                              !pkg.respond_to?(:namespace) ||
-                                pkg.namespace.nil? ||
-                                !pkg.namespace.is_a?(Lutaml::Uml::Package)
-                            end
-                          end
-
-          if root_packages.size == 1
-            build_tree_node(root_packages.first)
-          else
-            # Multiple roots - create virtual root
-            {
-              id: "root",
-              name: "Model",
-              path: "",
-              classCount: 0,
-              children: root_packages.map { |pkg| build_tree_node(pkg) },
-            }
-          end
-        end
-
-        def build_tree_node(package) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
-          pkg_id = @id_generator.package_id(package)
-
-          # Sort child packages by name
-          sorted_children = (package.packages || []).sort_by do |p|
-            p.name || ""
-          end
-
-          # Sort classes by name, filtering out unnamed classes
-          # This prevents unnamed classes from appearing in the tree or being
-          # counted
-          sorted_classes = (package.classes || [])
-            .reject { |c| c.name.nil? || c.name.empty? }
-            .sort_by(&:name)
-
-          # Build child nodes first to get their counts
-          child_nodes = sorted_children.map do |child|
-            build_tree_node(child)
-          end
-
-          # Calculate total count including nested packages
-          # Only counts named classes (unnamed classes are already filtered out)
-          total_class_count = sorted_classes.size + child_nodes.sum do |child|
-            child[:classCount] || 0
-          end
-
-          {
-            id: pkg_id,
-            name: package.name,
-            path: package_path(package),
-            stereotypes: normalize_stereotypes(
-              package.respond_to?(:stereotype) ? package.stereotype : nil,
-            ),
-            classCount: total_class_count,
-            classes: sorted_classes.map do |c|
-              {
-                id: @id_generator.class_id(c),
-                name: c.name,
-                stereotypes: normalize_stereotypes(
-                  c.respond_to?(:stereotype) ? c.stereotype : nil,
-                ),
-              }
-            end,
-            children: child_nodes,
-          }
-        end
-
-        # Build packages map
-        def build_packages_map
-          packages = {}
-
-          repository.packages_index.each do |package|
-            id = @id_generator.package_id(package)
-            packages[id] = serialize_package(package, id)
-          end
-
-          packages
-        end
-
-        def serialize_package(package, id) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
-          {
-            id: id,
-            xmiId: package.respond_to?(:xmi_id) ? package.xmi_id : nil,
-            name: package.name,
-            path: package_path(package),
-            definition: format_definition(
-              package.respond_to?(:definition) ? package.definition : nil,
-            ),
-            stereotypes: normalize_stereotypes(
-              package.respond_to?(:stereotype) ? package.stereotype : nil,
-            ),
-            classes: (package.classes || []).map do |c|
-              @id_generator.class_id(c)
-            end,
-            subPackages: (package.packages || []).map do |p|
-              @id_generator.package_id(p)
-            end,
-            diagrams: package_diagrams(package).map do |d|
-              @id_generator.diagram_id(d)
-            end,
-            parent: if package.respond_to?(:namespace) &&
-                package.namespace.is_a?(Lutaml::Uml::Package)
-                      @id_generator.package_id(package.namespace)
-                    end,
-          }
-        end
-
-        # Build classes map
-        def build_classes_map
-          classes = {}
-
-          repository.classes_index.each do |klass|
-            id = @id_generator.class_id(klass)
-            classes[id] = serialize_class(klass, id)
-          end
-
-          classes
-        end
-
-        def serialize_class(klass, id) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
-          # Get associations and sort by local role
-          class_associations = find_class_associations(klass)
-          sorted_associations = class_associations.sort_by do |assoc_id|
-            assoc = repository.associations_index.find do |a|
-              @id_generator.association_id(a) == assoc_id
-            end
-            next "" unless assoc
-
-            # Determine local role for this class
-            if assoc.owner_end_xmi_id == klass.xmi_id
-              assoc.owner_end_attribute_name || assoc.owner_end || ""
-            elsif assoc.member_end_xmi_id == klass.xmi_id
-              assoc.member_end_attribute_name || assoc.member_end || ""
-            else
-              ""
-            end
-          end
-
-          {
-            id: id,
-            xmiId: klass.xmi_id,
-            name: klass.name,
-            qualifiedName: qualified_name(klass),
-            type: class_type(klass),
-            package: package_id_for_class(klass),
-            stereotypes: normalize_stereotypes(
-              if klass.respond_to?(:stereotype)
-                klass.stereotype
-              end,
-            ),
-            definition: format_definition(klass.definition),
-            attributes: (klass.attributes || []).sort_by do |a|
-              a.name || ""
-            end.map do |attr|
-              @id_generator.attribute_id(attr, klass)
-            end,
-            operations: serialize_class_operations(klass),
-            associations: sorted_associations,
-            generalizations: find_generalizations(klass),
-            specializations: find_specializations(klass),
-            isAbstract: if klass.respond_to?(:is_abstract)
-                          klass.is_abstract
-                        else
-                          false
-                        end,
-            literals: serialize_literals(klass),
-            inheritedAttributes: compute_inherited_attributes(klass),
-            inheritedAssociations: compute_inherited_associations(klass),
-          }
-        end
-
-        # Build attributes map
-        def build_attributes_map
-          attributes = {}
-
-          repository.classes_index.each do |klass|
-            next unless klass.attributes
-
-            klass.attributes.each do |attr|
-              id = @id_generator.attribute_id(attr, klass)
-              attributes[id] = serialize_attribute(attr, klass, id)
-            end
-          end
-
-          attributes
-        end
-
-        def serialize_attribute(attribute, owner, id) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
-          {
-            id: id,
-            name: attribute.name,
-            type: attribute.type,
-            visibility: attribute.visibility,
-            owner: @id_generator.class_id(owner),
-            ownerName: owner.name,
-            cardinality: serialize_cardinality(attribute.cardinality),
-            definition: format_definition(attribute.definition),
-            stereotypes: normalize_stereotypes(
-              attribute.respond_to?(:stereotype) ? attribute.stereotype : nil,
-            ),
-            isStatic: if attribute.respond_to?(:is_static)
-                        attribute.is_static
-                      else
-                        false
-                      end,
-            isReadOnly: if attribute.respond_to?(:is_read_only)
-                          attribute.is_read_only
-                        else
-                          false
-                        end,
-            defaultValue: if attribute.respond_to?(:default)
-                            attribute.default
-                          end,
-          }
-        end
-
-        # Build associations map
-        # Uses repository.associations_index which handles both XMI
-        # and QEA formats
-        # Build operations map
-        def build_operations_map
-          operations = {}
-
-          repository.classes_index.each do |klass|
-            next unless klass.respond_to?(:operations) && klass.operations
-
-            klass.operations.each do |op|
-              id = @id_generator.operation_id(op, klass)
-              operations[id] = serialize_operation(op, klass, id)
-            end
-          end
-
-          operations
-        end
-
-        def serialize_operation(operation, owner, id) # rubocop:disable Metrics/MethodLength
-          {
-            id: id,
-            name: operation.name,
-            visibility: operation.visibility,
-            returnType: operation.return_type,
-            owner: @id_generator.class_id(owner),
-            ownerName: owner.name,
-            parameters: serialize_parameters(operation),
-            isStatic: if operation.respond_to?(:is_static)
-                        operation.is_static
-                      else
-                        false
-                      end,
-            isAbstract: if operation.respond_to?(:is_abstract)
-                          operation.is_abstract
-                        else
-                          false
-                        end,
-          }
-        end
-
-        def serialize_parameters(operation) # rubocop:disable Metrics/MethodLength
-          unless operation.respond_to?(:owned_parameter) &&
-              operation.owned_parameter
-            return []
-          end
-
-          operation.owned_parameter.map do |param|
-            {
-              name: param.name,
-              type: param.type,
-              direction: param.respond_to?(:direction) ? param.direction : "in",
-            }
-          end
-        end
-
-        # Build diagrams map
-        def build_diagrams_map
-          diagrams = {}
-
-          repository.diagrams_index.each do |diagram|
-            id = @id_generator.diagram_id(diagram)
-            diagrams[id] = serialize_diagram(diagram, id)
-          end
-
-          diagrams
+        def find_class_by_xmi_id(xmi_id)
+          return nil unless xmi_id
+          class_lookup.by_xmi_id(xmi_id)
         rescue StandardError
-          # Diagrams may not be available in all repositories
-          {}
-        end
-
-        def serialize_diagram(diagram, id)
-          {
-            id: id,
-            xmiId: diagram.xmi_id,
-            name: diagram.name,
-            type: diagram.diagram_type,
-            package: find_diagram_package(diagram),
-          }
-        end
-
-        # Helper methods
-
-        def package_path(package)
-          unless package.respond_to?(:namespace) && package.namespace
-            return package.name
-          end
-          return package.name unless package.namespace.is_a?(Lutaml::Uml::Package)
-
-          "#{package_path(package.namespace)}::#{package.name}"
-        end
-
-        def qualified_name(klass) # rubocop:disable Metrics/MethodLength
-          path_parts = []
-          current = klass
-
-          # Walk up the namespace chain
-          while current
-            if current.is_a?(Lutaml::Uml::TopElement)
-              path_parts.unshift(current.name)
-              current = current.namespace if current.respond_to?(:namespace)
-            elsif current.is_a?(Lutaml::Uml::Package)
-              path_parts.unshift(current.name)
-              current = current.namespace
-            else
-              break
-            end
-          end
-
-          path_parts.join("::")
-        end
-
-        def class_type(klass)
-          klass.class.name.split("::").last
-        end
-
-        def package_id_for_class(klass)
-          ns = klass.respond_to?(:namespace) ? klass.namespace : nil
-          return nil unless ns.is_a?(Lutaml::Uml::Package)
-
-          @id_generator.package_id(ns)
-        end
-
-        def package_diagrams(package)
-          return [] unless @options[:include_diagrams]
-
-          # Use the package's direct diagrams attribute instead of querying
-          package.diagrams || []
-        rescue StandardError => e
-          warn "Error getting diagrams for #{package.name}: #{e.message}"
-          []
-        end
-
-        def find_diagram_package(diagram)
-          # Try to find which package owns this diagram
-          repository.packages_index.each do |pkg|
-            diagrams = package_diagrams(pkg)
-            if diagrams.any? { |d| d.xmi_id == diagram.xmi_id }
-              return @id_generator.package_id(pkg)
-            end
-          end
           nil
+        end
+
+        def find_class_by_object_id(object_id)
+          return nil unless object_id
+          class_lookup.by_object_id(object_id)
         rescue StandardError
           nil
         end
@@ -515,315 +112,17 @@ module Lutaml
           }
         end
 
-        def format_definition(definition) # rubocop:disable Metrics/MethodLength
+        def format_definition(definition)
           return nil if definition.nil? || definition.empty?
-
           formatted = definition.strip
-
-          # Optionally truncate
           if @options[:max_definition_length] &&
               formatted.length > @options[:max_definition_length]
             formatted = "#{formatted[0...@options[:max_definition_length]]}..."
           end
-
-          # Optionally format as markdown (basic)
           if @options[:format_definitions]
-            formatted = format_as_markdown(formatted)
+            formatted = formatted.gsub(%r{(https?://[^\s]+)}, '[\1](\1)')
           end
-
           formatted
-        end
-
-        def format_as_markdown(text)
-          # Basic markdown formatting
-          # - Preserve line breaks
-          # - Convert URLs to links
-          text.gsub(%r{(https?://[^\s]+)}, '[\1](\1)')
-        end
-
-        def serialize_class_operations(klass)
-          return [] unless klass.respond_to?(:operations) && klass.operations
-
-          klass.operations.map { |op| @id_generator.operation_id(op, klass) }
-        end
-
-        def find_class_associations(klass)
-          associations = repository.associations_of(klass)
-          associations.map { |assoc| @id_generator.association_id(assoc) }
-        rescue StandardError
-          []
-        end
-
-        def find_generalizations(klass) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
-          # Use the pre-built generalization map for multiple inheritance
-          parent_xmi_ids = @generalization_map[klass.xmi_id]
-
-          if parent_xmi_ids && !parent_xmi_ids.empty?
-            # Map each parent XMI ID to class ID
-            parents = parent_xmi_ids.filter_map do |parent_xmi_id|
-              # Skip self-referential generalization
-              next if parent_xmi_id == klass.xmi_id
-
-              parent = find_class_by_xmi_id(parent_xmi_id)
-              parent ? @id_generator.class_id(parent) : nil
-            end
-
-            return parents unless parents.empty?
-          end
-
-          # Fallback: single parent via repository query
-          parent = repository.supertype_of(klass)
-          # Skip if parent is self (self-referential generalization)
-          return [] if parent && parent.xmi_id == klass.xmi_id
-
-          parent ? [@id_generator.class_id(parent)] : []
-        rescue StandardError => e
-          warn "Error finding generalizations for #{klass.name}: #{e.message}"
-          []
-        end
-
-        def find_specializations(klass)
-          children = repository.subtypes_of(klass)
-          # Filter out self if somehow included
-          children.reject do |child|
-            child.xmi_id == klass.xmi_id
-          end.map { |child| @id_generator.class_id(child) }
-        rescue StandardError
-          []
-        end
-
-        def serialize_literals(klass)
-          return [] unless klass.is_a?(Lutaml::Uml::Enum) && klass.owned_literal
-
-          klass.owned_literal.map do |literal|
-            {
-              name: literal.name,
-              definition: format_definition(literal.definition),
-            }
-          end
-        rescue StandardError
-          []
-        end
-
-        def serialize_generalization(klass, visited = Set.new) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
-          unless klass.respond_to?(:generalization) && klass.generalization
-            return nil
-          end
-          return nil if visited.include?(klass.xmi_id) # Prevent infinite loops
-
-          visited.add(klass.xmi_id)
-          gen = klass.generalization
-
-          {
-            generalId: gen.general_id,
-            generalName: gen.general_name,
-            generalUpperKlass: if gen.respond_to?(:general_upper_klass)
-                                 gen.general_upper_klass
-                               end,
-            hasGeneral: gen.respond_to?(:has_general) ? gen.has_general : false,
-            name: gen.name,
-            type: gen.type,
-            definition: format_definition(gen.definition),
-            stereotype: gen.respond_to?(:stereotype) ? gen.stereotype : nil,
-            ownedProps: (gen.respond_to?(:owned_props) ? gen.owned_props : [])
-              .map { |attr| serialize_general_attribute(attr) },
-            assocProps: (gen.respond_to?(:assoc_props) ? gen.assoc_props : [])
-              .map { |attr| serialize_general_attribute(attr) },
-            inheritedProps: (
-              gen.respond_to?(:inherited_props) ? gen.inherited_props : []
-            ).map { |attr| serialize_general_attribute(attr) },
-            inheritedAssocProps: (
-              if gen.respond_to?(:inherited_assoc_props)
-                gen.inherited_assoc_props
-              else
-                []
-              end
-            ).map { |attr| serialize_general_attribute(attr) },
-          }
-        rescue StandardError => e
-          warn "Error serializing generalization: #{e.message}"
-          nil
-        end
-
-        def serialize_general_attribute(attr)
-          return nil unless attr
-
-          {
-            name: attr.name,
-            type: attr.type,
-            cardinality: serialize_cardinality(attr.cardinality),
-            definition: format_definition(attr.definition),
-            upperKlass: attr.respond_to?(:upper_klass) ? attr.upper_klass : nil,
-            nameNs: attr.respond_to?(:name_ns) ? attr.name_ns : nil,
-            typeNs: attr.respond_to?(:type_ns) ? attr.type_ns : nil,
-          }
-        end
-
-        def find_generalization(parent_id)
-          parent = find_class_by_xmi_id(parent_id)
-          return nil unless parent
-
-          # Recursively find all ancestors
-          find_all_ancestors(parent, []) || []
-        end
-
-        def find_all_ancestors(klass, ancestors = [])
-          return ancestors if klass.nil?
-
-          unless ancestors.include?(klass.xmi_id)
-            ancestors << klass.xmi_id
-            if klass.generalization&.general_classierarchy
-              find_all_ancestors(klass.generalization&.general_class,
-                                 ancestors)
-            end
-          end
-          ancestors
-        end
-
-        # Compute inherited attributes from generalization chain
-        def compute_inherited_attributes(klass, visited = Set.new) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
-          unless klass.respond_to?(:generalization) && klass.generalization
-            return []
-          end
-          return [] if visited.include?(klass.xmi_id) # Prevent infinite loops
-
-          visited.add(klass.xmi_id)
-          inherited = []
-          current_gen = klass.generalization
-          parent_order = 0
-
-          while current_gen
-            parent_class = find_class_by_xmi_id(current_gen.general_id)
-            break unless parent_class
-            break if visited.include?(parent_class.xmi_id) # Prevent cycles
-
-            visited.add(parent_class.xmi_id)
-
-            if parent_class.attributes
-              # Sort attributes by name within this parent
-              sorted_attrs = parent_class.attributes.sort_by do |a|
-                a.name || ""
-              end
-              sorted_attrs.each do |attr|
-                attr_id = @id_generator.attribute_id(attr, parent_class)
-                inherited << {
-                  attributeId: attr_id,
-                  attribute: serialize_attribute(attr, parent_class, attr_id),
-                  inheritedFrom: @id_generator.class_id(parent_class),
-                  inheritedFromName: parent_class.name,
-                  parentOrder: parent_order, # Track hierarchy order
-                }
-              end
-            end
-
-            # Move to parent's parent
-            parent_order += 1
-            current_gen = if current_gen.respond_to?(:general)
-                            current_gen.general
-                          end
-          end
-
-          # Already sorted by parent hierarchy, then by name within parent
-          inherited
-        rescue StandardError => e
-          warn "Error computing inherited attributes: #{e.message}"
-          []
-        end
-
-        # Compute inherited associations from generalization chain
-        def compute_inherited_associations(klass, visited = Set.new) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
-          unless klass.respond_to?(:generalization) && klass.generalization
-            return []
-          end
-          return [] if visited.include?(klass.xmi_id) # Prevent infinite loops
-
-          visited.add(klass.xmi_id)
-          inherited = []
-          current_gen = klass.generalization
-          parent_order = 0
-
-          while current_gen
-            parent_class = find_class_by_xmi_id(current_gen.general_id)
-            break unless parent_class
-            break if visited.include?(parent_class.xmi_id) # Prevent cycles
-
-            visited.add(parent_class.xmi_id)
-
-            parent_associations = find_class_associations(parent_class)
-
-            # Get association details and determine local role from parent's
-            # perspective
-            assoc_with_roles = parent_associations.filter_map do |assoc_id|
-              assoc = repository.associations_index.find do |a|
-                @id_generator.association_id(a) == assoc_id
-              end
-              next unless assoc
-
-              # Determine which role is the "local" one for the parent class
-              # This becomes the inherited local role
-              local_role = if assoc.owner_end_xmi_id == parent_class.xmi_id
-                             assoc.owner_end_attribute_name || assoc.owner_end || ""
-                           elsif assoc.member_end_xmi_id == parent_class.xmi_id
-                             assoc.member_end_attribute_name || assoc.member_end || ""
-                           else
-                             ""
-                           end
-
-              { id: assoc_id, role: local_role }
-            end
-
-            # Sort by local role within this parent
-            assoc_with_roles.sort_by { |a| a[:role] }.each do |item|
-              inherited << {
-                associationId: item[:id],
-                inheritedFrom: @id_generator.class_id(parent_class),
-                inheritedFromName: parent_class.name,
-                parentOrder: parent_order,
-                localRole: item[:role], # Include for template use
-              }
-            end
-
-            # Move to parent's parent
-            parent_order += 1
-            current_gen = if current_gen.respond_to?(:general)
-                            current_gen.general
-                          end
-          end
-
-          inherited
-        rescue StandardError => e
-          warn "Error computing inherited associations: #{e.message}"
-          []
-        end
-
-        # Find class by XMI ID
-        def find_class_by_xmi_id(xmi_id)
-          return nil unless xmi_id
-
-          repository.classes_index.find { |c| c.xmi_id == xmi_id }
-        rescue StandardError
-          nil
-        end
-
-        # Find class by object ID (EA object ID)
-        def find_class_by_object_id(object_id)
-          return nil unless object_id
-
-          repository.classes_index.find do |c|
-            c.respond_to?(:ea_object_id) && c.ea_object_id == object_id
-          end
-        rescue StandardError
-          nil
-        end
-
-        # Normalize stereotype to always be an array
-        # @param stereotype [String, Array, nil] Stereotype value
-        # @return [Array<String>] Array of stereotypes
-        def normalize_stereotypes(stereotype)
-          return [] if stereotype.nil?
-          return stereotype if stereotype.is_a?(Array)
-
-          [stereotype]
         end
       end
     end

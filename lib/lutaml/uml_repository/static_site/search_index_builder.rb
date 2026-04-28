@@ -271,10 +271,7 @@ module Lutaml
           current = klass
 
           while current
-            if current.is_a?(Lutaml::Uml::TopElement)
-              path_parts.unshift(current.name)
-              current = current.namespace if current.respond_to?(:namespace)
-            elsif current.is_a?(Lutaml::Uml::Package)
+            if current.is_a?(Lutaml::Uml::TopElement) || current.is_a?(Lutaml::Uml::Package)
               path_parts.unshift(current.name)
               current = current.namespace if current.respond_to?(:namespace)
             else

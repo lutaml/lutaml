@@ -41,7 +41,6 @@ module Lutaml
           return "public" if ea_visibility.nil? || ea_visibility.empty?
 
           case ea_visibility.downcase
-          when "public" then "public"
           when "private" then "private"
           when "protected" then "protected"
           when "package" then "package"

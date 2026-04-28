@@ -17,6 +17,8 @@ require_relative "queries/association_query"
 require_relative "queries/diagram_query"
 require_relative "queries/search_query"
 require_relative "query_dsl/query_builder"
+require_relative "repository/loader"
+require_relative "repository/deprecated"
 # require_relative "lazy_repository"
 
 module Lutaml
@@ -48,6 +50,7 @@ module Lutaml
     #   parent = repo.supertype_of("ModelRoot::Child")
     #   descendants = repo.descendants_of("ModelRoot::Parent", max_depth: 2)
     class Repository
+      include Deprecated
       # @return [Lutaml::Uml::Document] The underlying UML document
       attr_reader :document
 
@@ -253,8 +256,8 @@ module Lutaml
       # @option options [String] :version ("1.0") Package version
       #   (deprecated, use :metadata)
       # @option options [Boolean] :include_xmi (false) Include source XMI
-      # @option options [Symbol] :serialization_format (:marshal) Format to use
-      #   (:marshal or :yaml)
+      # @option options [Symbol] :serialization_format (:yaml) Format to use
+      #   (:yaml)
       # @option options [Integer] :compression_level (6) ZIP compression level
       # @return [void]
       # @example Export with defaults
@@ -525,30 +528,6 @@ module Lutaml
         search_query.search(query, types: types, fields: fields)
       end
 
-      # Search for model elements by regex pattern.
-      #
-      # Similar to search but treats query as a regex pattern. Returns
-      # SearchResult objects for consistency with regular search.
-      #
-      # @param pattern [String, Regexp] The regex pattern to match
-      # @param types [Array<Symbol>] Types to search (:class, :attribute,
-      #   :association) (default: [:class, :attribute, :association])
-      # @param fields [Array<Symbol>] Fields to search in
-      # (:name, :documentation)
-      #   (default: [:name])
-      # @return [Hash] Search results grouped by type (same format as search)
-      # @example
-      #   results = repo.search("^Building.*", types:[:class])
-      #   results = repo.search("address$", types: [:attribute])
-      #   results = repo.search("urban", fields: [:documentation])
-      def search( # rubocop:disable Lint/DuplicateMethods
-        pattern,
-        types: %i[class attribute association],
-        fields: [:name]
-      )
-        search_query.search(pattern, types: types, fields: fields)
-      end
-
       # Get comprehensive statistics about the repository.
       #
       # Returns detailed metrics including package depths, class complexity,
@@ -646,7 +625,7 @@ module Lutaml
       # Get all associations as an array
       # Collects from both document-level (XMI) and class-level (QEA/EA)
       # @return [Array<Lutaml::Uml::Association>] All associations
-      def associations_index # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics:MethodLength,Metrics:PerceivedComplexity
+      def associations_index # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
         # Use cached index if available (built by IndexBuilder)
         return @indexes[:associations].values if @indexes[:associations]
 
@@ -692,36 +671,6 @@ module Lutaml
       #   all = repo.all_classes
       def all_classes
         classes_index
-      end
-
-      # DEPRECATED: Use search with types: [:class] instead
-      # @deprecated Use {#search} with types filter
-      def search_classes(query_string)
-        search(query_string, types: [:class])[:classes]
-      end
-
-      # DEPRECATED: Use subtypes_of instead
-      # @deprecated Use {#subtypes_of}
-      def find_children(class_or_qname, recursive: false)
-        subtypes_of(class_or_qname, recursive: recursive)
-      end
-
-      # DEPRECATED: Use associations_of instead
-      # @deprecated Use {#associations_of}
-      def find_associations(class_or_qname, options = {})
-        associations_of(class_or_qname, options)
-      end
-
-      # DEPRECATED: Use diagrams_in_package or all_diagrams instead
-      # @deprecated Use {#diagrams_in_package} or {#all_diagrams}
-      def find_diagrams(package_path)
-        diagrams_in_package(package_path)
-      end
-
-      # DEPRECATED: Use export_to_package instead
-      # @deprecated Use {#export_to_package}
-      def export(output_path, options = {})
-        export_to_package(output_path, options)
       end
 
       # Custom marshaling to exclude runtime-only query objects

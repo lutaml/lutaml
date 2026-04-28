@@ -69,8 +69,8 @@ module Lutaml
                                             desc: "Load metadata from YAML file"
 
           # Build options
-          thor_class.option :format, type: :string, default: "marshal",
-                                     desc: "Serialization format (marshal|yaml)"
+          thor_class.option :format, type: :string, default: "yaml",
+                                     desc: "Serialization format (yaml)"
           thor_class.option :validate, type: :boolean, default: true,
                                        desc: "Validate before building"
           thor_class.option :strict, type: :boolean, default: false,
@@ -166,7 +166,7 @@ module Lutaml
           # Export to package with metadata
           export_options = {
             serialization_format: (
-              options[:format] || options["format"] || "marshal"
+              options[:format] || options["format"] || "yaml"
             ).to_sym,
             metadata: metadata,
           }
@@ -213,7 +213,7 @@ module Lutaml
             name: options[:name] || File.basename(options[:output] || "model",
                                                   ".lur"),
             version: options[:version] || "1.0",
-            serialization_format: (options[:format] || "marshal").to_s,
+            serialization_format: (options[:format] || "yaml").to_s,
           }
 
           # Add optional fields if provided
@@ -273,7 +273,7 @@ module Lutaml
 
           # Ensure serialization_format is set
           metadata_hash["serialization_format"] ||= (
-            options[:format] || "marshal"
+            options[:format] || "yaml"
           ).to_s
 
           Lutaml::UmlRepository::PackageMetadata.from_hash(metadata_hash)
