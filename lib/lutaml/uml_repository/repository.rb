@@ -51,6 +51,7 @@ module Lutaml
     #   descendants = repo.descendants_of("ModelRoot::Parent", max_depth: 2)
     class Repository
       include Deprecated
+
       # @return [Lutaml::Uml::Document] The underlying UML document
       attr_reader :document
 

@@ -101,7 +101,7 @@ module Lutaml
         "history" => :@help,
         "clear" => :@help, "cls" => :@help,
         "config" => :@help,
-        "stats" => :@help,
+        "stats" => :@help
       }.freeze
 
       METHOD_MAP = {
@@ -119,7 +119,7 @@ module Lutaml
         "history" => :cmd_history,
         "clear" => :cmd_clear, "cls" => :cmd_clear,
         "config" => :cmd_config,
-        "stats" => :cmd_stats,
+        "stats" => :cmd_stats
       }.freeze
 
       def execute_command(input)
@@ -127,7 +127,7 @@ module Lutaml
         command = parts[0].downcase
         args = parts[1..]
 
-        if command == "exit" || command == "quit" || command == "q"
+        if ["exit", "quit", "q"].include?(command)
           @running = false
           return
         end

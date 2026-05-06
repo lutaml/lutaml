@@ -38,9 +38,15 @@ module Lutaml
               stereotypes: normalize_stereotypes(
                 package.respond_to?(:stereotype) ? package.stereotype : nil,
               ),
-              classes: (package.classes || []).map { |c| @id_generator.class_id(c) },
-              subPackages: (package.packages || []).map { |p| @id_generator.package_id(p) },
-              diagrams: package_diagrams(package).map { |d| @id_generator.diagram_id(d) },
+              classes: (package.classes || []).map do |c|
+                @id_generator.class_id(c)
+              end,
+              subPackages: (package.packages || []).map do |p|
+                @id_generator.package_id(p)
+              end,
+              diagrams: package_diagrams(package).map do |d|
+                @id_generator.diagram_id(d)
+              end,
               parent: if package.respond_to?(:namespace) &&
                   package.namespace.is_a?(Lutaml::Uml::Package)
                         @id_generator.package_id(package.namespace)
@@ -59,6 +65,7 @@ module Lutaml
 
           def package_diagrams(package)
             return [] unless @options[:include_diagrams]
+
             package.diagrams || []
           rescue StandardError => e
             warn "Error getting diagrams for #{package.name}: #{e.message}"

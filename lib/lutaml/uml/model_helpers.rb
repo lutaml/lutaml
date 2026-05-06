@@ -122,7 +122,7 @@ module Lutaml
       # @param max [String, nil]
       # @return [Hash{Symbol => String, nil}] Hash with :min and :max keys
       def parse_cardinality(min, max)
-        {min: min, max: max}
+        { min: min, max: max }
       end
     end
   end

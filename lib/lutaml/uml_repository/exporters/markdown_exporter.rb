@@ -41,7 +41,8 @@ module Lutaml
         end
 
         def generate_index_page
-          content = Markdown::IndexPageBuilder.new(repository, options, link_resolver).build
+          content = Markdown::IndexPageBuilder.new(repository, options,
+                                                   link_resolver).build
           File.write(File.join(output_dir, "index.md"), content)
         end
 

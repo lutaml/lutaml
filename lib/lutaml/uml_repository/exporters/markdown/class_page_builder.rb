@@ -49,7 +49,9 @@ module Lutaml
             stereotypes_array = normalize_stereotypes(klass.stereotype)
             return "" if stereotypes_array.empty?
 
-            "**Stereotypes**: #{stereotypes_array.map { |s| "`#{s}`" }.join(', ')}\n\n"
+            "**Stereotypes**: #{stereotypes_array.map do |s|
+              "`#{s}`"
+            end.join(', ')}\n\n"
           end
 
           def build_definition_section(klass)
