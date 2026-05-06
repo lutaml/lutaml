@@ -11,6 +11,27 @@ require_relative "id_generator"
 module Lutaml
   module UmlRepository
     module StaticSite
+      # Resolves Liquid {% include %} paths to template files on disk.
+      # Unlike LocalFileSystem (which adds a "_" prefix), this resolves
+      # paths directly: "components/header" → "<root>/components/header.liquid"
+      class TemplateFileSystem
+        attr_reader :root
+
+        def initialize(root)
+          @root = root
+        end
+
+        def read_template_file(template_path)
+          full = File.expand_path("#{template_path}.liquid", @root)
+          unless full.start_with?(@root)
+            raise Liquid::FileSystemError,
+                  "Illegal template path: #{template_path}"
+          end
+
+          File.read(full)
+        end
+      end
+
       # Main static site generator for LutaML UML Browser.
       #
       # Follows Dependency Inversion Principle by injecting dependencies
@@ -163,12 +184,9 @@ module Lutaml
         end
 
         def setup_liquid
-          # Use environment instead of deprecated class-level setters
-          environment = Liquid::Environment.new
-          environment.file_system = Liquid::LocalFileSystem.new(@options[:template_path])
-          # Changed from :strict to handle missing includes
-          environment.error_mode = :lax
-          @liquid_environment = environment
+          @liquid_environment = Liquid::Environment.new
+          @liquid_environment.file_system = TemplateFileSystem.new(@options[:template_path])
+          @liquid_environment.error_mode = :lax
         end
 
         # Generate single-file SPA
@@ -226,7 +244,7 @@ module Lutaml
 
         def render_components # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           # Set up Liquid file system for recursive includes
-          temp_file_system = Liquid::LocalFileSystem.new(@options[:template_path])
+          temp_file_system = TemplateFileSystem.new(@options[:template_path])
 
           component_names = ["header", "sidebar", "content", "package_details",
                              "class_details"]
@@ -274,7 +292,10 @@ module Lutaml
           # Render and write index.html
           template_content = File.read(File.join(@options[:template_path],
                                                  "multi_file.liquid"))
-          template = Liquid::Template.parse(template_content)
+          file_system = TemplateFileSystem.new(@options[:template_path])
+          template = Liquid::Template.parse(template_content,
+                                            error_mode: :lax)
+          template.registers[:file_system] = file_system
           html = template.render(context)
           html = minify_html(html) if @options[:minify]
           File.write(File.join(output_dir, "index.html"), html)
