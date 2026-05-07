@@ -1,171 +1,121 @@
-/* Layout System using CSS Grid */
+/* Layout — LutaML Branded */
 
 #app {
-  display: grid;
-  grid-template-rows: var(--header-height) 1fr;
+  display: flex;
   height: 100vh;
   overflow: hidden;
 }
 
-/* Header Layout */
-.app-header {
-  grid-row: 1;
+/* Main column (header + content) */
+.main-content {
+  flex: 1;
   display: flex;
-  align-items: center;
-  padding: 0 var(--space-lg);
-  background-color: var(--color-header-bg);
-  color: var(--color-header-text);
-  box-shadow: var(--shadow-md);
-  z-index: var(--z-header);
+  flex-direction: column;
+  overflow: hidden;
 }
 
-.header-content {
+/* Header */
+.app-header {
+  height: var(--header-height);
+  flex-shrink: 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  gap: var(--space-lg);
+  padding: 0 var(--space-4);
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border-light);
+  gap: var(--space-4);
+  z-index: var(--z-header);
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: var(--space-md);
+  gap: var(--space-3);
 }
 
 .header-center {
   flex: 1;
-  max-width: 600px;
-  position: relative;
+  display: flex;
+  justify-content: center;
+  max-width: 480px;
+  margin: 0 auto;
 }
 
 .header-right {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
+  gap: var(--space-1);
 }
 
-/* Main Layout (Sidebar + Content) */
-.main-layout {
-  grid-row: 2;
-  display: grid;
-  grid-template-columns: var(--sidebar-width) 1fr;
-  overflow: hidden;
-}
-
-/* Sidebar Layout */
+/* Sidebar */
 .sidebar {
-  grid-column: 1;
+  width: var(--sidebar-width);
+  flex-shrink: 0;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-light);
   display: flex;
   flex-direction: column;
-  background-color: var(--color-sidebar-bg);
-  border-right: 1px solid var(--color-sidebar-border);
   overflow: hidden;
   z-index: var(--z-sidebar);
 }
 
-.sidebar-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-md) var(--space-lg);
-  border-bottom: 1px solid var(--color-border);
-}
-
-.sidebar-header h2 {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text);
-}
-
-.sidebar-actions {
-  display: flex;
-  gap: var(--space-xs);
+.sidebar.collapsed {
+  width: 0;
 }
 
 .sidebar-content {
   flex: 1;
-  overflow-y: auto;
-  padding: var(--space-md);
-}
-
-/* Content Area Layout */
-.content-area {
-  grid-column: 2;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-width: var(--sidebar-width);
 }
 
-.breadcrumb {
-  padding: var(--space-md) var(--space-xl);
-  border-bottom: 1px solid var(--color-border);
-  background-color: var(--color-bg-secondary);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-}
-
-.content-pane {
+/* Content area */
+.content-area {
   flex: 1;
-  overflow-y: auto;
-  padding: var(--space-xl);
+  overflow: auto;
+  padding: var(--space-6);
+  background: var(--bg-primary);
 }
 
-/* Responsive Layout */
-
-/* Tablet and below */
+/* Responsive */
 @media (max-width: 1023px) {
-  .main-layout {
-    grid-template-columns: 1fr;
-    position: relative;
-  }
-
   .sidebar {
     position: absolute;
     top: 0;
     left: 0;
     bottom: 0;
-    width: var(--sidebar-width);
-    box-shadow: var(--shadow-xl);
-    z-index: var(--z-sidebar);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .sidebar.collapsed {
+    width: 0;
+    overflow: hidden;
   }
 
   .sidebar-toggle {
-    display: block !important;
-  }
-}
-
-/* Mobile */
-@media (max-width: 767px) {
-  :root {
-    --sidebar-width: 280px;
-    --header-height: 56px;
-  }
-
-  .app-header {
-    padding: 0 var(--space-md);
-  }
-
-  .header-content {
-    gap: var(--space-sm);
+    display: flex !important;
   }
 
   .header-center {
     max-width: none;
   }
+}
 
-  .content-pane {
-    padding: var(--space-md);
+@media (max-width: 767px) {
+  :root {
+    --sidebar-width: 280px;
+    --header-height: 48px;
   }
 
-  .breadcrumb {
-    padding: var(--space-sm) var(--space-md);
+  .content-area {
+    padding: var(--space-4);
   }
 }
 
-/* Large desktop */
 @media (min-width: 1280px) {
   :root {
-    --sidebar-width: 360px;
+    --sidebar-width: 320px;
   }
 }

@@ -7,15 +7,20 @@
   <meta name="description" content="{{ config.description }}">
   <meta name="generator" content="{{ buildInfo.generator }}">
 
+  <!-- Google Fonts — Inter + JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
   <!-- Styles (external) -->
   <link rel="stylesheet" href="assets/styles.css">
 </head>
 <body>
   <div id="app" x-data="app" x-init="init()" :class="{ 'dark': darkMode }">
-    {% include 'components/header' %}
+    {% include 'components/sidebar' %}
 
-    <div class="main-layout">
-      {% include 'components/sidebar' %}
+    <div class="main-content">
+      {% include 'components/header' %}
       {% include 'components/content' %}
     </div>
   </div>
@@ -23,11 +28,9 @@
   <!-- Data URLs (external JSON files{% if config.apiMode %} or API endpoints{% endif %}) -->
   <script>
     {% if config.apiMode %}
-    // API mode: fetch from server endpoints
     window.UML_DATA_URL = '/api/data';
     window.SEARCH_INDEX_URL = '/api/search/index';
     {% else %}
-    // Static mode: load from JSON files
     window.UML_DATA_URL = 'data/model.json';
     window.SEARCH_INDEX_URL = 'data/search.json';
     {% endif %}

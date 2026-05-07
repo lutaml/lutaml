@@ -1,110 +1,97 @@
-<div class="content-pane">
+<div class="content-area">
     <!-- Welcome Screen -->
     <div x-show="currentView === 'welcome'" x-transition class="view-welcome">
-      <div class="welcome-content">
-        <h1>Welcome to {{ config.title }}</h1>
-        <p class="welcome-description">Browse UML packages, classes, and associations with powerful search capabilities.</p>
+      <span class="welcome-logo">{{ lutamlIcon }}</span>
+      <h1 class="welcome-title" x-text="JSON.parse(config).title || 'UML Model Browser'"></h1>
+      <p class="welcome-subtitle">Browse packages, classes, associations, and diagrams.</p>
 
-        <div class="stats-grid" x-show="data && data.metadata">
-          <div class="stat-card">
-            <div class="stat-value" x-text="data.metadata.statistics.packages"></div>
-            <div class="stat-label">Packages</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value" x-text="data.metadata.statistics.classes"></div>
-            <div class="stat-label">Classes</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value" x-text="data.metadata.statistics.attributes"></div>
-            <div class="stat-label">Attributes</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value" x-text="data.metadata.statistics.associations"></div>
-            <div class="stat-label">Associations</div>
-          </div>
+      <div class="welcome-stats" x-show="data && data.metadata">
+        <div class="welcome-stat">
+          <div class="welcome-stat-value" x-text="data.metadata.statistics.packages"></div>
+          <div class="welcome-stat-label">Packages</div>
         </div>
+        <div class="welcome-stat">
+          <div class="welcome-stat-value" x-text="data.metadata.statistics.classes"></div>
+          <div class="welcome-stat-label">Classes</div>
+        </div>
+        <div class="welcome-stat">
+          <div class="welcome-stat-value" x-text="data.metadata.statistics.attributes"></div>
+          <div class="welcome-stat-label">Attributes</div>
+        </div>
+        <div class="welcome-stat">
+          <div class="welcome-stat-value" x-text="data.metadata.statistics.associations"></div>
+          <div class="welcome-stat-label">Associations</div>
+        </div>
+      </div>
 
-        <div class="welcome-actions">
-          <p>Select a package from the sidebar or use the search to get started.</p>
-          <kbd class="keyboard-hint">Press <kbd>/</kbd> or <kbd>Ctrl+K</kbd> to search</kbd>
-        </div>
+      <div class="welcome-actions">
+        Select a package from the sidebar or press <kbd>/</kbd> to search.
       </div>
     </div>
 
-    <!-- Package Details INLINE WITH FIXES -->
+    <!-- Package Details -->
     <div x-show="currentView === 'package'" x-transition class="view-package">
       <template x-if="currentPackage && data.packages[currentPackage]">
         <div class="package-details" x-data="{ get pkg() { return $store.app.data.packages[$store.app.currentPackage]; } }">
           <div class="entity-header">
-            <h1 class="entity-name" x-text="pkg.name"></h1>
-            <span class="entity-type-badge">Package</span>
+            <div class="entity-title">
+              <h1 class="entity-name" x-text="pkg.name"></h1>
+              <p class="entity-subtitle" x-show="pkg.path"><code x-text="pkg.path"></code></p>
+            </div>
+            <span class="entity-badge badge-package">Package</span>
           </div>
 
-          <dl class="entity-metadata">
-            <dt>Path</dt>
-            <dd><code x-text="pkg.path"></code></dd>
-
-            <template x-if="pkg.stereotypes && pkg.stereotypes.length > 0">
-              <div>
-                <dt>Stereotypes</dt>
-                <dd>
-                  <template x-for="stereotype in pkg.stereotypes" :key="stereotype">
-                    <span class="stereotype-badge" x-text="stereotype"></span>
-                  </template>
-                </dd>
-              </div>
-            </template>
-          </dl>
+          <div class="entity-metadata" x-show="pkg.stereotypes && pkg.stereotypes.length > 0">
+            <div class="metadata-item">
+              <span class="metadata-label">Stereotypes</span>
+              <span class="metadata-value">
+                <template x-for="s in pkg.stereotypes" :key="s">
+                  <span class="stereotype-tag" x-text="s"></span>
+                </template>
+              </span>
+            </div>
+          </div>
 
           <div class="entity-definition" x-show="pkg.definition">
-            <h3>Description</h3>
             <div class="definition-content" x-html="pkg.definition"></div>
           </div>
 
           <!-- Empty State -->
           <template x-if="(!pkg.subPackages || pkg.subPackages.length === 0) && (!pkg.classes || pkg.classes.length === 0) && (!pkg.diagrams || pkg.diagrams.length === 0)">
             <div class="empty-state">
-              <p class="empty-state-message">This package is empty.</p>
+              <p>This package is empty.</p>
             </div>
           </template>
 
-          <!-- Diagrams FIRST and PROMINENT -->
+          <!-- Diagrams -->
           <div class="section" x-show="pkg.diagrams && pkg.diagrams.length > 0">
-            <h3>Diagrams (<span x-text="pkg.diagrams.length"></span>)</h3>
-            <ul class="diagram-list">
+            <h3 class="section-title">Diagrams <span class="section-count" x-text="pkg.diagrams.length"></span></h3>
+            <div class="item-list">
               <template x-for="diagramId in pkg.diagrams" :key="diagramId">
-                <li class="diagram-item clickable-row" @click="$store.app.selectDiagram(diagramId)">
-                  <svg class="item-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                    <line x1="3" y1="9" x2="21" y2="9"></line>
-                    <line x1="9" y1="21" x2="9" y2="9"></line>
+                <div class="list-item" @click="$store.app.selectDiagram(diagramId)">
+                  <svg class="list-item-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <rect x="2" y="2" width="12" height="12" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+                    <path d="M2 6h12M6 6v8" stroke="currentColor" stroke-width="1.3"/>
                   </svg>
-                  <span class="diagram-name" x-text="$store.app.data.diagrams[diagramId] && $store.app.data.diagrams[diagramId].name"></span>
-                  <span class="diagram-type" x-text="$store.app.data.diagrams[diagramId] && `(${$store.app.data.diagrams[diagramId].type})`"></span>
-                  <span class="diagram-objects" x-show="$store.app.data.diagrams[diagramId] && $store.app.data.diagrams[diagramId].objectCount" x-text="`${$store.app.data.diagrams[diagramId].objectCount} objects`"></span>
-                </li>
+                  <span class="list-item-name" x-text="$store.app.data.diagrams[diagramId] && $store.app.data.diagrams[diagramId].name"></span>
+                  <span class="list-item-meta" x-show="$store.app.data.diagrams[diagramId] && $store.app.data.diagrams[diagramId].objectCount" x-text="`${$store.app.data.diagrams[diagramId].objectCount} objects`"></span>
+                  <span class="badge badge-diagram" x-show="$store.app.data.diagrams[diagramId]" x-text="$store.app.data.diagrams[diagramId] && $store.app.data.diagrams[diagramId].type"></span>
+                </div>
               </template>
-            </ul>
-          </div>
-
-          <!-- Info message -->
-          <template x-if="(!pkg.classes || pkg.classes.length === 0) && pkg.diagrams && pkg.diagrams.length > 0">
-            <div class="info-message">
-              <p>This package contains <strong x-text="pkg.diagrams.length"></strong> diagram(s) but no classes.</p>
             </div>
-          </template>
+          </div>
 
           <!-- Sub-packages -->
           <div class="section" x-show="pkg.subPackages && pkg.subPackages.length > 0">
-            <h3>Sub-packages</h3>
-            <div class="package-list">
+            <h3 class="section-title">Sub-packages <span class="section-count" x-text="pkg.subPackages.length"></span></h3>
+            <div class="item-list">
               <template x-for="subPkgId in pkg.subPackages" :key="subPkgId">
-                <div class="package-item" @click="$store.app.selectPackage(subPkgId)">
-                  <svg class="item-icon"  xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                <div class="list-item" @click="$store.app.selectPackage(subPkgId)">
+                  <svg class="list-item-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M2 5a2 2 0 012-2h3l1.5 2H12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2V5z" stroke="currentColor" stroke-width="1.2"/>
                   </svg>
-                  <span class="item-name" x-text="data.packages[subPkgId].name"></span>
-                  <span class="item-count" x-text="`${(data.packages[subPkgId].classes || []).length} classes`"></span>
+                  <span class="list-item-name" x-text="data.packages[subPkgId].name"></span>
+                  <span class="list-item-meta" x-text="`${(data.packages[subPkgId].classes || []).length} classes`"></span>
                 </div>
               </template>
             </div>
@@ -112,41 +99,50 @@
 
           <!-- Classes -->
           <div class="section" x-show="pkg.classes && pkg.classes.length > 0">
-            <h3>Classes</h3>
-            <table class="data-table classes-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Type</th>
-                  <th>Stereotypes</th>
-                  <th>Attributes</th>
-                </tr>
-              </thead>
-              <tbody>
-                <template x-for="classId in pkg.classes" :key="classId">
-                  <tr @click="$store.app.selectClass(classId)" class="clickable-row">
-                    <td><button class="link-button" x-text="data.classes[classId].name"></button></td>
-                    <td><span class="type-badge" x-text="data.classes[classId].type"></span></td>
-                    <td>
-                      <template x-if="data.classes[classId].stereotypes && data.classes[classId].stereotypes.length > 0">
-                        <div class="stereotypes-cell">
-                          <template x-for="stereotype in data.classes[classId].stereotypes" :key="stereotype">
-                            <span class="stereotype-tag" x-text="stereotype"></span>
-                          </template>
-                        </div>
-                      </template>
-                    </td>
-                    <td><span class="count-value" x-text="(data.classes[classId].attributes || []).length"></span></td>
+            <h3 class="section-title">Classes <span class="section-count" x-text="pkg.classes.length"></span></h3>
+            <div class="table-wrapper">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Stereotypes</th>
+                    <th>Attrs</th>
                   </tr>
-                </template>
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  <template x-for="classId in pkg.classes" :key="classId">
+                    <tr @click="$store.app.selectClass(classId)" class="clickable-row">
+                      <td><button class="link-button" x-text="data.classes[classId].name"></button></td>
+                      <td><span class="badge" :class="'badge-' + (data.classes[classId].type === 'Enumeration' ? 'enum' : data.classes[classId].type === 'DataType' ? 'datatype' : 'class')" x-text="data.classes[classId].type"></span></td>
+                      <td>
+                        <template x-if="data.classes[classId].stereotypes && data.classes[classId].stereotypes.length > 0">
+                          <span>
+                            <template x-for="st in data.classes[classId].stereotypes" :key="st">
+                              <span class="stereotype-tag" x-text="st"></span>
+                            </template>
+                          </span>
+                        </template>
+                      </td>
+                      <td style="color: var(--text-muted); font-variant-numeric: tabular-nums;" x-text="(data.classes[classId].attributes || []).length"></td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
           </div>
+
+          <!-- Info message -->
+          <template x-if="(!pkg.classes || pkg.classes.length === 0) && pkg.diagrams && pkg.diagrams.length > 0">
+            <div class="info-message">
+              This package contains <strong x-text="pkg.diagrams.length"></strong> diagram(s) but no classes.
+            </div>
+          </template>
         </div>
       </template>
     </div>
 
-    <!-- Class Details INLINE WITH FIXES -->
+    <!-- Class Details -->
     <div x-show="currentView === 'class'" x-transition class="view-class">
       <template x-if="currentClass && data.classes[currentClass]">
         <div class="class-details" x-data="{
@@ -155,14 +151,10 @@
           findClassByName(name) { return window.UMLUtils.findClassByName(data, name); },
           getAssociationEnds(assoc, cls) {
             if (!assoc || !cls) return { local: {}, remote: {}, direction: '↔' };
-            if (assoc.source && assoc.source.class === cls.xmiId) {
-              return { local: assoc.source, remote: assoc.target, direction: '→' };
-            } else if (assoc.target && assoc.target.class === cls.xmiId) {
-              return { local: assoc.target, remote: assoc.source, direction: '←' };
-            }
+            if (assoc.source && assoc.source.class === cls.xmiId) return { local: assoc.source, remote: assoc.target, direction: '→' };
+            if (assoc.target && assoc.target.class === cls.xmiId) return { local: assoc.target, remote: assoc.source, direction: '←' };
             return { local: assoc.source || {}, remote: assoc.target || {}, direction: '↔' };
-          }
-          ,
+          },
           groupByParent(items) {
             if (!items || items.length === 0) return [];
             const groups = {};
@@ -178,164 +170,131 @@
               <h1 class="entity-name" x-text="cls.qualifiedName"></h1>
               <p class="entity-subtitle" x-show="cls.name !== cls.qualifiedName" x-text="`(${cls.name})`"></p>
             </div>
-            <span class="entity-type-badge" x-text="cls.type"></span>
-            <span class="abstract-badge" x-show="cls.isAbstract">Abstract</span>
+            <span class="entity-badge" :class="'badge-' + (cls.type === 'Enumeration' ? 'enum' : cls.type === 'DataType' ? 'datatype' : cls.type === 'Interface' ? 'interface' : 'class')" x-text="cls.type"></span>
+            <span class="entity-badge badge-abstract" x-show="cls.isAbstract">Abstract</span>
           </div>
 
-          <dl class="entity-metadata">
-            <dt>Qualified Name</dt>
-            <dd><code x-text="cls.qualifiedName"></code></dd>
-
-            <dt>Package</dt>
-            <dd>
-              <button class="link-button" @click="selectPackage(cls.package)" x-text="data.packages[cls.package] && data.packages[cls.package].name"></button>
-            </dd>
-
-            <template x-if="cls.stereotypes && cls.stereotypes.length > 0">
-              <div>
-                <dt>Stereotypes</dt>
-                <dd>
-                  <template x-for="stereotype in cls.stereotypes" :key="stereotype">
-                    <span class="stereotype-badge" x-text="stereotype"></span>
-                  </template>
-                </dd>
-              </div>
-            </template>
-          </dl>
+          <div class="entity-metadata">
+            <div class="metadata-item">
+              <span class="metadata-label">Package</span>
+              <span class="metadata-value"><button class="link-button" @click="selectPackage(cls.package)" x-text="data.packages[cls.package] && data.packages[cls.package].name"></button></span>
+            </div>
+            <div class="metadata-item" x-show="cls.stereotypes && cls.stereotypes.length > 0">
+              <span class="metadata-label">Stereotypes</span>
+              <span class="metadata-value">
+                <template x-for="st in cls.stereotypes" :key="st">
+                  <span class="stereotype-tag" x-text="st"></span>
+                </template>
+              </span>
+            </div>
+          </div>
 
           <div class="entity-definition" x-show="cls.definition">
-            <h3>Description</h3>
             <div class="definition-content" x-html="cls.definition"></div>
           </div>
 
-          <!-- Inheritance (Generalization) -->
+          <!-- Inheritance -->
           <div class="section" x-show="(cls.generalizations && cls.generalizations.length > 0) || (cls.specializations && cls.specializations.length > 0)">
-            <h3>Inheritance</h3>
+            <h3 class="section-title">Inheritance</h3>
 
-            <div x-show="cls.generalizations && cls.generalizations.length > 0">
-              <h4>Extends (Superclasses)</h4>
-              <div class="inheritance-list">
+            <div x-show="cls.generalizations && cls.generalizations.length > 0" style="margin-bottom: var(--space-4);">
+              <div class="section-title" style="font-size: var(--text-xs);">Extends</div>
+              <div class="item-list">
                 <template x-for="parentId in cls.generalizations" :key="parentId">
-                  <div class="inheritance-item">
-                    <button @click="selectClass(parentId)" class="link-button">
-                      <svg class="item icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="18 15 12 9 6 15"></polyline>
-                      </svg>
-                      <span x-text="data.classes[parentId] && data.classes[parentId].name"></span>
-                    </button>
-                    <div class="inheritance-meta" x-show="data.classes[parentId]">
-                      <span class="inheritance-path" x-text="data.classes[parentId] && data.classes[parentId].qualifiedName"></span>
-                    </div>
+                  <div class="list-item" @click="selectClass(parentId)">
+                    <svg class="list-item-icon" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <polyline points="4 10 7 4 10 10" stroke="currentColor" stroke-width="1.3" fill="none"/>
+                    </svg>
+                    <span class="list-item-name" x-text="data.classes[parentId] && data.classes[parentId].name"></span>
+                    <span class="list-item-meta" x-text="data.classes[parentId] && data.classes[parentId].qualifiedName"></span>
                   </div>
                 </template>
               </div>
             </div>
 
             <div x-show="cls.specializations && cls.specializations.length > 0">
-              <h4>Extended by (Subclasses)</h4>
-              <div class="inheritance-list">
+              <div class="section-title" style="font-size: var(--text-xs);">Extended by</div>
+              <div class="item-list">
                 <template x-for="childId in cls.specializations" :key="childId">
-                  <button @click="selectClass(childId)" class="inheritance-item link-button">
-                    <svg class="item-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <polyline points="6 9 12 15 18 9"></polyline>
+                  <div class="list-item" @click="selectClass(childId)">
+                    <svg class="list-item-icon" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <polyline points="4 4 7 10 10 4" stroke="currentColor" stroke-width="1.3" fill="none"/>
                     </svg>
-                    <span x-text="data.classes[childId] && data.classes[childId].name"></span>
-                  </button>
+                    <span class="list-item-name" x-text="data.classes[childId] && data.classes[childId].name"></span>
+                  </div>
                 </template>
               </div>
             </div>
           </div>
 
-          <!-- Attributes with TYPE CLICKABILITY -->
+          <!-- Attributes -->
           <div class="section" x-show="cls.attributes && cls.attributes.length > 0">
-            <h3>Attributes</h3>
-            <table class="data-table attributes-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Type</th>
-                  <th>Visibility</th>
-                  <th>Cardinality</th>
-                  <th>Modifiers</th>
-                </tr>
-              </thead>
-              <tbody>
-                <template x-for="attrId in cls.attributes" :key="attrId">
-                  <tr x-data="{ attr: data.attributes[attrId] }">
-                    <td>
-                      <code x-text="attr.name"></code>
-                      <div class="cell-description" x-show="attr.definition" x-text="attr.definition"></div>
-                    </td>
-                    <td>
-                      <template x-if="isUmlBasicType(attr.type)">
-                        <code class="type-name uml-basic-type" x-text="attr.type" title="UML basic type"></code>
-                      </template>
-                      <template x-if="!isUmlBasicType(attr.type) && findClassByName(attr.type)">
-                        <button class="type-link" @click="selectClass(findClassByName(attr.type))" x-text="attr.type" title="Click to navigate"></button>
-                      </template>
-                      <template x-if="!isUmlBasicType(attr.type) && !findClassByName(attr.type)">
-                        <span class="type-unresolved" :title="'Unresolved type: ' + attr.type">
-                          <span x-text="'⚠️ ' + attr.type"></span>
-                        </span>
-                      </template>
-                    </td>
-                    <td><span class="visibility-badge" :data-visibility="attr.visibility" x-text="attr.visibility"></span></td>
-                    <td><code x-show="attr.cardinality" x-text="`${attr.cardinality.min}..${attr.cardinality.max}`"></code></td>
-                    <td>
-                      <span class="modifier-badge" x-show="attr.isStatic">static</span>
-                      <span class="modifier-badge" x-show="attr.isReadOnly">readOnly</span>
-                    </td>
-                  </tr>
-                </template>
-              </tbody>
-            </table>
+            <h3 class="section-title">Attributes <span class="section-count" x-text="cls.attributes.length"></span></h3>
+            <div class="table-wrapper">
+              <table class="data-table">
+                <thead>
+                  <tr><th>Name</th><th>Type</th><th>Visibility</th><th>Cardinality</th><th>Modifiers</th></tr>
+                </thead>
+                <tbody>
+                  <template x-for="attrId in cls.attributes" :key="attrId">
+                    <tr x-data="{ attr: data.attributes[attrId] }">
+                      <td>
+                        <code x-text="attr.name"></code>
+                        <div class="cell-description" x-show="attr.definition" x-text="attr.definition"></div>
+                      </td>
+                      <td>
+                        <template x-if="isUmlBasicType(attr.type)">
+                          <code class="uml-basic-type" x-text="attr.type"></code>
+                        </template>
+                        <template x-if="!isUmlBasicType(attr.type) && findClassByName(attr.type)">
+                          <button class="type-link" @click="selectClass(findClassByName(attr.type))" x-text="attr.type"></button>
+                        </template>
+                        <template x-if="!isUmlBasicType(attr.type) && !findClassByName(attr.type)">
+                          <span class="type-unresolved" x-text="attr.type"></span>
+                        </template>
+                      </td>
+                      <td><span class="visibility-badge" :data-visibility="attr.visibility" x-text="attr.visibility"></span></td>
+                      <td><code x-show="attr.cardinality" x-text="`${attr.cardinality.min}..${attr.cardinality.max}`"></code></td>
+                      <td>
+                        <span class="modifier-badge" x-show="attr.isStatic">static</span>
+                        <span class="modifier-badge" x-show="attr.isReadOnly">readOnly</span>
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
           </div>
 
-          <!-- Inherited Attributes GROUPED BY PARENT -->
+          <!-- Inherited Attributes -->
           <div class="section" x-show="cls.inheritedAttributes && cls.inheritedAttributes.length > 0">
-            <h3>Inherited Attributes (<span x-text="cls.inheritedAttributes.length"></span>)</h3>
-
+            <h3 class="section-title">Inherited Attributes <span class="section-count" x-text="cls.inheritedAttributes.length"></span></h3>
             <template x-for="(parentGroup, idx) in groupByParent(cls.inheritedAttributes)" :key="idx">
-              <div class="inherited-group">
-                <h4 class="inherited-group-header">
+              <div class="inheritance-group">
+                <div class="inheritance-header">
                   <span>From:</span>
                   <button class="link-button" @click="selectClass(parentGroup[0].inheritedFrom)" x-text="parentGroup[0].inheritedFromName"></button>
-                </h4>
+                </div>
                 <div class="table-wrapper">
-                  <table class="data-table inherited-attributes-table">
-                    <thead>
-                      <tr>
-                        <th>Name</th>
-                        <th>Type</th>
-                        <th>Visibility</th>
-                        <th>Cardinality</th>
-                        <th>Modifiers</th>
-                      </tr>
-                    </thead>
+                  <table class="data-table inherited-table">
+                    <thead><tr><th>Name</th><th>Type</th><th>Visibility</th><th>Cardinality</th></tr></thead>
                     <tbody>
                       <template x-for="item in parentGroup" :key="item.attributeId">
                         <tr x-data="{ attr: item.attribute }">
-                          <td>
-                            <code x-text="attr.name"></code>
-                            <div class="cell-description" x-show="attr.definition" x-text="attr.definition"></div>
-                          </td>
+                          <td><code x-text="attr.name"></code></td>
                           <td>
                             <template x-if="isUmlBasicType(attr.type)">
-                              <code class="type-name uml-basic-type" x-text="attr.type"></code>
+                              <code class="uml-basic-type" x-text="attr.type"></code>
                             </template>
                             <template x-if="!isUmlBasicType(attr.type) && findClassByName(attr.type)">
                               <button class="type-link" @click="selectClass(findClassByName(attr.type))" x-text="attr.type"></button>
                             </template>
                             <template x-if="!isUmlBasicType(attr.type) && !findClassByName(attr.type)">
-                              <span class="type-unresolved"><span x-text="'⚠️ ' + attr.type"></span></span>
+                              <span class="type-unresolved" x-text="attr.type"></span>
                             </template>
                           </td>
                           <td><span class="visibility-badge" :data-visibility="attr.visibility" x-text="attr.visibility"></span></td>
                           <td><code x-show="attr.cardinality" x-text="`${attr.cardinality.min}..${attr.cardinality.max}`"></code></td>
-                          <td>
-                            <span class="modifier-badge" x-show="attr.isStatic">static</span>
-                            <span class="modifier-badge" x-show="attr.isReadOnly">readOnly</span>
-                          </td>
                         </tr>
                       </template>
                     </tbody>
@@ -345,44 +304,28 @@
             </template>
           </div>
 
-          <!-- Associations WITH DESCRIPTIONS -->
+          <!-- Associations -->
           <div class="section" x-show="cls.associations && cls.associations.length > 0">
-            <h3>Associations (<span x-text="cls.associations.length"></span>)</h3>
+            <h3 class="section-title">Associations <span class="section-count" x-text="cls.associations.length"></span></h3>
             <div class="table-wrapper">
-              <table class="data-table associations-table">
-                <thead>
-                  <tr>
-                    <th>Name (Local Role)</th>
-                    <th>Target</th>
-                    <th>Dir</th>
-                    <th>Cardinality</th>
-                    <th>Target Role</th>
-                    <th>Target Card</th>
-                    <th>Type</th>
-                  </tr>
-                </thead>
+              <table class="data-table">
+                <thead><tr><th>Role</th><th>Target</th><th>Dir</th><th>Cardinality</th><th>Target Role</th><th>Target Card</th><th>Type</th></tr></thead>
                 <tbody>
                   <template x-for="assocId in cls.associations" :key="assocId">
                     <tr x-data="{
                       assoc: data.associations[assocId],
                       get ends() {
                         if (!this.assoc || !cls) return { local: {}, remote: {}, direction: '↔' };
-                        if (this.assoc.source && this.assoc.source.class === cls.xmiId) {
-                          return { local: this.assoc.source, remote: this.assoc.target, direction: '→' };
-                        } else if (this.assoc.target && this.assoc.target.class === cls.xmiId) {
-                          return { local: this.assoc.target, remote: this.assoc.source, direction: '←' };
-                        }
+                        if (this.assoc.source && this.assoc.source.class === cls.xmiId) return { local: this.assoc.source, remote: this.assoc.target, direction: '→' };
+                        if (this.assoc.target && this.assoc.target.class === cls.xmiId) return { local: this.assoc.target, remote: this.assoc.source, direction: '←' };
                         return { local: this.assoc.source || {}, remote: this.assoc.target || {}, direction: '↔' };
                       }
                     }">
                       <td>
                         <code x-text="ends.local ? (ends.local.role || '(unnamed)') : ''"></code>
-                        <div class="cell-description" x-show="assoc && assoc.name && assoc.name !== (ends.local && ends.local.role)" x-text="assoc ? `Association: ${assoc.name}` : ''"></div>
                         <div class="cell-description" x-show="assoc && assoc.definition" x-text="assoc ? assoc.definition : ''"></div>
                       </td>
-                      <td>
-                        <button class="link-button" @click="ends.remote && ends.remote.class && selectClass(ends.remote.class)" x-text="ends.remote ? ends.remote.className : ''"></button>
-                      </td>
+                      <td><button class="link-button" @click="ends.remote && ends.remote.class && selectClass(ends.remote.class)" x-text="ends.remote ? ends.remote.className : ''"></button></td>
                       <td><span x-text="ends.direction"></span></td>
                       <td><code x-show="ends.local && ends.local.cardinality" x-text="ends.local && ends.local.cardinality ? `${ends.local.cardinality.min}..${ends.local.cardinality.max}` : ''"></code></td>
                       <td><code x-text="ends.remote ? (ends.remote.role || '(unnamed)') : ''"></code></td>
@@ -390,9 +333,7 @@
                       <td>
                         <span x-show="ends.local && ends.local.aggregation === 'composite'" title="Composition">◆</span>
                         <span x-show="ends.local && ends.local.aggregation === 'shared'" title="Aggregation">◇</span>
-                        <span x-show="ends.remote && ends.remote.aggregation === 'composite'" title="Composition">◆</span>
-                        <span x-show="ends.remote && ends.remote.aggregation === 'shared'" title="Aggregation">◇</span>
-                        <span x-show="!(ends.local && ends.local.aggregation) && !(ends.remote && ends.remote.aggregation)">Assoc</span>
+                        <span x-show="!(ends.local && ends.local.aggregation) && !(ends.remote && ends.remote.aggregation)">—</span>
                       </td>
                     </tr>
                   </template>
@@ -401,62 +342,34 @@
             </div>
           </div>
 
-          <!-- Inherited Associations WITH DESCRIPTIONS -->
+          <!-- Inherited Associations -->
           <div class="section" x-show="cls.inheritedAssociations && cls.inheritedAssociations.length > 0">
-            <h3>Inherited Associations (<span x-text="cls.inheritedAssociations.length"></span>)</h3>
-
+            <h3 class="section-title">Inherited Associations <span class="section-count" x-text="cls.inheritedAssociations.length"></span></h3>
             <template x-for="(parentGroup, idx) in groupByParent(cls.inheritedAssociations)" :key="idx">
-              <div class="inherited-group">
-                <h4 class="inherited-group-header">
+              <div class="inheritance-group">
+                <div class="inheritance-header">
                   <span>From:</span>
                   <button class="link-button" @click="selectClass(parentGroup[0].inheritedFrom)" x-text="parentGroup[0].inheritedFromName"></button>
-                </h4>
+                </div>
                 <div class="table-wrapper">
-                  <table class="data-table inherited-associations-table">
-                    <thead>
-                      <tr>
-                        <th>Name (Local Role)</th>
-                        <th>Target</th>
-                        <th>Dir</th>
-                        <th>Cardinality</th>
-                        <th>Target Role</th>
-                        <th>Target Card</th>
-                        <th>Type</th>
-                      </tr>
-                    </thead>
+                  <table class="data-table inherited-table">
+                    <thead><tr><th>Role</th><th>Target</th><th>Dir</th><th>Cardinality</th><th>Target Role</th></tr></thead>
                     <tbody>
                       <template x-for="item in parentGroup" :key="item.associationId">
                         <tr x-data="{
                           assoc: data.associations[item.associationId],
                           get ends() {
                             if (!this.assoc || !cls) return { local: {}, remote: {}, direction: '↔' };
-                            if (this.assoc.source && this.assoc.source.class === cls.xmiId) {
-                              return { local: this.assoc.source, remote: this.assoc.target, direction: '→' };
-                            } else if (this.assoc.target && this.assoc.target.class === cls.xmiId) {
-                              return { local: this.assoc.target, remote: this.assoc.source, direction: '←' };
-                            }
+                            if (this.assoc.source && this.assoc.source.class === cls.xmiId) return { local: this.assoc.source, remote: this.assoc.target, direction: '→' };
+                            if (this.assoc.target && this.assoc.target.class === cls.xmiId) return { local: this.assoc.target, remote: this.assoc.source, direction: '←' };
                             return { local: this.assoc.source || {}, remote: this.assoc.target || {}, direction: '↔' };
                           }
                         }">
-                          <td>
-                            <code x-text="ends.local ? (ends.local.role || '(unnamed)') : ''"></code>
-                            <div class="cell-description" x-show="assoc && assoc.name" x-text="assoc ? `Association: ${assoc.name}` : ''"></div>
-                            <div class="cell-description" x-show="assoc && assoc.definition" x-text="assoc ? assoc.definition : ''"></div>
-                          </td>
-                          <td>
-                            <button class="link-button" @click="ends.remote && ends.remote.class && selectClass(ends.remote.class)" x-text="ends.remote ? ends.remote.className : ''"></button>
-                          </td>
+                          <td><code x-text="ends.local ? (ends.local.role || '(unnamed)') : ''"></code></td>
+                          <td><button class="link-button" @click="ends.remote && ends.remote.class && selectClass(ends.remote.class)" x-text="ends.remote ? ends.remote.className : ''"></button></td>
                           <td><span x-text="ends.direction"></span></td>
                           <td><code x-show="ends.local && ends.local.cardinality" x-text="ends.local && ends.local.cardinality ? `${ends.local.cardinality.min}..${ends.local.cardinality.max}` : ''"></code></td>
                           <td><code x-text="ends.remote ? (ends.remote.role || '(unnamed)') : ''"></code></td>
-                          <td><code x-show="ends.remote && ends.remote.cardinality" x-text="ends.remote && ends.remote.cardinality ? `${ends.remote.cardinality.min}..${ends.remote.cardinality.max}` : ''"></code></td>
-                          <td>
-                            <span x-show="ends.local && ends.local.aggregation === 'composite'">◆</span>
-                            <span x-show="ends.local && ends.local.aggregation === 'shared'">◇</span>
-                            <span x-show="ends.remote && ends.remote.aggregation === 'composite'">◆</span>
-                            <span x-show="ends.remote && ends.remote.aggregation === 'shared'">◇</span>
-                            <span x-show="!(ends.local && ends.local.aggregation) && !(ends.remote && ends.remote.aggregation)">Assoc</span>
-                          </td>
                         </tr>
                       </template>
                     </tbody>
@@ -472,31 +385,24 @@
     <!-- Search Results -->
     <div x-show="currentView === 'search'" x-transition class="view-search">
       <div x-data="searchResultsView">
-        <h2>Search Results</h2>
-        <p class="search-query">Showing results for "<span x-text="searchQuery"></span>"</p>
+        <h2 style="margin-bottom: var(--space-2);">Search Results</h2>
+        <p style="color: var(--text-muted); margin-bottom: var(--space-6); font-size: var(--text-sm);">
+          Showing results for "<strong x-text="searchQuery"></strong>"
+        </p>
 
-        <div x-show="searchResults.length === 0" class="no-results">
+        <div x-show="searchResults.length === 0" class="empty-state">
           <p>No results found.</p>
         </div>
 
-        <div x-show="searchResults.length > 0" class="results-container">
+        <div x-show="searchResults.length > 0">
           <template x-for="group in groupedResults" :key="group.type">
             <div class="result-group">
-              <h3 x-text="`${group.type}s (${group.items.length})`"></h3>
-
-              <div class="result-list">
+              <h3 class="result-group-title" x-text="`${group.type}s (${group.items.length})`"></h3>
+              <div class="item-list">
                 <template x-for="result in group.items" :key="result.id">
-                  <div class="result-item" @click="openResult(result)">
-                    <div class="result-header">
-                      <span class="result-name" x-html="highlightMatches(result.name, searchQuery)"></span>
-                      <span class="result-score" :title="`Relevance: ${result.score.toFixed(2)}`">
-                        <div class="score-dot" :class="getScoreClass(result.score)"></div>
-                      </span>
-                    </div>
-                    <div class="result-details">
-                      <span class="result-type" x-text="result.entityType"></span>
-                      <span class="result-path" x-text="result.qualifiedName || result.package"></span>
-                    </div>
+                  <div class="list-item" @click="openResult(result)">
+                    <span class="list-item-name" x-html="highlightMatches(result.name, searchQuery)"></span>
+                    <span class="list-item-meta" x-text="result.entityType"></span>
                   </div>
                 </template>
               </div>
@@ -504,6 +410,7 @@
           </template>
         </div>
       </div>
+    </div>
 
     <!-- Diagram View -->
     <div x-show="currentView === 'diagram'" x-transition class="view-diagram">
@@ -525,8 +432,8 @@
           downloadSvg() {
             const svgEl = document.querySelector('.diagram-svg-container svg');
             if (!svgEl) return;
-            const data = new XMLSerializer().serializeToString(svgEl);
-            const blob = new Blob([data], { type: 'image/svg+xml' });
+            const d = new XMLSerializer().serializeToString(svgEl);
+            const blob = new Blob([d], { type: 'image/svg+xml' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url; a.download = (this.diag.name || 'diagram').replace(/[^a-zA-Z0-9_-]/g, '_') + '.svg';
@@ -536,29 +443,26 @@
           <div class="entity-header">
             <div class="entity-title">
               <h1 class="entity-name" x-text="diag.name"></h1>
-              <p class="entity-subtitle">
+              <p class="diagram-meta">
                 <span x-text="diag.type"></span>
-                <span x-show="diag.objectCount"> - <span x-text="diag.objectCount"></span> elements, <span x-text="diag.linkCount"></span> connectors</span>
+                <span x-show="diag.objectCount"> · <span x-text="diag.objectCount"></span> elements, <span x-text="diag.linkCount"></span> connectors</span>
               </p>
             </div>
-            <div style="display: flex; gap: 0.5rem; align-items: center;">
-              <button class="link-button" x-show="diag.package" @click="selectPackage(diag.package)">
-                &larr; Back to package
-              </button>
-              <span class="entity-type-badge">Diagram</span>
+            <div style="display: flex; gap: var(--space-2); align-items: center;">
+              <button class="link-button" x-show="diag.package" @click="selectPackage(diag.package)">&larr; Package</button>
+              <span class="entity-badge badge-diagram">Diagram</span>
             </div>
           </div>
 
           <div class="diagram-toolbar" x-show="diag.svg">
-            <button class="btn btn-sm" @click="zoom(1.2)">Zoom In</button>
-            <button class="btn btn-sm" @click="zoom(0.8)">Zoom Out</button>
-            <button class="btn btn-sm" @click="resetView()">Reset</button>
-            <button class="btn btn-sm" @click="downloadSvg()">Download SVG</button>
+            <button class="btn-sm" @click="zoom(1.2)">Zoom In</button>
+            <button class="btn-sm" @click="zoom(0.8)">Zoom Out</button>
+            <button class="btn-sm" @click="resetView()">Reset</button>
+            <button class="btn-sm" @click="downloadSvg()">Download SVG</button>
           </div>
 
           <div class="diagram-svg-container"
                x-show="diag.svg"
-               x-ref="diagramContainer"
                @wheel.prevent="zoom($event.deltaY > 0 ? 0.9 : 1.1)"
                @mousedown="startPan($event)"
                @mousemove="doPan($event)"
@@ -569,10 +473,9 @@
           </div>
 
           <div x-show="!diag.svg" class="empty-state">
-            <p class="empty-state-message">SVG rendering not available for this diagram. Re-generate with <code>--render-diagrams</code> to include SVG.</p>
+            <p>SVG rendering not available. Re-generate with <code>--render-diagrams</code> to include SVG.</p>
           </div>
         </div>
       </template>
     </div>
-
   </div>
