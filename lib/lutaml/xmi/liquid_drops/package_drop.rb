@@ -82,7 +82,17 @@ module Lutaml
         end
 
         def children_packages
-          @model.children_packages
+          @model.children_packages.map do |package|
+            ::Lutaml::Xmi::LiquidDrops::PackageDrop.new(
+              package,
+              @guidance,
+              @options.merge(
+                {
+                  absolute_path: "#{@options[:absolute_path]}::#{name}",
+                },
+              ),
+            )
+          end
         end
 
         def definition
