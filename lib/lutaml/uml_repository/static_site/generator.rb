@@ -317,10 +317,16 @@ module Lutaml
             "apiMode" => false, # Static mode by default
           }
 
+          images_dir = File.join(@options[:template_path], "assets", "images")
+          lutaml_icon = read_svg_asset(images_dir, "lutaml-icon.svg")
+          lutaml_full_logo = read_svg_asset(images_dir, "lutaml-full.svg")
+
           {
             "config" => JSON.generate(config_hash),
             "data" => data,
             "searchIndex" => search_index,
+            "lutamlIcon" => lutaml_icon,
+            "lutamlFullLogo" => lutaml_full_logo,
             "buildInfo" => {
               "timestamp" => Time.now.utc.iso8601,
               "generator" => "LutaML Static Site Generator v1.0",
@@ -332,6 +338,13 @@ module Lutaml
           json = JSON.pretty_generate(data)
           File.write(path, json)
           puts "  ✓ #{File.basename(path)} (#{File.size(path) / 1024}KB)"
+        end
+
+        def read_svg_asset(images_dir, filename)
+          path = File.join(images_dir, filename)
+          return "" unless File.exist?(path)
+
+          File.read(path).strip
         end
 
         def generate_assets(output_dir) # rubocop:disable Metrics/MethodLength
@@ -348,6 +361,23 @@ module Lutaml
           js_path = File.join(assets_dir, "app.js")
           File.write(js_path, js_content)
           puts "  ✓ app.js (#{File.size(js_path) / 1024}KB)"
+
+          # Copy image assets
+          copy_image_assets(assets_dir)
+        end
+
+        def copy_image_assets(assets_dir)
+          images_src = File.join(@options[:template_path], "assets", "images")
+          return unless Dir.exist?(images_src)
+
+          images_dest = File.join(assets_dir, "images")
+          FileUtils.mkdir_p(images_dest)
+          Dir.glob(File.join(images_src, "*")).each do |src_file|
+            next if File.directory?(src_file)
+
+            dest_file = File.join(images_dest, File.basename(src_file))
+            FileUtils.cp(src_file, dest_file)
+          end
         end
 
         def build_css
