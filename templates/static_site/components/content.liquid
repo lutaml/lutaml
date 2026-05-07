@@ -73,7 +73,7 @@
             <h3>Diagrams (<span x-text="pkg.diagrams.length"></span>)</h3>
             <ul class="diagram-list">
               <template x-for="diagramId in pkg.diagrams" :key="diagramId">
-                <li class="diagram-item">
+                <li class="diagram-item clickable-row" @click="$store.app.selectDiagram(diagramId)">
                   <svg class="item-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                     <line x1="3" y1="9" x2="21" y2="9"></line>
@@ -81,6 +81,7 @@
                   </svg>
                   <span class="diagram-name" x-text="$store.app.data.diagrams[diagramId] && $store.app.data.diagrams[diagramId].name"></span>
                   <span class="diagram-type" x-text="$store.app.data.diagrams[diagramId] && `(${$store.app.data.diagrams[diagramId].type})`"></span>
+                  <span class="diagram-objects" x-show="$store.app.data.diagrams[diagramId] && $store.app.data.diagrams[diagramId].objectCount" x-text="`${$store.app.data.diagrams[diagramId].objectCount} objects`"></span>
                 </li>
               </template>
             </ul>
@@ -503,6 +504,75 @@
           </template>
         </div>
       </div>
+
+    <!-- Diagram View -->
+    <div x-show="currentView === 'diagram'" x-transition class="view-diagram">
+      <template x-if="currentDiagram && data.diagrams[currentDiagram]">
+        <div class="diagram-details" x-data="{
+          get diag() { return data.diagrams[currentDiagram]; },
+          get pkg() { return diag.package ? data.packages[diag.package] : null; },
+          diagramScale: 1.0,
+          diagramPanX: 0,
+          diagramPanY: 0,
+          isPanning: false,
+          panStartX: 0,
+          panStartY: 0,
+          zoom(factor) { this.diagramScale = Math.max(0.1, Math.min(5.0, this.diagramScale * factor)); },
+          resetView() { this.diagramScale = 1.0; this.diagramPanX = 0; this.diagramPanY = 0; },
+          startPan(e) { this.isPanning = true; this.panStartX = e.clientX - this.diagramPanX; this.panStartY = e.clientY - this.diagramPanY; },
+          doPan(e) { if (!this.isPanning) return; this.diagramPanX = e.clientX - this.panStartX; this.diagramPanY = e.clientY - this.panStartY; },
+          endPan() { this.isPanning = false; },
+          downloadSvg() {
+            const svgEl = document.querySelector('.diagram-svg-container svg');
+            if (!svgEl) return;
+            const data = new XMLSerializer().serializeToString(svgEl);
+            const blob = new Blob([data], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = (this.diag.name || 'diagram').replace(/[^a-zA-Z0-9_-]/g, '_') + '.svg';
+            a.click(); URL.revokeObjectURL(url);
+          }
+        }">
+          <div class="entity-header">
+            <div class="entity-title">
+              <h1 class="entity-name" x-text="diag.name"></h1>
+              <p class="entity-subtitle">
+                <span x-text="diag.type"></span>
+                <span x-show="diag.objectCount"> - <span x-text="diag.objectCount"></span> elements, <span x-text="diag.linkCount"></span> connectors</span>
+              </p>
+            </div>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+              <button class="link-button" x-show="diag.package" @click="selectPackage(diag.package)">
+                &larr; Back to package
+              </button>
+              <span class="entity-type-badge">Diagram</span>
+            </div>
+          </div>
+
+          <div class="diagram-toolbar" x-show="diag.svg">
+            <button class="btn btn-sm" @click="zoom(1.2)">Zoom In</button>
+            <button class="btn btn-sm" @click="zoom(0.8)">Zoom Out</button>
+            <button class="btn btn-sm" @click="resetView()">Reset</button>
+            <button class="btn btn-sm" @click="downloadSvg()">Download SVG</button>
+          </div>
+
+          <div class="diagram-svg-container"
+               x-show="diag.svg"
+               x-ref="diagramContainer"
+               @wheel.prevent="zoom($event.deltaY > 0 ? 0.9 : 1.1)"
+               @mousedown="startPan($event)"
+               @mousemove="doPan($event)"
+               @mouseup="endPan()"
+               @mouseleave="endPan()"
+               :style="`transform: translate(${diagramPanX}px, ${diagramPanY}px) scale(${diagramScale}); transform-origin: center; cursor: ${isPanning ? 'grabbing' : 'grab'};`">
+            <div x-html="diag.svg"></div>
+          </div>
+
+          <div x-show="!diag.svg" class="empty-state">
+            <p class="empty-state-message">SVG rendering not available for this diagram. Re-generate with <code>--render-diagrams</code> to include SVG.</p>
+          </div>
+        </div>
+      </template>
     </div>
+
   </div>
-</main>

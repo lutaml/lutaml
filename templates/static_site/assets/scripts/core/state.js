@@ -10,9 +10,10 @@ document.addEventListener('alpine:init', () => {
     config: window.APP_CONFIG || {},
 
     // Current State
-    currentView: 'welcome',  // 'welcome' | 'package' | 'class' | 'search'
+    currentView: 'welcome',  // 'welcome' | 'package' | 'class' | 'search' | 'diagram'
     currentPackage: null,
     currentClass: null,
+    currentDiagram: null,
     searchQuery: '',
     searchResults: [],
 
@@ -86,6 +87,7 @@ document.addEventListener('alpine:init', () => {
       this.currentView = 'welcome';
       this.currentPackage = null;
       this.currentClass = null;
+      this.currentDiagram = null;
       this.breadcrumbs = [];
       this.pushState();
     },
@@ -114,6 +116,21 @@ document.addEventListener('alpine:init', () => {
       this.currentClass = classId;
       this.currentPackage = cls.package;
       this.currentView = 'class';
+      this.updateBreadcrumbs();
+      this.pushState();
+    },
+
+    selectDiagram(diagramId) {
+      if (!this.data || !this.data.diagrams[diagramId]) {
+        console.warn('Diagram not found:', diagramId);
+        return;
+      }
+
+      const diag = this.data.diagrams[diagramId];
+
+      this.currentDiagram = diagramId;
+      this.currentPackage = diag.package;
+      this.currentView = 'diagram';
       this.updateBreadcrumbs();
       this.pushState();
     },
@@ -196,6 +213,8 @@ document.addEventListener('alpine:init', () => {
         this.breadcrumbs = this.buildPackageBreadcrumbs(this.currentPackage);
       } else if (this.currentView === 'class' && this.currentClass) {
         this.breadcrumbs = this.buildClassBreadcrumbs(this.currentClass);
+      } else if (this.currentView === 'diagram' && this.currentDiagram) {
+        this.breadcrumbs = [{ name: `Diagram: ${this.data.diagrams[this.currentDiagram]?.name || ''}`, type: 'diagram' }];
       } else if (this.currentView === 'search') {
         this.breadcrumbs = [{ name: `Search: ${this.searchQuery}`, type: 'search' }];
       }
@@ -275,6 +294,8 @@ document.addEventListener('alpine:init', () => {
         this.selectPackage(decodeURIComponent(parts[1]));
       } else if (parts[0] === 'class' && parts[1]) {
         this.selectClass(decodeURIComponent(parts[1]));
+      } else if (parts[0] === 'diagram' && parts[1]) {
+        this.selectDiagram(decodeURIComponent(parts[1]));
       } else if (parts[0] === 'search') {
         const params = new URLSearchParams(queryString);
         const query = params.get('q');
@@ -294,6 +315,8 @@ document.addEventListener('alpine:init', () => {
         hash = `#/package/${encodeURIComponent(this.currentPackage)}`;
       } else if (this.currentView === 'class' && this.currentClass) {
         hash = `#/class/${encodeURIComponent(this.currentClass)}`;
+      } else if (this.currentView === 'diagram' && this.currentDiagram) {
+        hash = `#/diagram/${encodeURIComponent(this.currentDiagram)}`;
       } else if (this.currentView === 'search' && this.searchQuery) {
         hash = `#/search?q=${encodeURIComponent(this.searchQuery)}`;
       }
@@ -370,6 +393,7 @@ function app() {
     get currentView() { return Alpine.store('app').currentView; },
     get currentPackage() { return Alpine.store('app').currentPackage; },
     get currentClass() { return Alpine.store('app').currentClass; },
+    get currentDiagram() { return Alpine.store('app').currentDiagram; },
     get sidebarVisible() {
       return Alpine.store('app').sidebarVisible;
     },
@@ -391,6 +415,9 @@ function app() {
     },
     selectClass(id) {
       Alpine.store('app').selectClass(id);
+    },
+    selectDiagram(id) {
+      Alpine.store('app').selectDiagram(id);
     },
     toggleTheme() {
       Alpine.store('app').toggleTheme();

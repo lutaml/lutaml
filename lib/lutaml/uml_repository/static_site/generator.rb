@@ -164,7 +164,8 @@ module Lutaml
             include_diagrams: config_opts["include_diagrams"] != false,
             format_definitions: config_opts["format_definitions"] != false,
             max_definition_length: config_opts["max_definition_length"],
-          }.merge(@options.slice(:include_diagrams, :format_definitions))
+          }.merge(@options.slice(:include_diagrams, :format_definitions,
+                                 :render_diagrams))
         end
 
         def search_options
@@ -358,6 +359,7 @@ module Lutaml
             "03-layout.css",
             "04-components.css",
             "05-utilities.css",
+            "06-diagrams.css",
           ]
 
           css_parts = css_files.map do |file|
