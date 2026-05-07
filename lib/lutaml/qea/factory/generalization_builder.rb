@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "set"
 require_relative "base_transformer"
 require_relative "attribute_transformer"
 require_relative "generalization_transformer"
@@ -31,7 +30,8 @@ module Lutaml
           generalization = if ea_connector.nil?
                              gen_transformer.transform(nil, current_obj)
                            else
-                             gen_transformer.transform(ea_connector, current_obj)
+                             gen_transformer.transform(ea_connector,
+                                                       current_obj)
                            end
           return nil unless generalization
 

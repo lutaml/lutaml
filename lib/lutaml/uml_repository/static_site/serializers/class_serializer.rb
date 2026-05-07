@@ -9,7 +9,8 @@ module Lutaml
         class ClassSerializer
           include Lutaml::Uml::ModelHelpers
 
-          def initialize(repository, id_generator, options, inheritance_resolver)
+          def initialize(repository, id_generator, options,
+inheritance_resolver)
             @repository = repository
             @id_generator = id_generator
             @options = options
@@ -81,6 +82,7 @@ module Lutaml
 
           def serialize_class_operations(klass)
             return [] unless klass.respond_to?(:operations) && klass.operations
+
             klass.operations.map { |op| @id_generator.operation_id(op, klass) }
           end
 
@@ -88,7 +90,8 @@ module Lutaml
             return [] unless klass.is_a?(Lutaml::Uml::Enum) && klass.owned_literal
 
             klass.owned_literal.map do |literal|
-              { name: literal.name, definition: format_definition(literal.definition) }
+              { name: literal.name,
+                definition: format_definition(literal.definition) }
             end
           rescue StandardError
             []
@@ -97,11 +100,13 @@ module Lutaml
           def package_id_for_class(klass)
             ns = klass.respond_to?(:namespace) ? klass.namespace : nil
             return nil unless ns.is_a?(Lutaml::Uml::Package)
+
             @id_generator.package_id(ns)
           end
 
           def format_definition(definition)
             return nil if definition.nil? || definition.empty?
+
             formatted = definition.strip
             if @options[:max_definition_length] &&
                 formatted.length > @options[:max_definition_length]

@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "set"
 require_relative "../../../uml/model_helpers"
 require_relative "../../class_lookup_index"
 
@@ -24,6 +23,7 @@ module Lutaml
             if parent_xmi_ids && !parent_xmi_ids.empty?
               parents = parent_xmi_ids.filter_map do |parent_xmi_id|
                 next if parent_xmi_id == klass.xmi_id
+
                 parent = class_lookup.by_xmi_id(parent_xmi_id)
                 parent ? @id_generator.class_id(parent) : nil
               end
@@ -32,6 +32,7 @@ module Lutaml
 
             parent = @repository.supertype_of(klass)
             return [] if parent && parent.xmi_id == klass.xmi_id
+
             parent ? [@id_generator.class_id(parent)] : []
           rescue StandardError => e
             warn "Error finding generalizations for #{klass.name}: #{e.message}"
@@ -65,7 +66,9 @@ module Lutaml
               visited.add(parent_class.xmi_id)
 
               if parent_class.attributes
-                sorted_attrs = parent_class.attributes.sort_by { |a| a.name || "" }
+                sorted_attrs = parent_class.attributes.sort_by do |a|
+                  a.name || ""
+                end
                 sorted_attrs.each do |attr|
                   attr_id = @id_generator.attribute_id(attr, parent_class)
                   inherited << {
@@ -164,7 +167,8 @@ module Lutaml
               ownedProps: serialize_general_attrs(gen, :owned_props),
               assocProps: serialize_general_attrs(gen, :assoc_props),
               inheritedProps: serialize_general_attrs(gen, :inherited_props),
-              inheritedAssocProps: serialize_general_attrs(gen, :inherited_assoc_props),
+              inheritedAssocProps: serialize_general_attrs(gen,
+                                                           :inherited_assoc_props),
             }
           rescue StandardError => e
             warn "Error serializing generalization: #{e.message}"
@@ -219,7 +223,10 @@ module Lutaml
 
           def serialize_general_attrs(gen, method)
             return [] unless gen.respond_to?(method)
-            (gen.send(method) || []).map { |attr| serialize_general_attribute(attr) }
+
+            (gen.send(method) || []).map do |attr|
+              serialize_general_attribute(attr)
+            end
           end
 
           def serialize_cardinality(cardinality)
@@ -233,6 +240,7 @@ module Lutaml
 
           def format_definition(definition)
             return nil if definition.nil? || definition.empty?
+
             formatted = definition.strip
             if @options[:max_definition_length] &&
                 formatted.length > @options[:max_definition_length]

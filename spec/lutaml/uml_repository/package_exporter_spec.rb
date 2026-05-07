@@ -175,7 +175,10 @@ RSpec.describe Lutaml::UmlRepository::PackageExporter do
         expect(indexes_entry).not_to be_nil
 
         serialized = indexes_entry.get_input_stream.read
-        expect { YAML.safe_load(serialized, permitted_classes: yaml_permitted_classes, aliases: true) }.not_to raise_error
+        expect do
+          YAML.safe_load(serialized, permitted_classes: yaml_permitted_classes,
+                                     aliases: true)
+        end.not_to raise_error
       end
     end
 

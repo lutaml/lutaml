@@ -38,6 +38,7 @@ module Lutaml
         collect_ancestors(klass, ancestors)
         ancestors.reverse_each.with_index(1) do |ancestor, level|
           break if @visited.include?(ancestor.xmi_id)
+
           @visited.add(ancestor.xmi_id)
           yield(ancestor, level) if block_given?
         end

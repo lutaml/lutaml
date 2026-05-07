@@ -32,13 +32,24 @@ module Lutaml
         def transform
           {
             metadata: Serializers::MetadataBuilder.new(repository).build,
-            packageTree: Serializers::PackageTreeBuilder.new(repository, id_generator).build,
-            packages: Serializers::PackageSerializer.new(repository, id_generator, options).build_map,
-            classes: Serializers::ClassSerializer.new(repository, id_generator, options, inheritance_resolver).build_map,
-            attributes: Serializers::AttributeSerializer.new(repository, id_generator, options).build_map,
+            packageTree: Serializers::PackageTreeBuilder.new(repository,
+                                                             id_generator).build,
+            packages: Serializers::PackageSerializer.new(repository,
+                                                         id_generator, options).build_map,
+            classes: Serializers::ClassSerializer.new(repository, id_generator,
+                                                      options, inheritance_resolver).build_map,
+            attributes: Serializers::AttributeSerializer.new(repository,
+                                                             id_generator, options).build_map,
             associations: build_associations_map,
-            operations: Serializers::OperationSerializer.new(repository, id_generator).build_map,
-            diagrams: (options[:include_diagrams] ? Serializers::DiagramSerializer.new(repository, id_generator, options).build_map : {}),
+            operations: Serializers::OperationSerializer.new(repository,
+                                                             id_generator).build_map,
+            diagrams: (if options[:include_diagrams]
+                         Serializers::DiagramSerializer.new(
+                           repository, id_generator, options
+                         ).build_map
+                       else
+                         {}
+                       end),
           }
         end
 
@@ -69,12 +80,14 @@ module Lutaml
 
             klass.association_generalization.each do |assoc_gen|
               next unless assoc_gen.respond_to?(:parent_object_id)
+
               parent_object_id = assoc_gen.parent_object_id
               next unless parent_object_id
 
               parent_class = class_lookup.by_object_id(parent_object_id)
               if parent_class&.xmi_id
                 next if parent_class.xmi_id == klass.xmi_id
+
                 unless map[klass.xmi_id].include?(parent_class.xmi_id)
                   map[klass.xmi_id] << parent_class.xmi_id
                 end
@@ -91,6 +104,7 @@ module Lutaml
 
         def find_class_by_xmi_id(xmi_id)
           return nil unless xmi_id
+
           class_lookup.by_xmi_id(xmi_id)
         rescue StandardError
           nil
@@ -98,6 +112,7 @@ module Lutaml
 
         def find_class_by_object_id(object_id)
           return nil unless object_id
+
           class_lookup.by_object_id(object_id)
         rescue StandardError
           nil
@@ -114,6 +129,7 @@ module Lutaml
 
         def format_definition(definition)
           return nil if definition.nil? || definition.empty?
+
           formatted = definition.strip
           if @options[:max_definition_length] &&
               formatted.length > @options[:max_definition_length]

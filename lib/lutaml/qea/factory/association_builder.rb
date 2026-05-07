@@ -179,6 +179,7 @@ module Lutaml
 
         def find_package_name(package_id)
           return nil if package_id.nil?
+
           database.find_package(package_id)&.name
         end
       end

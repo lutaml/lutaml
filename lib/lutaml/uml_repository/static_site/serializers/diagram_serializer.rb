@@ -48,6 +48,7 @@ module Lutaml
 
           def package_diagrams(package)
             return [] unless @options[:include_diagrams]
+
             package.diagrams || []
           rescue StandardError
             []

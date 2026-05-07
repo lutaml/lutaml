@@ -44,14 +44,18 @@ module Lutaml
           def build_tree_node(package) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
             pkg_id = @id_generator.package_id(package)
 
-            sorted_children = (package.packages || []).sort_by { |p| p.name || "" }
+            sorted_children = (package.packages || []).sort_by do |p|
+              p.name || ""
+            end
             sorted_classes = (package.classes || [])
               .reject { |c| c.name.nil? || c.name.empty? }
               .sort_by(&:name)
 
             child_nodes = sorted_children.map { |child| build_tree_node(child) }
 
-            total_class_count = sorted_classes.size + child_nodes.sum { |c| c[:classCount] || 0 }
+            total_class_count = sorted_classes.size + child_nodes.sum do |c|
+              c[:classCount] || 0
+            end
 
             {
               id: pkg_id,

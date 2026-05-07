@@ -60,7 +60,7 @@ module Lutaml
               .load_association_generalizations(ea_object.ea_object_id)
 
             klass.associations = assoc_builder.load_class_associations(
-              ea_object.ea_object_id, ea_object.ea_guid,
+              ea_object.ea_object_id, ea_object.ea_guid
             )
           end
         end
@@ -116,7 +116,9 @@ module Lutaml
           return [] if ea_guid.nil?
           return [] unless database.tagged_values
 
-          ea_tags = database.tagged_values.select { |tag| tag.element_id == ea_guid }
+          ea_tags = database.tagged_values.select do |tag|
+            tag.element_id == ea_guid
+          end
           TaggedValueTransformer.new(database).transform_collection(ea_tags)
         end
 

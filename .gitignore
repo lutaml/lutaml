@@ -8,9 +8,17 @@ Gemfile.lock
 # rspec failure tracking
 .rspec_status
 /spec/reports/
+/spec/tmp/
 /tmp/
 /.yardoc
 /_yardoc/
 
 _site/
 old-docs
+
+# Editor / OS
+.DS_Store
+
+# Transient planning files
+TODO.*/
+.rubocop_todo.yml.tmp
