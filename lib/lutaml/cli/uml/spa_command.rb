@@ -47,6 +47,9 @@ module Lutaml
                                      desc: "Minify HTML/CSS/JS output"
           thor_class.option :theme, type: :string, default: "light",
                                     desc: "Default theme: 'light' or 'dark'"
+          thor_class.option :render_diagrams, type: :boolean, default: false,
+                                              desc: "Render diagram SVGs " \
+                                                    "(may increase output size)"
         end
 
         def run(input_path) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
@@ -169,6 +172,7 @@ module Lutaml
             title: options[:title] || "UML Model Browser",
             minify: options[:minify] || false,
             theme: options[:theme] || "light",
+            render_diagrams: options[:render_diagrams] || false,
           }
 
           Lutaml::UmlRepository::StaticSite.generate(repository,
