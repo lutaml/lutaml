@@ -258,7 +258,7 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
 
       it "verifies inherited properties", :aggregate_failures do
         expect(gen_obj.inherited_props[2].name).to eq("boundedBy")
-        expect(gen_obj.inherited_props[2].used?).to be(false)
+        expect(gen_obj.inherited_props[2].used?).to eq("false")
         expect(gen_obj.inherited_props[2].guidance).to eq("この属性は使用されていません。\n")
 
         expect(gen_obj.inherited_props[0].name).to eq("description")
@@ -268,7 +268,7 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
         expect(gen_obj.inherited_props[0].gen_name).to eq("_Feature")
         expect(gen_obj.inherited_props[0].name_ns).to eq("gml")
         expect(gen_obj.inherited_props[0].association).to be_nil
-        expect(gen_obj.inherited_props[0].used?).to be(true)
+        expect(gen_obj.inherited_props[0].used?).to eq("true")
         expect(gen_obj.inherited_props[0].guidance).to be_nil
       end
 

@@ -67,10 +67,10 @@ module Lutaml
           if @guidance
             col_name = "#{name_ns}:#{name}"
             attr = @guidance["attributes"].find { |a| a["name"] == col_name }
-            return attr["used"] if attr
+            return attr["used"].to_s if attr
           end
 
-          true
+          "true"
         end
 
         def guidance
