@@ -1,144 +1,144 @@
-/* CSS Custom Properties for Theming */
+/* LutaML UML Browser — Branded Design System */
 
 :root {
-  /* Colors - Light Theme */
-  --color-bg: #ffffff;
-  --color-bg-secondary: #f8f9fa;
-  --color-bg-tertiary: #ecf0f1;
-  --color-text: #2c3e50;
-  --color-text-secondary: #7f8c8d;
-  --color-text-muted: #95a5a6;
+  /* Primary — LutaML Blue (#5b9cd4) */
+  --color-primary: #5b9cd4;
+  --color-primary-light: #7db5e2;
+  --color-primary-dark: #26489e;
+  --color-primary-alpha: rgba(91, 156, 212, 0.12);
 
-  --color-primary: #2c3e50;
-  --color-accent: #3498db;
-  --color-success: #27ae60;
-  --color-warning: #f39c12;
-  --color-error: #e74c3c;
-  --color-info: #3498db;
+  /* Accent — Golden Yellow (#dbab3e) */
+  --color-accent: #dbab3e;
+  --color-accent-light: #f0ca6e;
+  --color-accent-alpha: rgba(219, 171, 62, 0.12);
 
-  --color-border: #dcdfe6;
-  --color-border-light: #e4e7ed;
-  --color-border-dark: #b3b9bf;
+  /* Semantic */
+  --color-teal: #60c3a7;
+  --color-teal-alpha: rgba(96, 195, 167, 0.12);
+  --color-orange: #ea5624;
+  --color-orange-alpha: rgba(234, 86, 36, 0.12);
+  --color-red: #b31f24;
+  --color-red-alpha: rgba(179, 31, 36, 0.12);
+  --color-green: #7cc242;
+  --color-green-alpha: rgba(124, 194, 66, 0.12);
 
-  --color-link: #3498db;
-  --color-link-hover: #2980b9;
+  /* Backgrounds — Warm Stones */
+  --bg-primary: #FAFAF9;
+  --bg-secondary: #F5F5F4;
+  --bg-elevated: #FFFFFF;
+  --bg-overlay: rgba(28, 25, 23, 0.5);
+  --bg-hover: rgba(28, 25, 23, 0.04);
+  --bg-active: rgba(28, 25, 23, 0.06);
 
-  --color-code-bg: #f8f9fa;
-  --color-code-text: #e74c3c;
+  /* Text — Warm Grays */
+  --text-primary: #1C1917;
+  --text-secondary: #57534E;
+  --text-muted: #A8A29E;
 
-  /* Sidebar */
-  --color-sidebar-bg: #ffffff;
-  --color-sidebar-border: #dcdfe6;
-  --color-sidebar-hover: #f8f9fa;
-  --color-sidebar-active: #ebf5fb;
+  /* Borders */
+  --border-light: #E7E5E4;
+  --border-medium: #D6D3D1;
+  --border-focus: #5b9cd4;
 
-  /* Header */
-  --color-header-bg: #2c3e50;
-  --color-header-text: #ffffff;
-
-  /* Spacing */
-  --space-xs: 0.25rem;
-  --space-sm: 0.5rem;
-  --space-md: 1rem;
-  --space-lg: 1.5rem;
-  --space-xl: 2rem;
-  --space-2xl: 3rem;
-
-  /* Typography */
-  --font-family-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-                       "Helvetica Neue", Arial, sans-serif;
-  --font-family-mono: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono",
-                       "Courier New", monospace;
-
-  --font-size-xs: 0.75rem;
-  --font-size-sm: 0.875rem;
-  --font-size-base: 1rem;
-  --font-size-lg: 1.125rem;
-  --font-size-xl: 1.25rem;
-  --font-size-2xl: 1.5rem;
-  --font-size-3xl: 1.875rem;
-
-  --font-weight-normal: 400;
-  --font-weight-medium: 500;
-  --font-weight-semibold: 600;
-  --font-weight-bold: 700;
-
-  --line-height-tight: 1.25;
-  --line-height-base: 1.5;
-  --line-height-relaxed: 1.75;
-
-  /* Layout */
-  --sidebar-width: 320px;
-  --header-height: 64px;
-  --border-radius: 4px;
-  --border-radius-lg: 8px;
+  /* Badge Colors */
+  --badge-class: #26489e;
+  --badge-class-bg: rgba(38, 72, 158, 0.12);
+  --badge-enum: #dbab3e;
+  --badge-enum-bg: rgba(219, 171, 62, 0.15);
+  --badge-datatype: #60c3a7;
+  --badge-datatype-bg: rgba(96, 195, 167, 0.15);
+  --badge-interface: #5b9cd4;
+  --badge-interface-bg: rgba(91, 156, 212, 0.12);
+  --badge-package: #ea5624;
+  --badge-package-bg: rgba(234, 86, 36, 0.12);
+  --badge-diagram: #7cc242;
+  --badge-diagram-bg: rgba(124, 194, 66, 0.12);
+  --badge-abstract: #b31f24;
+  --badge-abstract-bg: rgba(179, 31, 36, 0.12);
 
   /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
-  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
+  --shadow-sm: 0 1px 2px rgba(28, 25, 23, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(28, 25, 23, 0.07), 0 2px 4px -1px rgba(28, 25, 23, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(28, 25, 23, 0.08), 0 4px 6px -2px rgba(28, 25, 23, 0.04);
+
+  /* Typography */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Monaco, 'Consolas', monospace;
+
+  /* Type Scale */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+
+  /* Line Heights */
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.75;
+
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+
+  /* Border Radius */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
 
   /* Transitions */
-  --transition-fast: 150ms ease-in-out;
-  --transition-base: 200ms ease-in-out;
-  --transition-slow: 300ms ease-in-out;
+  --transition-fast: 100ms ease;
+  --transition-normal: 150ms ease;
+  --transition-slow: 200ms ease-out;
+
+  /* Layout */
+  --sidebar-width: 280px;
+  --header-height: 56px;
 
   /* Z-index */
   --z-sidebar: 10;
   --z-header: 20;
-  --z-search-overlay: 30;
-  --z-modal: 40;
+  --z-search-overlay: 100;
+  --z-modal: 200;
 }
 
-/* Dark Theme */
+/* Dark Mode */
 #app.dark {
-  /* Colors - Dark Theme */
-  --color-bg: #1e1e1e;
-  --color-bg-secondary: #252526;
-  --color-bg-tertiary: #2d2d30;
-  --color-text: #e0e0e0;
-  --color-text-secondary: #a0a0a0;
-  --color-text-muted: #808080;
+  --bg-primary: #1a1a24;
+  --bg-secondary: #232736;
+  --bg-elevated: #2d3344;
+  --bg-overlay: rgba(0, 0, 0, 0.7);
+  --bg-hover: rgba(255, 255, 255, 0.06);
+  --bg-active: rgba(255, 255, 255, 0.10);
 
-  --color-primary: #3d5a80;
-  --color-accent: #5dade2;
-  --color-success: #52c08d;
-  --color-warning: #ffa726;
-  --color-error: #ef5350;
-  --color-info: #5dade2;
+  --text-primary: #e8edf4;
+  --text-secondary: #a8b4c8;
+  --text-muted: #6b7a8f;
 
-  --color-border: #3e3e42;
-  --color-border-light: #2d2d30;
-  --color-border-dark: #4e4e52;
+  --border-light: #3a4256;
+  --border-medium: #4a5572;
+  --border-focus: #5b9cd4;
 
-  --color-link: #5dade2;
-  --color-link-hover: #85c1e9;
+  --badge-class-bg: rgba(91, 156, 212, 0.2);
+  --badge-class: #5b9cd4;
+  --badge-enum-bg: rgba(219, 171, 62, 0.2);
+  --badge-datatype-bg: rgba(96, 195, 167, 0.2);
+  --badge-interface-bg: rgba(91, 156, 212, 0.2);
+  --badge-package-bg: rgba(234, 86, 36, 0.2);
+  --badge-diagram-bg: rgba(124, 194, 66, 0.2);
+  --badge-abstract-bg: rgba(179, 31, 36, 0.2);
 
-  --color-code-bg: #2d2d30;
-  --color-code-text: #ef5350;
-
-  /* Sidebar */
-  --color-sidebar-bg: #252526;
-  --color-sidebar-border: #3e3e42;
-  --color-sidebar-hover: #2d2d30;
-  --color-sidebar-active: #37373d;
-
-  /* Header */
-  --color-header-bg: #1e1e1e;
-  --color-header-text: #e0e0e0;
-
-  /* Shadows (darker for dark mode) */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
-  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.6);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6), 0 4px 6px -2px rgba(0, 0, 0, 0.4);
 }
-
-/* Responsive breakpoints (for media queries) */
-/* Use these in @media rules:
-   @media (min-width: 640px) { ... }  - Small devices and up
-   @media (min-width: 768px) { ... }  - Tablets and up
-   @media (min-width: 1024px) { ... } - Desktop and up
-   @media (min-width: 1280px) { ... } - Large desktop and up
-*/

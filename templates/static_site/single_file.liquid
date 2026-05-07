@@ -7,6 +7,11 @@
   <meta name="description" content="{{ config.description }}">
   <meta name="generator" content="{{ buildInfo.generator }}">
 
+  <!-- Google Fonts — Inter + JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
   <!-- Styles (embedded) -->
   <style>
     {{ styles }}
@@ -14,10 +19,10 @@
 </head>
 <body>
   <div id="app" x-data="app" x-init="init()" :class="{ 'dark': darkMode }">
-    {{ header }}
+    {{ sidebar }}
 
-    <div class="main-layout">
-      {{ sidebar }}
+    <div class="main-content">
+      {{ header }}
       {{ content }}
     </div>
   </div>

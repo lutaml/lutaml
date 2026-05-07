@@ -30,7 +30,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::TemplateFileSystem do
 
     it "resolves content component" do
       content = file_system.read_template_file("components/content")
-      expect(content).to include("content-pane")
+      expect(content).to include("content-area")
     end
 
     it "resolves tree_node component with self-referencing include" do
@@ -83,7 +83,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::TemplateFileSystem do
       expect(html).not_to include("Liquid error")
       expect(html).to include("<header")
       expect(html).to include("<aside")
-      expect(html).to include("content-pane")
+      expect(html).to include("content-area")
     end
   end
 end
