@@ -237,7 +237,7 @@ module Lutaml
         HEREDOC
 
         field_table = format_member_rows(node.attributes, hide_members)
-        method_table = if node.respond_to?(:operations)
+        method_table = if node.operations&.any?
                          format_member_rows(node.operations, hide_members)
                        end
         table_body = [name_html, field_table, method_table].map do |type|

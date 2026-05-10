@@ -21,12 +21,6 @@ digraph G {
         </TD>
   </TR>
   
-  <TR>
-    <TD><TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
-    <TR><TD ALIGN="LEFT"></TD></TR>
-  </TABLE></TD>
-  </TR>
-  
   </TABLE>>]
 
   AddressProfile -> AddressComponentProfile [dir="back" label="defines ▶" arrowtail="onormal" arrowhead="odiamond" taillabel="+componentProfile 0..*"]

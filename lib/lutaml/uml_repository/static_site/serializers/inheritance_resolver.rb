@@ -2,6 +2,10 @@
 
 require_relative "../../../uml/model_helpers"
 require_relative "../../class_lookup_index"
+require_relative "../models/spa_attribute"
+require_relative "../models/spa_cardinality"
+require_relative "../models/spa_inherited_attribute"
+require_relative "../models/spa_inherited_association"
 
 module Lutaml
   module UmlRepository
@@ -48,9 +52,7 @@ module Lutaml
           end
 
           def compute_inherited_attributes(klass, visited = Set.new)
-            unless klass.respond_to?(:generalization) && klass.generalization
-              return []
-            end
+            return [] unless klass.generalization
             return [] if visited.include?(klass.xmi_id)
 
             visited.add(klass.xmi_id)
@@ -71,18 +73,18 @@ module Lutaml
                 end
                 sorted_attrs.each do |attr|
                   attr_id = @id_generator.attribute_id(attr, parent_class)
-                  inherited << {
-                    attributeId: attr_id,
+                  inherited << Models::SpaInheritedAttribute.new(
+                    attribute_id: attr_id,
                     attribute: serialize_attribute(attr, parent_class, attr_id),
-                    inheritedFrom: @id_generator.class_id(parent_class),
-                    inheritedFromName: parent_class.name,
-                    parentOrder: parent_order,
-                  }
+                    inherited_from: @id_generator.class_id(parent_class),
+                    inherited_from_name: parent_class.name,
+                    parent_order: parent_order,
+                  )
                 end
               end
 
               parent_order += 1
-              current_gen = current_gen.general if current_gen.respond_to?(:general)
+              current_gen = current_gen.general
             end
 
             inherited
@@ -92,9 +94,7 @@ module Lutaml
           end
 
           def compute_inherited_associations(klass, visited = Set.new)
-            unless klass.respond_to?(:generalization) && klass.generalization
-              return []
-            end
+            return [] unless klass.generalization
             return [] if visited.include?(klass.xmi_id)
 
             visited.add(klass.xmi_id)
@@ -127,17 +127,17 @@ module Lutaml
               end
 
               assoc_with_roles.sort_by { |a| a[:role] }.each do |item|
-                inherited << {
-                  associationId: item[:id],
-                  inheritedFrom: @id_generator.class_id(parent_class),
-                  inheritedFromName: parent_class.name,
-                  parentOrder: parent_order,
-                  localRole: item[:role],
-                }
+                inherited << Models::SpaInheritedAssociation.new(
+                  association_id: item[:id],
+                  inherited_from: @id_generator.class_id(parent_class),
+                  inherited_from_name: parent_class.name,
+                  parent_order: parent_order,
+                  local_role: item[:role],
+                )
               end
 
               parent_order += 1
-              current_gen = current_gen.general if current_gen.respond_to?(:general)
+              current_gen = current_gen.general
             end
 
             inherited
@@ -147,9 +147,7 @@ module Lutaml
           end
 
           def serialize_generalization(klass, visited = Set.new)
-            unless klass.respond_to?(:generalization) && klass.generalization
-              return nil
-            end
+            return nil unless klass.generalization
             return nil if visited.include?(klass.xmi_id)
 
             visited.add(klass.xmi_id)
@@ -158,17 +156,16 @@ module Lutaml
             {
               generalId: gen.general_id,
               generalName: gen.general_name,
-              generalUpperKlass: gen.respond_to?(:general_upper_klass) ? gen.general_upper_klass : nil,
-              hasGeneral: gen.respond_to?(:has_general) ? gen.has_general : false,
+              generalUpperKlass: gen.general_upper_klass,
+              hasGeneral: gen.has_general,
               name: gen.name,
               type: gen.type,
               definition: format_definition(gen.definition),
-              stereotype: gen.respond_to?(:stereotype) ? gen.stereotype : nil,
-              ownedProps: serialize_general_attrs(gen, :owned_props),
-              assocProps: serialize_general_attrs(gen, :assoc_props),
-              inheritedProps: serialize_general_attrs(gen, :inherited_props),
-              inheritedAssocProps: serialize_general_attrs(gen,
-                                                           :inherited_assoc_props),
+              stereotype: gen.stereotype,
+              ownedProps: serialize_general_collection(gen.owned_props),
+              assocProps: serialize_general_collection(gen.assoc_props),
+              inheritedProps: serialize_general_collection(gen.inherited_props),
+              inheritedAssocProps: serialize_general_collection(gen.inherited_assoc_props),
             }
           rescue StandardError => e
             warn "Error serializing generalization: #{e.message}"
@@ -183,9 +180,9 @@ module Lutaml
               type: attr.type,
               cardinality: serialize_cardinality(attr.cardinality),
               definition: format_definition(attr.definition),
-              upperKlass: attr.respond_to?(:upper_klass) ? attr.upper_klass : nil,
-              nameNs: attr.respond_to?(:name_ns) ? attr.name_ns : nil,
-              typeNs: attr.respond_to?(:type_ns) ? attr.type_ns : nil,
+              upperKlass: attr.upper_klass,
+              nameNs: attr.name_ns,
+              typeNs: attr.type_ns,
             }
           end
 
@@ -203,39 +200,35 @@ module Lutaml
           end
 
           def serialize_attribute(attribute, owner, id)
-            {
+            Models::SpaAttribute.new(
               id: id,
               name: attribute.name,
               type: attribute.type,
               visibility: attribute.visibility,
               owner: @id_generator.class_id(owner),
-              ownerName: owner.name,
+              owner_name: owner.name,
               cardinality: serialize_cardinality(attribute.cardinality),
               definition: format_definition(attribute.definition),
-              stereotypes: normalize_stereotypes(
-                attribute.respond_to?(:stereotype) ? attribute.stereotype : nil,
-              ),
-              isStatic: attribute.respond_to?(:is_static) ? attribute.is_static : false,
-              isReadOnly: attribute.respond_to?(:is_read_only) ? attribute.is_read_only : false,
-              defaultValue: attribute.respond_to?(:default) ? attribute.default : nil,
-            }
+              stereotypes: normalize_stereotypes(attribute.stereotype),
+              is_static: attribute.is_static,
+              is_read_only: attribute.is_read_only,
+              default_value: attribute.default,
+            )
           end
 
-          def serialize_general_attrs(gen, method)
-            return [] unless gen.respond_to?(method)
+          def serialize_general_collection(items)
+            return [] unless items
 
-            (gen.send(method) || []).map do |attr|
-              serialize_general_attribute(attr)
-            end
+            items.map { |attr| serialize_general_attribute(attr) }
           end
 
           def serialize_cardinality(cardinality)
             return nil unless cardinality
 
-            {
+            Models::SpaCardinality.new(
               min: cardinality.min,
               max: cardinality.max,
-            }
+            )
           end
 
           def format_definition(definition)

@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require_relative "../../../uml/model_helpers"
+require_relative "../models/spa_class"
+require_relative "../models/spa_literal"
 
 module Lutaml
   module UmlRepository
@@ -32,16 +34,14 @@ inheritance_resolver)
             class_associations = find_class_associations(klass)
             sorted_associations = sort_associations(class_associations, klass)
 
-            {
+            Models::SpaClass.new(
               id: id,
-              xmiId: klass.xmi_id,
+              xmi_id: klass.xmi_id,
               name: klass.name,
-              qualifiedName: qualified_name_for(klass),
+              qualified_name: qualified_name_for(klass),
               type: class_type_for(klass),
               package: package_id_for_class(klass),
-              stereotypes: normalize_stereotypes(
-                klass.respond_to?(:stereotype) ? klass.stereotype : nil,
-              ),
+              stereotypes: normalize_stereotypes(klass.stereotype),
               definition: format_definition(klass.definition),
               attributes: (klass.attributes || []).sort_by { |a| a.name || "" }
                 .map { |attr| @id_generator.attribute_id(attr, klass) },
@@ -49,11 +49,11 @@ inheritance_resolver)
               associations: sorted_associations,
               generalizations: @inheritance_resolver.find_generalizations(klass),
               specializations: @inheritance_resolver.find_specializations(klass),
-              isAbstract: klass.respond_to?(:is_abstract) ? klass.is_abstract : false,
+              is_abstract: klass.is_abstract,
               literals: serialize_literals(klass),
-              inheritedAttributes: @inheritance_resolver.compute_inherited_attributes(klass),
-              inheritedAssociations: @inheritance_resolver.compute_inherited_associations(klass),
-            }
+              inherited_attributes: @inheritance_resolver.compute_inherited_attributes(klass),
+              inherited_associations: @inheritance_resolver.compute_inherited_associations(klass),
+            )
           end
 
           def find_class_associations(klass)
@@ -81,7 +81,7 @@ inheritance_resolver)
           end
 
           def serialize_class_operations(klass)
-            return [] unless klass.respond_to?(:operations) && klass.operations
+            return [] unless klass.operations
 
             klass.operations.map { |op| @id_generator.operation_id(op, klass) }
           end
@@ -90,18 +90,19 @@ inheritance_resolver)
             return [] unless klass.is_a?(Lutaml::Uml::Enum) && klass.owned_literal
 
             klass.owned_literal.map do |literal|
-              { name: literal.name,
-                definition: format_definition(literal.definition) }
+              Models::SpaLiteral.new(
+                name: literal.name,
+                definition: format_definition(literal.definition),
+              )
             end
           rescue StandardError
             []
           end
 
           def package_id_for_class(klass)
-            ns = klass.respond_to?(:namespace) ? klass.namespace : nil
-            return nil unless ns.is_a?(Lutaml::Uml::Package)
+            return nil unless klass.namespace.is_a?(Lutaml::Uml::Package)
 
-            @id_generator.package_id(ns)
+            @id_generator.package_id(klass.namespace)
           end
 
           def format_definition(definition)

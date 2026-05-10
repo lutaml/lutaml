@@ -13,7 +13,6 @@ module Lutaml
     class Class < Classifier
       attribute :nested_classifier, :string, collection: true,
                                              default: -> { [] }
-      attribute :is_abstract, :boolean, default: false
       attribute :stereotype, :string, collection: true, default: -> { [] }
       attribute :type, :string
       attribute :attributes, TopElementAttribute, collection: true
