@@ -7,36 +7,8 @@ require_relative "../../../../lib/lutaml/uml_repository/static_site/" \
 require "tempfile"
 
 RSpec.describe Lutaml::UmlRepository::StaticSite::Generator do
-  let(:repository) do
-    double("UmlRepository",
-           packages_index: [test_package],
-           classes_index: [test_class],
-           associations_index: [])
-  end
-
-  let(:test_package) do
-    double("Package",
-           xmi_id: "pkg_001",
-           name: "TestPackage",
-           definition: "Test package",
-           stereotypes: [],
-           owner: nil,
-           packages: [])
-  end
-
-  let(:test_class) do
-    double("Class",
-           xmi_id: "cls_001",
-           name: "TestClass",
-           definition: "Test class",
-           stereotypes: [],
-           owner: test_package,
-           attributes: [],
-           operations: nil,
-           is_abstract: false,
-           class: Lutaml::Uml::TopElement)
-  end
-
+  let(:document) { create_simple_test_document }
+  let(:repository) { Lutaml::UmlRepository::Repository.new(document: document) }
   let(:output_file) { Tempfile.new(["test_output", ".html"]) }
   let(:output_dir) { Dir.mktmpdir }
 
@@ -44,12 +16,6 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Generator do
     output_file.close
     output_file.unlink
     FileUtils.rm_rf(output_dir)
-  end
-
-  before do
-    # Set up the relationship after doubles are created to avoid circular
-    # reference
-    allow(test_package).to receive(:classes).and_return([test_class])
   end
 
   describe "#initialize" do
@@ -101,19 +67,12 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Generator do
   end
 
   describe "#generate" do
-    before do
-      # Mock repository methods
-      allow(repository).to receive_messages(associations_of: [],
-                                            supertype_of: nil, subtypes_of: [], diagrams_in_package: [], diagrams_index: [], document: [], packages_index: [])
-    end
-
     context "with single-file mode" do
       it "generates single HTML file", :aggregate_failures do
         generator = described_class.new(repository,
                                         mode: :single_file,
                                         output: output_file.path)
 
-        # Mock Liquid rendering
         allow_any_instance_of(Liquid::Template)
           .to receive(:render).and_return("<html>Test</html>")
 
@@ -130,8 +89,6 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Generator do
 
         allow_any_instance_of(Liquid::Template)
           .to receive(:render) do |_template, context|
-          # Verify data is passed to template
-          # In single-file mode, data is JSON-serialized string
           expect(context["data"]).to be_a(String)
           expect(context["searchIndex"]).to be_a(String)
           "<html>Data embedded</html>"
@@ -182,7 +139,6 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Generator do
         allow_any_instance_of(Liquid::Template)
           .to receive(:render).and_return("<html>Test</html>")
 
-        # Mock asset content
         allow(File).to receive(:read).and_call_original
         allow(File)
           .to receive(:read)
@@ -190,12 +146,6 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Generator do
           .and_return("/* CSS */", "// JS")
 
         generator.generate
-
-        # These would be created if asset files exist
-        # expect(File.exist?(File.join(output_dir, "assets", "styles.css")))
-        # .to be true
-        # expect(File.exist?(File.join(output_dir, "assets", "app.js")))
-        # .to be true
       end
     end
 
@@ -216,7 +166,6 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Generator do
     it "uses configuration for default values", :aggregate_failures do
       generator = described_class.new(repository)
 
-      # Should use config defaults
       expect(generator.config).to be_a(Lutaml::UmlRepository::StaticSite::Configuration)
       expect(generator.options).to include(:title)
     end

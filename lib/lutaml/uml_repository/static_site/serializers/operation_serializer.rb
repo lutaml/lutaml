@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require_relative "../models/spa_operation"
+require_relative "../models/spa_parameter"
+
 module Lutaml
   module UmlRepository
     module StaticSite
@@ -13,7 +16,7 @@ module Lutaml
           def build_map
             operations = {}
             @repository.classes_index.each do |klass|
-              next unless klass.respond_to?(:operations) && klass.operations
+              next unless klass.operations
 
               klass.operations.each do |op|
                 id = @id_generator.operation_id(op, klass)
@@ -24,30 +27,30 @@ module Lutaml
           end
 
           def serialize(operation, owner, id)
-            {
+            Models::SpaOperation.new(
               id: id,
               name: operation.name,
               visibility: operation.visibility,
-              returnType: operation.return_type,
+              return_type: operation.return_type,
               owner: @id_generator.class_id(owner),
-              ownerName: owner.name,
+              owner_name: owner.name,
               parameters: serialize_parameters(operation),
-              isStatic: operation.respond_to?(:is_static) ? operation.is_static : false,
-              isAbstract: operation.respond_to?(:is_abstract) ? operation.is_abstract : false,
-            }
+              is_static: operation.is_static,
+              is_abstract: operation.is_abstract,
+            )
           end
 
           private
 
           def serialize_parameters(operation)
-            return [] unless operation.respond_to?(:owned_parameter) && operation.owned_parameter
+            return [] unless operation.owned_parameter
 
             operation.owned_parameter.map do |param|
-              {
+              Models::SpaParameter.new(
                 name: param.name,
                 type: param.type,
-                direction: param.respond_to?(:direction) ? param.direction : "in",
-              }
+                direction: param.direction,
+              )
             end
           end
         end

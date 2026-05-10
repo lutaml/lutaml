@@ -13,6 +13,10 @@ module Lutaml
       attribute :cardinality, Cardinality
       attribute :keyword, :string
       attribute :is_derived, :boolean, default: false
+      attribute :is_static, :boolean, default: false
+      attribute :is_read_only, :boolean, default: false
+      attribute :default, :string
+      attribute :stereotype, :string, collection: true, default: -> { [] }
 
       attribute :definition, :string
       attribute :association, :string

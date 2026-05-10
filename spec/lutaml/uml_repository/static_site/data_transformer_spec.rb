@@ -30,104 +30,88 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::DataTransformer do
   end
 
   describe "#transform" do
-    it "returns a hash with all expected sections", :aggregate_failures do
+    it "returns a SpaDocument with all expected sections", :aggregate_failures do
       result = transformer.transform
 
-      expect(result).to be_a(Hash)
-      expect(result).to include(
-        :metadata,
-        :packageTree,
-        :packages,
-        :classes,
-        :attributes,
-        :associations,
-        :operations,
-        :diagrams,
-      )
+      expect(result).to be_a(Lutaml::UmlRepository::StaticSite::Models::SpaDocument)
+      expect(result.metadata).to be_a(Lutaml::UmlRepository::StaticSite::Models::SpaMetadata)
+      expect(result.package_tree).to be_a(Lutaml::UmlRepository::StaticSite::Models::SpaPackageTreeNode)
+      expect(result.packages).to be_a(Hash)
+      expect(result.classes).to be_a(Hash)
+      expect(result.attributes).to be_a(Hash)
+      expect(result.associations).to be_a(Hash)
+      expect(result.operations).to be_a(Hash)
+      expect(result.diagrams).to be_a(Hash)
     end
 
     it "builds metadata section", :aggregate_failures do
       result = transformer.transform
 
-      expect(result[:metadata]).to include(:generated, :generator, :version,
-                                           :statistics)
-      expect(result[:metadata][:generated]).to be_a(String)
-      expect(result[:metadata][:generator])
-        .to eq("LutaML Static Site Generator")
+      expect(result.metadata.generated).to be_a(String)
+      expect(result.metadata.generator).to eq("LutaML Static Site Generator")
     end
 
     it "builds statistics", :aggregate_failures do
       result = transformer.transform
-      stats = result[:metadata][:statistics]
+      stats = result.metadata.statistics
 
-      expect(stats).to include(:packages, :classes, :associations, :attributes)
-      expect(stats[:packages]).to be >= 1
-      expect(stats[:classes]).to be >= 1
+      expect(stats.packages).to be >= 1
+      expect(stats.classes).to be >= 1
     end
 
     it "builds hierarchical package tree", :aggregate_failures do
       result = transformer.transform
-      tree = result[:packageTree]
+      tree = result.package_tree
 
-      expect(tree).to be_a(Hash)
-      expect(tree).to include(:id, :name, :path, :classCount)
+      expect(tree).to be_a(Lutaml::UmlRepository::StaticSite::Models::SpaPackageTreeNode)
+      expect(tree.id).to be_a(String)
+      expect(tree.name).to be_a(String)
+      expect(tree.path).to be_a(String)
     end
 
     it "builds packages map with stable IDs", :aggregate_failures do
       result = transformer.transform
-      packages = result[:packages]
+      packages = result.packages
 
-      expect(packages).to be_a(Hash)
       expect(packages).not_to be_empty
 
-      # Check first package structure
       pkg = packages.values.first
-      expect(pkg).to include(:id, :xmiId, :name, :path, :definition,
-                             :stereotypes, :classes)
+      expect(pkg).to be_a(Lutaml::UmlRepository::StaticSite::Models::SpaPackage)
+      expect(pkg.id).not_to be_nil
+      expect(pkg.name).not_to be_nil
     end
 
     it "builds classes map", :aggregate_failures do
       result = transformer.transform
-      classes = result[:classes]
+      classes = result.classes
 
-      expect(classes).to be_a(Hash)
       expect(classes).not_to be_empty
 
-      # Check first class structure
       cls = classes.values.first
-      expect(cls)
-        .to include(:id, :xmiId, :name, :qualifiedName, :type, :package)
+      expect(cls).to be_a(Lutaml::UmlRepository::StaticSite::Models::SpaClass)
+      expect(cls.id).not_to be_nil
+      expect(cls.name).not_to be_nil
+      expect(cls.qualified_name).to be_a(String)
     end
 
     it "builds attributes map" do
       result = transformer.transform
-      attributes = result[:attributes]
-
-      expect(attributes).to be_a(Hash)
-      # Attributes may be empty if the test class doesn't have any
+      expect(result.attributes).to be_a(Hash)
     end
 
     it "builds associations map" do
       result = transformer.transform
-      associations = result[:associations]
-
-      expect(associations).to be_a(Hash)
-      # Associations may be empty in simple test document
+      expect(result.associations).to be_a(Hash)
     end
 
     it "builds operations map" do
       result = transformer.transform
-      operations = result[:operations]
-
-      expect(operations).to be_a(Hash)
-      # Operations may be empty if classes don't have operations
+      expect(result.operations).to be_a(Hash)
     end
 
     it "builds diagrams map when enabled" do
       result = transformer.transform
-      diagrams = result[:diagrams]
-
-      expect(diagrams).to be_a(Hash)
+      expect(result.diagrams).to be_a(Hash)
     end
 
     it "excludes diagrams when disabled" do
@@ -136,7 +120,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::DataTransformer do
 
       result = custom_transformer.transform
 
-      expect(result[:diagrams]).to eq({})
+      expect(result.diagrams).to eq({})
     end
   end
 
@@ -145,30 +129,28 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::DataTransformer do
       result1 = transformer.transform
       result2 = transformer.transform
 
-      expect(result1[:packages].keys).to eq(result2[:packages].keys)
+      expect(result1.packages.keys).to eq(result2.packages.keys)
     end
 
     it "generates stable IDs for classes" do
       result1 = transformer.transform
       result2 = transformer.transform
 
-      expect(result1[:classes].keys).to eq(result2[:classes].keys)
+      expect(result1.classes.keys).to eq(result2.classes.keys)
     end
 
     it "generates stable IDs for attributes" do
       result1 = transformer.transform
       result2 = transformer.transform
 
-      expect(result1[:attributes].keys).to eq(result2[:attributes].keys)
+      expect(result1.attributes.keys).to eq(result2.attributes.keys)
     end
   end
 
   describe "helper methods" do
     it "formats definitions properly" do
       result = transformer.transform
-
-      # Just verify the transform completes without error
-      expect(result).to be_a(Hash)
+      expect(result).to be_a(Lutaml::UmlRepository::StaticSite::Models::SpaDocument)
     end
 
     it "truncates long definitions when max_definition_length is set" do
@@ -176,33 +158,25 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::DataTransformer do
                                                max_definition_length: 10)
 
       result = custom_transformer.transform
-
-      # Just verify the transform completes without error
-      expect(result).to be_a(Hash)
+      expect(result).to be_a(Lutaml::UmlRepository::StaticSite::Models::SpaDocument)
     end
 
     it "builds qualified names correctly" do
       result = transformer.transform
-      classes = result[:classes]
 
-      # Verify qualified names are strings
-      classes.each_value do |cls|
-        expect(cls[:qualifiedName]).to be_a(String)
+      result.classes.each_value do |cls|
+        expect(cls.qualified_name).to be_a(String)
       end
     end
 
     it "serializes cardinality correctly" do
       result = transformer.transform
-
-      # Just verify the transform completes without error
-      expect(result).to be_a(Hash)
+      expect(result).to be_a(Lutaml::UmlRepository::StaticSite::Models::SpaDocument)
     end
 
     it "serializes association ends correctly" do
       result = transformer.transform
-
-      # Just verify the transform completes without error
-      expect(result).to be_a(Hash)
+      expect(result).to be_a(Lutaml::UmlRepository::StaticSite::Models::SpaDocument)
     end
   end
 end

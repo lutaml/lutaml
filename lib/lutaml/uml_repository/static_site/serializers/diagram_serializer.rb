@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../../presenters/diagram_presenter"
+require_relative "../models/spa_diagram"
 
 module Lutaml
   module UmlRepository
@@ -27,25 +28,20 @@ module Lutaml
           private
 
           def serialize(diagram, id)
-            data = {
+            Models::SpaDiagram.new(
               id: id,
-              xmiId: diagram.xmi_id,
+              xmi_id: diagram.xmi_id,
               name: diagram.name,
               type: diagram.diagram_type,
               package: find_diagram_package(diagram),
-              objectCount: (diagram.diagram_objects || []).size,
-              linkCount: (diagram.diagram_links || []).size,
-            }
-
-            if @options[:render_diagrams]
-              svg = render_svg(diagram)
-              data[:svg] = svg if svg
-            end
-
-            data
+              object_count: (diagram.diagram_objects || []).size,
+              link_count: (diagram.diagram_links || []).size,
+              svg: render_svg(diagram),
+            )
           end
 
           def render_svg(diagram)
+            return nil unless @options[:render_diagrams]
             return nil unless diagram.diagram_objects&.any?
 
             presenter = Presenters::DiagramPresenter.new(diagram, @repository)

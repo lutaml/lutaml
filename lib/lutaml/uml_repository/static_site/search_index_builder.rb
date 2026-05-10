@@ -1,21 +1,11 @@
 # frozen_string_literal: true
 
 require_relative "id_generator"
+require_relative "models/spa_search_entry"
 
 module Lutaml
   module UmlRepository
     module StaticSite
-      # Builds a lunr.js-compatible search index from a UML repository.
-      #
-      # The index includes:
-      # - Document store with searchable content
-      # - Field configuration for lunr.js
-      # - Pre-processed tokens for efficient client-side search
-      #
-      # @example
-      #   repository = UmlRepository.from_package("model.lur")
-      #   builder = SearchIndexBuilder.new(repository)
-      #   index = builder.build
       class SearchIndexBuilder
         attr_reader :repository, :id_generator, :options
 
@@ -25,20 +15,12 @@ module Lutaml
           this that these those it its
         ].freeze
 
-        # Initialize search index builder
-        #
-        # @param repository [UmlRepository] The repository to index
-        # @param options [Hash] Builder options
-        # @option options [Array<String>] :languages Languages for stemming
         def initialize(repository, options = {})
           @repository = repository
           @options = default_options.merge(options)
           @id_generator = IDGenerator.new
         end
 
-        # Build the search index
-        #
-        # @return [Hash] Lunr.js-compatible search index structure
         def build
           {
             version: "1.0.0",
@@ -57,7 +39,6 @@ module Lutaml
           }
         end
 
-        # Define searchable fields with boost values
         def field_definitions
           [
             { name: "name", boost: 10 },
@@ -68,26 +49,21 @@ module Lutaml
           ]
         end
 
-        # Build the document store
-        def build_document_store # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+        def build_document_store
           documents = []
 
-          # Index classes and their attributes
           repository.classes_index.each do |klass|
             documents << build_class_document(klass)
 
-            # Index attributes
             klass.attributes&.each do |attr|
               documents << build_attribute_document(attr, klass)
             end
           end
 
-          # Index associations
           repository.associations_index.each do |assoc|
             documents << build_association_document(assoc)
           end
 
-          # Index packages
           repository.packages_index.each do |package|
             documents << build_package_document(package)
           end
@@ -95,99 +71,77 @@ module Lutaml
           documents
         end
 
-        # Build search document for a class
-        def build_class_document(klass) # rubocop:disable Metrics/MethodLength
-          {
+        def build_class_document(klass)
+          Models::SpaSearchEntry.new(
             id: @id_generator.document_id("class", klass.xmi_id),
             type: "class",
-            entityType: class_type(klass),
-            entityId: @id_generator.class_id(klass),
+            entity_type: class_type(klass),
+            entity_id: @id_generator.class_id(klass),
             name: klass.name,
-            qualifiedName: qualified_name(klass),
+            qualified_name: qualified_name(klass),
             package: package_name(klass),
             content: build_class_content(klass),
-            boost: 1.5, # Classes are more important
-          }
+            boost: 1.5,
+          )
         end
 
-        # Build search document for an attribute
-        def build_attribute_document(attribute, owner) # rubocop:disable Metrics/MethodLength
-          {
+        def build_attribute_document(attribute, owner)
+          Models::SpaSearchEntry.new(
             id: @id_generator.document_id("attribute",
                                           "#{owner.xmi_id}::#{attribute.name}"),
             type: "attribute",
-            entityType: "Attribute",
-            entityId: @id_generator.attribute_id(attribute, owner),
+            entity_type: "Attribute",
+            entity_id: @id_generator.attribute_id(attribute, owner),
             name: attribute.name,
-            qualifiedName: "#{qualified_name(owner)}::#{attribute.name}",
+            qualified_name: "#{qualified_name(owner)}::#{attribute.name}",
             package: package_name(owner),
-            ownerName: owner.name,
-            ownerQualifiedName: qualified_name(owner),
-            ownerId: @id_generator.class_id(owner),
             content: build_attribute_content(attribute, owner),
             boost: 1.0,
-          }
+          )
         end
 
-        # Build search document for an association
-        def build_association_document(association) # rubocop:disable Metrics/MethodLength
-          # Association model has simple string attributes, not arrays
-          source_name = association.owner_end # String: class name
-          target_name = association.member_end # String: class name
-
-          {
+        def build_association_document(association)
+          Models::SpaSearchEntry.new(
             id: @id_generator.document_id("association", association.xmi_id),
             type: "association",
-            entityType: "Association",
-            entityId: @id_generator.association_id(association),
+            entity_type: "Association",
+            entity_id: @id_generator.association_id(association),
             name: association.name || "unnamed",
-            qualifiedName: association.name || "unnamed",
-            package: "", # Associations are document-level
-            content: build_association_content(association, source_name,
-                                               target_name),
+            qualified_name: association.name || "unnamed",
+            package: "",
+            content: build_association_content(association),
             boost: 0.8,
-          }
+          )
         end
 
-        # Build search document for a package
-        def build_package_document(package) # rubocop:disable Metrics/MethodLength
-          {
+        def build_package_document(package)
+          Models::SpaSearchEntry.new(
             id: @id_generator.document_id("package", package.xmi_id),
             type: "package",
-            entityType: "Package",
-            entityId: @id_generator.package_id(package),
+            entity_type: "Package",
+            entity_id: @id_generator.package_id(package),
             name: package.name,
-            qualifiedName: package_path(package),
+            qualified_name: package_path(package),
             package: parent_package_name(package),
             content: build_package_content(package),
             boost: 1.2,
-          }
+          )
         end
 
-        # Build searchable content for a class
-        def build_class_content(klass) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
+        def build_class_content(klass)
           parts = [
             klass.name,
             qualified_name(klass),
             class_type(klass),
-            (
-              if klass.respond_to?(:stereotype) && klass.stereotype
-                Array(klass.stereotype).join(" ")
-              end
-            ),
+            Array(klass.stereotype).join(" "),
             klass.definition,
             klass.attributes&.map(&:name)&.join(" "),
-            (
-              if klass.respond_to?(:operations)
-                klass.operations&.map(&:name)&.join(" ")
-              end
-            ),
+            klass.operations&.map(&:name)&.join(" "),
           ].compact
 
           normalize_content(parts.join(" "))
         end
 
-        # Build searchable content for an attribute
         def build_attribute_content(attribute, owner)
           parts = [
             attribute.name,
@@ -195,85 +149,55 @@ module Lutaml
             owner.name,
             qualified_name(owner),
             attribute.definition,
-            (
-              if attribute.respond_to?(:stereotype) && attribute.stereotype
-                Array(attribute.stereotype).join(" ")
-              end
-            ),
+            Array(attribute.stereotype).join(" "),
           ].compact
 
           normalize_content(parts.join(" "))
         end
 
-        # Build searchable content for an association
-        # @param association [Association] The association
-        # @param source_name [String] Source class name (already extracted)
-        # @param target_name [String] Target class name (already extracted)
-        def build_association_content(association, source_name, target_name)
+        def build_association_content(association)
           parts = [
             association.name,
-            source_name,
-            target_name,
+            association.owner_end,
+            association.member_end,
           ].compact
 
           normalize_content(parts.join(" "))
         end
 
-        # Build searchable content for a package
         def build_package_content(package)
           parts = [
             package.name,
             package_path(package),
             package.definition,
-            (
-              if package.respond_to?(:stereotype) && package.stereotype
-                Array(package.stereotype).join(" ")
-              end
-            ),
+            Array(package.stereotype).join(" "),
           ].compact
 
           normalize_content(parts.join(" "))
         end
 
-        # Normalize content for consistent search
-        def normalize_content(text) # rubocop:disable Metrics/MethodLength
-          # Convert to lowercase first
+        def normalize_content(text)
           text = text.downcase
-
-          # Split on spaces, colons, and other delimiters to create
-          # searchable tokens
-          # This allows "xs:date" to match "date" and "xs" separately
-          # Also allows "urbanplanning" to match "urban" and "planning" as
-          # separate tokens
           tokens = text.split(/[\s:]+/)
-
-          # Also keep the original compound words
-          # So both "urban planning" and "urbanplanning" will be searchable
           all_content = [text] + tokens
-
-          # Remove stop words and duplicates
           all_content = all_content.uniq.reject do |word|
             STOP_WORDS.include?(word)
           end
-
-          # Join back together with spaces
           all_content.join(" ").gsub(/\s+/, " ").strip
         end
-
-        # Helper methods
 
         def class_type(klass)
           klass.class.name.split("::").last
         end
 
-        def qualified_name(klass) # rubocop:disable Metrics/MethodLength
+        def qualified_name(klass)
           path_parts = []
           current = klass
 
           while current
             if current.is_a?(Lutaml::Uml::TopElement) || current.is_a?(Lutaml::Uml::Package)
               path_parts.unshift(current.name)
-              current = current.namespace if current.respond_to?(:namespace)
+              current = current.namespace
             else
               break
             end
@@ -283,30 +207,21 @@ module Lutaml
         end
 
         def package_name(klass)
-          ns = klass.respond_to?(:namespace) ? klass.namespace : nil
-          return "" unless ns.is_a?(Lutaml::Uml::Package)
+          return "" unless klass.namespace.is_a?(Lutaml::Uml::Package)
 
-          package_path(ns)
+          package_path(klass.namespace)
         end
 
         def parent_package_name(package)
-          ns = package.respond_to?(:namespace) ? package.namespace : nil
-          return "" unless ns.is_a?(Lutaml::Uml::Package)
+          return "" unless package.namespace.is_a?(Lutaml::Uml::Package)
 
-          package_path(ns)
+          package_path(package.namespace)
         end
 
         def package_path(package)
-          ns = package.respond_to?(:namespace) ? package.namespace : nil
-          return package.name unless ns.is_a?(Lutaml::Uml::Package)
+          return package.name unless package.namespace.is_a?(Lutaml::Uml::Package)
 
-          "#{package_path(ns)}::#{package.name}"
-        end
-
-        def find_association_package(klass)
-          return "" unless klass
-
-          package_name(klass)
+          "#{package_path(package.namespace)}::#{package.name}"
         end
       end
     end

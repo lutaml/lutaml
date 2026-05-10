@@ -20,12 +20,6 @@ digraph G {
   </TABLE></TD>
   </TR>
   
-  <TR>
-    <TD><TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
-    <TR><TD ALIGN="LEFT"></TD></TR>
-  </TABLE></TD>
-  </TR>
-  
   </TABLE>>]
   
   AttributeProfile [
@@ -37,12 +31,6 @@ digraph G {
     <TR><TD ALIGN="CENTER"><B>AttributeProfile</B></TD></TR>
   </TABLE>
   </TD>
-  </TR>
-  
-  <TR>
-    <TD><TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
-    <TR><TD ALIGN="LEFT"></TD></TR>
-  </TABLE></TD>
   </TR>
   
   <TR>
@@ -70,12 +58,6 @@ digraph G {
   </TABLE></TD>
   </TR>
   
-  <TR>
-    <TD><TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
-    <TR><TD ALIGN="LEFT"></TD></TR>
-  </TABLE></TD>
-  </TR>
-  
   </TABLE>>]
   
   AddressComponentProfile [
@@ -87,12 +69,6 @@ digraph G {
     <TR><TD ALIGN="CENTER"><B>AddressComponentProfile</B></TD></TR>
   </TABLE>
   </TD>
-  </TR>
-  
-  <TR>
-    <TD><TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
-    <TR><TD ALIGN="LEFT"></TD></TR>
-  </TABLE></TD>
   </TR>
   
   <TR>
@@ -120,12 +96,6 @@ digraph G {
   </TABLE></TD>
   </TR>
   
-  <TR>
-    <TD><TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
-    <TR><TD ALIGN="LEFT"></TD></TR>
-  </TABLE></TD>
-  </TR>
-  
   </TABLE>>]
   
   InterchangeAddressClassProfile [
@@ -137,12 +107,6 @@ digraph G {
     <TR><TD ALIGN="CENTER"><B>InterchangeAddressClassProfile</B></TD></TR>
   </TABLE>
   </TD>
-  </TR>
-  
-  <TR>
-    <TD><TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
-    <TR><TD ALIGN="LEFT"></TD></TR>
-  </TABLE></TD>
   </TR>
   
   <TR>

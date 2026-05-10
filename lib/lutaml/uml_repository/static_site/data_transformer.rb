@@ -12,6 +12,7 @@ require_relative "serializers/attribute_serializer"
 require_relative "serializers/operation_serializer"
 require_relative "serializers/diagram_serializer"
 require_relative "serializers/inheritance_resolver"
+require_relative "models/spa_document"
 
 module Lutaml
   module UmlRepository
@@ -30,10 +31,10 @@ module Lutaml
         end
 
         def transform
-          {
+          Models::SpaDocument.new(
             metadata: Serializers::MetadataBuilder.new(repository).build,
-            packageTree: Serializers::PackageTreeBuilder.new(repository,
-                                                             id_generator).build,
+            package_tree: Serializers::PackageTreeBuilder.new(repository,
+                                                               id_generator).build,
             packages: Serializers::PackageSerializer.new(repository,
                                                          id_generator, options).build_map,
             classes: Serializers::ClassSerializer.new(repository, id_generator,
@@ -43,14 +44,14 @@ module Lutaml
             associations: build_associations_map,
             operations: Serializers::OperationSerializer.new(repository,
                                                              id_generator).build_map,
-            diagrams: (if options[:include_diagrams]
-                         Serializers::DiagramSerializer.new(
-                           repository, id_generator, options
-                         ).build_map
-                       else
-                         {}
-                       end),
-          }
+            diagrams: if options[:include_diagrams]
+                        Serializers::DiagramSerializer.new(
+                          repository, id_generator, options
+                        ).build_map
+                      else
+                        {}
+                      end,
+          )
         end
 
         private
@@ -73,14 +74,12 @@ module Lutaml
           map = Hash.new { |h, k| h[k] = [] }
 
           repository.classes_index.each do |klass|
-            next unless klass.respond_to?(:association_generalization)
+            next unless klass.association_generalization
             unless klass.association_generalization && !klass.association_generalization.empty?
               next
             end
 
             klass.association_generalization.each do |assoc_gen|
-              next unless assoc_gen.respond_to?(:parent_object_id)
-
               parent_object_id = assoc_gen.parent_object_id
               next unless parent_object_id
 
@@ -100,31 +99,6 @@ module Lutaml
 
         def class_lookup
           @class_lookup ||= ClassLookupIndex.new(repository.classes_index)
-        end
-
-        def find_class_by_xmi_id(xmi_id)
-          return nil unless xmi_id
-
-          class_lookup.by_xmi_id(xmi_id)
-        rescue StandardError
-          nil
-        end
-
-        def find_class_by_object_id(object_id)
-          return nil unless object_id
-
-          class_lookup.by_object_id(object_id)
-        rescue StandardError
-          nil
-        end
-
-        def serialize_cardinality(cardinality)
-          return nil unless cardinality
-
-          {
-            min: cardinality.min,
-            max: cardinality.max,
-          }
         end
 
         def format_definition(definition)

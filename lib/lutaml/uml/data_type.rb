@@ -11,7 +11,6 @@ module Lutaml
     class DataType < Classifier
       attribute :nested_classifier, :string, collection: true,
                                              default: -> { [] }
-      attribute :is_abstract, :boolean, default: false
       attribute :type, :string
       attribute :attributes, TopElementAttribute, collection: true
       attribute :modifier, :string

@@ -28,11 +28,12 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Serializers::DiagramSerializer
 
       expect(result.size).to eq(1)
       entry = result.values.first
-      expect(entry[:name]).to eq("Test Diagram")
-      expect(entry[:type]).to eq("Logical")
-      expect(entry[:objectCount]).to eq(1)
-      expect(entry[:linkCount]).to eq(0)
-      expect(entry).not_to have_key(:svg)
+      expect(entry).to be_a(Lutaml::UmlRepository::StaticSite::Models::SpaDiagram)
+      expect(entry.name).to eq("Test Diagram")
+      expect(entry.type).to eq("Logical")
+      expect(entry.object_count).to eq(1)
+      expect(entry.link_count).to eq(0)
+      expect(entry.svg).to be_nil
     end
   end
 
@@ -64,7 +65,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Serializers::DiagramSerializer
       result = serializer.build_map
 
       entry = result.values.first
-      expect(entry[:svg]).to eq(svg_content)
+      expect(entry.svg).to eq(svg_content)
     end
 
     it "skips SVG for diagrams without objects" do
@@ -88,7 +89,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Serializers::DiagramSerializer
       result = serializer.build_map
 
       entry = result.values.first
-      expect(entry).not_to have_key(:svg)
+      expect(entry.svg).to be_nil
     end
   end
 end

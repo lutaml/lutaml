@@ -1,11 +1,17 @@
 # frozen_string_literal: true
 
+require_relative "operation_parameter"
+
 module Lutaml
   module Uml
     class Operation < TopElement
       attribute :id, :string
       attribute :return_type, :string
       attribute :parameter_type, :string
+      attribute :is_static, :boolean, default: false
+      attribute :is_abstract, :boolean, default: false
+      attribute :owned_parameter, OperationParameter, collection: true,
+                                                      default: -> { [] }
 
       yaml do
         map "id", to: :id

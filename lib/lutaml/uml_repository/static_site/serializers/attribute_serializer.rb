@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require_relative "../../../uml/model_helpers"
+require_relative "../models/spa_attribute"
+require_relative "../models/spa_cardinality"
 
 module Lutaml
   module UmlRepository
@@ -29,22 +31,20 @@ module Lutaml
           end
 
           def serialize(attribute, owner, id)
-            {
+            Models::SpaAttribute.new(
               id: id,
               name: attribute.name,
               type: attribute.type,
               visibility: attribute.visibility,
               owner: @id_generator.class_id(owner),
-              ownerName: owner.name,
+              owner_name: owner.name,
               cardinality: serialize_cardinality(attribute.cardinality),
               definition: format_definition(attribute.definition),
-              stereotypes: normalize_stereotypes(
-                attribute.respond_to?(:stereotype) ? attribute.stereotype : nil,
-              ),
-              isStatic: attribute.respond_to?(:is_static) ? attribute.is_static : false,
-              isReadOnly: attribute.respond_to?(:is_read_only) ? attribute.is_read_only : false,
-              defaultValue: attribute.respond_to?(:default) ? attribute.default : nil,
-            }
+              stereotypes: normalize_stereotypes(attribute.stereotype),
+              is_static: attribute.is_static,
+              is_read_only: attribute.is_read_only,
+              default_value: attribute.default,
+            )
           end
 
           private
@@ -52,10 +52,10 @@ module Lutaml
           def serialize_cardinality(cardinality)
             return nil unless cardinality
 
-            {
+            Models::SpaCardinality.new(
               min: cardinality.min,
               max: cardinality.max,
-            }
+            )
           end
 
           def format_definition(definition)
