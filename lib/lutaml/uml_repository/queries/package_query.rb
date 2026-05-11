@@ -188,15 +188,9 @@ module Lutaml
         # @return [Integer] Number of classes
         def count_classes(package) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/MethodLength
           count = 0
-          count += if package.respond_to?(:classes) && package.classes
-                     package.classes.size
-                   end
-          count += if package.respond_to?(:data_types) && package.data_types
-                     package.data_types.size
-                   end
-          count += if package.respond_to?(:enums) && package.enums
-                     package.enums.size
-                   end
+          count += package.classes&.size
+          count += package.data_types&.size
+          count += package.enums&.size
           count
         end
 
@@ -206,7 +200,7 @@ module Lutaml
         # The package
         # @return [Integer] Number of diagrams
         def count_diagrams(package)
-          return 0 unless package.respond_to?(:diagrams) && package.diagrams
+          return 0 unless package.diagrams
 
           package.diagrams.size
         end

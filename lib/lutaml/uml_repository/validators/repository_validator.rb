@@ -156,13 +156,13 @@ module Lutaml
 
             klass.associations.each do |assoc|
               # Check member_end references
-              if assoc.respond_to?(:member_end) && assoc.member_end
+              if assoc.member_end
                 check_association_end_type(assoc.member_end, qname)
               end
 
-              # Check owned_end references
-              if assoc.respond_to?(:owned_end) && assoc.owned_end
-                check_association_end_type(assoc.owned_end, qname)
+              # Check owner_end references
+              if assoc.owner_end
+                check_association_end_type(assoc.owner_end, qname)
               end
             end
           end
@@ -176,11 +176,11 @@ module Lutaml
           ends_array = ends.is_a?(Array) ? ends : [ends]
 
           ends_array.each do |end_obj|
-            next unless end_obj.respond_to?(:type)
+            next unless end_obj.is_a?(Lutaml::Uml::TopElementAttribute)
             next unless end_obj.type
 
             type_name = end_obj.type
-            type_name = type_name.name if type_name.respond_to?(:name)
+            type_name = type_name.name if type_name.is_a?(Lutaml::Uml::TopElement)
 
             next if @indexes[:qualified_names].key?(type_name)
 
@@ -196,7 +196,7 @@ module Lutaml
             next unless klass.attributes
 
             klass.attributes.each do |attr|
-              next unless attr.respond_to?(:cardinality)
+              next unless attr.cardinality
               next unless attr.cardinality
 
               cardinality = attr.cardinality
@@ -234,7 +234,7 @@ module Lutaml
         # @param cardinality [Object] Cardinality object
         # @return [Integer, nil] Min value
         def extract_min_value(cardinality)
-          return nil unless cardinality.respond_to?(:min)
+          return nil unless cardinality.min
 
           min_val = cardinality.min
           return nil unless min_val
@@ -247,7 +247,7 @@ module Lutaml
         # @param cardinality [Object] Cardinality object
         # @return [Integer, String, nil] Max value (could be "*" for unlimited)
         def extract_max_value(cardinality)
-          return nil unless cardinality.respond_to?(:max)
+          return nil unless cardinality.max
 
           max_val = cardinality.max
           return nil unless max_val

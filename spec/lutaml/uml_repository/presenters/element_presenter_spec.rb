@@ -54,7 +54,7 @@ RSpec.describe Lutaml::UmlRepository::Presenters::ElementPresenter do
     end
 
     it "returns empty string for attribute without cardinality method" do
-      attr = double("Attribute")
+      attr = Lutaml::Uml::TopElementAttribute.new
       result = presenter.send(:format_cardinality, attr)
       expect(result).to eq("")
     end
@@ -81,8 +81,8 @@ RSpec.describe Lutaml::UmlRepository::Presenters::ElementPresenter do
     end
 
     it "uses defaults when min/max not available" do
-      cardinality = double("Cardinality")
-      attr = double("Attribute", cardinality: cardinality)
+      cardinality = Lutaml::Uml::Cardinality.new
+      attr = Lutaml::Uml::TopElementAttribute.new(cardinality: cardinality)
       result = presenter.send(:format_cardinality, attr)
       expect(result).to eq("[0..*]")
     end

@@ -20,13 +20,13 @@ module Lutaml
           lines << ("=" * 50)
           lines << ""
           lines << "Name:          #{element.name}"
-          if element.respond_to?(:xmi_id) && element.xmi_id
+          if element.xmi_id
             lines << "XMI ID:        #{element.xmi_id}"
           end
-          if element.respond_to?(:stereotype) && element.stereotype
+          if element.stereotype && !element.stereotype.empty?
             lines << "Stereotype:    #{element.stereotype}"
           end
-          if element.respond_to?(:visibility) && element.visibility
+          if element.visibility
             lines << "Visibility:    #{element.visibility}"
           end
           lines << ""
@@ -59,16 +59,14 @@ module Lutaml
             value_count: element.values ? element.values.size : 0,
           }
 
-          data[:xmi_id] = element.xmi_id if
-            element.respond_to?(:xmi_id) && element.xmi_id
+          data[:xmi_id] = element.xmi_id if element.xmi_id
           data[:stereotype] = element.stereotype if
-            element.respond_to?(:stereotype) && element.stereotype
-          data[:visibility] = element.visibility if
-            element.respond_to?(:visibility) && element.visibility
+            element.stereotype && !element.stereotype.empty?
+          data[:visibility] = element.visibility if element.visibility
 
           if element.values && !element.values.empty?
             data[:values] = element.values.map do |v|
-              v.respond_to?(:name) ? v.name : v.to_s
+              v.name || v.to_s
             end
           end
 

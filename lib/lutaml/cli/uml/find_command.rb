@@ -84,7 +84,7 @@ module Lutaml
           end
 
           output = classes.map do |cls|
-            cls.respond_to?(:name) ? (cls.name || cls.to_s) : cls.to_s
+            cls.is_a?(Lutaml::Uml::TopElement) ? cls.name : cls.to_s
           end
 
           # output result based on the format option

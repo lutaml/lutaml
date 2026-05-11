@@ -141,7 +141,7 @@ module Lutaml
             OutputFormatter.progress_done
 
             # Display verbose validation if requested
-            if options[:verbose] && result.respond_to?(:validation_details)
+            if options[:verbose] && result.validation_details
               display_verbose_validation(result.validation_details)
             end
 
@@ -149,8 +149,7 @@ module Lutaml
               handle_validation_result(result)
 
               # Display unique unresolved types if present
-              if result.respond_to?(:external_references) &&
-                  result.external_references.any?
+              if result.external_references&.any?
                 display_unresolved_types(result.external_references)
               end
 

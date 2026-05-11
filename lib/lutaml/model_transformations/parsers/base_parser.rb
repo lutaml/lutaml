@@ -107,7 +107,7 @@ module Lutaml
           extension = File.extname(file_path).downcase
           return true if supported_extensions.include?(extension)
 
-          if respond_to?(:content_patterns) && File.exist?(file_path)
+          if self.class.method_defined?(:content_patterns) && File.exist?(file_path)
             File.open(file_path, "rb") do |file|
               header = file.read(1024) # Read first 1KB
               return false if header.nil? || header.empty?

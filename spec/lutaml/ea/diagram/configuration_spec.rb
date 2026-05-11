@@ -8,20 +8,18 @@ RSpec.describe Lutaml::Ea::Diagram::Configuration do
   let(:config) { described_class.new(config_path) }
 
   # Helper to create a mock element with specified properties
-  def mock_element(name: nil, stereotype: nil, package_name: nil) # rubocop:disable Metrics/AbcSize
-    element = double("Element")
-    allow(element).to receive(:name).and_return(name) if name
-    allow(element).to receive(:stereotype).and_return(stereotype) if stereotype
+  def mock_element(name: nil, stereotype: nil, package_name: nil)
     if package_name
-      allow(element).to receive(:package_name).and_return(package_name)
+      el = Lutaml::Uml::Diagram.new(name: name, package_name: package_name)
+    else
+      st = if stereotype.is_a?(Array)
+             stereotype
+           else
+             (stereotype ? [stereotype] : [])
+           end
+      el = Lutaml::Uml::Class.new(name: name, stereotype: st)
     end
-    allow(element).to receive(:respond_to?).with(:name).and_return(!name.nil?)
-    allow(element)
-      .to receive(:respond_to?).with(:stereotype).and_return(!stereotype.nil?)
-    allow(element)
-      .to receive(:respond_to?).with(:package_name)
-      .and_return(!package_name.nil?)
-    element
+    el
   end
 
   before do

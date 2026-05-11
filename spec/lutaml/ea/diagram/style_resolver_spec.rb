@@ -93,10 +93,7 @@ RSpec.describe Lutaml::Ea::Diagram::StyleResolver do
 
     context "with element having stereotype" do
       let(:stereotyped_element) do
-        double("Element",
-               name: "MyType",
-               package_name: nil,
-               stereotype: ["DataType"])
+        Lutaml::Uml::Class.new(name: "MyType", stereotype: ["DataType"])
       end
 
       it "applies stereotype-specific fill color" do
@@ -198,10 +195,7 @@ RSpec.describe Lutaml::Ea::Diagram::StyleResolver do
 
   describe "#resolve_fill_color" do
     let(:element) do
-      double("Element",
-             name: "TestClass",
-             package_name: nil,
-             stereotype: nil)
+      Lutaml::Uml::Class.new(name: "TestClass")
     end
 
     it "returns configuration fill color", :aggregate_failures do
@@ -236,10 +230,7 @@ RSpec.describe Lutaml::Ea::Diagram::StyleResolver do
 
   describe "#resolve_stroke_color" do
     let(:element) do
-      double("Element",
-             name: "TestClass",
-             package_name: nil,
-             stereotype: nil)
+      Lutaml::Uml::Class.new(name: "TestClass")
     end
 
     it "returns configuration stroke color", :aggregate_failures do
@@ -479,63 +470,51 @@ RSpec.describe Lutaml::Ea::Diagram::StyleResolver do
     end
 
     describe "#determine_association_type" do
-      it "returns 'aggregation' for shared aggregation" do
-        end_point = double("MemberEnd", aggregation: "shared")
-        connector = double("Association", member_end: [end_point])
+      it "returns 'aggregation' for aggregation type" do
+        connector = Lutaml::Uml::Association.new(member_end_type: "aggregation")
 
         type = resolver.send(:determine_association_type, connector)
 
         expect(type).to eq("aggregation")
       end
 
-      it "returns 'composition' for composite aggregation" do
-        end_point = double("MemberEnd", aggregation: "composite")
-        connector = double("Association", member_end: [end_point])
+      it "returns 'composition' for composition type" do
+        connector = Lutaml::Uml::Association.new(member_end_type: "composition")
 
         type = resolver.send(:determine_association_type, connector)
 
         expect(type).to eq("composition")
       end
 
-      it "handles case-insensitive aggregation values" do
-        end_point = double("MemberEnd", aggregation: "SHARED")
-        connector = double("Association", member_end: [end_point])
+      it "handles case-insensitive type values" do
+        connector = Lutaml::Uml::Association.new(owner_end_type: "AGGREGATION")
 
         type = resolver.send(:determine_association_type, connector)
 
         expect(type).to eq("aggregation")
       end
 
-      it "returns 'association' for no aggregation" do
-        end_point = double("MemberEnd", aggregation: nil)
-        connector = double("Association", member_end: [end_point])
+      it "returns 'association' for no aggregation type" do
+        connector = Lutaml::Uml::Association.new
 
         type = resolver.send(:determine_association_type, connector)
 
         expect(type).to eq("association")
       end
 
-      it "returns 'association' when member_end not available" do
-        connector = double("Association")
+      it "returns 'association' for non-Association" do
+        connector = double("Other")
 
         type = resolver.send(:determine_association_type, connector)
 
         expect(type).to eq("association")
       end
 
-      it "returns 'association' for empty member_end" do
-        connector = double("Association", member_end: [])
-
-        type = resolver.send(:determine_association_type, connector)
-
-        expect(type).to eq("association")
-      end
-
-      it "checks all member ends for aggregation" do
-        normal_end = double("MemberEnd", aggregation: nil)
-        composite_end = double("MemberEnd", aggregation: "composite")
-        connector = double("Association",
-                           member_end: [normal_end, composite_end])
+      it "checks both owner and member end types" do
+        connector = Lutaml::Uml::Association.new(
+          owner_end_type: "association",
+          member_end_type: "composition",
+        )
 
         type = resolver.send(:determine_association_type, connector)
 

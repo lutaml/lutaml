@@ -138,12 +138,12 @@ module Lutaml
         # @return [void]
         def post_process_xmi_document(document, file_path)
           # Set source file information
-          if document.respond_to?(:source_file=)
+          if document.class.method_defined?(:source_file=)
             document.source_file = file_path
           end
 
           # Add timestamp
-          if document.respond_to?(:parsed_at=)
+          if document.class.method_defined?(:parsed_at=)
             document.parsed_at = Time.now
           end
 

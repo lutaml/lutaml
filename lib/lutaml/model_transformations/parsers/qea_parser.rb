@@ -269,16 +269,16 @@ module Lutaml
         # @return [void]
         def post_process_qea_document(document, file_path)
           # Set QEA-specific source information
-          if document.respond_to?(:source_file=)
+          if document.class.method_defined?(:source_file=)
             document.source_file = file_path
           end
 
-          if document.respond_to?(:source_format=)
+          if document.class.method_defined?(:source_format=)
             document.source_format = "QEA"
           end
 
           # Store database statistics
-          if document.respond_to?(:database_stats=)
+          if document.class.method_defined?(:database_stats=)
             document.database_stats = @database_stats
           end
         end

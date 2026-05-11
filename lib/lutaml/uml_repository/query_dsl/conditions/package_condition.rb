@@ -68,7 +68,8 @@ module Lutaml
           # @param obj [Object] The object to extract path from
           # @return [PackagePath, nil] The object's package path
           def extract_package_path(obj)
-            return nil unless obj.respond_to?(:package_path)
+            return nil unless obj.is_a?(Lutaml::Model::Serializable) &&
+              obj.class.attributes&.key?(:package_path)
 
             path = obj.package_path
             return nil unless path

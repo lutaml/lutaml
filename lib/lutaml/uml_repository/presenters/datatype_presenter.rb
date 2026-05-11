@@ -20,21 +20,19 @@ module Lutaml
           lines << ("=" * 50)
           lines << ""
           lines << "Name:          #{element.name}"
-          if element.respond_to?(:xmi_id) && element.xmi_id
+          if element.xmi_id
             lines << "XMI ID:        #{element.xmi_id}"
           end
-          if element.respond_to?(:type) && element.type
+          if element.type
             lines << "Type:          #{element.type}"
           end
-          if element.respond_to?(:stereotype) && element.stereotype
+          if element.stereotype && !element.stereotype.empty?
             lines << "Stereotype:    #{element.stereotype}"
           end
-          if element.respond_to?(:visibility) && element.visibility
+          if element.visibility
             lines << "Visibility:    #{element.visibility}"
           end
-          if element.respond_to?(:is_abstract)
-            lines << "Abstract:      #{element.is_abstract}"
-          end
+          lines << "Abstract:      #{element.is_abstract}"
           lines << ""
 
           if element.attributes && !element.attributes.empty?
@@ -46,8 +44,7 @@ module Lutaml
             lines << ""
           end
 
-          if element.respond_to?(:operations) && element.operations &&
-              !element.operations.empty?
+          if element.operations && !element.operations.empty?
             lines << "Operations (#{element.operations.size}):"
             element.operations.each do |op|
               lines << "  - #{op.name}()"
@@ -72,16 +69,12 @@ module Lutaml
             name: element.name,
           }
 
-          data[:xmi_id] = element.xmi_id if
-            element.respond_to?(:xmi_id) && element.xmi_id
-          data[:data_type] = element.type if
-            element.respond_to?(:type) && element.type
+          data[:xmi_id] = element.xmi_id if element.xmi_id
+          data[:data_type] = element.type if element.type
           data[:stereotype] = element.stereotype if
-            element.respond_to?(:stereotype) && element.stereotype
-          data[:visibility] = element.visibility if
-            element.respond_to?(:visibility) && element.visibility
-          data[:is_abstract] = element.is_abstract if
-            element.respond_to?(:is_abstract)
+            element.stereotype && !element.stereotype.empty?
+          data[:visibility] = element.visibility if element.visibility
+          data[:is_abstract] = element.is_abstract
 
           if element.attributes && !element.attributes.empty?
             data[:attributes] = element.attributes.map do |attr|
@@ -92,8 +85,7 @@ module Lutaml
             end
           end
 
-          if element.respond_to?(:operations) && element.operations &&
-              !element.operations.empty?
+          if element.operations && !element.operations.empty?
             data[:operations] = element.operations.map(&:name)
           end
 

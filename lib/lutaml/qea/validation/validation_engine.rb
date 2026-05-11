@@ -223,11 +223,7 @@ module Lutaml
           # Note: Use document entities for primary validation
           if @database
             context[:db_packages] = @database.packages || []
-            context[:db_objects] = if @database.objects.respond_to?(:all)
-                                     @database.objects.all
-                                   else
-                                     @database.objects || []
-                                   end
+            context[:db_objects] = @database.objects.all
             context[:attributes] = @database.attributes || []
             context[:operations] = @database.operations || []
             context[:connectors] = @database.connectors || []

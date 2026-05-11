@@ -107,7 +107,8 @@ RSpec.describe Lutaml::Qea::Validation::ValidationEngine do
     let(:engine) { described_class.new(document, database: database) }
 
     before do
-      allow(database).to receive_messages(packages: [], objects: [],
+      allow(database).to receive_messages(packages: [],
+                                          objects: double("ObjectRepository", all: []),
                                           attributes: [], operations: [], connectors: [], diagrams: [], diagram_objects: [], diagram_links: [])
     end
 

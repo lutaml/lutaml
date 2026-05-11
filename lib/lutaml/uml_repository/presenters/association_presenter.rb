@@ -20,11 +20,8 @@ module Lutaml
           lines << ("=" * 50)
           lines << ""
           lines << "Name:          #{element.name || '(unnamed)'}"
-          if element.respond_to?(:xmi_id)
+          if element.xmi_id
             lines << "XMI ID:        #{element.xmi_id}"
-          end
-          if element.respond_to?(:xmi_type)
-            lines << "Type:          #{element.xmi_type}"
           end
           lines << ""
           lines << "Source:        #{source_display}"
@@ -48,8 +45,7 @@ module Lutaml
             target: target_display,
           }
 
-          data[:xmi_id] = element.xmi_id if element.respond_to?(:xmi_id)
-          data[:xmi_type] = element.xmi_type if element.respond_to?(:xmi_type)
+          data[:xmi_id] = element.xmi_id if element.xmi_id
 
           data
         end
@@ -66,7 +62,7 @@ module Lutaml
           # then symbol key (from show command)
           if @context["target"] || @context[:target]
             @context["target"] || @context[:target]
-          elsif element.respond_to?(:member_end) && element.member_end
+          elsif element.member_end
             member_end = element.member_end.first
             if member_end.is_a?(Hash)
               member_end[:xmi_type] || "Unknown"

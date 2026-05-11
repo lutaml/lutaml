@@ -244,7 +244,8 @@ module Lutaml
         def collect_package_associations(package, associations) # rubocop:disable Metrics/CyclomaticComplexity
           # Collect from classes in this package
           package.classes&.each do |klass|
-            if klass.respond_to?(:associations) && klass.associations
+            if (klass.is_a?(Lutaml::Uml::Class) ||
+                klass.is_a?(Lutaml::Uml::DataType)) && klass.associations
               associations.concat(klass.associations)
             end
           end

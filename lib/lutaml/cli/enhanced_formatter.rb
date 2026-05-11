@@ -125,7 +125,7 @@ module Lutaml
       # @param klass [Object] Class object to display
       # @param path_formatter [Proc] Formatter for package paths
       # @return [String] Enhanced class details
-      def self.format_class_details_enhanced(klass, path_formatter = nil) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+      def self.format_class_details_enhanced(klass, _path_formatter = nil) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
         lines = []
 
         # Header box
@@ -137,25 +137,21 @@ module Lutaml
 
         # Basic information
         lines << colorize("Basic Information:", :cyan)
-        if klass.respond_to?(:xmi_id)
+        if klass.is_a?(Lutaml::Uml::TopElement) && klass.xmi_id
           lines << "  XMI ID:      #{klass.xmi_id}"
         end
-        if klass.respond_to?(:stereotype) && klass.stereotype && !klass.stereotype.empty?
+        if klass.is_a?(Lutaml::Uml::TopElement) && klass.stereotype && !klass.stereotype.empty?
           st = klass.stereotype
           st_str = st.is_a?(Array) ? st.join(", ") : st
           lines << "  Stereotype:  #{st_str}"
         end
-        if klass.respond_to?(:is_abstract)
+        if klass.is_a?(Lutaml::Uml::Classifier)
           lines << "  Abstract:    #{klass.is_abstract ? 'Yes' : 'No'}"
-        end
-        if path_formatter && klass.respond_to?(:package)
-          package_path = path_formatter.call(klass.package)
-          lines << "  Package:     #{ICONS[:package]} #{package_path}"
         end
         lines << ""
 
         # Attributes
-        if klass.respond_to?(:attributes) && klass.attributes &&
+        if klass.is_a?(Lutaml::Uml::Classifier) && klass.attributes &&
             !klass.attributes.empty?
           lines << colorize(
             "#{ICONS[:attribute]} Attributes (#{klass.attributes.size}):",
@@ -173,21 +169,21 @@ module Lutaml
         end
 
         # Operations
-        if klass.respond_to?(:operations) && klass.operations &&
+        if klass.is_a?(Lutaml::Uml::Classifier) && klass.operations &&
             !klass.operations.empty?
           lines << colorize(
             "#{ICONS[:operation]} Operations (#{klass.operations.size}):",
             :yellow,
           )
           klass.operations.each do |op|
-            params = if op.respond_to?(:parameters) && op.parameters
-                       op.parameters.map do |p|
+            params = if op.owned_parameter
+                       op.owned_parameter.map do |p|
                          "#{p.name}: #{p.type}"
                        end.join(", ")
                      else
                        ""
                      end
-            return_type = if op.respond_to?(:return_type) && op.return_type
+            return_type = if op.return_type
                             " : #{op.return_type}"
                           else
                             ""
@@ -486,18 +482,13 @@ module Lutaml
       #
       # @param attr [Object] Attribute with cardinality
       # @return [String] Formatted cardinality
-      def self.format_cardinality(attr) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
-        return "" unless attr.respond_to?(:cardinality)
+      def self.format_cardinality(attr)
         return "" unless attr.cardinality
 
         card = attr.cardinality
-        if card.respond_to?(:min) && card.respond_to?(:max)
-          min = card.min || "0"
-          max = card.max || "*"
-          "[#{min}..#{max}]"
-        else
-          ""
-        end
+        min = card.min || "0"
+        max = card.max || "*"
+        "[#{min}..#{max}]"
       end
     end
   end

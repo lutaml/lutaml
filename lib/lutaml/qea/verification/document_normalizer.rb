@@ -73,7 +73,7 @@ module Lutaml
         # Process packages recursively to remove XMI IDs
         def process_packages(packages) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity
           packages.each do |package|
-            package.xmi_id = nil if package.respond_to?(:xmi_id=)
+            package.xmi_id = nil
             process_classes(package.classes) if package.classes
             process_enums(package.enums) if package.enums
             process_data_types(package.data_types) if package.data_types
@@ -84,23 +84,23 @@ module Lutaml
         # Process classes to remove XMI IDs
         def process_classes(classes) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           classes.each do |klass|
-            klass.xmi_id = nil if klass.respond_to?(:xmi_id=)
+            klass.xmi_id = nil
 
             # Remove XMI IDs from attributes
             klass.attributes&.each do |attr|
-              attr.xmi_id = nil if attr.respond_to?(:xmi_id=)
+              attr.xmi_id = nil
             end
 
             # Remove XMI IDs from operations
             klass.operations&.each do |op|
-              op.xmi_id = nil if op.respond_to?(:xmi_id=)
+              op.xmi_id = nil
               op.parameters&.each do |param|
-                param.xmi_id = nil if param.respond_to?(:xmi_id=)
+                param.xmi_id = nil if param.class.attributes.key?(:xmi_id)
               end
             end
 
             # Process nested classes
-            if klass.respond_to?(:classes) && klass.classes
+            if klass.is_a?(Lutaml::Uml::Package) && klass.classes
               process_classes(klass.classes)
             end
           end
@@ -109,11 +109,11 @@ module Lutaml
         # Process associations to remove XMI IDs
         def process_associations(associations)
           associations.each do |assoc|
-            assoc.xmi_id = nil if assoc.respond_to?(:xmi_id=)
-            if assoc.respond_to?(:owner_end_xmi_id=)
+            assoc.xmi_id = nil
+            if assoc.owner_end_xmi_id
               assoc.owner_end_xmi_id = nil
             end
-            if assoc.respond_to?(:member_end_xmi_id=)
+            if assoc.member_end_xmi_id
               assoc.member_end_xmi_id = nil
             end
           end
@@ -122,14 +122,14 @@ module Lutaml
         # Process enums to remove XMI IDs
         def process_enums(enums)
           enums.each do |enum|
-            enum.xmi_id = nil if enum.respond_to?(:xmi_id=)
+            enum.xmi_id = nil
           end
         end
 
         # Process data types to remove XMI IDs
         def process_data_types(data_types)
           data_types.each do |dt|
-            dt.xmi_id = nil if dt.respond_to?(:xmi_id=)
+            dt.xmi_id = nil
           end
         end
 
