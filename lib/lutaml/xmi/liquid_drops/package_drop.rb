@@ -35,7 +35,7 @@ module Lutaml
         end
 
         def klasses
-          @model.classes.map do |klass|
+          Array(@model.classes).map do |klass|
             ::Lutaml::Xmi::LiquidDrops::KlassDrop.new(
               klass,
               @guidance,
@@ -50,25 +50,25 @@ module Lutaml
         alias classes klasses
 
         def enums
-          @model.enums.map do |enum|
+          Array(@model.enums).map do |enum|
             ::Lutaml::Xmi::LiquidDrops::EnumDrop.new(enum, @options)
           end
         end
 
         def data_types
-          @model.data_types.map do |data_type|
+          Array(@model.data_types).map do |data_type|
             ::Lutaml::Xmi::LiquidDrops::DataTypeDrop.new(data_type, @options)
           end
         end
 
         def diagrams
-          @model.diagrams.map do |diagram|
+          Array(@model.diagrams).map do |diagram|
             ::Lutaml::Xmi::LiquidDrops::DiagramDrop.new(diagram, @options)
           end
         end
 
         def packages
-          @model.packages.map do |package|
+          Array(@model.packages).map do |package|
             ::Lutaml::Xmi::LiquidDrops::PackageDrop.new(
               package,
               @guidance,
@@ -82,7 +82,7 @@ module Lutaml
         end
 
         def children_packages
-          @model.children_packages.map do |package|
+          Array(@model.children_packages).map do |package|
             ::Lutaml::Xmi::LiquidDrops::PackageDrop.new(
               package,
               @guidance,

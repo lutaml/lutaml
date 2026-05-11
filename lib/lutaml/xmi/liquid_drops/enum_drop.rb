@@ -19,7 +19,7 @@ module Lutaml
         end
 
         def values
-          @model.values.map do |value|
+          Array(@model.values).map do |value|
             ::Lutaml::Xmi::LiquidDrops::EnumOwnedLiteralDrop.new(value)
           end
         end

@@ -20,7 +20,7 @@ module Lutaml
         end
 
         def attributes
-          @model.attributes.filter_map do |owned_attr|
+          Array(@model.attributes).filter_map do |owned_attr|
             if @options[:with_assoc] || owned_attr.association.nil?
               ::Lutaml::Xmi::LiquidDrops::AttributeDrop.new(owned_attr,
                                                             @options)
@@ -29,19 +29,19 @@ module Lutaml
         end
 
         def operations
-          @model.operations.map do |operation|
+          Array(@model.operations).map do |operation|
             ::Lutaml::Xmi::LiquidDrops::OperationDrop.new(operation)
           end
         end
 
         def associations
-          @model.associations.filter_map do |assoc|
+          Array(@model.associations).filter_map do |assoc|
             ::Lutaml::Xmi::LiquidDrops::AssociationDrop.new(assoc, @options)
           end
         end
 
         def constraints
-          @model.constraints.map do |constraint|
+          Array(@model.constraints).map do |constraint|
             ::Lutaml::Xmi::LiquidDrops::ConstraintDrop.new(constraint)
           end
         end
