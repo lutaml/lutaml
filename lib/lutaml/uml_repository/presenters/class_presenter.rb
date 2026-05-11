@@ -60,7 +60,7 @@ module Lutaml
         private
 
         def stereotype_display
-          if element.respond_to?(:stereotype) && element.stereotype
+          if element.stereotype && !element.stereotype.empty?
             "<<#{element.stereotype}>>"
           else
             ""

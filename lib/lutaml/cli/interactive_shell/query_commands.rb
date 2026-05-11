@@ -99,7 +99,7 @@ module Lutaml
             puts ""
             puts "Name: #{cls.name}"
 
-            if cls.respond_to?(:attributes) && cls.attributes && !cls.attributes.empty?
+            if cls.is_a?(Lutaml::Uml::Classifier) && cls.attributes && !cls.attributes.empty?
               puts ""
               puts OutputFormatter.colorize("Attributes:", :yellow)
               cls.attributes.each do |attr|

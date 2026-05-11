@@ -264,23 +264,15 @@ module Lutaml
         #
         # @param connector [Object] Association connector
         # @return [String] Specific association type
-        def determine_association_type(connector) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/MethodLength
-          return "association" unless connector.respond_to?(:member_end)
-          return "association" unless connector.member_end
+        def determine_association_type(connector)
+          return "association" unless connector.is_a?(Lutaml::Uml::Association)
 
-          # Ensure member_end is an array (handle legacy data
-          # where it might be a string)
-          member_ends = Array(connector.member_end)
-
-          # Check for aggregation or composition
-          member_ends.each do |end_point|
-            if end_point.respond_to?(:aggregation)
-              case end_point.aggregation&.downcase
-              when "shared"
-                return "aggregation"
-              when "composite"
-                return "composition"
-              end
+          [connector.owner_end_type, connector.member_end_type].each do |type|
+            case type&.downcase
+            when "aggregation"
+              return "aggregation"
+            when "composition"
+              return "composition"
             end
           end
 

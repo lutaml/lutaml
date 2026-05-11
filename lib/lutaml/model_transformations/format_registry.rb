@@ -63,7 +63,7 @@ module Lutaml
       # @return [void]
       def auto_register_from_parser(parser_class)
         supported_extensions = ""
-        if parser_class.new.respond_to?(:supported_extensions)
+        if parser_class.method_defined?(:supported_extensions)
           supported_extensions = parser_class.new.supported_extensions
         end
         register(supported_extensions, parser_class)
@@ -255,7 +255,7 @@ module Lutaml
 
           # Check header match for content patterns
           @parsers.each do |ext, parser_class|
-            if parser_class.new.respond_to? :content_patterns
+            if parser_class.method_defined?(:content_patterns)
               parser_klass = parser_class.new
               parser_klass.content_patterns.each do |pattern|
                 if header.match?(pattern)

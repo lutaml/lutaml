@@ -295,8 +295,7 @@ RSpec.describe Lutaml::UmlRepository::Presenters::DiagramPresenter do
       }
 
       it "returns nil for missing style" do
-        obj = double("DiagramObject")
-        allow(obj).to receive(:respond_to?).with(:style).and_return(false)
+        obj = Lutaml::Uml::DiagramObject.new
         expect(presenter.send(:extract_ea_id, obj)).to be_nil
       end
 
@@ -352,10 +351,10 @@ RSpec.describe Lutaml::UmlRepository::Presenters::DiagramPresenter do
         allow(repository).to receive_messages(
           associations_index: [mock_assoc], classes_index: [mock_class_gen],
         )
-        allow(mock_class_gen).to receive(:respond_to?)
-          .with(:generalization).and_return(true)
-        allow(mock_gen).to receive(:respond_to?)
-          .with(:xmi_id).and_return(true)
+        allow(mock_class_gen).to receive(:is_a?).with(Lutaml::Uml::Class).and_return(true)
+        allow(mock_class_gen).to receive(:is_a?).with(Lutaml::Uml::Classifier).and_return(true)
+        allow(mock_class_gen).to receive(:is_a?).with(Lutaml::Uml::TopElement).and_return(true)
+        allow(mock_class_gen).to receive(:is_a?).with(Lutaml::Uml::DataType).and_return(false)
       end
 
       it {
@@ -380,10 +379,11 @@ RSpec.describe Lutaml::UmlRepository::Presenters::DiagramPresenter do
 
         before do
           allow(repository).to receive(:classes_index).and_return([mcwa])
-          allow(mcwa).to receive(:respond_to?).with(:generalization).and_return(false)
+          allow(mcwa).to receive(:is_a?).with(Lutaml::Uml::Class).and_return(false)
+          allow(mcwa).to receive(:is_a?).with(Lutaml::Uml::DataType).and_return(true)
+          allow(mcwa).to receive(:is_a?).with(Lutaml::Uml::Classifier).and_return(true)
+          allow(mcwa).to receive(:is_a?).with(Lutaml::Uml::TopElement).and_return(true)
           allow(mcwa).to receive(:generalization).and_return(nil)
-          allow(mcwa).to receive(:respond_to?).with(:associations).and_return(true)
-          allow(mca).to receive(:respond_to?).with(:xmi_id).and_return(true)
         end
 
         it {
@@ -405,56 +405,36 @@ RSpec.describe Lutaml::UmlRepository::Presenters::DiagramPresenter do
         presenter.send(:find_connector_target, conn, elements_map)
       end
 
-      context "with target property" do
-        let(:conn) { double("Connector", target: "TARGET_ID") }
+      context "with Generalization" do
+        let(:conn) { Lutaml::Uml::Generalization.new(general: "TARGET_ID") }
 
-        before do
-          allow(conn).to receive(:respond_to?).with(:target).and_return(true)
+        it { expect(target_result[:id]).to eq("TARGET_ID") }
+      end
+
+      context "with Dependency" do
+        let(:conn) do
+          dep = Lutaml::Uml::Dependency.new
+          dep.supplier = ["TARGET_ID"]
+          dep
         end
 
         it { expect(target_result[:id]).to eq("TARGET_ID") }
       end
 
-      context "with supplier property" do
-        let(:conn) { double("Connector", supplier: "TARGET_ID") }
-
-        before do
-          allow(conn).to receive(:respond_to?).with(:target).and_return(false)
-          allow(conn).to receive(:respond_to?).with(:supplier).and_return(true)
+      context "with Association" do
+        let(:conn) do
+          assoc = Lutaml::Uml::Association.new
+          assoc.member_end = ["SRC", "TARGET_ID"]
+          assoc
         end
 
         it { expect(target_result[:id]).to eq("TARGET_ID") }
       end
 
-      context "with general property" do
-        let(:conn) { double("Connector", general: "TARGET_ID") }
-
-        before do
-          allow(conn).to receive(:respond_to?).with(:target).and_return(false)
-          allow(conn).to receive(:respond_to?).with(:supplier).and_return(false)
-          allow(conn).to receive(:respond_to?).with(:general).and_return(true)
-        end
-
-        it { expect(target_result[:id]).to eq("TARGET_ID") }
-      end
-
-      context "with member_end" do
-        let(:conn) { double("Connector", member_end: ["SRC", "TARGET_ID"]) }
-
-        before do
-          allow(conn).to receive(:respond_to?).with(:target).and_return(false)
-          allow(conn).to receive(:respond_to?).with(:supplier).and_return(false)
-          allow(conn).to receive(:respond_to?).with(:general).and_return(false)
-          allow(conn).to receive(:respond_to?).with(:member_end).and_return(true)
-        end
-
-        it { expect(target_result[:id]).to eq("TARGET_ID") }
-      end
-
-      context "with no matching property" do
+      context "with unknown connector type" do
         let(:conn) { double("Connector") }
 
-        before { allow(conn).to receive(:respond_to?).and_return(false) }
+        before { allow(conn).to receive(:is_a?).and_return(false) }
 
         it { expect(target_result).to be_nil }
       end
@@ -466,70 +446,48 @@ RSpec.describe Lutaml::UmlRepository::Presenters::DiagramPresenter do
         presenter.send(:find_connector_source, conn, elements_map)
       end
 
-      context "with source property" do
-        let(:conn) { double("Connector", source: "SOURCE_ID") }
+      context "with Generalization" do
+        let(:conn) { Lutaml::Uml::Generalization.new }
 
-        before do
-          allow(conn).to receive(:respond_to?).with(:source).and_return(true)
+        it "returns nil (Generalization doesn't track source)" do
+          expect(source_result).to be_nil
+        end
+      end
+
+      context "with Dependency" do
+        let(:conn) do
+          dep = Lutaml::Uml::Dependency.new
+          dep.client = ["SOURCE_ID"]
+          dep
         end
 
         it { expect(source_result[:id]).to eq("SOURCE_ID") }
       end
 
-      context "with client property" do
-        let(:conn) { double("Connector", client: "SOURCE_ID") }
-
-        before do
-          allow(conn).to receive(:respond_to?).with(:source).and_return(false)
-          allow(conn).to receive(:respond_to?).with(:client).and_return(true)
+      context "with Association with owner_end" do
+        let(:conn) do
+          assoc = Lutaml::Uml::Association.new
+          assoc.owner_end = "SOURCE_ID"
+          assoc
         end
 
         it { expect(source_result[:id]).to eq("SOURCE_ID") }
       end
 
-      context "with specific property" do
-        let(:conn) { double("Connector", specific: "SOURCE_ID") }
-
-        before do
-          allow(conn).to receive(:respond_to?).with(:source).and_return(false)
-          allow(conn).to receive(:respond_to?).with(:client).and_return(false)
-          allow(conn).to receive(:respond_to?).with(:specific).and_return(true)
+      context "with Association with only member_end" do
+        let(:conn) do
+          assoc = Lutaml::Uml::Association.new
+          assoc.member_end = ["SOURCE_ID", "TGT"]
+          assoc
         end
 
         it { expect(source_result[:id]).to eq("SOURCE_ID") }
       end
 
-      context "with owner_end property" do
-        let(:conn) { double("Connector", owner_end: "SOURCE_ID") }
-
-        before do
-          allow(conn).to receive(:respond_to?).with(:source).and_return(false)
-          allow(conn).to receive(:respond_to?).with(:client).and_return(false)
-          allow(conn).to receive(:respond_to?).with(:specific).and_return(false)
-          allow(conn).to receive(:respond_to?).with(:owner_end).and_return(true)
-        end
-
-        it { expect(source_result[:id]).to eq("SOURCE_ID") }
-      end
-
-      context "with member_end" do
-        let(:conn) { double("Connector", member_end: ["SOURCE_ID", "TGT"]) }
-
-        before do
-          allow(conn).to receive(:respond_to?).with(:source).and_return(false)
-          allow(conn).to receive(:respond_to?).with(:client).and_return(false)
-          allow(conn).to receive(:respond_to?).with(:specific).and_return(false)
-          allow(conn).to receive(:respond_to?).with(:owner_end).and_return(false)
-          allow(conn).to receive(:respond_to?).with(:member_end).and_return(true)
-        end
-
-        it { expect(source_result[:id]).to eq("SOURCE_ID") }
-      end
-
-      context "with no matching property" do
+      context "with unknown connector type" do
         let(:conn) { double("Connector") }
 
-        before { allow(conn).to receive(:respond_to?).and_return(false) }
+        before { allow(conn).to receive(:is_a?).and_return(false) }
 
         it { expect(source_result).to be_nil }
       end
@@ -597,40 +555,35 @@ RSpec.describe Lutaml::UmlRepository::Presenters::DiagramPresenter do
 
     describe "#extract_stereotype" do
       it "extracts stereotype string" do
-        el = double("Element", stereotype: "entity")
-        allow(el).to receive(:respond_to?).with(:stereotype).and_return(true)
+        el = Lutaml::Uml::Class.new(stereotype: ["entity"])
         expect(presenter.send(:extract_stereotype, el)).to eq("entity")
       end
 
       it "handles array of stereotypes" do
-        el = double("Element", stereotype: ["entity", "feature"])
-        allow(el).to receive(:respond_to?).with(:stereotype).and_return(true)
+        el = Lutaml::Uml::Class.new(stereotype: ["entity", "feature"])
         expect(presenter.send(:extract_stereotype, el)).to eq("entity")
       end
 
-      it "returns nil when not available" do
-        el = double("Element")
-        allow(el).to receive(:respond_to?).with(:stereotype).and_return(false)
+      it "returns nil for empty stereotype" do
+        el = Lutaml::Uml::Class.new(stereotype: [])
         expect(presenter.send(:extract_stereotype, el)).to be_nil
       end
 
       it "returns nil for nil stereotype" do
-        el = double("Element", stereotype: nil)
-        allow(el).to receive(:respond_to?).with(:stereotype).and_return(true)
+        el = Lutaml::Uml::Class.new
+        el.stereotype = []
         expect(presenter.send(:extract_stereotype, el)).to be_nil
       end
     end
 
     describe "#extract_attributes" do
       let(:mock_attr) do
-        double("Attribute", name: "id", type: "Integer", visibility: "public")
+        Lutaml::Uml::TopElementAttribute.new(name: "id", type: "Integer",
+                                             visibility: "public")
       end
 
       let(:element) do
-        el = double("Element", attributes: [mock_attr])
-        allow(el).to receive(:respond_to?).with(:attributes).and_return(true)
-        allow(mock_attr).to receive(:respond_to?).with(:visibility).and_return(true)
-        el
+        Lutaml::Uml::Class.new(attributes: [mock_attr])
       end
 
       let(:attrs) { presenter.send(:extract_attributes, element) }
@@ -641,33 +594,28 @@ RSpec.describe Lutaml::UmlRepository::Presenters::DiagramPresenter do
       it { expect(attrs.first[:type]).to eq("Integer") }
       it { expect(attrs.first[:visibility]).to eq("public") }
 
-      it "returns empty array when not available" do
-        el = double("Element")
-        allow(el).to receive(:respond_to?).with(:attributes).and_return(false)
+      it "returns empty array for non-Classifier" do
+        el = Lutaml::Uml::Package.new
         expect(presenter.send(:extract_attributes, el)).to eq([])
       end
 
       it "returns empty array for nil attributes" do
-        el = double("Element", attributes: nil)
-        allow(el).to receive(:respond_to?).with(:attributes).and_return(true)
+        el = Lutaml::Uml::Class.new
+        el.attributes = []
         expect(presenter.send(:extract_attributes, el)).to eq([])
       end
     end
 
     describe "#extract_operations" do
-      let(:mock_param) { double("Parameter", name: "value", type: "String") }
+      let(:mock_param) { Lutaml::Uml::OperationParameter.new(name: "value", type: "String") }
       let(:mock_op) do
-        double("Operation", name: "setValue", visibility: "public",
-                            return_type: "void", owned_parameter: [mock_param])
+        Lutaml::Uml::Operation.new(name: "setValue", visibility: "public",
+                                   return_type: "void",
+                                   owned_parameter: [mock_param])
       end
 
       let(:element) do
-        el = double("Element", operations: [mock_op])
-        allow(el).to receive(:respond_to?).with(:operations).and_return(true)
-        allow(mock_op).to receive(:respond_to?).with(:visibility).and_return(true)
-        allow(mock_op).to receive(:respond_to?).with(:return_type).and_return(true)
-        allow(mock_op).to receive(:respond_to?).with(:owned_parameter).and_return(true)
-        el
+        Lutaml::Uml::Class.new(operations: [mock_op])
       end
 
       let(:ops) { presenter.send(:extract_operations, element) }
@@ -679,19 +627,16 @@ RSpec.describe Lutaml::UmlRepository::Presenters::DiagramPresenter do
       it { expect(ops.first[:return_type]).to eq("void") }
       it { expect(ops.first[:parameters]).to be_an(Array) }
 
-      it "returns empty array when not available" do
-        el = double("Element")
-        allow(el).to receive(:respond_to?).with(:operations).and_return(false)
+      it "returns empty array for non-Classifier" do
+        el = Lutaml::Uml::Package.new
         expect(presenter.send(:extract_operations, el)).to eq([])
       end
     end
 
     describe "#extract_parameters" do
-      let(:mock_param) { double("Parameter", name: "value", type: "String") }
+      let(:mock_param) { Lutaml::Uml::OperationParameter.new(name: "value", type: "String") }
       let(:operation) do
-        op = double("Operation", owned_parameter: [mock_param])
-        allow(op).to receive(:respond_to?).with(:owned_parameter).and_return(true)
-        op
+        Lutaml::Uml::Operation.new(owned_parameter: [mock_param])
       end
 
       let(:params) { presenter.send(:extract_parameters, operation) }
@@ -701,15 +646,14 @@ RSpec.describe Lutaml::UmlRepository::Presenters::DiagramPresenter do
       it { expect(params.first[:name]).to eq("value") }
       it { expect(params.first[:type]).to eq("String") }
 
-      it "returns empty array when not available" do
-        op = double("Operation")
-        allow(op).to receive(:respond_to?).with(:owned_parameter).and_return(false)
+      it "returns empty array when no parameters" do
+        op = Lutaml::Uml::Operation.new
         expect(presenter.send(:extract_parameters, op)).to eq([])
       end
 
       it "returns empty array for nil parameters" do
-        op = double("Operation", owned_parameter: nil)
-        allow(op).to receive(:respond_to?).with(:owned_parameter).and_return(true)
+        op = Lutaml::Uml::Operation.new
+        op.owned_parameter = []
         expect(presenter.send(:extract_parameters, op)).to eq([])
       end
     end

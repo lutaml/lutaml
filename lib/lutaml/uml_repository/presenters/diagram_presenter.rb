@@ -256,10 +256,10 @@ module Lutaml
         # @param diagram_object [Object] Diagram object
         # @return [String, nil] EA internal ID (DUID from style)
         def extract_ea_id(diagram_object)
-          # EA stores the internal ID as DUID in the style string
-          unless diagram_object.respond_to?(:style) && diagram_object.style
-            return nil
-          end
+          return nil unless diagram_object.style
+
+          # Parse DUID from style string
+          # Style format: "NSL=0;LCol=-1;...;DUID=82C649C4;BCol=16764159;..."
 
           # Parse DUID from style string
           # Style format: "NSL=0;LCol=-1;...;DUID=82C649C4;BCol=16764159;..."
@@ -300,20 +300,17 @@ module Lutaml
           return connector if connector
 
           repository.classes_index.each do |klass|
-            if klass.respond_to?(:generalization) && klass.generalization
-              # Look in class-level generalizations
+            if klass.is_a?(Lutaml::Uml::Class) && klass.generalization
               gen = klass.generalization
-
-              # Handle both single generalization and array of generalizations
               generalizations = gen.is_a?(Array) ? gen : [gen]
-
               generalizations.each do |g|
-                return g if g.respond_to?(:xmi_id) && g.xmi_id == xmi_id
+                return g if g.xmi_id == xmi_id
               end
-            elsif klass.respond_to?(:associations) && klass.associations
-              # Look in class-level associations
+            elsif (klass.is_a?(Lutaml::Uml::Class) ||
+                   klass.is_a?(Lutaml::Uml::DataType)) &&
+                klass.associations
               assoc = klass.associations.find do |a|
-                a.respond_to?(:xmi_id) && a.xmi_id == xmi_id
+                a.xmi_id == xmi_id
               end
               return assoc if assoc
             end
@@ -328,25 +325,15 @@ module Lutaml
         # @param elements_map [Hash] Map of element ID to element data
         # @return [Hash, nil] Target element data
         def find_connector_target(connector, elements_map) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
-          target_id = nil
-
-          if connector.respond_to?(:target) && connector.target
-            target_id = connector.target
-          elsif connector.respond_to?(:supplier) && connector.supplier
-            target_id = connector.supplier
-          elsif connector.respond_to?(:general) && connector.general
-            target_id = connector.general
-          elsif connector.respond_to?(:member_end) && connector.member_end
-            # For associations, use the second member_end
-            ends = if connector.member_end.is_a?(Array)
-                     connector.member_end
-                   else
-                     [connector.member_end]
-                   end
-            if ends.size > 1
-              target_id = ends[1]
-            end
-          end
+          target_id = case connector
+                      when Lutaml::Uml::Generalization
+                        connector.general
+                      when Lutaml::Uml::Dependency
+                        Array(connector.supplier).first
+                      when Lutaml::Uml::Association
+                        ends = Array(connector.member_end)
+                        ends.size > 1 ? ends[1] : nil
+                      end
 
           elements_map[target_id]
         end
@@ -357,27 +344,14 @@ module Lutaml
         # @param elements_map [Hash] Map of element ID to element data
         # @return [Hash, nil] Source element data
         def find_connector_source(connector, elements_map) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
-          source_id = nil
-
-          if connector.respond_to?(:source) && connector.source
-            source_id = connector.source
-          elsif connector.respond_to?(:client) && connector.client
-            source_id = connector.client
-          elsif connector.respond_to?(:specific) && connector.specific
-            source_id = connector.specific
-          elsif connector.respond_to?(:owner_end) && connector.owner_end
-            source_id = connector.owner_end
-          elsif connector.respond_to?(:member_end) && connector.member_end
-            # For associations, use the first member_end
-            ends = if connector.member_end.is_a?(Array)
-                     connector.member_end
-                   else
-                     [connector.member_end]
-                   end
-            if ends.any?
-              source_id = ends[0]
-            end
-          end
+          source_id = case connector
+                      when Lutaml::Uml::Generalization
+                        nil
+                      when Lutaml::Uml::Dependency
+                        Array(connector.client).first
+                      when Lutaml::Uml::Association
+                        connector.owner_end || Array(connector.member_end).first
+                      end
 
           elements_map[source_id]
         end
@@ -421,8 +395,6 @@ module Lutaml
         # @param uml_element [Object] UML element
         # @return [String, nil] Stereotype name
         def extract_stereotype(uml_element)
-          return nil unless uml_element.respond_to?(:stereotype)
-
           stereotype = uml_element.stereotype
           return nil unless stereotype && !stereotype.empty?
 
@@ -434,14 +406,14 @@ module Lutaml
         # @param uml_element [Object] UML element
         # @return [Array<Hash>] Array of attribute data
         def extract_attributes(uml_element)
-          return [] unless uml_element.respond_to?(:attributes)
+          return [] unless uml_element.is_a?(Lutaml::Uml::Classifier)
           return [] unless uml_element.attributes
 
           uml_element.attributes.map do |attr|
             {
               name: attr.name,
               type: attr.type,
-              visibility: attr.respond_to?(:visibility) ? attr.visibility : nil,
+              visibility: attr.visibility,
             }
           end
         end
@@ -451,14 +423,14 @@ module Lutaml
         # @param uml_element [Object] UML element
         # @return [Array<Hash>] Array of operation data
         def extract_operations(uml_element)
-          return [] unless uml_element.respond_to?(:operations)
+          return [] unless uml_element.is_a?(Lutaml::Uml::Classifier)
           return [] unless uml_element.operations
 
           uml_element.operations.map do |op|
             {
               name: op.name,
-              visibility: op.respond_to?(:visibility) ? op.visibility : nil,
-              return_type: op.respond_to?(:return_type) ? op.return_type : nil,
+              visibility: op.visibility,
+              return_type: op.return_type,
               parameters: extract_parameters(op),
             }
           end
@@ -469,7 +441,6 @@ module Lutaml
         # @param operation [Object] UML operation
         # @return [Array<Hash>] Array of parameter data
         def extract_parameters(operation)
-          return [] unless operation.respond_to?(:owned_parameter)
           return [] unless operation.owned_parameter
 
           operation.owned_parameter.map do |param|

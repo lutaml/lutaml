@@ -209,7 +209,10 @@ module Lutaml
         # @param value [Object] Value to check
         # @return [Boolean]
         def present?(value)
-          !value.nil? && (value.respond_to?(:empty?) ? !value.empty? : true)
+          return false if value.nil?
+          return !value.empty? if value.is_a?(String) || value.is_a?(Array)
+
+          true
         end
 
         # Finds entity name from database

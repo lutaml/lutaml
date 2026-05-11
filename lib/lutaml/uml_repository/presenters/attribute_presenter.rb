@@ -24,15 +24,13 @@ module Lutaml
           lines << "Class:         #{class_name}"
           lines << "Type:          #{element.type || 'Unknown'}"
           lines << "Cardinality:   #{format_cardinality(element)}"
-          if element.respond_to?(:visibility) && element.visibility
+          if element.visibility
             lines << "Visibility:    #{element.visibility}"
           end
-          if element.respond_to?(:stereotype) && element.stereotype
+          if element.stereotype && !element.stereotype.empty?
             lines << "Stereotype:    #{element.stereotype}"
           end
-          if element.respond_to?(:is_derived)
-            lines << "Is Derived:    #{element.is_derived}"
-          end
+          lines << "Is Derived:    #{element.is_derived}"
           lines.join("\n")
         end
 
@@ -53,15 +51,13 @@ module Lutaml
             cardinality: format_cardinality(element),
           }
 
-          if element.respond_to?(:visibility)
+          if element.visibility
             data[:visibility] = element.visibility
           end
-          if element.respond_to?(:stereotype)
+          if element.stereotype
             data[:stereotype] = element.stereotype
           end
-          if element.respond_to?(:is_derived)
-            data[:is_derived] = element.is_derived
-          end
+          data[:is_derived] = element.is_derived
 
           data
         end

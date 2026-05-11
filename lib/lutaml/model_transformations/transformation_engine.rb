@@ -256,7 +256,7 @@ module Lutaml
         @format_registry.all_parsers.each_value do |parser_class|
           # Try to create instance to validate
           parser = parser_class.new(configuration: @configuration)
-          if parser.respond_to?(:parse)
+          if parser.class.method_defined?(:parse)
             results[:parsers_loaded] += 1
           else
             results[:parser_errors] << "Parser #{parser_class} does not " \

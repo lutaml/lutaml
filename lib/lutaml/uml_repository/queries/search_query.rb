@@ -260,13 +260,13 @@ module Lutaml
           all_associations = []
 
           # Get all associations defined at document level and
-          if document.respond_to?(:associations) && document.associations
+          if document.is_a?(Lutaml::Uml::Document) && document.associations
             all_associations << document.associations
           end
 
           # Get all associations defined within classes
           indexes[:qualified_names].each_value do |entity|
-            next unless entity.respond_to?(:associations) && entity.associations
+            next unless (entity.is_a?(Lutaml::Uml::Class) || entity.is_a?(Lutaml::Uml::DataType)) && entity.associations
 
             all_associations << entity.associations
           end

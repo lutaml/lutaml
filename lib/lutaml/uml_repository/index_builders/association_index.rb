@@ -14,7 +14,7 @@ module Lutaml
         # Collect class-level associations (QEA/EA format)
         # Note: This requires qualified_names index to be built first
         @qualified_names.each_value do |klass|
-          next unless klass.respond_to?(:associations) && klass.associations
+          next unless (klass.is_a?(Lutaml::Uml::Class) || klass.is_a?(Lutaml::Uml::DataType)) && klass.associations
 
           klass.associations.each do |assoc|
             next unless assoc.xmi_id
@@ -73,13 +73,13 @@ module Lutaml
           next unless klass.associations
 
           klass.associations.each do |assoc|
-            next unless assoc.respond_to?(:member_end_type)
+            next unless assoc.member_end_type
             next unless assoc.member_end_type == "inheritance"
 
             parent_name = assoc.member_end
             next unless parent_name
 
-            parent_name = parent_name.name if parent_name.respond_to?(:name)
+            parent_name = parent_name.name if parent_name.is_a?(Lutaml::Uml::Generalization)
             next unless parent_name.is_a?(String) && !parent_name.empty?
 
             parent_qname = resolve_qualified_name(parent_name, package_path)
@@ -101,14 +101,14 @@ module Lutaml
         return nil unless generalization
 
         # Check for general attribute (could be a string or object)
-        if generalization.respond_to?(:general)
+        if generalization.general
           parent = generalization.general
-          return parent.name if parent.respond_to?(:name)
+          return parent.name if parent
           return parent.to_s if parent
         end
 
         # Check for name attribute directly
-        if generalization.respond_to?(:name) && generalization.name
+        if generalization.name
           return generalization.name
         end
 

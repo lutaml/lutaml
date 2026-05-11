@@ -129,18 +129,16 @@ RSpec.describe Lutaml::Cli::EnhancedFormatter do
 
   describe ".format_class_details_enhanced" do
     let(:mock_class) do
-      double(
-        "Class",
+      Lutaml::Uml::Class.new(
         name: "TestClass",
         xmi_id: "test-123",
-        stereotype: "entity",
+        stereotype: ["entity"],
         is_abstract: false,
         attributes: [
-          double(
-            "Attribute",
+          Lutaml::Uml::TopElementAttribute.new(
             name: "id",
             type: "Integer",
-            cardinality: double("Cardinality", min: 1, max: 1),
+            cardinality: Lutaml::Uml::Cardinality.new(min: 1, max: 1),
           ),
         ],
         operations: [],
@@ -166,8 +164,7 @@ RSpec.describe Lutaml::Cli::EnhancedFormatter do
     end
 
     it "handles classes without attributes", :aggregate_failures do
-      empty_class = double(
-        "Class",
+      empty_class = Lutaml::Uml::Class.new(
         name: "EmptyClass",
         attributes: [],
         operations: [],
@@ -272,8 +269,8 @@ RSpec.describe Lutaml::Cli::EnhancedFormatter do
       expect(result).to eq("")
     end
 
-    it "handles attributes without cardinality method" do
-      attr = double("Attribute")
+    it "handles attributes without cardinality" do
+      attr = Lutaml::Uml::TopElementAttribute.new
 
       result = described_class.send(:format_cardinality, attr)
       expect(result).to eq("")

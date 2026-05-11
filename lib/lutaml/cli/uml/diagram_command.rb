@@ -83,12 +83,12 @@ module Lutaml
             }
 
             # Add stereotype if available
-            if uml_element.respond_to?(:stereotype) && uml_element.stereotype && !uml_element.stereotype.empty?
+            if uml_element.is_a?(Lutaml::Uml::TopElement) && uml_element.stereotype && !uml_element.stereotype.empty?
               element_data[:stereotype] = uml_element.stereotype.first
             end
 
             # Add attributes and operations for classes
-            if uml_element.respond_to?(:attributes) && uml_element.attributes
+            if uml_element.is_a?(Lutaml::Uml::Classifier) && uml_element.attributes
               element_data[:attributes] = uml_element.attributes.map do |attr|
                 {
                   name: attr.name,
@@ -98,7 +98,7 @@ module Lutaml
               end
             end
 
-            if uml_element.respond_to?(:operations) && uml_element.operations
+            if uml_element.is_a?(Lutaml::Uml::Classifier) && uml_element.operations
               element_data[:operations] = uml_element.operations.map do |op|
                 {
                   name: op.name,
@@ -131,30 +131,30 @@ module Lutaml
             }
 
             # Add role and multiplicity information if available
-            if connector.respond_to?(:owner_end_attribute_name) &&
+            if connector.is_a?(Lutaml::Uml::Association) &&
                 connector.owner_end_attribute_name
               connector_data[:source_role] = connector.owner_end_attribute_name
             end
 
-            if connector.respond_to?(:member_end_attribute_name) &&
+            if connector.is_a?(Lutaml::Uml::Association) &&
                 connector.member_end_attribute_name
               connector_data[:target_role] = connector.member_end_attribute_name
             end
 
-            if connector.respond_to?(:owner_end_cardinality) &&
+            if connector.is_a?(Lutaml::Uml::Association) &&
                 connector.owner_end_cardinality
               connector_data[:source_multiplicity] =
                 format_cardinality(connector.owner_end_cardinality)
             end
 
-            if connector.respond_to?(:member_end_cardinality) &&
+            if connector.is_a?(Lutaml::Uml::Association) &&
                 connector.member_end_cardinality
               connector_data[:target_multiplicity] =
                 format_cardinality(connector.member_end_cardinality)
             end
 
             # Add source and target information if available
-            if connector.respond_to?(:source) && connector.source
+            if connector.is_a?(Lutaml::Uml::Association) && connector.owner_end
               source_obj = find_diagram_object_for_element(
                 connector.source.xmi_id, diagram
               )
@@ -166,7 +166,7 @@ module Lutaml
               end
             end
 
-            if connector.respond_to?(:target) && connector.target
+            if connector.is_a?(Lutaml::Uml::Association) && connector.member_end
               target_obj = find_diagram_object_for_element(
                 connector.target.xmi_id, diagram
               )
@@ -405,11 +405,7 @@ module Lutaml
         def format_cardinality(cardinality)
           return "" unless cardinality
 
-          if cardinality.respond_to?(:to_s)
-            cardinality.to_s
-          else
-            ""
-          end
+          cardinality.to_s
         end
       end
     end

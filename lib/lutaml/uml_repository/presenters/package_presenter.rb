@@ -20,7 +20,7 @@ module Lutaml
           lines << ("=" * 50)
           lines << ""
           lines << "Name:        #{element.name}"
-          if element.respond_to?(:xmi_id)
+          if element.is_a?(Lutaml::Uml::TopElement) && element.xmi_id
             lines << "XMI ID:      #{element.xmi_id}"
           end
           lines.join("\n")
@@ -35,7 +35,10 @@ module Lutaml
             name: element.name,
           }
 
-          data[:xmi_id] = element.xmi_id if element.respond_to?(:xmi_id)
+          if element.is_a?(Lutaml::Uml::TopElement) && element.xmi_id
+            data[:xmi_id] =
+              element.xmi_id
+          end
 
           data
         end

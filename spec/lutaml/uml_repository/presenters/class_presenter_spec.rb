@@ -59,8 +59,7 @@ RSpec.describe Lutaml::UmlRepository::Presenters::ClassPresenter do
     end
 
     it "handles class without stereotype" do
-      allow(mock_class).to receive(:respond_to?)
-        .with(:stereotype).and_return(false)
+      allow(mock_class).to receive(:stereotype).and_return([])
       row = presenter.to_table_row
       expect(row[:details]).to eq("")
     end

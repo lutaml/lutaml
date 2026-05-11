@@ -38,7 +38,7 @@ module Lutaml
           package = indexes[:package_paths][package_path_string]
           return [] unless package
 
-          package_id = package.respond_to?(:xmi_id) ? package.xmi_id : nil
+          package_id = package.is_a?(Lutaml::Uml::Package) ? package.xmi_id : nil
           return [] unless package_id
 
           indexes[:diagram_index][package_id] || []

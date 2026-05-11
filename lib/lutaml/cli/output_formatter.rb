@@ -69,7 +69,7 @@ module Lutaml
           data
         else
           # For complex objects, convert to string representation
-          data.respond_to?(:name) ? data.name : data.to_s
+          data.is_a?(Lutaml::Uml::TopElement) ? data.name : data.to_s
         end
       end
 
@@ -271,7 +271,7 @@ module Lutaml
           stats[:most_complex_classes].first(5).each do |item|
             klass = item[:class]
             complexity = item[:complexity]
-            class_name = klass.respond_to?(:name) ? klass.name : klass.to_s
+            class_name = klass&.name || klass.to_s
 
             lines << "  #{class_name} (complexity: #{complexity})"
           end

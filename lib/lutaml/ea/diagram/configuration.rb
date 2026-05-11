@@ -47,14 +47,14 @@ module Lutaml
           value = nil
 
           # 1. Try class-specific override (highest priority)
-          if element.respond_to?(:name) && element.name
+          if element.is_a?(Lutaml::Uml::TopElement) && element.name
             class_config = dig_config("classes.#{element.name}.#{property}")
             value = class_config if class_config
           end
 
           # 2. Try package-based styling
           if !value &&
-              element.respond_to?(:package_name) && element.package_name
+              element.is_a?(Lutaml::Uml::Diagram) && element.package_name
             # Support wildcards: "CityGML::*"
             package_configs = config_data["packages"] || {}
             package_configs.each do |pattern, pkg_config|
@@ -67,7 +67,7 @@ module Lutaml
           end
 
           # 3. Try stereotype-based styling
-          if !value && element.respond_to?(:stereotype) && element.stereotype
+          if !value && element.is_a?(Lutaml::Uml::TopElement) && element.stereotype
             stereotypes = Array(element.stereotype)
             stereotypes.each do |stereo|
               stereo_value = dig_config("stereotypes.#{stereo}.#{property}")

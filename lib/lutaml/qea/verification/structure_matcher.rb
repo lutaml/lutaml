@@ -222,7 +222,7 @@ module Lutaml
         def index_by_name(collection)
           index = {}
           collection.each do |element|
-            next unless element.respond_to?(:name) && element.name
+            next unless element.name
 
             index[element.name] = element
           end
@@ -243,10 +243,10 @@ module Lutaml
 
         # Build operation signature for matching
         def build_operation_signature(operation)
-          return operation.name unless operation.respond_to?(:parameters)
+          return operation.name unless operation.owned_parameter
 
-          param_types = (operation.parameters || []).map do |param|
-            param.respond_to?(:type) ? param.type : "unknown"
+          param_types = operation.owned_parameter.map do |param|
+            param.type || "unknown"
           end.join(",")
 
           "#{operation.name}(#{param_types})"

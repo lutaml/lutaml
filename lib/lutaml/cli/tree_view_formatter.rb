@@ -163,7 +163,7 @@ module Lutaml
         children = []
 
         # Add attributes
-        if @show_attributes && klass.respond_to?(:attributes) &&
+        if @show_attributes && klass.is_a?(Lutaml::Uml::Classifier) &&
             klass.attributes
           children.concat(klass.attributes.map do |a|
             { type: :attribute, obj: a }
@@ -171,7 +171,7 @@ module Lutaml
         end
 
         # Add operations
-        if @show_operations && klass.respond_to?(:operations) &&
+        if @show_operations && klass.is_a?(Lutaml::Uml::Classifier) &&
             klass.operations
           children.concat(klass.operations.map do |o|
             { type: :operation, obj: o }
@@ -239,11 +239,7 @@ module Lutaml
         return "" if @max_depth && depth >= @max_depth
 
         assoc_name = assoc.name || "(unnamed)"
-        target = if assoc.respond_to?(:member_end) && assoc.member_end&.first
-                   assoc.member_end.first.xmi_type || "Unknown"
-                 else
-                   "Unknown"
-                 end
+        target = assoc.member_end || "Unknown"
 
         connector = is_last ? TREE_CHARS[:last_branch] : TREE_CHARS[:branch]
         icon = ICONS[:association]
@@ -280,7 +276,7 @@ module Lutaml
       # Determine class type (class, interface, enumeration)
       def determine_class_type(klass)
         return :enumeration if klass.class.name&.include?("Enum")
-        return :interface if klass.respond_to?(:stereotype) &&
+        return :interface if klass.is_a?(Lutaml::Uml::TopElement) &&
           Array(klass.stereotype).any? { |s| s&.downcase == "interface" }
 
         :class
