@@ -18,7 +18,7 @@ module Lutaml
 
         classes.each do |klass|
           @by_xmi_id[klass.xmi_id] = klass if klass.xmi_id
-          if klass.respond_to?(:ea_object_id) && klass.ea_object_id
+          if klass.class.attributes.key?(:ea_object_id) && klass.ea_object_id
             @by_object_id[klass.ea_object_id] = klass
           end
         end

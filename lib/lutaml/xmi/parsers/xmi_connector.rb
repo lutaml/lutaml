@@ -22,7 +22,7 @@ module Lutaml
           connector_node = fetch_connector(link_id)
           return nil unless connector_node
 
-          node = connector_node.send(node_name.to_sym)
+          node = connector_node.public_send(node_name.to_sym)
           return nil unless node
 
           documentation = node.documentation
@@ -48,7 +48,7 @@ module Lutaml
             return owner_end
           end
 
-          xmi_id = link.send(linke_owner_name.to_sym)
+          xmi_id = link.public_send(linke_owner_name.to_sym)
           lookup_entity_name(xmi_id) || connector_source_name(xmi_id)
         end
 
@@ -135,7 +135,7 @@ module Lutaml
           connector = fetch_connector(link_id)
           return [nil, nil] unless connector
 
-          assoc_connector = connector.send(connector_type.to_sym)
+          assoc_connector = connector.public_send(connector_type.to_sym)
 
           if assoc_connector
             assoc_connector_type = assoc_connector.type
@@ -207,7 +207,7 @@ module Lutaml
             connectors = @xmi_root_model.extension&.connectors&.connector || []
             connectors.each do |con|
               %i[source target].each do |dir|
-                idref = con.send(dir)&.idref
+                idref = con.public_send(dir)&.idref
                 lookup[[dir, idref]] = con if idref
               end
             end
@@ -223,10 +223,10 @@ module Lutaml
           return node.name if node&.name
 
           return if node.nil? ||
-            node.send(source_or_target.to_sym).nil? ||
-            node.send(source_or_target.to_sym).model.nil?
+            node.public_send(source_or_target.to_sym).nil? ||
+            node.public_send(source_or_target.to_sym).model.nil?
 
-          node.send(source_or_target.to_sym).model.name
+          node.public_send(source_or_target.to_sym).model.name
         end
 
         # @param xmi_id [String]

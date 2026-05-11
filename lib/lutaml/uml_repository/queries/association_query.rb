@@ -57,13 +57,13 @@ module Lutaml
           results = []
 
           # Get owned associations from the class itself
-          if klass.respond_to?(:associations) && klass.associations
+          if (klass.is_a?(Lutaml::Uml::Class) || klass.is_a?(Lutaml::Uml::DataType)) && klass.associations
             results.concat(klass.associations)
           end
 
           # Get associations from document level unless owned_only
           if !owned_only &&
-              document.respond_to?(:associations) && document.associations
+              document.is_a?(Lutaml::Uml::Document) && document.associations
             document_associations = document.associations.select do |assoc|
               match_association?(assoc, class_name, direction)
             end

@@ -65,8 +65,7 @@ module Lutaml
         return "" if @class_name.nil? || @class_name.empty?
 
         # Check if package path is empty
-        if @package_path.nil? ||
-            (@package_path.respond_to?(:empty?) && @package_path.empty?)
+        if @package_path.nil? || @package_path.empty?
           return @class_name
         end
 
@@ -105,7 +104,7 @@ module Lutaml
       #   qname.matches_glob?("Package1::*::ClassName") # => true
       def matches_glob?(pattern)
         # Create a full path for matching (package + class)
-        full_segments = if @package_path.respond_to?(:segments) &&
+        full_segments = if @package_path.is_a?(PackagePath) &&
             !@package_path.segments.empty?
                           @package_path.segments + [@class_name]
                         else
@@ -125,7 +124,7 @@ module Lutaml
       #   new_path = PackagePath.new("Package2")
       #   qname.with_package(new_path) # => QualifiedName("Package2::ClassName")
       def with_package(new_package_path)
-        if new_package_path.respond_to?(:empty?) && new_package_path.empty?
+        if new_package_path.empty?
           self.class.new(@class_name)
         else
           self.class.new("#{new_package_path}#{PackagePath::SEPARATOR}#{@class_name}")
@@ -148,7 +147,7 @@ module Lutaml
         return self if relative_path == @package_path
 
         # Otherwise create new qualified name with relative path
-        if relative_path.respond_to?(:empty?) && relative_path.empty?
+        if relative_path.empty?
           self.class.new(@class_name)
         else
           self.class.new("#{relative_path}#{PackagePath::SEPARATOR}#{@class_name}")

@@ -31,7 +31,7 @@ module Lutaml
       #     puts "#{'  ' * (level - 1)}Parent #{level}: #{parent.name}"
       #   end
       def walk(klass)
-        return [] unless klass.respond_to?(:generalization) && klass.generalization
+        return [] unless klass.is_a?(Lutaml::Uml::Class) && klass.generalization
 
         ancestors = []
         @visited.clear
@@ -69,12 +69,12 @@ module Lutaml
       # Uses a trail set for cycle detection (avoids Set mutation issues across calls).
       def collect_ancestors(klass, result, trail = [])
         return [] if trail.include?(klass.xmi_id) # cycle guard
-        return [] unless klass.respond_to?(:generalization) && klass.generalization
+        return [] unless klass.is_a?(Lutaml::Uml::Class) && klass.generalization
 
         trail = trail.dup
         trail << klass.xmi_id
 
-        general_id = klass.generalization.respond_to?(:general_id) ? klass.generalization.general_id : nil
+        general_id = klass.generalization.general_id
         parent = general_id ? find_class_by_id(general_id) : nil
 
         return [] unless parent
@@ -85,7 +85,7 @@ module Lutaml
 
       def find_class_by_id(xmi_id)
         @repository.indexes&.dig(:qualified_names, xmi_id) ||
-          @repository.send(:classes_index)&.find { |c| c.xmi_id == xmi_id }
+          @repository.classes_index&.find { |c| c.xmi_id == xmi_id }
       end
     end
   end

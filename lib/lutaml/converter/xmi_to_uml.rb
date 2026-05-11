@@ -271,7 +271,7 @@ module Lutaml
           uml_type = operation.uml_type.first
           uml_type_idref = uml_type.idref if uml_type
 
-          if !operation.respond_to?(:association) || operation.association.nil?
+          if !operation.class.attributes.key?(:association) || operation.association.nil?
             ::Lutaml::Uml::Operation.new.tap do |op|
               op.id = operation.id
               op.xmi_id = uml_type_idref
@@ -289,7 +289,7 @@ module Lutaml
         # In ea-xmi-2.5.1, constraints are moved to source/target under
         # connectors
         constraints = %i[source target].map do |st|
-          connector_node.send(st).constraints.constraint
+          connector_node.public_send(st).constraints.constraint
         end.flatten
 
         constraints.map do |constraint|

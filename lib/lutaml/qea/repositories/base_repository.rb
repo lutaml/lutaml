@@ -57,7 +57,7 @@ module Lutaml
         # @param id [Object] key value
         # @return [Object, nil] The record or nil if not found
         def find_by_key(key, id)
-          @records.find { |record| record.send(key) == id }
+          @records.find { |record| record.public_send(key) == id }
         end
 
         # Filter records by conditions
@@ -79,7 +79,7 @@ module Lutaml
           elsif conditions.is_a?(Hash)
             @records.select do |record|
               conditions.all? do |attr, value|
-                record.respond_to?(attr) && record.send(attr) == value
+                record.public_send(attr) == value
               end
             end
           else
@@ -150,8 +150,8 @@ module Lutaml
         #   # => [{id: 1, name: "Test"}, {id: 2, name: "Other"}]
         def pluck(*attributes)
           @records.map do |record|
-            attributes.each_with_object({}) do |attr, hash|
-              hash[attr] = record.send(attr) if record.respond_to?(attr)
+            attributes.to_h do |attr|
+              [attr, record.public_send(attr)]
             end
           end
         end
@@ -165,7 +165,7 @@ module Lutaml
         #   repository.group_by(:type)
         #   # => {"Class" => [obj1, obj2], "Interface" => [obj3]}
         def group_by(attribute)
-          @records.group_by { |record| record.send(attribute) }
+          @records.group_by { |record| record.public_send(attribute) }
         end
 
         # Sort records by an attribute
@@ -178,7 +178,7 @@ module Lutaml
         #   repository.order_by(:name)
         #   repository.order_by(:created_at, :desc)
         def order_by(attribute, order = :asc)
-          sorted = @records.sort_by { |record| record.send(attribute) }
+          sorted = @records.sort_by { |record| record.public_send(attribute) }
           order == :desc ? sorted.reverse : sorted
         end
 
@@ -191,7 +191,7 @@ module Lutaml
         #   repository.distinct(:type)
         #   # => ["Class", "Interface", "Component"]
         def distinct(attribute)
-          @records.map { |record| record.send(attribute) }.uniq
+          @records.map { |record| record.public_send(attribute) }.uniq
         end
 
         # Check if repository is empty

@@ -110,7 +110,7 @@ module Lutaml
         end
 
         def show_package(path)
-          nav = shell.instance_variable_get(:@navigation)
+          nav = shell.navigation
           path = nav.resolve_path(path)
           pkg = repository.find_package(path)
 

@@ -75,7 +75,7 @@ module Lutaml
         # @param path [String] Package path for error reporting
         # @return [void]
         def validate_collection(package, attribute, path) # rubocop:disable Metrics/MethodLength
-          value = package.send(attribute)
+          value = package.public_send(attribute)
           unless value.nil? || value.is_a?(Array)
             result.add_error(
               category: :invalid_structure,
@@ -175,7 +175,7 @@ module Lutaml
           name_counts = Hash.new(0)
 
           collection.each do |entity|
-            next unless entity.respond_to?(:name) && entity.name
+            next unless entity.name
 
             name_counts[entity.name] += 1
           end
@@ -212,10 +212,10 @@ module Lutaml
 
           # Check attribute type references
           all_classes.each do |cls, path|
-            next unless cls.respond_to?(:attributes)
+            next unless cls.is_a?(Lutaml::Uml::Class) || cls.is_a?(Lutaml::Uml::DataType)
 
             (cls.attributes || []).each do |attr|
-              next unless attr.respond_to?(:type) && attr.type
+              next unless attr.type
               next if primitive_type?(attr.type)
               next if valid_types.include?(attr.type)
 

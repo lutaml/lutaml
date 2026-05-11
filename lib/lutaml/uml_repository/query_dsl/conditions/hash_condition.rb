@@ -51,9 +51,9 @@ module Lutaml
           # @param value [Object] The expected value
           # @return [Boolean] true if condition matches
           def matches_condition?(obj, key, value)
-            return false unless obj.respond_to?(key)
+            return false unless obj.class.attributes.key?(key.to_sym)
 
-            actual_value = obj.send(key)
+            actual_value = obj.public_send(key)
             compare_values(actual_value, value)
           end
 

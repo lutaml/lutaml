@@ -21,7 +21,7 @@ module Lutaml
       private
 
       def association_type(type)
-        return type if respond_to?(:"#{type}=")
+        return type if self.class.attributes.key?(type.to_sym)
 
         raise(UnknownMemberTypeError, "Unknown member type: #{type}")
       end

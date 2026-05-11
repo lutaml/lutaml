@@ -17,8 +17,11 @@ module Lutaml
       HISTORY_FILE = File.expand_path("~/.lutaml-xmi-history")
       MAX_HISTORY = 1000
 
-      attr_reader :repository, :current_path, :config, :bookmarks,
-                  :last_results, :path_history
+      attr_reader :repository, :config, :bookmarks,
+                  :path_history,
+                  :navigation, :query, :bookmarks_cmd, :export, :help
+
+      attr_accessor :current_path, :last_results
 
       def initialize(lur_path_or_repo, config: nil)
         @config = {
@@ -83,25 +86,25 @@ module Lutaml
 
       COMMAND_DISPATCH = {
         # Navigation
-        "cd" => :@navigation, "pwd" => :@navigation,
-        "ls" => :@navigation, "list" => :@navigation,
-        "tree" => :@navigation, "up" => :@navigation,
-        "root" => :@navigation, "back" => :@navigation,
+        "cd" => :navigation, "pwd" => :navigation,
+        "ls" => :navigation, "list" => :navigation,
+        "tree" => :navigation, "up" => :navigation,
+        "root" => :navigation, "back" => :navigation,
         # Query
-        "find" => :@query, "f" => :@query,
-        "show" => :@query, "s" => :@query,
-        "search" => :@query, "?" => :@query,
-        "results" => :@query,
+        "find" => :query, "f" => :query,
+        "show" => :query, "s" => :query,
+        "search" => :query, "?" => :query,
+        "results" => :query,
         # Bookmarks
-        "bookmark" => :@bookmarks_cmd, "bm" => :@bookmarks_cmd,
+        "bookmark" => :bookmarks_cmd, "bm" => :bookmarks_cmd,
         # Export
-        "export" => :@export,
+        "export" => :export,
         # Utilities
-        "help" => :@help, "h" => :@help,
-        "history" => :@help,
-        "clear" => :@help, "cls" => :@help,
-        "config" => :@help,
-        "stats" => :@help
+        "help" => :help, "h" => :help,
+        "history" => :help,
+        "clear" => :help, "cls" => :help,
+        "config" => :help,
+        "stats" => :help
       }.freeze
 
       METHOD_MAP = {
@@ -136,7 +139,7 @@ module Lutaml
         method_name = METHOD_MAP[command]
 
         if handler_var && method_name
-          instance_variable_get(handler_var).send(method_name, args)
+          public_send(handler_var).public_send(method_name, args)
         else
           puts OutputFormatter.warning("Unknown command: #{command}")
           puts "Type 'help' for available commands"

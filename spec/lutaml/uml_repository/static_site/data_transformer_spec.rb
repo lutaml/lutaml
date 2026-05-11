@@ -30,7 +30,8 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::DataTransformer do
   end
 
   describe "#transform" do
-    it "returns a SpaDocument with all expected sections", :aggregate_failures do
+    it "returns a SpaDocument with all expected sections",
+       :aggregate_failures do
       result = transformer.transform
 
       expect(result).to be_a(Lutaml::UmlRepository::StaticSite::Models::SpaDocument)

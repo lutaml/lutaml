@@ -212,7 +212,7 @@ module Lutaml
           doc_node = fetch_element(node_id)
           return unless doc_node
 
-          doc_node.properties&.send(
+          doc_node.properties&.public_send(
             Lutaml::Model::Utils.snake_case(attr_name).to_sym,
           )
         end
@@ -282,10 +282,10 @@ module Lutaml
         # @param children_method [String] method to determine children exist
         def iterate_tree(result, node, type, children_method) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
           result << node if type.nil? || node.type == type
-          return unless node.send(children_method.to_sym)
+          return unless node.public_send(children_method.to_sym)
 
-          node.send(children_method.to_sym).each do |sub_node|
-            if sub_node.send(children_method.to_sym)
+          node.public_send(children_method.to_sym).each do |sub_node|
+            if sub_node.public_send(children_method.to_sym)
               iterate_tree(result, sub_node, type, children_method)
             elsif type.nil? || sub_node.type == type
               result << sub_node

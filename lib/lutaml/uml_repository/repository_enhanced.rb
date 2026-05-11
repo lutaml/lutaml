@@ -157,7 +157,7 @@ module Lutaml
         }
 
         # Add engine statistics if available
-        if @transformation_engine.respond_to?(:statistics)
+        if @transformation_engine.class.method_defined?(:statistics)
           base_info[:engine_statistics] = @transformation_engine.statistics
         end
 

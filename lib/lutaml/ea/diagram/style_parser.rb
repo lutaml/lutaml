@@ -139,6 +139,21 @@ module Lutaml
           base_style
         end
 
+        # Convert EA color integer to hex color
+        # (EA stores colors as BGR integers)
+        # @param ea_color [Integer] EA color value
+        # @return [String] Hex color string
+        def color_from_ea_color(ea_color)
+          return EA_COLORS[:class_fill] if ea_color.zero?
+
+          # EA colors are stored as BGR, convert to RGB
+          b = (ea_color & 0xFF0000) >> 16
+          g = (ea_color & 0x00FF00) >> 8
+          r = ea_color & 0x0000FF
+
+          format("#%02x%02x%02x", r, g, b).upcase # rubocop:disable Style/FormatStringToken
+        end
+
         private
 
         def get_base_element_style(element_type) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
@@ -275,21 +290,6 @@ module Lutaml
           end
 
           style
-        end
-
-        # Convert EA color integer to hex color
-        # (EA stores colors as BGR integers)
-        # @param ea_color [Integer] EA color value
-        # @return [String] Hex color string
-        def color_from_ea_color(ea_color)
-          return EA_COLORS[:class_fill] if ea_color.zero?
-
-          # EA colors are stored as BGR, convert to RGB
-          b = (ea_color & 0xFF0000) >> 16
-          g = (ea_color & 0x00FF00) >> 8
-          r = ea_color & 0x0000FF
-
-          format("#%02x%02x%02x", r, g, b).upcase # rubocop:disable Style/FormatStringToken
         end
 
         # Get stereotype-specific styling

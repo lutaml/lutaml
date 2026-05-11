@@ -34,7 +34,7 @@ module Lutaml
           Models::SpaDocument.new(
             metadata: Serializers::MetadataBuilder.new(repository).build,
             package_tree: Serializers::PackageTreeBuilder.new(repository,
-                                                               id_generator).build,
+                                                              id_generator).build,
             packages: Serializers::PackageSerializer.new(repository,
                                                          id_generator, options).build_map,
             classes: Serializers::ClassSerializer.new(repository, id_generator,

@@ -129,8 +129,8 @@ module Lutaml
 
             # Check fields for match
             fields.each do |field|
-              if entity.respond_to?(field) &&
-                  entity.send(field)&.match?(pattern)
+              if entity.class.attributes.key?(field) &&
+                  entity.public_send(field)&.match?(pattern)
 
                 match_field = field
                 qualified_name = qname
@@ -157,7 +157,7 @@ module Lutaml
           matched_entities = indexes[:stereotypes]
             .filter_map do |_stereotype, entities|
             entities.select do |entity|
-              entity.respond_to?(:stereotype) &&
+              entity.is_a?(Lutaml::Uml::Classifier) &&
                 Array(entity.stereotype).any? { |s| s&.match?(pattern) }
             end.uniq
           end.uniq.flatten
@@ -218,7 +218,7 @@ module Lutaml
           )
 
           indexes[:qualified_names].filter_map do |class_qname, entity| # rubocop:disable Metrics/BlockLength
-            next unless entity.respond_to?(:attributes) && entity.attributes
+            next unless entity.is_a?(Lutaml::Uml::Classifier) && entity.attributes
 
             match_field = nil
             match_attr = nil
@@ -227,8 +227,8 @@ module Lutaml
             entity.attributes.each do |attr|
               # Check attribute for match
               fields.each do |field|
-                if attr.respond_to?(field) &&
-                    attr.send(field)&.match?(pattern)
+                if attr.class.attributes.key?(field) &&
+                    attr.public_send(field)&.match?(pattern)
 
                   match_attr = attr
                   match_field = field
@@ -294,7 +294,7 @@ module Lutaml
             match_field = nil
 
             fields.each do |field|
-              if assoc.respond_to?(field) && assoc.send(field)&.match?(pattern)
+              if assoc.class.attributes.key?(field) && assoc.public_send(field)&.match?(pattern)
                 match_field = field
               end
             end

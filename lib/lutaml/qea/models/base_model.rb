@@ -25,7 +25,7 @@ module Lutaml
         # Returns the primary key value for this instance
         # @return [Object] the primary key value
         def primary_key
-          send(self.class.primary_key_column)
+          public_send(self.class.primary_key_column)
         end
 
         # Create instance from database row hash
