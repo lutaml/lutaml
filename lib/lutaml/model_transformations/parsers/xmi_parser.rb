@@ -165,13 +165,8 @@ module Lutaml
             options: @options,
           }
 
-          # Store metadata if document supports it
-          if document.respond_to?(:parsing_metadata=)
+          if document.class.method_defined?(:parsing_metadata=)
             document.parsing_metadata = metadata
-          elsif document.respond_to?(:instance_variable_set)
-            # Store in custom attribute if available
-            document.instance_variable_set(:@parsing_metadata,
-                                           metadata)
           end
         end
 

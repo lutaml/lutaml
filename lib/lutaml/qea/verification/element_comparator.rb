@@ -52,25 +52,19 @@ module Lutaml
           end
 
           # Compare is_abstract
-          if xmi_class.respond_to?(:is_abstract) &&
-              qea_class.respond_to?(:is_abstract) &&
-              xmi_class.is_abstract != qea_class.is_abstract
+          if xmi_class.is_abstract != qea_class.is_abstract
             differences << "is_abstract: #{xmi_class.is_abstract} " \
                            "vs #{qea_class.is_abstract}"
           end
 
           # Compare type
-          if xmi_class.respond_to?(:type) &&
-              qea_class.respond_to?(:type) &&
-              normalize_value(xmi_class.type) != normalize_value(qea_class.type)
+          if normalize_value(xmi_class.type) != normalize_value(qea_class.type)
             differences << "type: '#{xmi_class.type}' vs '#{qea_class.type}'"
           end
 
           # Compare modifier
-          if xmi_class.respond_to?(:modifier) &&
-              qea_class.respond_to?(:modifier) &&
-              normalize_value(xmi_class.modifier) !=
-                  normalize_value(qea_class.modifier)
+          if normalize_value(xmi_class.modifier) !=
+              normalize_value(qea_class.modifier)
             differences << "modifier: '#{xmi_class.modifier}' " \
                            "vs '#{qea_class.modifier}'"
           end
@@ -105,27 +99,22 @@ module Lutaml
           end
 
           # Compare type
-          if xmi_attr.respond_to?(:type) &&
-              qea_attr.respond_to?(:type) &&
-              normalize_value(xmi_attr.type) !=
-                  normalize_value(qea_attr.type)
+          if normalize_value(xmi_attr.type) !=
+              normalize_value(qea_attr.type)
             differences << "type: '#{xmi_attr.type}' vs '#{qea_attr.type}'"
           end
 
           # Compare visibility
-          if xmi_attr.respond_to?(:visibility) &&
-              qea_attr.respond_to?(:visibility) &&
-              normalize_value(xmi_attr.visibility) !=
-                  normalize_value(qea_attr.visibility)
+          if normalize_value(xmi_attr.visibility) !=
+              normalize_value(qea_attr.visibility)
             differences << "visibility: '#{xmi_attr.visibility}' " \
                            "vs '#{qea_attr.visibility}'"
           end
 
           # Compare cardinality if present
-          if xmi_attr.respond_to?(:cardinality) &&
-              qea_attr.respond_to?(:cardinality)
-            xmi_card = xmi_attr.cardinality
-            qea_card = qea_attr.cardinality
+          xmi_card = xmi_attr.cardinality
+          qea_card = qea_attr.cardinality
+          if xmi_card || qea_card
             if xmi_card && qea_card
               unless cardinalities_equal?(xmi_card, qea_card)
                 differences << "cardinality: #{format_cardinality(xmi_card)} " \
@@ -157,19 +146,15 @@ module Lutaml
           end
 
           # Compare return type
-          if xmi_op.respond_to?(:return_type) &&
-              qea_op.respond_to?(:return_type) &&
-              normalize_value(xmi_op.return_type) !=
-                  normalize_value(qea_op.return_type)
+          if normalize_value(xmi_op.return_type) !=
+              normalize_value(qea_op.return_type)
             differences << "return_type: '#{xmi_op.return_type}' " \
                            "vs '#{qea_op.return_type}'"
           end
 
           # Compare visibility
-          if xmi_op.respond_to?(:visibility) &&
-              qea_op.respond_to?(:visibility) &&
-              normalize_value(xmi_op.visibility) !=
-                  normalize_value(qea_op.visibility)
+          if normalize_value(xmi_op.visibility) !=
+              normalize_value(qea_op.visibility)
             differences << "visibility: '#{xmi_op.visibility}' " \
                            "vs '#{qea_op.visibility}'"
           end
@@ -273,32 +258,18 @@ module Lutaml
         end
 
         # Check if cardinalities are equal
-        def cardinalities_equal?(card1, card2) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+        def cardinalities_equal?(card1, card2)
           return true if card1.nil? && card2.nil?
           return false if card1.nil? || card2.nil?
 
-          min_equal = (
-            card1.min || (card1.respond_to?(:min_value) && card1.min_value)
-          ) == (
-            card2.min || (card2.respond_to?(:min_value) && card2.min_value)
-          )
-          max_equal = (
-            card1.max || (card1.respond_to?(:max_value) && card1.max_value)
-          ) == (
-            card2.max || (card2.respond_to?(:max_value) && card2.max_value)
-          )
-
-          min_equal && max_equal
+          card1.min == card2.min && card1.max == card2.max
         end
 
         # Format cardinality for display
         def format_cardinality(card)
           return "nil" if card.nil?
 
-          min = card.min || (card.respond_to?(:min_value) && card.min_value)
-          max = card.max || (card.respond_to?(:max_value) && card.max_value)
-
-          "#{min}..#{max}"
+          "\#{card.min}..\#{card.max}"
         end
       end
     end

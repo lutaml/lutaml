@@ -228,7 +228,7 @@ module Lutaml
         # @param klass [Object] The class object
         # @return [Array<Hash>] Array of operation hashes
         def serialize_operations(klass)
-          return [] unless klass.respond_to?(:operations) && klass.operations
+          return [] unless klass.is_a?(Lutaml::Uml::Classifier) && klass.operations
 
           klass.operations.map do |op|
             {

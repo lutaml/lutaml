@@ -236,7 +236,7 @@ module Lutaml
         #
         # @return [Array<Lutaml::Uml::Class>] Array of class objects
         def fetch_classes
-          indexes = @repository.instance_variable_get(:@indexes)
+          indexes = @repository.indexes
           qnames_index = indexes[:qualified_names] || {}
 
           qnames_index.values.select do |obj|
@@ -250,7 +250,7 @@ module Lutaml
         #
         # @return [Array<Lutaml::Uml::Package>] Array of package objects
         def fetch_packages
-          indexes = @repository.instance_variable_get(:@indexes)
+          indexes = @repository.indexes
           package_paths_index = indexes[:package_paths] || {}
           package_paths_index.values
         end

@@ -21,14 +21,22 @@ module Lutaml
           attribute :attributes, :string, collection: true, default: -> { [] }
           attribute :operations, :string, collection: true, default: -> { [] }
           attribute :associations, :string, collection: true, default: -> { [] }
-          attribute :generalizations, :string, collection: true, default: -> { [] }
-          attribute :specializations, :string, collection: true, default: -> { [] }
+          attribute :generalizations, :string, collection: true, default: -> {
+            []
+          }
+          attribute :specializations, :string, collection: true, default: -> {
+            []
+          }
           attribute :is_abstract, :boolean, default: false
           attribute :literals, SpaLiteral, collection: true, default: -> { [] }
           attribute :inherited_attributes, SpaInheritedAttribute, collection: true,
-                                                                 default: -> { [] }
+                                                                  default: -> {
+                                                                    []
+                                                                  }
           attribute :inherited_associations, SpaInheritedAssociation, collection: true,
-                                                                      default: -> { [] }
+                                                                      default: -> {
+                                                                        []
+                                                                      }
 
           json do
             map "id", to: :id

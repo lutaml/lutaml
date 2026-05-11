@@ -17,12 +17,12 @@ module Lutaml
       def build_group_index(collection, method, single: false)
         if single
           collection.each_with_object({}) do |item, hash|
-            key = item.send(method)
+            key = item.public_send(method)
             hash[key] = item if key
           end
         else
           collection.each_with_object({}) do |item, hash|
-            key = item.send(method)
+            key = item.public_send(method)
             (hash[key] ||= []) << item if key
           end
         end

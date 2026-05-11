@@ -301,12 +301,10 @@ module Lutaml
           }
 
           # Store metadata using various approaches
-          if document.respond_to?(:parsing_metadata=)
+          if document.class.method_defined?(:parsing_metadata=)
             document.parsing_metadata = metadata
-          elsif document.respond_to?(:metadata=)
+          elsif document.class.method_defined?(:metadata=)
             document.metadata = metadata
-          else
-            document.instance_variable_set(:@qea_metadata, metadata)
           end
         end
 

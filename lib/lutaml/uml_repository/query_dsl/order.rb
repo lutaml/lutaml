@@ -64,9 +64,9 @@ module Lutaml
         # @param obj [Object] The object to extract value from
         # @return [Object] The value to use for sorting
         def extract_sort_value(obj)
-          return "" unless obj.respond_to?(@field)
+          return "" unless obj.class.attributes.key?(@field.to_sym)
 
-          value = obj.send(@field)
+          value = obj.public_send(@field)
           normalize_value(value)
         end
 

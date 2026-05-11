@@ -313,7 +313,7 @@ module Lutaml
         @indexes[:qualified_names].count do |_, obj|
           next false unless obj.is_a?(Lutaml::Uml::Class)
 
-          obj.respond_to?(:is_abstract) && obj.is_abstract
+          obj.is_abstract
         end
       end
 
@@ -324,9 +324,7 @@ module Lutaml
         @indexes[:qualified_names].count do |_, obj|
           next false unless obj.is_a?(Lutaml::Uml::Class)
 
-          documentation = if obj.respond_to?(:documentation)
-                            obj.documentation
-                          end
+          documentation = obj.definition
           documentation.nil? || documentation.to_s.strip.empty?
         end
       end

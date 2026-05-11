@@ -36,7 +36,7 @@ module Lutaml
         def supertype(class_or_qname) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
           klass = resolve_class(class_or_qname)
           return nil unless klass
-          return nil unless klass.respond_to?(:generalization)
+          return nil unless klass.is_a?(Lutaml::Uml::Class)
           return nil unless klass.generalization
 
           parent_name = extract_parent_name(klass.generalization)
@@ -230,7 +230,7 @@ module Lutaml
 
           # Try as xmi_id - search in qualified_names
           indexes[:qualified_names].each_value do |entity|
-            next unless entity.respond_to?(:xmi_id)
+            next unless entity.xmi_id
 
             return entity if entity.xmi_id == class_or_id
           end
@@ -280,22 +280,18 @@ module Lutaml
         # @param generalization [Lutaml::Uml::Generalization]
         # Generalization object
         # @return [String, nil] Parent class name
-        def extract_parent_name(generalization) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/MethodLength
+        def extract_parent_name(generalization)
           return nil unless generalization
+          return nil unless generalization.is_a?(Lutaml::Uml::Generalization)
 
-          # Check for general attribute (could be a string or object)
-          if generalization.respond_to?(:general)
-            parent = generalization.general
-            return parent.name if parent.respond_to?(:name)
-            return parent.to_s if parent
+          parent = generalization.general
+          if parent
+            return parent.name if parent.is_a?(Lutaml::Uml::Generalization) && parent.name
+
+            return parent.to_s
           end
 
-          # Check for name attribute directly
-          if generalization.respond_to?(:name) && generalization.name
-            return generalization.name
-          end
-
-          nil
+          generalization.name if generalization.name
         end
 
         # Resolve a class name to its qualified name

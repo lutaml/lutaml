@@ -66,7 +66,7 @@ module Lutaml
           config = ResourceRegistry.config_for(identifier.type)
           return nil unless config
 
-          repo.send(config[:find_method], identifier.path)
+          repo.public_send(config[:find_method], identifier.path)
         end
 
         def display_element_details(element, identifier, repo)

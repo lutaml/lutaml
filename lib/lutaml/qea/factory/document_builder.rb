@@ -238,7 +238,7 @@ module Lutaml
         # @param valid_ids [Set<String>] Set of valid xmi_ids
         # @return [Boolean] True if valid or nil
         def check_association_end_valid?(assoc, attr, valid_ids)
-          value = assoc.send(attr)
+          value = assoc.public_send(attr)
           return true if value.nil?
 
           valid_ids.include?(value)
@@ -250,14 +250,14 @@ module Lutaml
         # @param valid_ids [Set<String>] Set of valid xmi_ids
         # @param warnings [Array<String>] Warning accumulator
         def add_invalid_end_warning(assoc, attr, valid_ids, warnings) # rubocop:disable Metrics/MethodLength
-          value = assoc.send(attr)
+          value = assoc.public_send(attr)
           return if value.nil?
 
           unless valid_ids.include?(value)
             # Get the corresponding name attribute for better error messages
             name_attr = attr.to_s.gsub("_xmi_id", "").to_sym
             name_value = begin
-              assoc.send(name_attr)
+              assoc.public_send(name_attr)
             rescue StandardError
               nil
             end

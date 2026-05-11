@@ -101,14 +101,14 @@ module Lutaml
               .split("\n").map(&:strip).join("\n")
           end
 
-          if model.respond_to?("#{key}=")
-            if model.class.attributes[key.to_sym].options[:collection]
-              values = model.send(key.to_sym).to_a
-              values << value
-              model.send("#{key}=", values)
-            else
-              model.send("#{key}=", value)
-            end
+          next unless model.class.attributes.key?(key.to_sym)
+
+          if model.class.attributes[key.to_sym].options[:collection]
+            values = model.public_send(key.to_sym).to_a
+            values << value
+            model.public_send("#{key}=", values)
+          else
+            model.public_send("#{key}=", value)
           end
         end
       end

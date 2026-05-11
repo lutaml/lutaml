@@ -277,15 +277,13 @@ module Lutaml
       # @param klass [Object] The class object
       # @return [Array<Hash>] List of attributes
       def build_attributes_list(klass)
-        return [] unless klass.respond_to?(:attributes) && klass.attributes
+        return [] unless klass.is_a?(Lutaml::Uml::Classifier) && klass.attributes
 
         klass.attributes.map do |attr|
           {
             "name" => attr.name,
             "type" => attr.type,
-            "visibility" => if attr.respond_to?(:visibility)
-                              attr.visibility
-                            end,
+            "visibility" => attr.visibility,
           }.compact
         end
       end
@@ -316,7 +314,7 @@ module Lutaml
       def count_all_attributes
         total = 0
         @repository.indexes[:qualified_names].each_value do |klass|
-          if klass.respond_to?(:attributes) && klass.attributes
+          if klass.is_a?(Lutaml::Uml::Classifier) && klass.attributes
             total += klass.attributes.size
           end
         end

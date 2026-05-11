@@ -35,9 +35,15 @@ module Lutaml
               path: package_path(package),
               definition: format_definition(package.definition),
               stereotypes: normalize_stereotypes(package.stereotype),
-              classes: (package.classes || []).map { |c| @id_generator.class_id(c) },
-              sub_packages: (package.packages || []).map { |p| @id_generator.package_id(p) },
-              diagrams: package_diagrams(package).map { |d| @id_generator.diagram_id(d) },
+              classes: (package.classes || []).map do |c|
+                @id_generator.class_id(c)
+              end,
+              sub_packages: (package.packages || []).map do |p|
+                @id_generator.package_id(p)
+              end,
+              diagrams: package_diagrams(package).map do |d|
+                @id_generator.diagram_id(d)
+              end,
               parent: parent_id(package),
             )
           end

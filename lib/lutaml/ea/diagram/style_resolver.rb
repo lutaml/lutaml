@@ -182,11 +182,12 @@ module Lutaml
             case key.strip
             when "BCol"
               # Background color (BGR integer)
-              style[:fill] = style_parser.send(:color_from_ea_color, value.to_i)
+              style[:fill] =
+                style_parser.color_from_ea_color(value.to_i)
             when "LCol"
               # Line color (BGR integer)
               style[:stroke] =
-                style_parser.send(:color_from_ea_color, value.to_i)
+                style_parser.color_from_ea_color(value.to_i)
             when "BFol"
               # Bold font (0 or 1)
               style[:font_weight] = value == "1" ? 700 : 400
@@ -220,7 +221,7 @@ module Lutaml
             when "LCol"
               # Line color
               style[:stroke] =
-                style_parser.send(:color_from_ea_color, value.to_i)
+                style_parser.color_from_ea_color(value.to_i)
             when "LWth"
               # Line width
               style[:stroke_width] = value.to_i

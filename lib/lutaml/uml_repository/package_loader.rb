@@ -147,11 +147,11 @@ module Lutaml
       # @raise [RuntimeError] If document is missing or format is unknown
       def self.load_document(zip, metadata) # rubocop:disable Metrics/MethodLength
         # Handle both PackageMetadata object and Hash (backward compatibility)
-        format = if metadata.respond_to?(:serialization_format)
-                   metadata.serialization_format
-                 else
+        format = if metadata.is_a?(Hash)
                    metadata["serialization_format"] ||
                      metadata[:serialization_format]
+                 else
+                   metadata.serialization_format
                  end
 
         case format.to_s

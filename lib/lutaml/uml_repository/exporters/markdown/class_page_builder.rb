@@ -55,7 +55,7 @@ module Lutaml
           end
 
           def build_definition_section(klass)
-            return "" unless klass.respond_to?(:definition) && klass.definition
+            return "" unless klass.definition
 
             "## Description\n\n#{klass.definition}\n\n"
           end
@@ -105,7 +105,7 @@ module Lutaml
           end
 
           def build_operations_section(klass)
-            return "" unless klass.respond_to?(:operations) && klass.operations&.any?
+            return "" unless klass.operations&.any?
 
             content = "## Operations\n\n"
             content += "| Name | Return Type | Visibility |\n"

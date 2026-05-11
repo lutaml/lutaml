@@ -17,14 +17,10 @@ module Lutaml
           end
 
           def build
-            root_packages = if @repository.document.packages
-                              @repository.document.packages
-                            else
-                              @repository.packages_index.select do |pkg|
-                                pkg.namespace.nil? ||
-                                  !pkg.namespace.is_a?(Lutaml::Uml::Package)
-                              end
-                            end
+            root_packages = @repository.document.packages || @repository.packages_index.select do |pkg|
+              pkg.namespace.nil? ||
+                !pkg.namespace.is_a?(Lutaml::Uml::Package)
+            end
 
             if root_packages.size == 1
               build_tree_node(root_packages.first)

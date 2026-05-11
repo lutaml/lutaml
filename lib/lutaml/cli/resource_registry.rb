@@ -10,7 +10,7 @@ module Lutaml
     #
     # @example Get configuration for a type
     #   config = ResourceRegistry.config_for(:class)
-    #   classes = repository.send(config[:list_method])
+    #   classes = repository.public_send(config[:list_method])
     #
     # @example List all available types
     #   ResourceRegistry.types # => [:package, :class, :diagram, ...]

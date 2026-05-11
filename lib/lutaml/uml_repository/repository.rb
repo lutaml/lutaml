@@ -377,7 +377,7 @@ module Lutaml
       # @return [Array<Lutaml::Uml::Attribute>] All attribute objects
       def all_attributes
         indexes[:qualified_names].flat_map do |_qname, entity|
-          next [] unless entity.respond_to?(:attributes) && entity.attributes
+          next [] unless entity.is_a?(Lutaml::Uml::Classifier) && entity.attributes
 
           entity.attributes
         end
@@ -642,7 +642,7 @@ module Lutaml
         end
 
         classes_index.each do |klass|
-          next unless klass.respond_to?(:associations) && klass.associations
+          next unless (klass.is_a?(Lutaml::Uml::Class) || klass.is_a?(Lutaml::Uml::DataType)) && klass.associations
 
           klass.associations.each do |assoc|
             if assoc.xmi_id && !seen.include?(assoc.xmi_id)

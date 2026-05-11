@@ -122,7 +122,9 @@ module Lutaml
           collection = get_collection_for_table(table)
           return false unless collection
 
-          collection.any? { |record| record.send(id_column) == reference_id }
+          collection.any? do |record|
+            record.public_send(id_column) == reference_id
+          end
         end
 
         # Maps table names to their corresponding collections in Database
@@ -223,8 +225,8 @@ module Lutaml
           collection = get_collection_for_table(table)
           return nil unless collection
 
-          record = collection.find { |r| r.send(id_column) == id }
-          record&.send(name_column)
+          record = collection.find { |r| r.public_send(id_column) == id }
+          record&.public_send(name_column)
         end
 
         # Validates a collection of entities

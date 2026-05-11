@@ -56,13 +56,13 @@ module Lutaml
       def self.build_package_paths(document)
         builder = new(document)
         builder.build_package_path_index
-        builder.instance_variable_get(:@package_paths).freeze
+        builder.package_paths.freeze
       end
 
       def self.build_package_to_path(document)
         builder = new(document)
         builder.build_package_path_index
-        builder.instance_variable_get(:@package_to_path).freeze
+        builder.package_to_path.freeze
       end
 
       # Build qualified names index
@@ -72,19 +72,19 @@ module Lutaml
       def self.build_qualified_names(document)
         builder = new(document)
         builder.build_qualified_name_index
-        builder.instance_variable_get(:@qualified_names).freeze
+        builder.qualified_names.freeze
       end
 
       def self.build_class_to_qname(document)
         builder = new(document)
         builder.build_qualified_name_index
-        builder.instance_variable_get(:@class_to_qname).freeze
+        builder.class_to_qname.freeze
       end
 
       def self.build_classes(document)
         builder = new(document)
         builder.build_qualified_name_index
-        builder.instance_variable_get(:@classes).freeze
+        builder.classes.freeze
       end
 
       def self.build_associations(document)
@@ -93,7 +93,7 @@ module Lutaml
         # class-level associations
         builder.build_qualified_name_index
         builder.build_association_index
-        builder.instance_variable_get(:@associations).freeze
+        builder.associations.freeze
       end
 
       # Build stereotypes index
@@ -103,7 +103,7 @@ module Lutaml
       def self.build_stereotypes(document)
         builder = new(document)
         builder.build_stereotype_index
-        builder.instance_variable_get(:@stereotypes).freeze
+        builder.stereotypes.freeze
       end
 
       # Build inheritance graph index
@@ -113,15 +113,13 @@ module Lutaml
       # @return [Hash] Frozen hash mapping parent qnames to child qnames
       def self.build_inheritance_graph(document, indexes)
         builder = new(document)
-        # If qualified_names index is provided, use it
         if indexes && indexes[:qualified_names]
-          builder.instance_variable_set(:@qualified_names,
-                                        indexes[:qualified_names])
+          builder.qualified_names = indexes[:qualified_names]
         else
           builder.build_qualified_name_index
         end
         builder.build_inheritance_graph_index
-        builder.instance_variable_get(:@inheritance_graph).freeze
+        builder.inheritance_graph.freeze
       end
 
       # Build diagram index
@@ -131,15 +129,13 @@ module Lutaml
       # @return [Hash] Frozen hash mapping package IDs to Diagram objects
       def self.build_diagram_index(document, indexes)
         builder = new(document)
-        # If package_paths index is provided, use it
         if indexes && indexes[:package_paths]
-          builder.instance_variable_set(:@package_paths,
-                                        indexes[:package_paths])
+          builder.package_paths = indexes[:package_paths]
         else
           builder.build_package_path_index
         end
         builder.build_diagram_index
-        builder.instance_variable_get(:@diagram_index).freeze
+        builder.diagram_index.freeze
       end
 
       def initialize(document)
@@ -156,6 +152,10 @@ module Lutaml
         @simple_name_to_qnames = {}
         @package_to_classes = {}
       end
+
+      attr_accessor :package_paths, :qualified_names
+      attr_reader :package_to_path, :class_to_qname, :classes, :associations,
+                  :stereotypes, :inheritance_graph, :diagram_index
 
       # Build all indexes and return them as a frozen hash
       #
