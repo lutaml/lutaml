@@ -38,22 +38,13 @@ module Lutaml
           if packages.empty?
             puts OutputFormatter.warning("No packages found at #{path}")
           else
-            packages.each do |pkg|
-              icon = config[:icons] ? "#{EnhancedFormatter::ICONS[:package]} " : ""
-              puts "#{icon}#{pkg.name}"
-            end
-            puts ""
-            puts "Total: #{packages.size} package(s)"
+            display_packages(packages)
           end
         end
 
         def cmd_tree(args)
           path = args.empty? ? current_path : resolve_path(args[0])
-
-          max_depth = nil
-          args.each_with_index do |arg, i|
-            max_depth = args[i + 1].to_i if arg == "-d" && args[i + 1]
-          end
+          max_depth = extract_depth(args)
 
           tree_data = repository.package_tree(path, max_depth: max_depth)
 
@@ -62,11 +53,7 @@ module Lutaml
             return
           end
 
-          if config[:icons]
-            puts EnhancedFormatter.format_tree_with_icons(tree_data, config)
-          else
-            puts OutputFormatter.format_tree(tree_data)
-          end
+          puts format_tree(tree_data)
         end
 
         def cmd_up(_args)
@@ -110,11 +97,7 @@ module Lutaml
           return "ModelRoot" if path == "/"
 
           if path.start_with?("../")
-            parts = current_path.split("::")
-            path.scan("../").each { parts.pop }
-            remaining = path.gsub(/^(\.\.\/)+/, "")
-            new_path = parts + remaining.split("/")
-            new_path.join("::")
+            resolve_parent_path(path)
           elsif path.start_with?("./")
             "#{current_path}::#{path[2..]}"
           else
@@ -123,6 +106,38 @@ module Lutaml
         end
 
         private
+
+        def display_packages(packages)
+          packages.each do |pkg|
+            icon = config[:icons] ? "#{EnhancedFormatter::ICONS[:package]} " : ""
+            puts "#{icon}#{pkg.name}"
+          end
+          puts ""
+          puts "Total: #{packages.size} package(s)"
+        end
+
+        def extract_depth(args)
+          args.each_with_index do |arg, i|
+            return args[i + 1].to_i if arg == "-d" && args[i + 1]
+          end
+          nil
+        end
+
+        def format_tree(tree_data)
+          if config[:icons]
+            EnhancedFormatter.format_tree_with_icons(tree_data, config)
+          else
+            OutputFormatter.format_tree(tree_data)
+          end
+        end
+
+        def resolve_parent_path(path)
+          parts = current_path.split("::")
+          path.scan("../").each { parts.pop }
+          remaining = path.gsub(/^(\.\.\/)+/, "")
+          new_path = parts + remaining.split("/")
+          new_path.join("::")
+        end
 
         def push_path_history
           return if path_history.last == current_path
