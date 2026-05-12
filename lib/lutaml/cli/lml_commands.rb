@@ -7,6 +7,7 @@ require_relative "../uml/has_attributes"
 require_relative "../uml/parsers/attribute"
 require_relative "../uml/parsers/dsl"
 require_relative "../uml/parsers/yaml"
+require_relative "../express/parsers/exp"
 
 module Lutaml
   module Cli
@@ -81,9 +82,7 @@ module Lutaml
             raise Thor::Error, "File does not exist: #{input_path}"
           end
 
-          document = Lutaml::Parser
-            .parse_into_document(File.new(input_path), @input_format)
-            .first
+          document = parse_document(input_path)
           result = @formatter.format(document)
 
           if @output_path
@@ -131,10 +130,7 @@ module Lutaml
           end
 
           begin
-            Lutaml::Parser.parse_into_document(
-              File.new(input_path),
-              DEFAULT_INPUT_FORMAT,
-            )
+            parse_document(input_path)
             say "✓ #{input_path}", :green
           rescue StandardError => e
             errors << "#{input_path}: #{e.message}"
@@ -151,6 +147,20 @@ module Lutaml
       end
 
       no_commands do # rubocop:disable Metrics/BlockLength
+        def parse_document(input_path)
+          case @input_format
+          when "lutaml"
+            Lutaml::Uml::Parsers::Dsl.parse(File.new(input_path))
+          when "yaml", "yml"
+            Lutaml::Uml::Parsers::Yaml.parse(input_path.to_s)
+          when "exp"
+            Lutaml::Express::Parsers::Exp.parse(File.new(input_path))
+          else
+            raise Thor::Error,
+                  "Unsupported input format: #{@input_format}"
+          end
+        end
+
         def setup_options # rubocop:disable Metrics/AbcSize
           @formatter = options[:formatter] if options[:formatter]
           @type = options[:type] if options[:type]

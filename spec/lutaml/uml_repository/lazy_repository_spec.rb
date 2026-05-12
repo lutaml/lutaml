@@ -6,7 +6,7 @@ require_relative "../../../lib/lutaml/uml_repository/repository"
 
 RSpec.describe Lutaml::UmlRepository::LazyRepository do
   let(:xmi_path) { "spec/fixtures/ea-xmi-2.5.1.xmi" }
-  let(:document) { Lutaml::Parser.parse([File.new(xmi_path)]).first }
+  let(:document) { Lutaml::Xmi::Parsers::Xml.parse(File.new(xmi_path)) }
   let(:repo) { described_class.new(document: document, lazy: true) }
 
   describe "initialization" do

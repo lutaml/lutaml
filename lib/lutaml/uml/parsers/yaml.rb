@@ -7,6 +7,9 @@ module Lutaml
   module Uml
     module Parsers
       class Yaml
+        # @param yaml_path [String] path to YAML file
+        # @param options [Hash] parsing options
+        # @return [Lutaml::Uml::Document]
         def self.parse(yaml_path, options = {})
           new.parse(yaml_path, options)
         end

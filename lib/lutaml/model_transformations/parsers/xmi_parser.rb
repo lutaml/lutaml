@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "base_parser"
-require_relative "../../parser"
+require_relative "../../xmi/parsers/xml"
 
 module Lutaml
   module ModelTransformations
@@ -9,11 +9,7 @@ module Lutaml
       # XMI Parser implements the BaseParser interface for XML Metadata
       # Interchange files.
       #
-      # This parser wraps the existing Lutaml::Parser functionality and adapts
-      # it
-      # to the new unified transformation architecture. It follows the Adapter
-      # pattern
-      # to integrate legacy XMI parsing with the new system.
+      # Delegates to Lutaml::Xmi::Parsers::Xml for actual parsing.
       class XmiParser < BaseParser
         # Get parser format name
         #

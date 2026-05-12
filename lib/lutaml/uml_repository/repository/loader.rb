@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative "../../xmi/parsers/xml"
 require_relative "../package_loader"
 
 module Lutaml
@@ -25,7 +26,7 @@ module Lutaml
         # @param options [Hash] Options for parsing
         # @return [Repository]
         def self.from_xmi(xmi_path, options = {})
-          document = Lutaml::Parser.parse([File.new(xmi_path)]).first
+          document = Lutaml::Xmi::Parsers::Xml.parse(File.new(xmi_path))
           indexes = IndexBuilder.build_all(document)
           new(document: document, indexes: indexes, options: options)
         end
@@ -36,7 +37,7 @@ module Lutaml
         # @param options [Hash] Options for parsing
         # @return [LazyRepository]
         def self.from_xmi_lazy(xmi_path, _options = {})
-          document = Lutaml::Parser.parse([File.new(xmi_path)]).first
+          document = Lutaml::Xmi::Parsers::Xml.parse(File.new(xmi_path))
           LazyRepository.new(document: document, lazy: true)
         end
 
