@@ -22,17 +22,8 @@ module Lutaml
           end
 
           def find_generalizations(klass)
-            parent_xmi_ids = @generalization_map[klass.xmi_id]
-
-            if parent_xmi_ids && !parent_xmi_ids.empty?
-              parents = parent_xmi_ids.filter_map do |parent_xmi_id|
-                next if parent_xmi_id == klass.xmi_id
-
-                parent = class_lookup.by_xmi_id(parent_xmi_id)
-                parent ? @id_generator.class_id(parent) : nil
-              end
-              return parents unless parents.empty?
-            end
+            map_parents = generalization_map_parents(klass)
+            return map_parents unless map_parents.nil?
 
             parent = @repository.supertype_of(klass)
             return [] if parent && parent.xmi_id == klass.xmi_id
@@ -66,22 +57,8 @@ module Lutaml
               break if visited.include?(parent_class.xmi_id)
 
               visited.add(parent_class.xmi_id)
-
-              if parent_class.attributes
-                sorted_attrs = parent_class.attributes.sort_by do |a|
-                  a.name || ""
-                end
-                sorted_attrs.each do |attr|
-                  attr_id = @id_generator.attribute_id(attr, parent_class)
-                  inherited << Models::SpaInheritedAttribute.new(
-                    attribute_id: attr_id,
-                    attribute: serialize_attribute(attr, parent_class, attr_id),
-                    inherited_from: @id_generator.class_id(parent_class),
-                    inherited_from_name: parent_class.name,
-                    parent_order: parent_order,
-                  )
-                end
-              end
+              inherited.concat(parent_inherited_attrs(parent_class,
+                                                      parent_order))
 
               parent_order += 1
               current_gen = current_gen.general
@@ -108,33 +85,9 @@ module Lutaml
               break if visited.include?(parent_class.xmi_id)
 
               visited.add(parent_class.xmi_id)
-              parent_associations = find_class_associations(parent_class)
-
-              assoc_with_roles = parent_associations.filter_map do |assoc_id|
-                assoc = @repository.associations_index.find do |a|
-                  @id_generator.association_id(a) == assoc_id
-                end
-                next unless assoc
-
-                local_role = if assoc.owner_end_xmi_id == parent_class.xmi_id
-                               assoc.owner_end_attribute_name || assoc.owner_end || ""
-                             elsif assoc.member_end_xmi_id == parent_class.xmi_id
-                               assoc.member_end_attribute_name || assoc.member_end || ""
-                             else
-                               ""
-                             end
-                { id: assoc_id, role: local_role }
-              end
-
-              assoc_with_roles.sort_by { |a| a[:role] }.each do |item|
-                inherited << Models::SpaInheritedAssociation.new(
-                  association_id: item[:id],
-                  inherited_from: @id_generator.class_id(parent_class),
-                  inherited_from_name: parent_class.name,
-                  parent_order: parent_order,
-                  local_role: item[:role],
-                )
-              end
+              inherited.concat(
+                parent_inherited_assocs(parent_class, parent_order),
+              )
 
               parent_order += 1
               current_gen = current_gen.general
@@ -153,20 +106,7 @@ module Lutaml
             visited.add(klass.xmi_id)
             gen = klass.generalization
 
-            {
-              generalId: gen.general_id,
-              generalName: gen.general_name,
-              generalUpperKlass: gen.general_upper_klass,
-              hasGeneral: gen.has_general,
-              name: gen.name,
-              type: gen.type,
-              definition: format_definition(gen.definition),
-              stereotype: gen.stereotype,
-              ownedProps: serialize_general_collection(gen.owned_props),
-              assocProps: serialize_general_collection(gen.assoc_props),
-              inheritedProps: serialize_general_collection(gen.inherited_props),
-              inheritedAssocProps: serialize_general_collection(gen.inherited_assoc_props),
-            }
+            gen_basic_fields(gen).merge(gen_collection_fields(gen))
           rescue StandardError => e
             warn "Error serializing generalization: #{e.message}"
             nil
@@ -187,6 +127,68 @@ module Lutaml
           end
 
           private
+
+          def generalization_map_parents(klass)
+            parent_xmi_ids = @generalization_map[klass.xmi_id]
+            return nil if parent_xmi_ids.nil? || parent_xmi_ids.empty?
+
+            parents = parent_xmi_ids.filter_map do |parent_xmi_id|
+              next if parent_xmi_id == klass.xmi_id
+
+              parent = class_lookup.by_xmi_id(parent_xmi_id)
+              parent ? @id_generator.class_id(parent) : nil
+            end
+            parents.empty? ? nil : parents
+          end
+
+          def parent_inherited_attrs(parent_class, parent_order)
+            return [] unless parent_class.attributes
+
+            parent_class.attributes.sort_by { |a| a.name || "" }
+              .map do |attr|
+                attr_id = @id_generator.attribute_id(attr, parent_class)
+                Models::SpaInheritedAttribute.new(
+                  attribute_id: attr_id,
+                  attribute: serialize_attribute(attr, parent_class, attr_id),
+                  inherited_from: @id_generator.class_id(parent_class),
+                  inherited_from_name: parent_class.name,
+                  parent_order: parent_order,
+                )
+              end
+          end
+
+          def parent_inherited_assocs(parent_class, parent_order)
+            parent_associations = find_class_associations(parent_class)
+
+            assoc_with_roles = parent_associations.filter_map do |assoc_id|
+              assoc = @repository.associations_index.find do |a|
+                @id_generator.association_id(a) == assoc_id
+              end
+              next unless assoc
+
+              { id: assoc_id, role: resolve_local_role(assoc, parent_class) }
+            end
+
+            assoc_with_roles.sort_by { |a| a[:role] }.map do |item|
+              Models::SpaInheritedAssociation.new(
+                association_id: item[:id],
+                inherited_from: @id_generator.class_id(parent_class),
+                inherited_from_name: parent_class.name,
+                parent_order: parent_order,
+                local_role: item[:role],
+              )
+            end
+          end
+
+          def resolve_local_role(assoc, parent_class)
+            if assoc.owner_end_xmi_id == parent_class.xmi_id
+              assoc.owner_end_attribute_name || assoc.owner_end || ""
+            elsif assoc.member_end_xmi_id == parent_class.xmi_id
+              assoc.member_end_attribute_name || assoc.member_end || ""
+            else
+              ""
+            end
+          end
 
           def class_lookup
             @class_lookup ||= ClassLookupIndex.new(@repository.classes_index)
@@ -229,6 +231,28 @@ module Lutaml
               min: cardinality.min,
               max: cardinality.max,
             )
+          end
+
+          def gen_basic_fields(gen)
+            {
+              generalId: gen.general_id,
+              generalName: gen.general_name,
+              generalUpperKlass: gen.general_upper_klass,
+              hasGeneral: gen.has_general,
+              name: gen.name,
+              type: gen.type,
+              definition: format_definition(gen.definition),
+              stereotype: gen.stereotype,
+            }
+          end
+
+          def gen_collection_fields(gen)
+            {
+              ownedProps: serialize_general_collection(gen.owned_props),
+              assocProps: serialize_general_collection(gen.assoc_props),
+              inheritedProps: serialize_general_collection(gen.inherited_props),
+              inheritedAssocProps: serialize_general_collection(gen.inherited_assoc_props),
+            }
           end
 
           def format_definition(definition)

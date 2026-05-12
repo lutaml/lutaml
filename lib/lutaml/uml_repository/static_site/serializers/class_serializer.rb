@@ -30,10 +30,7 @@ inheritance_resolver)
 
           private
 
-          def serialize(klass, id) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
-            class_associations = find_class_associations(klass)
-            sorted_associations = sort_associations(class_associations, klass)
-
+          def serialize(klass, id)
             Models::SpaClass.new(
               id: id,
               xmi_id: klass.xmi_id,
@@ -43,10 +40,10 @@ inheritance_resolver)
               package: package_id_for_class(klass),
               stereotypes: normalize_stereotypes(klass.stereotype),
               definition: format_definition(klass.definition),
-              attributes: (klass.attributes || []).sort_by { |a| a.name || "" }
-                .map { |attr| @id_generator.attribute_id(attr, klass) },
+              attributes: serialize_attribute_ids(klass),
               operations: serialize_class_operations(klass),
-              associations: sorted_associations,
+              associations: sort_associations(find_class_associations(klass),
+                                              klass),
               generalizations: @inheritance_resolver.find_generalizations(klass),
               specializations: @inheritance_resolver.find_specializations(klass),
               is_abstract: klass.is_abstract,
@@ -54,6 +51,11 @@ inheritance_resolver)
               inherited_attributes: @inheritance_resolver.compute_inherited_attributes(klass),
               inherited_associations: @inheritance_resolver.compute_inherited_associations(klass),
             )
+          end
+
+          def serialize_attribute_ids(klass)
+            (klass.attributes || []).sort_by { |a| a.name || "" }
+              .map { |attr| @id_generator.attribute_id(attr, klass) }
           end
 
           def find_class_associations(klass)
@@ -65,18 +67,26 @@ inheritance_resolver)
 
           def sort_associations(assoc_ids, klass)
             assoc_ids.sort_by do |assoc_id|
-              assoc = @repository.associations_index.find do |a|
-                @id_generator.association_id(a) == assoc_id
-              end
+              assoc = find_assoc_by_id(assoc_id)
               next "" unless assoc
 
-              if assoc.owner_end_xmi_id == klass.xmi_id
-                assoc.owner_end_attribute_name || assoc.owner_end || ""
-              elsif assoc.member_end_xmi_id == klass.xmi_id
-                assoc.member_end_attribute_name || assoc.member_end || ""
-              else
-                ""
-              end
+              resolve_assoc_role(assoc, klass)
+            end
+          end
+
+          def find_assoc_by_id(assoc_id)
+            @repository.associations_index.find do |a|
+              @id_generator.association_id(a) == assoc_id
+            end
+          end
+
+          def resolve_assoc_role(assoc, klass)
+            if assoc.owner_end_xmi_id == klass.xmi_id
+              assoc.owner_end_attribute_name || assoc.owner_end || ""
+            elsif assoc.member_end_xmi_id == klass.xmi_id
+              assoc.member_end_attribute_name || assoc.member_end || ""
+            else
+              ""
             end
           end
 

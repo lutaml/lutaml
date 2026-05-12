@@ -33,24 +33,13 @@ module Lutaml
         def transform
           Models::SpaDocument.new(
             metadata: Serializers::MetadataBuilder.new(repository).build,
-            package_tree: Serializers::PackageTreeBuilder.new(repository,
-                                                              id_generator).build,
-            packages: Serializers::PackageSerializer.new(repository,
-                                                         id_generator, options).build_map,
-            classes: Serializers::ClassSerializer.new(repository, id_generator,
-                                                      options, inheritance_resolver).build_map,
-            attributes: Serializers::AttributeSerializer.new(repository,
-                                                             id_generator, options).build_map,
+            package_tree: build_package_tree,
+            packages: build_packages_map,
+            classes: build_classes_map,
+            attributes: build_attributes_map,
             associations: build_associations_map,
-            operations: Serializers::OperationSerializer.new(repository,
-                                                             id_generator).build_map,
-            diagrams: if options[:include_diagrams]
-                        Serializers::DiagramSerializer.new(
-                          repository, id_generator, options
-                        ).build_map
-                      else
-                        {}
-                      end,
+            operations: build_operations_map,
+            diagrams: build_diagrams_map,
           )
         end
 
@@ -74,24 +63,7 @@ module Lutaml
           map = Hash.new { |h, k| h[k] = [] }
 
           repository.classes_index.each do |klass|
-            next unless klass.association_generalization
-            unless klass.association_generalization && !klass.association_generalization.empty?
-              next
-            end
-
-            klass.association_generalization.each do |assoc_gen|
-              parent_object_id = assoc_gen.parent_object_id
-              next unless parent_object_id
-
-              parent_class = class_lookup.by_object_id(parent_object_id)
-              if parent_class&.xmi_id
-                next if parent_class.xmi_id == klass.xmi_id
-
-                unless map[klass.xmi_id].include?(parent_class.xmi_id)
-                  map[klass.xmi_id] << parent_class.xmi_id
-                end
-              end
-            end
+            add_generalization_entries(map, klass)
           end
 
           map
@@ -99,6 +71,54 @@ module Lutaml
 
         def class_lookup
           @class_lookup ||= ClassLookupIndex.new(repository.classes_index)
+        end
+
+        def build_package_tree
+          Serializers::PackageTreeBuilder.new(repository, id_generator).build
+        end
+
+        def build_packages_map
+          Serializers::PackageSerializer.new(repository, id_generator,
+                                             options).build_map
+        end
+
+        def build_classes_map
+          Serializers::ClassSerializer.new(repository, id_generator,
+                                           options, inheritance_resolver).build_map
+        end
+
+        def build_attributes_map
+          Serializers::AttributeSerializer.new(repository, id_generator,
+                                               options).build_map
+        end
+
+        def build_operations_map
+          Serializers::OperationSerializer.new(repository,
+                                               id_generator).build_map
+        end
+
+        def build_diagrams_map
+          return {} unless options[:include_diagrams]
+
+          Serializers::DiagramSerializer.new(repository, id_generator,
+                                             options).build_map
+        end
+
+        def add_generalization_entries(map, klass)
+          return unless klass.association_generalization
+          return if klass.association_generalization.empty?
+
+          klass.association_generalization.each do |assoc_gen|
+            parent_object_id = assoc_gen.parent_object_id
+            next unless parent_object_id
+
+            parent_class = class_lookup.by_object_id(parent_object_id)
+            next unless parent_class&.xmi_id
+            next if parent_class.xmi_id == klass.xmi_id
+            next if map[klass.xmi_id].include?(parent_class.xmi_id)
+
+            map[klass.xmi_id] << parent_class.xmi_id
+          end
         end
 
         def format_definition(definition)
