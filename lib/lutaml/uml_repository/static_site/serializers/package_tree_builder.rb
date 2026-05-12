@@ -25,30 +25,27 @@ module Lutaml
             if root_packages.size == 1
               build_tree_node(root_packages.first)
             else
-              Models::SpaPackageTreeNode.new(
-                id: "root",
-                name: "Model",
-                path: "",
-                class_count: 0,
-                children: root_packages.map { |pkg| build_tree_node(pkg) },
-              )
+              build_virtual_root(root_packages)
             end
           end
 
           private
 
+          def build_virtual_root(root_packages)
+            Models::SpaPackageTreeNode.new(
+              id: "root",
+              name: "Model",
+              path: "",
+              class_count: 0,
+              children: root_packages.map { |pkg| build_tree_node(pkg) },
+            )
+          end
+
           def build_tree_node(package)
             pkg_id = @id_generator.package_id(package)
-
-            sorted_children = (package.packages || []).sort_by do |p|
-              p.name || ""
-            end
-            sorted_classes = (package.classes || [])
-              .reject { |c| c.name.nil? || c.name.empty? }
-              .sort_by(&:name)
-
+            sorted_children = sort_by_name(package.packages || [])
+            sorted_classes = filter_valid_classes(package.classes || [])
             child_nodes = sorted_children.map { |child| build_tree_node(child) }
-
             total_class_count = sorted_classes.size + child_nodes.sum(&:class_count)
 
             Models::SpaPackageTreeNode.new(
@@ -57,15 +54,27 @@ module Lutaml
               path: package_path_for(package),
               stereotypes: normalize_stereotypes(package.stereotype),
               class_count: total_class_count,
-              classes: sorted_classes.map do |c|
-                Models::SpaTreeClassRef.new(
-                  id: @id_generator.class_id(c),
-                  name: c.name,
-                  stereotypes: normalize_stereotypes(c.stereotype),
-                )
-              end,
+              classes: build_class_refs(sorted_classes),
               children: child_nodes,
             )
+          end
+
+          def sort_by_name(items)
+            items.sort_by { |p| p.name || "" }
+          end
+
+          def filter_valid_classes(classes)
+            classes.reject { |c| c.name.nil? || c.name.empty? }.sort_by(&:name)
+          end
+
+          def build_class_refs(classes)
+            classes.map do |c|
+              Models::SpaTreeClassRef.new(
+                id: @id_generator.class_id(c),
+                name: c.name,
+                stereotypes: normalize_stereotypes(c.stereotype),
+              )
+            end
           end
 
           def package_path_for(package)

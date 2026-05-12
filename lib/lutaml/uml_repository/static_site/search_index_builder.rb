@@ -51,23 +51,9 @@ module Lutaml
 
         def build_document_store
           documents = []
-
-          repository.classes_index.each do |klass|
-            documents << build_class_document(klass)
-
-            klass.attributes&.each do |attr|
-              documents << build_attribute_document(attr, klass)
-            end
-          end
-
-          repository.associations_index.each do |assoc|
-            documents << build_association_document(assoc)
-          end
-
-          repository.packages_index.each do |package|
-            documents << build_package_document(package)
-          end
-
+          documents.concat(build_class_documents)
+          documents.concat(build_association_documents)
+          documents.concat(build_package_documents)
           documents
         end
 
@@ -135,8 +121,8 @@ module Lutaml
             class_type(klass),
             Array(klass.stereotype).join(" "),
             klass.definition,
-            klass.attributes&.map(&:name)&.join(" "),
-            klass.operations&.map(&:name)&.join(" "),
+            collect_names(klass.attributes),
+            collect_names(klass.operations),
           ].compact
 
           normalize_content(parts.join(" "))
@@ -184,6 +170,33 @@ module Lutaml
             STOP_WORDS.include?(word)
           end
           all_content.join(" ").gsub(/\s+/, " ").strip
+        end
+
+        def build_class_documents
+          docs = []
+          repository.classes_index.each do |klass|
+            docs << build_class_document(klass)
+            klass.attributes&.each do |attr|
+              docs << build_attribute_document(attr, klass)
+            end
+          end
+          docs
+        end
+
+        def build_association_documents
+          repository.associations_index.map do |assoc|
+            build_association_document(assoc)
+          end
+        end
+
+        def build_package_documents
+          repository.packages_index.map do |package|
+            build_package_document(package)
+          end
+        end
+
+        def collect_names(items)
+          items&.map(&:name)&.join(" ")
         end
 
         def class_type(klass)

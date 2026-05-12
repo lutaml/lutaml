@@ -33,27 +33,15 @@ module Lutaml
         #   parent = query.supertype("ModelRoot::Child")
         #   # Or
         #   parent = query.supertype(child_class)
-        def supertype(class_or_qname) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+        def supertype(class_or_qname)
           klass = resolve_class(class_or_qname)
-          return nil unless klass
-          return nil unless klass.is_a?(Lutaml::Uml::Class)
-          return nil unless klass.generalization
+          return nil unless valid_supertype_target?(klass)
 
           parent_name = extract_parent_name(klass.generalization)
           return nil unless parent_name
-          # avoid self-references
           return nil if parent_name == klass.name
 
-          # Try to find in qualified_names index
-          qname_string = resolve_qname(class_or_qname)
-          return nil unless qname_string
-
-          qname = Lutaml::Uml::QualifiedName.new(qname_string)
-          package_path = qname.package_path.to_s
-
-          # Try to resolve parent qualified name
-          parent_qname = resolve_parent_qualified_name(parent_name,
-                                                       package_path)
+          parent_qname = resolve_parent_qname(class_or_qname, parent_name)
           return nil unless parent_qname
 
           indexes[:qualified_names][parent_qname]
@@ -200,14 +188,8 @@ module Lutaml
         #   qualified name, or xmi_id
         # @return [Boolean] true if circular inheritance detected
         def has_circular_inheritance?(class_or_id, visited: Set.new)
-          qname = if class_or_id.is_a?(String) &&
-              indexes[:qualified_names].key?(class_or_id)
-                    class_or_id
-                  else
-                    resolve_qname(class_or_id)
-                  end
+          qname = resolve_to_qname(class_or_id)
           return false unless qname
-
           return true if visited.include?(qname)
 
           visited.add(qname)
@@ -218,6 +200,21 @@ module Lutaml
         end
 
         private
+
+        def valid_supertype_target?(klass)
+          return false unless klass
+          return false unless klass.is_a?(Lutaml::Uml::Class)
+
+          klass.generalization ? true : false
+        end
+
+        def resolve_parent_qname(class_or_qname, parent_name)
+          qname_string = resolve_qname(class_or_qname)
+          return nil unless qname_string
+
+          qname = Lutaml::Uml::QualifiedName.new(qname_string)
+          resolve_parent_qualified_name(parent_name, qname.package_path.to_s)
+        end
 
         # Resolve a class by xmi_id or qualified name
         #
@@ -257,22 +254,24 @@ module Lutaml
         # @param max_depth [Integer, nil] Maximum depth to traverse
         # @param current_depth [Integer] Current depth
         # @return [Array] Array of descendant class objects
-        def collect_descendants(qname_string, max_depth, current_depth) # rubocop:disable Metrics/MethodLength
+        def collect_descendants(qname_string, max_depth, current_depth)
           return [] if max_depth && current_depth >= max_depth
 
           children = direct_subtypes(qname_string)
           result = children.dup
+          collect_child_descendants(children, max_depth, current_depth, result)
+          result
+        end
 
+        def collect_child_descendants(children, max_depth, current_depth,
+result)
           children.each do |child|
             child_qname = resolve_qname(child)
             next unless child_qname
 
-            grandchildren = collect_descendants(child_qname, max_depth,
-                                                current_depth + 1)
-            result.concat(grandchildren)
+            result.concat(collect_descendants(child_qname, max_depth,
+                                              current_depth + 1))
           end
-
-          result
         end
 
         # Extract parent name from generalization object
@@ -285,13 +284,24 @@ module Lutaml
           return nil unless generalization.is_a?(Lutaml::Uml::Generalization)
 
           parent = generalization.general
-          if parent
-            return parent.name if parent.is_a?(Lutaml::Uml::Generalization) && parent.name
-
-            return parent.to_s
-          end
+          return extract_name_from_parent(parent) if parent
 
           generalization.name if generalization.name
+        end
+
+        def resolve_to_qname(class_or_id)
+          if class_or_id.is_a?(String) &&
+              indexes[:qualified_names].key?(class_or_id)
+            class_or_id
+          else
+            resolve_qname(class_or_id)
+          end
+        end
+
+        def extract_name_from_parent(parent)
+          return parent.name if parent.is_a?(Lutaml::Uml::Generalization) && parent.name
+
+          parent.to_s
         end
 
         # Resolve a class name to its qualified name

@@ -8,8 +8,12 @@ module Lutaml
       # Creates a hash mapping qualified names to Class/DataType/Enum objects:
       #   "ModelRoot::i-UR::urf::Building" => Class{}
       # @api public
-      def build_qualified_name_index # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength
-        # Index top-level classes, data_types, and enums from document
+      def build_qualified_name_index
+        index_document_classifiers
+        index_package_classifiers
+      end
+
+      def index_document_classifiers
         if @document.classes
           index_classifiers(@document.classes,
                             ROOT_PACKAGE_NAME)
@@ -19,8 +23,9 @@ module Lutaml
                             ROOT_PACKAGE_NAME)
         end
         index_classifiers(@document.enums, ROOT_PACKAGE_NAME) if @document.enums
+      end
 
-        # Traverse packages and index their classifiers
+      def index_package_classifiers
         traverse_packages(@document.packages,
                           parent_path: ROOT_PACKAGE_NAME) do |package, path|
           index_classifiers(package.classes, path) if package.classes
@@ -35,13 +40,18 @@ module Lutaml
       #   "featureType" => [Class{}, Class{}],
       #   "dataType" => [Class{}]
       # @api public
-      def build_stereotype_index # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity
-        # Process top-level classes
+      def build_stereotype_index
+        index_document_stereotypes
+        index_package_stereotypes
+      end
+
+      def index_document_stereotypes
         index_by_stereotype(@document.classes) if @document.classes
         index_by_stereotype(@document.data_types) if @document.data_types
         index_by_stereotype(@document.enums) if @document.enums
+      end
 
-        # Process classes in packages
+      def index_package_stereotypes
         traverse_packages(@document.packages) do |package, _path|
           index_by_stereotype(package.classes) if package.classes
           index_by_stereotype(package.data_types) if package.data_types
@@ -53,39 +63,36 @@ module Lutaml
       #
       # @param classifiers [Array] Array of classifier objects
       # @param package_path [String] Package path for these classifiers
-      def index_classifiers(classifiers, package_path) # rubocop:disable Metrics/MethodLength
+      def index_classifiers(classifiers, package_path)
         return unless classifiers
 
         classifiers.each do |classifier|
           next unless classifier.name
 
-          qualified_name = "#{package_path}::#{classifier.name}"
-          @qualified_names[qualified_name] = classifier
-          if classifier.xmi_id
-            @class_to_qname[classifier.xmi_id] =
-              qualified_name
-          end
-          @classes[classifier.xmi_id] = classifier if classifier.xmi_id
-          @simple_name_to_qnames[classifier.name] ||= []
-          @simple_name_to_qnames[classifier.name] << qualified_name
-          (@package_to_classes[package_path] ||= []) << classifier
+          index_classifier(classifier, package_path)
         end
+      end
+
+      def index_classifier(classifier, package_path)
+        qualified_name = "#{package_path}::#{classifier.name}"
+        @qualified_names[qualified_name] = classifier
+        @class_to_qname[classifier.xmi_id] = qualified_name if classifier.xmi_id
+        @classes[classifier.xmi_id] = classifier if classifier.xmi_id
+        (@simple_name_to_qnames[classifier.name] ||= []) << qualified_name
+        (@package_to_classes[package_path] ||= []) << classifier
       end
 
       # Index classifiers by their stereotypes
       #
       # @param classifiers [Array] Array of classifier objects
-      def index_by_stereotype(classifiers) # rubocop:disable Metrics/CyclomaticComplexity
+      def index_by_stereotype(classifiers)
         return unless classifiers
 
         classifiers.each do |classifier|
           next unless classifier.stereotype && !classifier.stereotype.empty?
 
-          # Handle both String and Array stereotypes
-          stereotypes = Array(classifier.stereotype)
-          stereotypes.each do |stereotype|
-            @stereotypes[stereotype] ||= []
-            @stereotypes[stereotype] << classifier
+          Array(classifier.stereotype).each do |stereotype|
+            (@stereotypes[stereotype] ||= []) << classifier
           end
         end
       end

@@ -39,7 +39,7 @@ module Lutaml
 
               ---
 
-              [Back to Package](#{@link_resolver.package_link(pkg_path)}) | [Back to Index](../index.md)
+              #{build_navigation_links(pkg_path)}
             MARKDOWN
           end
 
@@ -67,21 +67,8 @@ module Lutaml
             return "" if parent.nil? && children.empty?
 
             content = "## Inheritance\n\n"
-
-            if parent
-              parent_qname = @link_resolver.qualified_name(parent)
-              content += "**Extends**: [#{parent.name}](#{@link_resolver.class_link(parent_qname)})\n\n"
-            end
-
-            if children.any?
-              content += "**Extended by**:\n\n"
-              children.each do |child|
-                child_qname = @link_resolver.qualified_name(child)
-                content += "- [#{child.name}](#{@link_resolver.class_link(child_qname)})\n"
-              end
-              content += "\n"
-            end
-
+            content += build_parent_link(parent) if parent
+            content += build_children_links(children) if children.any?
             content
           rescue StandardError
             ""
@@ -138,15 +125,7 @@ module Lutaml
           end
 
           def format_association_row(association, klass)
-            source_end = association.member_end&.first
-            target_end = association.member_end&.last
-
-            end_obj = if source_end&.type&.xmi_id == klass.xmi_id
-                        target_end
-                      else
-                        source_end
-                      end
-
+            end_obj = resolve_target_end(association, klass)
             return "" unless end_obj&.type
 
             target_qname = @link_resolver.qualified_name(end_obj.type)
@@ -171,6 +150,35 @@ module Lutaml
             end
 
             "#{content}\n"
+          end
+
+          def build_navigation_links(pkg_path)
+            "[Back to Package](#{@link_resolver.package_link(pkg_path)}) | [Back to Index](../index.md)"
+          end
+
+          def build_parent_link(parent)
+            parent_qname = @link_resolver.qualified_name(parent)
+            "**Extends**: [#{parent.name}](#{@link_resolver.class_link(parent_qname)})\n\n"
+          end
+
+          def build_children_links(children)
+            content = "**Extended by**:\n\n"
+            children.each do |child|
+              child_qname = @link_resolver.qualified_name(child)
+              content += "- [#{child.name}](#{@link_resolver.class_link(child_qname)})\n"
+            end
+            "#{content}\n"
+          end
+
+          def resolve_target_end(association, klass)
+            source_end = association.member_end&.first
+            target_end = association.member_end&.last
+
+            if source_end&.type&.xmi_id == klass.xmi_id
+              target_end
+            else
+              source_end
+            end
           end
         end
       end

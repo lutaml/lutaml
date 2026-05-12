@@ -66,7 +66,7 @@ module Lutaml
         # @example Recursive query
         #   classes = query.in_package("ModelRoot::i-UR", recursive: true)
         #   # Returns classes in i-UR and all nested packages
-        def in_package(package_path_string, recursive: false) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+        def in_package(package_path_string, recursive: false)
           return [] if package_path_string.nil? || package_path_string.empty?
 
           pkg_to_classes = indexes[:package_to_classes]
@@ -81,69 +81,95 @@ module Lutaml
         private
 
         # O(1) indexed lookup for in_package
-        def in_package_indexed(package_path_string, pkg_to_classes, recursive:) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
+        def in_package_indexed(package_path_string, pkg_to_classes, recursive:)
           is_absolute = package_path_string.start_with?("::")
           search_segs = package_path_string.split("::").reject(&:empty?)
 
           results = []
           pkg_to_classes.each do |path, classes|
-            path_segs = path.split("::")
-            matched = if is_absolute
-                        if recursive
-                          path == package_path_string ||
-                            path.start_with?("#{package_path_string}::")
-                        else
-                          path == package_path_string
-                        end
-                      elsif recursive
-                        # Relative: match when path ends with search segments
-                        (0..(path_segs.size - search_segs.size)).any? do |i|
-                          path_segs[i, search_segs.size] == search_segs
-                        end
-                      else
-                        path_segs.size >= search_segs.size &&
-                          path_segs[-search_segs.size..] == search_segs
-                      end
-
-            results.concat(classes) if matched
+            results.concat(classes) if indexed_path_matches?(
+              path, package_path_string, is_absolute, search_segs, recursive
+            )
           end
           results
+        end
+
+        def indexed_path_matches?(path, package_path_string, is_absolute,
+                                  search_segs, recursive)
+          if is_absolute
+            indexed_absolute_match?(path, package_path_string, recursive)
+          else
+            indexed_relative_match?(path.split("::"), search_segs, recursive)
+          end
+        end
+
+        def indexed_absolute_match?(path, package_path_string, recursive)
+          if recursive
+            path == package_path_string ||
+              path.start_with?("#{package_path_string}::")
+          else
+            path == package_path_string
+          end
+        end
+
+        def indexed_relative_match?(path_segs, search_segs, recursive)
+          if recursive
+            (0..(path_segs.size - search_segs.size)).any? do |i|
+              path_segs[i, search_segs.size] == search_segs
+            end
+          else
+            path_segs.size >= search_segs.size &&
+              path_segs[-search_segs.size..] == search_segs
+          end
         end
 
         # Fallback: original O(n) scan
         def in_package_scan(package_path_string, recursive:)
           package_path = Lutaml::Uml::PackagePath.new(package_path_string)
-          results = []
           is_absolute = package_path.absolute?
 
-          indexes[:qualified_names].each do |qname_string, klass|
-            qname = Lutaml::Uml::QualifiedName.new(qname_string)
-
-            matched = if is_absolute
-                        if recursive
-                          qname.package_path.starts_with?(package_path)
-                        else
-                          qname.package_path == package_path
-                        end
-                      else
-                        class_pkg_segs = qname.package_path.segments
-                        search_segs = package_path.segments
-
-                        if recursive
-                          (0..(class_pkg_segs.size - search_segs.size))
-                            .any? do |i|
-                            class_pkg_segs[i, search_segs.size] == search_segs
-                          end
-                        else
-                          class_pkg_segs.size >= search_segs.size &&
-                            class_pkg_segs[-search_segs.size..] == search_segs
-                        end
-                      end
-
-            results << klass if matched
+          indexes[:qualified_names].each_value.select do |klass|
+            scan_matches_package?(klass, package_path, is_absolute, recursive)
           end
+        end
 
-          results
+        def scan_matches_package?(klass, package_path, is_absolute, recursive)
+          qname = resolve_qname_for(klass)
+          return false unless qname
+
+          if is_absolute
+            match_absolute_path?(qname, package_path, recursive)
+          else
+            match_relative_path?(qname, package_path, recursive)
+          end
+        end
+
+        def resolve_qname_for(klass)
+          indexes[:qualified_names].find { |_, v| v == klass }&.first
+        end
+
+        def match_absolute_path?(qname, package_path, recursive)
+          qname = Lutaml::Uml::QualifiedName.new(qname)
+          if recursive
+            qname.package_path.starts_with?(package_path)
+          else
+            qname.package_path == package_path
+          end
+        end
+
+        def match_relative_path?(qname_string, package_path, recursive)
+          qname = Lutaml::Uml::QualifiedName.new(qname_string)
+          class_pkg_segs = qname.package_path.segments
+          search_segs = package_path.segments
+
+          if recursive
+            (0..(class_pkg_segs.size - search_segs.size)).any? do |i|
+              class_pkg_segs[i, search_segs.size] == search_segs
+            end
+          else
+            class_pkg_segs.size >= search_segs.size &&
+              class_pkg_segs[-search_segs.size..] == search_segs
+          end
         end
       end
     end
