@@ -17,55 +17,79 @@ module Lutaml
       class ClassTransformer < BaseTransformer
         def transform(ea_object)
           return nil if ea_object.nil?
-
-          is_class_type = ea_object.uml_class? || ea_object.interface?
-          is_proxy = ea_object.object_type == "ProxyConnector"
-          is_text_class = ea_object.object_type == "Text"
-          return nil unless is_class_type || is_proxy || is_text_class
+          return nil unless transformable?(ea_object)
 
           Lutaml::Uml::Class.new.tap do |klass|
-            klass.name = ea_object.name
-            klass.xmi_id = normalize_guid_to_xmi_format(ea_object.ea_guid,
-                                                        "EAID")
-            klass.is_abstract = ea_object.abstract?
-            klass.type = "Class"
-            klass.visibility = map_visibility(ea_object.visibility)
-
-            stereotypes = build_stereotypes(ea_object)
-            klass.stereotype = stereotypes unless stereotypes.empty?
-
-            klass.definition = normalize_line_endings(ea_object.note) unless
-              ea_object.note.nil? || ea_object.note.empty?
-
-            gen_builder = GeneralizationBuilder.new(database)
-            assoc_builder = AssociationBuilder.new(database)
-
-            attrs = load_attributes(ea_object.ea_object_id)
-            assoc_attrs = gen_builder.convert_to_top_element_attributes(
-              assoc_builder.load_association_attributes(ea_object.ea_object_id),
-            )
-            klass.attributes = attrs + assoc_attrs
-
-            klass.operations = load_operations(ea_object.ea_object_id)
-            klass.constraints = load_constraints(ea_object.ea_object_id)
-            klass.tagged_values = load_tagged_values(ea_object.ea_guid)
-            klass.tagged_values.concat(
-              load_object_properties(ea_object.ea_object_id),
-            )
-
-            klass.generalization = gen_builder.load_generalization(
-              ea_object.ea_object_id,
-            )
-            klass.association_generalization = gen_builder
-              .load_association_generalizations(ea_object.ea_object_id)
-
-            klass.associations = assoc_builder.load_class_associations(
-              ea_object.ea_object_id, ea_object.ea_guid
-            )
+            assign_basic_properties(klass, ea_object)
+            assign_features(klass, ea_object)
+            assign_relationships(klass, ea_object)
           end
         end
 
         private
+
+        def transformable?(ea_object)
+          ea_object.uml_class? || ea_object.interface? ||
+            ea_object.object_type == "ProxyConnector" ||
+            ea_object.object_type == "Text"
+        end
+
+        def assign_basic_properties(klass, ea_object)
+          klass.name = ea_object.name
+          klass.xmi_id = normalize_guid_to_xmi_format(ea_object.ea_guid, "EAID")
+          klass.is_abstract = ea_object.abstract?
+          klass.type = "Class"
+          klass.visibility = map_visibility(ea_object.visibility)
+          assign_stereotypes(klass, ea_object)
+          assign_definition(klass, ea_object)
+        end
+
+        def assign_stereotypes(klass, ea_object)
+          stereotypes = build_stereotypes(ea_object)
+          klass.stereotype = stereotypes unless stereotypes.empty?
+        end
+
+        def assign_definition(klass, ea_object)
+          return if ea_object.note.nil? || ea_object.note.empty?
+
+          klass.definition = normalize_line_endings(ea_object.note)
+        end
+
+        def assign_features(klass, ea_object)
+          klass.attributes = load_all_attributes(ea_object)
+          klass.operations = load_operations(ea_object.ea_object_id)
+          klass.constraints = load_constraints(ea_object.ea_object_id)
+          klass.tagged_values = load_tagged_values(ea_object.ea_guid)
+          klass.tagged_values.concat(
+            load_object_properties(ea_object.ea_object_id),
+          )
+        end
+
+        def assign_relationships(klass, ea_object)
+          gen_builder = GeneralizationBuilder.new(database)
+          assoc_builder = AssociationBuilder.new(database)
+
+          klass.generalization = gen_builder.load_generalization(
+            ea_object.ea_object_id,
+          )
+          klass.association_generalization = gen_builder
+            .load_association_generalizations(ea_object.ea_object_id)
+
+          klass.associations = assoc_builder.load_class_associations(
+            ea_object.ea_object_id, ea_object.ea_guid
+          )
+        end
+
+        def load_all_attributes(ea_object)
+          gen_builder = GeneralizationBuilder.new(database)
+          assoc_builder = AssociationBuilder.new(database)
+
+          attrs = load_attributes(ea_object.ea_object_id)
+          assoc_attrs = gen_builder.convert_to_top_element_attributes(
+            assoc_builder.load_association_attributes(ea_object.ea_object_id),
+          )
+          attrs + assoc_attrs
+        end
 
         def build_stereotypes(ea_object)
           stereotypes = []

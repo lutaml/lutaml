@@ -30,6 +30,11 @@ module Lutaml
 
       # Eagerly build all lazy lookup indexes before freezing
       def build_lookup_indexes
+        build_primary_indexes
+        build_secondary_indexes
+      end
+
+      def build_primary_indexes
         @objects_by_guid = build_group_index(objects, :ea_guid, single: true)
         @attributes_by_object_id = build_group_index(attributes, :ea_object_id)
         @operations_by_object_id = build_group_index(operations, :ea_object_id)
@@ -42,7 +47,9 @@ module Lutaml
         @diagrams_by_package_id = build_group_index(diagrams, :package_id)
         @diagram_objects_by_id = build_group_index(diagram_objects, :diagram_id)
         @diagram_links_by_id = build_group_index(diagram_links, :diagramid)
-        # Also build hash indexes for find_* methods
+      end
+
+      def build_secondary_indexes
         @packages_by_id = build_group_index(packages, :package_id, single: true)
         @connectors_by_id = build_group_index(connectors, :connector_id,
                                               single: true)
