@@ -19,14 +19,14 @@ module Lutaml
         end
 
         def packages
-          @model.packages.map do |package|
+          Array(@model.packages).map do |package|
             ::Lutaml::Xmi::LiquidDrops::PackageDrop.new(package, @guidance,
                                                         @options)
           end
         end
 
         def children_packages
-          @model.packages.flat_map(&:children_packages).uniq
+          Array(@model.packages).flat_map(&:children_packages).uniq
         end
       end
     end
