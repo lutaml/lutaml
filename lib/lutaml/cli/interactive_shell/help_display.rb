@@ -8,18 +8,14 @@ module Lutaml
     class InteractiveShell
       class HelpDisplay < CommandBase
         def display_welcome
-          puts OutputFormatter.colorize(
-            "╔═══════════════════════════════════════╗", :cyan
-          )
-          puts OutputFormatter.colorize(
-            "║  LutaML Interactive Shell (REPL)     ║", :cyan
-          )
-          puts OutputFormatter.colorize(
-            "╚═══════════════════════════════════════╝", :cyan
-          )
-          puts ""
-          puts "Type 'help' for available commands, 'exit' to quit"
-          puts ""
+          puts <<~WELCOME
+            #{OutputFormatter.colorize('╔═══════════════════════════════════════╗', :cyan)}
+            #{OutputFormatter.colorize('║  LutaML Interactive Shell (REPL)     ║', :cyan)}
+            #{OutputFormatter.colorize('╚═══════════════════════════════════════╝', :cyan)}
+
+            Type 'help' for available commands, 'exit' to quit
+
+          WELCOME
 
           stats = repository.statistics
           puts "Repository loaded:"
@@ -65,43 +61,41 @@ module Lutaml
         end
 
         def display_general_help
-          puts OutputFormatter.colorize("Available Commands:", :cyan)
-          puts ""
+          puts <<~HELP
+            #{OutputFormatter.colorize('Available Commands:', :cyan)}
 
-          puts OutputFormatter.colorize("Navigation:", :yellow)
-          puts "  cd PATH           Change to package path"
-          puts "  pwd               Print current path"
-          puts "  ls [PATH]         List packages"
-          puts "  tree [PATH]       Show package tree"
-          puts "  up                Go to parent package"
-          puts "  root              Go to ModelRoot"
-          puts "  back              Go to previous location"
-          puts ""
+            #{OutputFormatter.colorize('Navigation:', :yellow)}
+              cd PATH           Change to package path
+              pwd               Print current path
+              ls [PATH]         List packages
+              tree [PATH]       Show package tree
+              up                Go to parent package
+              root              Go to ModelRoot
+              back              Go to previous location
 
-          puts OutputFormatter.colorize("Query:", :yellow)
-          puts "  find CLASS        Find class (fuzzy search)"
-          puts "  show class QNAME  Show class details"
-          puts "  show package PATH Show package details"
-          puts "  show NUMBER       Show numbered result"
-          puts "  search QUERY      Full-text search"
-          puts "  ? QUERY           Alias for search"
-          puts ""
+            #{OutputFormatter.colorize('Query:', :yellow)}
+              find CLASS        Find class (fuzzy search)
+              show class QNAME  Show class details
+              show package PATH Show package details
+              show NUMBER       Show numbered result
+              search QUERY      Full-text search
+              ? QUERY           Alias for search
 
-          puts OutputFormatter.colorize("Bookmarks:", :yellow)
-          puts "  bookmark add NAME  Bookmark current location"
-          puts "  bookmark list      List bookmarks"
-          puts "  bookmark go NAME   Jump to bookmark"
-          puts "  bookmark rm NAME   Remove bookmark"
-          puts "  bm NAME            Quick jump"
-          puts ""
+            #{OutputFormatter.colorize('Bookmarks:', :yellow)}
+              bookmark add NAME  Bookmark current location
+              bookmark list      List bookmarks
+              bookmark go NAME   Jump to bookmark
+              bookmark rm NAME   Remove bookmark
+              bm NAME            Quick jump
 
-          puts OutputFormatter.colorize("Utilities:", :yellow)
-          puts "  help [COMMAND]    Show help"
-          puts "  history           Show command history"
-          puts "  clear             Clear screen"
-          puts "  config            Show configuration"
-          puts "  stats             Show statistics"
-          puts "  exit, quit, q     Exit shell"
+            #{OutputFormatter.colorize('Utilities:', :yellow)}
+              help [COMMAND]    Show help
+              history           Show command history
+              clear             Clear screen
+              config            Show configuration
+              stats             Show statistics
+              exit, quit, q     Exit shell
+          HELP
         end
 
         def display_command_help(command)

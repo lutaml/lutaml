@@ -24,20 +24,8 @@ module Lutaml
       attr_accessor :current_path, :last_results
 
       def initialize(lur_path_or_repo, config: nil)
-        @config = {
-          color: true,
-          icons: true,
-          show_counts: true,
-          page_size: 50,
-        }.merge(config || {})
-
-        if lur_path_or_repo.is_a?(String)
-          OutputFormatter.progress("Loading repository")
-          @repository = Lutaml::UmlRepository::Repository.from_package(lur_path_or_repo)
-          OutputFormatter.progress_done
-        else
-          @repository = lur_path_or_repo
-        end
+        @config = default_config.merge(config || {})
+        @repository = load_repository(lur_path_or_repo)
 
         @current_path = "ModelRoot"
         @bookmarks = {}
@@ -45,12 +33,7 @@ module Lutaml
         @path_history = ["ModelRoot"]
         @running = false
 
-        @navigation = NavigationCommands.new(self)
-        @query = QueryCommands.new(self)
-        @bookmarks_cmd = BookmarkCommands.new(self)
-        @export = ExportHandler.new(self)
-        @help = HelpDisplay.new(self)
-
+        init_commands
         setup_readline
         load_history
       end
@@ -59,16 +42,50 @@ module Lutaml
         @running = true
         @help.display_welcome
 
+        run_repl_loop
+
+        save_history
+        puts "\nGoodbye!"
+      end
+
+      private
+
+      def default_config
+        {
+          color: true,
+          icons: true,
+          show_counts: true,
+          page_size: 50,
+        }
+      end
+
+      def load_repository(lur_path_or_repo)
+        if lur_path_or_repo.is_a?(String)
+          OutputFormatter.progress("Loading repository")
+          repo = Lutaml::UmlRepository::Repository.from_package(lur_path_or_repo)
+          OutputFormatter.progress_done
+          repo
+        else
+          lur_path_or_repo
+        end
+      end
+
+      def init_commands
+        @navigation = NavigationCommands.new(self)
+        @query = QueryCommands.new(self)
+        @bookmarks_cmd = BookmarkCommands.new(self)
+        @export = ExportHandler.new(self)
+        @help = HelpDisplay.new(self)
+      end
+
+      def run_repl_loop
         while @running
           begin
             input = Readline.readline(prompt, true)
             break if input.nil?
             next if input.strip.empty?
 
-            if Readline::HISTORY.length > 1 && Readline::HISTORY[-2] == input
-              Readline::HISTORY.pop
-            end
-
+            deduplicate_history(input)
             execute_command(input.strip)
           rescue Interrupt
             puts "\nUse 'exit' or 'quit' to exit the shell"
@@ -77,12 +94,13 @@ module Lutaml
             puts e.backtrace.first(3).join("\n") if ENV["DEBUG"]
           end
         end
-
-        save_history
-        puts "\nGoodbye!"
       end
 
-      private
+      def deduplicate_history(input)
+        if Readline::HISTORY.length > 1 && Readline::HISTORY[-2] == input
+          Readline::HISTORY.pop
+        end
+      end
 
       COMMAND_DISPATCH = {
         # Navigation

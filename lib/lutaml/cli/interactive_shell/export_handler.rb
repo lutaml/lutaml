@@ -6,6 +6,12 @@ module Lutaml
   module Cli
     class InteractiveShell
       class ExportHandler < CommandBase
+        EXPORT_FORMATS = {
+          "csv" => :export_csv,
+          "json" => :export_json,
+          "yaml" => :export_yaml,
+        }.freeze
+
         def cmd_export(args)
           if last_results.nil? || last_results.empty?
             puts OutputFormatter.warning("No results to export")
@@ -20,13 +26,9 @@ module Lutaml
           format = args[1].downcase
           file_path = args[2]
 
-          case format
-          when "csv"
-            export_csv(file_path)
-          when "json"
-            export_json(file_path)
-          when "yaml"
-            export_yaml(file_path)
+          exporter = EXPORT_FORMATS[format]
+          if exporter
+            public_send(exporter, file_path)
           else
             puts OutputFormatter.error("Unsupported format: #{format}")
           end

@@ -19,16 +19,10 @@ module Lutaml
           if results[:class].empty?
             puts OutputFormatter.warning("No classes found matching '#{query}'")
           else
-            self.last_results = results[:class]
-
             puts OutputFormatter.colorize(
-              "Found #{last_results.size} class(es):", :cyan
+              "Found #{results[:class].size} class(es):", :cyan
             )
-            last_results.each_with_index do |qname, i|
-              puts "  #{i + 1}. #{qname}"
-            end
-            puts ""
-            puts "Use 'show NUMBER' to view details"
+            display_class_results(results[:class])
           end
         end
 
@@ -94,18 +88,7 @@ module Lutaml
           if config[:icons]
             puts EnhancedFormatter.format_class_details_enhanced(cls)
           else
-            puts OutputFormatter.colorize("Class: #{qname}", :cyan)
-            puts "=" * 50
-            puts ""
-            puts "Name: #{cls.name}"
-
-            if cls.is_a?(Lutaml::Uml::Classifier) && cls.attributes && !cls.attributes.empty?
-              puts ""
-              puts OutputFormatter.colorize("Attributes:", :yellow)
-              cls.attributes.each do |attr|
-                puts "  - #{attr.name}: #{attr.type}"
-              end
-            end
+            display_class_plain(cls, qname)
           end
         end
 
@@ -119,18 +102,7 @@ module Lutaml
             return
           end
 
-          puts OutputFormatter.colorize("Package: #{path}", :cyan)
-          puts "=" * 50
-          puts ""
-          puts "Name: #{pkg.name}"
-          puts ""
-
-          classes = repository.classes_in_package(path)
-          puts OutputFormatter.colorize("Classes (#{classes.size}):", :yellow)
-          classes.each do |cls|
-            icon = config[:icons] ? "#{EnhancedFormatter::ICONS[:class]} " : ""
-            puts "  #{icon}#{cls.name}"
-          end
+          display_package_contents(pkg, path)
         end
 
         def show_numbered_result(number)
@@ -159,24 +131,68 @@ module Lutaml
 
             case type
             when :class
-              self.last_results = items
-              items.each_with_index do |qname, i|
-                icon = config[:icons] ? "#{EnhancedFormatter::ICONS[:class]} " : ""
-                puts "  #{i + 1}. #{icon}#{qname}"
-              end
-              puts ""
-              puts "Use 'show NUMBER' to view details"
+              display_class_results(items)
             when :attribute
-              items.each do |item|
-                puts "  - #{item[:class_name]}::#{item[:attribute_name]} : " \
-                     "#{item[:type]}"
-              end
+              display_attribute_results(items)
             when :association
-              items.each do |item|
-                icon = config[:icons] ? "#{EnhancedFormatter::ICONS[:association]} " : ""
-                puts "  #{icon}#{item[:source]} → #{item[:target]}"
-              end
+              display_association_results(items)
             end
+          end
+        end
+
+        private
+
+        def display_class_results(items)
+          self.last_results = items
+          items.each_with_index do |qname, i|
+            icon = config[:icons] ? "#{EnhancedFormatter::ICONS[:class]} " : ""
+            puts "  #{i + 1}. #{icon}#{qname}"
+          end
+          puts ""
+          puts "Use 'show NUMBER' to view details"
+        end
+
+        def display_attribute_results(items)
+          items.each do |item|
+            puts "  - #{item[:class_name]}::#{item[:attribute_name]} : " \
+                 "#{item[:type]}"
+          end
+        end
+
+        def display_association_results(items)
+          items.each do |item|
+            icon = config[:icons] ? "#{EnhancedFormatter::ICONS[:association]} " : ""
+            puts "  #{icon}#{item[:source]} → #{item[:target]}"
+          end
+        end
+
+        def display_class_plain(cls, qname)
+          puts OutputFormatter.colorize("Class: #{qname}", :cyan)
+          puts "=" * 50
+          puts ""
+          puts "Name: #{cls.name}"
+
+          return unless cls.is_a?(Lutaml::Uml::Classifier) && cls.attributes && !cls.attributes.empty?
+
+          puts ""
+          puts OutputFormatter.colorize("Attributes:", :yellow)
+          cls.attributes.each do |attr|
+            puts "  - #{attr.name}: #{attr.type}"
+          end
+        end
+
+        def display_package_contents(pkg, path)
+          puts OutputFormatter.colorize("Package: #{path}", :cyan)
+          puts "=" * 50
+          puts ""
+          puts "Name: #{pkg.name}"
+          puts ""
+
+          classes = repository.classes_in_package(path)
+          puts OutputFormatter.colorize("Classes (#{classes.size}):", :yellow)
+          classes.each do |cls|
+            icon = config[:icons] ? "#{EnhancedFormatter::ICONS[:class]} " : ""
+            puts "  #{icon}#{cls.name}"
           end
         end
       end
