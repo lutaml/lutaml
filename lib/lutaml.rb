@@ -6,8 +6,6 @@ module Lutaml
   class Error < StandardError; end
 end
 
-require_relative "lutaml/parser"
-
 require_relative "lutaml/express"
 require_relative "lutaml/formatter"
 require_relative "lutaml/layout"

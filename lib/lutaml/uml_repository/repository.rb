@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "../parser"
+require_relative "../xmi/parsers/xml"
 require_relative "../uml/package_path"
 require_relative "../uml/qualified_name"
 require_relative "error_handler"
@@ -116,8 +116,7 @@ module Lutaml
       #   repo = Repository.from_xmi('model.xmi')
       #   repo = Repository.from_xmi('model.xmi', validate: true)
       def self.from_xmi(xmi_path, options = {})
-        # Parse XMI using Lutaml::Parser
-        document = Lutaml::Parser.parse([File.new(xmi_path)]).first
+        document = Lutaml::Xmi::Parsers::Xml.parse(File.new(xmi_path))
 
         # Build indexes
         indexes = IndexBuilder.build_all(document)
@@ -143,8 +142,7 @@ module Lutaml
       #   repo = Repository.from_xmi_lazy('large-model.xmi')
       #   # Only document loaded, indexes built on first access
       def self.from_xmi_lazy(xmi_path, _options = {})
-        # Parse XMI using Lutaml::Parser
-        document = Lutaml::Parser.parse([File.new(xmi_path)]).first
+        document = Lutaml::Xmi::Parsers::Xml.parse(File.new(xmi_path))
 
         LazyRepository.new(document: document, lazy: true)
       end

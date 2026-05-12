@@ -10,7 +10,7 @@ require "lutaml/converter/xmi_to_uml"
 module Lutaml
   module Xmi
     module Parsers
-      # Class for parsing .xmi schema files into ::Lutaml::Uml::Document
+      # Parses XMI files into Lutaml::Uml::Document objects.
       class Xml
         include Lutaml::Converter::XmiToUml
 
@@ -19,7 +19,7 @@ module Lutaml
         include XmiBase
 
         class << self
-          # @param xml [String] path to xml
+          # @param xml [String, File] path to XMI file or file object
           # @param options [Hash] options for parsing
           # @return [Lutaml::Uml::Document]
           def parse(xml, _options = {})

@@ -196,7 +196,7 @@ RSpec.describe "XMI/QEA Equivalence Integration" do
     let(:matcher) { Lutaml::Qea::Verification::StructureMatcher.new }
     let(:xmi_path) { File.join(xmi_dir, "test.xmi") }
     let(:qea_path) { File.join(qea_dir, "test.qea") }
-    let(:xmi_doc) { Lutaml::Parser.parse([File.new(xmi_path)]).first }
+    let(:xmi_doc) { Lutaml::Xmi::Parsers::Xml.parse(File.new(xmi_path)) }
     let(:qea_doc) { Lutaml::Qea.parse(qea_path) }
 
     before do

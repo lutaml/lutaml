@@ -17,7 +17,7 @@ RSpec.describe "QEA and XMI Equivalency", :integration do
       qea_document = qea_factory.create_document
 
       # Load document from XMI (EXPORTED from QEA)
-      xmi_document = Lutaml::Parser.parse([File.new(xmi_path)]).first
+      xmi_document = Lutaml::Xmi::Parsers::Xml.parse(File.new(xmi_path))
 
       # QEA should have >= information as XMI (XMI is a subset/export)
       # Note: We can't use direct equality because QEA may have more data
@@ -40,7 +40,7 @@ RSpec.describe "QEA and XMI Equivalency", :integration do
       qea_factory = Lutaml::Qea::Factory::EaToUmlFactory.new(qea_db)
       qea_document = qea_factory.create_document
 
-      xmi_document = Lutaml::Parser.parse([File.new(xmi_path)]).first
+      xmi_document = Lutaml::Xmi::Parsers::Xml.parse(File.new(xmi_path))
 
       # Get class names from both
       qea_class_names = collect_all_class_names(qea_document)
@@ -71,7 +71,7 @@ RSpec.describe "QEA and XMI Equivalency", :integration do
       qea_factory = Lutaml::Qea::Factory::EaToUmlFactory.new(qea_db)
       qea_document = qea_factory.create_document
 
-      xmi_document = Lutaml::Parser.parse([File.new(xmi_path)]).first
+      xmi_document = Lutaml::Xmi::Parsers::Xml.parse(File.new(xmi_path))
 
       # Both should have packages
       expect(qea_document.packages).not_to be_nil
@@ -90,7 +90,7 @@ RSpec.describe "QEA and XMI Equivalency", :integration do
       qea_factory = Lutaml::Qea::Factory::EaToUmlFactory.new(qea_db)
       qea_document = qea_factory.create_document
 
-      xmi_document = Lutaml::Parser.parse([File.new(xmi_path)]).first
+      xmi_document = Lutaml::Xmi::Parsers::Xml.parse(File.new(xmi_path))
 
       qea_assoc_count = qea_document.associations&.size || 0
       xmi_assoc_count = xmi_document.associations&.size || 0

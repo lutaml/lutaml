@@ -4,7 +4,6 @@ require "nokogiri"
 require "htmlentities"
 require "lutaml/uml/has_attributes"
 require "lutaml/uml/document"
-require "lutaml/xsd"
 require "lutaml/model"
 require "lutaml/model/schema"
 

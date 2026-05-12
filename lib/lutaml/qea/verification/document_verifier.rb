@@ -5,7 +5,7 @@ require_relative "structure_matcher"
 require_relative "element_comparator"
 require_relative "comparison_result"
 require_relative "../../qea"
-require_relative "../../parser"
+require_relative "../../xmi/parsers/xml"
 
 module Lutaml
   module Qea
@@ -163,7 +163,7 @@ module Lutaml
 
         # Parse XMI file
         def parse_xmi(xmi_path)
-          Lutaml::Parser.parse([File.new(xmi_path)]).first
+          Lutaml::Xmi::Parsers::Xml.parse(File.new(xmi_path))
         end
 
         # Parse QEA file
