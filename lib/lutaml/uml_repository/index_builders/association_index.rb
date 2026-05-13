@@ -133,7 +133,7 @@ module Lutaml
         parent = generalization.general
         return nil unless parent
 
-        parent.respond_to?(:name) ? parent.name : parent.to_s
+        parent.is_a?(String) ? parent : parent.name
       end
 
       def resolve_qualified_name(name, current_package_path)
