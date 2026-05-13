@@ -120,20 +120,6 @@ inheritance_resolver)
 
             @id_generator.package_id(klass.namespace)
           end
-
-          def format_definition(definition)
-            return nil if definition.nil? || definition.empty?
-
-            formatted = definition.strip
-            if @options[:max_definition_length] &&
-                formatted.length > @options[:max_definition_length]
-              formatted = "#{formatted[0...@options[:max_definition_length]]}..."
-            end
-            if @options[:format_definitions]
-              formatted = formatted.gsub(%r{(https?://[^\s]+)}, '[\1](\1)')
-            end
-            formatted
-          end
         end
       end
     end

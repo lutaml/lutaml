@@ -43,14 +43,14 @@ module Lutaml
           end
 
           def compute_inherited_attributes(klass, visited = Set.new)
-            walk_inheritance_chain(klass, visited, :parent_inherited_attrs)
+            walk_inheritance_chain(klass, visited, :attributes)
           rescue StandardError => e
             warn "Error computing inherited attributes: #{e.message}"
             []
           end
 
           def compute_inherited_associations(klass, visited = Set.new)
-            walk_inheritance_chain(klass, visited, :parent_inherited_assocs)
+            walk_inheritance_chain(klass, visited, :associations)
           rescue StandardError => e
             warn "Error computing inherited associations: #{e.message}"
             []
@@ -93,10 +93,16 @@ module Lutaml
             collect_chain_items(klass.generalization, visited, collector_method)
           end
 
-          def collect_chain_items(starting_gen, visited, collector_method)
+          COLLECTOR_METHODS = {
+            attributes: :parent_inherited_attrs,
+            associations: :parent_inherited_assocs,
+          }.freeze
+
+          def collect_chain_items(starting_gen, visited, collector_type)
             inherited = []
             current_gen = starting_gen
             parent_order = 0
+            method = COLLECTOR_METHODS.fetch(collector_type)
 
             while current_gen
               parent_class = class_lookup.by_xmi_id(current_gen.general_id)
@@ -104,8 +110,8 @@ module Lutaml
               break if visited.include?(parent_class.xmi_id)
 
               visited.add(parent_class.xmi_id)
-              inherited.concat(send(collector_method, parent_class,
-                                    parent_order))
+              inherited.concat(public_send(method, parent_class,
+                                           parent_order))
 
               parent_order += 1
               current_gen = current_gen.general
@@ -255,20 +261,6 @@ module Lutaml
               inheritedProps: serialize_general_collection(gen.inherited_props),
               inheritedAssocProps: serialize_general_collection(gen.inherited_assoc_props),
             }
-          end
-
-          def format_definition(definition)
-            return nil if definition.nil? || definition.empty?
-
-            formatted = definition.strip
-            if @options[:max_definition_length] &&
-                formatted.length > @options[:max_definition_length]
-              formatted = "#{formatted[0...@options[:max_definition_length]]}..."
-            end
-            if @options[:format_definitions]
-              formatted = formatted.gsub(%r{(https?://[^\s]+)}, '[\1](\1)')
-            end
-            formatted
           end
         end
       end

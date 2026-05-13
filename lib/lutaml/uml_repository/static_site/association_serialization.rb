@@ -23,23 +23,23 @@ module Lutaml
         end
 
         def serialize_association(association, id)
-          assoc_name = association.name
-          if assoc_name.nil? || assoc_name.empty?
-            assoc_name = association.owner_end_attribute_name
-            assoc_name = if assoc_name.nil? || assoc_name.empty?
-                           association.member_end_attribute_name
-                         end
-          end
-
           Models::SpaAssociation.new(
             id: id,
             xmi_id: association.xmi_id,
-            name: assoc_name,
+            name: resolve_association_name(association),
             type: "Association",
             definition: format_definition(association.definition),
             source: build_association_source(association),
             target: build_association_target(association),
           )
+        end
+
+        def resolve_association_name(association)
+          name = association.name
+          return name if name && !name.empty?
+
+          association.owner_end_attribute_name.presence ||
+            association.member_end_attribute_name
         end
 
         def build_association_source(association)
@@ -73,20 +73,6 @@ module Lutaml
             min: cardinality.min,
             max: cardinality.max,
           )
-        end
-
-        def format_definition(definition)
-          return nil if definition.nil? || definition.empty?
-
-          formatted = definition.strip
-          if @options[:max_definition_length] &&
-              formatted.length > @options[:max_definition_length]
-            formatted = "#{formatted[0...@options[:max_definition_length]]}..."
-          end
-          if @options[:format_definitions]
-            formatted = formatted.gsub(%r{(https?://[^\s]+)}, '[\1](\1)')
-          end
-          formatted
         end
       end
     end
