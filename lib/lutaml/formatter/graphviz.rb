@@ -206,25 +206,29 @@ module Lutaml
         "#{res} #{cardinality.min}..#{cardinality.max}"
       end
 
-      def format_member_rows(members, hide_members) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity
-        unless !hide_members && members&.length&.positive?
-          return <<~HEREDOC.chomp
-            <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
-              <TR><TD ALIGN="LEFT"></TD></TR>
-            </TABLE>
-          HEREDOC
-        end
+      EMPTY_MEMBER_TABLE = <<~HEREDOC.chomp
+        <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
+          <TR><TD ALIGN="LEFT"></TD></TR>
+        </TABLE>
+      HEREDOC
+
+      def format_member_rows(members, hide_members)
+        return EMPTY_MEMBER_TABLE if hide_members || !members&.any?
 
         field_rows = members.map do |field|
           %{<TR><TD ALIGN="LEFT">#{format_attribute(field)}</TD></TR>}
         end
-        field_table = <<~HEREDOC.chomp
+        build_member_table(field_rows)
+      end
+
+      def build_member_table(field_rows)
+        <<~HEREDOC.chomp
           <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
             #{field_rows.map { |row| (' ' * 10) + row }.join("\n")}
           </TABLE>
         HEREDOC
-        field_table << "\n" << (" " * 6)
-        field_table
+          .concat("\n")
+          .concat(" " * 6)
       end
 
       def format_class(node, hide_members) # rubocop:disable Metrics/MethodLength

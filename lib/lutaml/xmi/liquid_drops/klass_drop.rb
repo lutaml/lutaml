@@ -70,26 +70,28 @@ module Lutaml
         public
 
         def package
+          xmi_pkg = find_nested_xmi_package
+          return unless xmi_pkg
+
+          ::Lutaml::Xmi::LiquidDrops::PackageDrop.new(
+            build_uml_package(xmi_pkg),
+            @guidance,
+            @options.merge(absolute_path: "#{@options[:absolute_path]}::#{name}"),
+          )
+        end
+
+        def find_nested_xmi_package
           nested_pkg = @lookup.find_packaged_element_by_id(@model.xmi_id)
           return unless nested_pkg
 
-          xmi_pkg = nested_pkg.packaged_element&.find do |e|
-            e.type?("uml:Package")
-          end
-          return unless xmi_pkg
+          nested_pkg.packaged_element&.find { |e| e.type?("uml:Package") }
+        end
 
+        def build_uml_package(xmi_pkg)
           uml_pkg = ::Lutaml::Uml::Package.new
           uml_pkg.xmi_id = xmi_pkg.id
           uml_pkg.name = @lookup.get_package_name(xmi_pkg)
-          ::Lutaml::Xmi::LiquidDrops::PackageDrop.new(
-            uml_pkg,
-            @guidance,
-            @options.merge(
-              {
-                absolute_path: "#{@options[:absolute_path]}::#{name}",
-              },
-            ),
-          )
+          uml_pkg
         end
 
         def type

@@ -380,48 +380,32 @@ module Lutaml
           end
         end
 
+        CSS_FILES = %w[
+          00-variables.css 01-reset.css 02-base.css 03-layout.css
+          04-components.css 05-utilities.css 06-diagrams.css
+        ].freeze
+
+        JS_FILES = %w[
+          core/utils.js core/state.js core/router.js
+          search/lunr-custom.js ui/sidebar.js ui/details.js
+          ui/search.js app.js
+        ].freeze
+
         def build_css
-          # Read CSS modules and concatenate
-          css_files = [
-            "00-variables.css",
-            "01-reset.css",
-            "02-base.css",
-            "03-layout.css",
-            "04-components.css",
-            "05-utilities.css",
-            "06-diagrams.css",
-          ]
-
-          css_parts = css_files.map do |file|
-            path = File.join(@options[:template_path], "assets", "styles", file)
-            File.exist?(path) ? File.read(path) : ""
-          end
-
-          css = css_parts.join("\n\n")
-          @options[:minify] ? minify_css(css) : css
+          concatenate_assets("styles", CSS_FILES, :minify_css)
         end
 
         def build_js
-          # Read JS modules and concatenate
-          js_files = [
-            "core/utils.js",
-            "core/state.js",
-            "core/router.js",
-            "search/lunr-custom.js",
-            "ui/sidebar.js",
-            "ui/details.js",
-            "ui/search.js",
-            "app.js",
-          ]
+          concatenate_assets("scripts", JS_FILES, :minify_js)
+        end
 
-          js_parts = js_files.map do |file|
-            path = File.join(@options[:template_path], "assets", "scripts",
-                             file)
+        def concatenate_assets(subdir, files, minifier)
+          content = files.map do |file|
+            path = File.join(@options[:template_path], "assets", subdir, file)
             File.exist?(path) ? File.read(path) : ""
-          end
+          end.join("\n\n")
 
-          js = js_parts.join("\n\n")
-          @options[:minify] ? minify_js(js) : js
+          @options[:minify] ? public_send(minifier, content) : content
         end
 
         def minify_html(html)
