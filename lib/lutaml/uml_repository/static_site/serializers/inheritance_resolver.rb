@@ -57,7 +57,7 @@ module Lutaml
           end
 
           def serialize_generalization(klass, visited = Set.new)
-            return nil unless klass.generalization
+            return nil unless klass.is_a?(Lutaml::Uml::Class) && klass.generalization
             return nil if visited.include?(klass.xmi_id)
 
             visited.add(klass.xmi_id)
@@ -86,7 +86,7 @@ module Lutaml
           private
 
           def walk_inheritance_chain(klass, visited, collector_method)
-            return [] unless klass.generalization
+            return [] unless klass.is_a?(Lutaml::Uml::Class) && klass.generalization
             return [] if visited.include?(klass.xmi_id)
 
             visited.add(klass.xmi_id)

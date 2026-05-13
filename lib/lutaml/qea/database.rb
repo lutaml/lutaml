@@ -105,72 +105,80 @@ module Lutaml
         @collections.values.sum(&:size)
       end
 
-      SINGLE_INDEXES = {
-        find_package: [:packages, :package_id],
-        find_attribute: [:attributes, :id],
-        find_connector: [:connectors, :connector_id],
-        find_diagram: [:diagrams, :diagram_id],
-      }.freeze
-
-      GROUP_INDEXES = {
-        attributes_for_object: [:attributes, :ea_object_id],
-        operations_for_object: [:operations, :ea_object_id],
-        operation_params_for: [:operation_params, :operationid],
-        child_packages_for: [:packages, :parent_id],
-        objects_in_package: [:objects, :package_id],
-        diagrams_in_package: [:diagrams, :package_id],
-        diagram_objects_for: [:diagram_objects, :diagram_id],
-        diagram_links_for: [:diagram_links, :diagramid],
-      }.freeze
-
-      SINGLE_INDEXES.each do |method_name, (collection, field)|
-        ivar = :"@#{method_name}_idx"
-        define_method(method_name) do |id|
-          idx = instance_variable_get(ivar)
-          unless idx
-            idx = build_group_index(public_send(collection), field, single: true)
-            instance_variable_set(ivar, idx)
-          end
-          idx[id]
-        end
+      def find_package(id)
+        ensure_lookup_indexes
+        @packages_by_id[id]
       end
 
-      GROUP_INDEXES.each do |method_name, (collection, field)|
-        ivar = :"@#{method_name}_idx"
-        define_method(method_name) do |id|
-          idx = instance_variable_get(ivar)
-          unless idx
-            idx = build_group_index(public_send(collection), field)
-            instance_variable_set(ivar, idx)
-          end
-          idx[id] || []
-        end
+      def find_attribute(id)
+        ensure_lookup_indexes
+        @attributes_by_id[id]
+      end
+
+      def find_connector(id)
+        ensure_lookup_indexes
+        @connectors_by_id[id]
+      end
+
+      def find_diagram(id)
+        ensure_lookup_indexes
+        @diagrams_by_id[id]
+      end
+
+      def attributes_for_object(id)
+        ensure_lookup_indexes
+        @attributes_by_object_id[id] || []
+      end
+
+      def operations_for_object(id)
+        ensure_lookup_indexes
+        @operations_by_object_id[id] || []
+      end
+
+      def operation_params_for(id)
+        ensure_lookup_indexes
+        @operation_params_by_id[id] || []
+      end
+
+      def child_packages_for(id)
+        ensure_lookup_indexes
+        @packages_by_parent[id] || []
+      end
+
+      def objects_in_package(id)
+        ensure_lookup_indexes
+        @objects_by_package_id[id] || []
+      end
+
+      def diagrams_in_package(id)
+        ensure_lookup_indexes
+        @diagrams_by_package_id[id] || []
+      end
+
+      def diagram_objects_for(id)
+        ensure_lookup_indexes
+        @diagram_objects_by_id[id] || []
+      end
+
+      def diagram_links_for(id)
+        ensure_lookup_indexes
+        @diagram_links_by_id[id] || []
       end
 
       # Find an object by ID
-      #
-      # @param id [Integer] Object ID
-      # @return [Models::EaObject, nil] The object or nil if not found
       def find_object(id)
         objects.find_by_key(:ea_object_id, id)
       end
 
       # Find object by ea_guid
-      #
-      # @param ea_guid [String] Object GUID
-      # @return [Models::EaObject, nil] The object or nil if not found
       def find_object_by_guid(ea_guid)
-        @objects_by_guid ||= build_group_index(objects, :ea_guid, single: true)
+        ensure_lookup_indexes
         @objects_by_guid[ea_guid]
       end
 
       # Get connectors involving a specific object (start or end)
-      #
-      # @param object_id [Integer] Object ID
-      # @return [Array<Models::EaConnector>] Connectors for the object
       def connectors_for_object(object_id)
-        @connectors_by_start ||= build_group_index(connectors, :start_object_id)
-        @connectors_by_end ||= build_group_index(connectors, :end_object_id)
+        ensure_lookup_indexes
         (@connectors_by_start[object_id] || []) +
           (@connectors_by_end[object_id] || [])
       end
@@ -193,14 +201,19 @@ module Lutaml
       #
       # @return [self]
       def freeze
-        # Memoize repositories before freezing
         objects
-
-        # Eagerly build all lookup indexes before freezing
-        build_lookup_indexes
-
+        ensure_lookup_indexes
         @collections.freeze
         super
+      end
+
+      private
+
+      def ensure_lookup_indexes
+        return if @lookup_indexes_built
+
+        build_lookup_indexes
+        @lookup_indexes_built = true
       end
     end
   end
