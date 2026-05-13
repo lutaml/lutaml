@@ -38,8 +38,10 @@ module Lutaml
           name = association.name
           return name if name && !name.empty?
 
-          association.owner_end_attribute_name.presence ||
-            association.member_end_attribute_name
+          role = association.owner_end_attribute_name
+          return role if role && !role.empty?
+
+          association.member_end_attribute_name
         end
 
         def build_association_source(association)
