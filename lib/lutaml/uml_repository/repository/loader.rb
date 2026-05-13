@@ -64,17 +64,24 @@ module Lutaml
         def self.from_file_cached(xmi_path, lur_path: nil)
           lur_path ||= xmi_path.sub(/\.xmi$/i, ".lur")
 
-          if File.exist?(lur_path) && File.mtime(lur_path) >= File.mtime(xmi_path)
+          if cache_valid?(lur_path, xmi_path)
             puts "Using cached LUR package: #{lur_path}" if $VERBOSE
             from_package(lur_path)
           else
-            puts "Building repository from XMI..." if $VERBOSE
-            repo = from_xmi(xmi_path)
-
-            puts "Caching as LUR package: #{lur_path}" if $VERBOSE
-            repo.export_to_package(lur_path)
-            repo
+            build_and_cache(xmi_path, lur_path)
           end
+        end
+
+        def self.cache_valid?(lur_path, xmi_path)
+          File.exist?(lur_path) && File.mtime(lur_path) >= File.mtime(xmi_path)
+        end
+
+        def self.build_and_cache(xmi_path, lur_path)
+          puts "Building repository from XMI..." if $VERBOSE
+          repo = from_xmi(xmi_path)
+          puts "Caching as LUR package: #{lur_path}" if $VERBOSE
+          repo.export_to_package(lur_path)
+          repo
         end
 
         # Load a Repository from a LUR package file.

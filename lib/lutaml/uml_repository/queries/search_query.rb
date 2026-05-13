@@ -113,7 +113,7 @@ module Lutaml
         # @param query [String] Query string
         # @param fields [Array<Symbol>] Fields to search in
         # @return [Array<SearchResult>] Matching search result objects
-        def search_classes( # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+        def search_classes( # rubocop:disable Metrics/MethodLength
           query, fields: %i[name documentation],
           case_sensitive: false
         )
@@ -122,55 +122,64 @@ module Lutaml
           )
 
           indexes[:qualified_names].filter_map do |qname, entity|
-            match_field = nil
-            qualified_name = nil
-
             next unless entity.is_a?(Lutaml::Uml::Class)
 
-            # Check fields for match
-            fields.each do |field|
-              if entity.class.attributes.key?(field) &&
-                  entity.public_send(field)&.match?(pattern)
+            match_field = find_matching_field(entity, fields, pattern)
+            next unless match_field
 
-                match_field = field
-                qualified_name = qname
-              end
-            end
-
-            if match_field
-              SearchResult.new(
-                element: entity,
-                element_type: :class,
-                qualified_name: qualified_name,
-                package_path: extract_package_path(qualified_name),
-                match_field: match_field,
-              )
-            end
+            build_search_result(entity, :class, qname, match_field)
           end.uniq
         end
 
-        def search_by_stereotype(query, case_sensitive: false) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+        def find_matching_field(entity, fields, pattern)
+          last_match = nil
+          fields.each do |field|
+            if entity.class.attributes.key?(field) &&
+                entity.public_send(field)&.match?(pattern)
+              last_match = field
+            end
+          end
+          last_match
+        end
+
+        def build_search_result(entity, type, qname, match_field, context = {})
+          SearchResult.new(
+            element: entity,
+            element_type: type,
+            qualified_name: qname,
+            package_path: extract_package_path(qname),
+            match_field: match_field,
+            match_context: context,
+          )
+        end
+
+        def search_by_stereotype(query, case_sensitive: false)
           pattern = regex_pattern_from_query(
             query, case_sensitive: case_sensitive
           )
 
-          matched_entities = indexes[:stereotypes]
+          matched_entities = find_entities_by_stereotype_pattern(pattern)
+          matched_entities.map { |entity| build_stereotype_result(entity) }
+        end
+
+        def find_entities_by_stereotype_pattern(pattern)
+          indexes[:stereotypes]
             .filter_map do |_stereotype, entities|
             entities.select do |entity|
               entity.is_a?(Lutaml::Uml::Classifier) &&
                 Array(entity.stereotype).any? { |s| s&.match?(pattern) }
             end.uniq
           end.uniq.flatten
+        end
 
-          matched_entities.map do |entity|
-            SearchResult.new(
-              element: entity,
-              element_type: entity.class.name.split("::").last.downcase,
-              qualified_name: "",
-              package_path: "",
-              match_field: :stereotype,
-            )
-          end
+        def build_stereotype_result(entity)
+          SearchResult.new(
+            element: entity,
+            element_type: entity.class.name.split("::").last.downcase,
+            qualified_name: "",
+            package_path: "",
+            match_field: :stereotype,
+          )
         end
 
         # Search for packages matching the query
@@ -212,61 +221,63 @@ module Lutaml
         # @param query [String] Query string
         # @param fields [Array<Symbol>] Fields to search in
         # @return [Array<Lutaml::Uml::Class>] Matching search result objects
-        def search_attributes(query, fields: [:name], case_sensitive: false) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+        def search_attributes(query, fields: [:name], case_sensitive: false) # rubocop:disable Metrics/MethodLength
           pattern = regex_pattern_from_query(
             query, case_sensitive: case_sensitive
           )
 
-          indexes[:qualified_names].filter_map do |class_qname, entity| # rubocop:disable Metrics/BlockLength
+          indexes[:qualified_names].filter_map do |class_qname, entity|
             next unless entity.is_a?(Lutaml::Uml::Classifier) && entity.attributes
 
-            match_field = nil
-            match_attr = nil
-            qualified_name = nil
+            match_attr, match_field = find_matching_attribute(entity, fields,
+                                                              pattern)
+            next unless match_field
 
-            entity.attributes.each do |attr|
-              # Check attribute for match
-              fields.each do |field|
-                if attr.class.attributes.key?(field) &&
-                    attr.public_send(field)&.match?(pattern)
+            build_attribute_result(match_attr, entity, class_qname, match_field)
+          end.uniq
+        end
 
-                  match_attr = attr
-                  match_field = field
-                  qualified_name = class_qname
-                end
+        def find_matching_attribute(entity, fields, pattern)
+          match_attr = nil
+          match_field = nil
+          entity.attributes.each do |attr|
+            fields.each do |field|
+              if attr.class.attributes.key?(field) &&
+                  attr.public_send(field)&.match?(pattern)
+                match_attr = attr
+                match_field = field
               end
             end
+          end
+          match_field ? [match_attr, match_field] : nil
+        end
 
-            if match_field
-              SearchResult.new(
-                element: match_attr,
-                element_type: :attribute,
-                qualified_name: "#{qualified_name}::#{match_attr.name}",
-                package_path: extract_package_path(qualified_name),
-                match_field: match_field,
-                match_context: {
-                  "class_name" => entity&.name,
-                  "class_qname" => qualified_name,
-                },
-              )
-            end
-          end.uniq
+        def build_attribute_result(attr, entity, class_qname, match_field)
+          SearchResult.new(
+            element: attr,
+            element_type: :attribute,
+            qualified_name: "#{class_qname}::#{attr.name}",
+            package_path: extract_package_path(class_qname),
+            match_field: match_field,
+            match_context: {
+              "class_name" => entity.name,
+              "class_qname" => class_qname,
+            },
+          )
         end
 
         # Get all associations in the model
         #
         # @return [Array<Lutaml::Uml::Association>] All association objects
-        def get_all_associations # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+        def get_all_associations
           all_associations = []
 
-          # Get all associations defined at document level and
           if document.is_a?(Lutaml::Uml::Document) && document.associations
             all_associations << document.associations
           end
 
-          # Get all associations defined within classes
           indexes[:qualified_names].each_value do |entity|
-            next unless (entity.is_a?(Lutaml::Uml::Class) || entity.is_a?(Lutaml::Uml::DataType)) && entity.associations
+            next unless classifiable_with_associations?(entity)
 
             all_associations << entity.associations
           end
@@ -274,12 +285,16 @@ module Lutaml
           all_associations.flatten.uniq
         end
 
+        def classifiable_with_associations?(entity)
+          (entity.is_a?(Lutaml::Uml::Class) || entity.is_a?(Lutaml::Uml::DataType)) && entity.associations
+        end
+
         # Search for associations matching the query
         #
         # @param query [String] Query string
         # @param fields [Array<Symbol>] Fields to search in
         # @return [Array<SearchResult>] Matching search result objects
-        def search_associations(query, # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+        def search_associations(query, # rubocop:disable Metrics/MethodLength
           fields: %i[
             name owner_end member_end owner_end_attribute_name
             member_end_attribute_name documentation
@@ -291,27 +306,20 @@ module Lutaml
           )
 
           all_associations.filter_map do |assoc|
-            match_field = nil
+            match_field = find_matching_field(assoc, fields, pattern)
+            next unless match_field
 
-            fields.each do |field|
-              if assoc.class.attributes.key?(field) && assoc.public_send(field)&.match?(pattern)
-                match_field = field
-              end
-            end
-
-            if match_field
-              SearchResult.new(
-                element: assoc,
-                element_type: :association,
-                qualified_name: assoc.name || "(unnamed)",
-                package_path: "",
-                match_field: match_field,
-                match_context: {
-                  "source" => assoc.owner_end,
-                  "target" => assoc.member_end,
-                },
-              )
-            end
+            SearchResult.new(
+              element: assoc,
+              element_type: :association,
+              qualified_name: assoc.name || "(unnamed)",
+              package_path: "",
+              match_field: match_field,
+              match_context: {
+                "source" => assoc.owner_end,
+                "target" => assoc.member_end,
+              },
+            )
           end.uniq
         end
 

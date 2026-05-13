@@ -54,31 +54,38 @@ module Lutaml
           )
 
           builder = Markdown::PackagePageBuilder.new(repository, link_resolver)
-          packages.each do |package|
-            path = link_resolver.package_path(package)
-            content = builder.build(package, path)
-            filename = link_resolver.sanitize_filename("#{path}.md")
-            File.write(File.join(output_dir, "packages", filename), content)
-          end
+          packages.each { |pkg| write_package_page(builder, pkg) }
+        end
+
+        def write_package_page(builder, package)
+          path = link_resolver.package_path(package)
+          content = builder.build(package, path)
+          filename = link_resolver.sanitize_filename("#{path}.md")
+          File.write(File.join(output_dir, "packages", filename), content)
         end
 
         def generate_class_pages
-          classes = if options[:package]
-                      repository.classes_in_package(
-                        options[:package],
-                        recursive: options.fetch(:recursive, true),
-                      )
-                    else
-                      indexes&.dig(:classes)&.values || []
-                    end
-
+          classes = collect_export_classes
           builder = Markdown::ClassPageBuilder.new(repository, link_resolver)
-          classes.each do |klass|
-            qname = link_resolver.qualified_name(klass)
-            content = builder.build(klass, qname)
-            filename = link_resolver.sanitize_filename("#{qname}.md")
-            File.write(File.join(output_dir, "classes", filename), content)
+          classes.each { |klass| write_class_page(builder, klass) }
+        end
+
+        def collect_export_classes
+          if options[:package]
+            repository.classes_in_package(
+              options[:package],
+              recursive: options.fetch(:recursive, true),
+            )
+          else
+            indexes&.dig(:classes)&.values || []
           end
+        end
+
+        def write_class_page(builder, klass)
+          qname = link_resolver.qualified_name(klass)
+          content = builder.build(klass, qname)
+          filename = link_resolver.sanitize_filename("#{qname}.md")
+          File.write(File.join(output_dir, "classes", filename), content)
         end
       end
     end

@@ -114,12 +114,9 @@ module Lutaml
 
         def indexed_relative_match?(path_segs, search_segs, recursive)
           if recursive
-            (0..(path_segs.size - search_segs.size)).any? do |i|
-              path_segs[i, search_segs.size] == search_segs
-            end
+            segments_overlap?(path_segs, search_segs)
           else
-            path_segs.size >= search_segs.size &&
-              path_segs[-search_segs.size..] == search_segs
+            segments_end_with?(path_segs, search_segs)
           end
         end
 
@@ -163,13 +160,21 @@ module Lutaml
           search_segs = package_path.segments
 
           if recursive
-            (0..(class_pkg_segs.size - search_segs.size)).any? do |i|
-              class_pkg_segs[i, search_segs.size] == search_segs
-            end
+            segments_overlap?(class_pkg_segs, search_segs)
           else
-            class_pkg_segs.size >= search_segs.size &&
-              class_pkg_segs[-search_segs.size..] == search_segs
+            segments_end_with?(class_pkg_segs, search_segs)
           end
+        end
+
+        def segments_overlap?(class_segs, search_segs)
+          (0..(class_segs.size - search_segs.size)).any? do |i|
+            class_segs[i, search_segs.size] == search_segs
+          end
+        end
+
+        def segments_end_with?(class_segs, search_segs)
+          class_segs.size >= search_segs.size &&
+            class_segs[-search_segs.size..] == search_segs
         end
       end
     end

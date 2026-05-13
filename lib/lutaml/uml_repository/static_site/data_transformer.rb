@@ -109,16 +109,25 @@ module Lutaml
           return if klass.association_generalization.empty?
 
           klass.association_generalization.each do |assoc_gen|
-            parent_object_id = assoc_gen.parent_object_id
-            next unless parent_object_id
-
-            parent_class = class_lookup.by_object_id(parent_object_id)
-            next unless parent_class&.xmi_id
-            next if parent_class.xmi_id == klass.xmi_id
-            next if map[klass.xmi_id].include?(parent_class.xmi_id)
-
-            map[klass.xmi_id] << parent_class.xmi_id
+            add_valid_generalization_entry(map, klass, assoc_gen)
           end
+        end
+
+        def add_valid_generalization_entry(map, klass, assoc_gen)
+          parent_xmi_id = resolve_parent_xmi_id(assoc_gen)
+          return unless parent_xmi_id
+          return if parent_xmi_id == klass.xmi_id
+          return if map[klass.xmi_id].include?(parent_xmi_id)
+
+          map[klass.xmi_id] << parent_xmi_id
+        end
+
+        def resolve_parent_xmi_id(assoc_gen)
+          parent_object_id = assoc_gen.parent_object_id
+          return nil unless parent_object_id
+
+          parent_class = class_lookup.by_object_id(parent_object_id)
+          parent_class&.xmi_id
         end
 
         def format_definition(definition)

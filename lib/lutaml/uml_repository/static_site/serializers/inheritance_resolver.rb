@@ -43,57 +43,14 @@ module Lutaml
           end
 
           def compute_inherited_attributes(klass, visited = Set.new)
-            return [] unless klass.generalization
-            return [] if visited.include?(klass.xmi_id)
-
-            visited.add(klass.xmi_id)
-            inherited = []
-            current_gen = klass.generalization
-            parent_order = 0
-
-            while current_gen
-              parent_class = class_lookup.by_xmi_id(current_gen.general_id)
-              break unless parent_class
-              break if visited.include?(parent_class.xmi_id)
-
-              visited.add(parent_class.xmi_id)
-              inherited.concat(parent_inherited_attrs(parent_class,
-                                                      parent_order))
-
-              parent_order += 1
-              current_gen = current_gen.general
-            end
-
-            inherited
+            walk_inheritance_chain(klass, visited, :parent_inherited_attrs)
           rescue StandardError => e
             warn "Error computing inherited attributes: #{e.message}"
             []
           end
 
           def compute_inherited_associations(klass, visited = Set.new)
-            return [] unless klass.generalization
-            return [] if visited.include?(klass.xmi_id)
-
-            visited.add(klass.xmi_id)
-            inherited = []
-            current_gen = klass.generalization
-            parent_order = 0
-
-            while current_gen
-              parent_class = class_lookup.by_xmi_id(current_gen.general_id)
-              break unless parent_class
-              break if visited.include?(parent_class.xmi_id)
-
-              visited.add(parent_class.xmi_id)
-              inherited.concat(
-                parent_inherited_assocs(parent_class, parent_order),
-              )
-
-              parent_order += 1
-              current_gen = current_gen.general
-            end
-
-            inherited
+            walk_inheritance_chain(klass, visited, :parent_inherited_assocs)
           rescue StandardError => e
             warn "Error computing inherited associations: #{e.message}"
             []
@@ -128,6 +85,35 @@ module Lutaml
 
           private
 
+          def walk_inheritance_chain(klass, visited, collector_method)
+            return [] unless klass.generalization
+            return [] if visited.include?(klass.xmi_id)
+
+            visited.add(klass.xmi_id)
+            collect_chain_items(klass.generalization, visited, collector_method)
+          end
+
+          def collect_chain_items(starting_gen, visited, collector_method)
+            inherited = []
+            current_gen = starting_gen
+            parent_order = 0
+
+            while current_gen
+              parent_class = class_lookup.by_xmi_id(current_gen.general_id)
+              break unless parent_class
+              break if visited.include?(parent_class.xmi_id)
+
+              visited.add(parent_class.xmi_id)
+              inherited.concat(send(collector_method, parent_class,
+                                    parent_order))
+
+              parent_order += 1
+              current_gen = current_gen.general
+            end
+
+            inherited
+          end
+
           def generalization_map_parents(klass)
             parent_xmi_ids = @generalization_map[klass.xmi_id]
             return nil if parent_xmi_ids.nil? || parent_xmi_ids.empty?
@@ -135,10 +121,14 @@ module Lutaml
             parents = parent_xmi_ids.filter_map do |parent_xmi_id|
               next if parent_xmi_id == klass.xmi_id
 
-              parent = class_lookup.by_xmi_id(parent_xmi_id)
-              parent ? @id_generator.class_id(parent) : nil
+              resolve_parent_class_id(parent_xmi_id)
             end
             parents.empty? ? nil : parents
+          end
+
+          def resolve_parent_class_id(parent_xmi_id)
+            parent = class_lookup.by_xmi_id(parent_xmi_id)
+            parent ? @id_generator.class_id(parent) : nil
           end
 
           def parent_inherited_attrs(parent_class, parent_order)
@@ -158,35 +148,47 @@ module Lutaml
           end
 
           def parent_inherited_assocs(parent_class, parent_order)
-            parent_associations = find_class_associations(parent_class)
+            assoc_with_roles = collect_assoc_roles(parent_class)
 
-            assoc_with_roles = parent_associations.filter_map do |assoc_id|
-              assoc = @repository.associations_index.find do |a|
-                @id_generator.association_id(a) == assoc_id
-              end
+            assoc_with_roles.sort_by { |a| a[:role] }.map do |item|
+              build_inherited_assoc(item, parent_class, parent_order)
+            end
+          end
+
+          def collect_assoc_roles(parent_class)
+            find_class_associations(parent_class).filter_map do |assoc_id|
+              assoc = find_assoc_by_generated_id(assoc_id)
               next unless assoc
 
               { id: assoc_id, role: resolve_local_role(assoc, parent_class) }
             end
+          end
 
-            assoc_with_roles.sort_by { |a| a[:role] }.map do |item|
-              Models::SpaInheritedAssociation.new(
-                association_id: item[:id],
-                inherited_from: @id_generator.class_id(parent_class),
-                inherited_from_name: parent_class.name,
-                parent_order: parent_order,
-                local_role: item[:role],
-              )
+          def find_assoc_by_generated_id(assoc_id)
+            @repository.associations_index.find do |a|
+              @id_generator.association_id(a) == assoc_id
             end
           end
 
+          def build_inherited_assoc(item, parent_class, parent_order)
+            Models::SpaInheritedAssociation.new(
+              association_id: item[:id],
+              inherited_from: @id_generator.class_id(parent_class),
+              inherited_from_name: parent_class.name,
+              parent_order: parent_order,
+              local_role: item[:role],
+            )
+          end
+
           def resolve_local_role(assoc, parent_class)
-            if assoc.owner_end_xmi_id == parent_class.xmi_id
-              assoc.owner_end_attribute_name || assoc.owner_end || ""
-            elsif assoc.member_end_xmi_id == parent_class.xmi_id
-              assoc.member_end_attribute_name || assoc.member_end || ""
-            else
-              ""
+            role_for_end(assoc, parent_class.xmi_id) || ""
+          end
+
+          def role_for_end(assoc, xmi_id)
+            if assoc.owner_end_xmi_id == xmi_id
+              assoc.owner_end_attribute_name || assoc.owner_end
+            elsif assoc.member_end_xmi_id == xmi_id
+              assoc.member_end_attribute_name || assoc.member_end
             end
           end
 
