@@ -31,11 +31,17 @@ module Lutaml
           obj_pkg_name = find_package_name(obj&.package_id)
 
           assoc_connectors.filter_map do |ea_connector|
-            if ea_connector.start_object_id == object_id
-              build_end_attribute(ea_connector, obj, obj_pkg_name)
-            elsif ea_connector.end_object_id == object_id
-              build_start_attribute(ea_connector, obj, obj_pkg_name)
-            end
+            build_connector_attribute(ea_connector, object_id, obj,
+                                      obj_pkg_name)
+          end
+        end
+
+        def build_connector_attribute(ea_connector, object_id, obj,
+obj_pkg_name)
+          if ea_connector.start_object_id == object_id
+            build_end_attribute(ea_connector, obj, obj_pkg_name)
+          elsif ea_connector.end_object_id == object_id
+            build_start_attribute(ea_connector, obj, obj_pkg_name)
           end
         end
 
@@ -80,17 +86,30 @@ module Lutaml
           return nil unless member_obj
 
           member_role = resolve_member_role(ea_connector, is_start, member_obj)
+
+          build_association_record(ea_connector, object_id, normalized_owner_xmi_id,
+                                   owner_role, member_obj, member_role, is_start)
+        end
+
+        def build_association_record(ea_connector, object_id, owner_xmi_id,
+                                     owner_role, member_obj, member_role, is_start)
           cardinality_str = is_start ? ea_connector.destcard : ea_connector.sourcecard
 
           Lutaml::Uml::Association.new.tap do |assoc|
             assoc.xmi_id = normalize_guid_to_xmi_format(ea_connector.ea_guid,
                                                         "EAID")
-            assoc.name = ea_connector.name unless ea_connector.name.nil? || ea_connector.name.empty?
-            assign_association_ends(assoc, object_id, normalized_owner_xmi_id,
+            assign_assoc_name(assoc, ea_connector)
+            assign_association_ends(assoc, object_id, owner_xmi_id,
                                     owner_role, member_obj, member_role)
             assoc.member_end_type = ea_connector.connector_type&.downcase
             assoc.member_end_cardinality = build_cardinality(cardinality_str)
           end
+        end
+
+        def assign_assoc_name(assoc, ea_connector)
+          return if ea_connector.name.nil? || ea_connector.name.empty?
+
+          assoc.name = ea_connector.name
         end
 
         def assign_association_ends(assoc, object_id, owner_xmi_id,
@@ -121,17 +140,13 @@ module Lutaml
           target_obj = find_object_by_id(ea_connector.end_object_id)
           return nil unless target_obj
 
-          create_association_attribute(
-            name: ea_connector.destrole,
-            type: target_obj.name,
-            type_xmi_id: target_obj.ea_guid,
-            association_xmi_id: ea_connector.ea_guid,
+          build_directional_attribute(
+            role: ea_connector.destrole,
+            peer_obj: target_obj,
+            ea_connector: ea_connector,
             cardinality: ea_connector.destcard,
-            definition: ea_connector.notes,
-            gen_name: obj.name,
-            name_ns: obj_pkg_name,
-            type_ns: find_package_name(target_obj.package_id),
-            is_src: false,
+            obj: obj, obj_pkg_name: obj_pkg_name,
+            is_src: false
           )
         end
 
@@ -141,16 +156,29 @@ module Lutaml
           source_obj = find_object_by_id(ea_connector.start_object_id)
           return nil unless source_obj
 
-          create_association_attribute(
-            name: ea_connector.sourcerole,
-            type: source_obj.name,
-            type_xmi_id: source_obj.ea_guid,
-            association_xmi_id: ea_connector.ea_guid,
+          build_directional_attribute(
+            role: ea_connector.sourcerole,
+            peer_obj: source_obj,
+            ea_connector: ea_connector,
             cardinality: ea_connector.sourcecard,
+            obj: obj, obj_pkg_name: obj_pkg_name
+          )
+        end
+
+        def build_directional_attribute(role:, peer_obj:, ea_connector:,
+                                        cardinality:, obj:, obj_pkg_name:,
+                                        is_src: true)
+          create_association_attribute(
+            name: role,
+            type: peer_obj.name,
+            type_xmi_id: peer_obj.ea_guid,
+            association_xmi_id: ea_connector.ea_guid,
+            cardinality: cardinality,
             definition: ea_connector.notes,
             gen_name: obj.name,
             name_ns: obj_pkg_name,
-            type_ns: find_package_name(source_obj.package_id),
+            type_ns: find_package_name(peer_obj.package_id),
+            is_src: is_src,
           )
         end
 
