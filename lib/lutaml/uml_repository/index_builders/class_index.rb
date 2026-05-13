@@ -89,12 +89,16 @@ module Lutaml
         return unless classifiers
 
         classifiers.each do |classifier|
-          next unless classifier.stereotype && !classifier.stereotype.empty?
+          next unless has_stereotype?(classifier)
 
           Array(classifier.stereotype).each do |stereotype|
             (@stereotypes[stereotype] ||= []) << classifier
           end
         end
+      end
+
+      def has_stereotype?(classifier)
+        classifier.stereotype && !classifier.stereotype.empty?
       end
     end
   end

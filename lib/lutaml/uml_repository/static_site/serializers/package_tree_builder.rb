@@ -43,9 +43,8 @@ module Lutaml
 
           def build_tree_node(package)
             pkg_id = @id_generator.package_id(package)
-            sorted_children = sort_by_name(package.packages || [])
+            child_nodes = build_child_nodes(package)
             sorted_classes = filter_valid_classes(package.classes || [])
-            child_nodes = sorted_children.map { |child| build_tree_node(child) }
             total_class_count = sorted_classes.size + child_nodes.sum(&:class_count)
 
             Models::SpaPackageTreeNode.new(
@@ -57,6 +56,12 @@ module Lutaml
               classes: build_class_refs(sorted_classes),
               children: child_nodes,
             )
+          end
+
+          def build_child_nodes(package)
+            sort_by_name(package.packages || []).map do |child|
+              build_tree_node(child)
+            end
           end
 
           def sort_by_name(items)

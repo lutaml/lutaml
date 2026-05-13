@@ -83,20 +83,30 @@ module Lutaml
       def index_inheritance_assoc_edges(child_qname, klass, package_path)
         return unless klass.associations
 
-        klass.associations.each do |assoc|
-          next unless assoc.member_end_type == "inheritance"
-
-          parent_name = assoc.member_end
-          next unless parent_name
-
-          parent_name = parent_name.name if parent_name.is_a?(Lutaml::Uml::Generalization)
-          next unless parent_name.is_a?(String) && !parent_name.empty?
-
-          parent_qname = resolve_qualified_name(parent_name, package_path)
-          next unless parent_qname && child_qname != parent_qname
-
-          (@inheritance_graph[parent_qname] ||= []) << child_qname
+        klass.associations
+          .select { |assoc| assoc.member_end_type == "inheritance" }
+          .each do |assoc|
+          index_inheritance_edge(child_qname, assoc,
+                                 package_path)
         end
+      end
+
+      def index_inheritance_edge(child_qname, assoc, package_path)
+        parent_name = resolve_parent_name_from_assoc(assoc)
+        return unless parent_name
+
+        parent_qname = resolve_qualified_name(parent_name, package_path)
+        return unless parent_qname && child_qname != parent_qname
+
+        (@inheritance_graph[parent_qname] ||= []) << child_qname
+      end
+
+      def resolve_parent_name_from_assoc(assoc)
+        parent_name = assoc.member_end
+        return nil unless parent_name
+
+        parent_name = parent_name.name if parent_name.is_a?(Lutaml::Uml::Generalization)
+        parent_name.is_a?(String) && !parent_name.empty? ? parent_name : nil
       end
 
       # Extract parent name from generalization object

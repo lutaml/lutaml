@@ -148,12 +148,17 @@ module Lutaml
       # Lazy-built hash index for O(1) diagram lookups by package
       # @return [Hash] Mapping of package_id => [diagrams]
       def diagram_lookup
-        @diagram_lookup ||= begin
-          idx = Hash.new { |h, k| h[k] = [] }
-          diagrams = @xmi_root_model.extension&.diagrams&.diagram || []
-          diagrams.each { |d| idx[d.model.package] << d if d.model&.package }
-          idx
-        end
+        @diagram_lookup ||= build_diagram_index
+      end
+
+      def build_diagram_index
+        idx = Hash.new { |h, k| h[k] = [] }
+        xmi_diagrams.each { |d| idx[d.model.package] << d if d.model&.package }
+        idx
+      end
+
+      def xmi_diagrams
+        @xmi_root_model.extension&.diagrams&.diagram || []
       end
 
       def create_uml_class_attributes(klass) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength

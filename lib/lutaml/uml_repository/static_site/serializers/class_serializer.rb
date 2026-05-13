@@ -44,13 +44,29 @@ inheritance_resolver)
               operations: serialize_class_operations(klass),
               associations: sort_associations(find_class_associations(klass),
                                               klass),
-              generalizations: @inheritance_resolver.find_generalizations(klass),
-              specializations: @inheritance_resolver.find_specializations(klass),
               is_abstract: klass.is_abstract,
               literals: serialize_literals(klass),
+              **inheritance_data(klass),
+            )
+          end
+
+          def inheritance_data(klass)
+            {
+              generalizations: @inheritance_resolver.find_generalizations(klass),
+              specializations: @inheritance_resolver.find_specializations(klass),
               inherited_attributes: @inheritance_resolver.compute_inherited_attributes(klass),
               inherited_associations: @inheritance_resolver.compute_inherited_associations(klass),
-            )
+            }
+          end
+
+          def resolve_assoc_role(assoc, klass)
+            if assoc.owner_end_xmi_id == klass.xmi_id
+              assoc.owner_end_attribute_name || assoc.owner_end || ""
+            elsif assoc.member_end_xmi_id == klass.xmi_id
+              assoc.member_end_attribute_name || assoc.member_end || ""
+            else
+              ""
+            end
           end
 
           def serialize_attribute_ids(klass)
@@ -77,16 +93,6 @@ inheritance_resolver)
           def find_assoc_by_id(assoc_id)
             @repository.associations_index.find do |a|
               @id_generator.association_id(a) == assoc_id
-            end
-          end
-
-          def resolve_assoc_role(assoc, klass)
-            if assoc.owner_end_xmi_id == klass.xmi_id
-              assoc.owner_end_attribute_name || assoc.owner_end || ""
-            elsif assoc.member_end_xmi_id == klass.xmi_id
-              assoc.member_end_attribute_name || assoc.member_end || ""
-            else
-              ""
             end
           end
 

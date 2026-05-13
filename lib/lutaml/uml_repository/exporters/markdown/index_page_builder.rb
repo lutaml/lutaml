@@ -54,16 +54,24 @@ module Lutaml
             indent = "  " * depth
             path = node[:path]
             link = @link_resolver.package_link(path)
-            result = "#{indent}- [#{node[:name]}](#{link})"
-            result += " (#{node[:classes_count]} classes)" if node[:classes_count].positive?
-            result += "\n"
+            result = format_tree_line(indent, node[:name], link,
+                                      node[:classes_count])
 
-            if node[:children]&.any?
-              node[:children].each do |child|
-                result += build_tree_node(child, depth + 1)
-              end
+            append_child_nodes(result, node[:children], depth)
+          end
+
+          def format_tree_line(indent, name, link, classes_count)
+            line = "#{indent}- [#{name}](#{link})"
+            line += " (#{classes_count} classes)" if classes_count&.positive?
+            "#{line}\n"
+          end
+
+          def append_child_nodes(result, children, depth)
+            return result unless children&.any?
+
+            children.each do |child|
+              result << build_tree_node(child, depth + 1)
             end
-
             result
           end
         end
