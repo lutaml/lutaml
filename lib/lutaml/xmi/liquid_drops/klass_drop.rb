@@ -4,7 +4,7 @@ module Lutaml
   module Xmi
     module LiquidDrops
       class KlassDrop < Liquid::Drop
-        def initialize(model, guidance = nil, options = {}) # rubocop:disable Lint/MissingSuper,Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+        def initialize(model, guidance = nil, options = {}) # rubocop:disable Lint/MissingSuper
           @model = model
           @guidance = guidance
           @options = options
@@ -12,23 +12,8 @@ module Lutaml
           @xmi_root_model = options[:xmi_root_model]
           @id_name_mapping = options[:id_name_mapping]
 
-          if @xmi_root_model
-            @clients_dependencies = @lookup.select_dependencies_by_supplier(@model.xmi_id)
-            @suppliers_dependencies = @lookup.select_dependencies_by_client(@model.xmi_id)
-
-            matched_element = @lookup.find_matched_element(@model.xmi_id)
-            @inheritance_ids = matched_element&.links&.map do |link|
-              link.generalization.select do |gen|
-                gen.end == @model.xmi_id
-              end.map(&:id)
-            end&.flatten&.compact || []
-          end
-
-          if guidance
-            @klass_guidance = guidance["classes"].find do |klass|
-              klass["name"] == name || klass["name"] == absolute_path
-            end
-          end
+          init_xmi_dependencies if @xmi_root_model
+          init_guidance(guidance) if guidance
         end
 
         def xmi_id
@@ -52,6 +37,37 @@ module Lutaml
           absolute_path_arr << "::#{@xmi_root_model.model.name}"
           absolute_path_arr.reverse.join("::")
         end
+
+        private
+
+        def init_xmi_dependencies
+          @clients_dependencies = @lookup.select_dependencies_by_supplier(@model.xmi_id)
+          @suppliers_dependencies = @lookup.select_dependencies_by_client(@model.xmi_id)
+
+          matched_element = @lookup.find_matched_element(@model.xmi_id)
+          @inheritance_ids = extract_inheritance_ids(matched_element)
+        end
+
+        def init_guidance(guidance)
+          @klass_guidance = guidance["classes"].find do |klass|
+            klass["name"] == name || klass["name"] == absolute_path
+          end
+        end
+
+        def extract_inheritance_ids(matched_element)
+          return [] unless matched_element
+
+          links = matched_element.links
+          return [] unless links
+
+          links.flat_map do |link|
+            link.generalization
+              .select { |gen| gen.end == @model.xmi_id }
+              .map(&:id)
+          end.compact
+        end
+
+        public
 
         def package
           nested_pkg = @lookup.find_packaged_element_by_id(@model.xmi_id)
