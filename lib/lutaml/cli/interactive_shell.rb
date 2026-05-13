@@ -88,12 +88,20 @@ module Lutaml
             deduplicate_history(input)
             execute_command(input.strip)
           rescue Interrupt
-            puts "\nUse 'exit' or 'quit' to exit the shell"
+            handle_interrupt
           rescue StandardError => e
-            puts OutputFormatter.error("Error: #{e.message}")
-            puts e.backtrace.first(3).join("\n") if ENV["DEBUG"]
+            handle_error(e)
           end
         end
+      end
+
+      def handle_interrupt
+        puts "\nUse 'exit' or 'quit' to exit the shell"
+      end
+
+      def handle_error(error)
+        puts OutputFormatter.error("Error: #{error.message}")
+        puts error.backtrace.first(3).join("\n") if ENV["DEBUG"]
       end
 
       def deduplicate_history(input)

@@ -13,25 +13,31 @@ module Lutaml
         }.freeze
 
         def cmd_export(args)
-          if last_results.nil? || last_results.empty?
-            puts OutputFormatter.warning("No results to export")
-            return
-          end
+          return warn_no_results if last_results.nil? || last_results.empty?
+          return warn_export_usage unless valid_export_args?(args)
 
-          if args.size < 3 || args[0] != "last"
-            puts OutputFormatter.warning("Usage: export last FORMAT FILE")
-            return
-          end
+          dispatch_export(args[1].downcase, args[2])
+        end
 
-          format = args[1].downcase
-          file_path = args[2]
+        def valid_export_args?(args)
+          args.size >= 3 && args[0] == "last"
+        end
 
+        def dispatch_export(format, file_path)
           exporter = EXPORT_FORMATS[format]
           if exporter
             public_send(exporter, file_path)
           else
             puts OutputFormatter.error("Unsupported format: #{format}")
           end
+        end
+
+        def warn_no_results
+          puts OutputFormatter.warning("No results to export")
+        end
+
+        def warn_export_usage
+          puts OutputFormatter.warning("Usage: export last FORMAT FILE")
         end
 
         def export_csv(file_path)

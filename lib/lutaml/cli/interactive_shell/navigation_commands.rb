@@ -95,14 +95,18 @@ module Lutaml
           return path if path.start_with?("ModelRoot")
           return current_path if path == "."
           return "ModelRoot" if path == "/"
+          return resolve_parent_path(path) if path.start_with?("../")
+          return resolve_child_path(path) if path.start_with?("./")
 
-          if path.start_with?("../")
-            resolve_parent_path(path)
-          elsif path.start_with?("./")
-            "#{current_path}::#{path[2..]}"
-          else
-            current_path == "ModelRoot" ? path : "#{current_path}::#{path}"
-          end
+          resolve_simple_path(path)
+        end
+
+        def resolve_child_path(path)
+          "#{current_path}::#{path[2..]}"
+        end
+
+        def resolve_simple_path(path)
+          current_path == "ModelRoot" ? path : "#{current_path}::#{path}"
         end
 
         private

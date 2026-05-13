@@ -275,11 +275,19 @@ module Lutaml
 
       # Determine class type (class, interface, enumeration)
       def determine_class_type(klass)
-        return :enumeration if klass.class.name&.include?("Enum")
-        return :interface if klass.is_a?(Lutaml::Uml::TopElement) &&
-          Array(klass.stereotype).any? { |s| s&.downcase == "interface" }
+        return :enumeration if enumeration?(klass)
+        return :interface if interface?(klass)
 
         :class
+      end
+
+      def enumeration?(klass)
+        klass.class.name&.include?("Enum")
+      end
+
+      def interface?(klass)
+        klass.is_a?(Lutaml::Uml::TopElement) &&
+          Array(klass.stereotype).any? { |s| s&.downcase == "interface" }
       end
 
       # Find package path for a package object

@@ -131,26 +131,32 @@ module Lutaml
         # @param connector_type [String]
         # @return [Array<Hash, String>]
         # @note xpath %(//connector[@xmi:idref="#{link_id}"]/#{connector_type})
-        def fetch_assoc_connector(link_id, connector_type) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
+        def fetch_assoc_connector(link_id, connector_type)
           connector = fetch_connector(link_id)
           return [nil, nil] unless connector
 
           assoc_connector = connector.public_send(connector_type.to_sym)
+          return [nil, nil] unless assoc_connector
 
-          if assoc_connector
-            assoc_connector_type = assoc_connector.type
-            if assoc_connector_type&.multiplicity
-              cardinality = assoc_connector_type.multiplicity.split("..")
-              cardinality.unshift("1") if cardinality.length == 1
-              min, max = cardinality
-            end
-
-            assoc_connector_role = assoc_connector.role
-            attribute_name = assoc_connector.model.name if assoc_connector_role
-            cardinality = cardinality_min_max_value(min, max)
-          end
-
+          cardinality = extract_cardinality(assoc_connector)
+          attribute_name = extract_attribute_name(assoc_connector)
           [cardinality, attribute_name]
+        end
+
+        def extract_cardinality(assoc_connector)
+          assoc_connector_type = assoc_connector.type
+          min = nil
+          max = nil
+          if assoc_connector_type&.multiplicity
+            cardinality = assoc_connector_type.multiplicity.split("..")
+            cardinality.unshift("1") if cardinality.length == 1
+            min, max = cardinality
+          end
+          cardinality_min_max_value(min, max)
+        end
+
+        def extract_attribute_name(assoc_connector)
+          assoc_connector.role ? assoc_connector.model.name : nil
         end
 
         # @param owner_xmi_id [String]
@@ -202,16 +208,22 @@ module Lutaml
         # Lazy-built hash index for O(1) connector lookups
         # @return [Hash] Mapping of [direction, idref] => connector
         def connector_lookup
-          @connector_lookup ||= begin
-            lookup = {}
-            connectors = @xmi_root_model.extension&.connectors&.connector || []
-            connectors.each do |con|
-              %i[source target].each do |dir|
-                idref = con.public_send(dir)&.idref
-                lookup[[dir, idref]] = con if idref
-              end
-            end
-            lookup
+          @connector_lookup ||= build_connector_lookup
+        end
+
+        def build_connector_lookup
+          lookup = {}
+          connectors = @xmi_root_model.extension&.connectors&.connector || []
+          connectors.each do |con|
+            index_connector_directions(con, lookup)
+          end
+          lookup
+        end
+
+        def index_connector_directions(con, lookup)
+          %i[source target].each do |dir|
+            idref = con.public_send(dir)&.idref
+            lookup[[dir, idref]] = con if idref
           end
         end
 

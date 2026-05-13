@@ -55,7 +55,7 @@ module Lutaml
         # @param file_path [String] Path to the model file
         # @return [Lutaml::Uml::Document] Parsed UML document
         # @raise [ParseError] if parsing fails
-        def parse(file_path) # rubocop:disable Metrics/MethodLength
+        def parse(file_path)
           start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
           @stats_mutex.synchronize { @parse_stats[:total_parses] += 1 }
           parse_succeeded = false
@@ -65,37 +65,35 @@ module Lutaml
             validate_file!(file_path) if should_validate_input?
             clear_errors_and_warnings
 
-            begin
-              # Pre-parsing hook
-              before_parse(file_path)
-
-              # Core parsing (implemented by subclasses)
-              document = parse_internal(file_path)
-
-              # Post-parsing processing
-              document = after_parse(document, file_path)
-
-              # Validate output if requested
-              validate_output!(document) if should_validate_output?
-
-              parse_succeeded = true
-              @stats_mutex.synchronize { @parse_stats[:successful_parses] += 1 }
-              document
-            rescue StandardError => e
-              parse_handled = true
-              @stats_mutex.synchronize { @parse_stats[:failed_parses] += 1 }
-              handle_parsing_error(e, file_path)
-            end
+            parse_succeeded, result = execute_parse(file_path)
+            parse_handled = !parse_succeeded
+            result
           ensure
-            unless parse_succeeded || parse_handled
-              @stats_mutex.synchronize { @parse_stats[:failed_parses] += 1 }
-            end
-            duration = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
-            @last_duration = duration
-            @stats_mutex.synchronize do
-              @parse_stats[:total_duration] += duration
-              @parse_stats[:durations] << duration
-            end
+            record_parse_stats(parse_succeeded, parse_handled, start_time)
+          end
+        end
+
+        def execute_parse(file_path)
+          before_parse(file_path)
+          document = parse_internal(file_path)
+          document = after_parse(document, file_path)
+          validate_output!(document) if should_validate_output?
+
+          @stats_mutex.synchronize { @parse_stats[:successful_parses] += 1 }
+          [true, document]
+        rescue StandardError => e
+          [false, handle_parsing_error(e, file_path)]
+        end
+
+        def record_parse_stats(succeeded, handled, start_time)
+          unless succeeded || handled
+            @stats_mutex.synchronize { @parse_stats[:failed_parses] += 1 }
+          end
+          duration = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
+          @last_duration = duration
+          @stats_mutex.synchronize do
+            @parse_stats[:total_duration] += duration
+            @parse_stats[:durations] << duration
           end
         end
 

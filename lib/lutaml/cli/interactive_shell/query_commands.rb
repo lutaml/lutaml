@@ -172,8 +172,14 @@ module Lutaml
           puts ""
           puts "Name: #{cls.name}"
 
-          return unless cls.is_a?(Lutaml::Uml::Classifier) && cls.attributes && !cls.attributes.empty?
+          display_class_attributes(cls) if has_displayable_attributes?(cls)
+        end
 
+        def has_displayable_attributes?(cls)
+          cls.is_a?(Lutaml::Uml::Classifier) && cls.attributes && !cls.attributes.empty?
+        end
+
+        def display_class_attributes(cls)
           puts ""
           puts OutputFormatter.colorize("Attributes:", :yellow)
           cls.attributes.each do |attr|
@@ -188,6 +194,10 @@ module Lutaml
           puts "Name: #{pkg.name}"
           puts ""
 
+          display_package_classes(path)
+        end
+
+        def display_package_classes(path)
           classes = repository.classes_in_package(path)
           puts OutputFormatter.colorize("Classes (#{classes.size}):", :yellow)
           classes.each do |cls|
