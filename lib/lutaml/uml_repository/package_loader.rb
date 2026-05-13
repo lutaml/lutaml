@@ -166,10 +166,13 @@ module Lutaml
 
       # Load Document from Marshal format (legacy backward compatibility).
       #
+      # Safe because .lur packages are created by this gem (trusted source),
+      # never from user-supplied data.
+      #
       # @param zip [Zip::File] The ZIP archive
       # @return [Lutaml::Uml::Document] The loaded document
       # @raise [RuntimeError] If document file is missing
-      def self.load_marshal_document(zip)
+      def self.load_marshal_document(zip) # rubocop:disable Security/MarshalLoad
         entry = zip.find_entry("repository.marshal")
         unless entry
           raise "Invalid LUR package: missing repository.marshal"
@@ -213,7 +216,7 @@ module Lutaml
 
         marshal_entry = zip.find_entry("indexes/all.marshal")
         if marshal_entry
-          return Marshal.load(marshal_entry.get_input_stream.read)
+          return Marshal.load(marshal_entry.get_input_stream.read) # rubocop:disable Security/MarshalLoad
         end
 
         raise "Invalid LUR package: missing indexes/all.yaml"

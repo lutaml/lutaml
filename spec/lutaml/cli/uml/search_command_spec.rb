@@ -57,11 +57,17 @@ RSpec.describe Lutaml::Cli::Uml::SearchCommand do
   end
 
   def capture(stream)
-    stream_var = stream == :stdout ? :$stdout : :$stderr
-    old_stream = eval(stream_var.to_s)
-    eval("#{stream_var} = StringIO.new")
+    stream_var = stream == :stdout ? $stdout : $stderr
+    old_stream = stream_var
+    case stream
+    when :stdout then $stdout = StringIO.new
+    when :stderr then $stderr = StringIO.new
+    end
     yield
   ensure
-    eval("#{stream_var} = old_stream") if defined?(old_stream) && old_stream
+    case stream
+    when :stdout then $stdout = old_stream
+    when :stderr then $stderr = old_stream
+    end
   end
 end
