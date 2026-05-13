@@ -60,42 +60,44 @@ module Lutaml
           end
         end
 
+        HELP_TEXT = <<~HELP
+          Available Commands:
+
+          Navigation:
+            cd PATH           Change to package path
+            pwd               Print current path
+            ls [PATH]         List packages
+            tree [PATH]       Show package tree
+            up                Go to parent package
+            root              Go to ModelRoot
+            back              Go to previous location
+
+          Query:
+            find CLASS        Find class (fuzzy search)
+            show class QNAME  Show class details
+            show package PATH Show package details
+            show NUMBER       Show numbered result
+            search QUERY      Full-text search
+            ? QUERY           Alias for search
+
+          Bookmarks:
+            bookmark add NAME  Bookmark current location
+            bookmark list      List bookmarks
+            bookmark go NAME   Jump to bookmark
+            bookmark rm NAME   Remove bookmark
+            bm NAME            Quick jump
+
+          Utilities:
+            help [COMMAND]    Show help
+            history           Show command history
+            clear             Clear screen
+            config            Show configuration
+            stats             Show statistics
+            exit, quit, q     Exit shell
+        HELP
+
         def display_general_help
-          puts <<~HELP
-            #{OutputFormatter.colorize('Available Commands:', :cyan)}
-
-            #{OutputFormatter.colorize('Navigation:', :yellow)}
-              cd PATH           Change to package path
-              pwd               Print current path
-              ls [PATH]         List packages
-              tree [PATH]       Show package tree
-              up                Go to parent package
-              root              Go to ModelRoot
-              back              Go to previous location
-
-            #{OutputFormatter.colorize('Query:', :yellow)}
-              find CLASS        Find class (fuzzy search)
-              show class QNAME  Show class details
-              show package PATH Show package details
-              show NUMBER       Show numbered result
-              search QUERY      Full-text search
-              ? QUERY           Alias for search
-
-            #{OutputFormatter.colorize('Bookmarks:', :yellow)}
-              bookmark add NAME  Bookmark current location
-              bookmark list      List bookmarks
-              bookmark go NAME   Jump to bookmark
-              bookmark rm NAME   Remove bookmark
-              bm NAME            Quick jump
-
-            #{OutputFormatter.colorize('Utilities:', :yellow)}
-              help [COMMAND]    Show help
-              history           Show command history
-              clear             Clear screen
-              config            Show configuration
-              stats             Show statistics
-              exit, quit, q     Exit shell
-          HELP
+          puts OutputFormatter.colorize(HELP_TEXT, :cyan)
         end
 
         def display_command_help(command)
