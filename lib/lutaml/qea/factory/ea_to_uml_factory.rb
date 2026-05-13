@@ -183,35 +183,24 @@ module Lutaml
         # Register package and all its descendants in resolver
         # @param package [Lutaml::Uml::Package] Package to register
         # @return [void]
-        def register_package_hierarchy(package) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+        def register_package_hierarchy(package)
           return if package.nil?
 
-          # Register the package itself
           register_element(package)
+          register_package_members(package)
 
-          # Register all classes in the package
-          package.classes&.each do |klass|
-            register_element(klass)
-          end
-
-          # Register all enums in the package
-          package.enums&.each do |enum|
-            register_element(enum)
-          end
-
-          # Register all data types in the package
-          package.data_types&.each do |data_type|
-            register_element(data_type)
-          end
-
-          # Register all instances in the package
-          package.instances&.each do |instance|
-            register_element(instance)
-          end
-
-          # Recursively register child packages
           package.packages&.each do |child_package|
             register_package_hierarchy(child_package)
+          end
+        end
+
+        MEMBER_COLLECTIONS = %i[classes enums data_types instances].freeze
+
+        def register_package_members(package)
+          MEMBER_COLLECTIONS.each do |collection|
+            package.public_send(collection)&.each do |elem|
+              register_element(elem)
+            end
           end
         end
 

@@ -18,16 +18,27 @@ module Lutaml
           return nil unless enum?(ea_object)
 
           Lutaml::Uml::Enum.new.tap do |enum|
-            enum.name = ea_object.name
-            enum.xmi_id = normalize_guid_to_xmi_format(ea_object.ea_guid,
-                                                       "EAID")
-            enum.visibility = map_visibility(ea_object.visibility)
-            enum.stereotype = [ea_object.stereotype] if valid_stereotype?(ea_object)
-            enum.definition = ea_object.note unless
-              ea_object.note.nil? || ea_object.note.empty?
-            enum.values = load_enum_values(ea_object.ea_object_id)
-            enum.tagged_values = load_tagged_values(ea_object.ea_guid)
+            assign_enum_basic(enum, ea_object)
+            assign_enum_features(enum, ea_object)
           end
+        end
+
+        def assign_enum_basic(enum, ea_object)
+          enum.name = ea_object.name
+          enum.xmi_id = normalize_guid_to_xmi_format(ea_object.ea_guid,
+                                                     "EAID")
+          enum.visibility = map_visibility(ea_object.visibility)
+          enum.stereotype = [ea_object.stereotype] if valid_stereotype?(ea_object)
+          enum.definition = ea_object.note if note_present?(ea_object)
+        end
+
+        def note_present?(ea_object)
+          ea_object.note && !ea_object.note.empty?
+        end
+
+        def assign_enum_features(enum, ea_object)
+          enum.values = load_enum_values(ea_object.ea_object_id)
+          enum.tagged_values = load_tagged_values(ea_object.ea_guid)
         end
 
         private

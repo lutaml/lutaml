@@ -36,13 +36,7 @@ module Lutaml
         ancestors = []
         @visited.clear
         collect_ancestors(klass, ancestors)
-        ancestors.reverse_each.with_index(1) do |ancestor, level|
-          break if @visited.include?(ancestor.xmi_id)
-
-          @visited.add(ancestor.xmi_id)
-          yield(ancestor, level) if block_given?
-        end
-        ancestors.reverse_each.with_index(1)
+        yield_ancestors(ancestors)
       end
 
       # Get the direct supertype (immediate parent) of a class.
@@ -64,6 +58,16 @@ module Lutaml
       end
 
       private
+
+      def yield_ancestors(ancestors)
+        ancestors.reverse_each.with_index(1) do |ancestor, level|
+          break if @visited.include?(ancestor.xmi_id)
+
+          @visited.add(ancestor.xmi_id)
+          yield(ancestor, level) if block_given?
+        end
+        ancestors.reverse_each.with_index(1)
+      end
 
       # Collect ancestors recursively into the result array.
       # Uses a trail set for cycle detection (avoids Set mutation issues across calls).

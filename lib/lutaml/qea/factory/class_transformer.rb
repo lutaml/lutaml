@@ -57,6 +57,10 @@ module Lutaml
 
         def assign_features(klass, ea_object)
           klass.attributes = load_all_attributes(ea_object)
+          assign_feature_collections(klass, ea_object)
+        end
+
+        def assign_feature_collections(klass, ea_object)
           klass.operations = load_operations(ea_object.ea_object_id)
           klass.constraints = load_constraints(ea_object.ea_object_id)
           klass.tagged_values = load_tagged_values(ea_object.ea_guid)
@@ -93,21 +97,31 @@ module Lutaml
 
         def build_stereotypes(ea_object)
           stereotypes = []
-          if ea_object.stereotype && !ea_object.stereotype.empty?
-            stereotypes << ea_object.stereotype
-          end
-
-          xref_stereotype = StereotypeLoader.new(database)
-            .load_from_xref(ea_object.ea_guid)
-          if xref_stereotype && !stereotypes.include?(xref_stereotype)
-            stereotypes << xref_stereotype
-          end
-
-          if ea_object.interface? && !stereotypes.include?("interface")
-            stereotypes << "interface"
-          end
+          add_direct_stereotype(stereotypes, ea_object)
+          add_xref_stereotype(stereotypes, ea_object)
+          add_interface_stereotype(stereotypes, ea_object)
 
           stereotypes
+        end
+
+        def add_direct_stereotype(stereotypes, ea_object)
+          return unless ea_object.stereotype && !ea_object.stereotype.empty?
+
+          stereotypes << ea_object.stereotype
+        end
+
+        def add_xref_stereotype(stereotypes, ea_object)
+          xref_stereotype = StereotypeLoader.new(database)
+            .load_from_xref(ea_object.ea_guid)
+          return unless xref_stereotype && !stereotypes.include?(xref_stereotype)
+
+          stereotypes << xref_stereotype
+        end
+
+        def add_interface_stereotype(stereotypes, ea_object)
+          return unless ea_object.interface? && !stereotypes.include?("interface")
+
+          stereotypes << "interface"
         end
 
         def load_attributes(object_id)

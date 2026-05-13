@@ -11,12 +11,7 @@ module Lutaml
       class GeneralizationBuilder < BaseTransformer
         def load_generalization(object_id, visited = Set.new, is_leaf = true) # rubocop:disable Style/OptionalBooleanParameter
           return nil if object_id.nil?
-
-          if visited.include?(object_id)
-            warn "Circular inheritance detected for object_id #{object_id}, " \
-                 "stopping recursion"
-            return nil
-          end
+          return nil if circular_inheritance?(object_id, visited)
 
           visited = visited.dup.add(object_id)
 
@@ -27,15 +22,20 @@ module Lutaml
           return nil unless generalization
 
           populate_generalization_attrs(generalization, object_id)
+          populate_parent_generalization(generalization,
+                                         ea_connector_for(object_id), visited)
 
-          ea_connector = ea_connector_for(object_id)
-          populate_parent_generalization(generalization, ea_connector, visited)
-
-          if is_leaf && generalization.has_general
-            collect_inherited_properties(generalization)
-          end
+          collect_inherited_properties(generalization) if is_leaf && generalization.has_general
 
           generalization
+        end
+
+        def circular_inheritance?(object_id, visited)
+          return false unless visited.include?(object_id)
+
+          warn "Circular inheritance detected for object_id #{object_id}, " \
+               "stopping recursion"
+          true
         end
 
         def load_association_generalizations(object_id)
