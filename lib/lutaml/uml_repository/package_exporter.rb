@@ -3,7 +3,6 @@
 require "zip"
 require "yaml"
 require "time"
-require_relative "package_metadata"
 
 module Lutaml
   module UmlRepository

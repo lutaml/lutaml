@@ -2,18 +2,18 @@
 
 require "readline"
 require "pathname"
-require_relative "enhanced_formatter"
-require_relative "../uml_repository/repository"
-require_relative "interactive_shell/command_base"
-require_relative "interactive_shell/navigation_commands"
-require_relative "interactive_shell/query_commands"
-require_relative "interactive_shell/bookmark_commands"
-require_relative "interactive_shell/export_handler"
-require_relative "interactive_shell/help_display"
 
 module Lutaml
   module Cli
     class InteractiveShell
+      autoload :CommandBase, "lutaml/cli/interactive_shell/command_base"
+      autoload :NavigationCommands,
+               "lutaml/cli/interactive_shell/navigation_commands"
+      autoload :QueryCommands, "lutaml/cli/interactive_shell/query_commands"
+      autoload :BookmarkCommands,
+               "lutaml/cli/interactive_shell/bookmark_commands"
+      autoload :ExportHandler, "lutaml/cli/interactive_shell/export_handler"
+      autoload :HelpDisplay, "lutaml/cli/interactive_shell/help_display"
       HISTORY_FILE = File.expand_path("~/.lutaml-xmi-history")
       MAX_HISTORY = 1000
 

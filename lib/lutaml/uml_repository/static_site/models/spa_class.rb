@@ -1,10 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "spa_base"
-require_relative "spa_literal"
-require_relative "spa_inherited_attribute"
-require_relative "spa_inherited_association"
-
 module Lutaml
   module UmlRepository
     module StaticSite

@@ -1,10 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "base_transformer"
-require "lutaml/uml"
-require_relative "../../uml/diagram_object"
-require_relative "../../uml/diagram_link"
-
 module Lutaml
   module Qea
     module Factory

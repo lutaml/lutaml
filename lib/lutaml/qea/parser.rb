@@ -1,9 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../qea"
-require_relative "services/database_loader"
-require_relative "factory/ea_to_uml_factory"
-
 module Lutaml
   module Qea
     # Parser class provides backward compatibility wrapper for Qea.parse

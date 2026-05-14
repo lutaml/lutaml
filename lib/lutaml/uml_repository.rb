@@ -9,6 +9,14 @@ module Lutaml
     autoload :Configuration, "lutaml/uml_repository/configuration"
     autoload :ErrorHandler, "lutaml/uml_repository/error_handler"
     autoload :SearchResult, "lutaml/uml_repository/search_result"
+    autoload :ClassLookupIndex, "lutaml/uml_repository/class_lookup_index"
+    autoload :PackageMetadata, "lutaml/uml_repository/package_metadata"
+    autoload :IndexBuilder, "lutaml/uml_repository/index_builder"
+    autoload :IndexBuilders, "lutaml/uml_repository/index_builders"
+    autoload :StatisticsCalculator,
+             "lutaml/uml_repository/statistics_calculator"
+    autoload :PackageExporter, "lutaml/uml_repository/package_exporter"
+    autoload :PackageLoader, "lutaml/uml_repository/package_loader"
 
     # Main repository classes
     autoload :Repository, "lutaml/uml_repository/repository"
@@ -23,12 +31,24 @@ module Lutaml
       autoload :JsonExporter, "lutaml/uml_repository/exporters/json_exporter"
       autoload :MarkdownExporter,
                "lutaml/uml_repository/exporters/markdown_exporter"
+      autoload :Markdown, "lutaml/uml_repository/exporters/markdown"
     end
 
     # Query DSL
-    module QueryDsl
+    module QueryDSL
       autoload :QueryBuilder, "lutaml/uml_repository/query_dsl/query_builder"
       autoload :Order, "lutaml/uml_repository/query_dsl/order"
+
+      module Conditions
+        autoload :BaseCondition,
+                 "lutaml/uml_repository/query_dsl/conditions/base_condition"
+        autoload :HashCondition,
+                 "lutaml/uml_repository/query_dsl/conditions/hash_condition"
+        autoload :BlockCondition,
+                 "lutaml/uml_repository/query_dsl/conditions/block_condition"
+        autoload :PackageCondition,
+                 "lutaml/uml_repository/query_dsl/conditions/package_condition"
+      end
     end
 
     # Presenters

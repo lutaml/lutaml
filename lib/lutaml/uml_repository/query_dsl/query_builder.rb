@@ -1,11 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "conditions/base_condition"
-require_relative "conditions/hash_condition"
-require_relative "conditions/block_condition"
-require_relative "conditions/package_condition"
-require_relative "order"
-
 module Lutaml
   module UmlRepository
     module QueryDSL

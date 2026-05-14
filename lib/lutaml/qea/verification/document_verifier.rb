@@ -1,12 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "document_normalizer"
-require_relative "structure_matcher"
-require_relative "element_comparator"
-require_relative "comparison_result"
-require_relative "../../qea"
-require_relative "../../xmi/parsers/xml"
-
 module Lutaml
   module Qea
     module Verification

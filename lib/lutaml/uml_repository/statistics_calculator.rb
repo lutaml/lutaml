@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "index_builder"
-
 module Lutaml
   module UmlRepository
     # StatisticsCalculator provides comprehensive statistics about a

@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require_relative "../../../lib/lutaml/cli"
 require "stringio"
-require_relative "../../../lib/lutaml/cli/interactive_shell"
-require_relative "../../../lib/lutaml/uml_repository/repository"
 
+require_relative "../../../lib/lutaml/uml_repository"
 RSpec.describe Lutaml::Cli::InteractiveShell do
   let(:mock_repo) do
     double(

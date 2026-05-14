@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../has_attributes"
-
 module Lutaml
   module Uml
     module Node

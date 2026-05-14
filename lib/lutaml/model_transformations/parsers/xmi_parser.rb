@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "base_parser"
-require_relative "../../xmi/parsers/xml"
-
 module Lutaml
   module ModelTransformations
     module Parsers

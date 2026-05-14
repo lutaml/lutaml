@@ -1,13 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "class_transformer"
-require_relative "attribute_transformer"
-require_relative "operation_transformer"
-require_relative "association_transformer"
-require_relative "generalization_transformer"
-require_relative "package_transformer"
-require_relative "diagram_transformer"
-
 module Lutaml
   module Qea
     module Factory

@@ -1,26 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../xmi/parsers/xml"
-require_relative "../uml/package_path"
-require_relative "../uml/qualified_name"
-require_relative "error_handler"
-require_relative "index_builder"
-require_relative "statistics_calculator"
-require_relative "validators/repository_validator"
-require_relative "package_exporter"
-require_relative "package_loader"
-require_relative "package_metadata"
-require_relative "queries/package_query"
-require_relative "queries/class_query"
-require_relative "queries/inheritance_query"
-require_relative "queries/association_query"
-require_relative "queries/diagram_query"
-require_relative "queries/search_query"
-require_relative "query_dsl/query_builder"
-require_relative "repository/loader"
-require_relative "repository/deprecated"
-# require_relative "lazy_repository"
-
 module Lutaml
   module UmlRepository
     # Repository provides a fully indexed, queryable in-memory representation
@@ -50,6 +29,9 @@ module Lutaml
     #   parent = repo.supertype_of("ModelRoot::Child")
     #   descendants = repo.descendants_of("ModelRoot::Parent", max_depth: 2)
     class Repository
+      autoload :Loader, "lutaml/uml_repository/repository/loader"
+      autoload :Deprecated, "lutaml/uml_repository/repository/deprecated"
+
       include Deprecated
 
       # @return [Lutaml::Uml::Document] The underlying UML document

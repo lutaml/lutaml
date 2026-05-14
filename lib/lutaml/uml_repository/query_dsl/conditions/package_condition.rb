@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "base_condition"
-require_relative "../../../uml/package_path"
-
 module Lutaml
   module UmlRepository
     module QueryDSL

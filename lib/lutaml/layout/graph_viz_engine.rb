@@ -2,7 +2,6 @@
 
 require "ruby-graphviz"
 require "open3"
-require_relative "engine"
 
 module Lutaml
   module Layout

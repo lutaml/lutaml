@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-require_relative "xmi_to_uml_generalization"
-
 module Lutaml
   module Converter
     module XmiToUml
+      include XmiToUmlGeneralization
+
       def create_uml_document(xmi_model)
         ::Lutaml::Uml::Document.new.tap do |doc|
           doc.name = xmi_model.model.name

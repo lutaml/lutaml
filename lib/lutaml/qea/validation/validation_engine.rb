@@ -1,19 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "base_validator"
-require_relative "validation_result"
-require_relative "validator_registry"
-require_relative "package_validator"
-require_relative "class_validator"
-require_relative "attribute_validator"
-require_relative "operation_validator"
-require_relative "association_validator"
-require_relative "diagram_validator"
-require_relative "database/referential_integrity_validator"
-require_relative "database/orphan_validator"
-require_relative "database/circular_reference_validator"
-require_relative "../../uml/validation/document_structure_validator"
-
 module Lutaml
   module Qea
     module Validation

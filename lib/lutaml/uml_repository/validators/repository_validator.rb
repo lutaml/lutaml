@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../../uml/model_helpers"
-
 module Lutaml
   module UmlRepository
     module Validators
@@ -91,7 +89,12 @@ module Lutaml
             next unless attr.type
 
             is_primitive = primitive_type?(attr.type)
-            resolved_type = is_primitive ? nil : resolve_type_name(attr.type, package_path)
+            resolved_type = if is_primitive
+                              nil
+                            else
+                              resolve_type_name(attr.type,
+                                                package_path)
+                            end
             is_valid = is_primitive || !resolved_type.nil?
 
             if @verbose

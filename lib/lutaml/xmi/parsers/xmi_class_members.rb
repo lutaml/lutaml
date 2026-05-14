@@ -3,7 +3,7 @@
 module Lutaml
   module Xmi
     module Parsers
-      module XmiBase
+      module XmiClassMembers
         # Class member (attribute, operation, constraint) helpers
         # used by XmiLookupService and Pipeline C (XmiToUml)
 

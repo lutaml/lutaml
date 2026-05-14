@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "base_parser"
-require_relative "../../qea"
-
 module Lutaml
   module ModelTransformations
     module Parsers

@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../diagram"
-
 module Lutaml
   module Ea
     module Diagram

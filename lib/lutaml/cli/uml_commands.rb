@@ -1,24 +1,6 @@
 # frozen_string_literal: true
 
 require "thor"
-require_relative "output_formatter"
-require_relative "uml/build_command"
-require_relative "uml/info_command"
-require_relative "uml/validate_command"
-require_relative "uml/ls_command"
-require_relative "uml/inspect_command"
-require_relative "uml/tree_command"
-require_relative "uml/stats_command"
-require_relative "uml/search_command"
-require_relative "uml/find_command"
-require_relative "uml/export_command"
-require_relative "uml/serve_command"
-require_relative "uml/spa_command"
-require_relative "uml/repl_command"
-require_relative "uml/verify_command"
-require_relative "uml/diagram_command"
-require_relative "element_identifier"
-require_relative "resource_registry"
 
 module Lutaml
   module Cli

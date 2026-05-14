@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "lutaml/uml"
-
 module Lutaml
   module Qea
     module Factory

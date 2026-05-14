@@ -1,13 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "base_transformer"
-require_relative "attribute_transformer"
-require_relative "operation_transformer"
-require_relative "constraint_transformer"
-require_relative "tagged_value_transformer"
-require_relative "association_transformer"
-require "lutaml/uml"
-
 module Lutaml
   module Qea
     module Factory

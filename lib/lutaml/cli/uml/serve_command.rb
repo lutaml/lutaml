@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../output_formatter"
 module Lutaml
   module Cli
     module Uml

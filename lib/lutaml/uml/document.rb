@@ -1,17 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "group"
-require_relative "fidelity"
-require_relative "fontname"
-require_relative "comment"
-require_relative "class"
-require_relative "data_type"
-require_relative "enum"
-require_relative "package"
-require_relative "primitive_type"
-require_relative "association"
-require_relative "instance"
-
 module Lutaml
   module Uml
     class Document < Lutaml::Model::Serializable

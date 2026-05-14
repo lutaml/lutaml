@@ -1,34 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../database"
-require_relative "../infrastructure/database_connection"
-require_relative "../infrastructure/table_reader"
-require_relative "configuration"
-require_relative "../models/ea_object"
-require_relative "../models/ea_attribute"
-require_relative "../models/ea_operation"
-require_relative "../models/ea_operation_param"
-require_relative "../models/ea_connector"
-require_relative "../models/ea_package"
-require_relative "../models/ea_diagram"
-require_relative "../models/ea_diagram_object"
-require_relative "../models/ea_diagram_link"
-require_relative "../models/ea_object_constraint"
-require_relative "../models/ea_tagged_value"
-require_relative "../models/ea_object_property"
-require_relative "../models/ea_attribute_tag"
-require_relative "../models/ea_xref"
-require_relative "../models/ea_document"
-require_relative "../models/ea_script"
-require_relative "../models/ea_stereotype"
-require_relative "../models/ea_datatype"
-require_relative "../models/ea_constraint_type"
-require_relative "../models/ea_connector_type"
-require_relative "../models/ea_diagram_type"
-require_relative "../models/ea_object_type"
-require_relative "../models/ea_status_type"
-require_relative "../models/ea_complexity_type"
-
 module Lutaml
   module Qea
     module Services

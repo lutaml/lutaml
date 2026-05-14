@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "package_path"
-
 module Lutaml
   module Uml
     # Immutable value object representing a UML qualified class name.

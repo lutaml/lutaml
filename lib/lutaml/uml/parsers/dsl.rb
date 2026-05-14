@@ -2,10 +2,6 @@
 
 require "parslet"
 require "parslet/convenience"
-require_relative "dsl_preprocessor"
-require_relative "dsl_transform"
-require "lutaml/uml/node/document"
-require "lutaml/converter/dsl_to_uml"
 
 module Lutaml
   module Uml

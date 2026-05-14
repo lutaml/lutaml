@@ -1,19 +1,18 @@
 # frozen_string_literal: true
 
-require_relative "qea/infrastructure/database_connection"
-require_relative "qea/infrastructure/schema_reader"
-require_relative "qea/infrastructure/table_reader"
-require_relative "qea/services/configuration"
-require_relative "qea/services/database_loader"
-require_relative "qea/database"
-require_relative "qea/factory/ea_to_uml_factory"
-require_relative "qea/validation/validation_message"
-require_relative "qea/validation/validation_result"
-require_relative "qea/validation/base_validator"
-require_relative "qea/validation/validator_registry"
-require_relative "qea/validation/validation_engine"
-require_relative "qea/validation/formatters/json_formatter"
-require_relative "qea/validation/formatters/text_formatter"
+module Lutaml
+  module Qea
+    autoload :Infrastructure, "lutaml/qea/infrastructure"
+    autoload :Services, "lutaml/qea/services"
+    autoload :Models, "lutaml/qea/models"
+    autoload :Factory, "lutaml/qea/factory"
+    autoload :Validation, "lutaml/qea/validation"
+    autoload :Verification, "lutaml/qea/verification"
+    autoload :Database, "lutaml/qea/database"
+    autoload :Repositories, "lutaml/qea/repositories"
+    autoload :Parser, "lutaml/qea/parser"
+  end
+end
 
 module Lutaml
   # QEA module provides direct SQLite database parsing for Enterprise Architect

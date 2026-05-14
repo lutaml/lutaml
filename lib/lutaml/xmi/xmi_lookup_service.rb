@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "parsers/xmi_base"
-
 module Lutaml
   module Xmi
     # Single bridge between Liquid Drop classes and the XMI document tree.

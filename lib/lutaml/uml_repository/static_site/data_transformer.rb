@@ -1,19 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "id_generator"
-require_relative "../../uml/model_helpers"
-require_relative "../class_lookup_index"
-require_relative "association_serialization"
-require_relative "serializers/metadata_builder"
-require_relative "serializers/package_tree_builder"
-require_relative "serializers/package_serializer"
-require_relative "serializers/class_serializer"
-require_relative "serializers/attribute_serializer"
-require_relative "serializers/operation_serializer"
-require_relative "serializers/diagram_serializer"
-require_relative "serializers/inheritance_resolver"
-require_relative "models/spa_document"
-
 module Lutaml
   module UmlRepository
     module StaticSite

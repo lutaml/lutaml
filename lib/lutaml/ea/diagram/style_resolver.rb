@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "configuration"
-require_relative "style_parser"
-
 module Lutaml
   module Ea
     module Diagram

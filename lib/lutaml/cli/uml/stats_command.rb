@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../output_formatter"
-require_relative "shared_helpers"
-
 module Lutaml
   module Cli
     module Uml

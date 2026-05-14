@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../../../uml/model_helpers"
-
 module Lutaml
   module UmlRepository
     module Exporters

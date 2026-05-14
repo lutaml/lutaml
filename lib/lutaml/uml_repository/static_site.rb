@@ -1,11 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "static_site/configuration"
-require_relative "static_site/id_generator"
-require_relative "static_site/data_transformer"
-require_relative "static_site/search_index_builder"
-require_relative "static_site/generator"
-
 module Lutaml
   module UmlRepository
     # Static Site generation for UML model browsing.
@@ -32,6 +26,18 @@ module Lutaml
     #     output: "dist/"
     #   )
     module StaticSite
+      autoload :Configuration, "lutaml/uml_repository/static_site/configuration"
+      autoload :IdGenerator, "lutaml/uml_repository/static_site/id_generator"
+      autoload :DataTransformer,
+               "lutaml/uml_repository/static_site/data_transformer"
+      autoload :SearchIndexBuilder,
+               "lutaml/uml_repository/static_site/search_index_builder"
+      autoload :Generator, "lutaml/uml_repository/static_site/generator"
+      autoload :AssociationSerialization,
+               "lutaml/uml_repository/static_site/association_serialization"
+      autoload :Models, "lutaml/uml_repository/static_site/models"
+      autoload :Serializers, "lutaml/uml_repository/static_site/serializers"
+
       class << self
         # Generate a static site from a repository
         #

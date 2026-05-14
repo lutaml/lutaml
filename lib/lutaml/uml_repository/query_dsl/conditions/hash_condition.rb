@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "base_condition"
-
 module Lutaml
   module UmlRepository
     module QueryDSL

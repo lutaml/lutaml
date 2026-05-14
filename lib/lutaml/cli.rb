@@ -1,8 +1,20 @@
 # frozen_string_literal: true
 
 require "thor"
-require_relative "cli/uml_commands"
-require_relative "cli/lml_commands"
+
+module Lutaml
+  module Cli
+    autoload :OutputFormatter, "lutaml/cli/output_formatter"
+    autoload :EnhancedFormatter, "lutaml/cli/enhanced_formatter"
+    autoload :ResourceRegistry, "lutaml/cli/resource_registry"
+    autoload :ElementIdentifier, "lutaml/cli/element_identifier"
+    autoload :InteractiveShell, "lutaml/cli/interactive_shell"
+    autoload :TreeViewFormatter, "lutaml/cli/tree_view_formatter"
+    autoload :UmlCommands, "lutaml/cli/uml_commands"
+    autoload :LmlCommands, "lutaml/cli/lml_commands"
+    autoload :Uml, "lutaml/cli/uml"
+  end
+end
 
 module Lutaml
   # Main CLI entry point for LutaML

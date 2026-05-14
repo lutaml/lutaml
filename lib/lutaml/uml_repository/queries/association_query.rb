@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "base_query"
-require_relative "inheritance_query"
-
 module Lutaml
   module UmlRepository
     module Queries

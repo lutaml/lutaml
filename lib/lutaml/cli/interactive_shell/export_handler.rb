@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "command_base"
-
 module Lutaml
   module Cli
     class InteractiveShell

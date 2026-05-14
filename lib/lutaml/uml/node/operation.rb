@@ -1,9 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "attribute"
-require_relative "method_argument"
-require_relative "has_name"
-
 module Lutaml
   module Uml
     module Node

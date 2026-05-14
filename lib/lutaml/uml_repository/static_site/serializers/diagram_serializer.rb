@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../../presenters/diagram_presenter"
-require_relative "../models/spa_diagram"
-
 module Lutaml
   module UmlRepository
     module StaticSite

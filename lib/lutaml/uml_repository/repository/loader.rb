@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../../xmi/parsers/xml"
-require_relative "../package_loader"
-
 module Lutaml
   module UmlRepository
     class Repository

@@ -1,9 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../output_formatter"
-require_relative "../../uml_repository"
-require_relative "../../uml_repository/package_metadata"
-
 module Lutaml
   module Cli
     module Uml
@@ -162,7 +158,6 @@ module Lutaml
 
         def parse_source(model_path, is_qea)
           if is_qea
-            require_relative "../../qea"
             parse_qea_with_validation(model_path)
           else
             OutputFormatter.progress("Parsing XMI file")
@@ -282,7 +277,8 @@ module Lutaml
 
           if result.warnings.any?
             puts ""
-            display_messages(result.warnings, "Validation warnings", :warning, limit)
+            display_messages(result.warnings, "Validation warnings", :warning,
+                             limit)
           end
 
           if result.errors.any?
@@ -327,8 +323,6 @@ module Lutaml
         end
 
         def parse_qea_with_validation(qea_path)
-          require_relative "../../qea"
-
           if options[:validate]
             puts OutputFormatter.colorize(
               "⋯ Parsing QEA file with validation...", :cyan
@@ -351,7 +345,6 @@ module Lutaml
         def parse_qea_with_progress(qea_path) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           puts OutputFormatter.colorize("⋯ Parsing QEA file...", :cyan)
 
-          require_relative "../../qea/services/database_loader"
           loader = Lutaml::Qea::Services::DatabaseLoader.new(qea_path)
 
           current_table = nil
@@ -372,7 +365,6 @@ module Lutaml
           print "  ⋯ Transforming to UML..."
           $stdout.flush
 
-          require_relative "../../qea/factory/ea_to_uml_factory"
           factory = Lutaml::Qea::Factory::EaToUmlFactory.new(database)
           document = factory.create_document
 
@@ -394,9 +386,6 @@ module Lutaml
             return
           end
 
-          require_relative "../../qea/validation/formatters/text_formatter"
-          require_relative "../../qea/validation/formatters/json_formatter"
-
           formatter_class = case options[:validation_format]
                             when "json"
                               Lutaml::Qea::Validation::Formatters::JsonFormatter
@@ -408,7 +397,10 @@ module Lutaml
             result: validation_result,
             limit: options[:limit_errors],
           }
-          formatter_options[:color] = true if options[:validation_format] == "text"
+          if options[:validation_format] == "text"
+            formatter_options[:color] =
+              true
+          end
 
           formatter = formatter_class.new(**formatter_options)
           puts formatter.format
@@ -420,7 +412,8 @@ module Lutaml
           puts ""
 
           validation_details.each do |detail|
-            puts OutputFormatter.colorize("Class: #{detail[:class_name]}", :cyan)
+            puts OutputFormatter.colorize("Class: #{detail[:class_name]}",
+                                          :cyan)
 
             detail[:attributes].each do |attr_detail|
               symbol = if attr_detail[:valid]
@@ -441,7 +434,9 @@ module Lutaml
         end
 
         def display_unresolved_types(external_references) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
-          unique_types = external_references.map { |ref| ref[:referenced_type] }.uniq.sort
+          unique_types = external_references.map do |ref|
+            ref[:referenced_type]
+          end.uniq.sort
           return if unique_types.empty?
 
           puts ""

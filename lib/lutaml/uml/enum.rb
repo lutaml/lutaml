@@ -1,9 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "classifier"
-require_relative "top_element_attribute"
-require_relative "value"
-
 module Lutaml
   module Uml
     class Enum < Classifier

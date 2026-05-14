@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "operation_parameter"
-
 module Lutaml
   module Uml
     class Operation < TopElement
