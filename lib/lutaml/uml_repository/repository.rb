@@ -80,28 +80,7 @@ module Lutaml
         @indexes = indexes || IndexBuilder.build_all(document)
         @metadata = metadata
 
-        # Initialize runtime query services (not serialized to LUR)
-        # These are lightweight wrappers that operate on @document and @indexes
-        unless options[:skip_queries]
-          @package_query = Queries::PackageQuery.new(@document, @indexes)
-          @class_query = Queries::ClassQuery.new(@document, @indexes)
-          @inheritance_query = Queries::InheritanceQuery.new(
-            @document, @indexes
-          )
-          @association_query = Queries::AssociationQuery.new(
-            @document, @indexes
-          )
-          @diagram_query = Queries::DiagramQuery.new(@document, @indexes)
-          @search_query = Queries::SearchQuery.new(@document, @indexes)
-        end
-
-        # Initialize statistics calculator and cache result
-        @statistics_calculator = StatisticsCalculator.new(@document, @indexes)
-        @statistics = @statistics_calculator.calculate.freeze
-
-        # Initialize error handler for helpful error messages
-        @error_handler = ErrorHandler.new(self)
-
+        init_services(skip_queries: options[:skip_queries])
         freeze
       end
 
@@ -693,28 +672,35 @@ module Lutaml
       # and :metadata
       # @return [void]
       # @api private
-      def marshal_load(data) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+      def marshal_load(data)
         @document = data[:document]
         @indexes = data[:indexes]
         @metadata = data[:metadata]
 
-        # Reinitialize runtime query services
-        @package_query = Queries::PackageQuery.new(@document, @indexes)
-        @class_query = Queries::ClassQuery.new(@document, @indexes)
-        @inheritance_query = Queries::InheritanceQuery.new(@document, @indexes)
-        @association_query = Queries::AssociationQuery.new(@document, @indexes)
-        @diagram_query = Queries::DiagramQuery.new(@document, @indexes)
-        @search_query = Queries::SearchQuery.new(@document, @indexes)
-
-        # Reinitialize helpers and cache statistics
-        @statistics_calculator = StatisticsCalculator.new(@document, @indexes)
-        @statistics = @statistics_calculator.calculate.freeze
-        @error_handler = ErrorHandler.new(self)
-
+        init_services
         freeze
       end
 
       private
+
+      def init_services(skip_queries: false)
+        unless skip_queries
+          @package_query = Queries::PackageQuery.new(@document, @indexes)
+          @class_query = Queries::ClassQuery.new(@document, @indexes)
+          @inheritance_query = Queries::InheritanceQuery.new(
+            @document, @indexes
+          )
+          @association_query = Queries::AssociationQuery.new(
+            @document, @indexes
+          )
+          @diagram_query = Queries::DiagramQuery.new(@document, @indexes)
+          @search_query = Queries::SearchQuery.new(@document, @indexes)
+        end
+
+        @statistics_calculator = StatisticsCalculator.new(@document, @indexes)
+        @statistics = @statistics_calculator.calculate.freeze
+        @error_handler = ErrorHandler.new(self)
+      end
 
       # Get package query service
       #
