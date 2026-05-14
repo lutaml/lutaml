@@ -85,7 +85,9 @@ RSpec.describe "QEA Full Parsing Integration", :integration do
       it "includes class attributes" do
         next if document.classes.empty?
 
-        class_with_attrs = document.classes.find { |c| c.attributes && !c.attributes.empty? }
+        class_with_attrs = document.classes.find do |c|
+          c.attributes && !c.attributes.empty?
+        end
         next if class_with_attrs.nil?
 
         expect(class_with_attrs.attributes.first.name).not_to be_nil
@@ -94,7 +96,9 @@ RSpec.describe "QEA Full Parsing Integration", :integration do
       it "includes class operations" do
         next if document.classes.empty?
 
-        class_with_ops = document.classes.find { |c| c.operations && !c.operations.empty? }
+        class_with_ops = document.classes.find do |c|
+          c.operations && !c.operations.empty?
+        end
         next if class_with_ops.nil?
 
         expect(class_with_ops.operations.first.name).not_to be_nil
@@ -123,7 +127,9 @@ RSpec.describe "QEA Full Parsing Integration", :integration do
       it "maintains referential integrity in packages" do
         next if document.packages.empty?
 
-        package_class_ids = document.packages.flat_map { |pkg| pkg.classes.map(&:xmi_id) }.compact
+        package_class_ids = document.packages.flat_map do |pkg|
+          pkg.classes.map(&:xmi_id)
+        end.compact
         document_class_ids = document.classes.filter_map(&:xmi_id)
 
         package_class_ids.each do |id|
@@ -135,7 +141,9 @@ RSpec.describe "QEA Full Parsing Integration", :integration do
 
   describe "Integration with UmlRepository" do
     it "creates document compatible with UmlRepository" do
-      expect { Lutaml::UmlRepository::Repository.new(document: document) }.not_to raise_error
+      expect do
+        Lutaml::UmlRepository::Repository.new(document: document)
+      end.not_to raise_error
     end
 
     it "supports repository operations", :aggregate_failures do
@@ -159,7 +167,11 @@ RSpec.describe "QEA Full Parsing Integration", :integration do
 
   describe "Performance characteristics" do
     it "completes parsing in reasonable time" do
-      expect { Timeout.timeout(30) { Lutaml::Qea.parse(qea_path) } }.not_to raise_error
+      expect do
+        Timeout.timeout(30) do
+          Lutaml::Qea.parse(qea_path)
+        end
+      end.not_to raise_error
     end
 
     it "produces document with expected element counts", :aggregate_failures do
@@ -178,7 +190,9 @@ RSpec.describe "QEA Full Parsing Integration", :integration do
 
   describe "Error handling" do
     it "raises error for non-existent file" do
-      expect { Lutaml::Qea.parse("/non/existent/file.qea") }.to raise_error(StandardError)
+      expect do
+        Lutaml::Qea.parse("/non/existent/file.qea")
+      end.to raise_error(StandardError)
     end
 
     it "handles empty database gracefully", :aggregate_failures do
