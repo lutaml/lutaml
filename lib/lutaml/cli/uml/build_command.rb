@@ -9,6 +9,35 @@ module Lutaml
     module Uml
       # BuildCommand builds LUR packages from XMI or QEA files
       class BuildCommand
+        METADATA_OPTIONAL_FIELDS = %i[
+          publisher license description homepage keywords authors maintainers
+        ].freeze
+
+        COLLECTION_NAMES = {
+          "object" => "classes",
+          "package" => "packages",
+          "attribute" => "attributes",
+          "connector" => "associations",
+          "diagram" => "diagrams",
+          "operation" => "operations",
+          "operationparams" => "operation parameters",
+          "diagramobjects" => "diagram objects",
+          "diagramlinks" => "diagram links",
+          "objectconstraint" => "constraints",
+          "taggedvalue" => "tagged values",
+          "objectproperties" => "properties",
+          "attributetag" => "attribute tags",
+          "xref" => "cross-references",
+          "stereotypes" => "stereotypes",
+          "datatypes" => "data types",
+          "constrainttypes" => "constraint types",
+          "connectortypes" => "connector types",
+          "diagramtypes" => "diagram types",
+          "objecttypes" => "object types",
+          "statustypes" => "status types",
+          "complexitytypes" => "complexity types",
+        }.freeze
+
         attr_reader :options
 
         def initialize(options = {})
@@ -34,7 +63,7 @@ module Lutaml
             lutaml uml build model.qea     # Creates model.lur
 
             # With metadata
-            lutaml uml build model.xmi --name "Urban Model" --version "2.0" \\
+            lutaml uml build model.xmi --name "Urban Model" --version "2.0" \
               --publisher "City Planning" --license "CC-BY-4.0"
 
             # Load metadata from file
@@ -46,7 +75,6 @@ module Lutaml
                                            "(default: input file with .lur " \
                                            "extension)"
 
-          # Package metadata options
           thor_class.option :name, type: :string, desc: "Package name"
           thor_class.option :version, type: :string, default: "1.0",
                                       desc: "Package version"
@@ -68,7 +96,6 @@ module Lutaml
           thor_class.option :metadata_file, type: :string,
                                             desc: "Load metadata from YAML file"
 
-          # Build options
           thor_class.option :format, type: :string, default: "yaml",
                                      desc: "Serialization format (yaml)"
           thor_class.option :validate, type: :boolean, default: true,
@@ -91,78 +118,82 @@ module Lutaml
                                             "for each attribute"
         end
 
-        def run(model_path) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
-          unless File.exist?(model_path)
-            puts OutputFormatter.error("Model file not found: #{model_path}")
-            raise Thor::Error, "Model file not found: #{model_path}"
-          end
+        def run(model_path) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
+          validate_input_file(model_path)
 
-          # Set default output path if not provided
-          output_path = options[:output] || model_path.sub(/\.(xmi|qea)$/i,
-                                                           ".lur")
-
-          # Detect file type
+          output_path = resolve_output_path(model_path)
           is_qea = model_path.end_with?(".qea")
-          file_type = is_qea ? "QEA" : "XMI"
 
-          # Parse with validation for QEA files
-          repo, qea_validation_result = if is_qea
-                                          require_relative "../../qea"
-                                          parse_qea_with_validation(model_path)
-                                        else
-                                          OutputFormatter.progress(
-                                            "Parsing #{file_type} file",
-                                          )
-                                          r = Lutaml::UmlRepository::Repository
-                                            .from_xmi(model_path)
-                                          OutputFormatter.progress_done
-                                          [r, nil]
-                                        end
+          repo, qea_result = parse_source(model_path, is_qea)
 
-          # Display QEA validation results if available
-          if qea_validation_result && options[:validate]
-            display_qea_validation_result(qea_validation_result)
-
-            if options[:strict] && qea_validation_result.has_errors?
-              puts ""
-              puts OutputFormatter.error(
-                "Build failed due to validation errors",
-              )
-              raise Thor::Error, "Build failed due to validation errors"
-            end
+          if qea_result && options[:validate]
+            display_qea_validation_result(qea_result)
+            fail_build!("validation errors") if options[:strict] && qea_result.has_errors?
           end
 
-          # Validate repository if requested
-          # (XMI files or additional validation)
-          # Strict mode forces validation even if --no-validate is passed
-          if (options[:validate] || options[:strict]) && !is_qea
-            OutputFormatter.progress("Validating repository")
-            result = repo.validate(verbose: options[:verbose])
-            OutputFormatter.progress_done
+          validate_repository(repo) if should_validate?(is_qea)
 
-            # Display verbose validation if requested
-            if options[:verbose] && result.validation_details
-              display_verbose_validation(result.validation_details)
-            end
-
-            unless result.valid?
-              handle_validation_result(result)
-
-              # Display unique unresolved types if present
-              if result.external_references&.any?
-                display_unresolved_types(result.external_references)
-              end
-
-              if options[:strict] && result.errors.any?
-                raise Thor::Error, "Build failed due to validation errors"
-              end
-            end
-          end
-
-          # Build metadata from options
           metadata = build_metadata
+          export_package(repo, output_path, metadata)
+          display_build_summary(metadata, repo, output_path)
+        rescue StandardError => e
+          OutputFormatter.progress_done(success: false)
+          puts OutputFormatter.error("Failed to build package: #{e.message}")
+          puts e.backtrace.first(5).join("\n") if ENV["DEBUG"]
+          raise Thor::Error, "Failed to build package: #{e.message}"
+        end
 
-          # Export to package with metadata
+        private
+
+        def validate_input_file(model_path)
+          return if File.exist?(model_path)
+
+          puts OutputFormatter.error("Model file not found: #{model_path}")
+          raise Thor::Error, "Model file not found: #{model_path}"
+        end
+
+        def resolve_output_path(model_path)
+          options[:output] || model_path.sub(/\.(xmi|qea)$/i, ".lur")
+        end
+
+        def should_validate?(is_qea)
+          (options[:validate] || options[:strict]) && !is_qea
+        end
+
+        def parse_source(model_path, is_qea)
+          if is_qea
+            require_relative "../../qea"
+            parse_qea_with_validation(model_path)
+          else
+            OutputFormatter.progress("Parsing XMI file")
+            repo = Lutaml::UmlRepository::Repository.from_xmi(model_path)
+            OutputFormatter.progress_done
+            [repo, nil]
+          end
+        end
+
+        def validate_repository(repo) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
+          OutputFormatter.progress("Validating repository")
+          result = repo.validate(verbose: options[:verbose])
+          OutputFormatter.progress_done
+
+          display_verbose_validation(result.validation_details) if options[:verbose] && result.validation_details
+
+          return if result.valid?
+
+          handle_validation_result(result)
+          display_unresolved_types(result.external_references) if result.external_references&.any?
+
+          fail_build!("validation errors") if options[:strict] && result.errors.any?
+        end
+
+        def fail_build!(reason)
+          puts ""
+          puts OutputFormatter.error("Build failed due to #{reason}")
+          raise Thor::Error, "Build failed due to #{reason}"
+        end
+
+        def export_package(repo, output_path, metadata)
           export_options = {
             serialization_format: (
               options[:format] || options["format"] || "yaml"
@@ -173,12 +204,12 @@ module Lutaml
           OutputFormatter.progress("Exporting to LUR package")
           repo.export_to_package(output_path, export_options)
           OutputFormatter.progress_done
+        end
 
-          # Show success with statistics
+        def display_build_summary(metadata, repo, output_path) # rubocop:disable Metrics/AbcSize
           stats = repo.statistics
           puts ""
-          puts OutputFormatter
-            .success("Package built successfully: #{output_path}")
+          puts OutputFormatter.success("Package built successfully: #{output_path}")
           puts ""
           puts "Package Metadata:"
           puts "  Name:          #{metadata.name}"
@@ -192,22 +223,11 @@ module Lutaml
           puts "  Data Types:    #{stats[:total_data_types]}"
           puts "  Enumerations:  #{stats[:total_enums]}"
           puts "  Diagrams:      #{stats[:total_diagrams]}"
-        rescue StandardError => e
-          OutputFormatter.progress_done(success: false)
-          puts OutputFormatter.error("Failed to build package: #{e.message}")
-          puts e.backtrace.first(5).join("\n") if ENV["DEBUG"]
-          raise Thor::Error, "Failed to build package: #{e.message}"
         end
 
-        private
+        def build_metadata # rubocop:disable Metrics/AbcSize
+          return load_metadata_from_file(options[:metadata_file]) if options[:metadata_file]
 
-        def build_metadata # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
-          # If metadata file is provided, load from it
-          if options[:metadata_file]
-            return load_metadata_from_file(options[:metadata_file])
-          end
-
-          # Otherwise build from CLI options
           metadata_attrs = {
             name: options[:name] || File.basename(options[:output] || "model",
                                                   ".lur"),
@@ -215,28 +235,19 @@ module Lutaml
             serialization_format: (options[:format] || "yaml").to_s,
           }
 
-          # Add optional fields if provided
-          if options[:publisher]
-            metadata_attrs[:publisher] =
-              options[:publisher]
-          end
-          metadata_attrs[:license] = options[:license] if options[:license]
-          if options[:description]
-            metadata_attrs[:description] =
-              options[:description]
-          end
-          metadata_attrs[:homepage] = options[:homepage] if options[:homepage]
-          metadata_attrs[:keywords] = options[:keywords] if options[:keywords]
-          if options[:authors] && !options[:authors].empty?
-            metadata_attrs[:authors] =
-              options[:authors]
-          end
-          if options[:maintainers]
-            metadata_attrs[:maintainers] =
-              options[:maintainers]
-          end
+          merge_optional_fields(metadata_attrs, options)
 
           Lutaml::UmlRepository::PackageMetadata.new(**metadata_attrs)
+        end
+
+        def merge_optional_fields(target, source)
+          METADATA_OPTIONAL_FIELDS.each do |field|
+            value = source[field]
+            next unless value
+            next if field == :authors && value.empty?
+
+            target[field] = value
+          end
         end
 
         def load_metadata_from_file(file_path) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
@@ -247,30 +258,14 @@ module Lutaml
           require "yaml"
           metadata_hash = YAML.load_file(file_path)
 
-          # Override with CLI options if provided
-          metadata_hash["name"] = options[:name] if options[:name]
-          metadata_hash["version"] = options[:version] if options[:version]
-          if options[:publisher]
-            metadata_hash["publisher"] =
-              options[:publisher]
-          end
-          metadata_hash["license"] = options[:license] if options[:license]
-          if options[:description]
-            metadata_hash["description"] =
-              options[:description]
-          end
-          metadata_hash["homepage"] = options[:homepage] if options[:homepage]
-          metadata_hash["keywords"] = options[:keywords] if options[:keywords]
-          if options[:authors] && !options[:authors].empty?
-            metadata_hash["authors"] =
-              options[:authors]
-          end
-          if options[:maintainers]
-            metadata_hash["maintainers"] =
-              options[:maintainers]
+          METADATA_OPTIONAL_FIELDS.each do |field|
+            value = options[field]
+            next unless value
+            next if field == :authors && value.empty?
+
+            metadata_hash[field.to_s] = value
           end
 
-          # Ensure serialization_format is set
           metadata_hash["serialization_format"] ||= (
             options[:format] || "yaml"
           ).to_s
@@ -282,34 +277,27 @@ module Lutaml
           raise Thor::Error, "Invalid metadata: #{e.message}"
         end
 
-        def handle_validation_result(result) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
-          # Determine limit: explicit option, or smart default
-          limit = if options[:limit_errors]
-                    options[:limit_errors]
-                  elsif result.warnings.size + result.errors.size < 100
-                    nil # Show all
-                  else
-                    50 # Show top 50
-                  end
+        def handle_validation_result(result)
+          limit = resolve_error_limit(result)
 
           if result.warnings.any?
             puts ""
-            display_messages(
-              result.warnings,
-              "Validation warnings",
-              :warning,
-              limit,
-            )
+            display_messages(result.warnings, "Validation warnings", :warning, limit)
           end
 
           if result.errors.any?
             puts ""
-            display_messages(
-              result.errors,
-              "Validation errors",
-              :error,
-              limit,
-            )
+            display_messages(result.errors, "Validation errors", :error, limit)
+          end
+        end
+
+        def resolve_error_limit(result)
+          if options[:limit_errors]
+            options[:limit_errors]
+          elsif result.warnings.size + result.errors.size < 100
+            nil
+          else
+            50
           end
         end
 
@@ -328,17 +316,17 @@ module Lutaml
 
           to_show.each { |msg| puts "  - #{msg}" }
 
-          if limit && total > limit
-            puts ""
-            puts OutputFormatter.colorize(
-              "  ... and #{total - limit} more #{type}s " \
-              "(use --limit-errors to adjust)",
-              :yellow,
-            )
-          end
+          return unless limit && total > limit
+
+          puts ""
+          puts OutputFormatter.colorize(
+            "  ... and #{total - limit} more #{type}s " \
+            "(use --limit-errors to adjust)",
+            :yellow,
+          )
         end
 
-        def parse_qea_with_validation(qea_path) # rubocop:disable Metrics/MethodLength
+        def parse_qea_with_validation(qea_path)
           require_relative "../../qea"
 
           if options[:validate]
@@ -346,10 +334,7 @@ module Lutaml
               "⋯ Parsing QEA file with validation...", :cyan
             )
 
-            # Parse with validation enabled
             result = Lutaml::Qea.parse(qea_path, validate: true)
-
-            # Result is a hash when validation is enabled
             document = result[:document]
             validation_result = result[:validation_result]
             puts " #{OutputFormatter.colorize('✓', :green)}"
@@ -358,7 +343,6 @@ module Lutaml
             repo = Lutaml::UmlRepository::Repository.new(document: document)
             [repo, validation_result]
           else
-            # Parse without validation (reuse existing method)
             repo = parse_qea_with_progress(qea_path)
             [repo, nil]
           end
@@ -367,30 +351,24 @@ module Lutaml
         def parse_qea_with_progress(qea_path) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           puts OutputFormatter.colorize("⋯ Parsing QEA file...", :cyan)
 
-          # Load the database with progress tracking
           require_relative "../../qea/services/database_loader"
           loader = Lutaml::Qea::Services::DatabaseLoader.new(qea_path)
 
-          # Track progress per table
           current_table = nil
           loader.on_progress do |table_name, current, total|
             if current_table != table_name
               current_table = table_name
-              # New table started
               collection_name = format_collection_name(table_name)
               print "\r  ⋯ Loading #{collection_name}..."
               $stdout.flush
             end
-            # Update progress for current table
             if current == total
               puts " #{OutputFormatter.colorize('✓', :green)} (#{total})"
             end
           end
 
           database = loader.load
-          # Remove extra checkmark here - each table already has one
 
-          # Transform to UML document
           print "  ⋯ Transforming to UML..."
           $stdout.flush
 
@@ -416,11 +394,9 @@ module Lutaml
             return
           end
 
-          # Require formatters
           require_relative "../../qea/validation/formatters/text_formatter"
           require_relative "../../qea/validation/formatters/json_formatter"
 
-          # Use formatter for display
           formatter_class = case options[:validation_format]
                             when "json"
                               Lutaml::Qea::Validation::Formatters::JsonFormatter
@@ -432,10 +408,7 @@ module Lutaml
             result: validation_result,
             limit: options[:limit_errors],
           }
-          if options[:validation_format] == "text"
-            formatter_options[:color] =
-              true
-          end
+          formatter_options[:color] = true if options[:validation_format] == "text"
 
           formatter = formatter_class.new(**formatter_options)
           puts formatter.format
@@ -447,28 +420,19 @@ module Lutaml
           puts ""
 
           validation_details.each do |detail|
-            class_name = detail[:class_name]
-            puts OutputFormatter.colorize("Class: #{class_name}", :cyan)
+            puts OutputFormatter.colorize("Class: #{detail[:class_name]}", :cyan)
 
             detail[:attributes].each do |attr_detail|
-              attr_name = attr_detail[:attribute_name]
-              type_value = attr_detail[:type_value]
-              resolved_to = attr_detail[:resolved_to]
-              is_valid = attr_detail[:valid]
-
-              symbol = if is_valid
-                         OutputFormatter.colorize("✓",
-                                                  :green)
+              symbol = if attr_detail[:valid]
+                         OutputFormatter.colorize("✓", :green)
                        else
-                         OutputFormatter.colorize(
-                           "✗", :red
-                         )
+                         OutputFormatter.colorize("✗", :red)
                        end
 
-              puts "  #{symbol} #{attr_name}: #{type_value}"
-              if resolved_to
-                puts "      → #{resolved_to}"
-              elsif !is_valid
+              puts "  #{symbol} #{attr_detail[:attribute_name]}: #{attr_detail[:type_value]}"
+              if attr_detail[:resolved_to]
+                puts "      → #{attr_detail[:resolved_to]}"
+              elsif !attr_detail[:valid]
                 puts "      → (not found)"
               end
             end
@@ -477,11 +441,7 @@ module Lutaml
         end
 
         def display_unresolved_types(external_references) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
-          # Extract unique type names
-          unique_types = external_references.map do |ref|
-            ref[:referenced_type]
-          end.uniq.sort
-
+          unique_types = external_references.map { |ref| ref[:referenced_type] }.uniq.sort
           return if unique_types.empty?
 
           puts ""
@@ -502,34 +462,8 @@ module Lutaml
           puts ""
         end
 
-        def format_collection_name(table_name) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength
-          # Convert t_object -> objects, t_package -> packages, etc.
-          name = table_name.sub(/^t_/, "")
-          case name
-          when "object" then "classes"
-          when "package" then "packages"
-          when "attribute" then "attributes"
-          when "connector" then "associations"
-          when "diagram" then "diagrams"
-          when "operation" then "operations"
-          when "operationparams" then "operation parameters"
-          when "diagramobjects" then "diagram objects"
-          when "diagramlinks" then "diagram links"
-          when "objectconstraint" then "constraints"
-          when "taggedvalue" then "tagged values"
-          when "objectproperties" then "properties"
-          when "attributetag" then "attribute tags"
-          when "xref" then "cross-references"
-          when "stereotypes" then "stereotypes"
-          when "datatypes" then "data types"
-          when "constrainttypes" then "constraint types"
-          when "connectortypes" then "connector types"
-          when "diagramtypes" then "diagram types"
-          when "objecttypes" then "object types"
-          when "statustypes" then "status types"
-          when "complexitytypes" then "complexity types"
-          else name
-          end
+        def format_collection_name(table_name)
+          COLLECTION_NAMES.fetch(table_name.sub(/^t_/, ""), table_name)
         end
       end
     end
