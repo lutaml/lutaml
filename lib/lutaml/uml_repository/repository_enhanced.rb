@@ -25,6 +25,13 @@ module Lutaml
     #   config = ModelTransformations::Configuration.load("my_config.yml")
     #   repo = RepositoryEnhanced.from_model("model.qea", config: config)
     class RepositoryEnhanced < Repository
+      WARNING_SCORE_PENALTY = 5
+      ERROR_SCORE_PENALTY = 10
+      SLOW_PARSING_THRESHOLD = 60
+      MAX_ERRORS_FOR_VALID = 5
+
+      PARSING_OPTION_KEYS = %i[validate include_diagrams resolve_references].freeze
+
       # @return [ModelTransformations::TransformationEngine]
       # The transformation engine
       attr_reader :transformation_engine
@@ -314,24 +321,10 @@ module Lutaml
       #
       # @param options [Hash] Repository options
       # @return [Hash] Parsing options
-      def self.extract_parsing_options(options) # rubocop:disable Metrics/MethodLength
-        parsing_options = {}
-
-        # Map repository options to parsing options
-        if options.key?(:validate)
-          parsing_options[:validate_output] =
-            options[:validate]
+      def self.extract_parsing_options(options)
+        options.slice(*PARSING_OPTION_KEYS).tap do |parsed|
+          parsed[:validate_output] = parsed.delete(:validate) if parsed.key?(:validate)
         end
-        if options.key?(:include_diagrams)
-          parsing_options[:include_diagrams] =
-            options[:include_diagrams]
-        end
-        if options.key?(:resolve_references)
-          parsing_options[:resolve_references] =
-            options[:resolve_references]
-        end
-
-        parsing_options
       end
 
       # Extract transformation metadata from engine
@@ -375,26 +368,21 @@ module Lutaml
           quality_score: 100.0,
         }
 
-        # Check for transformation warnings
         if @transformation_metadata[:warnings]&.any?
           results[:warnings].concat(@transformation_metadata[:warnings])
-          results[:quality_score] -= @transformation_metadata[:warnings]
-            .size * 5
+          results[:quality_score] -= @transformation_metadata[:warnings].size * WARNING_SCORE_PENALTY
         end
 
-        # Check for transformation errors
         if @transformation_metadata[:errors]&.any?
           results[:errors].concat(@transformation_metadata[:errors])
-          results[:quality_score] -= @transformation_metadata[:errors].size * 10
-          results[:valid] = false if @transformation_metadata[:errors].size > 5
+          results[:quality_score] -= @transformation_metadata[:errors].size * ERROR_SCORE_PENALTY
+          results[:valid] = false if @transformation_metadata[:errors].size > MAX_ERRORS_FOR_VALID
         end
 
-        # Check parsing duration
-        if @transformation_metadata[:parsing_duration] &&
-            (@transformation_metadata[:parsing_duration] > 60) # > 1 minute
+        if @transformation_metadata[:parsing_duration]&.> SLOW_PARSING_THRESHOLD
           duration = @transformation_metadata[:parsing_duration].round(2)
           results[:warnings] << "Long parsing duration (#{duration}s)"
-          results[:quality_score] -= 5
+          results[:quality_score] -= WARNING_SCORE_PENALTY
         end
 
         results[:quality_score] = [results[:quality_score], 0].max
