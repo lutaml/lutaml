@@ -1,12 +1,12 @@
 require "spec_helper"
 
 RSpec.describe Lutaml::Xmi::Parsers::Xml do
+  let(:file) { File.new(fixtures_path("ea-xmi-2.5.1.xmi")) }
+
   describe ".parse" do
     subject(:parse) { described_class.parse(file) }
 
     context "when parsing xmi 2013 with uml 2013" do
-      let(:file) { File.new(fixtures_path("ea-xmi-2.5.1.xmi")) }
-
       let(:expected_class_names) do
         %w[
           BibliographicItem
@@ -158,8 +158,6 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
     subject(:new_parser) { described_class.new }
 
     context "when parsing xmi 2013 with uml 2013" do
-      let(:file) { File.new(fixtures_path("ea-xmi-2.5.1.xmi")) }
-
       let(:xmi_root_model) do
         xml_content = File.read(file)
         Xmi::Sparx::Root.parse_xml(xml_content)

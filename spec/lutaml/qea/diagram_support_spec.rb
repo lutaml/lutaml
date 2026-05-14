@@ -6,8 +6,7 @@ require_relative "../../../lib/lutaml/qea/factory/diagram_transformer"
 
 RSpec.describe "Comprehensive Diagram Support" do
   let(:qea_path) { "examples/qea/20251010_current_plateau_v5.1.qea" }
-  let(:loader) { Lutaml::Qea::Services::DatabaseLoader.new(qea_path) }
-  let(:database) { loader.load }
+  let(:database) { cached_qea_database(qea_path) }
 
   describe "Phase 1: Database Loading" do
     it "loads diagram objects table successfully", :aggregate_failures do
@@ -191,19 +190,19 @@ RSpec.describe "Comprehensive Diagram Support" do
   describe "Phase 5: Performance and Data Integrity" do
     it "loads all diagram data efficiently", :aggregate_failures do
       start_time = Time.now
-      database = loader.load
+      fresh_db = Lutaml::Qea::Services::DatabaseLoader.new(qea_path).load
       load_time = Time.now - start_time
 
       # Should load within reasonable time (generous threshold for CI runners)
       expect(load_time).to be < 120.0
-      expect(database.diagram_objects.size).to eq(1767)
-      expect(database.diagram_links.size).to eq(1813)
+      expect(fresh_db.diagram_objects.size).to eq(1767)
+      expect(fresh_db.diagram_links.size).to eq(1813)
     end
 
     it "freezes collections after loading", :aggregate_failures do
-      database = loader.load
-      expect(database.diagram_objects).to be_frozen
-      expect(database.diagram_links).to be_frozen
+      fresh_db = Lutaml::Qea::Services::DatabaseLoader.new(qea_path).load
+      expect(fresh_db.diagram_objects).to be_frozen
+      expect(fresh_db.diagram_links).to be_frozen
     end
 
     it "handles diagrams with many objects" do

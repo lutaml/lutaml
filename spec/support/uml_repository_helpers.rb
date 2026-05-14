@@ -2,12 +2,11 @@
 
 module UmlRepositoryHelpers
   def create_test_document
-    Lutaml::Xmi::Parsers::Xml.parse(File.new(fixtures_path("ea-xmi-2.5.1.xmi")))
+    cached_xmi_document
   end
 
   def create_test_repository
-    document = create_test_document
-    Lutaml::UmlRepository::Repository.new(document: document)
+    cached_repository
   end
 
   def create_simple_test_document # rubocop:disable Metrics/AbcSize

@@ -5,8 +5,7 @@ require_relative "../../../lib/lutaml/qea"
 
 RSpec.describe "Stereotypes and DataTypes Loading" do
   let(:qea_file) { "examples/qea/20251010_current_plateau_v5.1.qea" }
-  let(:loader) { Lutaml::Qea::Services::DatabaseLoader.new(qea_file) }
-  let(:database) { loader.load }
+  let(:database) { cached_qea_database(qea_file) }
 
   describe "Stereotypes" do
     it "loads stereotype definitions", :aggregate_failures do

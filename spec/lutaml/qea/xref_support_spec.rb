@@ -5,9 +5,7 @@ require_relative "../../../lib/lutaml/qea"
 
 RSpec.describe "QEA Cross-Reference Support" do
   let(:qea_file) { "examples/qea/20251010_current_plateau_v5.1.qea" }
-  let(:database) do
-    Lutaml::Qea::Services::DatabaseLoader.new(qea_file).load
-  end
+  let(:database) { cached_qea_database(qea_file) }
 
   describe "t_xref table loading" do
     it "loads all cross-reference records", :aggregate_failures do

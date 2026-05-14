@@ -8,33 +8,30 @@ RSpec.describe "QEA Full Parsing Integration", :integration do
     File.expand_path("../../../../examples/qea/test.qea", __dir__)
   end
 
+  let(:document) { cached_qea_parse(qea_path) }
+
   describe "Lutaml::Qea.parse" do
     it "parses QEA file to complete UML Document", :aggregate_failures do
-      document = Lutaml::Qea.parse(qea_path)
-
       expect(document).to be_a(Lutaml::Uml::Document)
       expect(document.name).to eq("EA Model")
     end
 
     it "populates document with packages" do
-      document = Lutaml::Qea.parse(qea_path)
       expect(document.packages).to be_an(Array)
     end
 
     it "populates document with classes" do
-      document = Lutaml::Qea.parse(qea_path)
       expect(document.classes).to be_an(Array)
     end
 
     it "populates document with associations" do
-      document = Lutaml::Qea.parse(qea_path)
       expect(document.associations).to be_an(Array)
     end
 
     context "with custom options" do
       it "accepts custom document name" do
-        document = Lutaml::Qea.parse(qea_path, document_name: "My Model")
-        expect(document.name).to eq("My Model")
+        custom_doc = Lutaml::Qea.parse(qea_path, document_name: "My Model")
+        expect(custom_doc.name).to eq("My Model")
       end
 
       it "can skip validation" do
@@ -52,16 +49,12 @@ RSpec.describe "QEA Full Parsing Integration", :integration do
   end
 
   describe "Complete transformation flow" do
-    let(:document) { Lutaml::Qea.parse(qea_path) }
-
     context "Package hierarchy" do
       it "maintains package structure", :aggregate_failures do
         next if document.packages.empty?
 
-        # Root packages should exist
         expect(document.packages).not_to be_empty
 
-        # Packages should have proper structure
         pkg = document.packages.first
         expect(pkg.name).not_to be_nil
         expect(pkg.xmi_id).not_to be_nil
@@ -72,12 +65,7 @@ RSpec.describe "QEA Full Parsing Integration", :integration do
       it "includes nested packages" do
         next if document.packages.empty?
 
-        # Check if any package has children
-        document.packages.any? do |pkg|
-          pkg.packages && !pkg.packages.empty?
-        end
-
-        # This is data-dependent, so we just verify the structure exists
+        document.packages.any? { |pkg| pkg.packages && !pkg.packages.empty? }
         expect(document.packages.first.packages).to be_an(Array)
       end
     end
@@ -97,29 +85,19 @@ RSpec.describe "QEA Full Parsing Integration", :integration do
       it "includes class attributes" do
         next if document.classes.empty?
 
-        # Find a class with attributes
-        class_with_attrs = document.classes.find do |c|
-          c.attributes && !c.attributes.empty?
-        end
-
+        class_with_attrs = document.classes.find { |c| c.attributes && !c.attributes.empty? }
         next if class_with_attrs.nil?
 
-        attr = class_with_attrs.attributes.first
-        expect(attr.name).not_to be_nil
+        expect(class_with_attrs.attributes.first.name).not_to be_nil
       end
 
       it "includes class operations" do
         next if document.classes.empty?
 
-        # Find a class with operations
-        class_with_ops = document.classes.find do |c|
-          c.operations && !c.operations.empty?
-        end
-
+        class_with_ops = document.classes.find { |c| c.operations && !c.operations.empty? }
         next if class_with_ops.nil?
 
-        op = class_with_ops.operations.first
-        expect(op.name).not_to be_nil
+        expect(class_with_ops.operations.first.name).not_to be_nil
       end
     end
 
@@ -135,38 +113,19 @@ RSpec.describe "QEA Full Parsing Integration", :integration do
 
     context "Data integrity" do
       it "has unique xmi_ids for all elements" do
-        # Collect all xmi_ids
         all_xmi_ids = document.packages.map(&:xmi_id)
-
-        document.classes.each do |klass|
-          all_xmi_ids << klass.xmi_id
-        end
-
-        # document associations return associations in connector-level
-        # and class-level
-        # class-level associations contain associations with both directions
-        # and it may include associations in connector level
-        # document.associations.each do |assoc|
-        #   all_xmi_ids << assoc.xmi_id
-        # end
-
+        document.classes.each { |klass| all_xmi_ids << klass.xmi_id }
         all_xmi_ids.compact!
 
-        # All should be unique
         expect(all_xmi_ids.size).to eq(all_xmi_ids.uniq.size)
       end
 
       it "maintains referential integrity in packages" do
         next if document.packages.empty?
 
-        # All classes in packages should also be in document.classes
-        package_class_ids = document.packages.flat_map do |pkg|
-          pkg.classes.map(&:xmi_id)
-        end.compact
-
+        package_class_ids = document.packages.flat_map { |pkg| pkg.classes.map(&:xmi_id) }.compact
         document_class_ids = document.classes.filter_map(&:xmi_id)
 
-        # Package classes should be subset of document classes
         package_class_ids.each do |id|
           expect(document_class_ids).to include(id)
         end
@@ -176,33 +135,22 @@ RSpec.describe "QEA Full Parsing Integration", :integration do
 
   describe "Integration with UmlRepository" do
     it "creates document compatible with UmlRepository" do
-      document = Lutaml::Qea.parse(qea_path)
-
-      # Should be able to create repository
-      expect do
-        Lutaml::UmlRepository::Repository.new(document: document)
-      end.not_to raise_error
+      expect { Lutaml::UmlRepository::Repository.new(document: document) }.not_to raise_error
     end
 
     it "supports repository operations", :aggregate_failures do
-      document = Lutaml::Qea.parse(qea_path)
       repo = Lutaml::UmlRepository::Repository.new(document: document)
 
-      # Should support basic operations
       expect(repo).to respond_to(:packages_index)
       expect(repo).to respond_to(:classes_index)
       expect(repo).to respond_to(:search)
     end
 
     it "can search parsed document", :aggregate_failures do
-      document = Lutaml::Qea.parse(qea_path)
-      repo = Lutaml::UmlRepository::Repository.new(document: document)
-
       next if document.classes.empty?
 
-      # Search should work
-      klass_name = document.classes.first.name
-      results = repo.search(klass_name)
+      repo = Lutaml::UmlRepository::Repository.new(document: document)
+      results = repo.search(document.classes.first.name)
 
       expect(results).to be_a(Hash)
       expect(results).to have_key(:total)
@@ -211,27 +159,17 @@ RSpec.describe "QEA Full Parsing Integration", :integration do
 
   describe "Performance characteristics" do
     it "completes parsing in reasonable time" do
-      expect do
-        Timeout.timeout(30) do
-          Lutaml::Qea.parse(qea_path)
-        end
-      end.not_to raise_error
+      expect { Timeout.timeout(30) { Lutaml::Qea.parse(qea_path) } }.not_to raise_error
     end
 
     it "produces document with expected element counts", :aggregate_failures do
-      document = Lutaml::Qea.parse(qea_path)
-
-      # Get raw database stats for comparison
       database = Lutaml::Qea.load_database(qea_path)
       db_stats = database.stats
 
-      # Document should have elements corresponding to database
-      # (exact counts may differ due to filtering)
       expect(document.packages.size).to be >= 0
       expect(document.classes.size).to be >= 0
       expect(document.associations.size).to be >= 0
 
-      # Document shouldn't exceed database counts
       if db_stats["packages"]
         expect(document.packages.size).to be <= db_stats["packages"]
       end
@@ -240,9 +178,7 @@ RSpec.describe "QEA Full Parsing Integration", :integration do
 
   describe "Error handling" do
     it "raises error for non-existent file" do
-      expect do
-        Lutaml::Qea.parse("/non/existent/file.qea")
-      end.to raise_error(StandardError)
+      expect { Lutaml::Qea.parse("/non/existent/file.qea") }.to raise_error(StandardError)
     end
 
     it "handles empty database gracefully", :aggregate_failures do
@@ -254,9 +190,9 @@ RSpec.describe "QEA Full Parsing Integration", :integration do
         end
         db.close
 
-        document = Lutaml::Qea.parse(f.path)
-        expect(document).to be_a(Lutaml::Uml::Document)
-        expect(document.packages).to be_empty
+        doc = Lutaml::Qea.parse(f.path)
+        expect(doc).to be_a(Lutaml::Uml::Document)
+        expect(doc.packages).to be_empty
       end
     end
   end
@@ -273,8 +209,8 @@ RSpec.describe "QEA Full Parsing Integration", :integration do
 
         example_files.each do |file_path|
           expect do
-            document = Lutaml::Qea.parse(file_path)
-            expect(document).to be_a(Lutaml::Uml::Document)
+            doc = Lutaml::Qea.parse(file_path)
+            expect(doc).to be_a(Lutaml::Uml::Document)
           end.not_to raise_error, "Failed to parse #{File.basename(file_path)}"
         end
       end
