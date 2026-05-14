@@ -16,13 +16,19 @@ module Lutaml
           association: :search_associations,
         }.freeze
 
+        RESULT_KEYS = {
+          class: :classes,
+          attribute: :attributes,
+          association: :associations,
+        }.freeze
+
         def search(query_string, types: %i[class attribute association],
                           fields: [:name], case_sensitive: false)
           return empty_result if query_string.nil? || query_string.empty?
 
           results = { classes: [], attributes: [], associations: [] }
           types.each do |type|
-            key = :"#{type}s"
+            key = RESULT_KEYS[type]
             results[key] = public_send(SEARCHERS[type],
                                        query_string,
                                        fields: fields,
