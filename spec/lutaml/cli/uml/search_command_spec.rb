@@ -5,7 +5,9 @@ require_relative "../../../../lib/lutaml/cli"
 
 require_relative "../../../../lib/lutaml/uml_repository"
 RSpec.describe Lutaml::Cli::Uml::SearchCommand do
-  let(:test_xmi) { File.join(__dir__, "../../../../spec/fixtures/ea-xmi-2.5.1.xmi") }
+  let(:test_xmi) do
+    File.join(__dir__, "../../../../spec/fixtures/ea-xmi-2.5.1.xmi")
+  end
   let(:test_lur) do
     path = temp_lur_path(prefix: "search_test")
     repo = Lutaml::UmlRepository::Repository.from_xmi(test_xmi)

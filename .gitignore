@@ -21,4 +21,5 @@ old-docs
 
 # Transient planning files
 TODO.*/
+TODO.*.md
 .rubocop_todo.yml.tmp
