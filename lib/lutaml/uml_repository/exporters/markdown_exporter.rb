@@ -1,13 +1,6 @@
 # frozen_string_literal: true
 
 require "fileutils"
-require_relative "base_exporter"
-require_relative "../../uml/model_helpers"
-require_relative "markdown/link_resolver"
-require_relative "markdown/formatting"
-require_relative "markdown/index_page_builder"
-require_relative "markdown/package_page_builder"
-require_relative "markdown/class_page_builder"
 
 module Lutaml
   module UmlRepository

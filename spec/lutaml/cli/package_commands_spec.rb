@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require_relative "../../../lib/lutaml/cli/uml_commands"
+require_relative "../../../lib/lutaml/cli"
+
 require_relative "../../../lib/lutaml/uml_repository"
 require "tempfile"
 require "zip"

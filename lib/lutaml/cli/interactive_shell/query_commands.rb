@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "command_base"
-require_relative "../enhanced_formatter"
-
 module Lutaml
   module Cli
     class InteractiveShell

@@ -2,12 +2,6 @@
 
 require "thor"
 require "pathname"
-require_relative "../formatter"
-require_relative "../uml/has_attributes"
-require_relative "../uml/parsers/attribute"
-require_relative "../uml/parsers/dsl"
-require_relative "../uml/parsers/yaml"
-require_relative "../express/parsers/exp"
 
 module Lutaml
   module Cli

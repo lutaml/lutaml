@@ -1,9 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "base_query"
-require_relative "../search_result"
-require_relative "../../uml/model_helpers"
-
 module Lutaml
   module UmlRepository
     module Queries
@@ -34,11 +30,13 @@ module Lutaml
                                        fields: fields,
                                        case_sensitive: case_sensitive)
           end
-          results[:total] = results.values_at(:classes, :attributes, :associations).sum(&:size)
+          results[:total] =
+            results.values_at(:classes, :attributes, :associations).sum(&:size)
           results
         end
 
-        def full_text_search(query_string, fields: [:name], case_sensitive: false)
+        def full_text_search(query_string, fields: [:name],
+case_sensitive: false)
           results = { classes: [], packages: [], total: 0 }
           return results if query_string.nil? || query_string.empty?
 
@@ -160,14 +158,17 @@ module Lutaml
         end
 
         def first_matching_field(entity, fields, pattern)
-          fields.reverse_each.find { |f| field_value_matches?(entity, f, pattern) }
+          fields.reverse_each.find do |f|
+            field_value_matches?(entity, f, pattern)
+          end
         end
 
         def find_matching_attribute(entity, fields, pattern)
           result = nil
           entity.attributes.each do |attr|
             fields.each do |field|
-              result = [attr, field] if field_value_matches?(attr, field, pattern)
+              result = [attr, field] if field_value_matches?(attr, field,
+                                                             pattern)
             end
           end
           result

@@ -1,9 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "configuration"
-require_relative "format_registry"
-require_relative "parsers/base_parser"
-
 module Lutaml
   module ModelTransformations
     # Transformation Engine orchestrates the entire model transformation

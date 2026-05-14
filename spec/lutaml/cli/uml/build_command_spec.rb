@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require_relative "../../../../lib/lutaml/cli/uml/build_command"
+require_relative "../../../../lib/lutaml/cli"
+
 require_relative "../../../../lib/lutaml/uml_repository"
-require_relative "../../../../lib/lutaml/cli/uml_commands"
 RSpec.describe Lutaml::Cli::Uml::BuildCommand do
   let(:test_xmi) { File.join(__dir__, "../../../../examples/xmi/basic.xmi") }
   let(:output_lur) { temp_lur_path(prefix: "build_test") }

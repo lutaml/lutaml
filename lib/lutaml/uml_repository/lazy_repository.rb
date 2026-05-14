@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "repository"
-
 module Lutaml
   module UmlRepository
     # LazyRepository provides lazy loading optimization for very large

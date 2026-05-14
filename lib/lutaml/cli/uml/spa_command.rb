@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../output_formatter"
-require_relative "../../uml"
-
 module Lutaml
   module Cli
     module Uml
@@ -152,8 +149,6 @@ module Lutaml
         end
 
         def load_from_qea(path)
-          require_relative "../../qea"
-
           # Load QEA database
           qea_db = Lutaml::Qea::Services::DatabaseLoader.new(path).load
 

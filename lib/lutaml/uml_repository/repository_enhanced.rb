@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../model_transformations"
-require_relative "repository"
-
 module Lutaml
   module UmlRepository
     # Enhanced Repository with unified model transformation support.
@@ -30,7 +27,8 @@ module Lutaml
       SLOW_PARSING_THRESHOLD = 60
       MAX_ERRORS_FOR_VALID = 5
 
-      PARSING_OPTION_KEYS = %i[validate include_diagrams resolve_references].freeze
+      PARSING_OPTION_KEYS = %i[validate include_diagrams
+                               resolve_references].freeze
 
       # @return [ModelTransformations::TransformationEngine]
       # The transformation engine
@@ -323,7 +321,10 @@ module Lutaml
       # @return [Hash] Parsing options
       def self.extract_parsing_options(options)
         options.slice(*PARSING_OPTION_KEYS).tap do |parsed|
-          parsed[:validate_output] = parsed.delete(:validate) if parsed.key?(:validate)
+          if parsed.key?(:validate)
+            parsed[:validate_output] =
+              parsed.delete(:validate)
+          end
         end
       end
 
@@ -376,7 +377,10 @@ module Lutaml
         if @transformation_metadata[:errors]&.any?
           results[:errors].concat(@transformation_metadata[:errors])
           results[:quality_score] -= @transformation_metadata[:errors].size * ERROR_SCORE_PENALTY
-          results[:valid] = false if @transformation_metadata[:errors].size > MAX_ERRORS_FOR_VALID
+          if @transformation_metadata[:errors].size > MAX_ERRORS_FOR_VALID
+            results[:valid] =
+              false
+          end
         end
 
         if @transformation_metadata[:parsing_duration]&.> SLOW_PARSING_THRESHOLD

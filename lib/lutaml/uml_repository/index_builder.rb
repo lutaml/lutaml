@@ -1,11 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../uml/package_path"
-require_relative "../uml/qualified_name"
-require_relative "index_builders/package_index"
-require_relative "index_builders/class_index"
-require_relative "index_builders/association_index"
-
 module Lutaml
   module UmlRepository
     # IndexBuilder builds fast lookup indexes from a Lutaml::Uml::Document
@@ -28,6 +22,10 @@ module Lutaml
     #   package = indexes[:package_paths]["ModelRoot::i-UR"]
     #   klass = indexes[:qualified_names]["ModelRoot::i-UR::Building"]
     class IndexBuilder
+      include IndexBuilders::PackageIndex
+      include IndexBuilders::ClassIndex
+      include IndexBuilders::AssociationIndex
+
       ROOT_PACKAGE_NAME = "ModelRoot"
 
       # Build all indexes from a UML document

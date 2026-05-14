@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "id_generator"
-require_relative "models/spa_search_entry"
-
 module Lutaml
   module UmlRepository
     module StaticSite

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require_relative "../../../lib/lutaml/cli/uml_commands"
+require_relative "../../../lib/lutaml/cli"
 
 RSpec.describe "CLI Error Handling and Edge Cases (via UmlCommands)" do
   let(:test_lur) { File.join(__dir__, "../../../plateau_all_packages.lur") }

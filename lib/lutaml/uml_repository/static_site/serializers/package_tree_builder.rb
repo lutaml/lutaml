@@ -1,9 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../../../uml/model_helpers"
-require_relative "../models/spa_package_tree_node"
-require_relative "../models/spa_tree_class_ref"
-
 module Lutaml
   module UmlRepository
     module StaticSite

@@ -1,9 +1,8 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require_relative "../../../../lib/lutaml/qea/parser"
 require_relative "../../../../lib/lutaml/cli"
-
+require_relative "../../../../lib/lutaml/qea"
 RSpec.describe "CLI UML Validate Command" do
   let(:qea_file) { "examples/qea/test.qea" }
 

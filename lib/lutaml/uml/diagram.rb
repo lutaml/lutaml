@@ -1,9 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "top_element"
-require_relative "diagram_object"
-require_relative "diagram_link"
-
 module Lutaml
   module Uml
     class Diagram < TopElement

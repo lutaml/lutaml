@@ -1,11 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "classifier"
-require_relative "top_element_attribute"
-require_relative "association"
-require_relative "constraint"
-require_relative "operation"
-
 module Lutaml
   module Uml
     class DataType < Classifier

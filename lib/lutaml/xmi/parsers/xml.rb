@@ -3,8 +3,6 @@
 require "nokogiri"
 require "htmlentities"
 require "xmi"
-require_relative "xmi_base"
-require_relative "../xmi_lookup_service"
 require "lutaml/converter/xmi_to_uml"
 
 module Lutaml

@@ -1,11 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "class"
-require_relative "enum"
-require_relative "data_type"
-require_relative "instance"
-require_relative "diagram"
-
 module Lutaml
   module Uml
     class Package < TopElement

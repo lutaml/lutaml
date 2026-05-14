@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "validation_message"
-
 module Lutaml
   module Qea
     module Validation

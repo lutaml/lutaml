@@ -2,7 +2,7 @@
 
 module Lutaml
   module Converter
-    module XmiToUml
+    module XmiToUmlGeneralization
       # Generalization-related conversion methods for XMI → UML
       #
       # These methods handle the recursive generalization hierarchy:

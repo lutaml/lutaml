@@ -1,33 +1,18 @@
 # frozen_string_literal: true
 
-require_relative "diagram/svg_renderer"
-require_relative "diagram/layout_engine"
-require_relative "diagram/style_parser"
-require_relative "diagram/path_builder"
-require_relative "diagram/element_renderers/base_renderer"
-require_relative "diagram/element_renderers/class_renderer"
-require_relative "diagram/element_renderers/package_renderer"
-require_relative "diagram/element_renderers/connector_renderer"
-
 module Lutaml
   module Ea
-    # Diagram rendering module for converting EA diagrams to SVG
-    #
-    # This module provides comprehensive diagram rendering capabilities
-    # for Enterprise Architect UML diagrams, converting them to clean,
-    # interactive SVG format for web display.
-    #
-    # Key Features:
-    # - SVG rendering with proper layout and styling
-    # - Support for classes, packages, and connectors
-    # - EA-specific style parsing and conversion
-    # - Interactive elements with hover effects
-    # - Path calculation for complex connector routing
-    #
-    # Usage:
-    #   diagram = Lutaml::Ea::Diagram.new(ea_diagram_data)
-    #   svg_content = diagram.render_svg
     module Diagram
+      autoload :SvgRenderer, "lutaml/ea/diagram/svg_renderer"
+      autoload :LayoutEngine, "lutaml/ea/diagram/layout_engine"
+      autoload :StyleParser, "lutaml/ea/diagram/style_parser"
+      autoload :PathBuilder, "lutaml/ea/diagram/path_builder"
+      autoload :StyleResolver, "lutaml/ea/diagram/style_resolver"
+      autoload :Configuration, "lutaml/ea/diagram/configuration"
+      autoload :Util, "lutaml/ea/diagram/util"
+      autoload :Extractor, "lutaml/ea/diagram/extractor"
+      autoload :ElementRenderers, "lutaml/ea/diagram/element_renderers"
+
       # Main entry point for diagram rendering
       class DiagramRenderer
         attr_reader :diagram_data, :layout_engine, :style_parser

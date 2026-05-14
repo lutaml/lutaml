@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "json"
-require_relative "base_exporter"
 
 module Lutaml
   module UmlRepository

@@ -1,10 +1,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require_relative "../../../../lib/lutaml/cli/uml/repl_command"
-require_relative "../../../../lib/lutaml/uml_repository"
-require_relative "../../../../lib/lutaml/cli/uml_commands"
+require_relative "../../../../lib/lutaml/cli"
 
+require_relative "../../../../lib/lutaml/uml_repository"
 RSpec.describe Lutaml::Cli::Uml::ReplCommand do
   let(:test_xmi) { File.join(__dir__, "../../../../examples/xmi/basic.xmi") }
   let(:test_lur) do

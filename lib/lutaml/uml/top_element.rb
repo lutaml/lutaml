@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "namespace"
-require_relative "tagged_value"
-
 module Lutaml
   module Uml
     class TopElement < Lutaml::Model::Serializable

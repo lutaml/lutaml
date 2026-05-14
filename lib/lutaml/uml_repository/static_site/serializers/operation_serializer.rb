@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../models/spa_operation"
-require_relative "../models/spa_parameter"
-
 module Lutaml
   module UmlRepository
     module StaticSite

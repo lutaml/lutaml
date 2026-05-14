@@ -1,12 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../../../uml/model_helpers"
-require_relative "../../class_lookup_index"
-require_relative "../models/spa_attribute"
-require_relative "../models/spa_cardinality"
-require_relative "../models/spa_inherited_attribute"
-require_relative "../models/spa_inherited_association"
-
 module Lutaml
   module UmlRepository
     module StaticSite

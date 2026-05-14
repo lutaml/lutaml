@@ -4,11 +4,12 @@ require "lutaml/model"
 
 module Lutaml
   module Uml
-    class Error < Lutaml::Error; end
+    class Error < StandardError; end
 
     # Base modules and mixins
     autoload :HasAttributes, "lutaml/uml/has_attributes"
     autoload :HasMembers, "lutaml/uml/has_members"
+    autoload :ModelHelpers, "lutaml/uml/model_helpers"
     autoload :Namespace, "lutaml/uml/namespace"
     autoload :PackagePath, "lutaml/uml/package_path"
     autoload :QualifiedName, "lutaml/uml/qualified_name"
@@ -18,6 +19,7 @@ module Lutaml
     autoload :Fidelity, "lutaml/uml/fidelity"
     autoload :Value, "lutaml/uml/value"
     autoload :Fontname, "lutaml/uml/fontname"
+    autoload :TaggedValue, "lutaml/uml/tagged_value"
 
     # Core elements
     autoload :TopElement, "lutaml/uml/top_element"
@@ -61,6 +63,7 @@ module Lutaml
     autoload :Property, "lutaml/uml/property"
     autoload :Port, "lutaml/uml/port"
     autoload :Operation, "lutaml/uml/operation"
+    autoload :OperationParameter, "lutaml/uml/operation_parameter"
     autoload :Constraint, "lutaml/uml/constraint"
 
     # Composite elements
@@ -78,21 +81,33 @@ module Lutaml
     autoload :Instance, "lutaml/uml/instance"
     autoload :Document, "lutaml/uml/document"
 
+    # Node (DSL AST nodes)
+    module Node
+      autoload :Base, "lutaml/uml/node/base"
+      autoload :HasName, "lutaml/uml/node/has_name"
+      autoload :HasType, "lutaml/uml/node/has_type"
+      autoload :Attribute, "lutaml/uml/node/attribute"
+      autoload :ClassNode, "lutaml/uml/node/class_node"
+      autoload :ClassRelationship, "lutaml/uml/node/class_relationship"
+      autoload :Document, "lutaml/uml/node/document"
+      autoload :MethodArgument, "lutaml/uml/node/method_argument"
+      autoload :Operation, "lutaml/uml/node/operation"
+      autoload :Relationship, "lutaml/uml/node/relationship"
+    end
+
     # Parsers
     module Parsers
       autoload :Dsl, "lutaml/uml/parsers/dsl"
+      autoload :DslPreprocessor, "lutaml/uml/parsers/dsl_preprocessor"
+      autoload :DslTransform, "lutaml/uml/parsers/dsl_transform"
       autoload :Yaml, "lutaml/uml/parsers/yaml"
       autoload :Attribute, "lutaml/uml/parsers/attribute"
     end
+
+    # Validation
+    module Validation
+      autoload :DocumentStructureValidator,
+               "lutaml/uml/validation/document_structure_validator"
+    end
   end
-end
-
-# Load formatter base
-require_relative "formatter"
-
-# Graphviz formatter is optional - only load if ruby-graphviz is available
-begin
-  require_relative "formatter/graphviz"
-rescue LoadError
-  # ruby-graphviz not available, skip graphviz formatter
 end

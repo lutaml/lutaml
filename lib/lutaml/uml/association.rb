@@ -1,9 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "top_element"
-require_relative "cardinality"
-require_relative "action"
-
 module Lutaml
   module Uml
     class Association < TopElement

@@ -1,11 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "path_builder"
-require_relative "style_resolver"
-require_relative "element_renderers/base_renderer"
-require_relative "element_renderers/class_renderer"
-require_relative "element_renderers/package_renderer"
-
 module Lutaml
   module Ea
     module Diagram

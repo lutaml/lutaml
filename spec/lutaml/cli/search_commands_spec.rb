@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require_relative "../../../lib/lutaml/cli/uml_commands"
-require_relative "../../../lib/lutaml/uml_repository/repository"
+require_relative "../../../lib/lutaml/cli"
+
+require_relative "../../../lib/lutaml/uml_repository"
 RSpec.describe "Search and Find Commands (via UmlCommands)" do
   let(:xmi_file) { File.join(__dir__, "../../../spec/fixtures/ea-xmi-2.5.1.xmi") }
   let(:lur_file) do

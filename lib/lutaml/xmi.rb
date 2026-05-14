@@ -7,9 +7,13 @@ module Lutaml
   module Xmi
     # Parsers
     module Parsers
-      autoload :Xml, "lutaml/xmi/parsers/xml"
+      autoload :XmiConnector, "lutaml/xmi/parsers/xmi_connector"
+      autoload :XmiClassMembers, "lutaml/xmi/parsers/xmi_class_members"
       autoload :XmiBase, "lutaml/xmi/parsers/xmi_base"
+      autoload :Xml, "lutaml/xmi/parsers/xml"
     end
+
+    autoload :XmiLookupService, "lutaml/xmi/xmi_lookup_service"
 
     # Liquid drops for template rendering
     module LiquidDrops

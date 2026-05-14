@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require_relative "../../../lib/lutaml/cli/tree_view_formatter"
-require_relative "../../../lib/lutaml/uml_repository/repository"
+require_relative "../../../lib/lutaml/cli"
 
+require_relative "../../../lib/lutaml/uml_repository"
 RSpec.describe Lutaml::Cli::TreeViewFormatter do
   let(:formatter) { described_class.new(options) }
   let(:options) { {} }

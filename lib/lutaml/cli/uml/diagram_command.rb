@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../../ea/diagram"
-
 module Lutaml
   module Cli
     module Uml
@@ -153,8 +151,14 @@ module Lutaml
         def add_classifier_members(data, uml_element)
           return unless uml_element.is_a?(Lutaml::Uml::Classifier)
 
-          data[:attributes] = serialize_element_attributes(uml_element.attributes) if uml_element.attributes
-          data[:operations] = serialize_element_operations(uml_element.operations) if uml_element.operations
+          if uml_element.attributes
+            data[:attributes] =
+              serialize_element_attributes(uml_element.attributes)
+          end
+          if uml_element.operations
+            data[:operations] =
+              serialize_element_operations(uml_element.operations)
+          end
         end
 
         def serialize_element_attributes(attributes)
@@ -168,7 +172,9 @@ module Lutaml
           operations.map do |op|
             { name: op.name, return_type: op.return_type,
               visibility: op.visibility || "public",
-              parameters: op.parameters&.map { |p| { name: p.name, type: p.type } } || [] }
+              parameters: op.parameters&.map do |p|
+                { name: p.name, type: p.type }
+              end || [] }
           end
         end
 
@@ -200,10 +206,22 @@ module Lutaml
         def add_association_metadata(data, connector)
           return unless connector.is_a?(Lutaml::Uml::Association)
 
-          data[:source_role] = connector.owner_end_attribute_name if connector.owner_end_attribute_name
-          data[:target_role] = connector.member_end_attribute_name if connector.member_end_attribute_name
-          data[:source_multiplicity] = format_cardinality(connector.owner_end_cardinality) if connector.owner_end_cardinality
-          data[:target_multiplicity] = format_cardinality(connector.member_end_cardinality) if connector.member_end_cardinality
+          if connector.owner_end_attribute_name
+            data[:source_role] =
+              connector.owner_end_attribute_name
+          end
+          if connector.member_end_attribute_name
+            data[:target_role] =
+              connector.member_end_attribute_name
+          end
+          if connector.owner_end_cardinality
+            data[:source_multiplicity] =
+              format_cardinality(connector.owner_end_cardinality)
+          end
+          if connector.member_end_cardinality
+            data[:target_multiplicity] =
+              format_cardinality(connector.member_end_cardinality)
+          end
         end
 
         def add_connector_coordinates(data, connector, diagram)

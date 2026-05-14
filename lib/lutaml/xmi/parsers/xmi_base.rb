@@ -4,13 +4,14 @@ require "nokogiri"
 require "htmlentities"
 require "xmi"
 require "digest"
-require_relative "xmi_connector"
-require_relative "xmi_class_members"
 
 module Lutaml
   module Xmi
     module Parsers
       module XmiBase
+        include XmiConnector
+        include XmiClassMembers
+
         def self.included(base)
           base.extend(ClassMethods)
         end

@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../output_formatter"
 module Lutaml
   module Cli
     module Uml
@@ -105,10 +104,6 @@ module Lutaml
         end
 
         def validate_qea_file(qea_path) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
-          require_relative "../../qea"
-          require_relative "../../qea/validation/formatters/text_formatter"
-          require_relative "../../qea/validation/formatters/json_formatter"
-
           puts OutputFormatter.colorize("\n=== QEA File Validation ===\n",
                                         :cyan)
           puts "File: #{qea_path}"

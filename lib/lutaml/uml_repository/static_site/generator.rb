@@ -3,10 +3,6 @@
 require "liquid"
 require "json"
 require "fileutils"
-require_relative "configuration"
-require_relative "data_transformer"
-require_relative "search_index_builder"
-require_relative "id_generator"
 
 module Lutaml
   module UmlRepository

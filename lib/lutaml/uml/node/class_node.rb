@@ -1,12 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "base"
-require_relative "attribute"
-require_relative "operation"
-require_relative "relationship"
-require_relative "class_relationship"
-require_relative "has_name"
-
 module Lutaml
   module Uml
     module Node

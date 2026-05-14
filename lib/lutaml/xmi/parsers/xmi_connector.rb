@@ -3,7 +3,7 @@
 module Lutaml
   module Xmi
     module Parsers
-      module XmiBase
+      module XmiConnector
         # Association/connector serialization helpers used by Pipeline C
 
         # @param link_id [String]

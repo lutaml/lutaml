@@ -2,8 +2,6 @@
 
 require "zip"
 require "yaml"
-require_relative "../uml"
-require_relative "package_metadata"
 
 module Lutaml
   module UmlRepository
@@ -89,7 +87,6 @@ module Lutaml
         end
 
         # Create lazy repository without indexes but with metadata
-        require_relative "../lazy_repository"
         LazyRepository.new(document: document, lazy: true, metadata: metadata)
       end
 

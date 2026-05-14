@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "resource_registry"
-
 module Lutaml
   module Cli
     # ElementIdentifier parses and manages element references

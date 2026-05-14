@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "base"
-require_relative "class_node"
-
 module Lutaml
   module Uml
     module Node

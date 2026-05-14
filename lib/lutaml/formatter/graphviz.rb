@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 require "open3"
-require_relative "base"
-require_relative "../layout/graph_viz_engine"
 
 module Lutaml
   module Formatter

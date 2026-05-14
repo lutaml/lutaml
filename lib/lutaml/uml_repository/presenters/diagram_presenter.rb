@@ -1,10 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "element_presenter"
-require_relative "../../ea/diagram/svg_renderer"
-require_relative "../../ea/diagram/layout_engine"
-require_relative "../../ea/diagram/style_resolver"
-
 module Lutaml
   module UmlRepository
     module Presenters

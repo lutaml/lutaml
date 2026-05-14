@@ -1,12 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "reference_resolver"
-require_relative "document_builder"
-require_relative "package_transformer"
-require_relative "class_transformer"
-require_relative "association_transformer"
-require_relative "diagram_transformer"
-
 module Lutaml
   module Qea
     module Factory

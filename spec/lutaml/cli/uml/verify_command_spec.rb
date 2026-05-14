@@ -1,10 +1,8 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require_relative "../../../../lib/lutaml/qea/parser"
-require_relative "../../../../lib/lutaml/cli/uml/verify_command"
-require_relative "../../../../lib/lutaml/cli/uml_commands"
-
+require_relative "../../../../lib/lutaml/cli"
+require_relative "../../../../lib/lutaml/qea"
 RSpec.describe Lutaml::Cli::Uml::VerifyCommand do
   let(:test_xmi) { File.join(__dir__, "../../../../examples/xmi/test.xmi") }
   let(:test_qea) { File.join(__dir__, "../../../../examples/qea/test.qea") }

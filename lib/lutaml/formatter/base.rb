@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../formatter"
-require_relative "../uml/has_attributes"
-
 module Lutaml
   module Formatter
     class Base

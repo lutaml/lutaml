@@ -1,10 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "base_transformer"
-require_relative "attribute_transformer"
-require_relative "generalization_transformer"
-require_relative "association_builder"
-
 module Lutaml
   module Qea
     module Factory

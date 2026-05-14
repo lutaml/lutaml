@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../models/spa_metadata"
-require_relative "../models/spa_statistics"
-
 module Lutaml
   module UmlRepository
     module StaticSite

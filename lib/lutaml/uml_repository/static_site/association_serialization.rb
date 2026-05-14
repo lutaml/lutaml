@@ -1,10 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "id_generator"
-require_relative "models/spa_association"
-require_relative "models/spa_association_end"
-require_relative "models/spa_cardinality"
-
 module Lutaml
   module UmlRepository
     module StaticSite

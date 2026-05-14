@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 require "benchmark"
-require_relative "../qea"
-require_relative "../xmi"
 
 module Lutaml
   module Qea

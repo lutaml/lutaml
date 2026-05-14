@@ -4,13 +4,15 @@ require_relative "lutaml/version"
 
 module Lutaml
   class Error < StandardError; end
-end
 
-require_relative "lutaml/express"
-require_relative "lutaml/formatter"
-require_relative "lutaml/layout"
-require_relative "lutaml/uml"
-require_relative "lutaml/uml_repository"
-require_relative "lutaml/xmi"
-require_relative "lutaml/xml"
-require_relative "lutaml/qea"
+  autoload :Express, "lutaml/express"
+  autoload :Formatter, "lutaml/formatter"
+  autoload :Layout, "lutaml/layout"
+  autoload :Uml, "lutaml/uml"
+  autoload :UmlRepository, "lutaml/uml_repository"
+  autoload :Xmi, "lutaml/xmi"
+  autoload :Ea, "lutaml/ea"
+  autoload :Qea, "lutaml/qea"
+  autoload :Converter, "lutaml/converter"
+  autoload :ModelTransformations, "lutaml/model_transformations"
+end

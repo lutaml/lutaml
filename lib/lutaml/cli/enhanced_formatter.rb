@@ -2,7 +2,6 @@
 
 require "io/console"
 require "table_tennis"
-require_relative "output_formatter"
 
 module Lutaml
   module Cli

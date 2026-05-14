@@ -3,7 +3,6 @@
 require "sinatra/base"
 require "json"
 require "liquid"
-require_relative "../static_site"
 
 module Lutaml
   module Xmi

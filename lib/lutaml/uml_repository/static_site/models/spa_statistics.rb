@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "spa_base"
-
 module Lutaml
   module UmlRepository
     module StaticSite

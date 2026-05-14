@@ -1,9 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "base_query"
-require_relative "../../uml/qualified_name"
-require_relative "../../uml/package_path"
-
 module Lutaml
   module UmlRepository
     module Queries

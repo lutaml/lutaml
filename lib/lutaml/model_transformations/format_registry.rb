@@ -220,7 +220,6 @@ module Lutaml
 
         # Load XMI parser if available
         begin
-          require_relative "parsers/xmi_parser"
           register(".xmi", Parsers::XmiParser)
         rescue LoadError
           # XMI parser not available, skip
@@ -228,7 +227,6 @@ module Lutaml
 
         # Load QEA parser if available
         begin
-          require_relative "parsers/qea_parser"
           register(".qea", Parsers::QeaParser)
         rescue LoadError
           # QEA parser not available, skip

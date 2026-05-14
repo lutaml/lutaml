@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "element_presenter"
-require_relative "presenter_factory"
-
 module Lutaml
   module UmlRepository
     module Presenters
