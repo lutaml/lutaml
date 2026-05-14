@@ -125,8 +125,7 @@ RSpec.describe "Attribute Tags Support" do
   end
 
   describe "Attribute Tags Integration" do
-    let(:loader) { Lutaml::Qea::Services::DatabaseLoader.new(qea_file) }
-    let(:database) { loader.load }
+    let(:database) { cached_qea_database(qea_file) }
 
     it "loads attribute tags from database", :aggregate_failures do
       expect(database.attribute_tags).not_to be_empty
@@ -180,8 +179,7 @@ RSpec.describe "Attribute Tags Support" do
   end
 
   describe "Database Statistics" do
-    let(:loader) { Lutaml::Qea::Services::DatabaseLoader.new(qea_file) }
-    let(:database) { loader.load }
+    let(:database) { cached_qea_database(qea_file) }
 
     it "includes attribute_tags in database stats", :aggregate_failures do
       stats = database.stats

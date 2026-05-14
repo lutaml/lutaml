@@ -5,14 +5,8 @@ require_relative "../../../../lib/lutaml/qea"
 
 RSpec.describe Lutaml::Qea::Factory::EaToUmlFactory do
   let(:qea_file) { "examples/qea/20251010_current_plateau_v5.1.qea" }
-  let(:database) { Lutaml::Qea.load_database(qea_file) }
+  let(:database) { cached_qea_database(qea_file) }
   let(:factory) { described_class.new(database) }
-
-  after do
-    if database.connection && !database.connection.closed?
-      database.connection&.close
-    end
-  end
 
   describe "#create_document" do
     it "creates a document with packages but no classes at document level",

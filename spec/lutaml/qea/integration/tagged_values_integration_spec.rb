@@ -12,7 +12,7 @@ RSpec.describe "Tagged Values Integration" do
   end
 
   it "loads tagged values from QEA database" do
-    document = Lutaml::Qea::Parser.parse(qea_file)
+    document = cached_qea_parse(qea_file)
 
     # Find associations that should have tagged values
     assocs_with_tags = document.associations.select do |assoc|

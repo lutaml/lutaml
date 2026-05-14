@@ -8,8 +8,7 @@ RSpec.describe "Priority 3 Lookup Tables" do
     File.join(__dir__,
               "../../../examples/qea/20251010_current_plateau_v5.1.qea")
   end
-  let(:loader) { Lutaml::Qea::Services::DatabaseLoader.new(qea_file) }
-  let(:database) { loader.load }
+  let(:database) { cached_qea_database(qea_file) }
 
   describe "Constraint Types" do
     let(:constraint_types) { database.constraint_types }

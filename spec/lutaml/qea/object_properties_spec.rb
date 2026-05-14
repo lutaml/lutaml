@@ -134,8 +134,7 @@ RSpec.describe "Object Properties Support" do
   end
 
   describe "Object Properties Integration" do
-    let(:loader) { Lutaml::Qea::Services::DatabaseLoader.new(qea_file) }
-    let(:database) { loader.load }
+    let(:database) { cached_qea_database(qea_file) }
 
     it "loads object properties from database", :aggregate_failures do
       expect(database.object_properties).not_to be_empty
@@ -191,8 +190,7 @@ RSpec.describe "Object Properties Support" do
   end
 
   describe "Database Statistics" do
-    let(:loader) { Lutaml::Qea::Services::DatabaseLoader.new(qea_file) }
-    let(:database) { loader.load }
+    let(:database) { cached_qea_database(qea_file) }
 
     it "includes object_properties in database stats", :aggregate_failures do
       stats = database.stats
