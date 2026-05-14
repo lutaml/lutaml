@@ -33,7 +33,7 @@ module Lutaml
 
           if element.values && !element.values.empty?
             lines << "Literal Values (#{element.values.size}):"
-            element.each_value do |value|
+            element.values.each do |value| # rubocop:disable Style/HashEachMethods
               lines << "  - #{value.name || value.to_s}"
             end
           else
