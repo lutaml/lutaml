@@ -2,273 +2,128 @@
 
 require_relative "base_query"
 require_relative "../search_result"
+require_relative "../../uml/model_helpers"
 
 module Lutaml
   module UmlRepository
     module Queries
-      # Query service for search operations.
-      #
-      # Provides methods for fuzzy text search and regex pattern matching
-      # across classes, attributes, and associations in the UML model.
-      #
-      # @example Searching for text
-      #   query = SearchQuery.new(document, indexes)
-      #   results = query.search("Building")
-      #   # => { classes: [...], attributes: [...], associations: [...],
-      #   total: 15 }
-      #
-      # @example Pattern matching
-      #   results = query.search("^Urban", type: :class)
       class SearchQuery < BaseQuery
-        # Perform a fuzzy text search across the model.
-        #
-        # Searches for the query string in class names, attribute names, and
-        # association names. Can optionally search in documentation fields.
-        # The search is case-insensitive.
-        #
-        # @param query_string [String] The text to search for
-        # @param types [Array<Symbol>] Types to search in - :class, :attribute,
-        #   :association (default: [:class, :attribute, :association])
-        # @param fields [Array<Symbol>] Fields to search in
-        # - :name, :documentation
-        #   (default: [:name])
-        # @return [Hash] Search results with keys :classes, :attributes,
-        #   :associations, :total
-        # @example
-        #   results = query.search("building")
-        #   results = query.search("urban", fields: [:name, :documentation])
-        def search( # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
-          query_string, types: %i[class attribute association],
-                        fields: [:name], case_sensitive: false
-        )
+        include Lutaml::Uml::ModelHelpers
+
+        SEARCHERS = {
+          class: :search_classes,
+          attribute: :search_attributes,
+          association: :search_associations,
+        }.freeze
+
+        def search(query_string, types: %i[class attribute association],
+                          fields: [:name], case_sensitive: false)
           return empty_result if query_string.nil? || query_string.empty?
 
-          results = {
-            classes: [],
-            attributes: [],
-            associations: [],
-            total: 0,
-          }
-
-          # Search classes
-          if types.include?(:class)
-            results[:classes] = search_classes(
-              query_string, fields: fields, case_sensitive: case_sensitive
-            )
+          results = { classes: [], attributes: [], associations: [] }
+          types.each do |type|
+            key = :"#{type}s"
+            results[key] = public_send(SEARCHERS[type],
+                                       query_string,
+                                       fields: fields,
+                                       case_sensitive: case_sensitive)
           end
-
-          # Search attributes
-          if types.include?(:attribute)
-            results[:attributes] = search_attributes(
-              query_string, fields: fields, case_sensitive: case_sensitive
-            )
-          end
-
-          # Search associations
-          if types.include?(:association)
-            results[:associations] = search_associations(
-              query_string, fields: fields, case_sensitive: case_sensitive
-            )
-          end
-
-          results[:total] = results[:classes].size +
-            results[:attributes].size +
-            results[:associations].size
-
+          results[:total] = results.values_at(:classes, :attributes, :associations).sum(&:size)
           results
         end
 
-        # Perform a full-text search across all text fields.
-        # Searches for the query string in all relevant text fields of classes
-        # and packages.
-        #
-        # @param query_string [String] The text to search for
-        # @param fields [Array<Symbol>] Fields to search in - :name, :
-        def full_text_search( # rubocop:disable Metrics/MethodLength
-          query_string,
-          fields: [:name], case_sensitive: false
-        )
-          results = empty_full_text_search_result
-          if query_string.nil? || query_string.empty?
-            return results
-          end
+        def full_text_search(query_string, fields: [:name], case_sensitive: false)
+          results = { classes: [], packages: [], total: 0 }
+          return results if query_string.nil? || query_string.empty?
 
-          # Search classes
           results[:classes] = search_classes(
             query_string, fields: fields, case_sensitive: case_sensitive
           )
-
-          # Search packages
           results[:packages] = search_packages(
             query_string, case_sensitive: case_sensitive
           )
-
           results[:total] = results[:classes].size + results[:packages].size
-
           results
         end
 
-        # Search for classes matching the query
-        #
-        # @param query [String] Query string
-        # @param fields [Array<Symbol>] Fields to search in
-        # @return [Array<SearchResult>] Matching search result objects
-        def search_classes( # rubocop:disable Metrics/MethodLength
-          query, fields: %i[name documentation],
-          case_sensitive: false
-        )
-          pattern = regex_pattern_from_query(
-            query, case_sensitive: case_sensitive
-          )
+        def search_classes(query, fields: %i[name documentation],
+                                case_sensitive: false)
+          pattern = pattern_from(query, case_sensitive)
 
           indexes[:qualified_names].filter_map do |qname, entity|
             next unless entity.is_a?(Lutaml::Uml::Class)
 
-            match_field = find_matching_field(entity, fields, pattern)
+            match_field = first_matching_field(entity, fields, pattern)
             next unless match_field
 
             build_search_result(entity, :class, qname, match_field)
           end.uniq
         end
 
-        def find_matching_field(entity, fields, pattern)
-          last_match = nil
-          fields.each do |field|
-            if entity.class.attributes.key?(field) &&
-                entity.public_send(field)&.match?(pattern)
-              last_match = field
-            end
-          end
-          last_match
-        end
-
-        def build_search_result(entity, type, qname, match_field, context = {})
-          SearchResult.new(
-            element: entity,
-            element_type: type,
-            qualified_name: qname,
-            package_path: extract_package_path(qname),
-            match_field: match_field,
-            match_context: context,
-          )
-        end
-
-        def search_by_stereotype(query, case_sensitive: false)
-          pattern = regex_pattern_from_query(
-            query, case_sensitive: case_sensitive
-          )
-
-          matched_entities = find_entities_by_stereotype_pattern(pattern)
-          matched_entities.map { |entity| build_stereotype_result(entity) }
-        end
-
-        def find_entities_by_stereotype_pattern(pattern)
-          indexes[:stereotypes]
-            .filter_map do |_stereotype, entities|
-            entities.select do |entity|
-              entity.is_a?(Lutaml::Uml::Classifier) &&
-                Array(entity.stereotype).any? { |s| s&.match?(pattern) }
-            end.uniq
-          end.uniq.flatten
-        end
-
-        def build_stereotype_result(entity)
-          SearchResult.new(
-            element: entity,
-            element_type: entity.class.name.split("::").last.downcase,
-            qualified_name: "",
-            package_path: "",
-            match_field: :stereotype,
-          )
-        end
-
-        # Search for packages matching the query
-        #
-        # @param query [String] Query string
-        # @param case_sensitive [Boolean] Whether the search is case-sensitive
-        # @return [Array<Lutaml::Uml::Package>] Matching package objects
-        def search_packages(query, case_sensitive: false) # rubocop:disable Metrics/MethodLength
-          pattern = regex_pattern_from_query(
-            query, case_sensitive: case_sensitive
-          )
-
-          indexes[:package_paths].filter_map do |path_string, package|
-            if path_string.to_s.match?(pattern)
-              SearchResult.new(
-                element: package,
-                element_type: :package,
-                qualified_name: path_string,
-                package_path: path_string,
-                match_field: :package_path,
-              )
-            end
-          end
-        end
-
-        def regex_pattern_from_query(query, case_sensitive: false)
-          # handle wildcard '*' and glob patterns
-          query = query.gsub("*", ".*") unless query.include?(".*")
-
-          if case_sensitive
-            Regexp.new(query)
-          else
-            Regexp.new(query, Regexp::IGNORECASE)
-          end
-        end
-
-        # Search for attributes matching the query
-        #
-        # @param query [String] Query string
-        # @param fields [Array<Symbol>] Fields to search in
-        # @return [Array<Lutaml::Uml::Class>] Matching search result objects
-        def search_attributes(query, fields: [:name], case_sensitive: false) # rubocop:disable Metrics/MethodLength
-          pattern = regex_pattern_from_query(
-            query, case_sensitive: case_sensitive
-          )
+        def search_attributes(query, fields: [:name],
+                                     case_sensitive: false)
+          pattern = pattern_from(query, case_sensitive)
 
           indexes[:qualified_names].filter_map do |class_qname, entity|
             next unless entity.is_a?(Lutaml::Uml::Classifier) && entity.attributes
 
-            match_attr, match_field = find_matching_attribute(entity, fields,
-                                                              pattern)
-            next unless match_field
+            attr_match = find_matching_attribute(entity, fields, pattern)
+            next unless attr_match
 
-            build_attribute_result(match_attr, entity, class_qname, match_field)
+            attr, match_field = attr_match
+            build_search_result(
+              attr, :attribute,
+              "#{class_qname}::#{attr.name}", match_field,
+              { "class_name" => entity.name, "class_qname" => class_qname },
+              package_path: extract_package_path(class_qname)
+            )
           end.uniq
         end
 
-        def find_matching_attribute(entity, fields, pattern)
-          match_attr = nil
-          match_field = nil
-          entity.attributes.each do |attr|
-            fields.each do |field|
-              if attr.class.attributes.key?(field) &&
-                  attr.public_send(field)&.match?(pattern)
-                match_attr = attr
-                match_field = field
-              end
-            end
+        def search_associations(query,
+                                fields: %i[
+                                  name owner_end member_end
+                                  owner_end_attribute_name
+                                  member_end_attribute_name documentation
+                                ],
+                                case_sensitive: false)
+          pattern = pattern_from(query, case_sensitive)
+
+          get_all_associations.filter_map do |assoc|
+            match_field = first_matching_field(assoc, fields, pattern)
+            next unless match_field
+
+            build_search_result(
+              assoc, :association,
+              assoc.name || "(unnamed)", match_field,
+              { "source" => assoc.owner_end, "target" => assoc.member_end }
+            )
+          end.uniq
+        end
+
+        def search_by_stereotype(query, case_sensitive: false)
+          pattern = pattern_from(query, case_sensitive)
+
+          find_entities_by_stereotype_pattern(pattern).map do |entity|
+            build_search_result(
+              entity,
+              entity.class.name.split("::").last.downcase.to_sym,
+              "", :stereotype
+            )
           end
-          match_field ? [match_attr, match_field] : nil
         end
 
-        def build_attribute_result(attr, entity, class_qname, match_field)
-          SearchResult.new(
-            element: attr,
-            element_type: :attribute,
-            qualified_name: "#{class_qname}::#{attr.name}",
-            package_path: extract_package_path(class_qname),
-            match_field: match_field,
-            match_context: {
-              "class_name" => entity.name,
-              "class_qname" => class_qname,
-            },
-          )
+        def search_packages(query, case_sensitive: false)
+          pattern = pattern_from(query, case_sensitive)
+
+          indexes[:package_paths].filter_map do |path_string, package|
+            next unless path_string.to_s.match?(pattern)
+
+            build_search_result(package, :package, path_string, :package_path,
+                                package_path: path_string)
+          end
         end
 
-        # Get all associations in the model
-        #
-        # @return [Array<Lutaml::Uml::Association>] All association objects
         def get_all_associations
           all_associations = []
 
@@ -285,79 +140,61 @@ module Lutaml
           all_associations.flatten.uniq
         end
 
-        def classifiable_with_associations?(entity)
-          (entity.is_a?(Lutaml::Uml::Class) || entity.is_a?(Lutaml::Uml::DataType)) && entity.associations
-        end
-
-        # Search for associations matching the query
-        #
-        # @param query [String] Query string
-        # @param fields [Array<Symbol>] Fields to search in
-        # @return [Array<SearchResult>] Matching search result objects
-        def search_associations(query, # rubocop:disable Metrics/MethodLength
-          fields: %i[
-            name owner_end member_end owner_end_attribute_name
-            member_end_attribute_name documentation
-          ],
-          case_sensitive: false)
-          all_associations = get_all_associations
-          pattern = regex_pattern_from_query(
-            query, case_sensitive: case_sensitive
-          )
-
-          all_associations.filter_map do |assoc|
-            match_field = find_matching_field(assoc, fields, pattern)
-            next unless match_field
-
-            SearchResult.new(
-              element: assoc,
-              element_type: :association,
-              qualified_name: assoc.name || "(unnamed)",
-              package_path: "",
-              match_field: match_field,
-              match_context: {
-                "source" => assoc.owner_end,
-                "target" => assoc.member_end,
-              },
-            )
-          end.uniq
-        end
-
         private
 
-        # Extract package path from qualified name
-        #
-        # @param qualified_name [String] Qualified name
-        # (e.g., "pkg1::pkg2::Class")
-        # @return [String] Package path (e.g., "pkg1::pkg2")
-        def extract_package_path(qualified_name)
-          parts = qualified_name.to_s.split("::")
-          return "" if parts.size <= 1
-
-          parts[0..-2].join("::")
+        def pattern_from(query, case_sensitive)
+          query = query.gsub("*", ".*") unless query.include?(".*")
+          Regexp.new(query, case_sensitive ? 0 : Regexp::IGNORECASE)
         end
 
-        # Return empty search result
-        #
-        # @return [Hash] Empty result hash
+        def field_value_matches?(obj, field, pattern)
+          return false unless obj.class.attributes.key?(field)
+
+          obj.public_send(field)&.match?(pattern)
+        end
+
+        def first_matching_field(entity, fields, pattern)
+          fields.reverse_each.find { |f| field_value_matches?(entity, f, pattern) }
+        end
+
+        def find_matching_attribute(entity, fields, pattern)
+          result = nil
+          entity.attributes.each do |attr|
+            fields.each do |field|
+              result = [attr, field] if field_value_matches?(attr, field, pattern)
+            end
+          end
+          result
+        end
+
+        def build_search_result(entity, type, qname, match_field,
+                                context = {}, **extra)
+          SearchResult.new(
+            element: entity,
+            element_type: type,
+            qualified_name: qname,
+            package_path: extra[:package_path] || extract_package_path(qname),
+            match_field: match_field,
+            match_context: context,
+          )
+        end
+
+        def classifiable_with_associations?(entity)
+          entity.is_a?(Lutaml::Uml::Class) || entity.is_a?(Lutaml::Uml::DataType)
+        end
+
+        def find_entities_by_stereotype_pattern(pattern)
+          indexes[:stereotypes]
+            .filter_map do |_stereotype, entities|
+            entities.select do |entity|
+              entity.is_a?(Lutaml::Uml::Classifier) &&
+                Array(entity.stereotype).any? { |s| s&.match?(pattern) }
+            end.uniq
+          end.uniq.flatten
+        end
+
         def empty_result
-          {
-            classes: [],
-            attributes: [],
-            associations: [],
-            total: 0,
-          }
-        end
-
-        # Return empty full text search result
-        #
-        # @return [Hash] Empty result hash
-        def empty_full_text_search_result
-          {
-            classes: [],
-            packages: [],
-            total: 0,
-          }
+          { classes: [], attributes: [], associations: [], total: 0 }
         end
       end
     end

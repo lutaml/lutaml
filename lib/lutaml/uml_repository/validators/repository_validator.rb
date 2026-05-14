@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "../../uml/model_helpers"
+
 module Lutaml
   module UmlRepository
     module Validators
@@ -22,6 +24,8 @@ module Lutaml
       #     result.errors.each { |error| puts "ERROR: #{error}" }
       #   end
       class RepositoryValidator
+        include Lutaml::Uml::ModelHelpers
+
         # Primitive types that don't need to be resolved
         PRIMITIVE_TYPES = %w[
           String Integer Boolean Date DateTime Float Double
@@ -65,61 +69,51 @@ module Lutaml
 
         # Check that all attribute types reference existing classes or are
         # primitives
-        def check_type_references # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+        def check_type_references # rubocop:disable Metrics/CyclomaticComplexity
           @external_references = []
 
-          @indexes[:qualified_names].each do |qname, klass| # rubocop:disable Metrics/BlockLength
+          @indexes[:qualified_names].each do |qname, klass|
             next unless klass.is_a?(Lutaml::Uml::Class)
             next unless klass.attributes
 
-            # Extract current package path from qualified name
-            current_package_path = extract_package_path(qname)
-
-            # Collect detailed validation info for this class if verbose
+            package_path = extract_package_path(qname, default: "ModelRoot")
             class_details = { class_name: qname, attributes: [] } if @verbose
-
-            klass.attributes.each do |attr| # rubocop:disable Metrics/BlockLength
-              next unless attr.type
-
-              is_primitive = primitive_type?(attr.type)
-
-              # Try to resolve the type name
-              resolved_type = if is_primitive
-                                nil
-                              else
-                                resolve_type_name(attr.type,
-                                                  current_package_path)
-                              end
-              is_valid = is_primitive || !resolved_type.nil?
-
-              # Collect verbose info
-              if @verbose
-                class_details[:attributes] << {
-                  attribute_name: attr.name,
-                  type_value: attr.type,
-                  resolved_to: resolved_type,
-                  valid: is_valid,
-                  is_primitive: is_primitive,
-                }
-              end
-
-              next if is_valid
-
-              # Track external reference
-              @external_references << {
-                class_name: qname,
-                attribute_name: attr.name,
-                referenced_type: attr.type,
-                context: "attribute type",
-              }
-
-              @errors << "Unresolved type reference: '#{attr.type}' in " \
-                         "#{qname}.#{attr.name}"
-            end
+            validate_class_attributes(klass, qname, package_path, class_details)
 
             if @verbose && class_details[:attributes].any?
               @validation_details << class_details
             end
+          end
+        end
+
+        def validate_class_attributes(klass, qname, package_path, class_details) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength
+          klass.attributes.each do |attr|
+            next unless attr.type
+
+            is_primitive = primitive_type?(attr.type)
+            resolved_type = is_primitive ? nil : resolve_type_name(attr.type, package_path)
+            is_valid = is_primitive || !resolved_type.nil?
+
+            if @verbose
+              class_details[:attributes] << {
+                attribute_name: attr.name,
+                type_value: attr.type,
+                resolved_to: resolved_type,
+                valid: is_valid,
+                is_primitive: is_primitive,
+              }
+            end
+
+            next if is_valid
+
+            @external_references << {
+              class_name: qname,
+              attribute_name: attr.name,
+              referenced_type: attr.type,
+              context: "attribute type",
+            }
+            @errors << "Unresolved type reference: '#{attr.type}' in " \
+                       "#{qname}.#{attr.name}"
           end
         end
 
@@ -277,15 +271,6 @@ module Lutaml
           path.pop
           visited[qname] = :permanent
           nil
-        end
-
-        # Extract package path from qualified name
-        #
-        # @param qname [String] Qualified name like "ModelRoot::Package::Class"
-        # @return [String] Package path like "ModelRoot::Package"
-        def extract_package_path(qname)
-          parts = qname.split("::")
-          parts.size > 1 ? parts[0..-2].join("::") : "ModelRoot"
         end
 
         # Resolve a type name to its fully qualified name

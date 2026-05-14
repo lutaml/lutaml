@@ -81,6 +81,13 @@ module Lutaml
         end
         formatted
       end
+
+      def extract_package_path(qualified_name, default: "")
+        parts = qualified_name.to_s.split("::")
+        return default if parts.size <= 1
+
+        parts[0..-2].join("::")
+      end
     end
   end
 end
