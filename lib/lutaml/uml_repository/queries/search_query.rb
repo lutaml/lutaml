@@ -6,16 +6,19 @@ module Lutaml
       class SearchQuery < BaseQuery
         include Lutaml::Uml::ModelHelpers
 
-        SEARCHERS = {
-          class: :search_classes,
-          attribute: :search_attributes,
-          association: :search_associations,
-        }.freeze
-
         RESULT_KEYS = {
           class: :classes,
           attribute: :attributes,
           association: :associations,
+        }.freeze
+
+        FIELD_READERS = {
+          name: lambda(&:name),
+          documentation: lambda(&:documentation),
+          owner_end: lambda(&:owner_end),
+          member_end: lambda(&:member_end),
+          owner_end_attribute_name: lambda(&:owner_end_attribute_name),
+          member_end_attribute_name: lambda(&:member_end_attribute_name),
         }.freeze
 
         def search(query_string, types: %i[class attribute association],
@@ -25,10 +28,10 @@ module Lutaml
           results = { classes: [], attributes: [], associations: [] }
           types.each do |type|
             key = RESULT_KEYS[type]
-            results[key] = public_send(SEARCHERS[type],
-                                       query_string,
-                                       fields: fields,
-                                       case_sensitive: case_sensitive)
+            results[key] = dispatch_search(
+              type, query_string,
+              fields: fields, case_sensitive: case_sensitive
+            )
           end
           results[:total] =
             results.values_at(:classes, :attributes, :associations).sum(&:size)
@@ -154,7 +157,7 @@ case_sensitive: false)
         def field_value_matches?(obj, field, pattern)
           return false unless obj.class.attributes.key?(field)
 
-          obj.public_send(field)&.match?(pattern)
+          read_attribute(obj, field)&.match?(pattern)
         end
 
         def first_matching_field(entity, fields, pattern)
@@ -202,6 +205,30 @@ case_sensitive: false)
 
         def empty_result
           { classes: [], attributes: [], associations: [], total: 0 }
+        end
+
+        def dispatch_search(type, query_string, fields:, case_sensitive:)
+          case type
+          when :class
+            search_classes(query_string,
+                           fields: fields,
+                           case_sensitive: case_sensitive)
+          when :attribute
+            search_attributes(query_string,
+                              fields: fields,
+                              case_sensitive: case_sensitive)
+          when :association
+            search_associations(query_string,
+                                fields: fields,
+                                case_sensitive: case_sensitive)
+          end
+        end
+
+        def read_attribute(obj, field)
+          reader = FIELD_READERS[field]
+          return nil unless reader
+
+          reader.call(obj)
         end
       end
     end
