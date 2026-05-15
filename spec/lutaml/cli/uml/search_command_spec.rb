@@ -10,7 +10,7 @@ RSpec.describe Lutaml::Cli::Uml::SearchCommand do
   end
   let(:test_lur) do
     path = temp_lur_path(prefix: "search_test")
-    repo = Lutaml::UmlRepository::Repository.from_xmi(test_xmi)
+    repo = cached_xmi_repository(test_xmi)
     repo.export_to_package(path)
     path
   end

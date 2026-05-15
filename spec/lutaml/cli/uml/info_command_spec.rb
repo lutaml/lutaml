@@ -8,7 +8,7 @@ RSpec.describe Lutaml::Cli::Uml::InfoCommand do
   let(:test_xmi) { File.join(__dir__, "../../../../examples/xmi/basic.xmi") }
   let(:test_lur) do
     path = temp_lur_path(prefix: "info_test")
-    repo = Lutaml::UmlRepository::Repository.from_xmi(test_xmi)
+    repo = cached_xmi_repository(test_xmi)
     repo.export_to_package(path, name: "InfoTest", version: "1.5")
     path
   end
