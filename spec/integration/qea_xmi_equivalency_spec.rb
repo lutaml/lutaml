@@ -9,7 +9,7 @@ RSpec.describe "QEA and XMI Equivalency", :integration do
     Lutaml::Qea::Factory::EaToUmlFactory.new(db).create_document
   end
   let(:xmi_document) do
-    Lutaml::Xmi::Parsers::Xml.parse(File.new(xmi_path))
+    cached_xmi_document(xmi_path, fixture: false)
   end
   let(:xmi_path) { "examples/xmi/basic.xmi" }
 
