@@ -4,10 +4,12 @@
 module FixtureCache
   CACHE = {} # rubocop:disable Style/MutableConstant
 
-  def cached_xmi_document(path = "ea-xmi-2.5.1.xmi")
+  def cached_xmi_document(path = "ea-xmi-2.5.1.xmi", fixture: true)
     key = :"xmi:#{path}"
-    CACHE[key] ||= Lutaml::Xmi::Parsers::Xml
-      .parse(File.new(fixtures_path(path)))
+    CACHE[key] ||= begin
+      resolved = fixture ? fixtures_path(path) : path
+      Lutaml::Xmi::Parsers::Xml.parse(File.new(resolved))
+    end
   end
 
   def cached_repository(path = "ea-xmi-2.5.1.xmi")
