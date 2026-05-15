@@ -229,7 +229,7 @@ module Lutaml
           end
 
           # Minify if requested
-          html = minify_html(html) if @options[:minify]
+          html = minify(html, :html) if @options[:minify]
 
           # Write output
           File.write(@options[:output], html)
@@ -294,7 +294,7 @@ module Lutaml
                                             error_mode: :lax)
           template.registers[:file_system] = file_system
           html = template.render(context)
-          html = minify_html(html) if @options[:minify]
+          html = minify(html, :html) if @options[:minify]
           File.write(File.join(output_dir, "index.html"), html)
 
           # Copy/generate assets
@@ -387,46 +387,51 @@ module Lutaml
           ui/search.js app.js
         ].freeze
 
+        CSS_RULES = [
+          [/\s+/, " "],
+          [/\s*{\s*/, "{"],
+          [/\s*}\s*/, "}"],
+          [/\s*:\s*/, ":"],
+          [/\s*;\s*/, ";"],
+        ].freeze
+
+        JS_RULES = [
+          [%r{//.*$}, ""],
+          [%r{/\*.*?\*/}m, ""],
+          [/\s+/, " "],
+        ].freeze
+
+        HTML_RULES = [
+          [/\s+/, " "],
+          [/>\s+</, "><"],
+        ].freeze
+
         def build_css
-          concatenate_assets("styles", CSS_FILES, :minify_css)
+          concatenate_assets("styles", CSS_FILES)
         end
 
         def build_js
-          concatenate_assets("scripts", JS_FILES, :minify_js)
+          concatenate_assets("scripts", JS_FILES)
         end
 
-        def concatenate_assets(subdir, files, minifier)
+        def concatenate_assets(subdir, files)
           content = files.map do |file|
             path = File.join(@options[:template_path], "assets", subdir, file)
             File.exist?(path) ? File.read(path) : ""
           end.join("\n\n")
 
-          @options[:minify] ? public_send(minifier, content) : content
+          @options[:minify] ? minify(content, subdir.to_sym) : content
         end
 
-        def minify_html(html)
-          # Basic HTML minification
-          html.gsub(/\s+/, " ")
-            .gsub(/>\s+</, "><")
-            .strip
-        end
-
-        def minify_css(css)
-          # Basic CSS minification
-          css.gsub(/\s+/, " ")
-            .gsub(/\s*{\s*/, "{")
-            .gsub(/\s*}\s*/, "}")
-            .gsub(/\s*:\s*/, ":")
-            .gsub(/\s*;\s*/, ";")
-            .strip
-        end
-
-        def minify_js(js)
-          # Basic JS minification (remove comments and extra whitespace)
-          js.gsub(%r{//.*$}, "")       # Remove single-line comments
-            .gsub(%r{/\*.*?\*/}m, "")  # Remove multi-line comments
-            .gsub(/\s+/, " ")          # Collapse whitespace
-            .strip
+        def minify(content, type)
+          rules = case type
+                  when :styles then CSS_RULES
+                  when :scripts then JS_RULES
+                  else HTML_RULES
+                  end
+          rules.reduce(content) do |acc, (pattern, replacement)|
+            acc.gsub(pattern, replacement)
+          end.strip
         end
       end
     end
