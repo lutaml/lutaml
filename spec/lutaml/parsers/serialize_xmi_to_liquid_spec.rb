@@ -2,12 +2,10 @@ require "spec_helper"
 
 RSpec.describe Lutaml::Xmi::Parsers::Xml do
   describe ".serialize_xmi_to_liquid" do
-    subject(:output) do
-      described_class.serialize_xmi_to_liquid(file)
-    end
-
     context "when parsing xmi 2013 with uml 2013" do
-      let(:file) { File.new(fixtures_path("ea-xmi-2.5.1.xmi")) }
+      subject(:output) do
+        cached_serialize_xmi_to_liquid("ea-xmi-2.5.1.xmi")
+      end
 
       let(:expected_class_names) do
         %w[
@@ -175,7 +173,9 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
     end
 
     context "when parsing xmi with generalization" do
-      let(:file) { File.new(fixtures_path("plateau_all_packages_export.xmi")) }
+      subject(:output) do
+        cached_serialize_xmi_to_liquid("plateau_all_packages_export.xmi")
+      end
 
       it "outputs attributes correctly", :aggregate_failures do
         test_package = output.packages.first.packages[2].packages[9]
@@ -216,11 +216,11 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
 
     context "when parsing xmi with generalization and guidance yaml" do
       subject(:output) do
-        described_class.serialize_xmi_to_liquid(file, guidance)
+        guidance = YAML.load_file(fixtures_path("guidance/guidance.yaml"))
+        cached_serialize_xmi_to_liquid("plateau_all_packages_export.xmi",
+                                       guidance)
       end
 
-      let(:file) { File.new(fixtures_path("plateau_all_packages_export.xmi")) }
-      let(:guidance) { YAML.load_file(fixtures_path("guidance/guidance.yaml")) }
       let(:test_package) { output.packages.first.packages[2].packages[9] }
       let(:test_klass) { test_package.classes[3] }
       let(:gen_obj) { test_klass.generalization }
@@ -280,7 +280,10 @@ RSpec.describe Lutaml::Xmi::Parsers::Xml do
     end
 
     context "when parsing xmi with generalization and sorted props" do
-      let(:file) { File.new(fixtures_path("plateau_all_packages_export.xmi")) }
+      subject(:output) do
+        cached_serialize_xmi_to_liquid("plateau_all_packages_export.xmi")
+      end
+
       let(:test_package) do
         output.packages.first.packages[1].packages[0]
           .packages[1].classes[144]

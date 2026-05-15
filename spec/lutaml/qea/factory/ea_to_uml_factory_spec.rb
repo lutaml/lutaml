@@ -5,21 +5,18 @@ require_relative "../../../../lib/lutaml/qea"
 
 RSpec.describe Lutaml::Qea::Factory::EaToUmlFactory do
   let(:qea_file) { "examples/qea/20251010_current_plateau_v5.1.qea" }
-  let(:database) { cached_qea_database(qea_file) }
-  let(:factory) { described_class.new(database) }
+  let(:document) { cached_ea_to_uml_document(qea_file) }
 
   describe "#create_document" do
     it "creates a document with packages but no classes at document level",
        :aggregate_failures do
-      document = factory.create_document
-
       expect(document).to be_a(Lutaml::Uml::Document)
       expect(document.packages).not_to be_empty
       expect(document.classes).to be_empty
     end
 
     it "nests classes in their correct packages according to Package_ID" do
-      document = factory.create_document
+      # document is cached via cached_ea_to_uml_document
 
       # Helper to count classes recursively in packages
       def count_classes_in_packages(packages)
@@ -35,7 +32,7 @@ RSpec.describe Lutaml::Qea::Factory::EaToUmlFactory do
     end
 
     it "preserves package hierarchy from database" do
-      document = factory.create_document
+      # document is cached via cached_ea_to_uml_document
 
       # Find a nested class and verify its package path
       def find_class_in_packages(packages, class_name, path = [])
@@ -71,7 +68,7 @@ RSpec.describe Lutaml::Qea::Factory::EaToUmlFactory do
 
     it "creates associations that reference classes by xmi_id",
        :aggregate_failures do
-      document = factory.create_document
+      # document is cached via cached_ea_to_uml_document
 
       expect(document.associations).not_to be_empty
 
@@ -83,7 +80,7 @@ RSpec.describe Lutaml::Qea::Factory::EaToUmlFactory do
 
   describe "package hierarchy correctness" do
     it "does not duplicate classes between packages and document level" do
-      document = factory.create_document
+      # document is cached via cached_ea_to_uml_document
 
       # Collect all class xmi_ids from packages
       def collect_class_xmi_ids(packages, ids = [])

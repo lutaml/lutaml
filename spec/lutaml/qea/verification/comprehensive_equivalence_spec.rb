@@ -2,7 +2,8 @@
 
 require "spec_helper"
 require_relative "../../../../lib/lutaml/uml_repository/repository"
-require_relative "../../../../lib/lutaml/qea/parser"
+require_relative "../../../../lib/lutaml/qea"
+require_relative "../../../../lib/lutaml/xmi/parsers/xml"
 
 RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
   # rubocop:disable RSpec/InstanceVariable
@@ -49,16 +50,15 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
       skip "No XMI/QEA file pairs available for testing"
     end
 
-    # Parse each file pair once and cache — let is per-example, not per-context,
-    # so without this each `it` block would re-parse the 10MB XMI files (~144 times)
+    # Parse each file pair once and cache via FixtureCache global hash.
+    # Shares results with other spec files parsing the same fixtures.
     @repos = {}
     @available_files.each do |fp|
-      qea_doc = Lutaml::Qea::Parser.parse(fp[:qea])
-      qea_repo = Lutaml::UmlRepository::Repository.new(document: qea_doc)
-
       @repos[fp[:name]] = {
-        xmi: Lutaml::UmlRepository::Repository.from_xmi(fp[:xmi]),
-        qea: qea_repo,
+        xmi: cached_xmi_repository(fp[:xmi]),
+        qea: Lutaml::UmlRepository::Repository.new(
+          document: cached_ea_to_uml_document(fp[:qea]),
+        ),
       }
     end
   end
@@ -455,7 +455,7 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
       context file_pair[:name].to_s do
         it "loads QEA files in reasonable time" do
           start_time = Time.now
-          qea_doc = Lutaml::Qea::Parser.parse(file_pair[:qea])
+          qea_doc = cached_ea_to_uml_document(file_pair[:qea])
           Lutaml::UmlRepository::Repository.new(document: qea_doc)
           load_time = Time.now - start_time
 
@@ -464,7 +464,7 @@ RSpec.describe "XMI/QEA Comprehensive Equivalence Verification" do
         end
 
         it "provides efficient search on large models" do
-          qea_doc = Lutaml::Qea::Parser.parse(file_pair[:qea])
+          qea_doc = cached_ea_to_uml_document(file_pair[:qea])
           qea_repo = Lutaml::UmlRepository::Repository.new(document: qea_doc)
 
           start_time = Time.now

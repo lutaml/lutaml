@@ -336,38 +336,29 @@ RSpec.describe Lutaml::ModelTransformations::Parsers::XmiParser do
   end
 
   describe "error handling" do
-    let(:large_xmi_content) do
-      File.read(
-        File.join(
-          __dir__,
-          "../../../../examples/xmi/20251010_current_plateau_v5.1.xmi",
-        ),
+    let(:large_xmi_path) do
+      File.join(
+        __dir__,
+        "../../../../examples/xmi/20251010_current_plateau_v5.1.xmi",
       )
     end
 
-    let(:large_file) do
-      file = Tempfile.new(["large", ".xmi"])
-      file.write(large_xmi_content)
-      file.close
-      file
+    before do
+      skip "Large XMI fixture not found" unless File.exist?(large_xmi_path)
     end
 
-    after { large_file.unlink }
-
-    it "handles large XMI files" do
-      result = parser.parse(large_file.path)
+    it "handles large XMI files and respects memory limits",
+       :aggregate_failures, :slow do
+      # Parse once and verify both standard and limited-memory parsers
+      result = parser.parse(large_xmi_path)
       expect(result).to be_a(Lutaml::Uml::Document)
-    end
 
-    it "respects memory limits from options" do
       parser_with_limits = described_class.new(
         configuration: configuration,
-        options: { memory_limit: 1 }, # Very low limit
+        options: { memory_limit: 1 },
       )
-
-      # Should still parse but may take longer or use different strategy
-      result = parser_with_limits.parse(large_file.path)
-      expect(result).to be_a(Lutaml::Uml::Document)
+      limited_result = parser_with_limits.parse(large_xmi_path)
+      expect(limited_result).to be_a(Lutaml::Uml::Document)
     end
   end
 end
