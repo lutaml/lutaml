@@ -171,36 +171,35 @@ module Lutaml
           }
         end
 
+        ENV_OPTION_MAP = {
+          "LUTAML_DIAGRAM_PADDING" => %i[padding to_i],
+          "LUTAML_DIAGRAM_BG_COLOR" => [:background_color, nil],
+          "LUTAML_DIAGRAM_GRID" => %i[grid_visible boolean],
+          "LUTAML_DIAGRAM_INTERACTIVE" => %i[interactive boolean],
+          "LUTAML_DIAGRAM_CONFIG" => [:config_path, nil],
+        }.freeze
+
         private
 
-        # Resolve options from defaults, environment, and parameters
-        def resolve_options(opts) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+        def resolve_options(opts)
           resolved = DEFAULT_OPTIONS.dup
 
-          # Environment variables
-          if ENV["LUTAML_DIAGRAM_PADDING"]
-            resolved[:padding] =
-              ENV["LUTAML_DIAGRAM_PADDING"].to_i
-          end
-          if ENV["LUTAML_DIAGRAM_BG_COLOR"]
-            resolved[:background_color] =
-              ENV["LUTAML_DIAGRAM_BG_COLOR"]
-          end
-          if ENV["LUTAML_DIAGRAM_GRID"]
-            resolved[:grid_visible] =
-              ENV["LUTAML_DIAGRAM_GRID"] == "true"
-          end
-          if ENV["LUTAML_DIAGRAM_INTERACTIVE"]
-            resolved[:interactive] =
-              ENV["LUTAML_DIAGRAM_INTERACTIVE"] == "true"
-          end
-          if ENV["LUTAML_DIAGRAM_CONFIG"]
-            resolved[:config_path] =
-              ENV["LUTAML_DIAGRAM_CONFIG"]
+          ENV_OPTION_MAP.each do |env_key, (option_key, coercion)|
+            env_value = ENV.fetch(env_key, nil)
+            next unless env_value
+
+            resolved[option_key] = coerce_env_value(env_value, coercion)
           end
 
-          # User-provided options override environment
           resolved.merge(opts)
+        end
+
+        def coerce_env_value(value, coercion)
+          case coercion
+          when :to_i then value.to_i
+          when :boolean then value == "true"
+          else value
+          end
         end
 
         # Load repository from LUR file
@@ -432,25 +431,21 @@ module Lutaml
         end
 
         # Add connector role and multiplicity information
-        def add_connector_metadata(connector_data, connector) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength
-          if connector.owner_end_attribute_name
-            connector_data[:source_role] =
-              connector.owner_end_attribute_name
-          end
-          if connector.member_end_attribute_name
-            connector_data[:target_role] =
-              connector.member_end_attribute_name
-          end
+        def add_connector_metadata(connector_data, connector)
+          assign_if_present(connector_data, :source_role,
+                            connector.owner_end_attribute_name)
+          assign_if_present(connector_data, :target_role,
+                            connector.member_end_attribute_name)
+          assign_if_present(connector_data, :source_multiplicity,
+                            connector.owner_end_cardinality, :format)
+          assign_if_present(connector_data, :target_multiplicity,
+                            connector.member_end_cardinality, :format)
+        end
 
-          if connector.owner_end_cardinality
-            connector_data[:source_multiplicity] =
-              format_cardinality(connector.owner_end_cardinality)
-          end
+        def assign_if_present(hash, key, value, transform = nil)
+          return unless value
 
-          if connector.member_end_cardinality
-            connector_data[:target_multiplicity] =
-              format_cardinality(connector.member_end_cardinality)
-          end
+          hash[key] = transform == :format ? format_cardinality(value) : value
         end
 
         # Find UML element by XMI ID
@@ -489,13 +484,6 @@ module Lutaml
             width: (right - left).abs,
             height: (bottom - top).abs,
           }
-        end
-
-        # Find diagram object for element
-        def find_diagram_object(element_xmi_id, diagram)
-          diagram.diagram_objects.find do |obj|
-            obj.object_xmi_id == element_xmi_id
-          end
         end
 
         # Determine element type from UML element
