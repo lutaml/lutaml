@@ -34,6 +34,19 @@ module Lutaml
           "complexitytypes" => "complexity types",
         }.freeze
 
+        SUMMARY_METADATA = {
+          "Publisher" => :publisher,
+          "License" => :license,
+        }.freeze
+
+        SUMMARY_CONTENTS = {
+          "Packages:" => :total_packages,
+          "Classes:" => :total_classes,
+          "Data Types:" => :total_data_types,
+          "Enumerations:" => :total_enums,
+          "Diagrams:" => :total_diagrams,
+        }.freeze
+
         attr_reader :options
 
         def initialize(options = {})
@@ -114,19 +127,14 @@ module Lutaml
                                             "for each attribute"
         end
 
-        def run(model_path) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
+        def run(model_path) # rubocop:disable Metrics/AbcSize
           validate_input_file(model_path)
 
           output_path = resolve_output_path(model_path)
           is_qea = model_path.end_with?(".qea")
 
           repo, qea_result = parse_source(model_path, is_qea)
-
-          if qea_result && options[:validate]
-            display_qea_validation_result(qea_result)
-            fail_build!("validation errors") if options[:strict] && qea_result.has_errors?
-          end
-
+          validate_qea_result(qea_result)
           validate_repository(repo) if should_validate?(is_qea)
 
           metadata = build_metadata
@@ -167,18 +175,27 @@ module Lutaml
           end
         end
 
-        def validate_repository(repo) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
+        def validate_qea_result(qea_result)
+          return unless qea_result && options[:validate]
+
+          display_qea_validation_result(qea_result)
+          fail_build!("validation errors") if options[:strict] && qea_result.has_errors?
+        end
+
+        def validate_repository(repo)
           OutputFormatter.progress("Validating repository")
           result = repo.validate(verbose: options[:verbose])
           OutputFormatter.progress_done
 
           display_verbose_validation(result.validation_details) if options[:verbose] && result.validation_details
-
           return if result.valid?
 
+          handle_validation_failure(result)
+        end
+
+        def handle_validation_failure(result)
           handle_validation_result(result)
           display_unresolved_types(result.external_references) if result.external_references&.any?
-
           fail_build!("validation errors") if options[:strict] && result.errors.any?
         end
 
@@ -209,15 +226,15 @@ module Lutaml
           puts "Package Metadata:"
           puts "  Name:          #{metadata.name}"
           puts "  Version:       #{metadata.version}"
-          puts "  Publisher:     #{metadata.publisher}" if metadata.publisher
-          puts "  License:       #{metadata.license}" if metadata.license
+          SUMMARY_METADATA.each do |label, attr|
+            value = metadata.public_send(attr)
+            puts "  #{label.ljust(15)}#{value}" if value
+          end
           puts ""
           puts "Package Contents:"
-          puts "  Packages:      #{stats[:total_packages]}"
-          puts "  Classes:       #{stats[:total_classes]}"
-          puts "  Data Types:    #{stats[:total_data_types]}"
-          puts "  Enumerations:  #{stats[:total_enums]}"
-          puts "  Diagrams:      #{stats[:total_diagrams]}"
+          SUMMARY_CONTENTS.each do |label, key|
+            puts "  #{label.ljust(15)} #{stats[key]}"
+          end
         end
 
         def build_metadata # rubocop:disable Metrics/AbcSize
@@ -245,22 +262,15 @@ module Lutaml
           end
         end
 
-        def load_metadata_from_file(file_path) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+        def load_metadata_from_file(file_path) # rubocop:disable Metrics/AbcSize
           unless File.exist?(file_path)
-            raise Thor::Error, "Metadata file not found: #{file_path}"
+            raise Thor::Error,
+                  "Metadata file not found: #{file_path}"
           end
 
           require "yaml"
           metadata_hash = YAML.load_file(file_path)
-
-          METADATA_OPTIONAL_FIELDS.each do |field|
-            value = options[field]
-            next unless value
-            next if field == :authors && value.empty?
-
-            metadata_hash[field.to_s] = value
-          end
-
+          merge_optional_fields_into(metadata_hash, options)
           metadata_hash["serialization_format"] ||= (
             options[:format] || "yaml"
           ).to_s
@@ -270,6 +280,16 @@ module Lutaml
           raise Thor::Error, "Invalid YAML in metadata file: #{e.message}"
         rescue ArgumentError => e
           raise Thor::Error, "Invalid metadata: #{e.message}"
+        end
+
+        def merge_optional_fields_into(hash, source)
+          METADATA_OPTIONAL_FIELDS.each do |field|
+            value = source[field]
+            next unless value
+            next if field == :authors && value.empty?
+
+            hash[field.to_s] = value
+          end
         end
 
         def handle_validation_result(result)
@@ -406,30 +426,31 @@ module Lutaml
           puts formatter.format
         end
 
-        def display_verbose_validation(validation_details) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength,Metrics/PerceivedComplexity
+        def display_verbose_validation(validation_details)
           puts ""
           puts OutputFormatter.colorize("Detailed Type Validation:", :cyan)
           puts ""
 
-          validation_details.each do |detail|
-            puts OutputFormatter.colorize("Class: #{detail[:class_name]}",
-                                          :cyan)
+          validation_details.each { |detail| display_class_validation(detail) }
+        end
 
-            detail[:attributes].each do |attr_detail|
-              symbol = if attr_detail[:valid]
-                         OutputFormatter.colorize("✓", :green)
-                       else
-                         OutputFormatter.colorize("✗", :red)
-                       end
+        def display_class_validation(detail)
+          puts OutputFormatter.colorize("Class: #{detail[:class_name]}", :cyan)
+          detail[:attributes].each { |attr| display_attribute_detail(attr) }
+          puts ""
+        end
 
-              puts "  #{symbol} #{attr_detail[:attribute_name]}: #{attr_detail[:type_value]}"
-              if attr_detail[:resolved_to]
-                puts "      → #{attr_detail[:resolved_to]}"
-              elsif !attr_detail[:valid]
-                puts "      → (not found)"
-              end
-            end
-            puts ""
+        def display_attribute_detail(attr_detail)
+          symbol = if attr_detail[:valid]
+                     OutputFormatter.colorize("✓", :green)
+                   else
+                     OutputFormatter.colorize("✗", :red)
+                   end
+          puts "  #{symbol} #{attr_detail[:attribute_name]}: #{attr_detail[:type_value]}"
+          if attr_detail[:resolved_to]
+            puts "      → #{attr_detail[:resolved_to]}"
+          elsif !attr_detail[:valid]
+            puts "      → (not found)"
           end
         end
 

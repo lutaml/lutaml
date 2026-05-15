@@ -71,8 +71,7 @@ module Lutaml
           @external_references = []
 
           @indexes[:qualified_names].each do |qname, klass|
-            next unless klass.is_a?(Lutaml::Uml::Class)
-            next unless klass.attributes
+            next unless klass.is_a?(Lutaml::Uml::Class) && klass.attributes
 
             package_path = extract_package_path(qname, default: "ModelRoot")
             class_details = { class_name: qname, attributes: [] } if @verbose
@@ -84,40 +83,51 @@ module Lutaml
           end
         end
 
-        def validate_class_attributes(klass, qname, package_path, class_details) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength
+        def validate_class_attributes(klass, qname, package_path, class_details)
           klass.attributes.each do |attr|
             next unless attr.type
 
-            is_primitive = primitive_type?(attr.type)
-            resolved_type = if is_primitive
-                              nil
-                            else
-                              resolve_type_name(attr.type,
-                                                package_path)
-                            end
-            is_valid = is_primitive || !resolved_type.nil?
-
-            if @verbose
-              class_details[:attributes] << {
-                attribute_name: attr.name,
-                type_value: attr.type,
-                resolved_to: resolved_type,
-                valid: is_valid,
-                is_primitive: is_primitive,
-              }
-            end
-
-            next if is_valid
-
-            @external_references << {
-              class_name: qname,
-              attribute_name: attr.name,
-              referenced_type: attr.type,
-              context: "attribute type",
-            }
-            @errors << "Unresolved type reference: '#{attr.type}' in " \
-                       "#{qname}.#{attr.name}"
+            validate_single_attribute(attr, qname, package_path, class_details)
           end
+        end
+
+        def validate_single_attribute(attr, qname, package_path, class_details)
+          is_primitive = primitive_type?(attr.type)
+          unless is_primitive
+            resolved_type = resolve_type_name(attr.type,
+                                              package_path)
+          end
+          is_valid = is_primitive || !resolved_type.nil?
+
+          if @verbose
+            add_verbose_detail(class_details, attr, resolved_type, is_valid,
+                               is_primitive)
+          end
+          return if is_valid
+
+          record_unresolved_type(attr, qname)
+        end
+
+        def add_verbose_detail(class_details, attr, resolved_type, is_valid,
+                               is_primitive)
+          class_details[:attributes] << {
+            attribute_name: attr.name,
+            type_value: attr.type,
+            resolved_to: resolved_type,
+            valid: is_valid,
+            is_primitive: is_primitive,
+          }
+        end
+
+        def record_unresolved_type(attr, qname)
+          @external_references << {
+            class_name: qname,
+            attribute_name: attr.name,
+            referenced_type: attr.type,
+            context: "attribute type",
+          }
+          @errors << "Unresolved type reference: '#{attr.type}' in " \
+                     "#{qname}.#{attr.name}"
         end
 
         # Check that all generalization references point to existing classes
