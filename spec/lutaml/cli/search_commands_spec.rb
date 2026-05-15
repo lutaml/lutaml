@@ -10,7 +10,7 @@ RSpec.describe "Search and Find Commands (via UmlCommands)" do
   end
   let(:lur_file) do
     path = temp_lur_path(prefix: "test_search")
-    repo = Lutaml::UmlRepository::Repository.from_xmi(xmi_file)
+    repo = cached_xmi_repository(xmi_file)
     repo.export_to_package(path)
     path
   end

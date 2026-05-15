@@ -6,7 +6,7 @@ require_relative "../../../lib/lutaml/uml_repository/repository"
 
 RSpec.describe Lutaml::UmlRepository::ErrorHandler do
   let(:xmi_path) { fixtures_path("ea-xmi-2.5.1.xmi") }
-  let(:repository) { Lutaml::UmlRepository::Repository.from_xmi(xmi_path) }
+  let(:repository) { cached_repository("ea-xmi-2.5.1.xmi") }
   let(:error_handler) { described_class.new(repository) }
 
   describe "#initialize" do
