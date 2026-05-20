@@ -3,6 +3,8 @@
 module Lutaml
   module Uml
     class Operation < TopElement
+      skip_reference_registration
+
       attribute :id, :string
       attribute :return_type, :string
       attribute :parameter_type, :string

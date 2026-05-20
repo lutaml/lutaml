@@ -3,6 +3,8 @@
 module Lutaml
   module Uml
     class Association < TopElement
+      skip_reference_registration
+
       attribute :owner_end, :string
       attribute :owner_end_attribute_name, :string
       attribute :owner_end_cardinality, Cardinality

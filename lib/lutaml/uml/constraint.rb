@@ -6,6 +6,8 @@
 module Lutaml
   module Uml
     class Constraint < TopElement
+      skip_reference_registration
+
       attribute :body, :string
       attribute :type, :string
       attribute :weight, :string

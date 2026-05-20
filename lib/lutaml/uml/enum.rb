@@ -3,6 +3,8 @@
 module Lutaml
   module Uml
     class Enum < Classifier
+      skip_reference_registration
+
       attribute :attributes, TopElementAttribute, collection: true,
                                                   default: -> { [] }
       attribute :modifier, :string

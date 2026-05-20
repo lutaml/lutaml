@@ -6,6 +6,7 @@
 module Lutaml
   module Uml
     class StateMachine < Behavior
+      skip_reference_registration
     end
   end
 end

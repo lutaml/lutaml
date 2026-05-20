@@ -5,6 +5,8 @@ require "lutaml/model"
 module Lutaml
   module Uml
     class Group < Lutaml::Model::Serializable
+      skip_reference_registration
+
       attribute :id, :string
       attribute :values, :string, collection: true
       attribute :groups, Group, collection: true

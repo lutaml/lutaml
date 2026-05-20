@@ -3,6 +3,8 @@
 module Lutaml
   module Uml
     class GeneralAttribute < Lutaml::Model::Serializable
+      skip_reference_registration
+
       attribute :id, :string
       attribute :name, :string
       attribute :type, :string

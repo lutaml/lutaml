@@ -7,6 +7,8 @@ module Lutaml
     # Tagged values are name-value pairs that provide additional metadata
     # for UML elements beyond the standard UML metamodel.
     class TaggedValue < Lutaml::Model::Serializable
+      skip_reference_registration
+
       attribute :name, :string
       attribute :value, :string
       attribute :notes, :string

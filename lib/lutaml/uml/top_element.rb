@@ -3,6 +3,8 @@
 module Lutaml
   module Uml
     class TopElement < Lutaml::Model::Serializable
+      skip_reference_registration
+
       attribute :name, :string
       attribute :xmi_id, :string
       attribute :xmi_uuid, :string

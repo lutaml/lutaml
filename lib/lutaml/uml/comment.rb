@@ -3,6 +3,8 @@
 module Lutaml
   module Uml
     class Comment < Lutaml::Model::Serializable
+      skip_reference_registration
+
       attribute :text, :string
 
       yaml do

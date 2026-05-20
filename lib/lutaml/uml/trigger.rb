@@ -6,6 +6,8 @@
 module Lutaml
   module Uml
     class Trigger < TopElement
+      skip_reference_registration
+
       attribute :event, :string
 
       yaml do

@@ -6,6 +6,8 @@ module Lutaml
   module Uml
     # Represents visual placement of an element on a diagram
     class DiagramObject < Lutaml::Model::Serializable
+      skip_reference_registration
+
       attribute :diagram_object_id, :string
       attribute :object_xmi_id, :string
       attribute :left, :integer

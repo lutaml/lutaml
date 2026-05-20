@@ -3,6 +3,8 @@
 module Lutaml
   module Uml
     class Diagram < TopElement
+      skip_reference_registration
+
       attribute :package_id, :string
       attribute :package_name, :string
       attribute :diagram_type, :string

@@ -6,6 +6,8 @@ module Lutaml
   module Uml
     # Represents visual routing of a connector on a diagram
     class DiagramLink < Lutaml::Model::Serializable
+      skip_reference_registration
+
       attribute :connector_id, :string
       attribute :connector_xmi_id, :string
       attribute :geometry, :string

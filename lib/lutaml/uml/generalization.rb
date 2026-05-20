@@ -3,6 +3,8 @@
 module Lutaml
   module Uml
     class Generalization < Lutaml::Model::Serializable
+      skip_reference_registration
+
       attribute :general_id, :string
       attribute :general_name, :string
       attribute :general_attributes,
