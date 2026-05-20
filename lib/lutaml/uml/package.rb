@@ -3,6 +3,8 @@
 module Lutaml
   module Uml
     class Package < TopElement
+      skip_reference_registration
+
       attribute :contents, :string, collection: true, default: -> { [] }
       attribute :classes, Class, collection: true, default: -> { [] }
       attribute :enums, Enum, collection: true, default: -> { [] }

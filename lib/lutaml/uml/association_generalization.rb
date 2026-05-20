@@ -3,6 +3,8 @@
 module Lutaml
   module Uml
     class AssociationGeneralization < Lutaml::Model::Serializable
+      skip_reference_registration
+
       attribute :id, :string
       attribute :type, :string
       attribute :general, :string

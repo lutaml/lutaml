@@ -3,6 +3,8 @@
 module Lutaml
   module Uml
     class Classifier < TopElement
+      skip_reference_registration
+
       attribute :association_generalization,
                 ::Lutaml::Uml::AssociationGeneralization,
                 collection: true, default: -> { [] }

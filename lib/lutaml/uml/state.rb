@@ -6,6 +6,8 @@
 module Lutaml
   module Uml
     class State < Vertex
+      skip_reference_registration
+
       attribute :exit, :string
       attribute :entry, :string
       attribute :do_activity, :string

@@ -6,6 +6,8 @@
 module Lutaml
   module Uml
     class ConnectorEnd < TopElement
+      skip_reference_registration
+
       attribute :role, :string
       attribute :part_with_port, :string
       attribute :connector, :string

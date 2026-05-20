@@ -3,6 +3,8 @@
 module Lutaml
   module Uml
     class Class < Classifier
+      skip_reference_registration
+
       attribute :nested_classifier, :string, collection: true,
                                              default: -> { [] }
       attribute :stereotype, :string, collection: true, default: -> { [] }

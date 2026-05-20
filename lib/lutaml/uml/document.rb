@@ -3,6 +3,8 @@
 module Lutaml
   module Uml
     class Document < Lutaml::Model::Serializable
+      skip_reference_registration
+
       attribute :name, :string
       attribute :title, :string
       attribute :caption, :string

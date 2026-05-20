@@ -6,6 +6,8 @@
 module Lutaml
   module Uml
     class Connector < TopElement
+      skip_reference_registration
+
       attribute :kind, :string
       attribute :connector_end, :string, collection: true, default: -> { [] }
 

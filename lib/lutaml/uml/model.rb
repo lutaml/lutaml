@@ -3,6 +3,8 @@
 module Lutaml
   module Uml
     class Model < Package
+      skip_reference_registration
+
       attribute :viewpoint, :string
 
       yaml do

@@ -3,6 +3,8 @@
 module Lutaml
   module Uml
     class Action < Lutaml::Model::Serializable
+      skip_reference_registration
+
       attribute :verb, :string
       attribute :direction, :string
 

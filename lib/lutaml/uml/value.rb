@@ -3,6 +3,8 @@
 module Lutaml
   module Uml
     class Value < Lutaml::Model::Serializable
+      skip_reference_registration
+
       attribute :definition, :string
       attribute :name, :string
       attribute :id, :string
