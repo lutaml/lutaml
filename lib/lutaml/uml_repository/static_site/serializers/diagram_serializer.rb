@@ -4,13 +4,7 @@ module Lutaml
   module UmlRepository
     module StaticSite
       module Serializers
-        class DiagramSerializer
-          def initialize(repository, id_generator, options)
-            @repository = repository
-            @id_generator = id_generator
-            @options = options
-          end
-
+        class DiagramSerializer < Base
           def build_map
             diagrams = {}
             @repository.diagrams_index.each do |diagram|
@@ -57,14 +51,6 @@ module Lutaml
             nil
           rescue StandardError
             nil
-          end
-
-          def package_diagrams(package)
-            return [] unless @options[:include_diagrams]
-
-            package.diagrams || []
-          rescue StandardError
-            []
           end
         end
       end

@@ -32,6 +32,24 @@ module Lutaml
             map "isReadOnly", to: :is_read_only
             map "defaultValue", to: :default_value
           end
+
+          def self.from_uml(uml_attr, owner, id_generator:, definition:,
+stereotypes:)
+            new(
+              id: id_generator.attribute_id(uml_attr, owner),
+              name: uml_attr.name,
+              type: uml_attr.type,
+              visibility: uml_attr.visibility,
+              owner: id_generator.class_id(owner),
+              owner_name: owner.name,
+              cardinality: SpaCardinality.from_uml(uml_attr.cardinality),
+              definition: definition,
+              stereotypes: stereotypes,
+              is_static: uml_attr.is_static,
+              is_read_only: uml_attr.is_read_only,
+              default_value: uml_attr.default,
+            )
+          end
         end
       end
     end

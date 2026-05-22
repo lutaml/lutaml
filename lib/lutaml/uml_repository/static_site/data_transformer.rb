@@ -4,7 +4,6 @@ module Lutaml
   module UmlRepository
     module StaticSite
       class DataTransformer
-        include AssociationSerialization
         include Lutaml::Uml::ModelHelpers
 
         attr_reader :repository, :id_generator, :options
@@ -76,6 +75,11 @@ module Lutaml
         def build_attributes_map
           Serializers::AttributeSerializer.new(repository, id_generator,
                                                options).build_map
+        end
+
+        def build_associations_map
+          Serializers::AssociationSerializer.new(repository, id_generator,
+                                                 options).build_map
         end
 
         def build_operations_map

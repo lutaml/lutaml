@@ -4,8 +4,12 @@ module Lutaml
   module UmlRepository
     module StaticSite
       module Serializers
+        autoload :AssociationSerializer,
+                 "lutaml/uml_repository/static_site/serializers/association_serializer"
         autoload :AttributeSerializer,
                  "lutaml/uml_repository/static_site/serializers/attribute_serializer"
+        autoload :Base,
+                 "lutaml/uml_repository/static_site/serializers/base"
         autoload :ClassSerializer,
                  "lutaml/uml_repository/static_site/serializers/class_serializer"
         autoload :DiagramSerializer,

@@ -12,6 +12,15 @@ module Lutaml
             map "min", to: :min
             map "max", to: :max
           end
+
+          def self.from_uml(uml_cardinality)
+            return nil unless uml_cardinality
+
+            new(
+              min: uml_cardinality.min,
+              max: uml_cardinality.max,
+            )
+          end
         end
       end
     end
