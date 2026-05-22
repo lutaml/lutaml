@@ -40,10 +40,11 @@ function select() {
         </svg>
       </span>
 
-      <span class="tree-label" @click="select">{{ node.name }}</span>
-
-      <span class="tree-stereotype" v-if="node.stereotypes && node.stereotypes.length">
-        <span v-for="s in node.stereotypes" :key="s">&laquo;{{ s }}&raquo;</span>
+      <span class="tree-label-group" @click="select">
+        <span class="tree-stereotype" v-if="node.stereotypes && node.stereotypes.length">
+          <span v-for="s in node.stereotypes" :key="s">&laquo;{{ s }}&raquo;</span>
+        </span>
+        <span class="tree-label">{{ node.name }}</span>
       </span>
 
       <span class="tree-count" v-if="node.classCount">{{ node.classCount }}</span>
