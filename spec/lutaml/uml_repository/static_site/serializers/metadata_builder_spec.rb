@@ -13,7 +13,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Serializers::MetadataBuilder d
       result = builder.build
 
       expect(result).to be_a(Lutaml::UmlRepository::StaticSite::Models::SpaMetadata)
-      expect(result.generator).to eq("LutaML Static Site Generator")
+      expect(result.generator).to eq("lutaml v#{Lutaml::VERSION}")
       expect(result.version).to eq("1.0")
     end
 

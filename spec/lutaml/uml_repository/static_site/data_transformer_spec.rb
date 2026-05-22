@@ -49,7 +49,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::DataTransformer do
       result = transformer.transform
 
       expect(result.metadata.generated).to be_a(String)
-      expect(result.metadata.generator).to eq("LutaML Static Site Generator")
+      expect(result.metadata.generator).to eq("lutaml v#{Lutaml::VERSION}")
     end
 
     it "builds statistics", :aggregate_failures do
