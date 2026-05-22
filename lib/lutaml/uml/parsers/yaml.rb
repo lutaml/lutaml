@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "yaml"
-require "lutaml/uml/document"
 
 module Lutaml
   module Uml

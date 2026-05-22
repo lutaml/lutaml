@@ -23,10 +23,9 @@ module Lutaml
             map "name", to: :name
             map "qualifiedName", to: :qualified_name
             map "package", to: :package, render_nil: true,
-                           render_default: true,
-                           render_empty: true
+                           render_default: true, render_empty: true
             map "content", to: :content
-            map "boost", to: :boost
+            map "boost", to: :boost, render_default: true
           end
         end
       end

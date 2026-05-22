@@ -16,7 +16,7 @@ module Lutaml
             map "attribute", to: :attribute
             map "inheritedFrom", to: :inherited_from
             map "inheritedFromName", to: :inherited_from_name
-            map "parentOrder", to: :parent_order
+            map "parentOrder", to: :parent_order, render_default: true
           end
         end
       end

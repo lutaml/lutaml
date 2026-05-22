@@ -4,26 +4,23 @@ module Lutaml
   module UmlRepository
     module StaticSite
       module Models
-        # Forward declaration for recursive structure
         class SpaPackageTreeNode < SpaBase
           attribute :id, :string
           attribute :name, :string
           attribute :path, :string
-          attribute :stereotypes, :string, collection: true, default: -> { [] }
+          attribute :stereotypes, :string, collection: true, initialize_empty: true
           attribute :class_count, :integer, default: 0
-          attribute :classes, SpaTreeClassRef, collection: true,
-                                               default: -> { [] }
-          attribute :children, SpaPackageTreeNode, collection: true,
-                                                   default: -> { [] }
+          attribute :classes, SpaTreeClassRef, collection: true, initialize_empty: true
+          attribute :children, SpaPackageTreeNode, collection: true, initialize_empty: true
 
           json do
             map "id", to: :id
             map "name", to: :name
             map "path", to: :path
-            map "stereotypes", to: :stereotypes
-            map "classCount", to: :class_count
-            map "classes", to: :classes
-            map "children", to: :children
+            map "stereotypes", to: :stereotypes, render_empty: true
+            map "classCount", to: :class_count, render_default: true
+            map "classes", to: :classes, render_empty: true
+            map "children", to: :children, render_empty: true
           end
         end
       end

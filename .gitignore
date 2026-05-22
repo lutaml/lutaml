@@ -26,3 +26,4 @@ TODO.*.md
 
 # Frontend build artifacts
 frontend/node_modules/
+TODO.migrate/

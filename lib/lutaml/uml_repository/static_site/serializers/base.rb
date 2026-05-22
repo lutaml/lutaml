@@ -1,10 +1,5 @@
 # frozen_string_literal: true
 
-require "lutaml/uml/model_helpers"
-require_relative "../id_generator"
-require_relative "../models"
-require_relative "../../class_lookup_index"
-
 module Lutaml
   module UmlRepository
     module StaticSite

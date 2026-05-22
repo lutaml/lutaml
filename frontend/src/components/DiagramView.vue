@@ -43,33 +43,35 @@ const svgTransform = computed(() =>
 <template>
   <div class="detail-view" v-if="diagram">
     <div class="entity-header">
-      <h2>{{ diagram.name }}</h2>
-      <span class="type-badge">Diagram</span>
+      <div class="entity-title">
+        <h2 class="entity-name">{{ diagram.name }}</h2>
+      </div>
+      <span class="entity-badge badge-diagram">Diagram</span>
     </div>
 
     <div class="entity-metadata">
-      <div class="meta-row" v-if="diagram.type">
-        <span class="meta-label">Type:</span>
-        <span>{{ diagram.type }}</span>
+      <div class="metadata-item" v-if="diagram.type">
+        <span class="metadata-label">Type</span>
+        <span class="metadata-value">{{ diagram.type }}</span>
       </div>
-      <div class="meta-row">
-        <span class="meta-label">Elements:</span>
-        <span>{{ diagram.objectCount }}</span>
+      <div class="metadata-item">
+        <span class="metadata-label">Elements</span>
+        <span class="metadata-value">{{ diagram.objectCount }}</span>
       </div>
-      <div class="meta-row">
-        <span class="meta-label">Connectors:</span>
-        <span>{{ diagram.linkCount }}</span>
+      <div class="metadata-item">
+        <span class="metadata-label">Connectors</span>
+        <span class="metadata-value">{{ diagram.linkCount }}</span>
       </div>
     </div>
 
     <div class="diagram-toolbar" v-if="diagram.svg">
-      <button @click="zoomIn">Zoom In</button>
-      <button @click="zoomOut">Zoom Out</button>
-      <button @click="resetView">Reset</button>
-      <button @click="downloadSvg">Download SVG</button>
+      <button class="btn-sm" @click="zoomIn">Zoom In</button>
+      <button class="btn-sm" @click="zoomOut">Zoom Out</button>
+      <button class="btn-sm" @click="resetView">Reset</button>
+      <button class="btn-sm" @click="downloadSvg">Download SVG</button>
     </div>
 
-    <div class="diagram-container" v-if="diagram.svg" @wheel="onWheel">
+    <div class="diagram-svg-container" v-if="diagram.svg" @wheel="onWheel">
       <div class="diagram-svg" :style="{ transform: svgTransform }"
            v-html="diagram.svg" />
     </div>

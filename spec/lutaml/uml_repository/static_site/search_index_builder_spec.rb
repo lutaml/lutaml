@@ -15,7 +15,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::SearchIndexBuilder do
     end
 
     it "creates an IDGenerator instance" do
-      expect(builder.id_generator).to be_a(Lutaml::UmlRepository::StaticSite::IDGenerator)
+      expect(builder.id_generator).to be_a(Lutaml::UmlRepository::StaticSite::IdGenerator)
     end
   end
 

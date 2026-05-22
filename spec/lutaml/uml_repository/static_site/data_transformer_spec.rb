@@ -25,7 +25,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::DataTransformer do
     end
 
     it "creates an IDGenerator instance" do
-      expect(transformer.id_generator).to be_a(Lutaml::UmlRepository::StaticSite::IDGenerator)
+      expect(transformer.id_generator).to be_a(Lutaml::UmlRepository::StaticSite::IdGenerator)
     end
   end
 

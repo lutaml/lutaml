@@ -13,7 +13,7 @@ module Lutaml
           attribute :owner_name, :string
           attribute :cardinality, SpaCardinality
           attribute :definition, :string
-          attribute :stereotypes, :string, collection: true, default: -> { [] }
+          attribute :stereotypes, :string, collection: true, initialize_empty: true
           attribute :is_static, :boolean, default: false
           attribute :is_read_only, :boolean, default: false
           attribute :default_value, :string
@@ -27,9 +27,9 @@ module Lutaml
             map "ownerName", to: :owner_name
             map "cardinality", to: :cardinality
             map "definition", to: :definition
-            map "stereotypes", to: :stereotypes
-            map "isStatic", to: :is_static
-            map "isReadOnly", to: :is_read_only
+            map "stereotypes", to: :stereotypes, render_empty: true
+            map "isStatic", to: :is_static, render_default: true
+            map "isReadOnly", to: :is_read_only, render_default: true
             map "defaultValue", to: :default_value
           end
 

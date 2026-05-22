@@ -11,10 +11,10 @@ module Lutaml
       # that remain stable across multiple generations.
       #
       # @example
-      #   generator = IDGenerator.new
+      #   generator = IdGenerator.new
       #   pkg_id = generator.package_id(package)  # => "pkg_a1b2c3d4"
       #   cls_id = generator.class_id(klass)      # => "cls_e5f6g7h8"
-      class IDGenerator
+      class IdGenerator
         def initialize
           @cache = {}
         end

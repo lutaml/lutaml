@@ -11,27 +11,19 @@ module Lutaml
           attribute :qualified_name, :string
           attribute :type, :string
           attribute :package, :string
-          attribute :stereotypes, :string, collection: true, default: -> { [] }
+          attribute :stereotypes, :string, collection: true, initialize_empty: true
           attribute :definition, :string
-          attribute :attributes, :string, collection: true, default: -> { [] }
-          attribute :operations, :string, collection: true, default: -> { [] }
-          attribute :associations, :string, collection: true, default: -> { [] }
-          attribute :generalizations, :string, collection: true, default: -> {
-            []
-          }
-          attribute :specializations, :string, collection: true, default: -> {
-            []
-          }
+          attribute :attributes, :string, collection: true, initialize_empty: true
+          attribute :operations, :string, collection: true, initialize_empty: true
+          attribute :associations, :string, collection: true, initialize_empty: true
+          attribute :generalizations, :string, collection: true, initialize_empty: true
+          attribute :specializations, :string, collection: true, initialize_empty: true
           attribute :is_abstract, :boolean, default: false
-          attribute :literals, SpaLiteral, collection: true, default: -> { [] }
+          attribute :literals, SpaLiteral, collection: true, initialize_empty: true
           attribute :inherited_attributes, SpaInheritedAttribute, collection: true,
-                                                                  default: -> {
-                                                                    []
-                                                                  }
+                                                                 initialize_empty: true
           attribute :inherited_associations, SpaInheritedAssociation, collection: true,
-                                                                      default: -> {
-                                                                        []
-                                                                      }
+                                                                     initialize_empty: true
 
           json do
             map "id", to: :id
@@ -40,17 +32,17 @@ module Lutaml
             map "qualifiedName", to: :qualified_name
             map "type", to: :type
             map "package", to: :package
-            map "stereotypes", to: :stereotypes
+            map "stereotypes", to: :stereotypes, render_empty: true
             map "definition", to: :definition
-            map "attributes", to: :attributes
-            map "operations", to: :operations
-            map "associations", to: :associations
-            map "generalizations", to: :generalizations
-            map "specializations", to: :specializations
-            map "isAbstract", to: :is_abstract
-            map "literals", to: :literals
-            map "inheritedAttributes", to: :inherited_attributes
-            map "inheritedAssociations", to: :inherited_associations
+            map "attributes", to: :attributes, render_empty: true
+            map "operations", to: :operations, render_empty: true
+            map "associations", to: :associations, render_empty: true
+            map "generalizations", to: :generalizations, render_empty: true
+            map "specializations", to: :specializations, render_empty: true
+            map "isAbstract", to: :is_abstract, render_default: true
+            map "literals", to: :literals, render_empty: true
+            map "inheritedAttributes", to: :inherited_attributes, render_empty: true
+            map "inheritedAssociations", to: :inherited_associations, render_empty: true
           end
         end
       end

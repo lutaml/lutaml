@@ -118,14 +118,19 @@ module Lutaml
         def validate_output_path(mode) # rubocop:disable Metrics/MethodLength
           output = options[:output]
 
-          # For multi-file mode, ensure output is a directory
-          if mode == :multi_file && File.extname(output) != ""
-            puts OutputFormatter.colorize(
-              "Warning: Multi-file mode requires directory output", :yellow
-            )
-            output_dir = File.dirname(output)
-            puts "Using directory: #{output_dir}"
-            output_dir
+          if mode == :multi_file
+            if File.extname(output) != ""
+              puts OutputFormatter.colorize(
+                "Warning: Multi-file mode requires directory output", :yellow
+              )
+              output_dir = File.dirname(output)
+              puts "Using directory: #{output_dir}"
+              output_dir
+            else
+              output
+            end
+          elsif File.extname(output).downcase != ".html"
+            output + ".html"
           else
             output
           end

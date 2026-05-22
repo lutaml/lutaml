@@ -77,7 +77,7 @@ module Lutaml
           content_type :json
           requested_id = params[:id]
 
-          id_gen = UmlRepository::StaticSite::IDGenerator.new
+          id_gen = UmlRepository::StaticSite::IdGenerator.new
 
           # Search for package by matching generated ID
           found_package = nil

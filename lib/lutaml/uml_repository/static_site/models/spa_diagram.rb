@@ -20,8 +20,8 @@ module Lutaml
             map "name", to: :name
             map "type", to: :type
             map "package", to: :package
-            map "objectCount", to: :object_count
-            map "linkCount", to: :link_count
+            map "objectCount", to: :object_count, render_default: true
+            map "linkCount", to: :link_count, render_default: true
             map "svg", to: :svg
           end
         end

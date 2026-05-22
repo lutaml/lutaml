@@ -18,20 +18,24 @@ const resultsByType = computed(() => {
 
 <template>
   <div class="detail-view">
-    <h2>Search Results</h2>
+    <div class="entity-header">
+      <div class="entity-title">
+        <h2 class="entity-name">Search Results</h2>
+      </div>
+    </div>
     <div v-for="(entries, type) in resultsByType" :key="type" class="section">
-      <h3>{{ type }}s ({{ entries.length }})</h3>
+      <h3 class="section-title">{{ type }}s <span class="section-count">{{ entries.length }}</span></h3>
       <div class="table-wrapper">
-        <table>
+        <table class="data-table">
           <thead>
             <tr><th>Name</th><th>Package</th><th>Type</th></tr>
           </thead>
           <tbody>
-            <tr v-for="entry in entries" :key="entry.id" class="clickable"
+            <tr v-for="entry in entries" :key="entry.id" class="clickable-row"
                 @click="entry.type === 'class' ? ui.selectClass(entry.entityId) : ui.selectPackage(entry.entityId)">
               <td>{{ entry.name }}</td>
               <td>{{ entry.package }}</td>
-              <td><span class="type-badge">{{ entry.entityType }}</span></td>
+              <td><span class="entity-badge" :class="'badge-' + (entry.entityType || 'class').toLowerCase()">{{ entry.entityType }}</span></td>
             </tr>
           </tbody>
         </table>

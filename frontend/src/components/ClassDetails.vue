@@ -35,54 +35,55 @@ function associationTarget(assoc: any): any {
 <template>
   <div class="detail-view" v-if="cls">
     <div class="entity-header">
-      <h2>{{ cls.qualifiedName }}</h2>
-      <span class="type-badge">{{ cls.type }}</span>
-      <span class="abstract-badge" v-if="cls.isAbstract">abstract</span>
+      <div class="entity-title">
+        <h2 class="entity-name">{{ cls.qualifiedName }}</h2>
+        <div class="entity-subtitle" v-if="cls.package">
+          <a href="#" class="link-button" @click.prevent="ui.selectPackage(cls.package!)">
+            {{ data.getPackageById(cls.package)?.name || cls.package }}
+          </a>
+        </div>
+      </div>
+      <span class="entity-badge" :class="'badge-' + (cls.type || 'class').toLowerCase()">{{ cls.type }}</span>
+      <span class="entity-badge badge-abstract" v-if="cls.isAbstract">abstract</span>
     </div>
 
-    <div class="entity-metadata">
-      <div v-if="cls.package" class="meta-row">
-        <span class="meta-label">Package:</span>
-        <a href="#" class="type-link" @click.prevent="ui.selectPackage(cls.package!)">
-          {{ data.getPackageById(cls.package)?.name || cls.package }}
-        </a>
-      </div>
-      <div v-if="cls.stereotypes.length" class="meta-row">
-        <span class="meta-label">Stereotypes:</span>
-        <span class="stereotype-tags">
+    <div class="entity-metadata" v-if="cls.stereotypes.length">
+      <div class="metadata-item">
+        <span class="metadata-label">Stereotypes</span>
+        <span class="metadata-value">
           <span v-for="s in cls.stereotypes" :key="s" class="stereotype-tag">&laquo;{{ s }}&raquo;</span>
         </span>
       </div>
     </div>
 
-    <div class="definition" v-if="cls.definition">
-      <p>{{ cls.definition }}</p>
+    <div class="entity-definition" v-if="cls.definition">
+      <div class="definition-content">{{ cls.definition }}</div>
     </div>
 
     <!-- Inheritance -->
     <div class="section" v-if="cls.generalizations.length || cls.specializations.length">
-      <h3>Inheritance</h3>
+      <h3 class="section-title">Inheritance</h3>
       <div v-if="cls.generalizations.length" class="inheritance-group">
-        <h4>&#8593; Extends</h4>
-        <div v-for="parentId in cls.generalizations" :key="parentId" class="list-item clickable"
+        <div class="inheritance-header">&#8593; Extends</div>
+        <div v-for="parentId in cls.generalizations" :key="parentId" class="list-item clickable-row"
              @click="ui.selectClass(parentId)">
-          <span class="item-name">{{ data.getClassById(parentId)?.name || parentId }}</span>
+          <span class="list-item-name">{{ data.getClassById(parentId)?.name || parentId }}</span>
         </div>
       </div>
       <div v-if="cls.specializations.length" class="inheritance-group">
-        <h4>&#8595; Extended by</h4>
-        <div v-for="childId in cls.specializations" :key="childId" class="list-item clickable"
+        <div class="inheritance-header">&#8595; Extended by</div>
+        <div v-for="childId in cls.specializations" :key="childId" class="list-item clickable-row"
              @click="ui.selectClass(childId)">
-          <span class="item-name">{{ data.getClassById(childId)?.name || childId }}</span>
+          <span class="list-item-name">{{ data.getClassById(childId)?.name || childId }}</span>
         </div>
       </div>
     </div>
 
     <!-- Attributes -->
     <div class="section" v-if="cls.attributes.length">
-      <h3>Attributes</h3>
+      <h3 class="section-title">Attributes <span class="section-count">{{ cls.attributes.length }}</span></h3>
       <div class="table-wrapper">
-        <table>
+        <table class="data-table">
           <thead>
             <tr>
               <th>Name</th>
@@ -93,7 +94,7 @@ function associationTarget(assoc: any): any {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="attrId in cls.attributes" :key="attrId">
+            <tr v-for="attrId in cls.attributes" :key="attrId" class="clickable-row">
               <td>{{ data.getAttributeById(attrId)?.name }}</td>
               <td>
                 <template v-if="data.getAttributeById(attrId)?.type">
@@ -112,7 +113,7 @@ function associationTarget(assoc: any): any {
               <td>
                 <span v-if="data.getAttributeById(attrId)?.visibility"
                       class="visibility-badge"
-                      :class="data.getAttributeById(attrId)?.visibility">
+                      :data-visibility="data.getAttributeById(attrId)?.visibility">
                   {{ data.getAttributeById(attrId)?.visibility }}
                 </span>
               </td>
@@ -129,11 +130,11 @@ function associationTarget(assoc: any): any {
 
     <!-- Inherited Attributes -->
     <div class="section" v-if="cls.inheritedAttributes.length">
-      <h3>Inherited Attributes</h3>
+      <h3 class="section-title">Inherited Attributes</h3>
       <div v-for="ia in cls.inheritedAttributes" :key="ia.attributeId" class="inheritance-group">
-        <h4>From {{ ia.inheritedFromName }}</h4>
+        <div class="inheritance-header">From {{ ia.inheritedFromName }}</div>
         <div class="table-wrapper">
-          <table>
+          <table class="data-table inherited-table">
             <thead>
               <tr><th>Name</th><th>Type</th><th>Cardinality</th></tr>
             </thead>
@@ -151,14 +152,14 @@ function associationTarget(assoc: any): any {
 
     <!-- Operations -->
     <div class="section" v-if="cls.operations.length">
-      <h3>Operations</h3>
+      <h3 class="section-title">Operations <span class="section-count">{{ cls.operations.length }}</span></h3>
       <div class="table-wrapper">
-        <table>
+        <table class="data-table">
           <thead>
             <tr><th>Name</th><th>Return</th><th>Visibility</th><th>Modifiers</th></tr>
           </thead>
           <tbody>
-            <tr v-for="opId in cls.operations" :key="opId">
+            <tr v-for="opId in cls.operations" :key="opId" class="clickable-row">
               <td>
                 {{ data.getOperationById(opId)?.name }}(
                 <span v-if="data.getOperationById(opId)?.parameters.length">
@@ -170,7 +171,7 @@ function associationTarget(assoc: any): any {
               <td>
                 <span v-if="data.getOperationById(opId)?.visibility"
                       class="visibility-badge"
-                      :class="data.getOperationById(opId)?.visibility">
+                      :data-visibility="data.getOperationById(opId)?.visibility">
                   {{ data.getOperationById(opId)?.visibility }}
                 </span>
               </td>
@@ -186,9 +187,9 @@ function associationTarget(assoc: any): any {
 
     <!-- Associations -->
     <div class="section" v-if="cls.associations.length">
-      <h3>Associations</h3>
+      <h3 class="section-title">Associations <span class="section-count">{{ cls.associations.length }}</span></h3>
       <div class="table-wrapper">
-        <table>
+        <table class="data-table">
           <thead>
             <tr><th>Name</th><th>Target</th><th>Cardinality</th><th>Aggregation</th></tr>
           </thead>
@@ -217,23 +218,23 @@ function associationTarget(assoc: any): any {
 
     <!-- Inherited Associations -->
     <div class="section" v-if="cls.inheritedAssociations.length">
-      <h3>Inherited Associations</h3>
+      <h3 class="section-title">Inherited Associations</h3>
       <div v-for="ia in cls.inheritedAssociations" :key="ia.associationId" class="inheritance-group">
-        <h4>From {{ ia.inheritedFromName }}</h4>
+        <div class="inheritance-header">From {{ ia.inheritedFromName }}</div>
         <div class="list-item">
-          <span class="item-name">{{ data.getAssociationById(ia.associationId)?.name }}</span>
-          <span class="item-meta">{{ ia.localRole }}</span>
+          <span class="list-item-name">{{ data.getAssociationById(ia.associationId)?.name }}</span>
+          <span class="list-item-meta">{{ ia.localRole }}</span>
         </div>
       </div>
     </div>
 
     <!-- Enum Literals -->
     <div class="section" v-if="cls.literals.length">
-      <h3>Literals</h3>
+      <h3 class="section-title">Literals <span class="section-count">{{ cls.literals.length }}</span></h3>
       <div class="item-list">
         <div v-for="lit in cls.literals" :key="lit.name" class="list-item">
-          <span class="item-name">{{ lit.name }}</span>
-          <span v-if="lit.definition" class="item-meta">{{ lit.definition }}</span>
+          <span class="list-item-name">{{ lit.name }}</span>
+          <span v-if="lit.definition" class="list-item-meta">{{ lit.definition }}</span>
         </div>
       </div>
     </div>

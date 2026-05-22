@@ -4,7 +4,7 @@ require "spec_helper"
 require "lutaml/uml_repository"
 
 RSpec.describe Lutaml::UmlRepository::StaticSite::Serializers::DiagramSerializer do
-  let(:id_generator) { Lutaml::UmlRepository::StaticSite::IDGenerator.new }
+  let(:id_generator) { Lutaml::UmlRepository::StaticSite::IdGenerator.new }
 
   let(:diagram_doc) do
     doc = Lutaml::Uml::Document.new

@@ -22,6 +22,23 @@ Lutaml is a Ruby gem for parsing and transforming UML models from multiple forma
 - DRY: consolidate duplicated patterns (especially `format_definition`, index building, metadata construction).
 - Never commit TODO tracking files to git.
 
+## Spec Require Rules
+
+**ALWAYS use `require_relative` in spec files. NEVER use bare `require`.**
+
+`require` depends on `$LOAD_PATH` which is unreliable:
+- Running a single spec file (`bundle exec rspec spec/foo/bar_spec.rb`) may not have `lib/` on the load path, causing `LoadError`.
+- If the gem is installed globally, `require "lutaml/foo"` loads the installed gem version, not the local working copy — specs silently test the wrong code.
+- `require_relative` resolves relative to the spec file's location. It always loads the exact file you intend, regardless of how the spec is run.
+
+```ruby
+# WRONG — may load wrong file or fail
+require "lutaml/uml_repository/static_site/data_transformer"
+
+# CORRECT — always loads the local file
+require_relative "../../../lib/lutaml/uml_repository/static_site/data_transformer"
+```
+
 ## Architecture
 - `lib/lutaml/uml/` — UML domain models (Class, Association, Package, etc.)
 - `lib/lutaml/uml_repository/` — Repository pattern over UML documents (queries, presenters, exporters, SPA)
