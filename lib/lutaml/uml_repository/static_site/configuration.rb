@@ -140,9 +140,117 @@ module Lutaml
           end
         end
 
+        # Logo configuration for light/dark variants
+        class LogoVariant < Lutaml::Model::Serializable
+          attribute :path, :string
+          attribute :url, :string
+
+          yaml do
+            map "path", to: :path
+            map "url", to: :url
+          end
+        end
+
+        # Logo configuration (square, long, etc.)
+        class LogoConfig < Lutaml::Model::Serializable
+          attribute :light, LogoVariant
+          attribute :dark, LogoVariant
+
+          yaml do
+            map "light", to: :light
+            map "dark", to: :dark
+          end
+        end
+
+        # Logos container
+        class LogosConfig < Lutaml::Model::Serializable
+          attribute :square, LogoConfig
+          attribute :long, LogoConfig
+
+          yaml do
+            map "square", to: :square
+            map "long", to: :long
+          end
+        end
+
+        # Appearance configuration
+        class AppearanceConfig < Lutaml::Model::Serializable
+          attribute :logos, LogosConfig
+          attribute :favicon, :string # Will be array of hashes
+          attribute :colors, :string # Will be hash
+          attribute :typography, :string # Will be hash
+          attribute :custom_css, :string
+          attribute :layout, :string # Will be hash
+
+          yaml do
+            map "logos", to: :logos
+            map "favicon", to: :favicon
+            map "colors", to: :colors
+            map "typography", to: :typography
+            map "custom_css", to: :custom_css
+            map "layout", to: :layout
+          end
+        end
+
+        # Author configuration
+        class AuthorConfig < Lutaml::Model::Serializable
+          attribute :name, :string
+          attribute :email, :string
+
+          yaml do
+            map "name", to: :name
+            map "email", to: :email
+          end
+        end
+
+        # External link configuration
+        class LinkConfig < Lutaml::Model::Serializable
+          attribute :name, :string
+          attribute :url, :string
+
+          yaml do
+            map "name", to: :name
+            map "url", to: :url
+          end
+        end
+
+        # Metadata configuration
+        class MetadataConfig < Lutaml::Model::Serializable
+          attribute :name, :string
+          attribute :title, :string
+          attribute :description, :string
+          attribute :version, :string
+          attribute :license, :string
+          attribute :license_url, :string
+          attribute :authors, AuthorConfig, collection: true
+          attribute :homepage, :string
+          attribute :repository, :string
+          attribute :documentation, :string
+          attribute :tags, :string, collection: true
+          attribute :links, LinkConfig, collection: true
+          attribute :appearance, AppearanceConfig
+
+          yaml do
+            map "name", to: :name
+            map "title", to: :title
+            map "description", to: :description
+            map "version", to: :version
+            map "license", to: :license
+            map "license_url", to: :license_url
+            map "authors", to: :authors
+            map "homepage", to: :homepage
+            map "repository", to: :repository
+            map "documentation", to: :documentation
+            map "tags", to: :tags
+            map "links", to: :links
+            map "appearance", to: :appearance
+          end
+        end
+
         # Main configuration attributes
         attribute :version, :string
         attribute :description, :string
+        attribute :metadata, MetadataConfig
         attribute :output, OutputConfig
         attribute :templates, :string # Will be hash
         attribute :data_transformation, :string # Will be hash
@@ -157,6 +265,7 @@ module Lutaml
         yaml do
           map "version", to: :version
           map "description", to: :description
+          map "metadata", to: :metadata
           map "output", to: :output
           map "templates", to: :templates
           map "data_transformation", to: :data_transformation

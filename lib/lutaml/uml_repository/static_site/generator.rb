@@ -89,7 +89,8 @@ module Lutaml
         end
 
         def create_data_transformer
-          DataTransformer.new(@repository, transformer_options)
+          DataTransformer.new(@repository,
+                              transformer_options.merge(config: @config))
         end
 
         def create_search_builder

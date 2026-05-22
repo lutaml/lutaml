@@ -29,6 +29,9 @@ module Lutaml
 
             # From QEA file
             lutaml uml build-spa model.qea -o browser.html
+
+            # With configuration (metadata, appearance, logos)
+            lutaml uml build-spa model.qea -o browser.html --config config.yml
           DESC
 
           thor_class.option :output, aliases: "-o", required: true,
@@ -47,6 +50,9 @@ module Lutaml
           thor_class.option :render_diagrams, type: :boolean, default: false,
                                               desc: "Render diagram SVGs " \
                                                     "(may increase output size)"
+          thor_class.option :config, type: :string,
+                                     desc: "Path to YAML configuration " \
+                                           "file (metadata, appearance, etc.)"
         end
 
         def run(input_path) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
@@ -119,18 +125,18 @@ module Lutaml
           output = options[:output]
 
           if mode == :multi_file
-            if File.extname(output) != ""
+            if File.extname(output) == ""
+              output
+            else
               puts OutputFormatter.colorize(
                 "Warning: Multi-file mode requires directory output", :yellow
               )
               output_dir = File.dirname(output)
               puts "Using directory: #{output_dir}"
               output_dir
-            else
-              output
             end
           elsif File.extname(output).downcase != ".html"
-            output + ".html"
+            "#{output}.html"
           else
             output
           end
@@ -174,6 +180,10 @@ module Lutaml
             theme: options[:theme] || "light",
             render_diagrams: options[:render_diagrams] || false,
           }
+
+          if options[:config]
+            generation_options[:config_path] = options[:config]
+          end
 
           Lutaml::UmlRepository::StaticSite.generate(repository,
                                                      generation_options)
