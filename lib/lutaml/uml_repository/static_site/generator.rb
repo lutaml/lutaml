@@ -1,105 +1,58 @@
 # frozen_string_literal: true
 
-require "liquid"
 require "json"
-require "fileutils"
+require_relative "configuration"
+require_relative "id_generator"
+require_relative "data_transformer"
+require_relative "search_index_builder"
+require_relative "output/strategy"
+require_relative "output/vue_inlined_strategy"
+require_relative "output/multi_file_strategy"
 
 module Lutaml
   module UmlRepository
     module StaticSite
-      # Resolves Liquid {% include %} paths to template files on disk.
-      # Unlike LocalFileSystem (which adds a "_" prefix), this resolves
-      # paths directly: "components/header" → "<root>/components/header.liquid"
-      class TemplateFileSystem
-        attr_reader :root
-
-        def initialize(root)
-          @root = root
-        end
-
-        def read_template_file(template_path)
-          full = File.expand_path("#{template_path}.liquid", @root)
-          unless full.start_with?(@root)
-            raise Liquid::FileSystemError,
-                  "Illegal template path: #{template_path}"
-          end
-
-          File.read(full)
-        end
-      end
-
-      # Main static site generator for LutaML UML Browser.
+      # Orchestrates static site generation.
       #
-      # Follows Dependency Inversion Principle by injecting dependencies
-      # and using external configuration instead of hardcoded values.
+      # Thin coordinator that delegates to:
+      # - DataTransformer for building the typed SpaDocument
+      # - SearchIndexBuilder for building the typed SpaSearchIndex
+      # - Output::Strategy subclass for rendering HTML
       #
-      # @example Single-file generation
-      #   config = Configuration.load
-      #   generator = Generator.new(repository, config: config,
-      #     mode: :single_file)
-      #   generator.generate
-      #
-      # @example With dependency injection
+      # @example Single-file Vue IIFE output
       #   generator = Generator.new(repository,
-      #     config: custom_config,
-      #     id_generator: custom_id_gen,
-      #     data_transformer: custom_transformer
-      #   )
+      #     output_strategy: Output::VueInlinedStrategy,
+      #     output: "browser.html")
+      #   generator.generate
       class Generator
-        attr_reader :repository, :config, :options
+        attr_reader :repository, :config, :options, :id_generator,
+                    :data_transformer, :search_builder
 
-        # Initialize generator with dependency injection
-        #
-        # @param repository [UmlRepository] The repository to generate site for
-        # @param options [Hash] Generation options
-        # @option options [Configuration] :config Configuration instance
-        # (default: auto-loaded)
-        # @option options [IDGenerator] :id_generator ID generator instance
-        # @option options [DataTransformer] :data_transformer Data
-        # transformer instance
-        # @option options [SearchIndexBuilder] :search_builder Search index
-        # builder instance
-        # @option options [Symbol] :mode Output mode
-        # (:single_file or :multi_file)
-        # @option options [String] :output Output path
-        # @option options [Boolean] :minify Minify output (overrides config)
-        def initialize(repository, options = {}) # rubocop:disable Metrics/MethodLength
+        def initialize(repository, options = {})
           @repository = repository
           @config = options[:config] ||
             Configuration.load(options[:config_path])
           @options = build_options(options)
 
-          # Dependency injection for testability
           @id_generator = options[:id_generator] || IDGenerator.new
           @data_transformer = options[:data_transformer] ||
             create_data_transformer
           @search_builder = options[:search_builder] ||
             create_search_builder
 
-          @liquid = setup_liquid
+          @output_strategy = resolve_strategy(options)
         end
 
-        # Generate the static site
-        #
-        # @return [String] Path to generated output
         def generate
-          case @options[:mode]
-          when :single_file
-            generate_single_file
-          when :multi_file
-            generate_multi_file
-          else
-            raise ArgumentError,
-                  "Invalid mode: #{@options[:mode]}. " \
-                  "Use :single_file or :multi_file"
-          end
+          spa_document = @data_transformer.transform
+          search_index = @search_builder.build
+
+          @output_strategy.render(spa_document, search_index)
         end
 
         private
 
-        # Build final options merging user options with configuration
-        def build_options(user_options) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
-          # Priority: user_options > config > defaults
+        def build_options(user_options)
           defaults = {
             mode: :single_file,
             output: determine_default_output,
@@ -108,41 +61,37 @@ module Lutaml
           config_options = {
             title: @config.ui&.title,
             description: @config.ui&.description,
-            minify: if user_options[:mode] == :single_file
-                      @config.output&.single_file&.minify
-                    else
-                      @config.output&.multi_file&.minify
-                    end,
-            template_path: parse_template_path || default_template_path,
           }.compact
 
           defaults.merge(config_options).merge(user_options)
         end
 
-        def parse_template_path # rubocop:disable Metrics/MethodLength
-          return nil unless @config.templates
-
-          templates_hash = case @config.templates
-                           when Hash
-                             @config.templates
-                           when String
-                             begin
-                               YAML.safe_load(@config.templates)
-                             rescue StandardError
-                               nil
-                             end
-                           end
-
-          templates_hash&.dig("base_path")
-        end
-
-        def determine_default_output # rubocop:disable Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
+        def determine_default_output
           if @config.output&.single_file&.enabled
             @config.output.single_file.default_filename || "browser.html"
           elsif @config.output&.multi_file&.enabled
             @config.output.multi_file.default_directory || "dist"
           else
             "browser.html"
+          end
+        end
+
+        def resolve_strategy(options)
+          strategy_class = options[:output_strategy]
+          if strategy_class
+            return strategy_class.new(@options[:output],
+                                      config: @config)
+          end
+
+          case @options[:mode]
+          when :single_file
+            Output::VueInlinedStrategy.new(@options[:output], config: @config)
+          when :multi_file
+            Output::MultiFileStrategy.new(@options[:output], config: @config)
+          else
+            raise ArgumentError,
+                  "Invalid mode: #{@options[:mode]}. " \
+                  "Use :single_file or :multi_file"
           end
         end
 
@@ -166,272 +115,10 @@ module Lutaml
 
         def search_options
           {
-            # Pass search configuration to builder
             fields: @config.search&.fields,
             document_types: @config.search&.document_types,
             stop_words: @config.search&.stop_words,
           }
-        end
-
-        def default_template_path
-          # From lib/lutaml/uml_repository/static_site/generator.rb
-          # Up 4 levels: static_site/ → uml_repository/ → lutaml/ → lib/ →
-          # (root)
-          File.expand_path("../../../../templates/static_site", __dir__)
-        end
-
-        def setup_liquid
-          @liquid_environment = Liquid::Environment.new
-          @liquid_environment.file_system = TemplateFileSystem.new(@options[:template_path])
-          @liquid_environment.error_mode = :lax
-        end
-
-        # Generate single-file SPA
-        def generate_single_file # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
-          puts "Generating single-file SPA..."
-
-          # Transform data
-          data = @data_transformer.transform
-          search_index = @search_builder.build
-
-          # Build CSS and JS
-          css_content = build_css
-          js_content = build_js
-
-          # Build initial context
-          context = build_liquid_context(
-            data.to_json, search_index.to_json, :single_file
-          )
-          context["styles"] = css_content
-          context["scripts"] = js_content
-
-          # Render components with context (call the lambda)
-          component_renderer = render_components
-          rendered_components = component_renderer.call(context)
-          context.merge!(rendered_components)
-
-          # Render template
-          template_path = File.join(@options[:template_path],
-                                    "single_file.liquid")
-          template_content = File.read(template_path)
-          template = Liquid::Template.parse(template_content)
-
-          html = template.render(context)
-
-          # Check for rendering errors
-          if html.nil? || html.empty?
-            errors = if template.errors.any?
-                       template.errors.join(", ")
-                     else
-                       "No specific errors, but output is empty"
-                     end
-            raise "Template rendering failed. Errors: #{errors}"
-          end
-
-          # Minify if requested
-          html = minify(html, :html) if @options[:minify]
-
-          # Write output
-          File.write(@options[:output], html)
-          puts "✓ Generated: #{@options[:output]} " \
-               "(#{File.size(@options[:output]) / 1024}KB)"
-
-          @options[:output]
-        end
-
-        def render_components # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
-          # Set up Liquid file system for recursive includes
-          temp_file_system = TemplateFileSystem.new(@options[:template_path])
-
-          component_names = ["header", "sidebar", "content", "package_details",
-                             "class_details"]
-          components = {}
-
-          # We need the context to render components, so we'll return a lambda
-          # that will be called with the context
-          lambda do |context|
-            component_names.each do |name|
-              component_path = File.join(@options[:template_path],
-                                         "components", "#{name}.liquid")
-              if File.exist?(component_path)
-                component_template = Liquid::Template.parse(File.read(component_path))
-                component_template.registers[:file_system] = temp_file_system
-                components[name] = component_template.render(context)
-              else
-                components[name] = "<!-- Component #{name} not found -->"
-              end
-            end
-            components
-          end
-        end
-
-        # Generate multi-file static site
-        def generate_multi_file # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
-          puts "Generating multi-file static site..."
-
-          output_dir = @options[:output]
-          FileUtils.mkdir_p(output_dir)
-          FileUtils.mkdir_p(File.join(output_dir, "data"))
-          FileUtils.mkdir_p(File.join(output_dir, "assets"))
-
-          # Transform data
-          data = @data_transformer.transform
-          search_index = @search_builder.build
-
-          # Write data files
-          write_data_file(File.join(output_dir, "data", "model.json"), data)
-          write_data_file(File.join(output_dir, "data", "search.json"),
-                          search_index)
-
-          # Build context (without embedded data)
-          context = build_liquid_context(nil, nil, :multi_file)
-
-          # Render and write index.html
-          template_content = File.read(File.join(@options[:template_path],
-                                                 "multi_file.liquid"))
-          file_system = TemplateFileSystem.new(@options[:template_path])
-          template = Liquid::Template.parse(template_content,
-                                            error_mode: :lax)
-          template.registers[:file_system] = file_system
-          html = template.render(context)
-          html = minify(html, :html) if @options[:minify]
-          File.write(File.join(output_dir, "index.html"), html)
-
-          # Copy/generate assets
-          generate_assets(output_dir)
-
-          puts "✓ Generated multi-file site in: #{output_dir}"
-          output_dir
-        end
-
-        def build_liquid_context(data, search_index, mode) # rubocop:disable Metrics/MethodLength
-          config_hash = {
-            "mode" => mode.to_s,
-            "title" => @options[:title],
-            "description" => @options[:description],
-            "theme" => @options[:theme],
-            "apiMode" => false, # Static mode by default
-          }
-
-          images_dir = File.join(@options[:template_path], "assets", "images")
-          lutaml_icon = read_svg_asset(images_dir, "lutaml-icon.svg")
-          lutaml_full_logo = read_svg_asset(images_dir, "lutaml-full.svg")
-
-          {
-            "config" => JSON.generate(config_hash),
-            "data" => data,
-            "searchIndex" => search_index,
-            "lutamlIcon" => lutaml_icon,
-            "lutamlFullLogo" => lutaml_full_logo,
-            "buildInfo" => {
-              "timestamp" => Time.now.utc.iso8601,
-              "generator" => "LutaML Static Site Generator v1.0",
-            },
-          }
-        end
-
-        def write_data_file(path, data)
-          json = JSON.pretty_generate(data)
-          File.write(path, json)
-          puts "  ✓ #{File.basename(path)} (#{File.size(path) / 1024}KB)"
-        end
-
-        def read_svg_asset(images_dir, filename)
-          path = File.join(images_dir, filename)
-          return "" unless File.exist?(path)
-
-          File.read(path).strip
-        end
-
-        def generate_assets(output_dir) # rubocop:disable Metrics/MethodLength
-          assets_dir = File.join(output_dir, "assets")
-
-          # Generate CSS
-          css_content = build_css
-          css_path = File.join(assets_dir, "styles.css")
-          File.write(css_path, css_content)
-          puts "  ✓ styles.css (#{File.size(css_path) / 1024}KB)"
-
-          # Generate JS
-          js_content = build_js
-          js_path = File.join(assets_dir, "app.js")
-          File.write(js_path, js_content)
-          puts "  ✓ app.js (#{File.size(js_path) / 1024}KB)"
-
-          # Copy image assets
-          copy_image_assets(assets_dir)
-        end
-
-        def copy_image_assets(assets_dir)
-          images_src = File.join(@options[:template_path], "assets", "images")
-          return unless Dir.exist?(images_src)
-
-          images_dest = File.join(assets_dir, "images")
-          FileUtils.mkdir_p(images_dest)
-          Dir.glob(File.join(images_src, "*")).each do |src_file|
-            next if File.directory?(src_file)
-
-            dest_file = File.join(images_dest, File.basename(src_file))
-            FileUtils.cp(src_file, dest_file)
-          end
-        end
-
-        CSS_FILES = %w[
-          00-variables.css 01-reset.css 02-base.css 03-layout.css
-          04-components.css 05-utilities.css 06-diagrams.css
-        ].freeze
-
-        JS_FILES = %w[
-          core/utils.js core/state.js core/router.js
-          search/lunr-custom.js ui/sidebar.js ui/details.js
-          ui/search.js app.js
-        ].freeze
-
-        CSS_RULES = [
-          [/\s+/, " "],
-          [/\s*{\s*/, "{"],
-          [/\s*}\s*/, "}"],
-          [/\s*:\s*/, ":"],
-          [/\s*;\s*/, ";"],
-        ].freeze
-
-        JS_RULES = [
-          [%r{//.*$}, ""],
-          [%r{/\*.*?\*/}m, ""],
-          [/\s+/, " "],
-        ].freeze
-
-        HTML_RULES = [
-          [/\s+/, " "],
-          [/>\s+</, "><"],
-        ].freeze
-
-        def build_css
-          concatenate_assets("styles", CSS_FILES)
-        end
-
-        def build_js
-          concatenate_assets("scripts", JS_FILES)
-        end
-
-        def concatenate_assets(subdir, files)
-          content = files.map do |file|
-            path = File.join(@options[:template_path], "assets", subdir, file)
-            File.exist?(path) ? File.read(path) : ""
-          end.join("\n\n")
-
-          @options[:minify] ? minify(content, subdir.to_sym) : content
-        end
-
-        def minify(content, type)
-          rules = case type
-                  when :styles then CSS_RULES
-                  when :scripts then JS_RULES
-                  else HTML_RULES
-                  end
-          rules.reduce(content) do |acc, (pattern, replacement)|
-            acc.gsub(pattern, replacement)
-          end.strip
         end
       end
     end

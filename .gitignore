@@ -23,3 +23,6 @@ old-docs
 TODO.*/
 TODO.*.md
 .rubocop_todo.yml.tmp
+
+# Frontend build artifacts
+frontend/node_modules/

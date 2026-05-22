@@ -4,12 +4,11 @@ module Lutaml
   module UmlRepository
     # Static Site generation for UML model browsing.
     #
-    # Provides a complete SPA generator using:
-    # - Liquid templates
-    # - Alpine.js for reactivity
+    # Generates a single-page application (SPA) from typed UML models:
+    # - Vue 3 + Pinia + TypeScript frontend (pre-built IIFE)
     # - lunr.js for client-side search
-    # - Modern CSS (Grid/Flexbox)
-    # - External YAML configuration
+    # - Strategy pattern for output (single-file or multi-file)
+    # - Full typed data layer via Lutaml::Model::Serializable
     #
     # @example Generate single-file SPA
     #   repository = UmlRepository.from_package("model.lur")
@@ -33,8 +32,6 @@ module Lutaml
       autoload :SearchIndexBuilder,
                "lutaml/uml_repository/static_site/search_index_builder"
       autoload :Generator, "lutaml/uml_repository/static_site/generator"
-      autoload :AssociationSerialization,
-               "lutaml/uml_repository/static_site/association_serialization"
       autoload :Models, "lutaml/uml_repository/static_site/models"
       autoload :Serializers, "lutaml/uml_repository/static_site/serializers"
 
