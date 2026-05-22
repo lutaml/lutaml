@@ -7,7 +7,8 @@ module Lutaml
         class SpaTreeClassRef < SpaBase
           attribute :id, :string
           attribute :name, :string
-          attribute :stereotypes, :string, collection: true, initialize_empty: true
+          attribute :stereotypes, :string, collection: true,
+                                           initialize_empty: true
 
           json do
             map "id", to: :id

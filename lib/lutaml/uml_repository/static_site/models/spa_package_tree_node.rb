@@ -8,10 +8,13 @@ module Lutaml
           attribute :id, :string
           attribute :name, :string
           attribute :path, :string
-          attribute :stereotypes, :string, collection: true, initialize_empty: true
+          attribute :stereotypes, :string, collection: true,
+                                           initialize_empty: true
           attribute :class_count, :integer, default: 0
-          attribute :classes, SpaTreeClassRef, collection: true, initialize_empty: true
-          attribute :children, SpaPackageTreeNode, collection: true, initialize_empty: true
+          attribute :classes, SpaTreeClassRef, collection: true,
+                                               initialize_empty: true
+          attribute :children, SpaPackageTreeNode, collection: true,
+                                                   initialize_empty: true
 
           json do
             map "id", to: :id

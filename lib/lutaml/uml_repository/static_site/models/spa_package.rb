@@ -10,9 +10,11 @@ module Lutaml
           attribute :name, :string
           attribute :path, :string
           attribute :definition, :string
-          attribute :stereotypes, :string, collection: true, initialize_empty: true
+          attribute :stereotypes, :string, collection: true,
+                                           initialize_empty: true
           attribute :classes, :string, collection: true, initialize_empty: true
-          attribute :sub_packages, :string, collection: true, initialize_empty: true
+          attribute :sub_packages, :string, collection: true,
+                                            initialize_empty: true
           attribute :diagrams, :string, collection: true, initialize_empty: true
           attribute :parent, :string
 
