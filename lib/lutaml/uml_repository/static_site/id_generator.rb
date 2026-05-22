@@ -97,6 +97,11 @@ module Lutaml
           @cache.clear
         end
 
+        # @return [Integer] Number of cached IDs
+        def cache_size
+          @cache.size
+        end
+
         private
 
         # Generate a stable ID from a prefix and key

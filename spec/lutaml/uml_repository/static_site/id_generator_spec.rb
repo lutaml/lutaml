@@ -1,24 +1,22 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require_relative "../../../../lib/lutaml/uml_repository/" \
-                 "static_site/id_generator"
+require "lutaml/uml_repository/static_site/id_generator"
 
 RSpec.describe Lutaml::UmlRepository::StaticSite::IDGenerator do
   let(:generator) { described_class.new }
 
-  # Test entity doubles
-  let(:package) { double("Package", xmi_id: "pkg_xmi_123") }
-  let(:klass) { double("Class", xmi_id: "cls_xmi_456") }
-  let(:attribute) { double("Attribute", name: "testAttr") }
-  let(:owner) { double("Owner", xmi_id: "owner_xmi_789") }
-  let(:association) { double("Association", xmi_id: "assoc_xmi_012") }
-  let(:operation) { double("Operation", name: "testOp") }
-  let(:diagram) { double("Diagram", xmi_id: "diag_xmi_345") }
+  let(:package) { Lutaml::Uml::Package.new(xmi_id: "pkg_xmi_123", name: "Pkg") }
+  let(:klass) { Lutaml::Uml::Class.new(xmi_id: "cls_xmi_456", name: "Cls") }
+  let(:attribute) { Lutaml::Uml::TopElementAttribute.new(name: "testAttr") }
+  let(:owner) { Lutaml::Uml::Class.new(xmi_id: "owner_xmi_789", name: "Owner") }
+  let(:association) { Lutaml::Uml::Association.new(xmi_id: "assoc_xmi_012") }
+  let(:operation) { Lutaml::Uml::Operation.new(name: "testOp", xmi_id: "op_1") }
+  let(:diagram) { Lutaml::Uml::Diagram.new(xmi_id: "diag_xmi_345") }
 
   describe "#initialize" do
     it "initializes with empty cache" do
-      expect(generator.instance_variable_get(:@cache)).to be_empty
+      expect(generator.cache_size).to eq(0)
     end
   end
 
@@ -38,16 +36,14 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::IDGenerator do
     it "uses cache for subsequent calls", :aggregate_failures do
       id1 = generator.package_id(package)
 
-      #  Cache should be populated
-      cache = generator.instance_variable_get(:@cache)
-      expect(cache).not_to be_empty
+      expect(generator.cache_size).to be > 0
 
       id2 = generator.package_id(package)
       expect(id2).to eq(id1)
     end
 
     it "generates different IDs for different packages" do
-      package2 = double("Package2", xmi_id: "pkg_xmi_999")
+      package2 = Lutaml::Uml::Package.new(xmi_id: "pkg_xmi_999", name: "P2")
 
       id1 = generator.package_id(package)
       id2 = generator.package_id(package2)
@@ -70,7 +66,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::IDGenerator do
     end
 
     it "generates different IDs for different classes" do
-      klass2 = double("Class2", xmi_id: "cls_xmi_999")
+      klass2 = Lutaml::Uml::Class.new(xmi_id: "cls_xmi_999", name: "C2")
 
       id1 = generator.class_id(klass)
       id2 = generator.class_id(klass2)
@@ -87,8 +83,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::IDGenerator do
     end
 
     it "uses combination of owner and attribute name" do
-      # Same attribute name but different owner should give different ID
-      owner2 = double("Owner2", xmi_id: "owner_xmi_999")
+      owner2 = Lutaml::Uml::Class.new(xmi_id: "owner_xmi_999", name: "O2")
 
       id1 = generator.attribute_id(attribute, owner)
       id2 = generator.attribute_id(attribute, owner2)
@@ -125,7 +120,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::IDGenerator do
     end
 
     it "uses combination of owner and operation name" do
-      owner2 = double("Owner2", xmi_id: "owner_xmi_999")
+      owner2 = Lutaml::Uml::Class.new(xmi_id: "owner_xmi_999", name: "O2")
 
       id1 = generator.operation_id(operation, owner)
       id2 = generator.operation_id(operation, owner2)
@@ -172,19 +167,15 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::IDGenerator do
 
   describe "#clear_cache" do
     it "clears the internal cache" do
-      # Generate some IDs to populate cache
       aggregate_failures do
         generator.package_id(package)
         generator.class_id(klass)
 
-        cache = generator.instance_variable_get(:@cache)
-        expect(cache).not_to be_empty
+        expect(generator.cache_size).to eq(2)
 
-        # Clear cache
         generator.clear_cache
 
-        cache_after = generator.instance_variable_get(:@cache)
-        expect(cache_after).to be_empty
+        expect(generator.cache_size).to eq(0)
       end
     end
 
@@ -193,7 +184,6 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::IDGenerator do
       generator.clear_cache
       id_after = generator.package_id(package)
 
-      # Should generate same ID (stable hashing)
       expect(id_after).to eq(id_before)
     end
   end
@@ -210,42 +200,36 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::IDGenerator do
     end
 
     it "generates IDs that are collision-resistant" do
-      # Generate many IDs and check for collisions
       ids = []
 
       100.times do |i|
-        pkg = double("Package#{i}", xmi_id: "pkg_#{i}")
+        pkg = Lutaml::Uml::Package.new(xmi_id: "pkg_#{i}", name: "P#{i}")
         ids << generator.package_id(pkg)
       end
 
-      # All IDs should be unique
       expect(ids.uniq.size).to eq(ids.size)
     end
   end
 
   describe "performance" do
     it "caches IDs for improved performance" do
-      # First call
       start_time = Time.now
       1000.times { generator.package_id(package) }
       cached_time = Time.now - start_time
 
-      # Cached calls should be much faster than generation
-      expect(cached_time).to be < 1.0 # Should complete in under 1s
+      expect(cached_time).to be < 1.0
     end
   end
 
   describe "edge cases" do
     it "handles nil XMI IDs gracefully" do
-      package_nil = double("PackageNil", xmi_id: nil)
+      package_nil = Lutaml::Uml::Package.new(xmi_id: nil, name: "Nil")
 
-      expect do
-        generator.package_id(package_nil)
-      end.not_to raise_error
+      expect { generator.package_id(package_nil) }.not_to raise_error
     end
 
     it "handles empty XMI IDs", :aggregate_failures do
-      package_empty = double("PackageEmpty", xmi_id: "")
+      package_empty = Lutaml::Uml::Package.new(xmi_id: "", name: "Empty")
 
       id = generator.package_id(package_empty)
       expect(id).to be_a(String)
@@ -254,15 +238,16 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::IDGenerator do
 
     it "handles very long XMI IDs" do
       long_id = "x" * 1000
-      package_long = double("PackageLong", xmi_id: long_id)
+      package_long = Lutaml::Uml::Package.new(xmi_id: long_id, name: "Long")
 
       id = generator.package_id(package_long)
-      expect(id.length).to eq(12) # Still short despite long input
+      expect(id.length).to eq(12)
     end
 
     it "handles special characters in XMI IDs" do
       special_id = "pkg-123_abc.xyz@test"
-      package_special = double("PackageSpecial", xmi_id: special_id)
+      package_special = Lutaml::Uml::Package.new(xmi_id: special_id,
+                                                 name: "Special")
 
       id = generator.package_id(package_special)
       expect(id).to match(/^pkg_[a-f0-9]{8}$/)

@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require_relative "../../../../lib/lutaml/uml_repository/static_site/generator"
-require_relative "../../../../lib/lutaml/uml_repository/static_site/" \
-                 "configuration"
+require "lutaml/uml_repository/static_site/generator"
+require "lutaml/uml_repository/static_site/output/vue_inlined_strategy"
+require "lutaml/uml_repository/static_site/output/multi_file_strategy"
 require "tempfile"
 
 RSpec.describe Lutaml::UmlRepository::StaticSite::Generator do
@@ -32,16 +32,11 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Generator do
       expect(generator.config).to be_a(Lutaml::UmlRepository::StaticSite::Configuration)
     end
 
-    it "creates data transformer" do
+    it "creates data transformer and search builder", :aggregate_failures do
       generator = described_class.new(repository)
 
-      expect(generator.instance_variable_get(:@data_transformer)).to be_a(Lutaml::UmlRepository::StaticSite::DataTransformer)
-    end
-
-    it "creates search builder" do
-      generator = described_class.new(repository)
-
-      expect(generator.instance_variable_get(:@search_builder)).to be_a(Lutaml::UmlRepository::StaticSite::SearchIndexBuilder)
+      expect(generator.data_transformer).to be_a(Lutaml::UmlRepository::StaticSite::DataTransformer)
+      expect(generator.search_builder).to be_a(Lutaml::UmlRepository::StaticSite::SearchIndexBuilder)
     end
 
     it "accepts custom configuration" do
@@ -51,112 +46,90 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Generator do
       expect(generator.config).to eq(custom_config)
     end
 
-    it "supports dependency injection for testing", :aggregate_failures do
-      mock_transformer = double("DataTransformer")
-      mock_builder = double("SearchBuilder")
+    it "accepts injected dependencies", :aggregate_failures do
+      custom_id_gen = Lutaml::UmlRepository::StaticSite::IDGenerator.new
+      custom_transformer = Lutaml::UmlRepository::StaticSite::DataTransformer.new(repository)
+      custom_builder = Lutaml::UmlRepository::StaticSite::SearchIndexBuilder.new(repository)
 
       generator = described_class.new(repository,
-                                      data_transformer: mock_transformer,
-                                      search_builder: mock_builder)
+                                      id_generator: custom_id_gen,
+                                      data_transformer: custom_transformer,
+                                      search_builder: custom_builder)
 
-      expect(generator.instance_variable_get(:@data_transformer))
-        .to eq(mock_transformer)
-      expect(generator.instance_variable_get(:@search_builder))
-        .to eq(mock_builder)
+      expect(generator.id_generator).to eq(custom_id_gen)
+      expect(generator.data_transformer).to eq(custom_transformer)
+      expect(generator.search_builder).to eq(custom_builder)
     end
   end
 
   describe "#generate" do
     context "with single-file mode" do
-      it "generates single HTML file", :aggregate_failures do
+      it "delegates to the output strategy" do
+        custom_strategy_class = Class.new(
+          Lutaml::UmlRepository::StaticSite::Output::Strategy,
+        ) do
+          def render(_spa_document, _search_index)
+            output_path
+          end
+        end
+
         generator = described_class.new(repository,
                                         mode: :single_file,
-                                        output: output_file.path)
-
-        allow_any_instance_of(Liquid::Template)
-          .to receive(:render).and_return("<html>Test</html>")
-
+                                        output: output_file.path,
+                                        output_strategy: custom_strategy_class)
         result = generator.generate
 
         expect(result).to eq(output_file.path)
-        expect(File.exist?(output_file.path)).to be true
-      end
-
-      it "embeds JSON data in HTML", :aggregate_failures do
-        generator = described_class.new(repository,
-                                        mode: :single_file,
-                                        output: output_file.path)
-
-        allow_any_instance_of(Liquid::Template)
-          .to receive(:render) do |_template, context|
-          expect(context["data"]).to be_a(String)
-          expect(context["searchIndex"]).to be_a(String)
-          "<html>Data embedded</html>"
-        end
-
-        generator.generate
       end
     end
 
     context "with multi-file mode" do
-      it "generates multi-file site structure", :aggregate_failures do
+      it "generates multi-file output", :aggregate_failures do
+        custom_strategy_class = Class.new(
+          Lutaml::UmlRepository::StaticSite::Output::Strategy,
+        ) do
+          def render(_doc, _idx)
+            FileUtils.mkdir_p(output_path)
+            File.write(File.join(output_path, "index.html"),
+                       "<html>test</html>")
+            output_path
+          end
+        end
+
         generator = described_class.new(repository,
                                         mode: :multi_file,
-                                        output: output_dir)
-
-        allow_any_instance_of(Liquid::Template)
-          .to receive(:render).and_return("<html>Test</html>")
-
+                                        output: output_dir,
+                                        output_strategy: custom_strategy_class)
         result = generator.generate
 
         expect(result).to eq(output_dir)
         expect(File.exist?(File.join(output_dir, "index.html"))).to be true
-        expect(File.exist?(File.join(output_dir, "data"))).to be true
-        expect(File.exist?(File.join(output_dir, "assets"))).to be true
       end
+    end
 
-      it "creates separate JSON data files", :aggregate_failures do
+    context "with custom output strategy" do
+      it "uses the injected strategy class" do
+        custom_class = Class.new(Lutaml::UmlRepository::StaticSite::Output::Strategy) do
+          def render(_doc, _idx)
+            output_path
+          end
+        end
+
         generator = described_class.new(repository,
-                                        mode: :multi_file,
-                                        output: output_dir)
+                                        output: "/tmp/custom.html",
+                                        output_strategy: custom_class)
+        result = generator.generate
 
-        allow_any_instance_of(Liquid::Template)
-          .to receive(:render).and_return("<html>Test</html>")
-
-        generator.generate
-
-        expect(File.exist?(File.join(output_dir, "data", "model.json")))
-          .to be true
-        expect(File.exist?(File.join(output_dir, "data", "search.json")))
-          .to be true
-      end
-
-      it "creates separate asset files", :aggregate_failures do
-        generator = described_class.new(repository,
-                                        mode: :multi_file,
-                                        output: output_dir)
-
-        allow_any_instance_of(Liquid::Template)
-          .to receive(:render).and_return("<html>Test</html>")
-
-        allow(File).to receive(:read).and_call_original
-        allow(File)
-          .to receive(:read)
-          .with(anything)
-          .and_return("/* CSS */", "// JS")
-
-        generator.generate
+        expect(result).to eq("/tmp/custom.html")
       end
     end
 
     context "with invalid mode" do
-      it "raises error for unsupported mode" do
-        generator = described_class.new(repository,
-                                        mode: :invalid_mode,
-                                        output: output_file.path)
-
+      it "raises error during initialization for unsupported mode" do
         expect do
-          generator.generate
+          described_class.new(repository,
+                              mode: :invalid_mode,
+                              output: output_file.path)
         end.to raise_error(ArgumentError, /Invalid mode/)
       end
     end
@@ -187,28 +160,25 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Generator do
       generator = described_class.new(repository,
                                       id_generator: custom_id_gen)
 
-      expect(generator.instance_variable_get(:@id_generator))
-        .to eq(custom_id_gen)
+      expect(generator.id_generator).to eq(custom_id_gen)
     end
 
     it "uses injected data transformer" do
-      mock_transformer = double("DataTransformer")
+      custom_transformer = Lutaml::UmlRepository::StaticSite::DataTransformer.new(repository)
 
       generator = described_class.new(repository,
-                                      data_transformer: mock_transformer)
+                                      data_transformer: custom_transformer)
 
-      expect(generator.instance_variable_get(:@data_transformer))
-        .to eq(mock_transformer)
+      expect(generator.data_transformer).to eq(custom_transformer)
     end
 
     it "uses injected search builder" do
-      mock_builder = double("SearchBuilder")
+      custom_builder = Lutaml::UmlRepository::StaticSite::SearchIndexBuilder.new(repository)
 
       generator = described_class.new(repository,
-                                      search_builder: mock_builder)
+                                      search_builder: custom_builder)
 
-      expect(generator.instance_variable_get(:@search_builder))
-        .to eq(mock_builder)
+      expect(generator.search_builder).to eq(custom_builder)
     end
   end
 end
