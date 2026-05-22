@@ -1,5 +1,5 @@
 # frozen_string_literal: true
 
 module Lutaml
-  VERSION = "0.10.18"
+  VERSION = "0.10.19"
 end
