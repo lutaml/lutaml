@@ -46,9 +46,20 @@ module Lutaml
 
       def class_type_for(uml_class)
         case uml_class
-        when String then uml_class.split("::").last
-        when Class then uml_class.name.split("::").last
-        else uml_class.class.name.split("::").last
+        when String
+          uml_class.split("::").last
+        when Lutaml::Uml::Enum
+          "Enumeration"
+        when Lutaml::Uml::DataType
+          "DataType"
+        when Lutaml::Uml::PrimitiveType
+          "PrimitiveType"
+        when Lutaml::Uml::Class
+          "Class"
+        when Class
+          uml_class.name.split("::").last
+        else
+          uml_class.class.name.split("::").last
         end
       end
 
