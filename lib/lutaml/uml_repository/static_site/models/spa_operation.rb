@@ -11,8 +11,7 @@ module Lutaml
           attribute :return_type, :string
           attribute :owner, :string
           attribute :owner_name, :string
-          attribute :parameters, SpaParameter, collection: true,
-                                               default: -> { [] }
+          attribute :parameters, SpaParameter, collection: true, initialize_empty: true
           attribute :is_static, :boolean, default: false
           attribute :is_abstract, :boolean, default: false
 
@@ -23,9 +22,9 @@ module Lutaml
             map "returnType", to: :return_type
             map "owner", to: :owner
             map "ownerName", to: :owner_name
-            map "parameters", to: :parameters
-            map "isStatic", to: :is_static
-            map "isAbstract", to: :is_abstract
+            map "parameters", to: :parameters, render_empty: true
+            map "isStatic", to: :is_static, render_default: true
+            map "isAbstract", to: :is_abstract, render_default: true
           end
         end
       end

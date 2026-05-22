@@ -21,8 +21,8 @@ onMounted(async () => {
     await data.loadFromUrl(win.__SPA_DATA_URL__, win.__SPA_SEARCH_URL__)
   }
 
-  ui.navigateFromHash()
-  window.addEventListener('hashchange', () => ui.navigateFromHash())
+  ui.navigateToHash()
+  window.addEventListener('hashchange', () => ui.navigateToHash())
 
   const saved = localStorage.getItem('uml-browser-preferences')
   if (saved) {
@@ -43,7 +43,7 @@ watch(() => [ui.darkMode, ui.sidebarVisible], () => {
 </script>
 
 <template>
-  <div id="app" :class="{ dark: ui.darkMode }">
+  <div class="app-layout" :data-theme="ui.darkMode ? 'dark' : 'light'">
     <AppSidebar />
     <div class="main-content">
       <AppHeader />

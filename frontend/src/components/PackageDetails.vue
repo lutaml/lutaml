@@ -9,79 +9,58 @@ const ui = useUiStore()
 const pkg = computed(() =>
   ui.currentPackageId ? data.getPackageById(ui.currentPackageId) : null,
 )
-
-function typeIcon(type: string): string {
-  switch (type) {
-    case 'Class': return 'C'
-    case 'DataType': return 'DT'
-    case 'Enum': return 'E'
-    case 'Interface': return 'I'
-    default: return 'C'
-  }
-}
-
-function resolveType(typeName: string): { isBasic: boolean; classId: string | null } {
-  const basicTypes = new Set([
-    'String', 'Integer', 'Boolean', 'Real', 'UnlimitedNatural',
-    'DateTime', 'URI', 'Any', 'Object',
-  ])
-  if (basicTypes.has(typeName)) return { isBasic: true, classId: null }
-  const found = data.findClassByName(typeName)
-  return { isBasic: false, classId: found ? found.id : null }
-}
 </script>
 
 <template>
   <div class="detail-view" v-if="pkg">
     <div class="entity-header">
-      <h2>{{ pkg.name }}</h2>
-      <span class="type-badge">Package</span>
+      <div class="entity-title">
+        <h2 class="entity-name">{{ pkg.name }}</h2>
+        <div class="entity-subtitle" v-if="pkg.path">{{ pkg.path }}</div>
+      </div>
+      <span class="entity-badge badge-package">Package</span>
     </div>
 
-    <div class="entity-metadata" v-if="pkg.path || pkg.stereotypes.length">
-      <div v-if="pkg.path" class="meta-row">
-        <span class="meta-label">Path:</span>
-        <span>{{ pkg.path }}</span>
-      </div>
-      <div v-if="pkg.stereotypes.length" class="meta-row">
-        <span class="meta-label">Stereotypes:</span>
-        <span class="stereotype-tags">
+    <div class="entity-metadata" v-if="pkg.stereotypes.length">
+      <div class="metadata-item">
+        <span class="metadata-label">Stereotypes</span>
+        <span class="metadata-value">
           <span v-for="s in pkg.stereotypes" :key="s" class="stereotype-tag">&laquo;{{ s }}&raquo;</span>
         </span>
       </div>
     </div>
 
-    <div class="definition" v-if="pkg.definition">
-      <p>{{ pkg.definition }}</p>
+    <div class="entity-definition" v-if="pkg.definition">
+      <div class="definition-content">{{ pkg.definition }}</div>
     </div>
 
     <div class="section" v-if="pkg.diagrams.length">
-      <h3>Diagrams</h3>
+      <h3 class="section-title">Diagrams <span class="section-count">{{ pkg.diagrams.length }}</span></h3>
       <div class="item-list">
         <div v-for="diagId in pkg.diagrams" :key="diagId"
-             class="list-item clickable" @click="ui.selectDiagram(diagId)">
-          <span class="item-icon">&#128202;</span>
-          <span class="item-name">{{ data.getDiagramById(diagId)?.name || diagId }}</span>
+             class="list-item clickable-row" @click="ui.selectDiagram(diagId)">
+          <span class="list-item-icon">&#128202;</span>
+          <span class="list-item-name">{{ data.getDiagramById(diagId)?.name || diagId }}</span>
         </div>
       </div>
     </div>
 
     <div class="section" v-if="pkg.subPackages.length">
-      <h3>Sub-Packages</h3>
+      <h3 class="section-title">Sub-Packages <span class="section-count">{{ pkg.subPackages.length }}</span></h3>
       <div class="item-list">
         <div v-for="subId in pkg.subPackages" :key="subId"
-             class="list-item clickable" @click="ui.selectPackage(subId)">
-          <span class="item-icon">&#128193;</span>
-          <span class="item-name">{{ data.getPackageById(subId)?.name || subId }}</span>
-          <span class="count-badge">{{ data.getPackageById(subId)?.classes.length || 0 }}</span>
+             class="list-item clickable-row" @click="ui.selectPackage(subId)">
+          <span class="list-item-icon">&#128193;</span>
+          <span class="list-item-name">{{ data.getPackageById(subId)?.name || subId }}</span>
+          <span class="tree-count">{{ data.getPackageById(subId)?.classes.length || 0 }}</span>
         </div>
       </div>
     </div>
 
     <div class="section" v-if="pkg.classes.length">
-      <h3>Classes</h3>
+      <h3 class="section-title">Classes <span class="section-count">{{ pkg.classes.length }}</span></h3>
       <div class="table-wrapper">
-        <table>
+        <table class="data-table">
           <thead>
             <tr>
               <th>Name</th>
@@ -91,10 +70,10 @@ function resolveType(typeName: string): { isBasic: boolean; classId: string | nu
             </tr>
           </thead>
           <tbody>
-            <tr v-for="clsId in pkg.classes" :key="clsId" class="clickable"
+            <tr v-for="clsId in pkg.classes" :key="clsId" class="clickable-row"
                 @click="ui.selectClass(clsId)">
               <td>{{ data.getClassById(clsId)?.name }}</td>
-              <td><span class="type-badge">{{ data.getClassById(clsId)?.type }}</span></td>
+              <td><span class="entity-badge" :class="'badge-' + (data.getClassById(clsId)?.type || 'class').toLowerCase()">{{ data.getClassById(clsId)?.type }}</span></td>
               <td>
                 <span v-for="s in (data.getClassById(clsId)?.stereotypes || [])" :key="s"
                       class="stereotype-tag">&laquo;{{ s }}&raquo;</span>

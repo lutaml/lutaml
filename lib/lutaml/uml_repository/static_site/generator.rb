@@ -1,13 +1,6 @@
 # frozen_string_literal: true
 
 require "json"
-require_relative "configuration"
-require_relative "id_generator"
-require_relative "data_transformer"
-require_relative "search_index_builder"
-require_relative "output/strategy"
-require_relative "output/vue_inlined_strategy"
-require_relative "output/multi_file_strategy"
 
 module Lutaml
   module UmlRepository
@@ -34,7 +27,7 @@ module Lutaml
             Configuration.load(options[:config_path])
           @options = build_options(options)
 
-          @id_generator = options[:id_generator] || IDGenerator.new
+          @id_generator = options[:id_generator] || IdGenerator.new
           @data_transformer = options[:data_transformer] ||
             create_data_transformer
           @search_builder = options[:search_builder] ||

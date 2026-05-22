@@ -3,7 +3,7 @@
 require "spec_helper"
 require "lutaml/uml_repository/static_site/id_generator"
 
-RSpec.describe Lutaml::UmlRepository::StaticSite::IDGenerator do
+RSpec.describe Lutaml::UmlRepository::StaticSite::IdGenerator do
   let(:generator) { described_class.new }
 
   let(:package) { Lutaml::Uml::Package.new(xmi_id: "pkg_xmi_123", name: "Pkg") }

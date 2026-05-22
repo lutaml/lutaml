@@ -11,6 +11,8 @@ module Lutaml
     autoload :Database, "lutaml/qea/database"
     autoload :Repositories, "lutaml/qea/repositories"
     autoload :Parser, "lutaml/qea/parser"
+    autoload :Benchmark, "lutaml/qea/benchmark"
+    autoload :FileDetector, "lutaml/qea/file_detector"
   end
 end
 

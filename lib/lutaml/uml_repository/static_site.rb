@@ -34,6 +34,7 @@ module Lutaml
       autoload :Generator, "lutaml/uml_repository/static_site/generator"
       autoload :Models, "lutaml/uml_repository/static_site/models"
       autoload :Serializers, "lutaml/uml_repository/static_site/serializers"
+      autoload :Output, "lutaml/uml_repository/static_site/output"
 
       class << self
         # Generate a static site from a repository

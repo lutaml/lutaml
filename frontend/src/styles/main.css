@@ -113,7 +113,7 @@
 }
 
 /* Dark Mode */
-#app.dark {
+[data-theme="dark"] {
   --bg-primary: #1a1a24;
   --bg-secondary: #232736;
   --bg-elevated: #2d3344;
@@ -358,6 +358,10 @@ mark {
 /* Layout — LutaML Branded */
 
 #app {
+  height: 100vh;
+}
+
+.app-layout {
   display: flex;
   height: 100vh;
   overflow: hidden;
@@ -372,7 +376,7 @@ mark {
 }
 
 /* Header */
-.app-header {
+.header {
   height: var(--header-height);
   flex-shrink: 0;
   display: flex;
@@ -777,9 +781,10 @@ mark {
 /* ========== Header ========== */
 
 .sidebar-toggle {
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: center;
+  padding: var(--space-2);
 }
 
 .home-btn {
@@ -1477,4 +1482,62 @@ mark {
   margin-top: var(--space-2);
   font-size: var(--text-sm);
   color: var(--text-muted);
+}
+
+/* Tree section (flex-grow in sidebar) */
+.tree-section {
+  flex: 1;
+  overflow: auto;
+}
+
+.tree-controls {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.tree-controls .btn {
+  padding: var(--space-1);
+}
+
+/* Breadcrumb separator */
+.breadcrumb-sep {
+  color: var(--border-medium);
+  margin: 0 var(--space-1);
+}
+
+/* Search keyboard hint */
+.search-kbd {
+  padding: 2px 6px;
+  font-size: var(--text-xs);
+  font-family: var(--font-mono);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-sm);
+}
+
+/* Theme toggle button */
+.theme-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+}
+
+/* Detail view wrapper */
+.detail-view {
+  max-width: 960px;
+}
+
+/* Loading text */
+.loading {
+  padding: var(--space-4);
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+/* Responsive sidebar toggle override */
+@media (min-width: 1024px) {
+  .sidebar-toggle {
+    display: flex;
+  }
 }

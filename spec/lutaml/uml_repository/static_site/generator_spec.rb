@@ -47,7 +47,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Generator do
     end
 
     it "accepts injected dependencies", :aggregate_failures do
-      custom_id_gen = Lutaml::UmlRepository::StaticSite::IDGenerator.new
+      custom_id_gen = Lutaml::UmlRepository::StaticSite::IdGenerator.new
       custom_transformer = Lutaml::UmlRepository::StaticSite::DataTransformer.new(repository)
       custom_builder = Lutaml::UmlRepository::StaticSite::SearchIndexBuilder.new(repository)
 
@@ -155,7 +155,7 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::Generator do
 
   describe "dependency injection" do
     it "uses injected ID generator" do
-      custom_id_gen = Lutaml::UmlRepository::StaticSite::IDGenerator.new
+      custom_id_gen = Lutaml::UmlRepository::StaticSite::IdGenerator.new
 
       generator = described_class.new(repository,
                                       id_generator: custom_id_gen)

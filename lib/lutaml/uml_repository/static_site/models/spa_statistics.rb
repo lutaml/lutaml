@@ -12,11 +12,11 @@ module Lutaml
           attribute :operations, :integer, default: 0
 
           json do
-            map "packages", to: :packages
-            map "classes", to: :classes
-            map "associations", to: :associations
-            map "attributes", to: :attributes
-            map "operations", to: :operations
+            map "packages", to: :packages, render_default: true
+            map "classes", to: :classes, render_default: true
+            map "associations", to: :associations, render_default: true
+            map "attributes", to: :attributes, render_default: true
+            map "operations", to: :operations, render_default: true
           end
         end
       end

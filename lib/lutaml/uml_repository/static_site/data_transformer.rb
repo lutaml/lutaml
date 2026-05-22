@@ -11,7 +11,7 @@ module Lutaml
         def initialize(repository, options = {})
           @repository = repository
           @options = default_options.merge(options)
-          @id_generator = IDGenerator.new
+          @id_generator = IdGenerator.new
           @generalization_map = build_generalization_map
         end
 
@@ -113,6 +113,15 @@ module Lutaml
         end
 
         def resolve_parent_xmi_id(assoc_gen)
+          return nil unless assoc_gen
+
+          if assoc_gen.is_a?(String)
+            return nil if assoc_gen.empty?
+
+            found = class_lookup.by_xmi_id(assoc_gen)
+            return found ? assoc_gen : nil
+          end
+
           parent_object_id = assoc_gen.parent_object_id
           return nil unless parent_object_id
 

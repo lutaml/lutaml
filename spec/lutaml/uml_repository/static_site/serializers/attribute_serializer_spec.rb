@@ -6,7 +6,7 @@ require "lutaml/uml_repository"
 RSpec.describe Lutaml::UmlRepository::StaticSite::Serializers::AttributeSerializer do
   let(:document) { create_simple_test_document }
   let(:repository) { Lutaml::UmlRepository::Repository.new(document: document) }
-  let(:id_generator) { Lutaml::UmlRepository::StaticSite::IDGenerator.new }
+  let(:id_generator) { Lutaml::UmlRepository::StaticSite::IdGenerator.new }
   let(:options) { { format_definitions: false } }
 
   describe "#build_map" do

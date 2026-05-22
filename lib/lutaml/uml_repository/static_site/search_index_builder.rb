@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "id_generator"
-require_relative "models"
-
 module Lutaml
   module UmlRepository
     module StaticSite
@@ -20,7 +17,7 @@ module Lutaml
         def initialize(repository, options = {})
           @repository = repository
           @options = default_options.merge(options)
-          @id_generator = IDGenerator.new
+          @id_generator = IdGenerator.new
         end
 
         def build
