@@ -11,7 +11,8 @@ module Lutaml
           attribute :return_type, :string
           attribute :owner, :string
           attribute :owner_name, :string
-          attribute :parameters, SpaParameter, collection: true, initialize_empty: true
+          attribute :parameters, SpaParameter, collection: true,
+                                               initialize_empty: true
           attribute :is_static, :boolean, default: false
           attribute :is_abstract, :boolean, default: false
 

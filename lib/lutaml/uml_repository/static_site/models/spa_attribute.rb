@@ -13,7 +13,8 @@ module Lutaml
           attribute :owner_name, :string
           attribute :cardinality, SpaCardinality
           attribute :definition, :string
-          attribute :stereotypes, :string, collection: true, initialize_empty: true
+          attribute :stereotypes, :string, collection: true,
+                                           initialize_empty: true
           attribute :is_static, :boolean, default: false
           attribute :is_read_only, :boolean, default: false
           attribute :default_value, :string
