@@ -43,8 +43,22 @@ module Lutaml
           end
 
           def build_data_json(spa_document, search_index)
+            metadata_hash = JSON.parse(spa_document.metadata.to_json)
+
+            # Parse appearance JSON string back into the metadata
+            if metadata_hash["appearance"].is_a?(String) && !metadata_hash["appearance"].empty?
+              begin
+                metadata_hash["appearance"] =
+                  JSON.parse(metadata_hash["appearance"])
+              rescue StandardError
+                metadata_hash.delete("appearance")
+              end
+            else
+              metadata_hash.delete("appearance")
+            end
+
             {
-              metadata: spa_document.metadata,
+              metadata: metadata_hash,
               packageTree: spa_document.package_tree,
               packages: spa_document.packages,
               classes: spa_document.classes,
@@ -57,8 +71,9 @@ module Lutaml
           end
 
           def build_html(data_json, js, css)
-            title = config.ui&.title || "UML Browser"
-            description = config.ui&.description || "UML Model Documentation"
+            meta = config&.metadata
+            title = config.ui&.title || meta&.title || "UML Browser"
+            description = config.ui&.description || meta&.description || "UML Model Documentation"
 
             <<~HTML
               <!DOCTYPE html>
@@ -68,7 +83,7 @@ module Lutaml
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <title>#{title}</title>
                 <meta name="description" content="#{description}">
-                <meta name="generator" content="LutaML Static Site Generator">
+                <meta name="generator" content="lutaml v#{Lutaml::VERSION}">
 
                 <link rel="preconnect" href="https://fonts.googleapis.com">
                 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

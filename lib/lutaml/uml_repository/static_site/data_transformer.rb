@@ -17,7 +17,8 @@ module Lutaml
 
         def transform
           Models::SpaDocument.new(
-            metadata: Serializers::MetadataBuilder.new(repository).build,
+            metadata: Serializers::MetadataBuilder.new(repository,
+                                                       @options[:config]).build,
             package_tree: build_package_tree,
             packages: build_packages_map,
             classes: build_classes_map,
