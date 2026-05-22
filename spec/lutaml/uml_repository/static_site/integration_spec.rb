@@ -34,7 +34,7 @@ RSpec.describe "SPA Generation Integration", type: :integration do
       # Verify model.json contains valid typed SpaDocument JSON
       model_json = JSON.parse(File.read(File.join(output_dir, "data",
                                                   "model.json")))
-      expect(model_json["metadata"]).to include("generator" => "LutaML Static Site Generator")
+      expect(model_json["metadata"]).to include("generator" => "lutaml v#{Lutaml::VERSION}")
       expect(model_json["metadata"]["statistics"]).to include("packages",
                                                               "classes")
       expect(model_json["packageTree"]).to include("id", "name", "children")
@@ -111,7 +111,7 @@ RSpec.describe "SPA Generation Integration", type: :integration do
       json = doc.to_json
       parsed = JSON.parse(json)
 
-      expect(parsed["metadata"]["generator"]).to eq("LutaML Static Site Generator")
+      expect(parsed["metadata"]["generator"]).to eq("lutaml v#{Lutaml::VERSION}")
       expect(parsed["classes"]).to be_a(Hash)
       expect(parsed["packages"]).to be_a(Hash)
     end
