@@ -4,14 +4,10 @@ module Lutaml
   module UmlRepository
     module StaticSite
       module Serializers
-        class ClassSerializer
-          include Lutaml::Uml::ModelHelpers
-
+        class ClassSerializer < Base
           def initialize(repository, id_generator, options,
 inheritance_resolver)
-            @repository = repository
-            @id_generator = id_generator
-            @options = options
+            super(repository, id_generator, options)
             @inheritance_resolver = inheritance_resolver
           end
 
@@ -35,7 +31,7 @@ inheritance_resolver)
               type: class_type_for(klass),
               package: package_id_for_class(klass),
               stereotypes: normalize_stereotypes(klass.stereotype),
-              definition: format_definition(klass.definition),
+              definition: format_definition(klass.definition, @options),
               attributes: serialize_attribute_ids(klass),
               operations: serialize_class_operations(klass),
               associations: sort_associations(find_class_associations(klass),
@@ -55,41 +51,9 @@ inheritance_resolver)
             }
           end
 
-          def resolve_assoc_role(assoc, klass)
-            if assoc.owner_end_xmi_id == klass.xmi_id
-              assoc.owner_end_attribute_name || assoc.owner_end || ""
-            elsif assoc.member_end_xmi_id == klass.xmi_id
-              assoc.member_end_attribute_name || assoc.member_end || ""
-            else
-              ""
-            end
-          end
-
           def serialize_attribute_ids(klass)
             (klass.attributes || []).sort_by { |a| a.name || "" }
               .map { |attr| @id_generator.attribute_id(attr, klass) }
-          end
-
-          def find_class_associations(klass)
-            associations = @repository.associations_of(klass)
-            associations.map { |assoc| @id_generator.association_id(assoc) }
-          rescue StandardError
-            []
-          end
-
-          def sort_associations(assoc_ids, klass)
-            assoc_ids.sort_by do |assoc_id|
-              assoc = find_assoc_by_id(assoc_id)
-              next "" unless assoc
-
-              resolve_assoc_role(assoc, klass)
-            end
-          end
-
-          def find_assoc_by_id(assoc_id)
-            @repository.associations_index.find do |a|
-              @id_generator.association_id(a) == assoc_id
-            end
           end
 
           def serialize_class_operations(klass)
@@ -98,13 +62,23 @@ inheritance_resolver)
             klass.operations.map { |op| @id_generator.operation_id(op, klass) }
           end
 
+          def sort_associations(assoc_ids, klass)
+            xmi_id = klass.xmi_id
+            assoc_ids.sort_by do |assoc_id|
+              assoc = find_assoc_by_id(assoc_id)
+              next "" unless assoc
+
+              resolve_assoc_role(assoc, xmi_id)
+            end
+          end
+
           def serialize_literals(klass)
             return [] unless klass.is_a?(Lutaml::Uml::Enum) && klass.owned_literal
 
             klass.owned_literal.map do |literal|
               Models::SpaLiteral.new(
                 name: literal.name,
-                definition: format_definition(literal.definition),
+                definition: format_definition(literal.definition, @options),
               )
             end
           rescue StandardError

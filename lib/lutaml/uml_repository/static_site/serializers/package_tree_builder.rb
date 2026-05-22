@@ -4,14 +4,7 @@ module Lutaml
   module UmlRepository
     module StaticSite
       module Serializers
-        class PackageTreeBuilder
-          include Lutaml::Uml::ModelHelpers
-
-          def initialize(repository, id_generator)
-            @repository = repository
-            @id_generator = id_generator
-          end
-
+        class PackageTreeBuilder < Base
           def build
             root_packages = @repository.document.packages || @repository.packages_index.select do |pkg|
               pkg.namespace.nil? ||
@@ -76,13 +69,6 @@ module Lutaml
                 stereotypes: normalize_stereotypes(c.stereotype),
               )
             end
-          end
-
-          def package_path_for(package)
-            return package.name unless package.namespace
-            return package.name unless package.namespace.is_a?(Lutaml::Uml::Package)
-
-            "#{package_path_for(package.namespace)}::#{package.name}"
           end
         end
       end

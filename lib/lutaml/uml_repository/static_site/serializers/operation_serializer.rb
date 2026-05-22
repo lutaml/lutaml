@@ -4,12 +4,7 @@ module Lutaml
   module UmlRepository
     module StaticSite
       module Serializers
-        class OperationSerializer
-          def initialize(repository, id_generator)
-            @repository = repository
-            @id_generator = id_generator
-          end
-
+        class OperationSerializer < Base
           def build_map
             operations = {}
             @repository.classes_index.each do |klass|
@@ -22,6 +17,8 @@ module Lutaml
             end
             operations
           end
+
+          private
 
           def serialize(operation, owner, id)
             Models::SpaOperation.new(
@@ -36,8 +33,6 @@ module Lutaml
               is_abstract: operation.is_abstract,
             )
           end
-
-          private
 
           def serialize_parameters(operation)
             return [] unless operation.owned_parameter

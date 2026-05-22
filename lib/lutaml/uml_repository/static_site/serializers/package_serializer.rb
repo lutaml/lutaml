@@ -4,15 +4,7 @@ module Lutaml
   module UmlRepository
     module StaticSite
       module Serializers
-        class PackageSerializer
-          include Lutaml::Uml::ModelHelpers
-
-          def initialize(repository, id_generator, options)
-            @repository = repository
-            @id_generator = id_generator
-            @options = options
-          end
-
+        class PackageSerializer < Base
           def build_map
             packages = {}
             @repository.packages_index.each do |package|
@@ -29,8 +21,8 @@ module Lutaml
               id: id,
               xmi_id: package.xmi_id,
               name: package.name,
-              path: package_path(package),
-              definition: format_definition(package.definition),
+              path: package_path_for(package),
+              definition: format_definition(package.definition, @options),
               stereotypes: normalize_stereotypes(package.stereotype),
               classes: collect_class_ids(package),
               sub_packages: collect_sub_package_ids(package),
@@ -55,22 +47,6 @@ module Lutaml
             return nil unless package.namespace.is_a?(Lutaml::Uml::Package)
 
             @id_generator.package_id(package.namespace)
-          end
-
-          def package_path(package)
-            return package.name unless package.namespace
-            return package.name unless package.namespace.is_a?(Lutaml::Uml::Package)
-
-            "#{package_path(package.namespace)}::#{package.name}"
-          end
-
-          def package_diagrams(package)
-            return [] unless @options[:include_diagrams]
-
-            package.diagrams || []
-          rescue StandardError => e
-            warn "Error getting diagrams for #{package.name}: #{e.message}"
-            []
           end
         end
       end

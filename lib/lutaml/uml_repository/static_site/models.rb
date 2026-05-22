@@ -36,6 +36,8 @@ module Lutaml
                  "lutaml/uml_repository/static_site/models/spa_parameter"
         autoload :SpaSearchEntry,
                  "lutaml/uml_repository/static_site/models/spa_search_entry"
+        autoload :SpaSearchIndex,
+                 "lutaml/uml_repository/static_site/models/spa_search_index"
         autoload :SpaStatistics,
                  "lutaml/uml_repository/static_site/models/spa_statistics"
         autoload :SpaTreeClassRef,

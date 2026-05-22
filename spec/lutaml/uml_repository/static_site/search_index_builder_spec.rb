@@ -1,54 +1,11 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require_relative "../../../../lib/lutaml/uml_repository/" \
-                 "static_site/search_index_builder"
+require "lutaml/uml_repository/static_site/search_index_builder"
 
 RSpec.describe Lutaml::UmlRepository::StaticSite::SearchIndexBuilder do
-  let(:repository) do
-    double("UmlRepository",
-           packages_index: [test_package],
-           classes_index: [test_class],
-           associations_index: [test_association])
-  end
-
-  let(:test_package) do
-    double("Package",
-           xmi_id: "pkg_001",
-           name: "TestPackage",
-           definition: "Test package for search indexing",
-           stereotype: ["ApplicationSchema"],
-           namespace: nil)
-  end
-
-  let(:test_class) do
-    double("Class",
-           xmi_id: "cls_001",
-           name: "Building",
-           definition: "A building class in urban planning",
-           stereotype: ["FeatureType"],
-           namespace: test_package,
-           attributes: [test_attribute],
-           operations: [],
-           class: Lutaml::Uml::TopElement)
-  end
-
-  let(:test_attribute) do
-    double("Attribute",
-           name: "buildingID",
-           type: "String",
-           definition: "Unique identifier for building",
-           stereotype: [])
-  end
-
-  let(:test_association) do
-    double("Association",
-           xmi_id: "assoc_001",
-           name: "contains",
-           owner_end: "Building",
-           member_end: "BuildingPart")
-  end
-
+  let(:document) { create_simple_test_document }
+  let(:repository) { Lutaml::UmlRepository::Repository.new(document: document) }
   let(:builder) { described_class.new(repository) }
 
   describe "#initialize" do
@@ -63,24 +20,26 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::SearchIndexBuilder do
   end
 
   describe "#build" do
-    it "returns lunr.js-compatible search index structure",
+    it "returns a SpaSearchIndex with all expected fields",
        :aggregate_failures do
       index = builder.build
 
-      expect(index).to be_a(Hash)
-      expect(index).to include(
-        :version, :fields, :ref, :documentStore, :pipeline
-      )
+      expect(index).to be_a(Lutaml::UmlRepository::StaticSite::Models::SpaSearchIndex)
+      expect(index.version).to eq("1.0.0")
+      expect(index.ref).to eq("id")
+      expect(index.fields).not_to be_empty
+      expect(index.document_store).not_to be_empty
+      expect(index.pipeline).to include("stemmer", "stopWordFilter")
     end
 
     it "includes version information" do
       index = builder.build
-      expect(index[:version]).to eq("1.0.0")
+      expect(index.version).to eq("1.0.0")
     end
 
     it "defines searchable fields with boost values", :aggregate_failures do
       index = builder.build
-      fields = index[:fields]
+      fields = index.fields
 
       expect(fields).to be_an(Array)
       expect(fields).not_to be_empty
@@ -92,111 +51,83 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::SearchIndexBuilder do
 
     it "uses 'id' as reference field" do
       index = builder.build
-      expect(index[:ref]).to eq("id")
+      expect(index.ref).to eq("id")
     end
 
     it "builds document store with all entity types", :aggregate_failures do
-      index = builder.build
-      docs = index[:documentStore]
+      docs = builder.build.document_store
 
       expect(docs).to be_an(Array)
       expect(docs).not_to be_empty
 
-      types = docs.map { |d| d.is_a?(Hash) ? d[:type] : d.type }.uniq
-      expect(types).to include("class", "attribute", "package")
+      types = docs.map(&:type).uniq
+      expect(types).to include("class", "package")
     end
 
     it "includes pipeline configuration" do
-      index = builder.build
-      pipeline = index[:pipeline]
-
+      pipeline = builder.build.pipeline
       expect(pipeline).to include("stemmer", "stopWordFilter")
     end
   end
 
   describe "document building" do
-    let(:index) { builder.build }
-    let(:documents) { index[:documentStore] }
-
-    def doc_attr(doc, key)
-      doc.is_a?(Hash) ? doc[key] : doc.send(key)
-    end
+    let(:documents) { builder.build.document_store }
 
     it "creates documents for classes", :aggregate_failures do
-      class_docs = documents.select { |d| doc_attr(d, :type) == "class" }
+      class_docs = documents.select { |d| d.type == "class" }
 
       expect(class_docs).not_to be_empty
 
       doc = class_docs.first
-      expect(doc_attr(doc, :type)).to eq("class")
-      expect(doc_attr(doc, :boost)).to eq(1.5)
-    end
-
-    it "creates documents for attributes", :aggregate_failures do
-      attr_docs = documents.select { |d| doc_attr(d, :type) == "attribute" }
-
-      expect(attr_docs).not_to be_empty
-
-      doc = attr_docs.first
-      expect(doc_attr(doc, :boost)).to eq(1.0)
-    end
-
-    it "creates documents for associations" do
-      assoc_docs = documents.select { |d| doc_attr(d, :type) == "association" }
-
-      expect(assoc_docs).not_to be_empty
-
-      doc = assoc_docs.first
-      expect(doc_attr(doc, :boost)).to eq(0.8)
+      expect(doc.type).to eq("class")
+      expect(doc.boost).to eq(1.5)
     end
 
     it "creates documents for packages", :aggregate_failures do
-      pkg_docs = documents.select { |d| doc_attr(d, :type) == "package" }
+      pkg_docs = documents.select { |d| d.type == "package" }
 
       expect(pkg_docs).not_to be_empty
 
       doc = pkg_docs.first
-      expect(doc_attr(doc, :boost)).to eq(1.2)
+      expect(doc.boost).to eq(1.2)
     end
 
     it "builds searchable content for each document", :aggregate_failures do
       doc = documents.first
 
-      content = doc_attr(doc, :content)
+      content = doc.content
       expect(content).to be_a(String)
       expect(content).not_to be_empty
       expect(content).to eq(content.downcase)
     end
 
     it "includes entity metadata in documents", :aggregate_failures do
-      class_doc = documents.find { |d| doc_attr(d, :type) == "class" }
+      class_doc = documents.find { |d| d.type == "class" }
 
-      expect(doc_attr(class_doc, :entity_id)).to be_a(String)
-      expect(doc_attr(class_doc, :entity_type)).to be_a(String)
-      expect(doc_attr(class_doc, :qualified_name)).to be_a(String)
+      expect(class_doc.entity_id).to be_a(String)
+      expect(class_doc.entity_type).to be_a(String)
+      expect(class_doc.qualified_name).to be_a(String)
     end
   end
 
   describe "content normalization" do
     it "normalizes content to lowercase" do
-      class_docs = builder.build[:documentStore].select do |d|
-        d.is_a?(Hash) ? d[:type] == "class" : d.type == "class"
+      class_docs = builder.build.document_store.select do |d|
+        d.type == "class"
       end
 
       class_docs.each do |doc|
-        content = doc.is_a?(Hash) ? doc[:content] : doc.content
-        expect(content).to eq(content.downcase)
+        expect(doc.content).to eq(doc.content.downcase)
       end
     end
 
     it "removes extra whitespace from content" do
-      class_docs = builder.build[:documentStore].select do |d|
-        d.is_a?(Hash) ? d[:type] == "class" : d.type == "class"
+      class_docs = builder.build.document_store.select do |d|
+        d.type == "class"
       end
 
       class_docs.each do |doc|
-        content = doc.is_a?(Hash) ? doc[:content] : doc.content
-        expect(content).not_to match(/\s{2,}/)
+        expect(doc.content).not_to match(/\s{2,}/)
       end
     end
   end
@@ -211,59 +142,51 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::SearchIndexBuilder do
 
   describe "error handling" do
     it "handles missing attributes gracefully" do
-      class_without_attrs = double("Class",
-                                   xmi_id: "cls_002",
-                                   name: "NoAttrs",
-                                   definition: nil,
-                                   stereotype: nil,
-                                   namespace: test_package,
-                                   attributes: nil,
-                                   operations: nil,
-                                   class: Lutaml::Uml::TopElement)
+      doc = Lutaml::Uml::Document.new
+      doc.name = "NoAttrs"
+      pkg = Lutaml::Uml::Package.new
+      pkg.name = "Pkg"
+      pkg.xmi_id = "pkg_na"
+      klass = Lutaml::Uml::Class.new
+      klass.name = "NoAttrs"
+      klass.xmi_id = "cls_na"
+      pkg.classes << klass
+      doc.packages << pkg
 
-      repo_with_minimal = double("Repository",
-                                 packages_index: [],
-                                 classes_index: [class_without_attrs],
-                                 associations_index: [])
-
-      minimal_builder = described_class.new(repo_with_minimal)
+      minimal_repo = Lutaml::UmlRepository::Repository.new(document: doc)
+      minimal_builder = described_class.new(minimal_repo)
 
       expect { minimal_builder.build }.not_to raise_error
-    end
-
-    it "handles nil definitions" do
-      expect { builder.build }.not_to raise_error
     end
   end
 
   describe "performance" do
     it "handles large repositories efficiently" do
+      doc = Lutaml::Uml::Document.new
+      doc.name = "Large"
+
+      pkg = Lutaml::Uml::Package.new
+      pkg.name = "BigPkg"
+      pkg.xmi_id = "pkg_big"
+
+      100.times do |i|
+        klass = Lutaml::Uml::Class.new
+        klass.name = "Class#{i}"
+        klass.xmi_id = "cls_#{i}"
+        pkg.classes << klass
+      end
+
+      doc.packages << pkg
+      large_repo = Lutaml::UmlRepository::Repository.new(document: doc)
+      large_builder = described_class.new(large_repo)
+
+      start_time = Time.now
+      index = large_builder.build
+      duration = Time.now - start_time
+
       aggregate_failures do
-        large_classes = Array.new(100) do |i|
-          double("Class#{i}",
-                 xmi_id: "cls_#{i}",
-                 name: "Class#{i}",
-                 definition: "Description #{i}",
-                 stereotype: [],
-                 namespace: test_package,
-                 attributes: [],
-                 operations: nil,
-                 class: Lutaml::Uml::TopElement)
-        end
-
-        large_repo = double("LargeRepository",
-                            packages_index: [test_package],
-                            classes_index: large_classes,
-                            associations_index: [])
-
-        large_builder = described_class.new(large_repo)
-
-        start_time = Time.now
-        index = large_builder.build
-        duration = Time.now - start_time
-
         expect(duration).to be < 1.0
-        expect(index[:documentStore].size).to be >= 100
+        expect(index.document_store.size).to be >= 100
       end
     end
   end

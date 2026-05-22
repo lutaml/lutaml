@@ -1,16 +1,21 @@
 # frozen_string_literal: true
 
+require_relative "id_generator"
+require_relative "models"
+
 module Lutaml
   module UmlRepository
     module StaticSite
       class SearchIndexBuilder
-        attr_reader :repository, :id_generator, :options
+        include Lutaml::Uml::ModelHelpers
 
         STOP_WORDS = %w[
           the a an and or but in on at to for of with from by
           is are was were be been being have has had
           this that these those it its
         ].freeze
+
+        attr_reader :repository, :id_generator, :options
 
         def initialize(repository, options = {})
           @repository = repository
@@ -19,13 +24,10 @@ module Lutaml
         end
 
         def build
-          {
-            version: "1.0.0",
+          Models::SpaSearchIndex.new(
             fields: field_definitions,
-            ref: "id",
-            documentStore: build_document_store,
-            pipeline: ["stemmer", "stopWordFilter"],
-          }
+            document_store: build_document_store,
+          )
         end
 
         private
@@ -61,7 +63,7 @@ module Lutaml
             entity_type: class_type(klass),
             entity_id: @id_generator.class_id(klass),
             name: klass.name,
-            qualified_name: qualified_name(klass),
+            qualified_name: qualified_name_for(klass),
             package: package_name(klass),
             content: build_class_content(klass),
             boost: 1.5,
@@ -76,7 +78,7 @@ module Lutaml
             entity_type: "Attribute",
             entity_id: @id_generator.attribute_id(attribute, owner),
             name: attribute.name,
-            qualified_name: "#{qualified_name(owner)}::#{attribute.name}",
+            qualified_name: "#{qualified_name_for(owner)}::#{attribute.name}",
             package: package_name(owner),
             content: build_attribute_content(attribute, owner),
             boost: 1.0,
@@ -104,7 +106,7 @@ module Lutaml
             entity_type: "Package",
             entity_id: @id_generator.package_id(package),
             name: package.name,
-            qualified_name: package_path(package),
+            qualified_name: package_path_for(package),
             package: parent_package_name(package),
             content: build_package_content(package),
             boost: 1.2,
@@ -114,7 +116,7 @@ module Lutaml
         def build_class_content(klass)
           parts = [
             klass.name,
-            qualified_name(klass),
+            qualified_name_for(klass),
             class_type(klass),
             Array(klass.stereotype).join(" "),
             klass.definition,
@@ -130,7 +132,7 @@ module Lutaml
             attribute.name,
             attribute.type,
             owner.name,
-            qualified_name(owner),
+            qualified_name_for(owner),
             attribute.definition,
             Array(attribute.stereotype).join(" "),
           ].compact
@@ -151,7 +153,7 @@ module Lutaml
         def build_package_content(package)
           parts = [
             package.name,
-            package_path(package),
+            package_path_for(package),
             package.definition,
             Array(package.stereotype).join(" "),
           ].compact
@@ -200,38 +202,16 @@ module Lutaml
           klass.class.name.split("::").last
         end
 
-        def qualified_name(klass)
-          path_parts = []
-          current = klass
-
-          while current
-            if current.is_a?(Lutaml::Uml::TopElement) || current.is_a?(Lutaml::Uml::Package)
-              path_parts.unshift(current.name)
-              current = current.namespace
-            else
-              break
-            end
-          end
-
-          path_parts.join("::")
-        end
-
         def package_name(klass)
           return "" unless klass.namespace.is_a?(Lutaml::Uml::Package)
 
-          package_path(klass.namespace)
+          package_path_for(klass.namespace)
         end
 
         def parent_package_name(package)
           return "" unless package.namespace.is_a?(Lutaml::Uml::Package)
 
-          package_path(package.namespace)
-        end
-
-        def package_path(package)
-          return package.name unless package.namespace.is_a?(Lutaml::Uml::Package)
-
-          "#{package_path(package.namespace)}::#{package.name}"
+          package_path_for(package.namespace)
         end
       end
     end
