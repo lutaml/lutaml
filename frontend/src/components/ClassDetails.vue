@@ -30,6 +30,11 @@ function associationTarget(assoc: any): any {
   if (assoc.source?.class !== cls.value.xmiId) return assoc.source
   return assoc.target
 }
+
+function badgeType(c: any): string {
+  if (c.literals && c.literals.length > 0) return 'ENUMERATION'
+  return c.type?.toUpperCase() || 'CLASS'
+}
 </script>
 
 <template>
@@ -38,12 +43,12 @@ function associationTarget(assoc: any): any {
       <div class="entity-title">
         <h2 class="entity-name">{{ cls.qualifiedName }}</h2>
         <div class="entity-subtitle" v-if="cls.package">
-          <a href="#" class="link-button" @click.prevent="ui.selectPackage(cls.package!)">
+          <a href="#" class="link-button" @click.prevent="ui.selectPackage(cls.package!, data.getPackageById(cls.package!)?.name)">
             {{ data.getPackageById(cls.package)?.name || cls.package }}
           </a>
         </div>
       </div>
-      <span class="entity-badge" :class="'badge-' + (cls.type || 'class').toLowerCase()">{{ cls.type }}</span>
+      <span class="entity-badge" :class="'badge-' + badgeType(cls)">{{ badgeType(cls) }}</span>
       <span class="entity-badge badge-abstract" v-if="cls.isAbstract">abstract</span>
     </div>
 

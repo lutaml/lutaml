@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { useDataStore } from './dataStore'
 
 export type ViewName = 'welcome' | 'package' | 'class' | 'search' | 'diagram'
 
@@ -12,8 +13,11 @@ export const useUiStore = defineStore('ui', {
   state: () => ({
     currentView: 'welcome' as ViewName,
     currentPackageId: null as string | null,
+    currentPackageLabel: null as string | null,
     currentClassId: null as string | null,
+    currentClassLabel: null as string | null,
     currentDiagramId: null as string | null,
+    currentDiagramLabel: null as string | null,
     sidebarVisible: true,
     darkMode: false,
     expandedNodes: new Set<string>(),
@@ -34,6 +38,7 @@ export const useUiStore = defineStore('ui', {
     selectPackage(id: string, label?: string) {
       this.currentView = 'package'
       this.currentPackageId = id
+      this.currentPackageLabel = label || null
       this.currentClassId = null
       this.currentDiagramId = null
       this.breadcrumbs = [{ label: label || 'Package', id, type: 'package' }]
@@ -44,12 +49,13 @@ export const useUiStore = defineStore('ui', {
     selectClass(id: string, label?: string) {
       this.currentView = 'class'
       this.currentClassId = id
+      this.currentClassLabel = label || null
       this.currentDiagramId = null
       this.breadcrumbs = [
-        ...(this.currentPackageId
+        ...(this.currentPackageId && this.currentPackageLabel
           ? [
               {
-                label: 'Package',
+                label: this.currentPackageLabel,
                 id: this.currentPackageId,
                 type: 'package',
               },
@@ -63,11 +69,12 @@ export const useUiStore = defineStore('ui', {
     selectDiagram(id: string, label?: string) {
       this.currentView = 'diagram'
       this.currentDiagramId = id
+      this.currentDiagramLabel = label || null
       this.breadcrumbs = [
-        ...(this.currentPackageId
+        ...(this.currentPackageId && this.currentPackageLabel
           ? [
               {
-                label: 'Package',
+                label: this.currentPackageLabel,
                 id: this.currentPackageId,
                 type: 'package',
               },
@@ -121,12 +128,20 @@ export const useUiStore = defineStore('ui', {
       const hash = window.location.hash.slice(1)
       if (!hash) return
 
+      const data = useDataStore()
+
       if (hash.startsWith('/package/')) {
-        this.selectPackage(hash.slice('/package/'.length))
+        const id = hash.slice('/package/'.length)
+        const pkg = data.getPackageById(id)
+        this.selectPackage(id, pkg?.name)
       } else if (hash.startsWith('/class/')) {
-        this.selectClass(hash.slice('/class/'.length))
+        const id = hash.slice('/class/'.length)
+        const cls = data.getClassById(id)
+        this.selectClass(id, cls?.name)
       } else if (hash.startsWith('/diagram/')) {
-        this.selectDiagram(hash.slice('/diagram/'.length))
+        const id = hash.slice('/diagram/'.length)
+        const diag = data.getDiagramById(id)
+        this.selectDiagram(id, diag?.name)
       }
     },
 

@@ -143,10 +143,37 @@ export interface SpaStatistics {
   operations: number
 }
 
+export interface SpaLogoVariant {
+  path?: string
+  url?: string
+}
+
+export interface SpaLogoConfig {
+  light: SpaLogoVariant
+  dark: SpaLogoVariant
+}
+
+export interface SpaLogos {
+  square?: SpaLogoConfig
+  long?: SpaLogoConfig
+}
+
+export interface SpaAppearance {
+  logos?: SpaLogos
+}
+
 export interface SpaMetadata {
+  title?: string
+  description?: string
   generated: string
   generator: string
   version: string
+  homepage?: string
+  repository?: string
+  license?: string
+  authors?: string
+  tags?: string[]
+  appearance?: SpaAppearance
   statistics: SpaStatistics
 }
 

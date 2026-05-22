@@ -1,10 +1,29 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useDataStore } from '../stores/dataStore'
 import { useUiStore } from '../stores/uiStore'
 import PackageTreeNode from './PackageTreeNode.vue'
 
 const data = useDataStore()
 const ui = useUiStore()
+
+const LUTAML_LOGO_LIGHT = 'https://raw.githubusercontent.com/lutaml/branding/refs/heads/main/svg/lutaml-logo_logo-icon-light.svg'
+const LUTAML_LOGO_DARK = 'https://raw.githubusercontent.com/lutaml/branding/refs/heads/main/svg/lutaml-logo_logo-icon-dark.svg'
+const LUTAML_FULL_LIGHT = 'https://raw.githubusercontent.com/lutaml/branding/refs/heads/main/svg/lutaml-logo_logo-full-light.svg'
+const LUTAML_FULL_DARK = 'https://raw.githubusercontent.com/lutaml/branding/refs/heads/main/svg/lutaml-logo_logo-full-dark.svg'
+
+const brandingLogo = computed(() => {
+  const logos = data.metadata?.appearance?.logos
+  if (logos?.square) {
+    const variant = ui.darkMode ? logos.square.dark : logos.square.light
+    return variant?.url || variant?.path || (ui.darkMode ? LUTAML_LOGO_DARK : LUTAML_LOGO_LIGHT)
+  }
+  return ui.darkMode ? LUTAML_LOGO_DARK : LUTAML_LOGO_LIGHT
+})
+
+const footerLogo = computed(() => {
+  return ui.darkMode ? LUTAML_FULL_DARK : LUTAML_FULL_LIGHT
+})
 
 function formatDate(isoString?: string): string {
   if (!isoString) return ''
@@ -22,12 +41,9 @@ function formatDate(isoString?: string): string {
     <div class="sidebar-content">
       <!-- Branding -->
       <div class="sidebar-branding">
-        <svg class="branding-logo" viewBox="0 0 32 32" width="28" height="28">
-          <rect x="2" y="2" width="28" height="28" rx="6" fill="var(--color-primary)" />
-          <text x="16" y="22" text-anchor="middle" fill="white" font-size="16" font-weight="bold">L</text>
-        </svg>
+        <img :src="brandingLogo" alt="Logo" class="branding-logo" />
         <div class="branding-text">
-          <span class="branding-title">LutaML</span>
+          <span class="branding-title">{{ data.metadata?.title || 'LutaML' }}</span>
           <span class="branding-subtitle">UML Browser</span>
         </div>
       </div>
@@ -88,13 +104,13 @@ function formatDate(isoString?: string): string {
       <!-- Footer -->
       <div class="sidebar-footer">
         <a href="https://www.lutaml.org" target="_blank" rel="noopener" class="footer-brand" title="LutaML">
-          <svg class="lutaml-logo" viewBox="0 0 60 16" width="50" height="14">
-            <text x="0" y="13" fill="var(--text-muted)" font-size="14" font-family="var(--font-sans)" font-weight="600">LutaML</text>
-          </svg>
+          <img :src="footerLogo" alt="LutaML" class="lutaml-logo" />
         </a>
         <div class="footer-text-group">
           <span class="footer-text" v-if="data.metadata?.generated">
-            Generated {{ formatDate(data.metadata.generated) }}
+            Generated {{ formatDate(data.metadata.generated) }} with
+            <a href="https://github.com/lutaml/lutaml" target="_blank" rel="noopener">LutaML</a>
+            v{{ data.metadata.version || '?' }}
           </span>
         </div>
       </div>
