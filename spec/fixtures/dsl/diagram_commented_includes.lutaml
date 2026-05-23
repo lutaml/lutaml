@@ -1,5 +1,0 @@
-diagram MyView {
-  title "my diagram"
-
-  ** include ../models/bipm_document/BipmCommitteeAcronym.lutaml
-}

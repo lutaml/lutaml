@@ -1,15 +1,19 @@
 # CLAUDE.md — Lutaml Project
 
 ## Project Overview
-Lutaml is a Ruby gem for parsing and transforming UML models from multiple formats (XMI, QEA/EA, DSL). It provides a CLI, interactive shell, static site generator, web UI, and model transformation pipeline.
+Lutaml is a Ruby gem for parsing and transforming UML models from multiple formats (XMI, QEA/EA, DSL). It provides a CLI, interactive shell, and model transformation pipeline. The UML domain models, repository, converters, SPA generator, and web UI live in the companion `lutaml-uml` gem.
+
+## Multi-Repo Structure
+- **`lutaml`** (this repo) — CLI, XMI parser, QEA parser, Express parser, formatters, layout engine
+- **`lutaml-uml`** (`../lutaml-uml/`) — UML domain models, UmlRepository, converters, EA diagrams, Vue SPA frontend
+- `lutaml` depends on `lutaml-uml` at runtime
 
 ## Testing Constraints
 
 **CRITICAL: Do NOT run the full test suite at once.** It will crash due to memory. Run targeted subsets:
 - `bundle exec rspec spec/lutaml/cli/` — CLI specs
 - `bundle exec rspec spec/lutaml/qea/` — QEA parser specs
-- `bundle exec rspec spec/lutaml/uml_repository/` — UML repository specs
-- `bundle exec rspec spec/lutaml/uml/` — UML model specs
+- `bundle exec rspec spec/lutaml/uml/` — UML model specs (runs from lutaml-uml)
 - `bundle exec rspec spec/lutaml/parsers/` — Parser specs
 - `bundle exec rspec spec/lutaml/formatter/` — Formatter specs
 - Combine at most 2-3 suites at a time for targeted verification.
@@ -24,30 +28,33 @@ Lutaml is a Ruby gem for parsing and transforming UML models from multiple forma
 
 ## Spec Require Rules
 
-**ALWAYS use `require_relative` in spec files. NEVER use bare `require`.**
-
-`require` depends on `$LOAD_PATH` which is unreliable:
-- Running a single spec file (`bundle exec rspec spec/foo/bar_spec.rb`) may not have `lib/` on the load path, causing `LoadError`.
-- If the gem is installed globally, `require "lutaml/foo"` loads the installed gem version, not the local working copy — specs silently test the wrong code.
-- `require_relative` resolves relative to the spec file's location. It always loads the exact file you intend, regardless of how the spec is run.
-
+For code in **this repo** (cli, qea, xmi, formatter, etc.), use `require_relative`:
 ```ruby
-# WRONG — may load wrong file or fail
-require "lutaml/uml_repository/static_site/data_transformer"
-
-# CORRECT — always loads the local file
-require_relative "../../../lib/lutaml/uml_repository/static_site/data_transformer"
+require_relative "../../../lib/lutaml/qea/parser"
 ```
 
-## Architecture
-- `lib/lutaml/uml/` — UML domain models (Class, Association, Package, etc.)
-- `lib/lutaml/uml_repository/` — Repository pattern over UML documents (queries, presenters, exporters, SPA)
+For code in **lutaml-uml** (uml, uml_repository, converter, ea), use `require` since it's a separate gem:
+```ruby
+require "lutaml/uml"
+require "lutaml/uml_repository"
+require "lutaml/converter"
+```
+
+## Architecture (this repo)
+- `lib/lutaml/cli/` — Thor CLI commands
 - `lib/lutaml/qea/` — EA .qea SQLite parser and factory
 - `lib/lutaml/xmi/` — XMI XML parsing
-- `lib/lutaml/converter/` — Format converters (XMI→UML, DSL→UML)
-- `lib/lutaml/cli/` — Thor CLI commands
+- `lib/lutaml/express/` — Express parser
+- `lib/lutaml/formatter/` — Output formatters
+- `lib/lutaml/layout/` — Layout engine
 - `lib/lutaml/model_transformations/` — Format-agnostic transformation pipeline
+
+## Architecture (lutaml-uml)
+- `lib/lutaml/uml/` — UML domain models (Class, Association, Package, etc.)
+- `lib/lutaml/uml_repository/` — Repository, queries, presenters, exporters, SPA
+- `lib/lutaml/converter/` — Format converters (XMI→UML, DSL→UML)
 - `lib/lutaml/ea/` — EA diagram SVG rendering
+- `frontend/` — Vue 3 SPA frontend
 
 ## CI Notes
 - Ignore Ruby 3.4 ubuntu failures (performance-related, not code issues)

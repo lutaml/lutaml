@@ -1,6 +1,0 @@
-diagram MyView {
-  fontname "Arial"
-  title "my diagram"
-  include none_existing.lutaml
-  include none_existing1.lutaml
-}
