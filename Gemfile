@@ -9,6 +9,7 @@ gem "parsanol", "1.3.9"
 
 gem "canon"
 gem "lutaml-model", github: "lutaml/lutaml-model", branch: "main"
+gem "lutaml-lml", path: "../lutaml-lml"
 gem "lutaml-uml", path: "../lutaml-uml"
 gem "openssl", "~> 3.0"
 gem "rack-test"

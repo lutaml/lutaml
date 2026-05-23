@@ -33,6 +33,7 @@ Gem::Specification.new do |spec|
   # TODO: remove once reline declares fiddle as a dependency
   # (fiddle was removed from Ruby 4.0 default gems, breaking reline on Windows)
   spec.add_dependency "fiddle"
+  spec.add_dependency "lutaml-lml"
   spec.add_dependency "lutaml-uml"
   spec.metadata["rubygems_mfa_required"] = "true"
 end
