@@ -59,6 +59,13 @@ module Lutaml
 
         model.associations = associations
       end
+
+      # Serialize this document back into LutaML DSL (.lutaml) text.
+      # Inverse of parsing; output re-parses to a structurally equivalent
+      # Document. See Lutaml::Converter::UmlToDsl.
+      def to_lutaml
+        Lutaml::Converter::UmlToDsl.convert(self)
+      end
     end
   end
 end
