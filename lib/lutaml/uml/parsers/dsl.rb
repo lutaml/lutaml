@@ -263,6 +263,49 @@ module Lutaml
             association_body
         end
 
+        # -- Association shorthand (one-line, PlantUML-style operators)
+        #
+        # Compositional operator: [left adornment] -- [right adornment]
+        #   left  -> owner_end_type, right -> member_end_type
+        #   *  composition   o  aggregation   <| / |>  inheritance   < / >  direct
+        # Examples: A --> B | A o-- B | A o--> B | A --|> B | A *-- B | A -- B
+        rule(:assoc_op_left)  { str("*") | str("o") | str("<|") | str("<") }
+        rule(:assoc_op_right) { str("*") | str("o") | str("|>") | str(">") }
+        rule(:assoc_op) do
+          assoc_op_left.as(:op_left).maybe >>
+            str("--") >>
+            assoc_op_right.as(:op_right).maybe
+        end
+        # Operator-aware endpoint token: like a class name but whitespace-free,
+        # and it stops before an operator so `Test-Class --> Other` parses while
+        # `A-->B` splits correctly (a `-`/`:`/`.` is part of the name only when
+        # it does not begin an operator).
+        rule(:endpoint_name_chars) do
+          (assoc_op.absent? >> match['a-zA-Z0-9_\-:.']).repeat(1)
+        end
+        %w[owner member].each do |end_type|
+          rule("shortcut_#{end_type}_endpoint") do
+            endpoint_name_chars.as("#{end_type}_end") >>
+              (str("#") >>
+                visibility? >>
+                endpoint_name_chars.as("#{end_type}_end_attribute_name")).maybe >>
+              (spaces? >>
+                str("[") >>
+                cardinality_body_definition.as("#{end_type}_end_cardinality") >>
+                str("]")).maybe
+          end
+        end
+        # NOTE: whitespace around the operator is REQUIRED. The aggregation
+        # glyph `o` is also a name character, so a spaceless form like
+        # `Foo-->Bar` would mis-parse (`Foo`'s trailing `o` consumed as an
+        # `o--` adornment). Mandatory spaces make the operator unambiguous.
+        rule(:shortcut_association_definition) do
+          (shortcut_owner_endpoint >>
+            spaces >> assoc_op >> spaces >>
+            shortcut_member_endpoint)
+            .as(:assoc_shortcut)
+        end
+
         # -- Class
 
         rule(:kw_class_modifier) { kw_abstract | kw_interface }
@@ -384,6 +427,7 @@ module Lutaml
             primitive_definition.as(:primitives) |
             data_type_definition.as(:data_types) |
             association_definition.as(:associations) |
+            shortcut_association_definition |
             comment_definition |
             comment_multiline_definition
         end

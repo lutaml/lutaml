@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "tempfile"
 
 RSpec.describe Lutaml::Uml::Parsers::Dsl do
   describe ".parse" do
@@ -184,6 +185,67 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
           expect(association.member_end_cardinality).to(be_nil)
         end
       end
+    end
+
+    context "when one-line association shorthand exists" do
+      let(:content) do
+        File.new(fixtures_path("dsl/diagram_class_association_shorthand.lutaml"))
+      end
+
+      let(:ends) do
+        parse.associations.map do |a|
+          [a.owner_end, a.owner_end_type, a.member_end, a.member_end_type]
+        end
+      end
+
+      it "parses every operator form into the right number of associations" do
+        expect(parse.associations.length).to eq(11)
+      end
+
+      it "maps each operator to the correct end types", :aggregate_failures do
+        expect(ends[0]).to eq(["A", nil, "B", "direct"])         # A --> B
+        expect(ends[1]).to eq(["A", "aggregation", "B", nil])    # A o-- B
+        expect(ends[2]).to eq(["A", "composition", "B", nil])    # A *-- B
+        expect(ends[3]).to eq(["A", nil, "B", "inheritance"])    # A --|> B
+        expect(ends[4]).to eq(["A", "aggregation", "B", "direct"]) # A o--> B (dual)
+        expect(ends[5]).to eq(["A", nil, "B", nil])              # A -- B
+        expect(ends[6]).to eq(["A", "direct", "B", nil])         # A <-- B (left direct)
+        expect(ends[7]).to eq(["A", "inheritance", "B", nil])    # A <|-- B (left inheritance)
+        expect(ends[8]).to eq(["A", nil, "B", "aggregation"])    # A --o B (right aggregation)
+      end
+
+      it "supports role names and cardinality on both ends", :aggregate_failures do
+        roles = parse.associations[9]
+        expect(roles.owner_end).to eq("A")
+        expect(roles.owner_end_attribute_name).to eq("owns")
+        expect(roles.owner_end_cardinality.min).to eq("1")
+        expect(roles.member_end).to eq("B")
+        expect(roles.member_end_attribute_name).to eq("owned")
+        expect(roles.member_end_cardinality.min).to eq("0")
+        expect(roles.member_end_cardinality.max).to eq("*")
+      end
+
+      it "keeps qualified endpoint names intact (operator-aware token)" do
+        expect(ends[10]).to eq(["Foo::Bar", nil, "Baz::Qux", "direct"])
+      end
+
+      it "requires whitespace around the operator (rejects spaceless forms)",
+         :aggregate_failures do
+        # `Foo-->Bar` would otherwise mis-parse `Foo`'s trailing `o` as an
+        # `o--` aggregation adornment, so the spaceless form is rejected.
+        %w[Foo-->Bar A--order A--oB].each do |spaceless|
+          file = Tempfile.new(["spaceless", ".lutaml"])
+          file.write("diagram V {\n  #{spaceless}\n}")
+          file.flush
+          expect { described_class.parse(File.new(file.path)) }
+            .to raise_error(Lutaml::Uml::Parsers::ParsingError)
+        ensure
+          file&.close
+          file&.unlink
+        end
+      end
+
+      it_behaves_like "the correct graphviz formatting"
     end
 
     context "when data_types entries" do
