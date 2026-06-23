@@ -83,7 +83,9 @@ module Lutaml
           end
 
           if config[:icons]
-            puts EnhancedFormatter.format_class_details_enhanced(cls)
+            puts EnhancedFormatter.format_class_details_enhanced(
+              cls, repository: repository
+            )
           else
             display_class_plain(cls, qname)
           end
@@ -169,19 +171,37 @@ module Lutaml
           puts ""
           puts "Name: #{cls.name}"
 
-          display_class_attributes(cls) if has_displayable_attributes?(cls)
+          display_class_attributes(cls, qname) if has_displayable_attributes?(cls)
         end
 
         def has_displayable_attributes?(cls)
           cls.is_a?(Lutaml::Uml::Classifier) && cls.attributes && !cls.attributes.empty?
         end
 
-        def display_class_attributes(cls)
+        def display_class_attributes(cls, qname)
           puts ""
           puts OutputFormatter.colorize("Attributes:", :yellow)
           cls.attributes.each do |attr|
-            puts "  - #{attr.name}: #{attr.type}"
+            puts "  - #{attr.name}: #{attr.type}#{resolved_type_suffix(attr, qname)}"
           end
+        end
+
+        # " -> <qname>" suffix when an attribute's type resolves to another
+        # class (with "(ambiguous)" when the simple name matched several).
+        # Empty for primitives, unresolved types, or already-qualified types.
+        def resolved_type_suffix(attr, qname)
+          result = repository.resolve_type(attr, from: qname)
+          return "" unless navigable_resolution?(result, attr)
+
+          suffix = result.ambiguous? ? " (ambiguous)" : ""
+          " -> #{result.qualified_name}#{suffix}"
+        rescue StandardError
+          ""
+        end
+
+        def navigable_resolution?(result, attr)
+          result&.resolved? && !result.primitive? &&
+            result.qualified_name != attr.type
         end
 
         def display_package_contents(pkg, path)
