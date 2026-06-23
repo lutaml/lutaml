@@ -151,5 +151,23 @@ RSpec.describe Lutaml::UmlRepository::Presenters::AttributePresenter do
       expect(presenter.to_text).not_to include("Resolved Type:")
       expect(presenter.to_hash).not_to have_key(:resolved_type)
     end
+
+    it "suppresses the resolved line for an already-qualified type" do
+      # refQualified's type IS the fully-qualified name, so there is nothing
+      # extra to show — matching the REPL/enhanced surfaces.
+      expect(presenter_for("refQualified").to_text)
+        .not_to include("Resolved Type:")
+    end
+
+    it "reports primitive and unresolved shapes in to_hash",
+       :aggregate_failures do
+      primitive = presenter_for("refPrimitive").to_hash
+      expect(primitive[:resolved_type]).to eq("String")
+      expect(primitive[:resolved_type_primitive]).to be(true)
+
+      unresolved = presenter_for("refUnresolved").to_hash
+      expect(unresolved[:resolved_type]).to be_nil
+      expect(unresolved[:resolved_type_candidates]).to eq([])
+    end
   end
 end

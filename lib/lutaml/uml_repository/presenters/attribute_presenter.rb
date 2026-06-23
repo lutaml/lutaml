@@ -89,6 +89,8 @@ module Lutaml
           return nil unless resolution
           return "Resolved Type:  (primitive)" if resolution.primitive?
           return nil unless resolution.resolved?
+          # Already-qualified type that resolves to itself: nothing to add.
+          return nil if resolution.qualified_name == element.type
 
           suffix = if resolution.ambiguous?
                      " (ambiguous: #{resolution.candidates.size} candidates)"
