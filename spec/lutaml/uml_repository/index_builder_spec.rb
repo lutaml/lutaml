@@ -54,6 +54,37 @@ RSpec.describe Lutaml::UmlRepository::IndexBuilder do
     end
   end
 
+  describe "inheritance graph resolution of generalization parents" do
+    let(:document) do
+      mk_child = lambda do |name, general|
+        klass = Lutaml::Uml::Class.new(name: name, xmi_id: name)
+        klass.generalization = Lutaml::Uml::Generalization.new(general: general)
+        klass
+      end
+      pkg_b = Lutaml::Uml::Package.new(name: "PkgB", xmi_id: "pb")
+      pkg_b.classes = [Lutaml::Uml::Class.new(name: "Parent", xmi_id: "p1")]
+      pkg_a = Lutaml::Uml::Package.new(name: "PkgA", xmi_id: "pa")
+      pkg_a.classes = [
+        mk_child.call("CFull", "ModelRoot::PkgB::Parent"),
+        mk_child.call("CLeaf", "Parent"),
+        mk_child.call("CPartial", "PkgB::Parent"),
+      ]
+      doc = Lutaml::Uml::Document.new(name: "InheritanceModel")
+      doc.packages = [pkg_a, pkg_b]
+      doc
+    end
+
+    it "resolves fully-qualified and leaf parents but not partial ones",
+       :aggregate_failures do
+      children = indexes[:inheritance_graph]["ModelRoot::PkgB::Parent"] || []
+      expect(children).to include("ModelRoot::PkgA::CFull")
+      expect(children).to include("ModelRoot::PkgA::CLeaf")
+      # The association index stays map-only (no suffix scan), so a partially
+      # qualified parent creates no edge — preserving historical behaviour.
+      expect(children).not_to include("ModelRoot::PkgA::CPartial")
+    end
+  end
+
   describe "package_paths index" do
     it "indexes packages by path" do
       package_paths_index = indexes[:package_paths]

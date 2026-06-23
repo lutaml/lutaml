@@ -68,9 +68,14 @@ module Lutaml
       # @param simple_name_to_qnames [Hash{String=>Array<String>}, nil] simple
       #   name => [qname,...]; when nil (e.g. a legacy .lur whose stored indexes
       #   predate this map) the candidate list is rebuilt from qualified_names
+      # @param scan_fallback [Boolean] when true, a leaf-name map miss falls
+      #   back to scanning qualified names by suffix (which also resolves
+      #   partially-qualified references). The association index passes false to
+      #   preserve its historical map-only behaviour (it never scanned, so a
+      #   partially-qualified generalization parent must not create an edge).
       # @return [Result]
       def resolve(type:, package_path:, qualified_names:,
-                  simple_name_to_qnames: nil)
+                  simple_name_to_qnames: nil, scan_fallback: true)
         return UNRESOLVED if type.to_s.empty?
 
         # Classifier matches take precedence over the primitive list, so a real
@@ -79,7 +84,8 @@ module Lutaml
         # when no classifier matches.
         direct_result(type, qualified_names) ||
           same_package_result(type, package_path, qualified_names) ||
-          simple_name_result(type, qualified_names, simple_name_to_qnames) ||
+          simple_name_result(type, qualified_names, simple_name_to_qnames,
+                             scan_fallback) ||
           primitive_result(type, qualified_names) ||
           UNRESOLVED
       end
@@ -102,9 +108,10 @@ module Lutaml
         matched(local, qualified_names, [local]) if qualified_names.key?(local)
       end
 
-      def simple_name_result(type, qualified_names, simple_name_to_qnames)
+      def simple_name_result(type, qualified_names, simple_name_to_qnames,
+                             scan_fallback)
         candidates = candidate_qnames(type, qualified_names,
-                                      simple_name_to_qnames)
+                                      simple_name_to_qnames, scan_fallback)
         return if candidates.empty?
 
         matched(candidates.first, qualified_names, candidates,
@@ -120,13 +127,15 @@ module Lutaml
       # prebuilt index; falls back to scanning qualified_names (legacy packages
       # whose stored indexes predate the simple-name map). The scan matches the
       # validator's historical `end_with?("::<type>")` first-match exactly.
-      def candidate_qnames(type, qualified_names, simple_name_to_qnames)
+      def candidate_qnames(type, qualified_names, simple_name_to_qnames,
+                           scan_fallback)
         mapped = simple_name_to_qnames && simple_name_to_qnames[type]
         return mapped if mapped && !mapped.empty?
+        return [] unless scan_fallback
 
         # Map miss (or no/empty map): scan qualified names by suffix. This also
         # resolves PARTIALLY-qualified references like "Pkg::Class" that the
-        # leaf-keyed simple-name map cannot — matching the historical
+        # leaf-keyed simple-name map cannot — matching the validator's historical
         # end_with? behaviour exactly (and covers legacy .lur / lazy builds).
         suffix = "::#{type}"
         qualified_names.keys.select { |qname| qname.end_with?(suffix) }

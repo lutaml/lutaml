@@ -73,11 +73,11 @@ module Lutaml
 
       # Resolve an attribute/type to its target class.
       #
-      # Ensures the qualified_names index is built first; the simple-name map is
-      # not built lazily, so TypeResolver derives candidates from qualified_names
-      # on the fly.
+      # Ensures the qualified_names and simple-name indexes are built first so
+      # resolution uses the O(1) map rather than scanning on every call.
       def resolve_type(attr_or_type, from: nil)
         ensure_index(:qualified_names)
+        ensure_index(:simple_name_to_qnames)
         super
       end
 
@@ -237,6 +237,9 @@ module Lutaml
           ensure_index(:package_paths)
           @indexes[:diagram_index] =
             IndexBuilder.build_diagram_index(@document, @indexes)
+        when :simple_name_to_qnames
+          @indexes[:simple_name_to_qnames] =
+            IndexBuilder.build_simple_name_to_qnames(@document)
         end
 
         @index_builders_pending.delete(index_name)

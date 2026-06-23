@@ -79,6 +79,14 @@ module Lutaml
         builder.class_to_qname.freeze
       end
 
+      # Build the simple-name => [qualified name, ...] index on its own (used by
+      # LazyRepository so resolve_type gets the O(1) map instead of scanning).
+      def self.build_simple_name_to_qnames(document)
+        builder = new(document)
+        builder.build_qualified_name_index
+        builder.simple_name_to_qnames.freeze
+      end
+
       def self.build_classes(document)
         builder = new(document)
         builder.build_qualified_name_index
@@ -111,9 +119,16 @@ module Lutaml
       # @return [Hash] Frozen hash mapping parent qnames to child qnames
       def self.build_inheritance_graph(document, indexes)
         builder = new(document)
-        if indexes && indexes[:qualified_names]
+        if indexes && indexes[:qualified_names] &&
+            indexes[:simple_name_to_qnames]
           builder.qualified_names = indexes[:qualified_names]
+          builder.simple_name_to_qnames.replace(indexes[:simple_name_to_qnames])
         else
+          # The association index resolves leaf-name parents through the
+          # simple-name map (it never scans), so build qualified_names AND that
+          # map together. A caller may pass qualified_names without the map
+          # (lazy repositories); rebuilding both keeps the lazy inheritance
+          # graph identical to the eager one.
           builder.build_qualified_name_index
         end
         builder.build_inheritance_graph_index
@@ -153,7 +168,8 @@ module Lutaml
 
       attr_accessor :package_paths, :qualified_names
       attr_reader :package_to_path, :class_to_qname, :classes, :associations,
-                  :stereotypes, :inheritance_graph, :diagram_index
+                  :stereotypes, :inheritance_graph, :diagram_index,
+                  :simple_name_to_qnames
 
       # Build all indexes and return them as a frozen hash
       #

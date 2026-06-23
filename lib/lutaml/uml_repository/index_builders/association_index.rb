@@ -139,11 +139,16 @@ module Lutaml
 
         def resolve_qualified_name(name, current_package_path)
           # Shared, package-aware resolution over the in-progress build maps.
+          # scan_fallback: false keeps this map-only (the historical behaviour);
+          # a partially-qualified parent that misses the leaf-name map must NOT
+          # be resolved via a suffix scan, so no spurious inheritance edge is
+          # created.
           result = TypeResolver.resolve(
             type: name,
             package_path: current_package_path,
             qualified_names: @qualified_names,
             simple_name_to_qnames: @simple_name_to_qnames,
+            scan_fallback: false,
           )
           # Only return a real classifier qname. The resolver reports primitive
           # names (e.g. a parent literally named "String") as resolved, but
