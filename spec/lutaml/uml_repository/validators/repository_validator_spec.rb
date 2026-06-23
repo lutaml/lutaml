@@ -38,6 +38,28 @@ RSpec.describe Lutaml::UmlRepository::Validators::RepositoryValidator do
         result = validator.validate
         expect(result.errors).to be_an(Array)
         expect(result.errors.first).to include("Unresolved type reference")
+        # The "NonExistent::Type[0..1]," type stays unresolved precisely because
+        # the shared resolver does NOT strip cardinality/suffixes.
+      end
+    end
+
+    # Guards that extracting the shared TypeResolver did not change validation
+    # behaviour: types that resolve (incl. ambiguous-but-matched) are NOT errors;
+    # only genuinely unknown types are.
+    context "when resolving with the shared type resolver" do
+      let(:document) { create_resolution_test_document }
+
+      it "does not flag resolvable types (same/cross-package, ambiguous)",
+         :aggregate_failures do
+        errors = validator.validate.errors
+        expect(errors).not_to include(a_string_including("'Beta'"))
+        expect(errors).not_to include(a_string_including("'Gamma'"))
+        expect(errors).not_to include(a_string_including("'Shared'"))
+      end
+
+      it "still flags genuinely unresolved types" do
+        expect(validator.validate.errors)
+          .to include(a_string_including("Unresolved type reference: 'DoesNotExist'"))
       end
     end
 

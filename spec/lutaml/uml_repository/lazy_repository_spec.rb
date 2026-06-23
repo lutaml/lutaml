@@ -309,4 +309,22 @@ RSpec.describe Lutaml::UmlRepository::LazyRepository do
       expect(lazy_repo.indexes.values.compact.size).to eq(0)
     end
   end
+
+  describe "#resolve_type" do
+    let(:document) { create_resolution_test_document }
+
+    it "builds the qualified_names index on demand, then resolves",
+       :aggregate_failures do
+      alpha = document.packages.find { |p| p.name == "PkgA" }
+        .classes.find { |c| c.name == "Alpha" }
+      attr = alpha.attributes.find { |a| a.name == "refSame" }
+
+      expect(repo.index_built?(:qualified_names)).to be false
+      result = repo.resolve_type(attr, from: "ModelRoot::PkgA::Alpha")
+
+      expect(repo.index_built?(:qualified_names)).to be true
+      expect(result.qualified_name).to eq("ModelRoot::PkgA::Beta")
+      expect(result.classifier.name).to eq("Beta")
+    end
+  end
 end

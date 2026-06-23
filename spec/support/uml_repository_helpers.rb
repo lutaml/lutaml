@@ -40,6 +40,50 @@ module UmlRepositoryHelpers
     doc.packages << root_package
     doc
   end
+
+  # A deterministic multi-package document covering every type-resolution
+  # branch: same-package, already-qualified, cross-package (unique simple name),
+  # same-package-wins-over-ambiguity, ambiguous, primitive and unresolved.
+  # Every class carries an xmi_id (the SPA serializers require it).
+  def create_resolution_test_document # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+    mk_attr = lambda do |name, type|
+      Lutaml::Uml::TopElementAttribute.new(name: name, type: type)
+    end
+    mk_class = lambda do |name, xmi_id, attrs = []|
+      klass = Lutaml::Uml::Class.new(name: name, xmi_id: xmi_id)
+      klass.attributes = attrs if attrs.any?
+      klass
+    end
+
+    # Branches each attribute exercises:
+    #   refSame -> same-package (PkgA::Beta); refQualified -> already-qualified;
+    #   refCross -> unique simple name (PkgB::Gamma); refSamePkgShared ->
+    #   same-package wins over ambiguity; refPrimitive -> primitive;
+    #   refUnresolved -> unresolved.
+    alpha = mk_class.call("Alpha", "cls_alpha", [
+                            mk_attr.call("refSame", "Beta"),
+                            mk_attr.call("refQualified", "ModelRoot::PkgB::Gamma"),
+                            mk_attr.call("refCross", "Gamma"),
+                            mk_attr.call("refSamePkgShared", "Shared"),
+                            mk_attr.call("refPrimitive", "String"),
+                            mk_attr.call("refUnresolved", "DoesNotExist"),
+                          ])
+    echo = mk_class.call("Echo", "cls_echo",
+                         [mk_attr.call("refAmbiguous", "Shared")]) # from PkgC (no local Shared) => ambiguous
+
+    pkg_a = Lutaml::Uml::Package.new(name: "PkgA", xmi_id: "pkg_a")
+    pkg_a.classes = [alpha, mk_class.call("Beta", "cls_beta"),
+                     mk_class.call("Shared", "cls_shared_a")]
+    pkg_b = Lutaml::Uml::Package.new(name: "PkgB", xmi_id: "pkg_b")
+    pkg_b.classes = [mk_class.call("Gamma", "cls_gamma"),
+                     mk_class.call("Shared", "cls_shared_b")]
+    pkg_c = Lutaml::Uml::Package.new(name: "PkgC", xmi_id: "pkg_c")
+    pkg_c.classes = [echo]
+
+    doc = Lutaml::Uml::Document.new(name: "ResolveModel")
+    doc.packages = [pkg_a, pkg_b, pkg_c]
+    doc
+  end
 end
 
 RSpec.configure do |config|

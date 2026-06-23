@@ -24,12 +24,10 @@ module Lutaml
       class RepositoryValidator
         include Lutaml::Uml::ModelHelpers
 
-        # Primitive types that don't need to be resolved
-        PRIMITIVE_TYPES = %w[
-          String Integer Boolean Date DateTime Float Double
-          Long Short Byte Char Time Decimal
-          UnlimitedNatural Real
-        ].freeze
+        # Primitive types that don't need to be resolved.
+        # Single source of truth lives in TypeResolver (shared with the
+        # association index and Repository#resolve_type).
+        PRIMITIVE_TYPES = Lutaml::UmlRepository::TypeResolver::PRIMITIVE_TYPES
 
         # @param document [Lutaml::Uml::Document] The UML document
         # @param indexes [Hash] The repository indexes
@@ -292,19 +290,14 @@ module Lutaml
         # @param current_package_path [String] Current package context
         # @return [String, nil] Resolved qualified name or nil if not found
         def resolve_type_name(type_name, current_package_path)
-          # Already qualified and exists?
-          return type_name if @indexes[:qualified_names].key?(type_name)
-
-          # Try in current package
-          local_qname = "#{current_package_path}::#{type_name}"
-          return local_qname if @indexes[:qualified_names].key?(local_qname)
-
-          # Try to find in all qualified names (simple name match)
-          @indexes[:qualified_names].each_key do |qname|
-            return qname if qname.end_with?("::#{type_name}")
-          end
-
-          nil
+          # Delegates to the shared resolver; returns the resolved qualified
+          # name or nil (behaviour preserved for the validator's nil-check).
+          TypeResolver.resolve(
+            type: type_name,
+            package_path: current_package_path,
+            qualified_names: @indexes[:qualified_names],
+            simple_name_to_qnames: @indexes[:simple_name_to_qnames],
+          ).qualified_name
         end
 
         # Check if a type is a primitive type

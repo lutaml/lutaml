@@ -16,6 +16,7 @@ RSpec.describe Lutaml::UmlRepository::IndexBuilder do
         :stereotypes,
         :inheritance_graph,
         :diagram_index,
+        :simple_name_to_qnames,
       )
     end
 
@@ -30,6 +31,26 @@ RSpec.describe Lutaml::UmlRepository::IndexBuilder do
       expect(indexes[:inheritance_graph]).to be_a(Hash)
       expect(indexes[:diagram_index]).to be_a(Hash)
       expect(indexes[:package_to_classes]).to be_a(Hash)
+      expect(indexes[:simple_name_to_qnames]).to be_a(Hash)
+    end
+  end
+
+  describe "simple_name_to_qnames index" do
+    let(:document) { create_resolution_test_document }
+
+    it "maps each simple class name to all its qualified names",
+       :aggregate_failures do
+      map = indexes[:simple_name_to_qnames]
+      expect(map["Shared"])
+        .to contain_exactly("ModelRoot::PkgA::Shared", "ModelRoot::PkgB::Shared")
+      expect(map["Beta"]).to eq(["ModelRoot::PkgA::Beta"])
+    end
+
+    it "only references qualified names that exist" do
+      qualified_names = indexes[:qualified_names]
+      indexes[:simple_name_to_qnames].each_value do |qname_list|
+        qname_list.each { |qname| expect(qualified_names).to have_key(qname) }
+      end
     end
   end
 

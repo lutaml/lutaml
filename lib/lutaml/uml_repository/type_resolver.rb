@@ -1,0 +1,136 @@
+# frozen_string_literal: true
+
+module Lutaml
+  module UmlRepository
+    # TypeResolver resolves a UML type name (e.g. an attribute's type, or a
+    # generalization parent) to the classifier it refers to, using the
+    # package-aware precedence shared by the repository validator and the
+    # association index:
+    #
+    #   1. already-qualified - the type is itself a known qualified name
+    #   2. same-package      - "<package_path>::<type>" is a known qualified name
+    #   3. simple-name match - some qualified name ends with "::<type>"
+    #                          (first match wins; more than one => ambiguous)
+    #
+    # It is a pure, stateless module so it can run both at index-build time (over
+    # the in-progress maps) and at query time (over a frozen Repository's
+    # indexes). It performs no mutation and stores no state.
+    module TypeResolver
+      module_function
+
+      # Primitive type names that resolve to themselves (no classifier).
+      # Single source of truth; also referenced by RepositoryValidator.
+      PRIMITIVE_TYPES = %w[
+        String Integer Boolean Date DateTime Float Double
+        Long Short Byte Char Time Decimal
+        UnlimitedNatural Real
+      ].freeze
+
+      # The outcome of resolving a type name.
+      class Result
+        attr_reader :qualified_name, :classifier, :candidates
+
+        def initialize(qualified_name: nil, classifier: nil, primitive: false,
+                       ambiguous: false, candidates: [])
+          @qualified_name = qualified_name
+          @classifier = classifier
+          @primitive = primitive
+          @ambiguous = ambiguous
+          # dup + freeze: the simple-name path passes the index's own array;
+          # never expose mutable repository index state to callers.
+          @candidates = candidates.dup.freeze
+        end
+
+        # Resolved when it maps to a qualified name (a classifier or a
+        # primitive). Mirrors the validator's "valid unless nil" contract, so an
+        # ambiguous-but-matched type is still resolved (not an error).
+        def resolved?
+          !@qualified_name.nil?
+        end
+
+        def primitive?
+          @primitive
+        end
+
+        def ambiguous?
+          @ambiguous
+        end
+      end
+
+      UNRESOLVED = Result.new.freeze
+
+      # Resolve a type name to a Result.
+      #
+      # @param type [String, nil] the type name (e.g. an attribute's type)
+      # @param package_path [String, nil] the owning element's package path,
+      #   used for the same-package step (skipped when nil/empty)
+      # @param qualified_names [Hash{String=>Object}] qname => classifier
+      # @param simple_name_to_qnames [Hash{String=>Array<String>}, nil] simple
+      #   name => [qname,...]; when nil (e.g. a legacy .lur whose stored indexes
+      #   predate this map) the candidate list is rebuilt from qualified_names
+      # @return [Result]
+      def resolve(type:, package_path:, qualified_names:,
+                  simple_name_to_qnames: nil)
+        return UNRESOLVED if type.to_s.empty?
+
+        # Classifier matches take precedence over the primitive list, so a real
+        # class named like a primitive (e.g. a domain "Date") still resolves and
+        # is reachable by inheritance/navigation. Primitive is the fallback only
+        # when no classifier matches.
+        direct_result(type, qualified_names) ||
+          same_package_result(type, package_path, qualified_names) ||
+          simple_name_result(type, qualified_names, simple_name_to_qnames) ||
+          primitive_result(type, qualified_names) ||
+          UNRESOLVED
+      end
+
+      def primitive_result(type, qualified_names)
+        return unless PRIMITIVE_TYPES.include?(type)
+
+        Result.new(qualified_name: type, classifier: qualified_names[type],
+                   primitive: true)
+      end
+
+      def direct_result(type, qualified_names)
+        matched(type, qualified_names, [type]) if qualified_names.key?(type)
+      end
+
+      def same_package_result(type, package_path, qualified_names)
+        return if package_path.to_s.empty?
+
+        local = "#{package_path}::#{type}"
+        matched(local, qualified_names, [local]) if qualified_names.key?(local)
+      end
+
+      def simple_name_result(type, qualified_names, simple_name_to_qnames)
+        candidates = candidate_qnames(type, qualified_names,
+                                      simple_name_to_qnames)
+        return if candidates.empty?
+
+        matched(candidates.first, qualified_names, candidates,
+                ambiguous: candidates.size > 1)
+      end
+
+      def matched(qname, qualified_names, candidates, ambiguous: false)
+        Result.new(qualified_name: qname, classifier: qualified_names[qname],
+                   candidates: candidates, ambiguous: ambiguous)
+      end
+
+      # Simple-name candidates in qualified_names insertion order. Prefers the
+      # prebuilt index; falls back to scanning qualified_names (legacy packages
+      # whose stored indexes predate the simple-name map). The scan matches the
+      # validator's historical `end_with?("::<type>")` first-match exactly.
+      def candidate_qnames(type, qualified_names, simple_name_to_qnames)
+        mapped = simple_name_to_qnames && simple_name_to_qnames[type]
+        return mapped if mapped && !mapped.empty?
+
+        # Map miss (or no/empty map): scan qualified names by suffix. This also
+        # resolves PARTIALLY-qualified references like "Pkg::Class" that the
+        # leaf-keyed simple-name map cannot — matching the historical
+        # end_with? behaviour exactly (and covers legacy .lur / lazy builds).
+        suffix = "::#{type}"
+        qualified_names.keys.select { |qname| qname.end_with?(suffix) }
+      end
+    end
+  end
+end

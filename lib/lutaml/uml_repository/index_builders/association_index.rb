@@ -138,16 +138,19 @@ module Lutaml
         end
 
         def resolve_qualified_name(name, current_package_path)
-          # If name contains "::", it might already be qualified
-          return name if @qualified_names.key?(name)
-
-          # Try in current package
-          local_qname = "#{current_package_path}::#{name}"
-          return local_qname if @qualified_names.key?(local_qname)
-
-          # O(1) lookup using reverse index instead of O(n) scan
-          candidates = @simple_name_to_qnames[name]
-          candidates&.first
+          # Shared, package-aware resolution over the in-progress build maps.
+          result = TypeResolver.resolve(
+            type: name,
+            package_path: current_package_path,
+            qualified_names: @qualified_names,
+            simple_name_to_qnames: @simple_name_to_qnames,
+          )
+          # Only return a real classifier qname. The resolver reports primitive
+          # names (e.g. a parent literally named "String") as resolved, but
+          # those must NOT create an inheritance edge — guard on key presence,
+          # which also preserves the historical "qname or nil" contract.
+          qname = result.qualified_name
+          @qualified_names.key?(qname) ? qname : nil
         end
       end
     end

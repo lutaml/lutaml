@@ -177,6 +177,7 @@ module Lutaml
           classes: @classes.freeze,
           associations: @associations.freeze,
           package_to_classes: plain_hash(@package_to_classes).freeze,
+          simple_name_to_qnames: plain_hash(@simple_name_to_qnames).freeze,
         }.freeze
       end
 

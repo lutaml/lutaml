@@ -71,6 +71,16 @@ module Lutaml
         super
       end
 
+      # Resolve an attribute/type to its target class.
+      #
+      # Ensures the qualified_names index is built first; the simple-name map is
+      # not built lazily, so TypeResolver derives candidates from qualified_names
+      # on the fly.
+      def resolve_type(attr_or_type, from: nil)
+        ensure_index(:qualified_names)
+        super
+      end
+
       # Find a package by its path.
       #
       # Ensures the package_paths index is built before querying.
