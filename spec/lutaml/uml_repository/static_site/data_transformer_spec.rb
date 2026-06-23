@@ -180,4 +180,46 @@ RSpec.describe Lutaml::UmlRepository::StaticSite::DataTransformer do
       expect(result).to be_a(Lutaml::UmlRepository::StaticSite::Models::SpaDocument)
     end
   end
+
+  describe "attribute typeRef precompute" do
+    let(:document) { create_resolution_test_document }
+
+    def attr_named(result, name)
+      result.attributes.values.find { |attribute| attribute.name == name }
+    end
+
+    it "precomputes a deterministic typeRef for class-typed attributes",
+       :aggregate_failures do
+      result = transformer.transform
+      expect(attr_named(result, "refSame").type_ref.qualified_name)
+        .to eq("ModelRoot::PkgA::Beta")
+      expect(attr_named(result, "refCross").type_ref.qualified_name)
+        .to eq("ModelRoot::PkgB::Gamma")
+    end
+
+    it "emits no typeRef for primitive or unresolved types",
+       :aggregate_failures do
+      result = transformer.transform
+      expect(attr_named(result, "refPrimitive").type_ref).to be_nil
+      expect(attr_named(result, "refUnresolved").type_ref).to be_nil
+    end
+
+    it "marks an ambiguous reference", :aggregate_failures do
+      ambiguous = attr_named(transformer.transform, "refAmbiguous")
+      expect(ambiguous.type_ref).not_to be_nil
+      expect(ambiguous.type_ref.ambiguous).to be(true)
+    end
+
+    it "serializes the typeRef under camelCase JSON keys" do
+      json = attr_named(transformer.transform, "refSame").to_json
+      expect(json).to include("\"typeRef\"").and include("\"classId\"")
+    end
+
+    it "is deterministic across transforms" do
+      first = attr_named(transformer.transform, "refSame").type_ref.class_id
+      second = attr_named(described_class.new(repository).transform,
+                          "refSame").type_ref.class_id
+      expect(first).to eq(second)
+    end
+  end
 end

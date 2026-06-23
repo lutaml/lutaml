@@ -52,11 +52,15 @@ module Lutaml
           end
 
           def serialize_attribute(attribute, owner, _id)
+            type_ref = Models::SpaTypeRef.from_resolution(
+              @repository.resolve_type(attribute, from: owner), @id_generator
+            )
             Models::SpaAttribute.from_uml(
               attribute, owner,
               id_generator: @id_generator,
               definition: format_definition(attribute.definition, @options),
-              stereotypes: normalize_stereotypes(attribute.stereotype)
+              stereotypes: normalize_stereotypes(attribute.stereotype),
+              type_ref: type_ref
             )
           end
         end

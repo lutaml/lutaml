@@ -3,6 +3,15 @@ export interface SpaCardinality {
   max?: string
 }
 
+// Precomputed, deterministic reference from an attribute's type to the class
+// it resolves to (absent for primitives and unresolved types). `ambiguous` is
+// optional so older generated data without it still parses.
+export interface SpaTypeRef {
+  classId: string
+  qualifiedName: string
+  ambiguous?: boolean
+}
+
 export interface SpaAttribute {
   id: string
   name: string
@@ -11,6 +20,7 @@ export interface SpaAttribute {
   owner: string
   ownerName: string
   cardinality?: SpaCardinality
+  typeRef?: SpaTypeRef
   definition?: string
   stereotypes: string[]
   isStatic: boolean
