@@ -43,10 +43,24 @@ module Lutaml
 
       def document_header(document)
         header = []
-        header << "title \"#{document.title}\"" if present?(document.title)
-        header << "caption \"#{document.caption}\"" if present?(document.caption)
+        header << "title #{dsl_quote(document.title)}" if present?(document.title)
+        if present?(document.caption)
+          header << "caption #{dsl_quote(document.caption)}"
+        end
         header << "fontname \"#{document.fontname}\"" if present?(document.fontname)
         header
+      end
+
+      # Quote a title/caption so it round-trips through the DSL grammar. Prefers
+      # double quotes; switches to single quotes when the value contains a
+      # double quote; if it contains both (the DSL has no escape), drops the
+      # double quotes so the output still parses.
+      def dsl_quote(value)
+        str = value.to_s
+        return "\"#{str}\"" unless str.include?('"')
+        return "'#{str}'" unless str.include?("'")
+
+        "\"#{str.delete('"')}\""
       end
 
       def elements_to_dsl(document) # rubocop:disable Metrics/AbcSize

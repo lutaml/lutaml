@@ -48,6 +48,20 @@ RSpec.describe Lutaml::Converter::UmlToDsl do
     end
   end
 
+  describe "title and caption round-trip" do
+    it "preserves titles and captions with special characters",
+       :aggregate_failures do
+      doc = Lutaml::Uml::Document.new(name: "M")
+      doc.title = "Core (v1.2) / urf"
+      doc.caption = "needs a \"quote\" inside"
+
+      reparsed = reparse(doc.to_lutaml)
+
+      expect(reparsed.title).to eq("Core (v1.2) / urf")
+      expect(reparsed.caption).to eq("needs a \"quote\" inside")
+    end
+  end
+
   describe "rich round-trip" do
     let(:fixture) { fixtures_path("dsl/diagram_roundtrip_rich.lutaml") }
 

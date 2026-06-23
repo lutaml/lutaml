@@ -225,6 +225,22 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
         expect(roles.member_end_cardinality.max).to eq("*")
       end
 
+      it "consumes role-name visibility markers without a merge collision",
+         :aggregate_failures do
+        # `#+role` / `#-other` previously raised a "Duplicate subtrees" warning
+        # and dropped the prefix; the marker is now consumed, leaving clean
+        # role names on both ends.
+        file = Tempfile.new(["role_visibility", ".lutaml"])
+        file.write("diagram V {\n  A#+role --> B#-other\n}")
+        file.flush
+        assoc = described_class.parse(File.new(file.path)).associations.first
+        expect(assoc.owner_end_attribute_name).to eq("role")
+        expect(assoc.member_end_attribute_name).to eq("other")
+      ensure
+        file&.close
+        file&.unlink
+      end
+
       it "keeps qualified endpoint names intact (operator-aware token)" do
         expect(ends[10]).to eq(["Foo::Bar", nil, "Baz::Qux", "direct"])
       end
@@ -243,6 +259,17 @@ RSpec.describe Lutaml::Uml::Parsers::Dsl do
           file&.close
           file&.unlink
         end
+      end
+
+      it "accepts a tab around the operator, not only spaces" do
+        file = Tempfile.new(["tabbed", ".lutaml"])
+        file.write("diagram V {\n  A\t-->\tB\n}")
+        file.flush
+        expect(described_class.parse(File.new(file.path)).associations.length)
+          .to eq(1)
+      ensure
+        file&.close
+        file&.unlink
       end
 
       it_behaves_like "the correct graphviz formatting"

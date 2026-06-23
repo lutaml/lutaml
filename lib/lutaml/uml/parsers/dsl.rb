@@ -150,19 +150,28 @@ module Lutaml
         end
 
         rule(:title_keyword) { kw_title >> spaces }
-        rule(:title_text) do
-          match['"\''].maybe >>
-            match['a-zA-Z0-9_\- ,.:;'].repeat(1).as(:title) >>
-            match['"\''].maybe
-        end
+        rule(:title_text) { quoted_or_plain_text(:title) }
         rule(:title_definition) { title_keyword >> title_text }
         rule(:caption_keyword) { kw_caption >> spaces }
-        rule(:caption_text) do
-          match['"\''].maybe >>
-            match['a-zA-Z0-9_\- ,.:;'].repeat(1).as(:caption) >>
-            match['"\''].maybe
-        end
+        rule(:caption_text) { quoted_or_plain_text(:caption) }
         rule(:caption_definition) { caption_keyword >> caption_text }
+
+        # A quoted string (any content except its quote char or a newline) or,
+        # for backward compatibility, an unquoted run of name-ish characters.
+        # The quoted form lets titles/captions carry parens, slashes, etc. and
+        # still round-trip through Document#to_lutaml.
+        def quoted_or_plain_text(key)
+          quoted_text('"', key) |
+            quoted_text("'", key) |
+            match['a-zA-Z0-9_\- ,.:;'].repeat(1).as(key)
+        end
+
+        def quoted_text(quote, key)
+          line_break = str("\n") | str("\r")
+          str(quote) >>
+            ((str(quote) | line_break).absent? >> any).repeat(1).as(key) >>
+            str(quote)
+        end
 
         rule(:fontname_keyword) { kw_fontname >> spaces }
         rule(:fontname_text) do
@@ -287,7 +296,12 @@ module Lutaml
           rule("shortcut_#{end_type}_endpoint") do
             endpoint_name_chars.as("#{end_type}_end") >>
               (str("#") >>
-                visibility? >>
+                # Consume an optional visibility marker (+/-/#/~) on the role
+                # name WITHOUT capturing it: the Association model has no role
+                # visibility, and capturing it as :visibility_modifier on both
+                # ends collides ("Duplicate subtrees") when owner and member are
+                # merged into the single assoc_shortcut subtree.
+                kw_visibility_modifier.maybe >>
                 endpoint_name_chars.as("#{end_type}_end_attribute_name")).maybe >>
               (spaces? >>
                 str("[") >>
@@ -295,13 +309,17 @@ module Lutaml
                 str("]")).maybe
           end
         end
+        # Horizontal whitespace (space or tab) — the shared `spaces` rule only
+        # matches the space byte, so the operator separator uses this to accept
+        # tabs too.
+        rule(:hspace) { (str(" ") | str("\t")).repeat(1) }
         # NOTE: whitespace around the operator is REQUIRED. The aggregation
         # glyph `o` is also a name character, so a spaceless form like
         # `Foo-->Bar` would mis-parse (`Foo`'s trailing `o` consumed as an
-        # `o--` adornment). Mandatory spaces make the operator unambiguous.
+        # `o--` adornment). Mandatory whitespace makes the operator unambiguous.
         rule(:shortcut_association_definition) do
           (shortcut_owner_endpoint >>
-            spaces >> assoc_op >> spaces >>
+            hspace >> assoc_op >> hspace >>
             shortcut_member_endpoint)
             .as(:assoc_shortcut)
         end
