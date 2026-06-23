@@ -15,4 +15,5 @@ module Lutaml
   autoload :Qea, "lutaml/qea"
   autoload :Converter, "lutaml/converter"
   autoload :ModelTransformations, "lutaml/model_transformations"
+  autoload :Schema, "lutaml/schema"
 end
