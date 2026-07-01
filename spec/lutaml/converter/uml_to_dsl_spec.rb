@@ -96,4 +96,16 @@ RSpec.describe Lutaml::Converter::UmlToDsl do
       expect(association_tuples(reparsed)).to eq(association_tuples(document))
     end
   end
+
+  describe "definition escaping round-trip" do
+    it "round-trips a definition containing backslashes and braces" do
+      tricky = 'a backslash \\ and braces { } and a \\{ combo'
+      document = Lutaml::Uml::Document.new(name: "M")
+      document.classes = [Lutaml::Uml::Class.new(name: "C", definition: tricky)]
+
+      reparsed = reparse(document.to_lutaml)
+
+      expect(reparsed.classes.first.definition).to eq(tricky)
+    end
+  end
 end

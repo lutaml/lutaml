@@ -160,7 +160,9 @@ module Lutaml
       end
 
       def definition_block(text)
-        escaped = text.to_s.gsub("{", "\\{").gsub("}", "\\}")
+        # Escape the escape character itself (\) as well as the braces, so any
+        # definition text round-trips through the parser's unescaping.
+        escaped = text.to_s.gsub(/[\\{}]/) { |char| "\\#{char}" }
         "definition {\n#{escaped}\n}"
       end
 
