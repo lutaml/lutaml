@@ -344,7 +344,7 @@ RSpec.describe Lutaml::Ea::Diagram::SvgRenderer do
     end
 
     it "applies default background color" do
-      expect(svg_output).to match(/fill:#ffffff/)
+      expect(svg_output).to include("fill:#ffffff")
     end
 
     it "includes fill-opacity style" do

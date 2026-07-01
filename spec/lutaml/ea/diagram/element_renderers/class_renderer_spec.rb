@@ -227,7 +227,7 @@ RSpec.describe Lutaml::Ea::Diagram::ElementRenderers::ClassRenderer do
 
         # First attribute should be at y + name_height + 15
         # = 50 + 25 + 15 = 90
-        expect(label).to match(/y="90/)
+        expect(label).to include('y="90')
       end
     end
 
