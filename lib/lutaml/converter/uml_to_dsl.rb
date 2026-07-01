@@ -22,6 +22,12 @@ module Lutaml
     # It also does not yet emit element comments (TopElement#comments /
     # Document#comments); comments are dropped on export. Re-emitting them is a
     # follow-up.
+    #
+    # Definition text is emitted verbatim (only `\`, `{` and `}` are escaped),
+    # so a definition containing `//` or a line whose first word is `include`
+    # does NOT round-trip: the DSL preprocessor strips `//` comments and expands
+    # `include` directives before parsing, independent of this exporter. Making
+    # the preprocessor definition/quote-aware is a follow-up.
     module UmlToDsl
       module_function
 
@@ -74,16 +80,25 @@ module Lutaml
       def class_to_dsl(klass)
         header = "class #{klass.name}"
         header = "#{klass.modifier} #{header}" if present?(klass.modifier)
-        header += " <<#{klass.keyword}>>" if present?(klass.keyword)
-        block(header, classifier_body(klass))
+        block(with_keyword(header, klass), classifier_body(klass))
       end
 
       def enum_to_dsl(enum)
-        block("enum #{enum.name}", classifier_body(enum))
+        block(with_keyword("enum #{enum.name}", enum), classifier_body(enum))
       end
 
       def data_type_to_dsl(data_type)
-        block("data_type #{data_type.name}", classifier_body(data_type))
+        block(with_keyword("data_type #{data_type.name}", data_type),
+              classifier_body(data_type))
+      end
+
+      # Appends a `<<keyword>>` stereotype to a classifier header. The grammar
+      # accepts it on classes, enums and data types, so all three must re-emit
+      # it to round-trip.
+      def with_keyword(header, element)
+        return header unless present?(element.keyword)
+
+        "#{header} <<#{element.keyword}>>"
       end
 
       # Shared body for class/enum/data_type: optional definition + attributes.

@@ -108,4 +108,23 @@ RSpec.describe Lutaml::Converter::UmlToDsl do
       expect(reparsed.classes.first.definition).to eq(tricky)
     end
   end
+
+  describe "classifier keyword round-trip" do
+    it "preserves <<keyword>> on enums and data types", :aggregate_failures do
+      src = <<~LUTAML
+        diagram D {
+          enum Color <<enumeration>> {
+            red
+          }
+          data_type Money <<valueType>> {
+            amount
+          }
+        }
+      LUTAML
+      reparsed = reparse(reparse(src).to_lutaml)
+
+      expect(reparsed.enums.first.keyword).to eq("enumeration")
+      expect(reparsed.data_types.first.keyword).to eq("valueType")
+    end
+  end
 end
