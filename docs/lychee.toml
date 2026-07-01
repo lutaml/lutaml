@@ -1,6 +1,6 @@
 # Lychee link checker configuration for LutaML documentation
 
-# Cache results for 1 day to speed up repeated checks
+# Cache results to speed up repeated checks
 cache = true
 
 # Maximum number of concurrent requests
@@ -12,72 +12,34 @@ timeout = 30
 # Maximum number of retries per link
 max_retries = 3
 
-# Follow redirects
-follow_redirects = true
-
-# Maximum redirect depth
+# Maximum redirect depth (redirects are followed up to this many)
 max_redirects = 5
 
-# Accept status codes
-accept = [
-    200,  # OK
-    203,  # Non-Authoritative Information
-    204,  # No Content
-    206,  # Partial Content
-    429,  # Too Many Requests (we'll retry)
-]
+# Accept these HTTP status codes as success
+accept = [200, 203, 204, 206, 429]
 
-# Exclude patterns (glob format)
+# Exclude URLs matching these regexes
 exclude = [
-    # Exclude localhost links
-    'http://localhost*',
-    'http://127.0.0.1*',
-
-    # Exclude example domains
-    'http://example.com*',
-    'https://example.com*',
-
-    # Exclude GitHub edit links (they may 404 for non-contributors)
-    'https://github.com/*/edit/*',
-
-    # Exclude potential rate-limited APIs
-    'https://api.github.com/*',
+    "^https?://localhost",
+    "^https?://127\\.0\\.0\\.1",
+    "^https?://example\\.com",
+    "^https://github\\.com/[^/]+/[^/]+/edit/",
+    "^https://api\\.github\\.com/",
 ]
 
-# Include patterns - check these file types
-include = [
-    '**/*.html',
-    '**/*.md',
-    '**/*.adoc',
-]
-
-# HTTP headers to send with requests
-[headers]
-# Set user agent
-User-Agent = "Mozilla/5.0 (compatible; Lychee/0.13.0; +https://github.com/lycheeverse/lychee)"
-
-# GitHub API token (if available in environment)
-# Authorization = "Bearer ${GITHUB_TOKEN}"
-
-# Verbose output
-verbose = true
-
-# Don't show progress bar in CI
+# Do not show a progress bar in CI
 no_progress = true
 
 # Output format
 format = "markdown"
 
-# Exclude paths from file system checks
-exclude_path = [
-    ".git/",
-    "_site/",
-    "node_modules/",
-    "vendor/",
-]
+# HTTP headers to send with requests
+header = { "User-Agent" = "Mozilla/5.0 (compatible; Lychee/0.23.0; +https://github.com/lycheeverse/lychee)" }
 
-# Scheme to use when checking local files
-scheme = "https"
+# Schemes to check
+scheme = ["https", "http"]
 
-# Base URL for relative links
-# base = "https://lutaml.github.io/lutaml"
+# Exclude these paths from file-system discovery. NOTE: do not exclude _site/
+# here — the CI link check explicitly targets _site/**/*.html, and excluding it
+# would drop every file ("No files found") and fail with failIfEmpty.
+exclude_path = [".git/", "node_modules/", "vendor/"]

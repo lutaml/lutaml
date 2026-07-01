@@ -167,8 +167,8 @@ RSpec.describe Lutaml::Qea::Benchmark do
       formatted = described_class.format_results(results)
 
       aggregate_failures do
-        expect(formatted).to match(/faster than XMI/)
-        expect(formatted).to match(/Improvement:/)
+        expect(formatted).to include("faster than XMI")
+        expect(formatted).to include("Improvement:")
       end
     end
 
