@@ -91,6 +91,7 @@ module Lutaml
       end
 
       def build_serializable(uml) # rubocop:disable Metrics/MethodLength,Metrics/AbcSize
+        validate_class_name!(uml)
         classified = @encoding_rule.classify(realizable_attributes(uml))
         elements = classified[:elements]
         xml_attributes = classified[:attributes]
@@ -146,6 +147,18 @@ module Lutaml
         raise ArgumentError,
               "Class #{uml.name.inspect} has duplicate attribute name(s): " \
               "#{duplicates.join(', ')}"
+      end
+
+      # The class name becomes the XSD root element name and the JSON Schema
+      # definition/$ref key, so it must be a valid XML name too (attribute
+      # names are already validated in #realizable_attributes). Fail loudly
+      # rather than emit an invalid schema or an unescaped $ref.
+      def validate_class_name!(uml)
+        return if uml.name.to_s.match?(NCNAME)
+
+        raise ArgumentError,
+              "Class #{uml.name.inspect} is not a valid XML name and cannot " \
+              "be realized as an XSD root / JSON Schema definition name."
       end
 
       def uml_classes

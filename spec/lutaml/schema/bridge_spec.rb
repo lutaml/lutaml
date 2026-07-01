@@ -95,6 +95,20 @@ RSpec.describe Lutaml::Schema::Bridge do
         .to raise_error(ArgumentError, /duplicate attribute name/)
     end
 
+    it "rejects a class name that is not a valid XML name",
+       :aggregate_failures do
+      doc = Lutaml::Uml::Document.new(
+        name: "M",
+        classes: [Lutaml::Uml::Class.new(
+          name: "Bad Class", attributes: [attribute("id", "String")],
+        )],
+      )
+      expect { described_class.new(doc).to_xsd("Bad Class") }
+        .to raise_error(ArgumentError, /not a valid XML name/)
+      expect { described_class.new(doc).to_json_schema("Bad Class") }
+        .to raise_error(ArgumentError, /not a valid XML name/)
+    end
+
     it "refuses to disambiguate duplicate simple class names" do
       pkg = Lutaml::Uml::Package.new(
         name: "P",
