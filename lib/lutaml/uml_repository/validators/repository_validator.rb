@@ -24,11 +24,6 @@ module Lutaml
       class RepositoryValidator
         include Lutaml::Uml::ModelHelpers
 
-        # Primitive types that don't need to be resolved.
-        # Single source of truth lives in TypeResolver (shared with the
-        # association index and Repository#resolve_type).
-        PRIMITIVE_TYPES = Lutaml::UmlRepository::TypeResolver::PRIMITIVE_TYPES
-
         # @param document [Lutaml::Uml::Document] The UML document
         # @param indexes [Hash] The repository indexes
         def initialize(document, indexes)
@@ -90,12 +85,13 @@ module Lutaml
         end
 
         def validate_single_attribute(attr, qname, package_path, class_details)
-          is_primitive = primitive_type?(attr.type)
-          unless is_primitive
-            resolved_type = resolve_type_name(attr.type,
-                                              package_path)
-          end
-          is_valid = is_primitive || !resolved_type.nil?
+          result = resolve_type(attr.type, package_path)
+          is_primitive = result.primitive?
+          # A classifier named like a primitive resolves as the classifier
+          # (TypeResolver precedence); genuine primitives keep the prior verbose
+          # contract of reporting no resolved qualified name.
+          resolved_type = is_primitive ? nil : result.qualified_name
+          is_valid = result.resolved?
 
           if @verbose
             add_verbose_detail(class_details, attr, resolved_type, is_valid,
@@ -284,28 +280,21 @@ module Lutaml
           nil
         end
 
-        # Resolve a type name to its fully qualified name
+        # Resolve a type name via the shared resolver (same precedence used by
+        # the association index and Repository#resolve_type: qualified ->
+        # same-package -> simple-name -> primitive, so a classifier named like a
+        # primitive wins over the primitive list).
         #
         # @param type_name [String] Type name to resolve
         # @param current_package_path [String] Current package context
-        # @return [String, nil] Resolved qualified name or nil if not found
-        def resolve_type_name(type_name, current_package_path)
-          # Delegates to the shared resolver; returns the resolved qualified
-          # name or nil (behaviour preserved for the validator's nil-check).
+        # @return [Lutaml::UmlRepository::TypeResolver::Result] resolution result
+        def resolve_type(type_name, current_package_path)
           TypeResolver.resolve(
             type: type_name,
             package_path: current_package_path,
             qualified_names: @indexes[:qualified_names],
             simple_name_to_qnames: @indexes[:simple_name_to_qnames],
-          ).qualified_name
-        end
-
-        # Check if a type is a primitive type
-        #
-        # @param type [String] Type name
-        # @return [Boolean] True if primitive type
-        def primitive_type?(type)
-          PRIMITIVE_TYPES.include?(type)
+          )
         end
       end
 

@@ -63,6 +63,42 @@ RSpec.describe Lutaml::UmlRepository::Validators::RepositoryValidator do
       end
     end
 
+    # A domain class named like a primitive (e.g. "Date") must resolve as the
+    # classifier, matching Repository#resolve_type and the SPA/export surfaces,
+    # rather than being short-circuited as a primitive.
+    context "with a classifier named like a primitive" do
+      let(:document) do
+        doc = Lutaml::Uml::Document.new
+        doc.name = "M"
+        pkg = Lutaml::Uml::Package.new
+        pkg.name = "P"
+        date = Lutaml::Uml::Class.new
+        date.name = "Date"
+        date.xmi_id = "date"
+        event = Lutaml::Uml::Class.new
+        event.name = "Event"
+        event.xmi_id = "event"
+        attr = Lutaml::Uml::TopElementAttribute.new
+        attr.name = "occurred"
+        attr.type = "Date"
+        event.attributes = [attr]
+        pkg.classes = [date, event]
+        doc.packages = [pkg]
+        doc
+      end
+
+      it "resolves it as a classifier, not a primitive", :aggregate_failures do
+        detail = validator.validate(verbose: true).validation_details
+          .find { |d| d[:class_name].to_s.end_with?("Event") }
+        occurred = detail[:attributes]
+          .find { |a| a[:attribute_name] == "occurred" }
+
+        expect(occurred[:is_primitive]).to be(false)
+        expect(occurred[:resolved_to]).to include("Date")
+        expect(occurred[:valid]).to be(true)
+      end
+    end
+
     context "with circular inheritance" do
       let(:document) do
         doc = Lutaml::Uml::Document.new
