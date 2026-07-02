@@ -72,9 +72,14 @@ module Lutaml
 
         rule(:spaces) { match("\s").repeat(1) }
         rule(:spaces?) { spaces.maybe }
+        # `//` line comment: discarded (whitespace-equivalent), so it is folded
+        # into the skip rule rather than stripped by a text pre-pass. This keeps
+        # it context-aware — it only applies where the grammar skips whitespace,
+        # never inside a quoted string or an atomic `definition {}` body.
+        rule(:line_comment) { str("//") >> (newline.absent? >> any).repeat }
         rule(:whitespace) do
-          (match("\s") | match("	") | match("\r?\n") | match("\r") | str(";"))
-            .repeat(1)
+          (match("\s") | match("	") | match("\r?\n") | match("\r") | str(";") |
+            line_comment).repeat(1)
         end
         rule(:whitespace?) { whitespace.maybe }
         rule(:name) { match["a-zA-Z0-9 _-"].repeat(1) }

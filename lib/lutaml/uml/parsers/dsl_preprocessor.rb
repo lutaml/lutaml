@@ -28,14 +28,7 @@ module Lutaml
         private
 
         def process_dsl_line(include_root, line)
-          process_include_line(include_root, process_comment_line(line))
-        end
-
-        def process_comment_line(line)
-          has_comment = line.match(%r{//.*})
-          return line if has_comment.nil?
-
-          line.gsub(%r{//.*}, "")
+          process_include_line(include_root, line)
         end
 
         def process_include_line(include_root, line) # rubocop:disable Metrics/MethodLength
@@ -47,9 +40,7 @@ module Lutaml
             path_to_file = File.join(include_root,
                                      path_to_file)
           end
-          File.read(path_to_file).split("\n").map do |line|
-            process_comment_line(line)
-          end
+          File.read(path_to_file).split("\n")
         rescue Errno::ENOENT
           puts(
             "No such file or directory @ rb_sysopen - #{path_to_file}, " \
