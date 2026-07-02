@@ -154,27 +154,28 @@ module Lutaml
             .as(:attributes)
         end
 
-        rule(:title_keyword) { kw_title >> spaces }
-        rule(:title_text) do
-          match['"\''].maybe >>
-            match['a-zA-Z0-9_\- ,.:;'].repeat(1).as(:title) >>
-            match['"\''].maybe
+        # A quoted value ("..." or '...') captures arbitrary inner content; an
+        # unquoted value is limited to the `bare` character class. Quoting lets
+        # a title/caption/fontname hold characters the bare class excludes (e.g.
+        # `/` in a URL) instead of truncating at the first such character.
+        def quoted_value(name, bare)
+          quoted_string('"', name) | quoted_string("'", name) |
+            bare.repeat(1).as(name)
         end
+
+        def quoted_string(quote, name)
+          str(quote) >> (str(quote).absent? >> any).repeat.as(name) >> str(quote)
+        end
+
+        rule(:title_keyword) { kw_title >> spaces }
+        rule(:title_text) { quoted_value(:title, match['a-zA-Z0-9_\- ,.:;']) }
         rule(:title_definition) { title_keyword >> title_text }
         rule(:caption_keyword) { kw_caption >> spaces }
-        rule(:caption_text) do
-          match['"\''].maybe >>
-            match['a-zA-Z0-9_\- ,.:;'].repeat(1).as(:caption) >>
-            match['"\''].maybe
-        end
+        rule(:caption_text) { quoted_value(:caption, match['a-zA-Z0-9_\- ,.:;']) }
         rule(:caption_definition) { caption_keyword >> caption_text }
 
         rule(:fontname_keyword) { kw_fontname >> spaces }
-        rule(:fontname_text) do
-          match['"\''].maybe >>
-            match['a-zA-Z0-9_\- '].repeat(1).as(:fontname) >>
-            match['"\''].maybe
-        end
+        rule(:fontname_text) { quoted_value(:fontname, match['a-zA-Z0-9_\- ']) }
         rule(:fontname_definition) { fontname_keyword >> fontname_text }
 
         # Method
