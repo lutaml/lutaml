@@ -116,7 +116,7 @@ module Lutaml
         end
         rule(:boolean) { (str("true") | str("false")).as(:boolean) }
         rule(:number) { match("[0-9]").repeat(1).as(:number) }
-        rule(:variable) { (quoted_string | match("[a-zA-Z0-9_]").repeat(1)) }
+        rule(:variable) { quoted_string | match("[a-zA-Z0-9_]").repeat(1) }
         rule(:reference) do
           str("reference:(") >>
             (variable >> (str(".") >> variable).repeat).as(:reference) >>
@@ -190,7 +190,7 @@ module Lutaml
         rule(:attribute_value) { list | key_value_map | value | match("[^\n]").repeat(1) }
         rule(:attribute) do
           comment_definition |
-          variable.as(:key) >> spaces? >> str("+").as(:add).maybe >> str("=").maybe >> spaces? >> attribute_value.as(:value)
+            (variable.as(:key) >> spaces? >> str("+").as(:add).maybe >> str("=").maybe >> spaces? >> attribute_value.as(:value))
         end
         rule(:attributes) do
           (
@@ -245,33 +245,27 @@ module Lutaml
         end
 
         rule(:keyword_type_argument) do
-          (
-            str("type") >>
+          str("type") >>
             spaces? >>
             match["[^\s\n\r]"].repeat(1).as(:type) >>
             whitespace?
-          )
         end
 
         rule(:keyword_cardinality_argument) do
-          (
-            str("cardinality") >>
+          str("cardinality") >>
             spaces? >>
             cardinality_body_definition.as(:cardinality) >>
             whitespace?
-          )
         end
 
         rule(:keyword_any_argument) do
-          (
-            spaces? >>
+          spaces? >>
             match("[^\s\n\r]").repeat(1).as(:name) >>
             spaces >>
             str("=").maybe >>
             spaces? >>
             attribute_value.as(:value) >>
             whitespace?
-          )
         end
 
         rule(:keyword_attribute_options) do
@@ -622,7 +616,7 @@ module Lutaml
         rule(:import) do
           kw_import >> spaces? >> str("{") >> whitespace? >>
             import_definition.repeat.as(:imports) >>
-          str("}") >> whitespace?
+            str("}") >> whitespace?
         end
 
         rule(:import_definition) do
@@ -657,7 +651,7 @@ module Lutaml
         end
 
         rule(:lml_instance_body) do
-          (lml_instance_members >> whitespace?)
+          lml_instance_members >> whitespace?
         end
 
         rule(:instance_template) do

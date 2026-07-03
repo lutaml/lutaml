@@ -9,7 +9,7 @@ module Lutaml
 
     class TopElementAttribute < Uml::TopElementAttribute
       attribute :properties, TopElementAttribute, collection: true, default: []
-      attribute :value, TopElementAttribute, collection: true
+      attribute :value, Lutaml::Model::Type::Value
       attribute :attributes, TopElementAttribute, collection: true, default: []
       attribute :extended, :boolean
       attribute :instances, Instance, collection: true, default: []

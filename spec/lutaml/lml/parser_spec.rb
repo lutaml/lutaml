@@ -16,11 +16,11 @@ RSpec.describe Lutaml::Lml::Parser do
         expect(doc.title).to eq("my diagram").or be_nil
       end
 
-      context "AddressClassProfile class" do
+      context "with AddressClassProfile class" do
         let(:klass) { doc.classes.find { |c| c.name == "AddressClassProfile" } }
 
         it "exists and has correct definition" do
-          expect(klass).not_to be_nil, "Expected AddressClassProfile class to exist" 
+          expect(klass).not_to be_nil, "Expected AddressClassProfile class to exist"
           expect(klass.definition).to include("this is multiline")
         end
 
@@ -33,7 +33,7 @@ RSpec.describe Lutaml::Lml::Parser do
         end
       end
 
-      context "AttributeProfile class" do
+      context "with AttributeProfile class" do
         let(:klass2) { doc.classes.find { |c| c.name == "AttributeProfile" } }
 
         it "exists" do
@@ -59,7 +59,7 @@ RSpec.describe Lutaml::Lml::Parser do
         expect(doc.requires).to include("iho_s102_check.lml")
       end
 
-      context "S158Checks instance" do
+      context "with S158Checks instance" do
         let(:inst) { doc.instance }
 
         it "exists and has correct type" do
@@ -88,7 +88,7 @@ RSpec.describe Lutaml::Lml::Parser do
         expect(doc.instance).not_to be_nil
       end
 
-      context "top-level instance (meta)" do
+      context "with top-level instance (meta)" do
         let(:meta) { doc.instance }
 
         it "has a nested instance (iho) with correct attributes and lists" do
@@ -130,7 +130,7 @@ RSpec.describe Lutaml::Lml::Parser do
         expect(doc.name).to eql("IhoS102Check")
       end
 
-      context "ValidationCheck class" do
+      context "with ValidationCheck class" do
         let(:klass) { doc.classes.find { |c| c.name == "ValidationCheck" } }
 
         it "exists and has correct attributes" do
@@ -158,7 +158,7 @@ RSpec.describe Lutaml::Lml::Parser do
         expect(doc.title).to eq("my diagram").or be_nil
       end
 
-      context "AddressClassProfile class" do
+      context "with AddressClassProfile class" do
         let(:klass) { doc.classes.find { |c| c.name == "AddressClassProfile" } }
 
         it "exists and has correct definition" do
@@ -179,7 +179,7 @@ RSpec.describe Lutaml::Lml::Parser do
         end
       end
 
-      context "AttributeProfile class" do
+      context "with AttributeProfile class" do
         let(:klass2) { doc.classes.find { |c| c.name == "AttributeProfile" } }
 
         it "exists" do
@@ -205,7 +205,7 @@ RSpec.describe Lutaml::Lml::Parser do
         expect(doc.name).to eql("IhoS102Check")
       end
 
-      context "ValidationCheck class" do
+      context "with ValidationCheck class" do
         let(:klass) { doc.classes.find { |c| c.name == "ValidationCheck" } }
 
         it "exists and has correct attributes" do
@@ -235,12 +235,21 @@ RSpec.describe Lutaml::Lml::Parser do
         expect(doc.instances).to be_a(Lutaml::Lml::InstanceCollection)
       end
 
-      it "maps collections correctly" do
+      it "maps every collection block, in order" do
         collections = doc.instances.collections
-        expect(collections).to be_a(Lutaml::Lml::Collection)
-        expect(collections.name).to eq("test_suite_1")
-        expect(collections.includes).to eq(["laptop_123", "desktop_1", "desktop_2"])
-        expect(collections.validations).to eq(["count >= 3", "all? { |i| i.components.count > 0 }"])
+        expect(collections.map(&:name)).to eq(%w[test_suite_1 test_suite_2])
+        suite = collections.first
+        expect(suite.includes).to eq(["laptop_123", "desktop_1", "desktop_2"])
+        expect(suite.validations).to eq(["count >= 3", "all? { |i| i.components.count > 0 }"])
+        expect(collections.last.includes).to eq(["gaming_pc"])
+      end
+
+      it "serializes parsed models without type errors" do
+        import_hash = doc.instances.imports.first.to_hash
+        expect(import_hash["file"]).to eq("test_data/products.xml")
+        expect(import_hash["attributes"]).to include(
+          hash_including("name" => "map_to", "value" => "Product"),
+        )
       end
 
       it "maps imports correctly" do
@@ -262,12 +271,14 @@ RSpec.describe Lutaml::Lml::Parser do
         xml_export = exports.find { |exp| exp.format_type == "xml" }
         expect(xml_export.attributes.map(&:name)).to include("file", "indent", "encoding")
         expect(xml_export.attributes.find { |a| a.name == "file" }.value).to eq("output/products.xml")
-        expect(xml_export.attributes.find { |a| a.name == "indent" }.value).to eq(true)
+        expect(xml_export.attributes.find { |a| a.name == "indent" }.value).to be(true)
         expect(xml_export.attributes.find { |a| a.name == "encoding" }.value).to eq("UTF-8")
         step_export = exports.find { |exp| exp.format_type == "step" }
         expect(step_export.attributes.map(&:name)).to include("file", "reference_format")
         expect(step_export.attributes.find { |a| a.name == "file" }.value).to eq("output/products.stp")
+        # rubocop:disable Style/FormatStringToken -- literal fixture data, not a format string
         expect(step_export.attributes.find { |a| a.name == "reference_format" }.value).to eq("#%{id}")
+        # rubocop:enable Style/FormatStringToken
       end
 
       it "maps product inheritance and template correctly" do

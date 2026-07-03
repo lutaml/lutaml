@@ -7,18 +7,18 @@ module Lutaml
           obj = obj.map { |item| process_data(item) }
         when Hash
           obj.each do |key, value|
-            case key
-            when :requires
-              obj[key] = process_requires(value)
-            when :instances
-              obj[key] = process_instances(value)
-            when :instance
-              obj[key] = process_instance(value)
-            when :attributes
-              obj[key] = process_attributes(value)
-            else
-              obj[key] = process_data(value)
-            end
+            obj[key] = case key
+                       when :requires
+                         process_requires(value)
+                       when :instances
+                         process_instances(value)
+                       when :instance
+                         process_instance(value)
+                       when :attributes
+                         process_attributes(value)
+                       else
+                         process_data(value)
+                       end
           end
         else
           obj
@@ -32,22 +32,22 @@ module Lutaml
       def process_instances(obj)
         return [] unless obj.is_a?(Array)
 
-        obj = obj.each_with_object({}) do |instance, acc|
+        obj.each_with_object({}) do |instance, acc|
           acc[:instances] ||= []
           if instance.key?(:instance)
             acc[:instances] << process_instance(instance[:instance])
           elsif instance.key?(:collections)
-            acc[:collections] = process_collections(instance[:collections])
+            (acc[:collections] ||= []) << process_collections(instance[:collections])
           elsif instance.key?(:imports)
-            acc[:imports] = process_imports(instance[:imports])
+            (acc[:imports] ||= []).concat(process_imports(instance[:imports]))
           elsif instance.key?(:exports)
-            acc[:exports] = process_exports(instance[:exports])
+            (acc[:exports] ||= []).concat(process_exports(instance[:exports]))
           end
         end
       end
 
       def process_instance(hash)
-        hash = hash.each_with_object({}) do |(key, value), result|
+        hash.each_with_object({}) do |(key, value), result|
           case key
           when :instance_type
             result[:type] = process_value(value).last
@@ -92,7 +92,8 @@ module Lutaml
       def process_attributes_hash(obj)
         obj[:name] = obj.delete(:key) if obj.key?(:key)
         if obj.key?(:comments)
-          obj[:name], obj[:value] = ["Comment", process_value(obj.delete(:comments)).last]
+          obj[:name] = "Comment"
+          obj[:value] = process_value(obj.delete(:comments)).last
         end
         obj[:type], obj[:value] = process_value(obj[:value]) if obj.key?(:value)
 
@@ -120,11 +121,11 @@ module Lutaml
       def process_imports(obj)
         obj.map do |export|
           export.each_with_object({}) do |(key, value), result|
-            if key == :attributes
-              result[key] = process_attributes(value)
-            else
-              result[key] = process_value(value).last
-            end
+            result[key] = if key == :attributes
+                            process_attributes(value)
+                          else
+                            process_value(value).last
+                          end
           end
         end
       end
@@ -132,11 +133,11 @@ module Lutaml
       def process_exports(obj)
         obj.map do |export|
           export.each_with_object({}) do |(key, value), result|
-            if key == :attributes
-              result[key] = process_attributes(value)
-            else
-              result[key] = process_value(value).last
-            end
+            result[key] = if key == :attributes
+                            process_attributes(value)
+                          else
+                            process_value(value).last
+                          end
           end
         end
       end

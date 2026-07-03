@@ -132,6 +132,7 @@ Metrics/AbcSize:
   Exclude:
     - 'lib/lutaml/cli/interactive_shell/query_commands.rb'
     - 'lib/lutaml/cli/uml/diagram_command.rb'
+    - 'lib/lutaml/lml/data_processor.rb'
     - 'lib/lutaml/qea/factory/generalization_builder.rb'
     - 'lib/lutaml/uml_repository/exporters/markdown/class_page_builder.rb'
     - 'lib/lutaml/uml_repository/queries/search_query.rb'
@@ -143,6 +144,7 @@ Metrics/AbcSize:
 # Configuration parameters: AllowedMethods, AllowedPatterns, Max.
 Metrics/CyclomaticComplexity:
   Exclude:
+    - 'lib/lutaml/lml/data_processor.rb'
     - 'lib/lutaml/qea/factory/generalization_builder.rb'
     - 'lib/lutaml/uml/model_helpers.rb'
     - 'lib/lutaml/uml_repository/index_builders/association_index.rb'
@@ -156,6 +158,8 @@ Metrics/CyclomaticComplexity:
 # Configuration parameters: CountComments, CountAsOne, AllowedMethods, AllowedPatterns.
 Metrics/MethodLength:
   Max: 23
+  Exclude:
+    - 'lib/lutaml/lml/data_processor.rb'
 
 # Offense count: 5
 # Configuration parameters: CountKeywordArgs, MaxOptionalParameters.
@@ -166,6 +170,7 @@ Metrics/ParameterLists:
 # Configuration parameters: AllowedMethods, AllowedPatterns, Max.
 Metrics/PerceivedComplexity:
   Exclude:
+    - 'lib/lutaml/lml/data_processor.rb'
     - 'lib/lutaml/qea/factory/ea_to_uml_factory.rb'
     - 'lib/lutaml/uml_repository/static_site/generator.rb'
     - 'lib/lutaml/uml_repository/static_site/output/vue_inlined_strategy.rb'

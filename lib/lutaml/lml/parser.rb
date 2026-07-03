@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'lutaml/lml/data_processor'
+require "lutaml/lml/data_processor"
 require "lutaml/uml/parsers/dsl"
 
 module Lutaml
@@ -18,12 +18,6 @@ module Lutaml
       def create_lml_document(hash)
         ::Lutaml::Lml::Document.new.tap do |model|
           set_lml_model(model, hash)
-        end
-      end
-
-      def create_lml_instances(model, hash)
-        ::Lutaml::Lml::InstanceCollection.new.tap do |collection|
-          set_lml_model(collection, hash)
         end
       end
 
@@ -112,7 +106,7 @@ module Lutaml
         set_model_attribute(model, hash)
       end
 
-      def set_model_attribute(model, hash) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+      def set_model_attribute(model, hash) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
         hash.each do |key, value|
           if key == :definition
             value = value.to_s.gsub(/\\}/, "}").gsub(/\\{/, "{")
@@ -131,23 +125,20 @@ module Lutaml
         end
       end
 
-      def create_lml_members(model, hash) # rubocop:disable Metrics/MethodLength,Metrics/AbcSize
+      def create_lml_members(model, hash) # rubocop:disable Metrics/MethodLength
         members = hash.delete(:members)
         members.to_a.each do |member_hash|
-          member_hash.each do
-            create_lml_instances(model, member_hash)
-            create_lml_packages(model, member_hash)
-            create_lml_classes(model, member_hash)
-            create_lml_enums(model, member_hash)
-            create_lml_data_types(model, member_hash)
-            create_lml_diagrams(model, member_hash)
-            create_lml_attributes(model, member_hash)
-            create_lml_associations(model, member_hash)
-            create_lml_operations(model, member_hash)
-            create_lml_constraints(model, member_hash)
-            create_lml_values(model, member_hash)
-            set_model_attribute(model, member_hash)
-          end
+          create_lml_packages(model, member_hash)
+          create_lml_classes(model, member_hash)
+          create_lml_enums(model, member_hash)
+          create_lml_data_types(model, member_hash)
+          create_lml_diagrams(model, member_hash)
+          create_lml_attributes(model, member_hash)
+          create_lml_associations(model, member_hash)
+          create_lml_operations(model, member_hash)
+          create_lml_constraints(model, member_hash)
+          create_lml_values(model, member_hash)
+          set_model_attribute(model, member_hash)
         end
         hash
       end

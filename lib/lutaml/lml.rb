@@ -2,7 +2,7 @@
 
 require "lutaml/model"
 
-Dir.glob(File.expand_path("./lml/**/*.rb", __dir__)).sort.each do |file|
+Dir.glob(File.expand_path("./lml/**/*.rb", __dir__)).each do |file|
   require file
 end
 

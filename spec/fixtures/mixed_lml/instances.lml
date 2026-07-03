@@ -12,6 +12,12 @@ instances {
     }
   }
 
+  collection "test_suite_2" {
+    includes [
+      "gaming_pc"
+    ]
+  }
+
   import {
     xml "test_data/products.xml" {
       map_to Product

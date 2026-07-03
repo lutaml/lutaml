@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'lutaml/lml/top_element_attribute'
+require "lutaml/lml/top_element_attribute"
 
 module Lutaml
   module Lml
