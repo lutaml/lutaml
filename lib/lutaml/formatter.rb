@@ -2,6 +2,9 @@
 
 module Lutaml
   module Formatter
+    autoload :Base, "lutaml/formatter/base"
+    autoload :Graphviz, "lutaml/formatter/graphviz"
+
     class << self
       def all
         @all ||= []

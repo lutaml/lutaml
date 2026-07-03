@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18.34cm" height="2.65cm" viewBox="0 0 693 100">
+<title></title>
+<desc>Created with Enterprise Architect (Build: 1624) 2</desc>
+
+<g style="fill:#FFFFFF;fill-opacity:1.00;">
+	 <rect x="0" y="0" width="693" height="100" shape-rendering="auto"/>
+</g><g style="stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel; fill:#FFFFFF;fill-opacity:1.00; stroke:#000000; stroke-opacity:1.00">
+  <polygon points="183 44 337 44 337 90 183 90 183 44" shape-rendering="auto"   style="fill-rule:evenodd;"/>
+  <polygon points="183 10 291 10 291 44 183 44 183 10" shape-rendering="auto"   style="fill-rule:evenodd;"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00">
+	<text x="188.00" y="23.00" textLength="93" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 188.00 23.00)">«ApplicationSchema»</text>
+	<text x="188.00" y="35.00" textLength="14" style="font-family:Cambria; font-weight:700; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 188.00 35.00)">urf</text>
+</g>
+<g style="stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel; fill:#FFFFFF;fill-opacity:1.00; stroke:#000000; stroke-opacity:1.00">
+  <polygon points="10 44 164 44 164 90 10 90 10 44" shape-rendering="auto"   style="fill-rule:evenodd;"/>
+  <polygon points="10 10 118 10 118 44 10 44 10 10" shape-rendering="auto"   style="fill-rule:evenodd;"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00">
+	<text x="15.00" y="23.00" textLength="93" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 15.00 23.00)">«ApplicationSchema»</text>
+	<text x="15.00" y="35.00" textLength="17" style="font-family:Cambria; font-weight:700; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 15.00 35.00)">uro</text>
+</g>
+<g style="stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel; fill:#FFFFFF;fill-opacity:1.00; stroke:#000000; stroke-opacity:1.00">
+  <polygon points="529 44 683 44 683 90 529 90 529 44" shape-rendering="auto"   style="fill-rule:evenodd;"/>
+  <polygon points="529 10 637 10 637 44 529 44 529 10" shape-rendering="auto"   style="fill-rule:evenodd;"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00">
+	<text x="534.00" y="23.00" textLength="93" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 534.00 23.00)">«ApplicationSchema»</text>
+	<text x="534.00" y="35.00" textLength="15" style="font-family:Cambria; font-weight:700; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 534.00 35.00)">urt</text>
+</g>
+<g style="stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel; fill:#FFFFFF;fill-opacity:1.00; stroke:#000000; stroke-opacity:1.00">
+  <polygon points="356 44 510 44 510 90 356 90 356 44" shape-rendering="auto"   style="fill-rule:evenodd;"/>
+  <polygon points="356 10 464 10 464 44 356 44 356 10" shape-rendering="auto"   style="fill-rule:evenodd;"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00">
+	<text x="361.00" y="23.00" textLength="93" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 361.00 23.00)">«ApplicationSchema»</text>
+	<text x="361.00" y="35.00" textLength="16" style="font-family:Cambria; font-weight:700; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 361.00 35.00)">urg</text>
+</g>
+</svg>

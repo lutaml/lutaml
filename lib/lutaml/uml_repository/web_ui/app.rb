@@ -1,0 +1,161 @@
+# frozen_string_literal: true
+
+require "sinatra/base"
+require "json"
+require "liquid"
+
+module Lutaml
+  module Xmi
+    module WebUi
+      # Sinatra web application for browsing UML models.
+      #
+      # Serves the modern SPA interface with JSON API endpoints and lunr.js
+      # search.
+      # Uses shared Liquid templates with the static site generator.
+      #
+      # @example Starting the server
+      #   Lutaml::Xmi::WebUi::App.serve("model.lur", port: 3000)
+      class App < Sinatra::Base
+        enable :logging
+
+        # Serve the SPA (using shared Liquid template)
+        get "/" do # rubocop:disable Metrics/BlockLength
+          content_type :html
+
+          # Use the same multi_file.liquid template as static generator
+          # but with apiMode: true to use JSON endpoints
+          template_path = File.expand_path(
+            File.join(
+              __dir__,
+              "..", "..", "..", "..", "templates", "static_site"
+            ),
+          )
+
+          Liquid::Template.file_system = Liquid::LocalFileSystem.new(template_path)
+
+          template_content = File.read(File.join(template_path,
+                                                 "multi_file.liquid"))
+          template = Liquid::Template.parse(template_content)
+
+          context = {
+            "config" => {
+              "mode" => "multi_file",
+              "title" => "UML Repository Explorer (Live)",
+              "description" => "Live browser for UML models",
+              "apiMode" => true, # KEY: Use API endpoints instead of static JSON
+              "theme" => "light",
+            },
+            "buildInfo" => {
+              "timestamp" => Time.now.utc.iso8601,
+              "generator" => "LutaML Live Web UI v2.0",
+            },
+          }
+
+          template.render(context)
+        end
+
+        # API: Full data model (replaces data/model.json in static mode)
+        get "/api/data" do
+          content_type :json
+
+          # Use shared DataTransformer
+          transformer = UmlRepository::StaticSite::DataTransformer.new(repository)
+          transformer.transform.to_json
+        end
+
+        # API: Search index (replaces data/search.json in static mode)
+        get "/api/search/index" do
+          content_type :json
+
+          # Use shared SearchIndexBuilder
+          builder = UmlRepository::StaticSite::SearchIndexBuilder.new(repository)
+          builder.build.to_json
+        end
+
+        # API: Package details (on-demand, optional optimization)
+        get "/api/packages/:id" do
+          content_type :json
+          requested_id = params[:id]
+
+          id_gen = UmlRepository::StaticSite::IdGenerator.new
+
+          # Search for package by matching generated ID
+          found_package = nil
+          repository.indexes[:package_paths].each_value do |package|
+            next unless package.is_a?(Lutaml::Uml::Package)
+
+            if id_gen.package_id(package) == requested_id
+              found_package = package
+              break
+            end
+          end
+
+          unless found_package
+            halt 404, { error: "Package not found: #{requested_id}" }.to_json
+          end
+
+          # Build package response
+          {
+            id: requested_id,
+            name: found_package.name,
+            xmi_id: found_package.xmi_id,
+          }.to_json
+        end
+
+        # API: Class details (on-demand, optional optimization)
+        get "/api/classes/:id" do
+          content_type :json
+          params[:id]
+
+          # Find class by generated ID
+          # This would require reverse lookup from ID to class
+          # For now, use the full data endpoint
+          halt 501, { error: "On-demand class loading not yet implemented. " \
+                             "Use /api/data" }.to_json
+        end
+
+        # Start the web server
+        def self.serve(lur_path, port: 3000, host: "localhost") # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+          repo = if File.extname(lur_path) == ".lur"
+                   UmlRepository::Repository.from_package(lur_path)
+                 else
+                   UmlRepository::Repository.from_xmi(lur_path)
+                 end
+
+          set :repository, repo
+          set :port, port
+          set :bind, host
+
+          puts ""
+          puts "╔═══════════════════════════════════════════════════════════╗"
+          puts "║        LutaML UML Browser - Web Server                  ║"
+          puts "╚═══════════════════════════════════════════════════════════╝"
+          puts ""
+          puts "  Loading: #{File.basename(lur_path)}"
+          puts "  Server:  http://#{host}:#{port}"
+          puts ""
+          puts "  Features:"
+          puts "    • Modern SPA interface"
+          puts "    • Live data via JSON API"
+          puts "    • Full-text search with lunr.js"
+          puts "    • Dark/light themes"
+          puts "    • Responsive design"
+          puts ""
+          puts "  Press Ctrl+C to stop"
+          puts ""
+          puts "─" * 60
+          puts ""
+
+          run!
+        end
+
+        private
+
+        # Get the repository from settings
+        def repository
+          settings.repository
+        end
+      end
+    end
+  end
+end

@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18.71cm" height="19.34cm" viewBox="0 0 707 731">
+<title></title>
+<desc>Created with Enterprise Architect (Build: 1624) 2</desc>
+
+<g style="fill:#FFFFFF;fill-opacity:1.00;">
+	 <rect x="0" y="0" width="707" height="731" shape-rendering="auto"/>
+</g><g style="stroke-width:2;stroke-linecap:round;stroke-linejoin:bevel; fill:#FFCCFF;fill-opacity:1.00; stroke:#000000; stroke-opacity:1.00">
+ <rect x="53" y="278" width="220" height="88" rx="0.00" shape-rendering="auto"  />
+</g>
+<g style="stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00">
+	<text x="137.00" y="294.00" textLength="52" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 137.00 294.00)">«DataType»</text>
+	<text x="122.00" y="306.00" textLength="81" style="font-family:Cambria; font-weight:700; font-style:italic; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 122.00 306.00)">uro::DmAttribute</text>
+</g>
+<g style="stroke-width:2;stroke-linecap:round;stroke-linejoin:bevel; fill:#000000;fill-opacity:0.00; stroke:#000000; stroke-opacity:1.00">
+  <path d="M 53 313 L 272 313" shape-rendering="auto"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00">
+	<text x="58.00" y="327.00" textLength="8" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 58.00 327.00)">+ </text>
+	<text x="74.00" y="327.00" textLength="104" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 74.00 327.00)">dmCode: gml:CodeType</text>
+	<text x="58.00" y="339.00" textLength="8" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 58.00 339.00)">+ </text>
+	<text x="74.00" y="339.00" textLength="139" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 74.00 339.00)">meshCode: gml:CodeType [0..1]</text>
+</g>
+<g style="stroke-width:2;stroke-linecap:round;stroke-linejoin:bevel; fill:#CCFFCC;fill-opacity:1.00; stroke:#000000; stroke-opacity:1.00">
+ <rect x="429" y="612" width="160" height="51" rx="0.00" shape-rendering="auto"  />
+</g>
+<g style="stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00">
+	<text x="493.00" y="628.00" textLength="32" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 493.00 628.00)">«Type»</text>
+	<text x="473.00" y="640.00" textLength="72" style="font-family:Cambria; font-weight:700; font-style:italic; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 473.00 640.00)">gml::_Geometry</text>
+</g>
+<g style="stroke-width:2;stroke-linecap:round;stroke-linejoin:bevel; fill:#FFFFCC;fill-opacity:1.00; stroke:#000000; stroke-opacity:1.00">
+ <rect x="117" y="10" width="235" height="159" rx="0.00" shape-rendering="auto"  />
+</g>
+<g style="stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00">
+	<text x="329.00" y="23.00" textLength="20" style="font-family:Cambria; font-weight:0; font-style:italic; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 329.00 23.00)">_Site</text>
+	<text x="202.00" y="41.00" textLength="65" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 202.00 41.00)">«FeatureType»</text>
+	<text x="185.00" y="53.00" textLength="98" style="font-family:Cambria; font-weight:700; font-style:italic; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 185.00 53.00)">tun::_AbstractTunnel</text>
+</g>
+<g style="stroke-width:2;stroke-linecap:round;stroke-linejoin:bevel; fill:#000000;fill-opacity:0.00; stroke:#000000; stroke-opacity:1.00">
+  <path d="M 117 60 L 351 60" shape-rendering="auto"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00">
+	<text x="122.00" y="74.00" textLength="8" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 122.00 74.00)">+ </text>
+	<text x="138.00" y="74.00" textLength="114" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 138.00 74.00)">class: gml:CodeType [0..1]</text>
+	<text x="122.00" y="86.00" textLength="8" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 122.00 86.00)">+ </text>
+	<text x="138.00" y="86.00" textLength="128" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 138.00 86.00)">function: gml:CodeType [0..*]</text>
+	<text x="122.00" y="98.00" textLength="8" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 122.00 98.00)">+ </text>
+	<text x="138.00" y="98.00" textLength="117" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 138.00 98.00)">usage: gml:CodeType [0..*]</text>
+	<text x="122.00" y="110.00" textLength="8" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 122.00 110.00)">+ </text>
+	<text x="138.00" y="110.00" textLength="152" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 138.00 110.00)">yearOfConstruction: xs:gYear [0..1]</text>
+	<text x="122.00" y="122.00" textLength="8" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 122.00 122.00)">+ </text>
+	<text x="138.00" y="122.00" textLength="145" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 138.00 122.00)">yearOfDemolition: xs:gYear [0..1]</text>
+</g>
+<g style="stroke-width:2;stroke-linecap:round;stroke-linejoin:bevel; fill:#FFCCFF;fill-opacity:1.00; stroke:#000000; stroke-opacity:1.00">
+ <rect x="397" y="278" width="300" height="292" rx="0.00" shape-rendering="auto"  />
+</g>
+<g style="stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00">
+	<text x="521.00" y="294.00" textLength="52" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 521.00 294.00)">«DataType»</text>
+	<text x="486.00" y="306.00" textLength="121" style="font-family:Cambria; font-weight:700; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 486.00 306.00)">uro::DataQualityAttribute</text>
+</g>
+<g style="stroke-width:2;stroke-linecap:round;stroke-linejoin:bevel; fill:#000000;fill-opacity:0.00; stroke:#000000; stroke-opacity:1.00">
+  <path d="M 397 313 L 696 313" shape-rendering="auto"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00">
+	<text x="402.00" y="327.00" textLength="8" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 402.00 327.00)">+ </text>
+	<text x="418.00" y="327.00" textLength="187" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 418.00 327.00)">geometrySrcDescLod0: gml:CodeType [0..*]</text>
+	<text x="402.00" y="339.00" textLength="8" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 402.00 339.00)">+ </text>
+	<text x="418.00" y="339.00" textLength="187" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 418.00 339.00)">geometrySrcDescLod1: gml:CodeType [1..*]</text>
+	<text x="402.00" y="351.00" textLength="8" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 402.00 351.00)">+ </text>
+	<text x="418.00" y="351.00" textLength="187" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 418.00 351.00)">geometrySrcDescLod2: gml:CodeType [0..*]</text>
+	<text x="402.00" y="363.00" textLength="8" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 402.00 363.00)">+ </text>
+	<text x="418.00" y="363.00" textLength="187" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 418.00 363.00)">geometrySrcDescLod3: gml:CodeType [0..*]</text>
+	<text x="402.00" y="375.00" textLength="8" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 402.00 375.00)">+ </text>
+	<text x="418.00" y="375.00" textLength="187" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 418.00 375.00)">geometrySrcDescLod4: gml:CodeType [0..*]</text>
+	<text x="402.00" y="387.00" textLength="8" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 402.00 387.00)">+ </text>
+	<text x="418.00" y="387.00" textLength="162" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 418.00 387.00)">thematicSrcDesc: gml:CodeType [0..*]</text>
+	<text x="402.00" y="399.00" textLength="8" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 402.00 399.00)">+ </text>
+	<text x="418.00" y="399.00" textLength="198" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 418.00 399.00)">appearanceSrcDescLod0: gml:CodeType [0..*]</text>
+	<text x="402.00" y="411.00" textLength="8" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 402.00 411.00)">+ </text>
+	<text x="418.00" y="411.00" textLength="198" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 418.00 411.00)">appearanceSrcDescLod1: gml:CodeType [0..*]</text>
+	<text x="402.00" y="423.00" textLength="8" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 402.00 423.00)">+ </text>
+	<text x="418.00" y="423.00" textLength="198" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 418.00 423.00)">appearanceSrcDescLod2: gml:CodeType [0..*]</text>
+	<text x="402.00" y="435.00" textLength="8" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 402.00 435.00)">+ </text>
+	<text x="418.00" y="435.00" textLength="198" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 418.00 435.00)">appearanceSrcDescLod3: gml:CodeType [0..*]</text>
+	<text x="402.00" y="447.00" textLength="8" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 402.00 447.00)">+ </text>
+	<text x="418.00" y="447.00" textLength="198" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 418.00 447.00)">appearanceSrcDescLod4: gml:CodeType [0..*]</text>
+	<text x="402.00" y="459.00" textLength="8" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 402.00 459.00)">+ </text>
+	<text x="418.00" y="459.00" textLength="128" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 418.00 459.00)">lodType: gml:CodeType [0..*]</text>
+	<text x="402.00" y="471.00" textLength="8" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 402.00 471.00)">+ </text>
+	<text x="418.00" y="471.00" textLength="165" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 418.00 471.00)">lod1HeightType: gml:CodeType [0..1]</text>
+	<text x="402.00" y="483.00" textLength="8" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 402.00 483.00)">+ </text>
+	<text x="418.00" y="483.00" textLength="154" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 418.00 483.00)">tranDataAcquisition: xs:string [0..1]</text>
+</g>
+<g style="stroke-width:2;stroke-linecap:round;stroke-linejoin:bevel; fill:#FFFFCC;fill-opacity:1.00; stroke:#000000; stroke-opacity:1.00">
+ <rect x="429" y="55" width="110" height="70" rx="0.00" shape-rendering="auto"  />
+</g>
+<g style="stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00">
+	<text x="451.00" y="71.00" textLength="65" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 451.00 71.00)">«FeatureType»</text>
+	<text x="457.00" y="83.00" textLength="54" style="font-family:Cambria; font-weight:700; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 457.00 83.00)">tun::Tunnel</text>
+</g>
+<g style="stroke-width:2;stroke-linecap:round;stroke-linejoin:bevel; fill:#FFCCFF;fill-opacity:1.00; stroke:#000000; stroke-opacity:1.00">
+ <rect x="24" y="479" width="276" height="224" rx="0.00" shape-rendering="auto"  />
+</g>
+<g style="stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00">
+	<text x="136.00" y="495.00" textLength="52" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 136.00 495.00)">«DataType»</text>
+	<text x="96.00" y="507.00" textLength="131" style="font-family:Cambria; font-weight:700; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 96.00 507.00)">uro::DmGeometricAttribute</text>
+</g>
+<g style="stroke-width:2;stroke-linecap:round;stroke-linejoin:bevel; fill:#000000;fill-opacity:0.00; stroke:#000000; stroke-opacity:1.00">
+  <path d="M 24 514 L 299 514" shape-rendering="auto"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00">
+	<text x="29.00" y="528.00" textLength="8" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 29.00 528.00)">+ </text>
+	<text x="45.00" y="528.00" textLength="130" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 45.00 528.00)">geometryType: gml:CodeType</text>
+	<text x="29.00" y="540.00" textLength="8" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 29.00 540.00)">+ </text>
+	<text x="45.00" y="540.00" textLength="110" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 45.00 540.00)">mapLevel: gml:CodeType</text>
+	<text x="29.00" y="552.00" textLength="8" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 29.00 552.00)">+ </text>
+	<text x="45.00" y="552.00" textLength="116" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 45.00 552.00)">shapeType: gml:CodeType</text>
+	<text x="29.00" y="564.00" textLength="8" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 29.00 564.00)">+ </text>
+	<text x="45.00" y="564.00" textLength="114" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 45.00 564.00)">visibility: xs:boolean [0..1]</text>
+	<text x="29.00" y="576.00" textLength="8" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 29.00 576.00)">+ </text>
+	<text x="45.00" y="576.00" textLength="96" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 45.00 576.00)">is3d: xs:boolean [0..1]</text>
+	<text x="29.00" y="588.00" textLength="8" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 29.00 588.00)">+ </text>
+	<text x="45.00" y="588.00" textLength="133" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 45.00 588.00)">isInstallation: xs:boolean [0..1]</text>
+	<text x="29.00" y="600.00" textLength="8" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 29.00 600.00)">+ </text>
+	<text x="45.00" y="600.00" textLength="113" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 45.00 600.00)">isEdited: xs:boolean [0..1]</text>
+	<text x="29.00" y="612.00" textLength="8" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 29.00 612.00)">+ </text>
+	<text x="45.00" y="612.00" textLength="182" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 45.00 612.00)">isSupplementarySymbol: xs:boolean [0..1]</text>
+	<text x="29.00" y="624.00" textLength="8" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 29.00 624.00)">+ </text>
+	<text x="45.00" y="624.00" textLength="97" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 45.00 624.00)">angle: xs:double [0..1]</text>
+	<text x="29.00" y="636.00" textLength="8" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 29.00 636.00)">+ </text>
+	<text x="45.00" y="636.00" textLength="142" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 45.00 636.00)">elevation: gml:LengthType [0..1]</text>
+</g>
+<g style="stroke-width:2;stroke-linecap:round;stroke-linejoin:bevel; fill:#000000;fill-opacity:0.00; stroke:#000000; stroke-opacity:1.00">
+  <path d="M 547 277 L 547 219 L 234 219 L 234 170" shape-rendering="auto"/>
+</g>
+<g style="stroke-width:2;stroke-linecap:round;stroke-linejoin:bevel; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:1.00">
+  <polygon points="239 180 234 170 229 180 234 190" shape-rendering="auto"   style="fill-rule:evenodd;"/>
+</g>
+<g style="stroke-width:2;stroke-linecap:round;stroke-linejoin:bevel; fill:#000000;fill-opacity:0.00; stroke:#000000; stroke-opacity:1.00">
+  <path d="M 553 262 L 547 277 L 541 262" shape-rendering="auto"/>
+  <path d="M 162 478 L 162 367" shape-rendering="auto"/>
+</g>
+<g style="stroke-width:2;stroke-linecap:round;stroke-linejoin:bevel; fill:#FFFFFF;fill-opacity:1.00; stroke:#000000; stroke-opacity:1.00">
+  <polygon points="168 383 156 383 162 367" shape-rendering="auto"   style="fill-rule:evenodd;"/>
+</g>
+<g style="stroke-width:2;stroke-linecap:round;stroke-linejoin:bevel; fill:#000000;fill-opacity:0.00; stroke:#000000; stroke-opacity:1.00">
+  <path d="M 163 277 L 163 219 L 234 219 L 234 170" shape-rendering="auto"/>
+</g>
+<g style="stroke-width:2;stroke-linecap:round;stroke-linejoin:bevel; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:1.00">
+  <polygon points="239 180 234 170 229 180 234 190" shape-rendering="auto"   style="fill-rule:evenodd;"/>
+</g>
+<g style="stroke-width:2;stroke-linecap:round;stroke-linejoin:bevel; fill:#000000;fill-opacity:0.00; stroke:#000000; stroke-opacity:1.00">
+  <path d="M 169 262 L 163 277 L 157 262" shape-rendering="auto"/>
+  <path d="M 557 664 L 301 612" shape-rendering="auto"/>
+  <path d="M 543 655 L 557 664 L 541 667" shape-rendering="auto"/>
+  <path d="M 428 89 L 353 89" shape-rendering="auto"/>
+</g>
+<g style="stroke-width:2;stroke-linecap:round;stroke-linejoin:bevel; fill:#FFFFFF;fill-opacity:1.00; stroke:#000000; stroke-opacity:1.00">
+  <polygon points="369 83 369 95 353 89" shape-rendering="auto"   style="fill-rule:evenodd;"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00">
+	<text x="5.00" y="269.00" textLength="74" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 5.00 269.00)">+tunDmAttribute</text>
+	<text x="18.00" y="281.00" textLength="48" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 18.00 281.00)">«property»</text>
+	<text x="185.00" y="271.00" textLength="14" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 185.00 271.00)">0..*</text>
+	<text x="359.00" y="271.00" textLength="111" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 359.00 271.00)">+tunDataQualityAttribute</text>
+	<text x="391.00" y="283.00" textLength="48" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 391.00 283.00)">«property»</text>
+	<text x="550.00" y="271.00" textLength="16" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 550.00 271.00)">0..1</text>
+	<text x="425.00" y="679.00" textLength="67" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 425.00 679.00)">+lod0Geometry</text>
+	<text x="425.00" y="691.00" textLength="48" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 425.00 691.00)">«property»</text>
+	<text x="565.00" y="679.00" textLength="16" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 565.00 679.00)">0..1</text>
+</g>
+</svg>

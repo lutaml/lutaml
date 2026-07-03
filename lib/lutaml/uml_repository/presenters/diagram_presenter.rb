@@ -1,0 +1,469 @@
+# frozen_string_literal: true
+
+module Lutaml
+  module UmlRepository
+    module Presenters
+      # Presenter for UML Diagram elements
+      #
+      # Coordinates the entire diagram rendering pipeline by:
+      # 1. Loading elements and connectors from the repository
+      # 2. Converting EA coordinates to SVG format
+      # 3. Using StyleResolver to merge EA data + config + defaults
+      # 4. Creating a DiagramRenderer wrapper
+      # 5. Generating SVG output via SvgRenderer
+      class DiagramPresenter < ElementPresenter
+        attr_reader :config_path
+
+        # @param diagram [Lutaml::Uml::Diagram] The diagram to present
+        # @param repository [Repository] Repository for looking up elements
+        # @param options [Hash] Rendering options
+        # @option options [String] :config_path Path to diagram configuration
+        def initialize(diagram, repository, options = {})
+          super(diagram, repository)
+          @config_path = options[:config_path]
+          @layout_engine = Ea::Diagram::LayoutEngine.new
+        end
+
+        # Generate SVG output for the diagram
+        #
+        # @param options [Hash] Rendering options
+        # @option options [Integer] :padding (20) Padding around diagram
+        # @option options [String] :background_color ("#ffffff")
+        # Background color
+        # @option options [Boolean] :grid_visible (false) Show grid
+        # @option options [Boolean] :interactive (false)
+        # Enable interactive features
+        # @return [String] Complete SVG content
+        def svg_output(options = {}) # rubocop:disable Metrics/MethodLength
+          # Build diagram data structure
+          diagram_data = {
+            name: element.name,
+            elements: build_elements_data,
+            connectors: build_connectors_data,
+          }
+
+          # Create diagram renderer wrapper
+          diagram_renderer = DiagramRendererWrapper.new(diagram_data,
+                                                        @layout_engine)
+
+          # Create SVG renderer with configuration
+          renderer_options = options.merge(config_path: config_path)
+          svg_renderer = Ea::Diagram::SvgRenderer.new(diagram_renderer,
+                                                      renderer_options)
+
+          # Generate and return SVG
+          svg_renderer.render
+        end
+
+        # Get elements in the diagram
+        #
+        # @return [Array<Hash>] Array of element data hashes
+        def elements
+          build_elements_data
+        end
+
+        # Get connectors in the diagram
+        #
+        # @return [Array<Hash>] Array of connector data hashes
+        def connectors
+          build_connectors_data
+        end
+
+        # Text output for diagram
+        def to_text # rubocop:disable Metrics/AbcSize
+          lines = []
+          lines << "Diagram: #{element.name}"
+          lines << ("=" * 50)
+          lines << ""
+          lines << "Type:          #{element.diagram_type}"
+          lines << "Package:       #{element.package_name || 'Unknown'}"
+          lines << "Elements:      #{(element.diagram_objects || []).count}"
+          lines << "Connectors:    #{(element.diagram_links || []).count}"
+          lines.join("\n")
+        end
+
+        # Table row for diagram
+        def to_table_row
+          {
+            type: "Diagram",
+            name: element.name || "(unnamed)",
+            details: "#{element.diagram_type} " \
+                     "- #{(element.diagram_objects || []).count} elements",
+          }
+        end
+
+        # Hash representation
+        def to_hash
+          {
+            type: "Diagram",
+            name: element.name,
+            diagram_type: element.diagram_type,
+            package_name: element.package_name,
+            elements_count: (element.diagram_objects || []).count,
+            connectors_count: (element.diagram_links || []).count,
+          }
+        end
+
+        private
+
+        # Build element data from diagram_objects
+        #
+        # @return [Array<Hash>] Array of element data for rendering
+        def build_elements_data # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+          return [] unless element.diagram_objects
+
+          element.diagram_objects.filter_map do |diagram_object|
+            # Look up the actual element in the repository
+            uml_element = find_element_by_xmi_id(diagram_object.object_xmi_id)
+            next nil unless uml_element
+
+            # Convert EA coordinates to SVG format
+            coords = @layout_engine.convert_ea_coordinates(diagram_object)
+
+            # Build element data hash
+            {
+              id: diagram_object.object_xmi_id,
+              name: uml_element.name,
+              type: determine_element_type(uml_element),
+              x: coords[:x],
+              y: coords[:y],
+              width: coords[:width],
+              height: coords[:height],
+              stereotype: extract_stereotype(uml_element),
+              attributes: extract_attributes(uml_element),
+              operations: extract_operations(uml_element),
+              element: uml_element, # Original UML element
+              diagram_object: diagram_object, # Original diagram placement data
+            }
+          end
+        end
+
+        # Build connector data from diagram_links
+        #
+        # @return [Array<Hash>] Array of connector data for rendering
+        def build_connectors_data # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+          return [] unless element.diagram_links
+
+          # Build elements index for quick lookup by XMI ID
+          elements_map = build_elements_data
+            .to_h do |elem|
+            [elem[:id], elem]
+          end
+
+          # Build diagram objects map for EA internal ID lookup
+          diagram_objects_map = {}
+          element.diagram_objects&.each do |dobj|
+            diagram_objects_map[extract_ea_id(dobj)] = dobj.object_xmi_id
+          end
+
+          element.diagram_links.filter_map do |diagram_link| # rubocop:disable Metrics/BlockLength
+            # Skip hidden connectors
+            next nil if diagram_link.hidden
+
+            # Look up the actual connector in the repository
+            connector = find_connector_by_xmi_id(diagram_link.connector_xmi_id)
+
+            # Even if connector object not found, we can still render
+            # Original diagram routing datausing geometry
+            # The diagram_link contains all visual information needed
+            connector_type = if connector
+                               determine_connector_type(connector)
+                             else
+                               # Default to association if connector object
+                               # not found
+                               "association"
+                             end
+
+            # Parse source and target from diagram_link style
+            # (contains SOID/EOID)
+            style_data = parse_diagram_link_style(diagram_link.style)
+
+            source_elem = nil
+            target_elem = nil
+
+            # Try to find elements using EA internal IDs from style
+            if style_data[:soid]
+              source_xmi_id = diagram_objects_map[style_data[:soid]]
+              source_elem = elements_map[source_xmi_id] if source_xmi_id
+            end
+
+            if style_data[:eoid]
+              target_xmi_id = diagram_objects_map[style_data[:eoid]]
+              target_elem = elements_map[target_xmi_id] if target_xmi_id
+            end
+
+            # Fallback: try to find from connector object
+            # if style parsing failed
+            if (!source_elem || !target_elem) && connector
+              source_elem ||= find_connector_source(connector, elements_map)
+              target_elem ||= find_connector_target(connector, elements_map)
+            end
+
+            # Build connector data hash
+            {
+              id: diagram_link.connector_xmi_id,
+              type: connector_type,
+              geometry: diagram_link.geometry,
+              style: diagram_link.style,
+              # Source element for geometry calculation
+              source_element: source_elem,
+              # Target element for geometry calculation
+              target_element: target_elem,
+              # May be nil if not found
+              element: connector,
+              # Original diagram routing data
+              diagram_link: diagram_link,
+            }
+          end
+        end
+
+        # Parse EA diagram link style string
+        #
+        # Style format: "Mode=3;EOID=82C649C4;SOID=21096985;
+        # Color=-1;LWidth=2;TREE=V;"
+        # SOID = Source Object ID (EA internal ID)
+        # EOID = End Object ID (EA internal ID)
+        #
+        # @param style_string [String] EA style string
+        # @return [Hash] Parsed style data
+        def parse_diagram_link_style(style_string) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/MethodLength
+          return {} unless style_string
+
+          data = {}
+          style_string.split(";").each do |pair|
+            next if pair.empty?
+
+            key, value = pair.split("=", 2)
+            next unless key && value
+
+            case key.strip
+            when "SOID"
+              data[:soid] = value.strip
+            when "EOID"
+              data[:eoid] = value.strip
+            end
+          end
+          data
+        end
+
+        # Extract EA internal ID from diagram object
+        #
+        # @param diagram_object [Object] Diagram object
+        # @return [String, nil] EA internal ID (DUID from style)
+        def extract_ea_id(diagram_object)
+          return nil unless diagram_object.style
+
+          # Parse DUID from style string
+          # Style format: "NSL=0;LCol=-1;...;DUID=82C649C4;BCol=16764159;..."
+
+          # Parse DUID from style string
+          # Style format: "NSL=0;LCol=-1;...;DUID=82C649C4;BCol=16764159;..."
+          style = diagram_object.style
+          match = style.match(/DUID=([^;]+)/)
+          return match[1] if match
+
+          nil
+        end
+
+        # Find element in repository by XMI ID
+        #
+        # @param xmi_id [String] XMI identifier
+        # @return [Object, nil] UML element or nil if not found
+        def find_element_by_xmi_id(xmi_id)
+          return nil unless xmi_id && repository
+
+          # Try to find in classes index (includes classes, datatypes, enums)
+          element = repository.classes_index.find { |cls| cls.xmi_id == xmi_id }
+          return element if element
+
+          # Try to find in packages index
+          repository.packages_index.find { |pkg| pkg.xmi_id == xmi_id }
+        end
+
+        # Find connector in repository by XMI ID
+        #
+        # @param xmi_id [String] XMI identifier
+        # @return [Object, nil] UML connector or nil if not found
+        def find_connector_by_xmi_id(xmi_id) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+          return nil unless xmi_id && repository
+
+          # Look in document-level associations index
+          connector = repository.associations_index.find do |assoc|
+            assoc.xmi_id == xmi_id
+          end
+
+          return connector if connector
+
+          repository.classes_index.each do |klass|
+            if klass.is_a?(Lutaml::Uml::Class) && klass.generalization
+              gen = klass.generalization
+              generalizations = gen.is_a?(Array) ? gen : [gen]
+              generalizations.each do |g|
+                return g if g.xmi_id == xmi_id
+              end
+            elsif (klass.is_a?(Lutaml::Uml::Class) ||
+                   klass.is_a?(Lutaml::Uml::DataType)) &&
+                klass.associations
+              assoc = klass.associations.find do |a|
+                a.xmi_id == xmi_id
+              end
+              return assoc if assoc
+            end
+          end
+
+          nil
+        end
+
+        # Find connector target element
+        #
+        # @param connector [Object] UML connector
+        # @param elements_map [Hash] Map of element ID to element data
+        # @return [Hash, nil] Target element data
+        def find_connector_target(connector, elements_map) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+          target_id = case connector
+                      when Lutaml::Uml::Generalization
+                        connector.general
+                      when Lutaml::Uml::Dependency
+                        Array(connector.supplier).first
+                      when Lutaml::Uml::Association
+                        ends = Array(connector.member_end)
+                        ends.size > 1 ? ends[1] : nil
+                      end
+
+          elements_map[target_id]
+        end
+
+        # Find connector source element
+        #
+        # @param connector [Object] UML connector
+        # @param elements_map [Hash] Map of element ID to element data
+        # @return [Hash, nil] Source element data
+        def find_connector_source(connector, elements_map) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+          source_id = case connector
+                      when Lutaml::Uml::Generalization
+                        nil
+                      when Lutaml::Uml::Dependency
+                        Array(connector.client).first
+                      when Lutaml::Uml::Association
+                        connector.owner_end || Array(connector.member_end).first
+                      end
+
+          elements_map[source_id]
+        end
+
+        # Determine element type for rendering
+        #
+        # @param uml_element [Object] UML element
+        # @return [String] Element type
+        def determine_element_type(uml_element)
+          case uml_element.class.name
+          when /DataType/
+            "datatype"
+          when /Enum/
+            "enum"
+          when /Package/
+            "package"
+          else
+            "class"
+          end
+        end
+
+        # Determine connector type for rendering
+        #
+        # @param connector [Object] UML connector
+        # @return [String] Connector type
+        def determine_connector_type(connector)
+          case connector.class.name
+          when /Generalization/
+            "generalization"
+          when /Dependency/
+            "dependency"
+          when /Realization/
+            "realization"
+          else
+            "association"
+          end
+        end
+
+        # Extract stereotype from element
+        #
+        # @param uml_element [Object] UML element
+        # @return [String, nil] Stereotype name
+        def extract_stereotype(uml_element)
+          stereotype = uml_element.stereotype
+          return nil unless stereotype && !stereotype.empty?
+
+          stereotype.is_a?(Array) ? stereotype.first : stereotype
+        end
+
+        # Extract attributes from element
+        #
+        # @param uml_element [Object] UML element
+        # @return [Array<Hash>] Array of attribute data
+        def extract_attributes(uml_element)
+          return [] unless uml_element.is_a?(Lutaml::Uml::Classifier)
+          return [] unless uml_element.attributes
+
+          uml_element.attributes.map do |attr|
+            {
+              name: attr.name,
+              type: attr.type,
+              visibility: attr.visibility,
+            }
+          end
+        end
+
+        # Extract operations from element
+        #
+        # @param uml_element [Object] UML element
+        # @return [Array<Hash>] Array of operation data
+        def extract_operations(uml_element)
+          return [] unless uml_element.is_a?(Lutaml::Uml::Classifier)
+          return [] unless uml_element.operations
+
+          uml_element.operations.map do |op|
+            {
+              name: op.name,
+              visibility: op.visibility,
+              return_type: op.return_type,
+              parameters: extract_parameters(op),
+            }
+          end
+        end
+
+        # Extract parameters from operation
+        #
+        # @param operation [Object] UML operation
+        # @return [Array<Hash>] Array of parameter data
+        def extract_parameters(operation)
+          return [] unless operation.owned_parameter
+
+          operation.owned_parameter.map do |param|
+            {
+              name: param.name,
+              type: param.type,
+            }
+          end
+        end
+
+        # Wrapper class to adapt diagram data to SvgRenderer expectations
+        class DiagramRendererWrapper
+          attr_reader :diagram_data, :bounds, :elements, :connectors
+
+          def initialize(diagram_data, layout_engine)
+            @diagram_data = diagram_data
+            @elements = diagram_data[:elements] || []
+            @connectors = diagram_data[:connectors] || []
+            @bounds = layout_engine.calculate_bounds(diagram_data)
+          end
+        end
+      end
+
+      # Register with factory
+      PresenterFactory.register(
+        Lutaml::Uml::Diagram,
+        DiagramPresenter,
+      )
+    end
+  end
+end

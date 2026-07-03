@@ -3,6 +3,8 @@
 module Lutaml
   module Uml
     class Property < TopElement
+      skip_reference_registration
+
       attribute :type, :string
       attribute :aggregation, :string
       attribute :association, :string

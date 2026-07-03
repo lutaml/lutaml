@@ -3,9 +3,8 @@
 module Lutaml
   module Uml
     module HasMembers
-      class UnknownMemberTypeError < StandardError; end
+      class UnknownMemberTypeError < Lutaml::Error; end
 
-      # TODO: move to Parslet::Transform
       def members=(value) # rubocop:disable Metrics/AbcSize
         value.group_by { |member| member.keys.first }
           .each do |(type, group)|
@@ -22,7 +21,7 @@ module Lutaml
       private
 
       def association_type(type)
-        return type if respond_to?(:"#{type}=")
+        return type if self.class.attributes.key?(type.to_sym)
 
         raise(UnknownMemberTypeError, "Unknown member type: #{type}")
       end

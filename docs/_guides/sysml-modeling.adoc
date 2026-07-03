@@ -1,0 +1,37 @@
+---
+title: SysML Modeling with LutaML
+parent: Guides
+nav_order: 12
+---
+
+= Lutaml::Sysml
+
+Lutaml::Sysml extends Lutaml::Uml by adding concepts relevant to systems
+engineering, supporting a Model-Based Systems Engineering (MBSE) approach
+throughout the entire system lifecycle.
+
+== Overview
+
+SysML (Systems Modeling Language) is a general-purpose modeling language for systems engineering applications. It supports the specification, analysis, design, verification, and validation of complex systems that may include hardware, software, data, personnel, procedures, and facilities.
+
+== Usage
+
+Lutaml::Sysml provides specialized diagram types and elements for systems engineering modeling, including:
+
+* Requirements diagrams
+* Block definition diagrams
+* Internal block diagrams
+* Parametric diagrams
+* Activity diagrams
+* Sequence diagrams
+* State machine diagrams
+* Use case diagrams
+
+== Integration with UML
+
+Since SysML extends UML, all UML modeling capabilities are available in SysML models. The extension adds systems engineering-specific stereotypes, properties, and diagram types while maintaining compatibility with the UML foundation.
+
+== See Also
+
+* link:uml-modeling[UML Modeling Guide]
+* link:../README[LutaML Documentation]

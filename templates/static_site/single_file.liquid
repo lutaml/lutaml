@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ config.title }}</title>
+  <meta name="description" content="{{ config.description }}">
+  <meta name="generator" content="{{ buildInfo.generator }}">
+
+  <!-- Google Fonts — Inter + JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Styles (embedded) -->
+  <style>
+    {{ styles }}
+  </style>
+</head>
+<body>
+  <div id="app" x-data="app" x-init="init()" :class="{ 'dark': darkMode }">
+    {{ sidebar }}
+
+    <div class="main-content">
+      {{ header }}
+      {{ content }}
+    </div>
+  </div>
+
+  <!-- Data (embedded as JavaScript) -->
+  <script>
+    window.UML_DATA = {{ data | json }};
+    window.SEARCH_INDEX = {{ searchIndex | json }};
+    window.APP_CONFIG = {{ config }};
+  </script>
+
+  <!-- Alpine.js -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
+
+  <!-- lunr.js -->
+  <script src="https://cdn.jsdelivr.net/npm/lunr@2.3.9/lunr.min.js"></script>
+
+  <!-- Alpine.js Templates -->
+  <template id="package-details-template">
+    {{ package_details }}
+  </template>
+
+  <template id="class-details-template">
+    {{ class_details }}
+  </template>
+
+  <!-- Application Scripts (embedded) -->
+  <script>
+    {{ scripts }}
+  </script>
+</body>
+</html>

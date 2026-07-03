@@ -1,5 +1,5 @@
 digraph G {
-  graph [splines="ortho" pad=0.5 ranksep="1.2.equally" nodesep="1.2.equally"]
+  graph [splines="ortho" pad=0.5 ranksep="1.2.equally" nodesep="1.2.equally" rankdir="BT"]
   edge [color="gray50"]
   node [shape="box" fontname="Helvetica-bold"]
 
@@ -12,12 +12,6 @@ digraph G {
     <TR><TD ALIGN="CENTER"><B>AddressClassProfile</B></TD></TR>
   </TABLE>
   </TD>
-  </TR>
-  
-  <TR>
-    <TD><TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
-    <TR><TD ALIGN="LEFT"></TD></TR>
-  </TABLE></TD>
   </TR>
   
   <TR>
@@ -45,12 +39,6 @@ digraph G {
   </TABLE></TD>
   </TR>
   
-  <TR>
-    <TD><TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
-    <TR><TD ALIGN="LEFT"></TD></TR>
-  </TABLE></TD>
-  </TR>
-  
   </TABLE>>]
   
   AddressProfile [
@@ -62,12 +50,6 @@ digraph G {
     <TR><TD ALIGN="CENTER"><B>AddressProfile</B></TD></TR>
   </TABLE>
   </TD>
-  </TR>
-  
-  <TR>
-    <TD><TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
-    <TR><TD ALIGN="LEFT"></TD></TR>
-  </TABLE></TD>
   </TR>
   
   <TR>
@@ -95,12 +77,6 @@ digraph G {
   </TABLE></TD>
   </TR>
   
-  <TR>
-    <TD><TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
-    <TR><TD ALIGN="LEFT"></TD></TR>
-  </TABLE></TD>
-  </TR>
-  
   </TABLE>>]
   
   ProfileCompliantAddress [
@@ -120,12 +96,6 @@ digraph G {
   </TABLE></TD>
   </TR>
   
-  <TR>
-    <TD><TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
-    <TR><TD ALIGN="LEFT"></TD></TR>
-  </TABLE></TD>
-  </TR>
-  
   </TABLE>>]
   
   InterchangeAddressClassProfile [
@@ -137,12 +107,6 @@ digraph G {
     <TR><TD ALIGN="CENTER"><B>InterchangeAddressClassProfile</B></TD></TR>
   </TABLE>
   </TD>
-  </TR>
-  
-  <TR>
-    <TD><TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
-    <TR><TD ALIGN="LEFT"></TD></TR>
-  </TABLE></TD>
   </TR>
   
   <TR>

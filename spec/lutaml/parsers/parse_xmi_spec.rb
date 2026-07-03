@@ -1,12 +1,10 @@
 require "spec_helper"
 
-RSpec.describe Lutaml::XMI::Parsers::XML do
+RSpec.describe Lutaml::Xmi::Parsers::Xml do
   describe ".parse" do
-    subject(:parse) { described_class.parse(file) }
+    subject(:parse) { cached_xmi_document }
 
     context "when parsing xmi 2013 with uml 2013" do
-      let(:file) { File.new(fixtures_path("ea-xmi-2.5.1.xmi")) }
-
       let(:expected_class_names) do
         %w[
           BibliographicItem
@@ -110,21 +108,22 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
 
       it "correctly parses package tree" do
         expect(first_package.packages.map(&:name))
-          .to match_array([])
+          .to be_empty
       end
 
-      it "correctly parses package classes" do
+      it "correctly parses package classes", :aggregate_failures do
         expect(first_package.classes.map(&:name)).to(eq(expected_class_names))
         expect(first_package.classes.map(&:xmi_id))
           .to(eq(expected_class_xmi_ids))
       end
 
-      it "correctly parses entities of enums type" do
+      it "correctly parses entities of enums type", :aggregate_failures do
         expect(first_package.enums.map(&:name)).to(eq(expected_enum_names))
         expect(first_package.enums.map(&:xmi_id)).to(eq(expected_enum_xmi_ids))
       end
 
-      it "correctly parses entities and attributes for class" do
+      it "correctly parses entities and attributes for class",
+         :aggregate_failures do
         klass = first_package.classes.find do |entity|
           entity.name == "RequirementType"
         end
@@ -138,11 +137,11 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
           entity.name == "Block"
         end
 
-        expect(klass.associations.map(&:member_end).compact)
+        expect(klass.associations.filter_map(&:member_end))
           .to(eq(expected_association_names))
       end
 
-      it "correctly parses diagrams for package" do
+      it "correctly parses diagrams for package", :aggregate_failures do
         root_package = parse.packages.first
         expect(root_package.diagrams.length).to(eq(1))
         expect(root_package.diagrams.map(&:name))
@@ -158,11 +157,13 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
 
     context "when parsing xmi 2013 with uml 2013" do
       let(:file) { File.new(fixtures_path("ea-xmi-2.5.1.xmi")) }
+      let(:xmi_root_model) do
+        xml_content = File.read(file)
+        Xmi::Sparx::Root.parse_xml(xml_content)
+      end
 
       before do
-        xml_content = File.read(file)
-        @xmi_root_model = Xmi::Sparx::SparxRoot.parse_xml(xml_content)
-        new_parser.send(:parse, @xmi_root_model)
+        new_parser.send(:parse, xmi_root_model)
       end
 
       it ".lookup_entity_name" do
@@ -172,15 +173,15 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
         expect(owner_end).to eq("verification")
       end
 
-      it ".fetch_element" do
+      it ".fetch_element", :aggregate_failures do
         e = new_parser.send(
           :fetch_element, "EAID_D832D6D8_0518_43f7_9166_7A4E3E8605AA"
         )
-        expect(e).to be_instance_of(Xmi::Sparx::SparxElement)
+        expect(e).to be_instance_of(Xmi::Sparx::Element::Element)
         expect(e.idref).to eq("EAID_D832D6D8_0518_43f7_9166_7A4E3E8605AA")
       end
 
-      it ".doc_node_attribute_value" do
+      it ".doc_node_attribute_value", :aggregate_failures do
         val = new_parser.send(
           :doc_node_attribute_value,
           "EAID_D832D6D8_0518_43f7_9166_7A4E3E8605AA", "stereotype"
@@ -191,7 +192,7 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
           :doc_node_attribute_value,
           "EAID_D832D6D8_0518_43f7_9166_7A4E3E8605AA", "isAbstract"
         )
-        expect(val).to eq(false)
+        expect(val).to be(false)
 
         val = new_parser.send(
           :doc_node_attribute_value,
@@ -205,11 +206,11 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
         )
       end
 
-      it ".select_all_packaged_elements" do
+      it ".select_all_packaged_elements", :aggregate_failures do
         all_elements = []
         new_parser.send(
           :select_all_packaged_elements, all_elements,
-          @xmi_root_model.model, nil
+          xmi_root_model.model, nil
         )
         expect(all_elements.count).to eq(15)
         all_elements.each do |e|
@@ -217,11 +218,12 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
         end
       end
 
-      it ".select_all_packaged_elements with type uml:Association" do
+      it ".select_all_packaged_elements with type uml:Association",
+         :aggregate_failures do
         all_elements = []
         new_parser.send(
           :select_all_packaged_elements, all_elements,
-          @xmi_root_model.model, "uml:Association"
+          xmi_root_model.model, "uml:Association"
         )
         expect(all_elements.count).to eq(5)
         all_elements.each do |e|
@@ -230,7 +232,7 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
         end
       end
 
-      it ".all_packaged_elements" do
+      it ".all_packaged_elements", :aggregate_failures do
         all_elements = new_parser.send(:all_packaged_elements)
         expect(all_elements.count).to eq(37)
         all_elements.each do |e|
@@ -238,105 +240,12 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
         end
       end
 
-      it ".serialize_model_enums" do
-        val = new_parser.send(
-          :serialize_model_enums, @xmi_root_model.model.packaged_element.first
-        )
-
-        expect(val).to eq(
-          [{
-            xmi_id: "EAID_E497ABDA_05EF_416a_A461_03535864970D",
-            name: "ObligationType",
-            stereotype: "enumeration",
-            definition: nil,
-            values: [
-              {
-                definition: nil,
-                name: "requirement",
-                type: nil,
-              },
-              {
-                definition: nil,
-                name: "recommendation",
-                type: nil,
-              },
-              {
-                definition: nil,
-                name: "permission",
-                type: nil,
-              },
-            ],
-          }],
-        )
-      end
-
-      it ".serialize_model_classes" do
-        val = new_parser.send(
-          :serialize_model_classes,
-          @xmi_root_model.model.packaged_element.first, @xmi_root_model.model
-        )
-        expect(val.count).to eq(8)
-        expect(val.first[:xmi_id]).to eq(
-          "EAID_D832D6D8_0518_43f7_9166_7A4E3E8605AA",
-        )
-        expect(val.first[:name]).to eq("BibliographicItem")
-      end
-
-      it ".serialize_model_data_types" do
-        val = new_parser.send(
-          :serialize_model_data_types, @xmi_root_model.model
-        )
-        expect(val).to eq([])
-      end
-
-      it ".serialize_model_diagrams" do
-        val = new_parser.send(
-          :serialize_model_diagrams,
-          "EAPK_C799E047_A10F_4203_9E22_9C47183CED98",
-        )
-        expect(val.count).to eq(1)
-        expect(val).to eq([{
-                            xmi_id: "EAID_FB7118FD_7DE4_4dac_8E43_1F55CD195957",
-                            name: "Starter Class Diagram",
-                            definition: "aada\n",
-                          }])
-      end
-
-      it ".serialize_model_associations without association" do
-        val = new_parser.send(
-          :serialize_model_associations,
-          "EAPK_C799E047_A10F_4203_9E22_9C47183CED98",
-        )
-        expect(val).to eq(nil)
-      end
-
-      it ".serialize_model_associations with associations" do
-        val = new_parser.send(
-          :serialize_model_associations,
-          "EAID_D832D6D8_0518_43f7_9166_7A4E3E8605AA",
-        )
-
-        expect(val).to eq(
-          [{
-            xmi_id: "EAID_2CA98919_831B_4182_BBC2_C2EAF17FEF60",
-            member_end: "RequirementType",
-            member_end_type: "aggregation",
-            member_end_cardinality: { min: nil, max: nil },
-            member_end_attribute_name: "RequirementType",
-            member_end_xmi_id: "EAID_C1155D80_E68B_46d5_ADE5_F5639486163D",
-            owner_end: "BibliographicItem",
-            owner_end_xmi_id: "EAID_D832D6D8_0518_43f7_9166_7A4E3E8605AA",
-            definition: nil,
-          }],
-        )
-      end
-
-      it ".fetch_connector" do
+      it ".fetch_connector", :aggregate_failures do
         val = new_parser.send(
           :fetch_connector,
           "EAID_2CA98919_831B_4182_BBC2_C2EAF17FEF60",
         )
-        expect(val).to be_instance_of(Xmi::Sparx::SparxConnector)
+        expect(val).to be_instance_of(Xmi::Sparx::Connector::Connector)
         expect(val.idref).to eq("EAID_2CA98919_831B_4182_BBC2_C2EAF17FEF60")
       end
 
@@ -345,28 +254,12 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
           :fetch_definition_node_value,
           "EAID_2CA98919_831B_4182_BBC2_C2EAF17FEF60", "source"
         )
-        expect(val).to eq(nil)
-      end
-
-      it ".serialize_class_operations" do
-        val = new_parser.send(
-          :serialize_class_operations,
-          @xmi_root_model.model.packaged_element.first,
-        )
-        expect(val).to eq([])
-      end
-
-      it ".serialize_class_constraints" do
-        val = new_parser.send(
-          :serialize_class_constraints,
-          "EAID_2CA98919_831B_4182_BBC2_C2EAF17FEF60",
-        )
-        expect(val).to eq([])
+        expect(val).to be_nil
       end
 
       it ".serialize_owned_type" do
         assoc_element = nil
-        @xmi_root_model.extension.elements.element.each do |e|
+        xmi_root_model.extension.elements.element.each do |e|
           e.links&.each do |link|
             if assoc_element.nil? && link.association.any?
               assoc_element = link.association.first
@@ -382,7 +275,7 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
 
       it ".serialize_member_end" do
         assoc_element = nil
-        @xmi_root_model.extension.elements.element.each do |e|
+        xmi_root_model.extension.elements.element.each do |e|
           e.links&.each do |link|
             if assoc_element.nil? && link.association.any?
               assoc_element = link.association.first
@@ -395,14 +288,14 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
         )
         expect(val).to eq([
                             "RequirementType",
-                            "aggregation",
+                            "association",
                             "EAID_C1155D80_E68B_46d5_ADE5_F5639486163D",
                           ])
       end
 
       it ".serialize_member_type" do
         assoc_element = nil
-        @xmi_root_model.extension.elements.element.each do |e|
+        xmi_root_model.extension.elements.element.each do |e|
           e.links&.each do |link|
             if assoc_element.nil? && link.association.any?
               assoc_element = link.association.first
@@ -415,7 +308,7 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
         )
         expect(val).to eq([
                             "RequirementType",
-                            "aggregation",
+                            "association",
                             { max: nil, min: nil },
                             "RequirementType",
                             "EAID_C1155D80_E68B_46d5_ADE5_F5639486163D",
@@ -424,7 +317,7 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
 
       it ".fetch_assoc_connector" do
         assoc_element = nil
-        @xmi_root_model.extension.elements.element.each do |e|
+        xmi_root_model.extension.elements.element.each do |e|
           e.links&.each do |link|
             if assoc_element.nil? && link.association.any?
               assoc_element = link.association.first
@@ -439,7 +332,7 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
 
       it ".generalization_association if link.start == owner_xmi_id" do
         gen_element = nil
-        @xmi_root_model.extension.elements.element.each do |e|
+        xmi_root_model.extension.elements.element.each do |e|
           e.links&.each do |link|
             if gen_element.nil? && link.generalization.any?
               gen_element = link.generalization.first
@@ -461,7 +354,7 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
 
       it ".generalization_association if link.start != owner_xmi_id" do
         gen_element = nil
-        @xmi_root_model.extension.elements.element.each do |e|
+        xmi_root_model.extension.elements.element.each do |e|
           e.links&.each do |link|
             if gen_element.nil? && link.generalization.any?
               gen_element = link.generalization.first

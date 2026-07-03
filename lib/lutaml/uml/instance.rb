@@ -3,6 +3,8 @@
 module Lutaml
   module Uml
     class Instance < TopElement
+      skip_reference_registration
+
       attribute :classifier, :string
       attribute :slot, :string, collection: true, default: -> { [] }
 

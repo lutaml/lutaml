@@ -1,0 +1,121 @@
+/* Layout — LutaML Branded */
+
+#app {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Main column (header + content) */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Header */
+.app-header {
+  height: var(--header-height);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-4);
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border-light);
+  gap: var(--space-4);
+  z-index: var(--z-header);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.header-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* Sidebar */
+.sidebar {
+  width: var(--sidebar-width);
+  flex-shrink: 0;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: var(--z-sidebar);
+}
+
+.sidebar.collapsed {
+  width: 0;
+}
+
+.sidebar-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: var(--sidebar-width);
+}
+
+/* Content area */
+.content-area {
+  flex: 1;
+  overflow: auto;
+  padding: var(--space-6);
+  background: var(--bg-primary);
+}
+
+/* Responsive */
+@media (max-width: 1023px) {
+  .sidebar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .sidebar.collapsed {
+    width: 0;
+    overflow: hidden;
+  }
+
+  .sidebar-toggle {
+    display: flex !important;
+  }
+
+  .header-center {
+    max-width: none;
+  }
+}
+
+@media (max-width: 767px) {
+  :root {
+    --sidebar-width: 280px;
+    --header-height: 48px;
+  }
+
+  .content-area {
+    padding: var(--space-4);
+  }
+}
+
+@media (min-width: 1280px) {
+  :root {
+    --sidebar-width: 320px;
+  }
+}

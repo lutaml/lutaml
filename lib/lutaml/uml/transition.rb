@@ -6,6 +6,8 @@
 module Lutaml
   module Uml
     class Transition < TopElement
+      skip_reference_registration
+
       attribute :source, :string
       attribute :target, :string
       attribute :guard, :string

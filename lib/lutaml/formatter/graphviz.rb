@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 require "open3"
-require "lutaml/formatter/base"
-require "lutaml/layout/graph_viz_engine"
 
 module Lutaml
   module Formatter
@@ -53,8 +51,7 @@ module Lutaml
         @graph["ranksep"] = "1.2.equally"
         # Padding between nodes
         @graph["nodesep"] = "1.2.equally"
-        # TODO: set rankdir
-        # @graph['rankdir'] = 'BT'
+        @graph["rankdir"] = "BT"
 
         @edge = Attributes.new
         @edge["color"] = "gray50"
@@ -87,7 +84,7 @@ module Lutaml
           .gsub("]", "&#93;")
       end
 
-      def format_field(node) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+      def format_attribute(node) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
         symbol = ACCESS_SYMBOLS[node.visibility]
         result = "#{symbol}#{node.name}"
         if node.type
@@ -104,7 +101,7 @@ module Lutaml
         result
       end
 
-      def format_method(node) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength
+      def format_operation(node) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength
         symbol = ACCESS_SYMBOLS[node.access]
         result = "#{symbol} #{node.name}"
         if node.arguments
@@ -207,69 +204,90 @@ module Lutaml
         "#{res} #{cardinality.min}..#{cardinality.max}"
       end
 
-      def format_member_rows(members, hide_members) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity
-        unless !hide_members && members&.length&.positive?
-          return <<~HEREDOC.chomp
-            <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
-              <TR><TD ALIGN="LEFT"></TD></TR>
-            </TABLE>
-          HEREDOC
-        end
+      EMPTY_MEMBER_TABLE = <<~HEREDOC.chomp
+        <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
+          <TR><TD ALIGN="LEFT"></TD></TR>
+        </TABLE>
+      HEREDOC
+
+      def format_member_rows(members, hide_members)
+        return EMPTY_MEMBER_TABLE if hide_members || !members&.any?
 
         field_rows = members.map do |field|
-          %{<TR><TD ALIGN="LEFT">#{format_field(field)}</TD></TR>}
+          %{<TR><TD ALIGN="LEFT">#{format_attribute(field)}</TD></TR>}
         end
-        field_table = <<~HEREDOC.chomp
+        build_member_table(field_rows)
+      end
+
+      def build_member_table(field_rows)
+        <<~HEREDOC.chomp
           <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
             #{field_rows.map { |row| (' ' * 10) + row }.join("\n")}
           </TABLE>
         HEREDOC
-        field_table << "\n" << (" " * 6)
-        field_table
+          .concat("\n")
+          .concat(" " * 6)
       end
 
-      def format_class(node, hide_members) # rubocop:disable Metrics/AbcSize
+      def format_class(node, hide_members) # rubocop:disable Metrics/MethodLength
         name = ["<B>#{node.name}</B>"]
         name.unshift("«#{node.keyword}»") if node.keyword
-        name_html = <<~HEREDOC
-          <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
-            #{name.map { |n| %(<TR><TD ALIGN="CENTER">#{n}</TD></TR>) }.join('\n')}
-          </TABLE>
-        HEREDOC
+        name_html = build_name_table(name)
 
         field_table = format_member_rows(node.attributes, hide_members)
-        method_table = format_member_rows(node.methods, hide_members)
-        table_body = [name_html, field_table, method_table].map do |type|
-          next if type.nil?
+        method_table = if node.operations&.any?
+                         format_member_rows(node.operations, hide_members)
+                       end
+        table_body = build_table_body(name_html, field_table, method_table)
 
+        <<~HEREDOC.chomp
+          <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="10">
+            #{table_body}
+          </TABLE>
+        HEREDOC
+      end
+
+      def build_name_table(name_parts)
+        <<~HEREDOC
+          <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
+            #{name_parts.map { |n| %(<TR><TD ALIGN="CENTER">#{n}</TD></TR>) }.join('\n')}
+          </TABLE>
+        HEREDOC
+      end
+
+      def build_table_body(name_html, field_table, method_table)
+        [name_html, field_table, method_table].compact.filter_map do |type|
           <<~TEXT
             <TR>
               <TD>#{type}</TD>
             </TR>
           TEXT
-        end
-
-        <<~HEREDOC.chomp
-          <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="10">
-            #{table_body.compact.join("\n")}
-          </TABLE>
-        HEREDOC
+        end.join("\n")
       end
 
-      def format_document(node) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+      def format_document(node)
         @fontname = node.fontname || DEFAULT_CLASS_FONT
         @node["fontname"] = "#{@fontname}-bold"
 
-        if node.fidelity
-          hide_members = node.fidelity.hideMembers
-          hide_other_classes = node.fidelity.hideOtherClasses
-        end
-        classes = (node.classes +
-                    node.enums +
-                    node.data_types +
-                    node.primitives).map do |class_node|
-          graph_node_name = generate_graph_name(class_node.name)
+        hide_members, hide_other_classes = extract_fidelity_options(node)
+        classes = format_all_classes(node, hide_members)
+        associations = build_associations(node, hide_other_classes)
 
+        build_digraph(classes, associations)
+      end
+
+      def extract_fidelity_options(node)
+        if node.fidelity
+          [node.fidelity.hideMembers, node.fidelity.hideOtherClasses]
+        else
+          [nil, nil]
+        end
+      end
+
+      def format_all_classes(node, hide_members)
+        all_classes = node.classes + node.enums + node.data_types + node.primitives
+        all_classes.map do |class_node|
+          graph_node_name = generate_graph_name(class_node.name)
           <<~HEREDOC
             #{graph_node_name} [
               shape="plain"
@@ -277,25 +295,36 @@ module Lutaml
               label=<#{format_class(class_node, hide_members)}>]
           HEREDOC
         end.join("\n")
-        associations = node.classes.map(&:associations).compact.flatten +
-          node.associations
+      end
+
+      def build_associations(node, hide_other_classes)
+        associations = collect_all_associations(node)
         if node.groups
           associations = sort_by_document_grouping(node.groups,
                                                    associations)
         end
+
         classes_names = node.classes.map(&:name)
-        associations = associations.map do |assoc_node|
-          if hide_other_classes &&
-              !classes_names.include?(assoc_node.member_end)
-            next
-          end
+        format_filtered_associations(associations, classes_names,
+                                     hide_other_classes)
+      end
+
+      def collect_all_associations(node)
+        node.classes.filter_map(&:associations).flatten + node.associations
+      end
+
+      def format_filtered_associations(associations, classes_names,
+hide_other_classes)
+        associations.filter_map do |assoc_node|
+          next if hide_other_classes && !classes_names.include?(assoc_node.member_end)
 
           format_relationship(assoc_node)
         end.join("\n")
+      end
 
-        classes = classes.lines.map { |line| "  #{line}" }.join.chomp
-        associations = associations
-          .lines.map { |line| "  #{line}" }.join.chomp
+      def build_digraph(classes, associations)
+        indented_classes = indent_lines(classes)
+        indented_assocs = indent_lines(associations)
 
         <<~HEREDOC
           digraph G {
@@ -303,11 +332,15 @@ module Lutaml
             edge [#{@edge}]
             node [#{@node}]
 
-          #{classes}
+          #{indented_classes}
 
-          #{associations}
+          #{indented_assocs}
           }
         HEREDOC
+      end
+
+      def indent_lines(text)
+        text.lines.map { |line| "  #{line}" }.join.chomp
       end
 
       protected

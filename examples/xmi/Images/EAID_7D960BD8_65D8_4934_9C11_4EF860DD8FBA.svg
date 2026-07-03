@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="16.83cm" height="14.55cm" viewBox="0 0 636 550">
+<title></title>
+<desc>Created with Enterprise Architect (Build: 1624) 2</desc>
+
+<g style="fill:#FFFFFF;fill-opacity:1.00;">
+	 <rect x="0" y="0" width="636" height="550" shape-rendering="auto"/>
+</g><g style="stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel; fill:#FFFFFF;fill-opacity:1.00; stroke:#000000; stroke-opacity:1.00">
+  <polygon points="10 391 152 391 152 426 10 426 10 391" shape-rendering="auto"   style="fill-rule:evenodd;"/>
+  <polygon points="10 357 115 357 115 391 10 391 10 357" shape-rendering="auto"   style="fill-rule:evenodd;"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00">
+	<text x="15.00" y="370.00" textLength="75" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 15.00 370.00)">«FeatureDataset»</text>
+	<text x="15.00" y="382.00" textLength="41" style="font-family:Cambria; font-weight:700; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 15.00 382.00)">Features</text>
+</g>
+<g style="stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel; fill:#FFFFFF;fill-opacity:1.00; stroke:#000000; stroke-opacity:1.00">
+  <polygon points="168 376 310 376 310 426 168 426 168 376" shape-rendering="auto"   style="fill-rule:evenodd;"/>
+  <polygon points="168 357 273 357 273 376 168 376 168 357" shape-rendering="auto"   style="fill-rule:evenodd;"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00">
+	<text x="173.00" y="370.00" textLength="41" style="font-family:Cambria; font-weight:700; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 173.00 370.00)">Domains</text>
+</g>
+<g style="stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel; fill:#FFFFFF;fill-opacity:1.00; stroke:#000000; stroke-opacity:1.00">
+  <polygon points="484 376 626 376 626 426 484 426 484 376" shape-rendering="auto"   style="fill-rule:evenodd;"/>
+  <polygon points="484 357 589 357 589 376 484 376 484 357" shape-rendering="auto"   style="fill-rule:evenodd;"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00">
+	<text x="489.00" y="370.00" textLength="84" style="font-family:Cambria; font-weight:700; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 489.00 370.00)">Spatial References</text>
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#FEFAF5;fill-opacity:1.00; stroke:#577AC1; stroke-opacity:1.00">
+ <rect x="489" y="380" width="11" height="14" rx="0.00" shape-rendering="auto"  />
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#FFFFFF;fill-opacity:1.00; stroke:#577AC1; stroke-opacity:1.00">
+ <rect x="489" y="380" width="11" height="4" rx="0.00" shape-rendering="auto"  />
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#000000;fill-opacity:0.00; stroke:#577AC1; stroke-opacity:1.00">
+  <path d="M 489 387 L 499 387" shape-rendering="auto"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#000000;fill-opacity:0.00; stroke:#EF8585; stroke-opacity:1.00">
+  <path d="M 491 385 L 495 385" shape-rendering="auto"/>
+  <path d="M 497 385 L 498 385" shape-rendering="auto"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#000000;fill-opacity:0.00; stroke:#4D4D4D; stroke-opacity:1.00">
+  <path d="M 491 389 L 495 389" shape-rendering="auto"/>
+  <path d="M 497 389 L 498 389" shape-rendering="auto"/>
+  <path d="M 491 391 L 495 391" shape-rendering="auto"/>
+  <path d="M 497 391 L 498 391" shape-rendering="auto"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00">
+	<text x="507.00" y="391.00" textLength="94" style="font-family:Cambria; font-weight:0; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 507.00 391.00)">+ MySpatialReference</text>
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#FFFFFF;fill-opacity:1.00; stroke:#000000; stroke-opacity:1.00">
+  <polygon points="64 10 64 318 612 318 612 22 600 10" shape-rendering="auto"   style="fill-rule:evenodd;"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#DCDCDC;fill-opacity:1.00; stroke:#000000; stroke-opacity:1.00">
+  <polygon points="600 10 600 22 612 22" shape-rendering="auto"   style="fill-rule:evenodd;"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:square;stroke-linejoin:bevel; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00">
+	<text x="69.00" y="37.00" textLength="203" style="font-family:Arial; font-weight:400; font-style:normal; font-size:9pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 69.00 37.00)">The model is structured as follows:</text>
+	<text x="69.00" y="53.00" textLength="341" style="font-family:Arial; font-weight:400; font-style:normal; font-size:9pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 69.00 53.00)">- Feature classes are contained in the &quot;Features&quot; package.</text>
+	<text x="69.00" y="69.00" textLength="439" style="font-family:Arial; font-weight:400; font-style:normal; font-size:9pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 69.00 69.00)">- CodedValue- and RangeDomains are contained in the &quot;Domains&quot; package.</text>
+	<text x="69.00" y="85.00" textLength="323" style="font-family:Arial; font-weight:400; font-style:normal; font-size:9pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 69.00 85.00)">- Object classes are contained in the &quot;Tables&quot; package.</text>
+	<text x="69.00" y="101.00" textLength="505" style="font-family:Arial; font-weight:400; font-style:normal; font-size:9pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 69.00 101.00)">- All association classes created to represent n:m relationships between model classes</text>
+	<text x="69.00" y="117.00" textLength="304" style="font-family:Arial; font-weight:400; font-style:normal; font-size:9pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 69.00 117.00)">are contained in the &quot;Association Classes&quot; package.</text>
+	<text x="69.00" y="149.00" textLength="522" style="font-family:Arial; font-weight:400; font-style:normal; font-size:9pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 69.00 149.00)">Before exporting your model to an ArcGIS schema, you can change the Spatial Reference</text>
+	<text x="69.00" y="165.00" textLength="222" style="font-family:Arial; font-weight:400; font-style:normal; font-size:9pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 69.00 165.00)">element (currently set to EPSG:4326).</text>
+	<text x="69.00" y="197.00" textLength="506" style="font-family:Arial; font-weight:400; font-style:normal; font-size:9pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 69.00 197.00)">The Spatial Reference element is available under the &quot;Spatial References&quot; package. To</text>
+	<text x="69.00" y="213.00" textLength="524" style="font-family:Arial; font-weight:400; font-style:normal; font-size:9pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 69.00 213.00)">change the spatial reference system, simply select the &quot;MySpatialReference&quot; element and</text>
+	<text x="69.00" y="229.00" textLength="329" style="font-family:Arial; font-weight:400; font-style:normal; font-size:9pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 69.00 229.00)">choose: Extensions &gt; ArcGIS &gt; Set Coordinate System.</text>
+	<text x="69.00" y="261.00" textLength="537" style="font-family:Arial; font-weight:400; font-style:normal; font-size:9pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 69.00 261.00)">You can export your model as an ArcGIS schema by selecting the ArcGIS Workspace in the</text>
+	<text x="69.00" y="277.00" textLength="177" style="font-family:Arial; font-weight:400; font-style:normal; font-size:9pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 69.00 277.00)">Project Browser and choosing:</text>
+	<text x="69.00" y="293.00" textLength="340" style="font-family:Arial; font-weight:400; font-style:normal; font-size:9pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 69.00 293.00)">Extensions &gt; ArcGIS &gt; Export to ArcGIS Workspace XML</text>
+</g>
+<g style="stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel; fill:#FFFFFF;fill-opacity:1.00; stroke:#000000; stroke-opacity:1.00">
+  <polygon points="326 376 468 376 468 426 326 426 326 376" shape-rendering="auto"   style="fill-rule:evenodd;"/>
+  <polygon points="326 357 431 357 431 376 326 376 326 357" shape-rendering="auto"   style="fill-rule:evenodd;"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00">
+	<text x="331.00" y="370.00" textLength="30" style="font-family:Cambria; font-weight:700; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 331.00 370.00)">Tables</text>
+</g>
+<g style="stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel; fill:#FFFFFF;fill-opacity:1.00; stroke:#000000; stroke-opacity:1.00">
+  <polygon points="10 479 141 479 141 540 10 540 10 479" shape-rendering="auto"   style="fill-rule:evenodd;"/>
+  <polygon points="10 460 116 460 116 479 10 479 10 460" shape-rendering="auto"   style="fill-rule:evenodd;"/>
+</g>
+<g style="stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00">
+	<text x="15.00" y="473.00" textLength="91" style="font-family:Cambria; font-weight:700; font-style:normal; font-size:7pt; fill:#000000;fill-opacity:1.00; stroke:#000000; stroke-opacity:0.00 stroke-width:0; white-space: pre;" xml:space="preserve" transform="rotate(-0.00 15.00 473.00)">Association Classes</text>
+</g>
+</svg>

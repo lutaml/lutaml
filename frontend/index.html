@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LutaML UML Browser (dev)</title>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+    // Stub data for development mode
+    window.__SPA_DATA__ = {
+      metadata: { generated: "2025-01-01", generator: "Dev", version: "1.0", statistics: { packages: 1, classes: 1, associations: 0, attributes: 1, operations: 0 } },
+      packageTree: { id: "pkg_test", name: "TestPackage", path: "TestPackage", stereotypes: [], classCount: 1, classes: [{ id: "cls_test", name: "TestClass", stereotypes: [] }], children: [] },
+      packages: { "pkg_test": { id: "pkg_test", xmiId: "test", name: "TestPackage", path: "TestPackage", stereotypes: [], classes: ["cls_test"], subPackages: [], diagrams: [] } },
+      classes: { "cls_test": { id: "cls_test", xmiId: "test_cls", name: "TestClass", qualifiedName: "TestPackage::TestClass", type: "Class", stereotypes: [], attributes: [], operations: [], associations: [], generalizations: [], specializations: [], isAbstract: false, literals: [], inheritedAttributes: [], inheritedAssociations: [] } },
+      attributes: {},
+      associations: {},
+      operations: {},
+      diagrams: {},
+      searchIndex: { version: "1.0.0", fields: [], ref: "id", documentStore: [], pipeline: [] }
+    };
+  </script>
+  <script type="module" src="/src/app.ts"></script>
+</body>
+</html>

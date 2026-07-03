@@ -28,13 +28,13 @@ RSpec.describe Lutaml::Uml::TopElementAttribute do
       YAML
     end
 
-    it "outputs cardinality" do
+    it "outputs cardinality", :aggregate_failures do
       expect(YAML.safe_load(output)["cardinality"]["min"]).to eq("1")
       expect(YAML.safe_load(output)["cardinality"]["max"]).to eq("*")
     end
 
     it "outputs default is_derived" do
-      expect(YAML.safe_load(output)["is_derived"]).to eq(false)
+      expect(YAML.safe_load(output)["is_derived"]).to be(false)
     end
 
     it "outputs stripped definition" do

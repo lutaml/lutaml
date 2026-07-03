@@ -3,10 +3,16 @@
 module Lutaml
   module Uml
     class Classifier < TopElement
-      attribute :generalization, :string, collection: true, default: -> { [] }
+      skip_reference_registration
+
+      attribute :association_generalization,
+                ::Lutaml::Uml::AssociationGeneralization,
+                collection: true, default: -> { [] }
+      attribute :operations, Operation, collection: true, default: -> { [] }
+      attribute :is_abstract, :boolean, default: false
 
       yaml do
-        map "generalization", to: :generalization
+        map "generalization", to: :association_generalization
       end
     end
   end

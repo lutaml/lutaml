@@ -1,0 +1,42 @@
+---
+title: File Formats
+parent: Reference
+nav_order: 3
+has_children: true
+---
+
+= File Formats
+
+Complete specifications for all file formats supported by LutaML.
+
+== Available Format Specifications
+
+=== link:qea-structure[QEA File Format]
+
+Enterprise Architect's native SQLite database format specification.
+
+**Topics covered:**
+
+* Database schema and table structure
+* Two-layer transformation architecture
+* Implemented and excluded tables
+* Performance characteristics
+* Configuration and usage
+
+=== link:lutaml-syntax[LutaML Syntax Reference]
+
+Complete syntax reference for LutaML's native modeling DSL.
+
+**Topics covered:**
+
+* Diagram syntax
+* Class and data type definitions
+* Associations and relationships
+* Attributes and operations
+* Comments and annotations
+* Package organization
+
+== Related Documentation
+
+* link:../../guides/parsing[Parsing Guides] - How to parse these formats
+* link:../../pages[Core Topics] - Understanding model structures

@@ -1,0 +1,197 @@
+---
+title: What is LutaML?
+parent: Core Topics
+nav_order: 1
+---
+
+= What is LutaML?
+
+== Purpose
+
+LutaML is a universal Ruby library and CLI for accessing, parsing, and
+manipulating data models across multiple modeling languages.
+
+== What LutaML Does
+
+The LutaML library provides a unified interface for working with the following
+modelling languages:
+
+* EXPRESS (ISO 10303-11)
+* UML (UML 2.x)
+* XSD (XML Schema Definition)
+* LML (LutaML Modeling Language)
+
+In particular:
+
+* Parse *Enterprise Architect (EA)* models from QEA and XMI formats
+* Parse *ISO 10303-11 EXPRESS* schemas
+* Generate SVG diagrams from EA models (QEA) with full styling
+* Store and query models in compressed LUR (LutaML UML Repository) format
+* Create browsable SPA (Single Page Application) sites from models
+* Provide full access of models via Ruby API, CLI tools and Liquid templates
+
+
+== Problems LutaML solves
+
+=== Access multiple modeling languages
+
+Different UML tools use different formats (XMI, QEA, EXPRESS). LutaML provides a single interface to work with all of them.
+
+=== Diagram Rendering
+
+LutaML generates **SVG diagrams** matching EA's visual output.
+
+=== Model querying
+
+LutaML supports querying UML models through a powerful DSL.
+
+=== Documentation
+
+LutaML **auto-generates complete documentation sites** from your models.
+
+== Key features
+
+=== Unified parser interface
+
+Single entry point for all formats:
+
+[source,ruby]
+----
+require "lutaml"
+
+# Automatically detects format
+Lutaml::Parser.parse([File.new("model.xmi")])  # XMI
+Lutaml::Parser.parse([File.new("model.qea")])  # QEA
+Lutaml::Parser.parse([File.new("schema.exp")]) # EXPRESS
+----
+
+=== Enterprise Architect (QEA/XMI) parsing
+
+Direct access using native QEA or exported XMI for parsing, with full EA
+metadata preserved.
+
+
+=== Enterprise Architect diagram generation
+
+Generate SVG diagrams with:
+
+* EA-style colors and fonts
+* Full stereotype support
+* Multiple connector types
+* YAML-based styling
+* PNG/PDF export (optional)
+
+=== LUR Package Format
+
+Compressed binary format for:
+
+* **Fast loading**: <100ms vs 5-8s for XMI
+* **Efficient storage**: 15-30MB for large models
+* **Built-in indexing**: O(1) lookups
+* **Versioning**: Track model changes
+
+=== Rich Query Capabilities
+
+Find elements with:
+
+* Full-text search
+* Stereotype filtering
+* Package navigation
+* Query DSL
+* Pattern matching
+
+=== Complete CLI
+
+Command-line tools for:
+
+* Building repositories
+* Searching models
+* Generating diagrams
+* Exporting data
+* Creating documentation
+
+== Use Cases
+
+=== Standards Organizations
+
+ISO, OGC, OMG working with UML and EXPRESS models for international standards.
+
+=== Software Architects
+
+Teams using Enterprise Architect for system design and documentation.
+
+=== Tool Developers
+
+Building analysis or transformation tools on top of modeling data.
+
+=== Researchers
+
+Analyzing model structures, patterns, and evolution.
+
+== Target Users
+
+* Standards developers and maintainers
+* Enterprise architects and modelers
+* Software development teams
+* UML tool integrators
+* Model-driven engineering practitioners
+
+== Supported Formats
+
+=== Input Formats
+
+* **QEA**: Enterprise Architect SQLite databases
+* **XMI**: OMG XML Metadata Interchange (v2.1+)
+* **EXPRESS**: ISO 10303-11 schemas
+* **LutaML**: Native modeling DSL
+
+=== Output Formats
+
+* **LUR**: LutaML UML Repository packages
+* **SVG**: Scalable Vector Graphics diagrams
+* **JSON**: Model data export
+* **YAML**: Model data export
+* **CSV**: Tabular data export
+* **Markdown**: Documentation
+* **HTML**: Static documentation sites
+
+== Architecture
+
+LutaML uses a **two-layer architecture**:
+
+1. **Parse Layer**: Direct 1:1 mapping of source formats to Ruby objects
+2. **Domain Layer**: Rich UML metamodel with hierarchical relationships
+
+This design ensures:
+
+* **Clean separation** between formats and models
+* **Extensibility** for new formats
+* **Type safety** and validation
+* **Performance** through optimized transformations
+
+See link:architecture[System Architecture] for details.
+
+== Getting Started
+
+Ready to start using LutaML?
+
+1. link:/core/installation[Install LutaML] - Get set up
+2. link:/tutorials/getting-started[Quick Start Tutorial] - Your first steps
+3. link:/guides[Guides] - Task-oriented documentation
+4. link:/references[Reference] - Complete API documentation
+
+== License and Community
+
+LutaML is open source and maintained by https://www.ribose.com[Ribose].
+
+* **License**: https://github.com/lutaml/lutaml/blob/main/LICENSE[BSD-3-Clause]
+* **Source**: https://github.com/lutaml/lutaml[GitHub Repository]
+* **Package**: https://rubygems.org/gems/lutaml[RubyGems]
+* **Issues**: https://github.com/lutaml/lutaml/issues[Issue Tracker]
+
+== See Also
+
+* link:installation[Installation Guide]
+* link:architecture[System Architecture]
+* link:concepts/qea-parsing[QEA Parsing Concept]
+* link:concepts/lur-format[LUR Package Format]

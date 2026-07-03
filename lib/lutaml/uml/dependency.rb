@@ -6,6 +6,8 @@
 module Lutaml
   module Uml
     class Dependency < TopElement
+      skip_reference_registration
+
       attribute :client, :string, collection: true, default: -> { [] }
       attribute :supplier, :string, collection: true, default: -> { [] }
 

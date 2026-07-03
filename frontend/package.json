@@ -1,0 +1,26 @@
+{
+  "name": "lutaml-uml-spa",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "type-check": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "lunr": "^2.3.9",
+    "pinia": "^2.2.0",
+    "vue": "^3.5.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.0",
+    "@vitest/browser": "^4.1.7",
+    "puppeteer": "^25.0.4",
+    "typescript": "^5.6.0",
+    "vite": "^6.0.0",
+    "vitest": "^4.1.7",
+    "vue-tsc": "^2.2.0"
+  }
+}

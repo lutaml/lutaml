@@ -1,0 +1,109 @@
+---
+title: Tutorials
+nav_order: 2
+has_children: true
+---
+= Tutorials
+
+== Overview
+
+This section provides step-by-step learning paths to help you accomplish specific tasks with LutaML. Each tutorial walks you through a complete workflow from start to finish.
+
+== Available Tutorials
+
+=== link:/tutorials/getting-started[Getting Started with LutaML]
+
+Your first steps with LutaML. Learn how to install, parse your first model file, and explore basic functionality.
+
+**What you'll learn:**
+
+* Installing LutaML
+* Parsing XMI and QEA files
+* Understanding the `Lutaml::Parser` interface
+* Basic model exploration
+
+**Time:** 15 minutes
+
+---
+
+=== link:/tutorials/first-lur-package[Building Your First LUR Package]
+
+Create a LutaML UML Repository (LUR) package from an XMI or QEA file for fast loading and querying.
+
+**What you'll learn:**
+
+* Converting XMI/QEA to LUR format
+* Understanding LUR package structure
+* Loading and querying LUR packages
+* Performance benefits
+
+**Time:** 20 minutes
+
+---
+
+=== link:/tutorials/generating-diagrams[Generating Diagrams]
+
+Generate pixel-perfect SVG diagrams from Enterprise Architect models with full styling support.
+
+**What you'll learn:**
+
+* Loading diagrams from QEA files
+* Basic diagram generation
+* Customizing colors and styles
+* Exporting diagrams
+
+**Time:** 25 minutes
+
+---
+
+=== link:/tutorials/documentation-site[Creating a Documentation Site]
+
+Build a complete SPA documentation website from your UML model with search and navigation.
+
+**What you'll learn:**
+
+* Using the `build-spa` command
+* Understanding output modes
+* Customizing the site
+* Deploying documentation
+
+**Time:** 20 minutes
+
+---
+
+=== link:/tutorials/querying-models[Searching and Querying Models]
+
+Master the query DSL and search capabilities to find exactly what you need in large models.
+
+**What you'll learn:**
+
+* Full-text search
+* Using the query DSL
+* Filtering by stereotype
+* Advanced queries
+
+**Time:** 30 minutes
+
+== Prerequisites
+
+Most tutorials assume you have:
+
+* Ruby 2.7+ installed
+* Basic command-line knowledge
+* LutaML installed (see link:/installation[Installation Guide])
+
+== Tutorial Format
+
+Each tutorial follows this structure:
+
+1. **Purpose** - What you'll accomplish
+2. **Prerequisites** - What you need before starting
+3. **Steps** - Detailed walkthrough with code examples
+4. **Verification** - How to confirm success
+5. **Next Steps** - Where to go from here
+
+== Related Sections
+
+* link:/pages[Core Topics] - Fundamental concepts
+* link:/guides[Guides] - Task-oriented how-to documentation
+* link:/references[Reference] - Detailed specifications

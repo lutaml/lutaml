@@ -3,6 +3,8 @@
 module Lutaml
   module Uml
     class Document < Lutaml::Model::Serializable
+      skip_reference_registration
+
       attribute :name, :string
       attribute :title, :string
       attribute :caption, :string
@@ -16,7 +18,9 @@ module Lutaml
       attribute :enums, Enum, collection: true, default: -> { [] }
       attribute :packages, Package, collection: true, default: -> { [] }
       attribute :primitives, PrimitiveType, collection: true, default: -> { [] }
+      attribute :instances, Instance, collection: true, default: -> { [] }
       attribute :associations, Association, collection: true, default: -> { [] }
+      attribute :diagrams, Diagram, collection: true, default: -> { [] }
 
       yaml do
         map "name", to: :name
@@ -32,6 +36,8 @@ module Lutaml
         map "enums", to: :enums
         map "packages", to: :packages
         map "primitives", to: :primitives
+        map "instances", to: :instances
+        map "diagrams", to: :diagrams
 
         map "associations", to: :associations, with: {
           to: :associations_to_yaml, from: :associations_from_yaml
@@ -39,6 +45,8 @@ module Lutaml
       end
 
       def associations_to_yaml(model, doc)
+        return unless model.associations
+
         associations = model.associations.map(&:to_hash)
         doc["associations"] = associations unless associations.empty?
       end

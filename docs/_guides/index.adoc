@@ -1,0 +1,135 @@
+= Guides
+:nav_order: 3
+:has_children: true
+
+== Overview
+
+This section provides task-oriented how-to documentation for common workflows and operations with LutaML. Each guide focuses on accomplishing a specific goal.
+
+== Command-Line Usage
+
+=== link:../cli-usage[Complete CLI Guide]
+
+Comprehensive guide to using LutaML's command-line interface, including all commands, options, and workflows.
+
+== Diagram Generation
+
+=== link:diagram-generation[Generating EA-Style Diagrams]
+
+Learn how to generate pixel-perfect SVG diagrams from Enterprise Architect models with full styling support.
+
+**Topics covered:**
+
+* EA-style colors and fonts
+* Configurable styling system
+* Multiple connector types
+* Lazy-loading in SPA mode
+
+== Modeling Languages
+
+=== link:uml-modeling[UML Modeling with LutaML]
+
+Work with UML class diagrams using LutaML's native syntax and conversion tools.
+
+=== link:sysml-modeling[SysML Modeling with LutaML]
+
+Extend UML with SysML concepts for systems engineering and MBSE workflows.
+
+== Configuration & Customization
+
+=== link:../references/configuration/diagram-styles[Configuring Diagram Styles]
+
+Learn how to customize diagram colors, fonts, and styling using YAML configuration files.
+
+=== link:../references/configuration/package-metadata[Setting Up Package Metadata]
+
+Configure XML namespaces, schema locations, and other metadata for UML packages.
+
+=== link:repository-management[Managing Repositories]
+
+Best practices for organizing, versioning, and maintaining LUR repositories.
+
+== Parsing Guides
+
+=== link:parsing/qea-parsing[Parsing QEA Files]
+
+How to parse Enterprise Architect QEA files directly from SQLite databases.
+
+**Topics covered:**
+
+* File validation
+* Performance optimization
+* Handling large models
+* Error recovery
+
+=== link:parsing/xmi-parsing[Parsing XMI Files]
+
+Working with OMG XMI format exports from various UML tools.
+
+**Topics covered:**
+
+* XMI format detection
+* Namespace handling
+* Profile support
+* Validation
+
+=== link:parsing/express-parsing[Parsing EXPRESS Schemas]
+
+Handle ISO 10303-11 EXPRESS schemas used in industrial standards.
+
+**Topics covered:**
+
+* Schema file parsing
+* Cache files
+* Model transformation
+* Integration with Expressir
+
+== Working with Models
+
+=== Querying and Search
+
+* Full-text search across models
+* Using the query DSL effectively
+* Filtering by properties
+* Pattern matching
+
+=== Export and Integration
+
+* Exporting to CSV/JSON/YAML
+* Generating documentation
+* Integration with other tools
+* Custom exporters
+
+== Advanced Topics
+
+=== Performance Optimization
+
+* LUR caching strategies
+* Lazy loading
+* Memory management
+* Batch processing
+
+=== Extending LutaML
+
+* Custom parsers
+* Plugin development
+* Transformer creation
+* Renderer extensions
+
+== Guide Format
+
+Each guide follows this structure:
+
+1. **Purpose** - What this guide helps you accomplish
+2. **Prerequisites** - What you need to know or have installed
+3. **Concepts** - Key concepts for understanding
+4. **Step-by-Step Instructions** - Detailed walkthrough
+5. **Examples** - Real-world examples
+6. **Troubleshooting** - Common issues and solutions
+7. **References** - Related documentation
+
+== Related Sections
+
+* link:../tutorials[Tutorials] - Step-by-step learning paths
+* link:../pages[Core Topics] - Fundamental concepts
+* link:../references[Reference] - Detailed specifications

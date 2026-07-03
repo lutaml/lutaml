@@ -1,23 +1,18 @@
 # frozen_string_literal: true
 
-require "lutaml/uml/association"
-require "lutaml/uml/constraint"
-require "lutaml/uml/operation"
-require "lutaml/uml/data_type"
-
 module Lutaml
   module Uml
     class DataType < Classifier
+      skip_reference_registration
+
       attribute :nested_classifier, :string, collection: true,
                                              default: -> { [] }
-      attribute :is_abstract, :boolean, default: false
       attribute :type, :string
       attribute :attributes, TopElementAttribute, collection: true
       attribute :modifier, :string
       attribute :constraints, Constraint, collection: true
       attribute :operations, Operation, collection: true
       attribute :data_types, DataType, collection: true
-      attribute :methods, :string, collection: true, default: -> { [] }
       attribute :relationships, :string, collection: true, default: -> { [] }
       attribute :keyword, :string, default: "dataType"
 
@@ -34,7 +29,6 @@ module Lutaml
         map "operations", to: :operations
         map "data_types", to: :data_types
 
-        map "methods", to: :methods
         map "relationships", to: :relationships
 
         map "associations", to: :associations, with: {
@@ -43,6 +37,8 @@ module Lutaml
       end
 
       def associations_to_yaml(model, doc)
+        return unless model.associations
+
         associations = model.associations.map(&:to_hash)
         doc["associations"] = associations unless associations.empty?
       end

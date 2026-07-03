@@ -1,0 +1,52 @@
+---
+title: Configuration
+parent: Reference
+nav_order: 4
+has_children: true
+---
+
+= Configuration Reference
+
+Complete configuration schemas and reference documentation for LutaML's various configuration files.
+
+== Available Configuration References
+
+=== link:diagram-styles[Diagram Styling Configuration]
+
+Complete YAML schema reference for configuring diagram generation with EA-style rendering.
+
+**Topics covered:**
+
+* Stereotype-based styling
+* Package pattern matching
+* Connector styling
+* Priority resolution rules
+* Font and color configuration
+* Box styling options
+
+=== link:package-metadata[Package Metadata Configuration]
+
+YAML configuration for package metadata including XML namespaces and schema locations.
+
+**Topics covered:**
+
+* Metadata key definitions
+* Wildcard pattern matching
+* Precedence rules
+* XSD generation integration
+* Cache management
+* API integration
+
+== Configuration File Locations
+
+LutaML searches for configuration files in these locations:
+
+1. Path specified via parameter
+2. `config/` directory (project-specific)
+3. `~/.lutaml/` (user-specific)
+4. Built-in defaults
+
+== Related Documentation
+
+* link:../../guides[Guides] - How to use these configurations
+* link:../../tutorials[Tutorials] - Step-by-step configuration examples

@@ -2,15 +2,11 @@
 
 require "parslet"
 require "parslet/convenience"
-require "lutaml/uml/parsers/dsl_preprocessor"
-require "lutaml/uml/parsers/dsl_transform"
-require "lutaml/uml/node/document"
-require "lutaml/converter/dsl_to_uml"
 
 module Lutaml
   module Uml
     module Parsers
-      class ParsingError < StandardError; end
+      class ParsingError < Lutaml::Error; end
 
       # Class for parsing LutaML dsl into Lutaml::Uml::Document
       class Dsl < Parslet::Parser
@@ -218,7 +214,7 @@ module Lutaml
         end
         rule(:attribute_keyword?) { attribute_keyword.maybe }
         rule(:attribute_type) do
-          (str(":").maybe >>
+          str(":").maybe >>
             spaces? >>
             attribute_keyword? >>
             spaces? >>
@@ -226,7 +222,6 @@ module Lutaml
             match['a-zA-Z0-9_\- \/\+'].repeat(1).as(:type) >>
             quotes? >>
             spaces?
-          )
         end
         rule(:attribute_type?) do
           attribute_type.maybe

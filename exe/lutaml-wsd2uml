@@ -14,9 +14,9 @@ def sync_puts(line, level = 0)
   $stdout.flush
 end
 
-SKIPPED_LINES_REGEXP = /^(@startuml|'\*{7}|note|@enduml|!|'\/)/.freeze
-COMMENT_START = /\/'/.freeze
-COMMENT_END = /'\//.freeze
+SKIPPED_LINES_REGEXP = /^(@startuml|'\*{7}|note|@enduml|!|'\/)/
+COMMENT_START = /\/'/
+COMMENT_END = /'\//
 ASSOCIATION_MAPPINGS = {
   /-\|>/ => ",inheritance",
   /<\|-/ => "inheritance,",

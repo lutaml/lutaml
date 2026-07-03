@@ -1,24 +1,34 @@
 # frozen_string_literal: true
 
 module Lutaml
-  module XMI
-    class CardinalityDrop < Liquid::Drop
-      include Parsers::XMIBase
+  module Xmi
+    module LiquidDrops
+      class CardinalityDrop < Liquid::Drop
+        def initialize(model) # rubocop:disable Lint/MissingSuper
+          @model = model
+        end
 
-      def initialize(model) # rubocop:disable Lint/MissingSuper
-        @model = model
-      end
+        def min
+          return nil unless @model
 
-      def min
-        return @model[:min] if @model.is_a?(Hash)
+          case @model
+          when ::Lutaml::Uml::Cardinality
+            @model.min
+          else
+            @model.lower_value&.value
+          end
+        end
 
-        @model.lower_value&.value
-      end
+        def max
+          return nil unless @model
 
-      def max
-        return @model[:max] if @model.is_a?(Hash)
-
-        @model.upper_value&.value
+          case @model
+          when ::Lutaml::Uml::Cardinality
+            @model.max
+          else
+            @model.upper_value&.value
+          end
+        end
       end
     end
   end

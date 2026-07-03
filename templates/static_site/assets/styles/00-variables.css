@@ -1,0 +1,144 @@
+/* LutaML UML Browser — Branded Design System */
+
+:root {
+  /* Primary — LutaML Blue (#5b9cd4) */
+  --color-primary: #5b9cd4;
+  --color-primary-light: #7db5e2;
+  --color-primary-dark: #26489e;
+  --color-primary-alpha: rgba(91, 156, 212, 0.12);
+
+  /* Accent — Golden Yellow (#dbab3e) */
+  --color-accent: #dbab3e;
+  --color-accent-light: #f0ca6e;
+  --color-accent-alpha: rgba(219, 171, 62, 0.12);
+
+  /* Semantic */
+  --color-teal: #60c3a7;
+  --color-teal-alpha: rgba(96, 195, 167, 0.12);
+  --color-orange: #ea5624;
+  --color-orange-alpha: rgba(234, 86, 36, 0.12);
+  --color-red: #b31f24;
+  --color-red-alpha: rgba(179, 31, 36, 0.12);
+  --color-green: #7cc242;
+  --color-green-alpha: rgba(124, 194, 66, 0.12);
+
+  /* Backgrounds — Warm Stones */
+  --bg-primary: #FAFAF9;
+  --bg-secondary: #F5F5F4;
+  --bg-elevated: #FFFFFF;
+  --bg-overlay: rgba(28, 25, 23, 0.5);
+  --bg-hover: rgba(28, 25, 23, 0.04);
+  --bg-active: rgba(28, 25, 23, 0.06);
+
+  /* Text — Warm Grays */
+  --text-primary: #1C1917;
+  --text-secondary: #57534E;
+  --text-muted: #A8A29E;
+
+  /* Borders */
+  --border-light: #E7E5E4;
+  --border-medium: #D6D3D1;
+  --border-focus: #5b9cd4;
+
+  /* Badge Colors */
+  --badge-class: #26489e;
+  --badge-class-bg: rgba(38, 72, 158, 0.12);
+  --badge-enum: #dbab3e;
+  --badge-enum-bg: rgba(219, 171, 62, 0.15);
+  --badge-datatype: #60c3a7;
+  --badge-datatype-bg: rgba(96, 195, 167, 0.15);
+  --badge-interface: #5b9cd4;
+  --badge-interface-bg: rgba(91, 156, 212, 0.12);
+  --badge-package: #ea5624;
+  --badge-package-bg: rgba(234, 86, 36, 0.12);
+  --badge-diagram: #7cc242;
+  --badge-diagram-bg: rgba(124, 194, 66, 0.12);
+  --badge-abstract: #b31f24;
+  --badge-abstract-bg: rgba(179, 31, 36, 0.12);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(28, 25, 23, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(28, 25, 23, 0.07), 0 2px 4px -1px rgba(28, 25, 23, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(28, 25, 23, 0.08), 0 4px 6px -2px rgba(28, 25, 23, 0.04);
+
+  /* Typography */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Monaco, 'Consolas', monospace;
+
+  /* Type Scale */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+
+  /* Line Heights */
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.75;
+
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+
+  /* Border Radius */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+
+  /* Transitions */
+  --transition-fast: 100ms ease;
+  --transition-normal: 150ms ease;
+  --transition-slow: 200ms ease-out;
+
+  /* Layout */
+  --sidebar-width: 280px;
+  --header-height: 56px;
+
+  /* Z-index */
+  --z-sidebar: 10;
+  --z-header: 20;
+  --z-search-overlay: 100;
+  --z-modal: 200;
+}
+
+/* Dark Mode */
+#app.dark {
+  --bg-primary: #1a1a24;
+  --bg-secondary: #232736;
+  --bg-elevated: #2d3344;
+  --bg-overlay: rgba(0, 0, 0, 0.7);
+  --bg-hover: rgba(255, 255, 255, 0.06);
+  --bg-active: rgba(255, 255, 255, 0.10);
+
+  --text-primary: #e8edf4;
+  --text-secondary: #a8b4c8;
+  --text-muted: #6b7a8f;
+
+  --border-light: #3a4256;
+  --border-medium: #4a5572;
+  --border-focus: #5b9cd4;
+
+  --badge-class-bg: rgba(91, 156, 212, 0.2);
+  --badge-class: #5b9cd4;
+  --badge-enum-bg: rgba(219, 171, 62, 0.2);
+  --badge-datatype-bg: rgba(96, 195, 167, 0.2);
+  --badge-interface-bg: rgba(91, 156, 212, 0.2);
+  --badge-package-bg: rgba(234, 86, 36, 0.2);
+  --badge-diagram-bg: rgba(124, 194, 66, 0.2);
+  --badge-abstract-bg: rgba(179, 31, 36, 0.2);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6), 0 4px 6px -2px rgba(0, 0, 0, 0.4);
+}

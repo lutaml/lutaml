@@ -1,0 +1,58 @@
+# Package Metadata Configuration Example
+#
+# This file demonstrates how to configure package metadata for use with
+# LutaML's PackageMetadata system.
+#
+# Package metadata enables external configuration of:
+# - XSD generation: xmlns, targetNamespace, schemaLocation
+# - Documentation: Package descriptions
+# - Styling: Package-specific styling rules
+# - Validation: Package constraints
+#
+# Format: YAML with "packages" root key
+
+packages:
+  # Exact package path match
+  "ModelRoot::i-UR::Urban Planning ADE 3.2::uro":
+    xmlns: "http://www.kantei.go.jp/jp/singi/tiiki/toshisaisei/itoshisaisei/iur/uro/2.0"
+    targetNamespace: "http://www.kantei.go.jp/jp/singi/tiiki/toshisaisei/itoshisaisei/iur/uro/2.0"
+    schemaLocation: "../../schemas/uro/2.0/urbanObject.xsd"
+    prefix: "uro"
+    documentation: |
+      Urban Object package containing classes for urban planning and
+      infrastructure modeling in PLATEAU i-UR standard.
+    version: "2.0"
+
+  # Another exact match
+  "ModelRoot::CityGML2.0::Core":
+    xmlns: "http://www.opengis.net/citygml/2.0"
+    targetNamespace: "http://www.opengis.net/citygml/2.0/core"
+    schemaLocation: "http://schemas.opengis.net/citygml/2.0/cityGMLBase.xsd"
+    prefix: "core"
+    documentation: "CityGML 2.0 Core module - fundamental city model classes"
+
+  # Wildcard pattern: matches any direct child of ModelRoot::CityGML2.0
+  "ModelRoot::CityGML2.0::*":
+    xmlns: "http://www.opengis.net/citygml/2.0"
+    prefix: "citygml"
+    documentation: "Default CityGML 2.0 namespace"
+
+  # Multi-level wildcard: matches ModelRoot::<anything>::Common
+  "ModelRoot::*::Common":
+    documentation: "Common elements package"
+    category: "utilities"
+
+  # Package with custom metadata
+  "ModelRoot::CustomPackage":
+    xmlns: "http://example.com/custom/1.0"
+    prefix: "custom"
+    author: "Your Organization"
+    license: "Apache-2.0"
+    contact: "info@example.com"
+
+# Notes:
+# 1. Exact matches take precedence over wildcard patterns
+# 2. Multiple wildcards can match the same package path
+# 3. Metadata from all matches is merged (exact match wins)
+# 4. Any custom keys are supported beyond the standard ones
+# 5. Package paths use "::" as separator (UML qualified name format)

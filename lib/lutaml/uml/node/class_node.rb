@@ -1,12 +1,5 @@
 # frozen_string_literal: true
 
-require "lutaml/uml/node/base"
-require "lutaml/uml/node/field"
-require "lutaml/uml/node/method"
-require "lutaml/uml/node/relationship"
-require "lutaml/uml/node/class_relationship"
-require "lutaml/uml/node/has_name"
-
 module Lutaml
   module Uml
     module Node
@@ -16,30 +9,30 @@ module Lutaml
         attr_reader :modifier, :members
 
         def modifier=(value)
-          @modifier = value.to_s # TODO: Validate?
+          @modifier = value.to_s
         end
 
         def members=(value) # rubocop:disable Metrics/MethodLength
           @members = value.to_a.map do |member|
-            type       = member.to_a[0][0] # TODO: This is dumb
-            attributes = member.to_a[0][1]
+            type       = member.keys.first
+            attributes = member.values.first
             attributes[:parent] = self
 
             case type
-            when :field              then Field.new(attributes)
-            when :method             then Method.new(attributes)
+            when :field              then Attribute.new(attributes)
+            when :method             then Operation.new(attributes)
             when :relationship       then Relationship.new(attributes)
             when :class_relationship then ClassRelationship.new(attributes)
             end
           end
         end
 
-        def fields
-          @members.select { |member| member.instance_of?(Field) }
+        def attributes
+          @members.select { |member| member.instance_of?(Attribute) }
         end
 
-        def methods
-          @members.select { |member| member.instance_of?(Method) }
+        def operations
+          @members.select { |member| member.instance_of?(Operation) }
         end
 
         def relationships

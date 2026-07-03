@@ -1,0 +1,77 @@
+---
+title: Parsing Guides
+parent: Guides
+nav_order: 20
+has_children: true
+---
+
+= Parsing Guides
+
+Comprehensive guides for parsing different model formats with LutaML.
+
+== Available Parsing Guides
+
+=== link:express-parsing[EXPRESS Parsing]
+
+Guide for parsing ISO 10303-11 EXPRESS schemas used in industrial standards.
+
+**Topics covered:**
+
+* Schema file parsing with Expressir
+* Cache file handling
+* Model transformation
+* Integration examples
+
+=== link:xmi-parsing[XMI Parsing]
+
+Guide for parsing OMG XMI format exports from UML tools.
+
+**Topics covered:**
+
+* XMI format detection
+* Namespace handling
+* Profile support
+* Validation techniques
+
+=== QEA Parsing
+
+Enterprise Architect QEA format parsing is covered in multiple locations:
+
+* link:../../pages/concepts/qea-parsing[Concept Overview] - Understanding QEA
+* link:../../references/formats/qea-structure[Format Specification] - Complete details
+* link:../../tutorials/getting-started[Tutorial] - Step-by-step walkthrough
+
+== Common Parsing Patterns
+
+=== Using the Unified Parser
+
+LutaML provides a single entry point for all formats:
+
+[source,ruby]
+----
+require "lutaml"
+
+# Automatically detects format and parses
+document = Lutaml::Parser.parse([File.new("model.xmi")])
+document = Lutaml::Parser.parse([File.new("model.qea")])
+document = Lutaml::Parser.parse([File.new("schema.exp")])
+----
+
+=== Error Handling
+
+All parsers follow consistent error handling:
+
+[source,ruby]
+----
+begin
+  document = Lutaml::Parser.parse([File.new("model.xmi")])
+rescue Lutaml::ParseError => e
+  puts "Parse error: #{e.message}"
+end
+----
+
+== Related Documentation
+
+* link:../../references/formats[Format Specifications] - Technical details
+* link:../../tutorials/getting-started[Getting Started] - Basic parsing tutorial
+* link:../../references/api/parsers[Parser API Reference] - Complete API docs

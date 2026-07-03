@@ -1,0 +1,718 @@
+# frozen_string_literal: true
+
+module Lutaml
+  module UmlRepository
+    # Repository provides a fully indexed, queryable in-memory representation
+    # of a UML model.
+    #
+    # It wraps the existing [`Lutaml::Uml::Document`](../../uml/document.rb)
+    # model and adds:
+    # - Package hierarchy with path-based navigation
+    # - Class index with qualified name lookups
+    # - Type resolution for attribute data types
+    # - Association tracking including ownership and navigability
+    # - Diagram metadata for visualization
+    # - Search capabilities across all model elements
+    #
+    # Repository can be built from XMI files or loaded from pre-serialized
+    # LUR (LutaML UML Repository) packages for instant loading.
+    #
+    # @example Building from XMI
+    #   repo = Lutaml::Xmi::Repository.from_xmi('model.xmi')
+    #   klass = repo.find_class("ModelRoot::i-UR::urf::Building")
+    #
+    # @example Navigating package hierarchy
+    #   packages = repo.list_packages("ModelRoot::i-UR", recursive: true)
+    #   tree = repo.package_tree("ModelRoot", max_depth: 2)
+    #
+    # @example Querying inheritance
+    #   parent = repo.supertype_of("ModelRoot::Child")
+    #   descendants = repo.descendants_of("ModelRoot::Parent", max_depth: 2)
+    class Repository
+      autoload :Loader, "lutaml/uml_repository/repository/loader"
+      autoload :Deprecated, "lutaml/uml_repository/repository/deprecated"
+
+      include Deprecated
+
+      # @return [Lutaml::Uml::Document] The underlying UML document
+      attr_reader :document
+
+      # @return [Hash] The indexes for fast lookups
+      attr_reader :indexes
+
+      # @return [PackageMetadata, nil] The package metadata (if loaded from LUR)
+      attr_reader :metadata
+
+      # Initialize a new Repository.
+      #
+      # This is typically not called directly.
+      # Use [`from_xmi`](#from_xmi) instead.
+      #
+      # @param document [Lutaml::Uml::Document] The UML document to wrap
+      # @param indexes [Hash, nil] Pre-built indexes, or nil to build them
+      #   automatically
+      # @param metadata [PackageMetadata, nil] Package metadata
+      # (if loaded from LUR)
+      # @return [Repository] A new frozen repository instance
+      # @example
+      #   indexes = IndexBuilder.build_all(document)
+      #   repo = Repository.new(document: document, indexes: indexes)
+      def initialize(document:, indexes: nil, metadata: nil, options: {}) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+        @document = document.freeze
+        @indexes = indexes || IndexBuilder.build_all(document)
+        @metadata = metadata
+
+        init_services(skip_queries: options[:skip_queries])
+        freeze
+      end
+
+      # Build a Repository from an XMI file.
+      #
+      # @param xmi_path [String] Path to the XMI file
+      # @param options [Hash] Options for parsing
+      # @option options [Boolean] :validate (false) Validate model consistency
+      #   after building indexes
+      # @return [Repository] A new repository instance
+      # @example
+      #   repo = Repository.from_xmi('model.xmi')
+      #   repo = Repository.from_xmi('model.xmi', validate: true)
+      def self.from_xmi(xmi_path, options = {})
+        document = Lutaml::Xmi::Parsers::Xml.parse(File.new(xmi_path))
+
+        # Build indexes
+        indexes = IndexBuilder.build_all(document)
+
+        # Optionally validate (placeholder for future validation logic)
+        # if options[:validate]
+        #   validate_model(document, indexes)
+        # end
+
+        new(document: document, indexes: indexes, options: options)
+      end
+
+      # Build a Repository from an XMI file with lazy index loading.
+      #
+      # This method creates a LazyRepository that builds indexes on-demand
+      # rather than upfront. Useful for very large models (1000+ classes)
+      # to reduce initial load time and memory usage.
+      #
+      # @param xmi_path [String] Path to the XMI file
+      # @param options [Hash] Options for parsing
+      # @return [LazyRepository] A new lazy repository instance
+      # @example
+      #   repo = Repository.from_xmi_lazy('large-model.xmi')
+      #   # Only document loaded, indexes built on first access
+      def self.from_xmi_lazy(xmi_path, _options = {})
+        document = Lutaml::Xmi::Parsers::Xml.parse(File.new(xmi_path))
+
+        LazyRepository.new(document: document, lazy: true)
+      end
+
+      # Auto-detect file type and load appropriately.
+      #
+      # Detects whether the file is an XMI file (.xmi) or a LUR package (.lur)
+      # and loads it using the appropriate method.
+      #
+      # @param path [String] Path to the file (.xmi or .lur)
+      # @return [Repository] A new or loaded repository instance
+      # @raise [ArgumentError] If the file type is unknown
+      # @example
+      #   repo = Repository.from_file('model.xmi')
+      #   repo = Repository.from_file('model.lur')
+      def self.from_file(path)
+        case File.extname(path).downcase
+        when ".xmi" then from_xmi(path)
+        when ".lur" then from_package(path)
+        else
+          raise ArgumentError,
+                "Unknown file type: #{path}. Expected .xmi or .lur"
+        end
+      end
+
+      # Smart caching - use LUR if newer than XMI, otherwise rebuild.
+      #
+      # This method implements intelligent caching by checking if a LUR package
+      # exists and is newer than the source XMI file. If so, it loads from the
+      # cache. Otherwise, it builds from XMI and creates/updates the cache.
+      #
+      # @param xmi_path [String] Path to the XMI file
+      # @param lur_path [String, nil] Path to the LUR package (default: XMI path
+      #   with .lur extension)
+      # @return [Repository] A repository instance
+      # @example Using default cache path
+      #   repo = Repository.from_file_cached('model.xmi')
+      #   # Creates/uses model.lur
+      #
+      # @example Using custom cache path
+      #   repo = Repository.from_file_cached('model.xmi',
+      #                                          lur_path: 'cache/model.lur')
+      def self.from_file_cached(xmi_path, lur_path: nil) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+        lur_path ||= xmi_path.sub(/\.xmi$/i, ".lur")
+
+        if File.exist?(lur_path) && File.mtime(lur_path) >= File.mtime(xmi_path)
+          puts "Using cached LUR package: #{lur_path}" if $VERBOSE
+          from_package(lur_path)
+        else
+          puts "Building repository from XMI..." if $VERBOSE
+          repo = from_xmi(xmi_path)
+
+          puts "Caching as LUR package: #{lur_path}" if $VERBOSE
+          repo.export_to_package(lur_path)
+          repo
+        end
+      end
+
+      # Load a Repository from a LUR package file.
+      #
+      # @param lur_path [String] Path to the .lur package file
+      # @return [Repository] A loaded repository instance
+      # @example
+      #   repo = Repository.from_package("model.lur")
+      def self.from_package(lur_path)
+        PackageLoader.load(lur_path)
+      end
+
+      # Load a Repository from a LUR package file with lazy loading.
+      #
+      # This method loads the document without building indexes, deferring
+      # index creation until first access. Useful for very large models.
+      #
+      # @param lur_path [String] Path to the .lur package file
+      # @return [LazyRepository] A loaded lazy repository instance
+      # @example
+      #   repo = Repository.from_package_lazy("large-model.lur")
+      def self.from_package_lazy(lur_path)
+        PackageLoader.load_document_only(lur_path)
+      end
+
+      # Auto-detect file type and load with lazy loading.
+      #
+      # Detects whether the file is an XMI file (.xmi) or a LUR package (.lur)
+      # and loads it using the appropriate lazy loading method.
+      #
+      # @param path [String] Path to the file (.xmi or .lur)
+      # @return [LazyRepository] A new or loaded lazy repository instance
+      # @raise [ArgumentError] If the file type is unknown
+      # @example
+      #   repo = Repository.from_file_lazy('large-model.xmi')
+      #   repo = Repository.from_file_lazy('large-model.lur')
+      def self.from_file_lazy(path)
+        case File.extname(path).downcase
+        when ".xmi" then from_xmi_lazy(path)
+        when ".lur" then from_package_lazy(path)
+        else
+          raise ArgumentError,
+                "Unknown file type: #{path}. Expected .xmi or .lur"
+        end
+      end
+
+      # Export this repository to a LUR package file.
+      #
+      # @param output_path [String] Path for the output .lur file
+      # @param options [Hash] Export options
+      # @option options [PackageMetadata, Hash] :metadata Package metadata
+      # @option options [String] :name ("UML Model") Package name
+      #   (deprecated, use :metadata)
+      # @option options [String] :version ("1.0") Package version
+      #   (deprecated, use :metadata)
+      # @option options [Boolean] :include_xmi (false) Include source XMI
+      # @option options [Symbol] :serialization_format (:yaml) Format to use
+      #   (:yaml)
+      # @option options [Integer] :compression_level (6) ZIP compression level
+      # @return [void]
+      # @example Export with defaults
+      #   repo.export_to_package("model.lur")
+      #
+      # @example Export with PackageMetadata
+      #   metadata = PackageMetadata.new(
+      #     name: "Urban Model",
+      #     version: "2.0",
+      #     publisher: "City Planning"
+      #   )
+      #   repo.export_to_package("model.lur", metadata: metadata)
+      #
+      # @example Export with custom options (backward compatible)
+      #   repo.export_to_package("model.lur",
+      #     name: "My Model",
+      #     version: "2.0",
+      #     serialization_format: :yaml
+      #   )
+      def export_to_package(output_path, options = {})
+        PackageExporter.new(self, options).export(output_path)
+      end
+
+      # Find a package by its path.
+      #
+      # @param path [String] The package path (e.g., "ModelRoot::i-UR::urf")
+      # @param raise_on_error [Boolean] Whether to raise an error if not found
+      #   (default: false)
+      # @return [Lutaml::Uml::Package, Lutaml::Uml::Document, nil] The package
+      #   or document, or nil if not found
+      # @raise [NameError] If package not found and raise_on_error is true
+      # @example
+      #   package = repo.find_package("ModelRoot::i-UR::urf")
+      #   package = repo.find_package("ModelRoot::typo", raise_on_error: true)
+      def find_package(path, raise_on_error: false)
+        result = package_query.find_by_path(path)
+        return result if result || !raise_on_error
+
+        @error_handler.package_not_found_error(path)
+      end
+
+      # List packages at a specific path.
+      #
+      # @param path [String] The parent package path (default: "ModelRoot")
+      # @param recursive [Boolean] Whether to include nested packages
+      #   recursively (default: false)
+      # @return [Array<Lutaml::Uml::Package>] Array of packages
+      # @example Non-recursive listing
+      #   packages = repo.list_packages("ModelRoot::i-UR", recursive: false)
+      #
+      # @example Recursive listing
+      #   packages = repo.list_packages("ModelRoot", recursive: true)
+      def list_packages(path = "ModelRoot", recursive: false)
+        package_query.list(path, recursive: recursive)
+      end
+
+      # Build a hierarchical tree structure of packages.
+      #
+      # @param path [String] The root package path to start from
+      #   (default: "ModelRoot")
+      # @param max_depth [Integer, nil] Maximum depth to traverse (nil for
+      #   unlimited)
+      # @return [Hash, nil] Tree structure with package information, or nil
+      #   if root not found
+      # @example
+      #   tree = repo.package_tree("ModelRoot::i-UR", max_depth: 2)
+      def package_tree(path = "ModelRoot", max_depth: nil)
+        package_query.tree(path, max_depth: max_depth)
+      end
+
+      # Find a class by its qualified name.
+      #
+      # @param qualified_name [String] The qualified name
+      #   (e.g., "ModelRoot::i-UR::urf::Building")
+      # @param raise_on_error [Boolean] Whether to raise an error if not found
+      #   (default: false)
+      # @return [Lutaml::Uml::Class, Lutaml::Uml::DataType,
+      # Lutaml::Uml::Enum, nil]
+      #   The class object, or nil if not found
+      # @raise [NameError] If class not found and raise_on_error is true
+      # @example
+      #   klass = repo.find_class("ModelRoot::i-UR::urf::Building")
+      #   klass = repo.find_class("ModelRoot::Typo", raise_on_error: true)
+      def find_class(qualified_name, raise_on_error: false)
+        result = class_query.find_by_qname(qualified_name)
+        return result if result || !raise_on_error
+
+        @error_handler.class_not_found_error(qualified_name)
+      end
+
+      # Find an attribute by its qualified name.
+      #
+      # The qualified name format is "PackagePath::ClassName::attributeName".
+      # Splits off the last segment as the attribute name, finds the containing
+      # class, then returns the matching attribute.
+      #
+      # @param qualified_name [String] Qualified name of the attribute
+      # @return [Lutaml::Uml::Attribute, nil] The attribute or nil
+      # @example
+      #   attr = repo.find_attribute("ModelRoot::Core::Building::name")
+      def find_attribute(qualified_name)
+        class_qname, _, attr_name = qualified_name.rpartition("::")
+        return nil if class_qname.empty?
+
+        klass = class_query.find_by_qname(class_qname)
+        return nil unless klass
+
+        attrs = klass.attributes
+        return nil unless attrs
+
+        attrs.find { |a| a.name == attr_name }
+      end
+
+      # Get all attributes across all classes in the repository.
+      #
+      # @return [Array<Lutaml::Uml::Attribute>] All attribute objects
+      def all_attributes
+        indexes[:qualified_names].flat_map do |_qname, entity|
+          next [] unless entity.is_a?(Lutaml::Uml::Classifier) && entity.attributes
+
+          entity.attributes
+        end
+      end
+
+      # Find all classes with a specific stereotype.
+      #
+      # @param stereotype [String] The stereotype to search for
+      # @return [Array] Array of class objects with the stereotype
+      # @example
+      #   feature_types = repo.find_classes_by_stereotype("featureType")
+      def find_classes_by_stereotype(stereotype)
+        class_query.find_by_stereotype(stereotype)
+      end
+
+      # Get classes in a specific package.
+      #
+      # @param package_path [String] The package path
+      # @param recursive [Boolean] Whether to include classes from nested
+      #   packages (default: false)
+      # @return [Array] Array of class objects in the package
+      # @example
+      #   classes = repo.classes_in_package("ModelRoot::i-UR::urf")
+      #   all_classes = repo.classes_in_package(
+      #   "ModelRoot::i-UR", recursive: true)
+      def classes_in_package(package_path, recursive: false)
+        class_query.in_package(package_path, recursive: recursive)
+      end
+
+      # Get the direct parent class (supertype).
+      #
+      # @param class_or_qname [Lutaml::Uml::Class, String] The class object
+      #   or qualified name string
+      # @return [Lutaml::Uml::Class, nil] The parent class, or nil if no parent
+      # @example
+      #   parent = repo.supertype_of("ModelRoot::Child")
+      #   parent = repo.supertype_of(child_class)
+      def supertype_of(class_or_qname)
+        inheritance_query.supertype(class_or_qname)
+      end
+
+      # Get direct child classes (subtypes).
+      #
+      # @param class_or_qname [Lutaml::Uml::Class, String] The class object
+      #   or qualified name string
+      # @param recursive [Boolean] Whether to include all descendants
+      #   (default: false)
+      # @return [Array] Array of child class objects
+      # @example
+      #   children = repo.subtypes_of("ModelRoot::Parent")
+      #   all_descendants = repo.subtypes_of(
+      #   "ModelRoot::Parent", recursive: true)
+      def subtypes_of(class_or_qname, recursive: false)
+        inheritance_query.subtypes(class_or_qname, recursive: recursive)
+      end
+
+      # Get all ancestor classes up to the root.
+      #
+      # Returns ancestors in order from immediate parent to root.
+      #
+      # @param class_or_qname [Lutaml::Uml::Class, String] The class object
+      #   or qualified name string
+      # @return [Array] Array of ancestor class objects, ordered from nearest
+      #   to furthest
+      # @example
+      #   ancestors = repo.ancestors_of("ModelRoot::GrandChild")
+      def ancestors_of(class_or_qname)
+        inheritance_query.ancestors(class_or_qname)
+      end
+
+      # Get all descendant classes.
+      #
+      # @param class_or_qname [Lutaml::Uml::Class, String] The class object
+      #   or qualified name string
+      # @param max_depth [Integer, nil] Maximum depth to traverse (nil for
+      #   unlimited)
+      # @return [Array] Array of descendant class objects
+      # @example
+      #   descendants = repo.descendants_of("ModelRoot::Parent", max_depth: 2)
+      def descendants_of(class_or_qname, max_depth: nil)
+        inheritance_query.descendants(class_or_qname, max_depth: max_depth)
+      end
+
+      # Get associations involving a class.
+      #
+      # @param class_or_qname [Lutaml::Uml::Class, String] The class object
+      #   or qualified name string
+      # @param options [Hash] Query options
+      # @option options [Symbol] :direction (:both) Filter by direction:
+      #   :source, :target, or :both
+      # @option options [Boolean] :owned_only Return only owned associations
+      # @option options [Boolean] :navigable_only
+      # Return only navigable associations
+      # @return [Array<Lutaml::Uml::Association>] Array of association objects
+      # @example
+      #   all_assocs = repo.associations_of("ModelRoot::Building")
+      #   outgoing = repo.associations_of(
+      #   "ModelRoot::Building", direction: :source)
+      def associations_of(class_or_qname, options = {})
+        association_query.find_for_class(class_or_qname, options)
+      end
+
+      # Get diagrams in a specific package.
+      #
+      # @param package_path [String] The package path or package ID
+      # @return [Array<Lutaml::Uml::Diagram>] Array of diagram objects
+      # @example
+      #   diagrams = repo.diagrams_in_package("ModelRoot::i-UR::urf")
+      def diagrams_in_package(package_path)
+        diagram_query.in_package(package_path)
+      end
+
+      # Find a diagram by its name.
+      #
+      # @param diagram_name [String] The diagram name
+      # @return [Lutaml::Uml::Diagram, nil] The diagram object,
+      # or nil if not found
+      # @example
+      #   diagram = repo.find_diagram("Class Diagram 1")
+      def find_diagram(diagram_name)
+        diagram_query.find_by_name(diagram_name)
+      end
+
+      # Get all diagrams in the model.
+      #
+      # @return [Array<Lutaml::Uml::Diagram>] Array of all diagram objects
+      # @example
+      #   all_diagrams = repo.all_diagrams
+      def all_diagrams
+        diagram_query.all
+      end
+
+      # Search for model elements by query string.
+      #
+      # @param query [String] The search query
+      # @param types [Array<Symbol>] Types to search (:class, :attribute,
+      #   :association) (default: [:class, :attribute, :association])
+      # @param fields [Array<Symbol>] Fields to search in
+      # (:name, :documentation)
+      #   (default: [:name])
+      # @return [Hash] Search results grouped by type
+      # @example
+      #   results = repo.search("Building")
+      #   results = repo.search("address", types: [:attribute])
+      #   results = repo.search("urban", fields: [:name, :documentation])
+      def search(
+        query, types: %i[class attribute association], fields: [:name]
+      )
+        search_query.search(query, types: types, fields: fields)
+      end
+
+      # Get comprehensive statistics about the repository.
+      #
+      # Returns detailed metrics including package depths, class complexity,
+      # attribute distributions, and model quality metrics.
+      # Statistics are calculated once during initialization and cached.
+      #
+      # @return [Hash] Comprehensive statistics hash
+      # @example
+      #   stats = repo.statistics
+      #   puts "Total packages: #{stats[:total_packages]}"
+      #   puts "Max package depth: #{stats[:max_package_depth]}"
+      #   puts "Most complex class:
+      #     #{stats[:most_complex_classes].first[:name]}"
+      def statistics
+        @statistics
+      end
+
+      # Validate the repository for consistency and integrity.
+      #
+      # Performs comprehensive validation including:
+      # - Type reference validation
+      # - Generalization reference validation
+      # - Circular inheritance detection
+      # - Association reference validation
+      # - Multiplicity validation
+      #
+      # @param verbose [Boolean] Collect detailed validation information
+      # @return [Validators::ValidationResult] Validation results
+      # @example
+      #   result = repo.validate
+      #   if result.valid?
+      #     puts "Repository is valid"
+      #   else
+      #     result.errors.each { |error| puts "ERROR: #{error}" }
+      #   end
+      def validate(verbose: false)
+        Validators::RepositoryValidator.new(@document,
+                                            @indexes).validate(verbose: verbose)
+      end
+
+      # Build a query using the Query DSL
+      #
+      # Provides a fluent interface for building complex queries with
+      # method chaining, lazy evaluation, and composable filters.
+      #
+      # @yield [QueryDSL::QueryBuilder] The query builder
+      # @return [QueryDSL::QueryBuilder] The query builder for further chaining
+      # @example Basic query
+      #   results = repo.query do |q|
+      #     q.classes.where(stereotype: 'featureType')
+      #   end.all
+      #
+      # @example Complex query
+      #   results = repo.query do |q|
+      #     q.classes
+      #       .in_package('ModelRoot::i-UR', recursive: true)
+      #       .where { |c| c.attributes&.size.to_i > 10 }
+      #       .order_by(:name, direction: :desc)
+      #       .limit(5)
+      #   end.execute
+      def query(&block)
+        builder = QueryDSL::QueryBuilder.new(self)
+        block&.call(builder)
+        builder
+      end
+
+      # Build and execute a query using the Query DSL
+      #
+      # Same as [`query`](#query) but executes immediately and returns results.
+      #
+      # @yield [QueryDSL::QueryBuilder] The query builder
+      # @return [Array] The query results
+      # @example
+      #   results = repo.query! do |q|
+      #     q.classes.where(stereotype: 'featureType')
+      #   end
+      def query!(&)
+        query(&).execute
+      end
+
+      # Convenience methods for SPA data transformer
+
+      # Get all packages as an array (excluding root Document)
+      # @return [Array<Lutaml::Uml::Package>] All packages
+      def packages_index
+        (@indexes[:package_paths]&.values || []).grep(Lutaml::Uml::Package)
+      end
+
+      # Get all classes (including datatypes and enums) as an array
+      # @return [Array] All classifiers
+      def classes_index
+        @indexes[:qualified_names]&.values || []
+      end
+
+      # Get all associations as an array
+      # Collects from both document-level (XMI) and class-level (QEA/EA)
+      # @return [Array<Lutaml::Uml::Association>] All associations
+      def associations_index # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+        # Use cached index if available (built by IndexBuilder)
+        return @indexes[:associations].values if @indexes[:associations]
+
+        # Fallback for edge cases: collect from document and classes
+        seen = Set.new
+        associations = []
+
+        (@document.associations || []).each do |assoc|
+          if assoc.xmi_id && !seen.include?(assoc.xmi_id)
+            seen << assoc.xmi_id
+            associations << assoc
+          end
+        end
+
+        classes_index.each do |klass|
+          next unless (klass.is_a?(Lutaml::Uml::Class) || klass.is_a?(Lutaml::Uml::DataType)) && klass.associations
+
+          klass.associations.each do |assoc|
+            if assoc.xmi_id && !seen.include?(assoc.xmi_id)
+              seen << assoc.xmi_id
+              associations << assoc
+            end
+          end
+        end
+
+        associations
+      end
+
+      # Get qualified name(key) by the object from @indexes[:qualified_names]
+      def qualified_name_for(obj)
+        @indexes[:qualified_names].key(obj)
+      end
+
+      # Get all diagrams as an array
+      # @return [Array<Lutaml::Uml::Diagram>] All diagrams
+      def diagrams_index
+        all_diagrams
+      end
+
+      # Get all classes in the repository
+      # @return [Array] All class objects (classes, datatypes, enums)
+      # @example
+      #   all = repo.all_classes
+      def all_classes
+        classes_index
+      end
+
+      # Custom marshaling to exclude runtime-only query objects
+      #
+      # Only serializes the core data (document, indexes, and metadata), not the
+      # derived query service objects. This keeps serialized size minimal.
+      #
+      # @return [Hash] Serializable state (document, indexes, and metadata)
+      # @api private
+      def marshal_dump
+        { document: @document, indexes: @indexes, metadata: @metadata }
+      end
+
+      # Restore from marshaled state
+      #
+      # Reconstructs the repository from serialized document, indexes,
+      # and metadata,
+      # reinitializing all query services.
+      #
+      # @param data [Hash] Serialized state with :document, :indexes,
+      # and :metadata
+      # @return [void]
+      # @api private
+      def marshal_load(data)
+        @document = data[:document]
+        @indexes = data[:indexes]
+        @metadata = data[:metadata]
+
+        init_services
+        freeze
+      end
+
+      private
+
+      def init_services(skip_queries: false)
+        unless skip_queries
+          @package_query = Queries::PackageQuery.new(@document, @indexes)
+          @class_query = Queries::ClassQuery.new(@document, @indexes)
+          @inheritance_query = Queries::InheritanceQuery.new(
+            @document, @indexes
+          )
+          @association_query = Queries::AssociationQuery.new(
+            @document, @indexes
+          )
+          @diagram_query = Queries::DiagramQuery.new(@document, @indexes)
+          @search_query = Queries::SearchQuery.new(@document, @indexes)
+        end
+
+        @statistics_calculator = StatisticsCalculator.new(@document, @indexes)
+        @statistics = @statistics_calculator.calculate.freeze
+        @error_handler = ErrorHandler.new(self)
+      end
+
+      # Get package query service
+      #
+      # @return [Queries::PackageQuery] The package query service
+      attr_reader :package_query
+
+      # Get class query service
+      #
+      # @return [Queries::ClassQuery] The class query service
+      attr_reader :class_query
+
+      # Get inheritance query service
+      #
+      # @return [Queries::InheritanceQuery] The inheritance query service
+      attr_reader :inheritance_query
+
+      # Get association query service
+      #
+      # @return [Queries::AssociationQuery] The association query service
+      attr_reader :association_query
+
+      # Get diagram query service
+      #
+      # @return [Queries::DiagramQuery] The diagram query service
+      attr_reader :diagram_query
+
+      # Get search query service
+      #
+      # @return [Queries::SearchQuery] The search query service
+      attr_reader :search_query
+    end
+  end
+end

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "ruby-graphviz"
-require "lutaml/layout/engine"
+require "open3"
 
 module Lutaml
   module Layout

@@ -18,8 +18,8 @@ module Lutaml
 
         def parse(io, options = {})
           tree = Transform.new.apply(super)
-          tree[:assignments].each_with_object({}) do |assignment, memo|
-            memo[assignment[:name].to_s] = assignment[:value]
+          tree[:assignments].to_h do |assignment|
+            [assignment[:name].to_s, assignment[:value]]
           end
         end
 

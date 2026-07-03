@@ -1,46 +1,40 @@
 # frozen_string_literal: true
 
-require "lutaml/uml/package"
-require "lutaml/uml/association"
-require "lutaml/uml/constraint"
-require "lutaml/uml/operation"
-require "lutaml/uml/data_type"
-
 module Lutaml
   module Uml
     class Class < Classifier
+      skip_reference_registration
+
       attribute :nested_classifier, :string, collection: true,
                                              default: -> { [] }
-      attribute :is_abstract, :boolean, default: false
+      attribute :stereotype, :string, collection: true, default: -> { [] }
       attribute :type, :string
-      attribute :package, Package
       attribute :attributes, TopElementAttribute, collection: true
       attribute :modifier, :string
       attribute :constraints, Constraint, collection: true
       attribute :operations, Operation, collection: true
       attribute :data_types, DataType, collection: true
-      attribute :methods, :string, collection: true, default: -> { [] }
-
       attribute :associations, Association, collection: true
+      attribute :generalization, Generalization
 
       yaml do
         map "nested_classifier", to: :nested_classifier
         map "is_abstract", to: :is_abstract
+        map "stereotype", to: :stereotype
         map "type", to: :type
-        map "package", to: :package
         map "attributes", to: :attributes
         map "modifier", to: :modifier
         map "constraints", to: :constraints
         map "operations", to: :operations
         map "data_types", to: :data_types
-        map "methods", to: :methods
-
         map "associations", to: :associations, with: {
           to: :associations_to_yaml, from: :associations_from_yaml
         }
       end
 
       def associations_to_yaml(model, doc)
+        return unless model.associations
+
         associations = model.associations.map(&:to_hash)
         doc["associations"] = associations unless associations.empty?
       end

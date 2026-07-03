@@ -75,7 +75,7 @@ RSpec.describe Lutaml::Uml::Parsers::Yaml do
       expect(parse).to be_instance_of(Lutaml::Uml::Document)
     end
 
-    it "contains nested groups" do
+    it "contains nested groups", :aggregate_failures do
       expect(YAML.safe_load(output)["groups"]).to be_an(Array)
       expect(YAML.safe_load(output)["groups"].size).to eq(2)
       expect(YAML.safe_load(output)["groups"].first["id"]).to eq("TestGroup1")

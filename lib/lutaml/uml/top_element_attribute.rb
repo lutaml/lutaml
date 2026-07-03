@@ -3,6 +3,8 @@
 module Lutaml
   module Uml
     class TopElementAttribute < Lutaml::Model::Serializable
+      skip_reference_registration
+
       attribute :name, :string
       attribute :visibility, :string, default: "public"
       attribute :type, :string
@@ -13,8 +15,17 @@ module Lutaml
       attribute :cardinality, Cardinality
       attribute :keyword, :string
       attribute :is_derived, :boolean, default: false
+      attribute :is_static, :boolean, default: false
+      attribute :is_read_only, :boolean, default: false
+      attribute :default, :string
+      attribute :stereotype, :string, collection: true, default: -> { [] }
 
       attribute :definition, :string
+      attribute :association, :string
+      attribute :type_ns, :string
+      attribute :tagged_values, TaggedValue, collection: true, default: -> {
+        []
+      }
 
       yaml do
         map "name", to: :name
@@ -31,6 +42,9 @@ module Lutaml
         map "definition", to: :definition, with: {
           to: :definition_to_yaml, from: :definition_from_yaml
         }
+        map "association", to: :association
+        map "type_ns", to: :type_ns
+        map "tagged_values", to: :tagged_values
       end
 
       def definition_to_yaml(model, doc)

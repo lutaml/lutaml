@@ -1,0 +1,197 @@
+= Reference
+:nav_order: 4
+:has_children: true
+
+== Overview
+
+This section provides detailed technical specifications, API documentation, and configuration schemas for LutaML.
+
+== Command-Line Interface
+
+=== link:cli/commands[Complete Command Reference]
+
+Comprehensive reference for all CLI commands, options, and arguments.
+
+=== Individual Commands
+
+* link:cli/build[`lutaml uml build`] - Build LUR packages
+* link:cli/search[`lutaml uml search`] - Search models
+* link:cli/export[`lutaml uml export`] - Export data
+* link:cli/ls[`lutaml uml ls`] - List elements
+* link:cli/tree[`lutaml uml tree`] - Show hierarchy
+* link:cli/stats[`lutaml uml stats`] - Statistics
+* link:cli/docs[`lutaml uml docs`] - Generate docs
+* link:cli/serve[`lutaml uml serve`] - Start server
+
+== API Documentation
+
+=== Core APIs
+
+==== link:api/repository[Repository API]
+
+Complete API reference for `Lutaml::UmlRepository::Repository` class.
+
+**Topics:**
+
+* Creating repositories
+* Querying methods
+* Index management
+* Statistics calculation
+
+==== link:api/parsers[Parser APIs]
+
+Reference for all parser interfaces and implementations.
+
+**Topics:**
+
+* Unified parser interface
+* Format-specific parsers
+* Parser options
+* Error handling
+
+==== link:api/presenters[Presenter APIs]
+
+Documentation for element presentation and formatting.
+
+**Topics:**
+
+* Presenter factory
+* Element presenters
+* Output formats
+* Customization
+
+=== Query DSL
+
+Complete reference for the query DSL syntax and methods.
+
+=== Model Classes
+
+* `Lutaml::Uml::Document`
+* `Lutaml::Uml::Package`
+* `Lutaml::Uml::Class`
+* `Lutaml::Uml::Attribute`
+* `Lutaml::Uml::Association`
+* `Lutaml::Uml::Diagram`
+
+== File Formats
+
+=== link:formats/qea-structure[QEA File Format]
+
+Complete specification of Enterprise Architect's QEA (SQLite) database format.
+
+**Topics:**
+
+* Database schema
+* Table relationships
+* Data types
+* Supported EA versions
+
+=== link:formats/lur-format[LUR Package Format]
+
+Specification of LutaML's compressed repository format.
+
+**Topics:**
+
+* Package structure
+* Compression
+* Versioning
+* Metadata
+
+=== link:formats/lutaml-syntax[LutaML Syntax]
+
+Complete syntax reference for LutaML's native DSL.
+
+**Topics:**
+
+* Diagram syntax
+* Class definitions
+* Associations
+* Attributes and operations
+
+=== XMI Support
+
+OMG XMI format compatibility and extensions.
+
+=== EXPRESS Support
+
+ISO 10303-11 EXPRESS schema support via Expressir.
+
+== Configuration
+
+=== link:configuration/diagram-styles[Diagram Styling Configuration]
+
+Complete YAML schema for diagram style configuration.
+
+**Topics:**
+
+* Stereotype styling
+* Package patterns
+* Connector types
+* Priority rules
+
+=== link:configuration/package-metadata[Package Metadata Configuration]
+
+YAML schema for package metadata including XML namespaces.
+
+**Topics:**
+
+* Metadata keys
+* Wildcard patterns
+* Precedence rules
+* Integration
+
+=== Static Site Configuration
+
+YAML configuration for SPA documentation generation.
+
+=== Repository Configuration
+
+LUR repository settings and options.
+
+== Data Models
+
+=== UML Metamodel
+
+Complete UML metamodel implementation in Ruby.
+
+=== EA Model Mapping
+
+How Enterprise Architect concepts map to UML.
+
+=== Type System
+
+Type definitions and compatibility across formats.
+
+== Error Codes
+
+Reference for all error codes and messages.
+
+== Performance
+
+=== Benchmarks
+
+Performance characteristics and benchmarks for various operations.
+
+=== Optimization Guidelines
+
+Best practices for optimal performance.
+
+== Compatibility
+
+=== Ruby Versions
+
+Supported Ruby versions and compatibility notes.
+
+=== EA Versions
+
+Enterprise Architect version compatibility.
+
+=== Platform Support
+
+Operating system and platform compatibility.
+
+== Related Sections
+
+* link:../pages[Core Topics] - Fundamental concepts
+* link:../tutorials[Tutorials] - Step-by-step learning
+* link:../guides[Guides] - Task-oriented documentation

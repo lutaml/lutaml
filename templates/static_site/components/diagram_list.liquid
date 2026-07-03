@@ -1,0 +1,52 @@
+{%- comment -%}
+Diagram List Component
+Displays a list of available diagrams
+
+Parameters:
+- diagrams: Array of diagram objects
+- title: Optional title for the section
+{%- endcomment -%}
+
+{%- if diagrams and diagrams.size > 0 -%}
+<div class="diagram-list-section">
+  {%- if title -%}
+  <h3>{{ title }}</h3>
+  {%- endif -%}
+
+  <div class="diagram-list">
+    {%- for diagram in diagrams -%}
+    <div class="diagram-list-item" data-diagram-id="{{ diagram.id }}">
+      <div class="diagram-list-item-info">
+        <div class="diagram-list-item-name">{{ diagram.name }}</div>
+        <div class="diagram-list-item-meta">
+          {{ diagram.type | default: "Unknown" }}
+          • {{ diagram.objects | default: 0 }} objects
+          • {{ diagram.links | default: 0 }} connectors
+        </div>
+      </div>
+      <button
+        class="diagram-list-item-action"
+        onclick="showDiagram('{{ diagram.id }}')"
+        title="View diagram">
+        View
+      </button>
+    </div>
+    {%- endfor -%}
+  </div>
+</div>
+
+<script>
+  function showDiagram(diagramId) {
+    // Navigate to diagram view or open in modal
+    if (window.diagramViewer) {
+      window.diagramViewer.loadDiagram(diagramId);
+
+      // Scroll to diagram container
+      const container = document.getElementById('diagram-container');
+      if (container) {
+        container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+  }
+</script>
+{%- endif -%}

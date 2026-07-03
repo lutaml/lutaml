@@ -1,0 +1,71 @@
+{%- comment -%}
+Diagram Viewer Component
+Displays a UML diagram with interactive controls
+
+Parameters:
+- diagram: Diagram object with id, name, type, svgPath, objects, links
+{%- endcomment -%}
+
+<div class="diagram-section" data-diagram-id="{{ diagram.id }}">
+  <h3>{{ diagram.name }}</h3>
+
+  <div class="diagram-viewer">
+    <!-- Diagram Controls -->
+    <div class="diagram-controls">
+      <button id="diagram-zoom-in" title="Zoom In">
+        <span>🔍+</span> Zoom In
+      </button>
+      <button id="diagram-zoom-out" title="Zoom Out">
+        <span>🔍-</span> Zoom Out
+      </button>
+      <button id="diagram-reset" title="Reset View">
+        <span>⟲</span> Reset
+      </button>
+      <button id="diagram-download" title="Download SVG">
+        <span>⬇</span> Download
+      </button>
+    </div>
+
+    <!-- Diagram Container -->
+    <div id="diagram-container" class="diagram-container">
+      <div class="diagram-loading">
+        <p>Loading diagram...</p>
+      </div>
+    </div>
+
+    <!-- Diagram Metadata -->
+    <div class="diagram-metadata" id="diagram-metadata">
+      <div class="metadata-item">
+        <span class="metadata-label">Type:</span>
+        <span class="metadata-value">{{ diagram.type | default: "Unknown" }}</span>
+      </div>
+      <div class="metadata-item">
+        <span class="metadata-label">Objects:</span>
+        <span class="metadata-value">{{ diagram.objects | default: 0 }}</span>
+      </div>
+      <div class="metadata-item">
+        <span class="metadata-label">Connectors:</span>
+        <span class="metadata-value">{{ diagram.links | default: 0 }}</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Load diagram when component is visible
+    (function() {
+      const diagramId = '{{ diagram.id }}';
+
+      // Wait for diagramViewer to be initialized
+      if (window.diagramViewer) {
+        window.diagramViewer.loadDiagram(diagramId);
+      } else {
+        // Wait for DOMContentLoaded
+        window.addEventListener('DOMContentLoaded', function() {
+          if (window.diagramViewer) {
+            window.diagramViewer.loadDiagram(diagramId);
+          }
+        });
+      }
+    })();
+  </script>
+</div>

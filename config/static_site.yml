@@ -1,0 +1,166 @@
+# LutaML Static Site Generator Configuration
+# External configuration following YAGNI and separation of concerns
+
+version: "1.0"
+description: "Configuration for LutaML UML Browser SPA Generator"
+
+# Output Configuration
+output:
+  modes:
+    single_file:
+      enabled: true
+      default_filename: "browser.html"
+      embed_data: true
+      embed_styles: true
+      embed_scripts: true
+      minify: false
+    multi_file:
+      enabled: true
+      default_directory: "dist"
+      data_directory: "data"
+      assets_directory: "assets"
+      minify: false
+
+# Template Configuration
+templates:
+  base_path: "templates/static_site"
+  layouts:
+    single_file: "single_file.liquid"
+    multi_file: "multi_file.liquid"
+  components:
+    - header
+    - sidebar
+    - tree_node
+    - content
+    - package_details
+    - class_details
+
+# Data Transformation Configuration
+data_transformation:
+  include_diagrams: true
+  format_definitions: true
+  max_definition_length: null
+  normalize_paths: true
+  generate_statistics: true
+
+# Search Index Configuration
+search:
+  enabled: true
+  fields:
+    - name: "name"
+      boost: 10
+      searchable: true
+    - name: "qualifiedName"
+      boost: 5
+      searchable: true
+    - name: "type"
+      boost: 3
+      searchable: true
+    - name: "package"
+      boost: 2
+      searchable: true
+    - name: "content"
+      boost: 1
+      searchable: true
+  document_types:
+    - type: "class"
+      boost: 1.5
+      enabled: true
+    - type: "attribute"
+      boost: 1.0
+      enabled: true
+    - type: "association"
+      boost: 0.8
+      enabled: true
+    - type: "package"
+      boost: 1.2
+      enabled: true
+  stop_words:
+    - "the"
+    - "a"
+    - "an"
+    - "and"
+    - "or"
+    - "but"
+    - "in"
+    - "on"
+    - "at"
+    - "to"
+    - "for"
+    - "of"
+    - "with"
+    - "from"
+    - "by"
+  pipeline:
+    - "stemmer"
+    - "stopWordFilter"
+
+# Asset Configuration
+assets:
+  styles:
+    - "00-variables.css"
+    - "01-reset.css"
+    - "02-base.css"
+    - "03-layout.css"
+    - "04-components.css"
+    - "05-utilities.css"
+  scripts:
+    - "core/utils.js"
+    - "core/state.js"
+    - "ui/sidebar.js"
+    - "ui/search.js"
+    - "ui/details.js"
+    - "app.js"
+  cdn:
+    alpinejs: "https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"
+    lunrjs: "https://cdn.jsdelivr.net/npm/lunr@2.3.9/lunr.min.js"
+
+# UI Configuration
+ui:
+  title: "UML Model Browser"
+  description: "Interactive browser for UML models"
+  theme:
+    default: "light"
+    allow_toggle: true
+  sidebar:
+    width: "320px"
+    collapsible: true
+    default_expanded: false
+  breadcrumb:
+    enabled: true
+    separator: "/"
+  statistics:
+    enabled: true
+    display_on_welcome: true
+
+# Feature Flags
+features:
+  search: true
+  dark_mode: true
+  keyboard_shortcuts: true
+  breadcrumbs: true
+  statistics: true
+  diagrams: true
+  export: false  # Future feature
+  print: false   # Future feature
+
+# Plugin System
+plugins:
+  serializers: []  # Custom serializers can be registered
+  transformers: [] # Custom transformers can be registered
+  filters: []      # Custom Liquid filters
+
+# Performance Configuration
+performance:
+  lazy_loading: false
+  virtual_scrolling: false
+  chunk_size: 1000
+  cache_enabled: true
+
+# Accessibility Configuration
+accessibility:
+  wcag_level: "AA"
+  keyboard_nav: true
+  aria_labels: true
+  focus_indicators: true
+  reduced_motion: true

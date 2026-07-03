@@ -1,0 +1,321 @@
+---
+title: Installation
+parent: Core Topics
+nav_order: 2
+---
+
+= Installation
+
+== Prerequisites
+
+=== Ruby Version
+
+LutaML requires Ruby 2.7 or higher. Ruby 3.x is recommended for best performance.
+
+To check your Ruby version:
+
+[source,console]
+----
+$ ruby -v
+ruby 3.2.0 (2022-12-25 revision a528908271) [x86_64-darwin22]
+----
+
+=== System Requirements
+
+* **Operating Systems**: Linux, macOS, Windows
+* **Memory**: 512MB minimum, 2GB+ recommended for large models
+* **Disk Space**: 100MB for gem and dependencies
+
+== Installation Methods
+
+=== Via RubyGems (Recommended)
+
+Install the latest stable release:
+
+[source,console]
+----
+$ gem install lutaml
+----
+
+=== Via Bundler
+
+Add to your `Gemfile`:
+
+[source,ruby]
+----
+gem "lutaml"
+----
+
+Then install:
+
+[source,console]
+----
+$ bundle install
+----
+
+=== From Source
+
+For development or the latest features:
+
+[source,console]
+----
+$ git clone https://github.com/lutaml/lutaml.git
+$ cd lutaml
+$ bundle install
+$ bundle exec rake install
+----
+
+== Verifying Installation
+
+Check that LutaML is installed correctly:
+
+[source,console]
+----
+$ lutaml --version
+LutaML version X.Y.Z
+----
+
+Test basic functionality:
+
+[source,console]
+----
+$ lutaml --help
+----
+
+You should see a list of available commands.
+
+== Optional Dependencies
+
+=== For Diagram Export
+
+To export diagrams to PNG or PDF formats, install:
+
+**macOS:**
+[source,console]
+----
+$ brew install librsvg inkscape imagemagick
+----
+
+**Ubuntu/Debian:**
+[source,console]
+----
+$ apt-get install librsvg2-bin inkscape imagemagick
+----
+
+**Windows:**
+
+Download and install:
+
+*  https://imagemagick.org/script/download.php#windows[ImageMagick]
+*  https://inkscape.org/release/[Inkscape]
+
+=== For Development
+
+Additional tools for development:
+
+[source,console]
+----
+$ gem install rubocop simplecov yard
+----
+
+== Configuration
+
+=== Environment Variables
+
+Optional environment variables:
+
+[source,bash]
+----
+# Diagram generation defaults
+export LUTAML_DIAGRAM_CONFIG=~/.lutaml/diagram_styles.yml
+export LUTAML_DIAGRAM_PADDING=20
+export LUTAML_DIAGRAM_BG_COLOR="#ffffff"
+
+# Development
+export LUTAML_DEBUG=true
+export LUTAML_PROFILE=true
+----
+
+=== Configuration Files
+
+LutaML searches for configuration in:
+
+1. Current directory: `./.lutaml/`
+2. User directory: `~/.lutaml/`
+3. System directory: `/etc/lutaml/`
+
+Create user configuration directory:
+
+[source,console]
+----
+$ mkdir -p ~/.lutaml
+----
+
+== Platform-Specific Notes
+
+=== macOS
+
+**Using Homebrew Ruby:**
+
+If using Homebrew's Ruby, ensure it's in your PATH:
+
+[source,bash]
+----
+export PATH="/usr/local/opt/ruby/bin:$PATH"
+----
+
+**Permissions Issues:**
+
+If you get permission errors, avoid `sudo`. Instead:
+
+[source,console]
+----
+$ gem install --user-install lutaml
+----
+
+Add to PATH:
+
+[source,bash]
+----
+export PATH="$HOME/.gem/ruby/3.2.0/bin:$PATH"
+----
+
+=== Linux
+
+**System Ruby:**
+
+Most Linux distributions come with Ruby. Install development headers:
+
+**Debian/Ubuntu:**
+[source,console]
+----
+$ apt-get install ruby-dev build-essential
+----
+
+**RHEL/CentOS/Fedora:**
+[source,console]
+----
+$ yum install ruby-devel gcc make
+----
+
+**Using rbenv or RVM:**
+
+For better Ruby version management, consider https://github.com/rbenv/rbenv[rbenv] or https://rvm.io[RVM].
+
+=== Windows
+
+**Using RubyInstaller:**
+
+1. Download and install https://rubyinstaller.org/[RubyInstaller with DevKit]
+2. Open "Start Command Prompt with Ruby"
+3. Install LutaML:
+
+[source,console]
+----
+> gem install lutaml
+----
+
+**Windows Subsystem for Linux (WSL):**
+
+For best compatibility, consider using WSL 2 with Ubuntu.
+
+== Updating
+
+=== Update via RubyGems
+
+[source,console]
+----
+$ gem update lutaml
+----
+
+=== Update via Bundler
+
+[source,console]
+----
+$ bundle update lutaml
+----
+
+=== Check for Updates
+
+[source,console]
+----
+$ gem outdated lutaml
+----
+
+== Troubleshooting
+
+=== Permission Denied Errors
+
+**Problem**: `You don't have write permissions for the /Library/Ruby/Gems/X.X.X directory`
+
+**Solution**: Use `--user-install` or a Ruby version manager (rbenv/RVM).
+
+=== Native Extension Compilation Errors
+
+**Problem**: `ERROR: Failed to build gem native extension`
+
+**Solution**: Install development tools:
+
+* **macOS**: `xcode-select --install`
+* **Linux**: Install `build-essential` or `gcc make`
+* **Windows**: Use RubyInstaller with DevKit
+
+=== Command Not Found
+
+**Problem**: `lutaml: command not found`
+
+**Solution**: Add gem bin directory to PATH:
+
+[source,bash]
+----
+export PATH="$(ruby -e 'puts Gem.user_dir')/bin:$PATH"
+----
+
+Add this to your `~/.bashrc`, `~/.zshrc`, or equivalent.
+
+=== Dependencies Issues
+
+**Problem**: Conflicting gem versions
+
+**Solution**: Use Bundler with a clean environment:
+
+[source,console]
+----
+$ bundle exec lutaml --version
+----
+
+== Uninstalling
+
+To remove LutaML:
+
+[source,console]
+----
+$ gem uninstall lutaml
+----
+
+Remove configuration (optional):
+
+[source,console]
+----
+$ rm -rf ~/.lutaml
+----
+
+== Next Steps
+
+Now that LutaML is installed:
+
+1. link:../tutorials/getting-started[Quick Start Tutorial] - Your first steps
+2. link:../guides/cli-usage[CLI Usage Guide] - Learn the commands
+3. link:../references/cli/commands[Command Reference] - Complete CLI docs
+
+== Getting Help
+
+* **Documentation**: https://lutaml.github.io/lutaml/
+* **Issues**: https://github.com/lutaml/lutaml/issues
+* **Discussions**: https://github.com/lutaml/lutaml/discussions
+
+== See Also
+
+* link:overview[What is LutaML?]
+* link:architecture[System Architecture]
+* link:../tutorials/getting-started[Getting Started Tutorial]

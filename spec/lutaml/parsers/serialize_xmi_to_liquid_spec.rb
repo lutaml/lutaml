@@ -1,13 +1,11 @@
 require "spec_helper"
 
-RSpec.describe Lutaml::XMI::Parsers::XML do
+RSpec.describe Lutaml::Xmi::Parsers::Xml do
   describe ".serialize_xmi_to_liquid" do
-    subject(:output) do
-      described_class.serialize_xmi_to_liquid(file)
-    end
-
     context "when parsing xmi 2013 with uml 2013" do
-      let(:file) { File.new(fixtures_path("ea-xmi-2.5.1.xmi")) }
+      subject(:output) do
+        cached_serialize_xmi_to_liquid("ea-xmi-2.5.1.xmi")
+      end
 
       let(:expected_class_names) do
         %w[
@@ -97,8 +95,8 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
       end
       let(:first_package) { output.packages.first }
 
-      it "parses xml file into Lutaml::XMI::RootDrop object" do
-        expect(output).to(be_instance_of(Lutaml::XMI::RootDrop))
+      it "parses xml file into Lutaml::Xmi::LiquidDrops::RootDrop object" do
+        expect(output).to(be_instance_of(Lutaml::Xmi::LiquidDrops::RootDrop))
       end
 
       it "correctly parses model name" do
@@ -112,21 +110,22 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
 
       it "correctly parses package tree" do
         expect(first_package.packages.map(&:name))
-          .to match_array([])
+          .to be_empty
       end
 
-      it "correctly parses package classes" do
+      it "correctly parses package classes", :aggregate_failures do
         expect(first_package.classes.map(&:name)).to(eq(expected_class_names))
         expect(first_package.classes.map(&:xmi_id))
           .to(eq(expected_class_xmi_ids))
       end
 
-      it "correctly parses entities of enums type" do
+      it "correctly parses entities of enums type", :aggregate_failures do
         expect(first_package.enums.map(&:name)).to(eq(expected_enum_names))
         expect(first_package.enums.map(&:xmi_id)).to(eq(expected_enum_xmi_ids))
       end
 
-      it "correctly parses entities and attributes for class" do
+      it "correctly parses entities and attributes for class",
+         :aggregate_failures do
         klass = first_package.classes.find do |entity|
           entity.name == "RequirementType"
         end
@@ -140,11 +139,11 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
           entity.name == "Block"
         end
 
-        expect(klass.associations.map(&:member_end).compact)
+        expect(klass.associations.filter_map(&:member_end))
           .to(eq(expected_association_names))
       end
 
-      it "correctly parses diagrams for package" do
+      it "correctly parses diagrams for package", :aggregate_failures do
         root_package = output.packages.first
         expect(root_package.diagrams.length).to(eq(1))
         expect(root_package.diagrams.map(&:name))
@@ -153,7 +152,7 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
           .to(eq(["aada\n"]))
       end
 
-      it "correctly parses connector for class" do
+      it "correctly parses connector for class", :aggregate_failures do
         root_package = output.packages.first
         test_class = root_package.classes.first
         expect(test_class.associations.count).to eq(1)
@@ -174,38 +173,40 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
     end
 
     context "when parsing xmi with generalization" do
-      let(:file) { File.new(fixtures_path("plateau_all_packages_export.xmi")) }
+      subject(:output) do
+        cached_serialize_xmi_to_liquid("plateau_all_packages_export.xmi")
+      end
 
-      it "should output attributes correctly" do
+      it "outputs attributes correctly", :aggregate_failures do
         test_package = output.packages.first.packages[2].packages[9]
         gen_obj = test_package.classes[3].generalization
         expect(test_package.name).to eq("bldg")
         expect(gen_obj.name).to eq("Building")
 
-        expect(gen_obj.general.attributes[0][:name]).to eq("class")
-        expect(gen_obj.general.attributes[0][:id]).to eq(
+        expect(gen_obj.general.attributes[0].name).to eq("class")
+        expect(gen_obj.general.attributes[0].id).to eq(
           "EAID_FDC435D4_544B_4122_BEA1_7C0B55136938",
         )
-        expect(gen_obj.general.attributes[0][:type]).to eq("gml::CodeType")
-        expect(gen_obj.general.attributes[0][:xmi_id]).to eq(
+        expect(gen_obj.general.attributes[0].type).to eq("gml::CodeType")
+        expect(gen_obj.general.attributes[0].xmi_id).to eq(
           "EAJava_gml__CodeType",
         )
-        expect(gen_obj.general.attributes[0][:is_derived]).to eq(nil)
-        expect(gen_obj.general.attributes[0][:association]).to eq(nil)
-        expect(gen_obj.general.attributes[0][:definition]).to eq(
+        expect(gen_obj.general.attributes[0].is_derived).to be(false)
+        expect(gen_obj.general.attributes[0].association).to be_nil
+        expect(gen_obj.general.attributes[0].definition).to eq(
           "建築物の形態による区分。コードリスト(&lt;&lt;Building_class.xml&gt;&gt;)より選択する。",
         )
-        expect(gen_obj.general.attributes[28][:association]).to eq(
+        expect(gen_obj.general.attributes[28].association).to eq(
           "EAID_99ADD620_BC08_4adc_80A1_A8EB2A1B2E2F",
         )
 
         expect(gen_obj.inherited_props[0].name).to eq("description")
         expect(gen_obj.inherited_props[0].type).to eq("gml::StringOrRefType")
-        expect(gen_obj.inherited_props[0].type_ns).to eq(nil)
+        expect(gen_obj.inherited_props[0].type_ns).to be_nil
         expect(gen_obj.inherited_props[0].upper_klass).to eq("gml")
         expect(gen_obj.inherited_props[0].gen_name).to eq("_Feature")
         expect(gen_obj.inherited_props[0].name_ns).to eq("gml")
-        expect(gen_obj.inherited_props[0].association).to eq(nil)
+        expect(gen_obj.inherited_props[0].association).to be_nil
 
         expect(gen_obj.inherited_assoc_props[0].association).to eq(
           "EAID_98F26EAF_7E3C_48b2_AAE7_4769CF1AAFD6",
@@ -214,17 +215,17 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
     end
 
     context "when parsing xmi with generalization and guidance yaml" do
-      let(:file) { File.new(fixtures_path("plateau_all_packages_export.xmi")) }
-      let(:guidance) { YAML.load_file(fixtures_path("guidance/guidance.yaml")) }
-
       subject(:output) do
-        described_class.serialize_xmi_to_liquid(file, guidance)
+        guidance = YAML.load_file(fixtures_path("guidance/guidance.yaml"))
+        cached_serialize_xmi_to_liquid("plateau_all_packages_export.xmi",
+                                       guidance)
       end
 
-      it "should output attributes correctly" do
-        test_package = output.packages.first.packages[2].packages[9]
-        test_klass = test_package.classes[3]
-        gen_obj = test_package.classes[3].generalization
+      let(:test_package) { output.packages.first.packages[2].packages[9] }
+      let(:test_klass) { test_package.classes[3] }
+      let(:gen_obj) { test_klass.generalization }
+
+      it "verifies package and class metadata", :aggregate_failures do
         expect(test_package.name).to eq("bldg")
         expect(gen_obj.name).to eq("Building")
         expect(test_package.absolute_path).to eq(
@@ -234,38 +235,44 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
         expect(test_klass.absolute_path).to eq(
           "::EA_Model::Conceptual Models::CityGML2.0::bldg::Building",
         )
+      end
 
-        expect(gen_obj.general.attributes[0][:name]).to eq("class")
-        expect(gen_obj.general.attributes[0][:id]).to eq(
+      it "verifies general attribute details", :aggregate_failures do
+        expect(gen_obj.general.attributes[0].name).to eq("class")
+        expect(gen_obj.general.attributes[0].id).to eq(
           "EAID_FDC435D4_544B_4122_BEA1_7C0B55136938",
         )
-        expect(gen_obj.general.attributes[0][:type]).to eq("gml::CodeType")
-        expect(gen_obj.general.attributes[0][:xmi_id]).to eq(
+        expect(gen_obj.general.attributes[0].type).to eq("gml::CodeType")
+        expect(gen_obj.general.attributes[0].xmi_id).to eq(
           "EAJava_gml__CodeType",
         )
-        expect(gen_obj.general.attributes[0][:is_derived]).to eq(nil)
-        expect(gen_obj.general.attributes[0][:association]).to eq(nil)
-        expect(gen_obj.general.attributes[0][:definition]).to eq(
+        expect(gen_obj.general.attributes[0].is_derived).to be(false)
+        expect(gen_obj.general.attributes[0].association).to be_nil
+        expect(gen_obj.general.attributes[0].definition).to eq(
           "建築物の形態による区分。コードリスト(&lt;&lt;Building_class.xml&gt;&gt;)より選択する。",
         )
-        expect(gen_obj.general.attributes[28][:association]).to eq(
+        expect(gen_obj.general.attributes[28].association).to eq(
           "EAID_99ADD620_BC08_4adc_80A1_A8EB2A1B2E2F",
         )
+      end
 
+      it "verifies inherited properties", :aggregate_failures do
         expect(gen_obj.inherited_props[2].name).to eq("boundedBy")
-        expect(gen_obj.inherited_props[2].used?).to eq(false)
+        expect(gen_obj.inherited_props[2].used?).to eq("false")
         expect(gen_obj.inherited_props[2].guidance).to eq("この属性は使用されていません。\n")
 
         expect(gen_obj.inherited_props[0].name).to eq("description")
         expect(gen_obj.inherited_props[0].type).to eq("gml::StringOrRefType")
-        expect(gen_obj.inherited_props[0].type_ns).to eq(nil)
+        expect(gen_obj.inherited_props[0].type_ns).to be_nil
         expect(gen_obj.inherited_props[0].upper_klass).to eq("gml")
         expect(gen_obj.inherited_props[0].gen_name).to eq("_Feature")
         expect(gen_obj.inherited_props[0].name_ns).to eq("gml")
-        expect(gen_obj.inherited_props[0].association).to eq(nil)
-        expect(gen_obj.inherited_props[0].used?).to eq(true)
-        expect(gen_obj.inherited_props[0].guidance).to eq(nil)
+        expect(gen_obj.inherited_props[0].association).to be_nil
+        expect(gen_obj.inherited_props[0].used?).to eq("true")
+        expect(gen_obj.inherited_props[0].guidance).to be_nil
+      end
 
+      it "verifies inherited association properties" do
         expect(gen_obj.inherited_assoc_props[0].association).to eq(
           "EAID_98F26EAF_7E3C_48b2_AAE7_4769CF1AAFD6",
         )
@@ -273,57 +280,66 @@ RSpec.describe Lutaml::XMI::Parsers::XML do
     end
 
     context "when parsing xmi with generalization and sorted props" do
-      let(:file) { File.new(fixtures_path("plateau_all_packages_export.xmi")) }
+      subject(:output) do
+        cached_serialize_xmi_to_liquid("plateau_all_packages_export.xmi")
+      end
 
-      it "should output attributes correctly" do
-        test_package = output.packages.first.packages[1].packages[0]
+      let(:test_package) do
+        output.packages.first.packages[1].packages[0]
           .packages[1].classes[144]
-        gen_obj = test_package.generalization
+      end
+      let(:gen_obj) { test_package.generalization }
+
+      let(:expected_inherited_assoc) do
+        %w[
+          core:core::外部参照[_CityObject]
+          gen:_genericAttribute[_CityObject]
+          urf:lod0MultiCurve[_UrbanFunction]
+          urf:lod0MultiSurface[_UrbanFunction]
+          urf:lod1MultiSurface[_UrbanFunction]
+          urf:lod0MultiPoint[_UrbanFunction]
+          uro:dataQualityAttribute[_UrbanFunction]
+          urf:table[_UrbanFunction]
+          urf:attributes[_UrbanFunction]
+          uro:keyValuePairAttribute[_UrbanFunction]
+          urf:urbanParkAttribute[Zone]
+          urf:boundary[Zone]
+          urf:threeDimensionalExtent[UrbanFacility]
+        ]
+      end
+
+      let(:expected_sorted_assoc) do
+        %w[
+          core:core::外部参照[_CityObject]
+          gen:_genericAttribute[_CityObject]
+          urf:attributes[_UrbanFunction]
+          urf:lod0MultiCurve[_UrbanFunction]
+          urf:lod0MultiPoint[_UrbanFunction]
+          urf:lod0MultiSurface[_UrbanFunction]
+          urf:lod1MultiSurface[_UrbanFunction]
+          urf:table[_UrbanFunction]
+          uro:dataQualityAttribute[_UrbanFunction]
+          uro:keyValuePairAttribute[_UrbanFunction]
+          urf:boundary[Zone]
+          urf:urbanParkAttribute[Zone]
+          urf:threeDimensionalExtent[UrbanFacility]
+        ]
+      end
+
+      def format_assoc_prop(p)
+        "#{p.name_ns}:#{p.name}[#{p.gen_name}]"
+      end
+
+      it "outputs attributes correctly", :aggregate_failures do
         expect(test_package.name).to eq("TrafficFacility")
 
         expect(
-          gen_obj.inherited_assoc_props.map do |p|
-            "#{p.name_ns}:#{p.name}[#{p.gen_name}]"
-          end,
-        ).to eq(
-          [
-            "core:core::外部参照[_CityObject]",
-            "gen:_genericAttribute[_CityObject]",
-            "urf:lod0MultiCurve[_UrbanFunction]",
-            "urf:lod0MultiSurface[_UrbanFunction]",
-            "urf:lod1MultiSurface[_UrbanFunction]",
-            "urf:lod0MultiPoint[_UrbanFunction]",
-            "uro:dataQualityAttribute[_UrbanFunction]",
-            "urf:table[_UrbanFunction]",
-            "urf:attributes[_UrbanFunction]",
-            "uro:keyValuePairAttribute[_UrbanFunction]",
-            "urf:urbanParkAttribute[Zone]",
-            "urf:boundary[Zone]",
-            "urf:threeDimensionalExtent[UrbanFacility]",
-          ],
-        )
+          gen_obj.inherited_assoc_props.map { |p| format_assoc_prop(p) },
+        ).to eq(expected_inherited_assoc)
 
         expect(
-          gen_obj.sorted_inherited_assoc_props.map do |p|
-            "#{p.name_ns}:#{p.name}[#{p.gen_name}]"
-          end,
-        ).to eq(
-          [
-            "core:core::外部参照[_CityObject]",
-            "gen:_genericAttribute[_CityObject]",
-            "urf:attributes[_UrbanFunction]",
-            "urf:lod0MultiCurve[_UrbanFunction]",
-            "urf:lod0MultiPoint[_UrbanFunction]",
-            "urf:lod0MultiSurface[_UrbanFunction]",
-            "urf:lod1MultiSurface[_UrbanFunction]",
-            "urf:table[_UrbanFunction]",
-            "uro:dataQualityAttribute[_UrbanFunction]",
-            "uro:keyValuePairAttribute[_UrbanFunction]",
-            "urf:boundary[Zone]",
-            "urf:urbanParkAttribute[Zone]",
-            "urf:threeDimensionalExtent[UrbanFacility]",
-          ],
-        )
+          gen_obj.sorted_inherited_assoc_props.map { |p| format_assoc_prop(p) },
+        ).to eq(expected_sorted_assoc)
       end
     end
   end

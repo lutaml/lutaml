@@ -1,209 +1,190 @@
 # frozen_string_literal: true
 
 module Lutaml
-  module XMI
-    class KlassDrop < Liquid::Drop
-      include Parsers::XMIBase
+  module Xmi
+    module LiquidDrops
+      class KlassDrop < Liquid::Drop
+        def initialize(model, guidance = nil, options = {}) # rubocop:disable Lint/MissingSuper
+          @model = model
+          @guidance = guidance
+          @options = options
+          @lookup = options[:lookup]
+          @xmi_root_model = options[:xmi_root_model]
+          @id_name_mapping = options[:id_name_mapping]
 
-      def initialize(model, guidance = nil, options = {}) # rubocop:disable Lint/MissingSuper,Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
-        @model = model
-        @guidance = guidance
-        @options = options
-        @xmi_root_model = options[:xmi_root_model]
-        @id_name_mapping = options[:id_name_mapping]
-
-        @package = model&.packaged_element&.find do |e|
-          e.type?("uml:Package")
+          init_xmi_dependencies if @xmi_root_model
+          init_guidance(guidance) if guidance
         end
 
-        @owned_attributes = model&.owned_attribute&.select do |attr|
-          attr.type?("uml:Property")
+        def xmi_id
+          @model.xmi_id
         end
 
-        if @xmi_root_model
-          @matched_element = @xmi_root_model&.extension&.elements&.element&.find do |e| # rubocop:disable Layout/LineLength,Style/SafeNavigationChainLength
-            e.idref == @model.id
+        def name
+          @model.name
+        end
+
+        def absolute_path
+          absolute_path_arr = [@model.name]
+          e = @lookup.find_upper_level_packaged_element(@model.xmi_id)
+          absolute_path_arr << e.name if e
+
+          while e
+            e = @lookup.find_upper_level_packaged_element(e.id)
+            absolute_path_arr << e.name if e
           end
 
-          @clients_dependencies = select_dependencies_by_supplier(@model.id)
-          @suppliers_dependencies = select_dependencies_by_client(@model.id)
-
-          @inheritance_ids = @matched_element&.links&.map do |link|
-            link.generalization.select do |gen|
-              gen.end == @model.id
-            end.map(&:id)
-          end&.flatten&.compact || []
+          absolute_path_arr << "::#{@xmi_root_model.model.name}"
+          absolute_path_arr.reverse.join("::")
         end
 
-        if guidance
+        private
+
+        def init_xmi_dependencies
+          @clients_dependencies = @lookup.select_dependencies_by_supplier(@model.xmi_id)
+          @suppliers_dependencies = @lookup.select_dependencies_by_client(@model.xmi_id)
+
+          matched_element = @lookup.find_matched_element(@model.xmi_id)
+          @inheritance_ids = extract_inheritance_ids(matched_element)
+        end
+
+        def init_guidance(guidance)
           @klass_guidance = guidance["classes"].find do |klass|
             klass["name"] == name || klass["name"] == absolute_path
           end
         end
-      end
 
-      def xmi_id
-        @model.id
-      end
+        def extract_inheritance_ids(matched_element)
+          return [] unless matched_element
 
-      def name
-        @model.name
-      end
+          links = matched_element.links
+          return [] unless links
 
-      def absolute_path
-        "#{@options[:absolute_path]}::#{name}"
-      end
-
-      def package
-        ::Lutaml::XMI::PackageDrop.new(
-          @package,
-          @guidance,
-          @options.merge(
-            {
-              absolute_path: "#{@options[:absolute_path]}::#{name}",
-            },
-          ),
-        )
-      end
-
-      def type
-        @model.type.split(":").last
-      end
-
-      def attributes
-        @owned_attributes.map do |owned_attr|
-          if @options[:with_assoc] || owned_attr.association.nil?
-            ::Lutaml::XMI::AttributeDrop.new(owned_attr, @options)
-          end
-        end.compact
-      end
-
-      def owned_attributes
-        @owned_attributes.map do |owned_attr|
-          ::Lutaml::XMI::AttributeDrop.new(owned_attr, @options)
-        end.compact
-      end
-
-      def suppliers_dependencies
-        @suppliers_dependencies.map do |dependency|
-          ::Lutaml::XMI::DependencyDrop.new(dependency, @options)
-        end.compact
-      end
-
-      def clients_dependencies
-        @clients_dependencies.map do |dependency|
-          ::Lutaml::XMI::DependencyDrop.new(dependency, @options)
-        end.compact
-      end
-
-      def inheritances
-        @inheritance_ids.map do |inheritance_id|
-          # ::Lutaml::XMI::InheritanceDrop.new(dependency, @options)
-          connector = fetch_connector(inheritance_id)
-          ::Lutaml::XMI::ConnectorDrop.new(connector, @options)
-        end.compact
-      end
-
-      def associations # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity,Metrics/MethodLength
-        return if !@matched_element || !@matched_element.links
-
-        links = []
-        @matched_element.links.each do |link|
-          links << link.association if link.association.any?
-          links << link.generalization if link.generalization.any?
+          links.flat_map do |link|
+            link.generalization
+              .select { |gen| gen.end == @model.xmi_id }
+              .map(&:id)
+          end.compact
         end
 
-        links.flatten.compact.map do |assoc|
-          link_member = assoc.start == xmi_id ? "end" : "start"
-          link_owner_name = link_member == "start" ? "end" : "start"
+        public
 
-          member_end, member_end_type, member_end_cardinality,
-            member_end_attribute_name, member_end_xmi_id =
-            serialize_member_type(xmi_id, assoc, link_member)
+        def package
+          xmi_pkg = find_nested_xmi_package
+          return unless xmi_pkg
 
-          owner_end = serialize_owned_type(xmi_id, assoc, link_owner_name)
-
-          if member_end && ((member_end_type != "aggregation") ||
-            (member_end_type == "aggregation" && member_end_attribute_name))
-
-            doc_node_name = (link_member == "start" ? "source" : "target")
-            definition = fetch_definition_node_value(assoc.id, doc_node_name)
-
-            ::Lutaml::XMI::AssociationDrop.new(
-              xmi_id: assoc.id,
-              member_end: member_end,
-              member_end_type: member_end_type,
-              member_end_cardinality: member_end_cardinality,
-              member_end_attribute_name: member_end_attribute_name,
-              member_end_xmi_id: member_end_xmi_id,
-              owner_end: owner_end,
-              owner_end_xmi_id: xmi_id,
-              definition: definition,
-              options: @options,
-            )
-          end
-        end.compact
-      end
-
-      def operations
-        @model.owned_operation.map do |operation|
-          if operation.association.nil?
-            ::Lutaml::XMI::OperationDrop.new(operation)
-          end
-        end.compact
-      end
-
-      def constraints
-        connector_node = fetch_connector(@model.id)
-        return unless connector_node
-
-        # In ea-xmi-2.5.1, constraints are moved to source/target under
-        # connectors
-        constraints = %i[source target].map do |st|
-          connector_node.send(st).constraints.constraint
-        end.flatten
-
-        constraints.map do |constraint|
-          ::Lutaml::XMI::ConstraintDrop.new(constraint)
-        end
-      end
-
-      def generalization
-        if @options[:with_gen] && @model.type?("uml:Class")
-          generalization = serialize_generalization(@model)
-          return {} if generalization.nil?
-
-          ::Lutaml::XMI::GeneralizationDrop.new(
-            generalization, @klass_guidance, @options
+          ::Lutaml::Xmi::LiquidDrops::PackageDrop.new(
+            build_uml_package(xmi_pkg),
+            @guidance,
+            @options.merge(absolute_path: "#{@options[:absolute_path]}::#{name}"),
           )
         end
-      end
 
-      def upper_packaged_element
-        if @options[:with_gen]
-          find_upper_level_packaged_element(@model.id)
+        def find_nested_xmi_package
+          nested_pkg = @lookup.find_packaged_element_by_id(@model.xmi_id)
+          return unless nested_pkg
+
+          nested_pkg.packaged_element&.find { |e| e.type?("uml:Package") }
         end
-      end
 
-      def subtype_of
-        find_subtype_of_from_generalization(@model.id) ||
-          find_subtype_of_from_owned_attribute_type(@model.id)
-      end
+        def build_uml_package(xmi_pkg)
+          uml_pkg = ::Lutaml::Uml::Package.new
+          uml_pkg.xmi_id = xmi_pkg.id
+          uml_pkg.name = @lookup.get_package_name(xmi_pkg)
+          uml_pkg
+        end
 
-      def has_guidance?
-        !!@klass_guidance
-      end
+        def type
+          @model.type
+        end
 
-      def is_abstract # rubocop:disable Naming/PredicateName,Naming/PredicatePrefix
-        doc_node_attribute_value(@model.id, "isAbstract")
-      end
+        def attributes
+          Array(@model.attributes).filter_map do |owned_attr|
+            if @options[:with_assoc] || owned_attr.association.nil?
+              ::Lutaml::Xmi::LiquidDrops::AttributeDrop.new(owned_attr,
+                                                            @options)
+            end
+          end
+        end
 
-      def definition
-        doc_node_attribute_value(@model.id, "documentation")
-      end
+        def owned_attributes
+          Array(@model.attributes).filter_map do |owned_attr|
+            ::Lutaml::Xmi::LiquidDrops::AttributeDrop.new(owned_attr, @options)
+          end
+        end
 
-      def stereotype
-        doc_node_attribute_value(@model.id, "stereotype")
+        def suppliers_dependencies
+          Array(@suppliers_dependencies).filter_map do |dependency|
+            ::Lutaml::Xmi::LiquidDrops::DependencyDrop.new(dependency, @options)
+          end
+        end
+
+        def clients_dependencies
+          Array(@clients_dependencies).filter_map do |dependency|
+            ::Lutaml::Xmi::LiquidDrops::DependencyDrop.new(dependency, @options)
+          end
+        end
+
+        def inheritances
+          Array(@inheritance_ids).filter_map do |inheritance_id|
+            connector = @lookup.fetch_connector(inheritance_id)
+            ::Lutaml::Xmi::LiquidDrops::ConnectorDrop.new(connector, @options)
+          end
+        end
+
+        def associations
+          Array(@model.associations).filter_map do |assoc|
+            ::Lutaml::Xmi::LiquidDrops::AssociationDrop.new(assoc, @options)
+          end
+        end
+
+        def operations
+          Array(@model.operations).map do |operation|
+            ::Lutaml::Xmi::LiquidDrops::OperationDrop.new(operation)
+          end
+        end
+
+        def constraints
+          Array(@model.constraints).map do |constraint|
+            ::Lutaml::Xmi::LiquidDrops::ConstraintDrop.new(constraint)
+          end
+        end
+
+        def generalization
+          if @options[:with_gen] && @model.generalization
+            ::Lutaml::Xmi::LiquidDrops::GeneralizationDrop.new(
+              @model.generalization, @klass_guidance, @options
+            )
+          end
+        end
+
+        def upper_packaged_element
+          if @options[:with_gen]
+            e = @lookup.find_upper_level_packaged_element(@model.xmi_id)
+            e&.name
+          end
+        end
+
+        def subtype_of
+          @lookup.find_subtype_of_from_generalization(@model.xmi_id) ||
+            @lookup.find_subtype_of_from_owned_attribute_type(@model.xmi_id)
+        end
+
+        def has_guidance?
+          !!@klass_guidance
+        end
+
+        def is_abstract # rubocop:disable Naming/PredicateName,Naming/PredicatePrefix
+          @model.is_abstract
+        end
+
+        def definition
+          @model.definition
+        end
+
+        def stereotype
+          @model.stereotype&.first
+        end
       end
     end
   end

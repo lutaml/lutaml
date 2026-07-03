@@ -1,0 +1,266 @@
+# Model Transformations Configuration
+# This file configures the unified model transformation system for LutaML
+#
+# Version: 1.0
+# Description: External configuration for model format parsers and transformation options
+
+version: "1.0"
+description: "LutaML Model Transformations Configuration"
+
+# Parser configurations define how different model formats are handled
+parsers:
+  # XML Metadata Interchange (XMI) Parser
+  - format: "xmi"
+    extension: ".xmi"
+    parser_class: "Lutaml::ModelTransformations::Parsers::XmiParser"
+    enabled: true
+    priority: 100
+    description: "XML Metadata Interchange parser for UML models"
+    options:
+      - "validate_xml"
+      - "resolve_references"
+      - "preserve_namespaces"
+      - "include_documentation"
+
+  # Enterprise Architect Database (QEA) Parser
+  - format: "qea"
+    extension: ".qea"
+    parser_class: "Lutaml::ModelTransformations::Parsers::QeaParser"
+    enabled: true
+    priority: 90
+    description: "Enterprise Architect database parser"
+    options:
+      - "include_diagrams"
+      - "validate_transformation"
+      - "load_progress_callback"
+      - "cache_database"
+
+  # Legacy XML support (lower priority than XMI)
+  - format: "xml"
+    extension: ".xml"
+    parser_class: "Lutaml::ModelTransformations::Parsers::XmiParser"
+    enabled: true
+    priority: 80
+    description: "Generic XML parser (delegates to XMI parser)"
+    options:
+      - "validate_xml"
+      - "resolve_references"
+
+  # Enterprise Architect Project files (legacy format)
+  - format: "eap"
+    extension: ".eap"
+    parser_class: "Lutaml::ModelTransformations::Parsers::QeaParser"
+    enabled: true
+    priority: 70
+    description: "Enterprise Architect project file parser"
+    options:
+      - "include_diagrams"
+      - "legacy_format_support"
+
+  # Enterprise Architect Exchange files
+  - format: "eapx"
+    extension: ".eapx"
+    parser_class: "Lutaml::ModelTransformations::Parsers::QeaParser"
+    enabled: true
+    priority: 75
+    description: "Enterprise Architect exchange file parser"
+    options:
+      - "include_diagrams"
+      - "compressed_format"
+
+# Global transformation options
+transformation_options:
+  # Validate output document structure after parsing
+  validate_output: false
+
+  # Include diagram information in transformed documents
+  include_diagrams: true
+
+  # Preserve original XMI/QEA IDs in transformed elements
+  preserve_ids: true
+
+  # Resolve cross-references between model elements
+  resolve_references: true
+
+  # Enable strict validation mode (fail on warnings)
+  strict_mode: false
+
+# Format detection configuration
+format_detection:
+  # Use file extensions for format detection
+  use_file_extension: true
+
+  # Use content analysis (magic bytes) for format detection
+  use_content_sniffing: true
+
+  # Fallback parser when format cannot be detected
+  fallback_parser: "Lutaml::ModelTransformations::Parsers::XmiParser"
+
+  # Magic byte signatures for content detection
+  magic_bytes:
+    - "SQLite format 3"  # QEA/SQLite files
+    - "<?xml"            # XML/XMI files
+
+# Error handling configuration
+error_handling:
+  # Error handling strategy: "continue", "fail_fast", "collect"
+  strategy: "continue"
+
+  # Log errors and warnings to console
+  log_errors: true
+
+  # Maximum number of errors before aborting (0 = unlimited)
+  max_errors: 10
+
+  # Fail immediately on first error
+  fail_fast: false
+
+# Format-specific configurations
+format_specific:
+  xmi:
+    # XMI-specific options
+    namespace_handling: "preserve"
+    reference_resolution: "eager"
+    xml_validation: "lenient"
+    encoding_detection: "auto"
+
+  qea:
+    # QEA-specific options
+    database_timeout: 30
+    load_strategy: "progressive"
+    diagram_processing: "full"
+    schema_validation: "basic"
+
+# Performance tuning
+performance:
+  # Enable parser instance caching
+  cache_parsers: true
+
+  # Maximum size for parser cache (number of instances)
+  max_parser_cache_size: 10
+
+  # Enable transformation history tracking
+  track_history: true
+
+  # Maximum number of history entries to keep
+  max_history_size: 1000
+
+# Logging configuration
+logging:
+  # Log level: "debug", "info", "warn", "error"
+  level: "info"
+
+  # Include timestamps in log messages
+  include_timestamps: true
+
+  # Include parser class names in log messages
+  include_parser_names: true
+
+  # Log transformation statistics
+  log_statistics: true
+
+# Plugin/extension support
+plugins:
+  # Enable plugin system
+  enabled: false
+
+  # Plugin discovery paths
+  discovery_paths:
+    - "lib/lutaml/model_transformations/plugins"
+    - "~/.lutaml/plugins"
+
+  # Auto-load plugins on startup
+  auto_load: false
+
+# Validation rules
+validation:
+  # Required elements validation
+  require_packages: false
+  require_classes: false
+
+  # Reference validation
+  check_broken_references: true
+  allow_external_references: true
+
+  # Naming validation
+  validate_naming_conventions: false
+  naming_patterns:
+    package: "^[A-Z][a-zA-Z0-9]*$"
+    class: "^[A-Z][a-zA-Z0-9]*$"
+    attribute: "^[a-z][a-zA-Z0-9]*$"
+
+# Transformation presets for common scenarios
+presets:
+  # Fast parsing preset (minimal validation, no diagrams)
+  fast:
+    transformation_options:
+      validate_output: false
+      include_diagrams: false
+      resolve_references: false
+    error_handling:
+      strategy: "fail_fast"
+      log_errors: false
+
+  # Comprehensive parsing preset (full validation and processing)
+  comprehensive:
+    transformation_options:
+      validate_output: true
+      include_diagrams: true
+      resolve_references: true
+      strict_mode: true
+    error_handling:
+      strategy: "collect"
+      log_errors: true
+      max_errors: 0
+
+  # Production preset (balanced performance and reliability)
+  production:
+    transformation_options:
+      validate_output: true
+      include_diagrams: true
+      resolve_references: true
+      strict_mode: false
+    error_handling:
+      strategy: "continue"
+      log_errors: true
+      max_errors: 5
+    performance:
+      cache_parsers: true
+      track_history: false
+
+# Compatibility settings
+compatibility:
+  # Support legacy LutaML API
+  legacy_api_support: true
+
+  # Automatic migration of old configuration formats
+  auto_migrate_config: true
+
+  # Deprecated feature warnings
+  warn_deprecated: true
+
+# Development/debugging options
+development:
+  # Enable debug mode
+  debug_mode: false
+
+  # Dump intermediate transformation results
+  dump_intermediate: false
+
+  # Benchmark transformation performance
+  benchmark_mode: false
+
+  # Verbose parser output
+  verbose_parsing: false
+
+# Integration settings
+integration:
+  # UML Repository integration
+  auto_build_repository: true
+  repository_lazy_loading: false
+
+  # CLI integration
+  register_cli_commands: true
+
+  # Web UI integration
+  enable_web_ui: false

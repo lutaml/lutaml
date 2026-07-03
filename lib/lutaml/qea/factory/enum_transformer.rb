@@ -1,0 +1,88 @@
+# frozen_string_literal: true
+
+module Lutaml
+  module Qea
+    module Factory
+      # Transforms EA objects (Enumeration type) to UML enums
+      class EnumTransformer < BaseTransformer
+        # Transform EA object to UML enum
+        # @param ea_object [EaObject] EA object model
+        # @return [Lutaml::Uml::Enum] UML enum
+        def transform(ea_object)
+          return nil if ea_object.nil?
+          return nil unless enum?(ea_object)
+
+          Lutaml::Uml::Enum.new.tap do |enum|
+            assign_enum_basic(enum, ea_object)
+            assign_enum_features(enum, ea_object)
+          end
+        end
+
+        def assign_enum_basic(enum, ea_object)
+          enum.name = ea_object.name
+          enum.xmi_id = normalize_guid_to_xmi_format(ea_object.ea_guid,
+                                                     "EAID")
+          enum.visibility = map_visibility(ea_object.visibility)
+          enum.stereotype = [ea_object.stereotype] if valid_stereotype?(ea_object)
+          enum.definition = ea_object.note if note_present?(ea_object)
+        end
+
+        def note_present?(ea_object)
+          ea_object.note && !ea_object.note.empty?
+        end
+
+        def assign_enum_features(enum, ea_object)
+          enum.values = load_enum_values(ea_object.ea_object_id)
+          enum.tagged_values = load_tagged_values(ea_object.ea_guid)
+        end
+
+        private
+
+        def enum?(ea_object)
+          ea_object.enumeration? ||
+            (ea_object.stereotype && ea_object.stereotype.downcase == "enumeration")
+        end
+
+        def valid_stereotype?(ea_object)
+          ea_object.stereotype && !ea_object.stereotype.empty?
+        end
+
+        # Load enum values (literals) from attributes
+        # @param object_id [Integer] Object ID
+        # @return [Array<Lutaml::Uml::Value>] Enum values
+        def load_enum_values(object_id)
+          return [] if object_id.nil?
+
+          ea_attrs = database.attributes_for_object(object_id)
+            .sort_by { |a| a.pos || 0 }
+
+          ea_attrs.filter_map { |ea_attr| build_enum_value(ea_attr) }
+        end
+
+        def build_enum_value(ea_attr)
+          Lutaml::Uml::Value.new.tap do |value|
+            value.name = ea_attr.name
+            value.id = normalize_guid_to_xmi_format(ea_attr.ea_guid, "EAID")
+            value.definition = ea_attr.notes unless
+              ea_attr.notes.nil? || ea_attr.notes.empty?
+          end
+        end
+
+        # Load and transform tagged values for an enum
+        # @param ea_guid [String] Element GUID
+        # @return [Array<Lutaml::Uml::TaggedValue>] UML tagged values
+        def load_tagged_values(ea_guid)
+          return [] if ea_guid.nil?
+          return [] unless database.tagged_values
+
+          ea_tags = database.tagged_values.select do |tag|
+            tag.element_id == ea_guid
+          end
+
+          tag_transformer = TaggedValueTransformer.new(database)
+          tag_transformer.transform_collection(ea_tags)
+        end
+      end
+    end
+  end
+end

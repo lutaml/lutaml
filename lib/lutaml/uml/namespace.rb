@@ -2,9 +2,11 @@
 
 module Lutaml
   module Uml
-    class NameSpace < Lutaml::Model::Serializable
+    class Namespace < Lutaml::Model::Serializable
+      skip_reference_registration
+
       attribute :name, :string
-      attribute :namespace, NameSpace
+      attribute :namespace, Namespace
     end
   end
 end
