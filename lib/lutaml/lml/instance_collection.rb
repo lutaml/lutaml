@@ -8,10 +8,10 @@ require "lutaml/lml/collection"
 module Lutaml
   module Lml
     class InstanceCollection < Lutaml::Model::Serializable
-      attribute :instances, Instance, collection: true, default: []
-      attribute :imports, InstancesImport, collection: true, default: []
-      attribute :exports, InstancesExport, collection: true, default: []
-      attribute :collections, Collection, collection: true, default: []
+      attribute :instances, Instance, collection: true, default: -> { [] }
+      attribute :imports, InstancesImport, collection: true, default: -> { [] }
+      attribute :exports, InstancesExport, collection: true, default: -> { [] }
+      attribute :collections, Collection, collection: true, default: -> { [] }
     end
   end
 end

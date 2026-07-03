@@ -291,5 +291,33 @@ RSpec.describe Lutaml::Lml::Parser do
         expect(products.last.parent).to eq("base_computer")
       end
     end
+
+    context "when parsing quoted strings" do
+      let(:lml_io) do
+        Struct.new(:path, :content) do
+          def read
+            content
+          end
+        end
+      end
+
+      it "accepts single- and double-quoted strings" do
+        source = <<~LML
+          require 'shared/base.lml'
+          require "shared/extra.lml"
+          instances {
+          }
+        LML
+        doc = described_class.parse(lml_io.new("inline.lml", source))
+        expect(doc.requires).to eq(["shared/base.lml", "shared/extra.lml"])
+      end
+
+      it "rejects mismatched quote pairs" do
+        source = "require \"shared/base.lml'\ninstances {\n}\n"
+        expect do
+          described_class.parse(lml_io.new("inline.lml", source))
+        end.to raise_error(Lutaml::Uml::Parsers::ParsingError)
+      end
+    end
   end
 end

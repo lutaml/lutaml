@@ -45,12 +45,6 @@ module Lutaml
         end
       end
 
-      def create_lml_diagram(hash)
-        ::Lutaml::Lml::Diagram.new.tap do |model|
-          set_lml_model(model, hash)
-        end
-      end
-
       def create_lml_attribute(hash) # rubocop:disable Metrics/AbcSize
         ::Lutaml::Lml::TopElementAttribute.new.tap do |model|
           set_lml_model(model, hash)
@@ -132,7 +126,6 @@ module Lutaml
           create_lml_classes(model, member_hash)
           create_lml_enums(model, member_hash)
           create_lml_data_types(model, member_hash)
-          create_lml_diagrams(model, member_hash)
           create_lml_attributes(model, member_hash)
           create_lml_associations(model, member_hash)
           create_lml_operations(model, member_hash)
@@ -180,16 +173,6 @@ module Lutaml
         attr = create_lml_data_type(data_types)
         model.data_types = [] if model.data_types.nil?
         model.data_types << attr
-        hash
-      end
-
-      def create_lml_diagrams(model, hash)
-        diagrams = hash.delete(:diagrams)
-        return [] if diagrams.nil?
-
-        attr = create_lml_diagram(diagrams)
-        model.diagrams = [] if model.diagrams.nil?
-        model.diagrams << attr
         hash
       end
 
