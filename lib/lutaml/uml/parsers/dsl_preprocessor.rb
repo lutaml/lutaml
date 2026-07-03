@@ -8,6 +8,12 @@ module Lutaml
       class DslPreprocessor
         attr_reader :input_file
 
+        # A `definition { ... }` body, mirroring the grammar: it runs from
+        # `definition {` to the first unescaped `}` (`\` escapes the next
+        # character; braces do not nest). Used to keep an `include` that appears
+        # as literal text inside a definition from being expanded as a directive.
+        DEFINITION_BODY = /\bdefinition\s*\{(?:\\.|[^}])*\}/m
+
         def initialize(input_file)
           @input_file = input_file
         end
@@ -20,15 +26,41 @@ module Lutaml
 
         def call
           include_root = File.dirname(input_file.path)
-          input_file.read.split("\n").reduce([]) do |res, line|
-            res.push(*process_dsl_line(include_root, line))
+          text = input_file.read
+          in_definition = definition_line_flags(text)
+          text.split("\n").each_with_index.reduce([]) do |res, (line, index)|
+            res.push(*process_dsl_line(include_root, line, in_definition[index]))
           end.join("\n")
         end
 
         private
 
-        def process_dsl_line(include_root, line)
+        # `include` is only expanded at statement position. A line whose content
+        # falls inside a `definition { ... }` body is literal text, so leave it
+        # untouched — otherwise a definition line beginning with `include` would
+        # be misread as a directive.
+        def process_dsl_line(include_root, line, in_definition)
+          return line if in_definition
+
           process_include_line(include_root, line)
+        end
+
+        # @return [Array<Boolean>] per line, whether the line's content is inside
+        #   a definition body (indexed to match the read text split on newlines).
+        def definition_line_flags(text)
+          flags = Array.new(text.count("\n") + 1, false)
+          pos = 0
+          while (match = DEFINITION_BODY.match(text, pos))
+            mark_definition_lines(flags, text, match)
+            pos = match.end(0)
+          end
+          flags
+        end
+
+        def mark_definition_lines(flags, text, match)
+          first = text[0...match.begin(0)].count("\n")
+          last = text[0...(match.end(0) - 1)].count("\n")
+          (first..last).each { |line_index| flags[line_index] = true }
         end
 
         def process_include_line(include_root, line) # rubocop:disable Metrics/MethodLength
