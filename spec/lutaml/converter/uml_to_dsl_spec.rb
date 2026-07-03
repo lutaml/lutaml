@@ -20,9 +20,14 @@ RSpec.describe Lutaml::Converter::UmlToDsl do
   def association_tuples(doc)
     doc.associations.map do |a|
       [a.owner_end, a.owner_end_type, a.owner_end_attribute_name,
+       *card(a.owner_end_cardinality),
        a.member_end, a.member_end_type, a.member_end_attribute_name,
-       a.member_end_cardinality&.min, a.member_end_cardinality&.max, a.name]
+       *card(a.member_end_cardinality), a.name]
     end
+  end
+
+  def card(cardinality)
+    [cardinality&.min, cardinality&.max]
   end
 
   describe "Document#to_lutaml" do

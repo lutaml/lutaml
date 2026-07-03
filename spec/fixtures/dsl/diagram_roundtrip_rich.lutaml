@@ -35,7 +35,7 @@ diagram RichView {
   association PersonAnimal {
     owner_type aggregation
     member_type direct
-    owner Person#pets
+    owner Person#pets [1..*]
     member Animal#owner [0..*]
   }
 }
