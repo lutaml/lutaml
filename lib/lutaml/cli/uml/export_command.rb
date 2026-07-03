@@ -43,6 +43,8 @@ module Lutaml
           when "xsd", "json-schema" then run_schema(repo)
           else raise Thor::Error, "Unknown format: #{options[:format]}"
           end
+        rescue Thor::Error
+          raise
         rescue StandardError => e
           fail_export(e)
         end
