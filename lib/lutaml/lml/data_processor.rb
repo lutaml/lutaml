@@ -75,6 +75,8 @@ module Lutaml
       end
 
       def process_attributes_array(obj)
+        return [] if obj.empty?
+
         if obj.all? { |e| e.is_a?(Hash) && e.keys.size == 1 }
           hash = {}
           obj.each do |item|

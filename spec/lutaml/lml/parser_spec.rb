@@ -319,5 +319,21 @@ RSpec.describe Lutaml::Lml::Parser do
         end.to raise_error(Lutaml::Uml::Parsers::ParsingError)
       end
     end
+
+    context "when parsing instances with empty bodies" do
+      let(:lml_io) do
+        Struct.new(:path, :content) do
+          def read
+            content
+          end
+        end
+      end
+
+      it "maps empty and whitespace-only bodies to empty attribute lists" do
+        source = "instances {\n  Product \"p1\" {}\n  Product \"p2\" {   \n\n  }\n}\n"
+        doc = described_class.parse(lml_io.new("inline.lml", source))
+        expect(doc.instances.instances.map(&:attributes)).to eq([[], []])
+      end
+    end
   end
 end
