@@ -79,18 +79,17 @@ where:
 * `owner_type` - optional, type of the owner end (`aggregation`|`composition`|`direct`|`inheritance`)
 * `member_type` - optional, type of the member end (`aggregation`|`composition`|`direct`|`inheritance`)
 * `owner|member` - end of association, use `\#attribute_name` to set a role name
-* `property_string` - property string for attibutes associations
-* `cardinality` - examples: '1..*', '*'
+* `cardinality` - optional, in square brackets, e.g. `[1..*]`, `[0..*]`, `[*]`
 
 Example:
 
 [source,java]
 ----
 class AddressClassProfile {
-  +addressClassProfile:
+  +addressClassProfile
 }
 class AttributeProfile {
-  +attributeProfile:
+  +attributeProfile
 }
 
 association BidirectionalAssociation {
