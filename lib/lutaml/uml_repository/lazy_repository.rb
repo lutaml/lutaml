@@ -238,11 +238,26 @@ module Lutaml
           @indexes[:diagram_index] =
             IndexBuilder.build_diagram_index(@document, @indexes)
         when :simple_name_to_qnames
+          # Derive from the already-built qualified_names (qname => classifier)
+          # instead of re-traversing the whole document. Keyed by the
+          # classifier's own name, in qualified_names insertion order, so it is
+          # identical to IndexBuilder.build_simple_name_to_qnames.
+          ensure_index(:qualified_names)
           @indexes[:simple_name_to_qnames] =
-            IndexBuilder.build_simple_name_to_qnames(@document)
+            derive_simple_name_to_qnames(@indexes[:qualified_names])
         end
 
         @index_builders_pending.delete(index_name)
+      end
+
+      # Group qualified names by their classifier's own name, reproducing
+      # IndexBuilder.build_simple_name_to_qnames without a second traversal.
+      def derive_simple_name_to_qnames(qualified_names)
+        derived = {}
+        qualified_names.each do |qname, classifier|
+          (derived[classifier.name] ||= []) << qname
+        end
+        IndexBuilder.freeze_values(derived)
       end
     end
   end
