@@ -84,7 +84,15 @@ module Lutaml
       def self.build_simple_name_to_qnames(document)
         builder = new(document)
         builder.build_qualified_name_index
-        builder.simple_name_to_qnames.freeze
+        freeze_values(builder.simple_name_to_qnames)
+      end
+
+      # Freeze a hash-of-arrays and each of its value arrays, so the
+      # immutability guarantee also covers the nested arrays reachable through
+      # Repository#indexes.
+      def self.freeze_values(hash)
+        hash.each_value(&:freeze)
+        hash.freeze
       end
 
       def self.build_classes(document)
@@ -192,8 +200,10 @@ module Lutaml
           class_to_qname: @class_to_qname.freeze,
           classes: @classes.freeze,
           associations: @associations.freeze,
-          package_to_classes: plain_hash(@package_to_classes).freeze,
-          simple_name_to_qnames: plain_hash(@simple_name_to_qnames).freeze,
+          package_to_classes:
+            self.class.freeze_values(plain_hash(@package_to_classes)),
+          simple_name_to_qnames:
+            self.class.freeze_values(plain_hash(@simple_name_to_qnames)),
         }.freeze
       end
 
