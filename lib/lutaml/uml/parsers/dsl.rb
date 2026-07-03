@@ -101,7 +101,7 @@ module Lutaml
 
         rule(:quotes) { match['"\''] }
         rule(:quotes?) { quotes.maybe }
-        rule(:space) { match("\s") }
+        rule(:space) { str(" ") }
         rule(:spaces) { space.repeat(1) }
         rule(:spaces?) { spaces.maybe }
         rule(:whitespace) do
@@ -247,7 +247,7 @@ module Lutaml
         rule(:keyword_type_argument) do
           str("type") >>
             spaces? >>
-            match["[^\s\n\r]"].repeat(1).as(:type) >>
+            match('[^ \n\r]').repeat(1).as(:type) >>
             whitespace?
         end
 
@@ -260,7 +260,7 @@ module Lutaml
 
         rule(:keyword_any_argument) do
           spaces? >>
-            match("[^\s\n\r]").repeat(1).as(:name) >>
+            match('[^ \n\r]').repeat(1).as(:name) >>
             spaces >>
             str("=").maybe >>
             spaces? >>
@@ -620,7 +620,7 @@ module Lutaml
         end
 
         rule(:import_definition) do
-          match("[^\s\n\r]").repeat(1).as(:format_type) >> spaces? >> quoted_string.as(:file) >> whitespace? >>
+          match('[^ \n\r]').repeat(1).as(:format_type) >> spaces? >> quoted_string.as(:file) >> whitespace? >>
             str("{") >> whitespace? >>
             attributes >> whitespace? >>
             str("}") >> whitespace?

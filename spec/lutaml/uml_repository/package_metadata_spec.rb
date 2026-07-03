@@ -83,28 +83,28 @@ RSpec.describe Lutaml::UmlRepository::PackageMetadata do
       metadata = described_class.new(name: nil, version: "1.0")
       errors = metadata.validate
       expect(errors.size).to eq(1)
-      expect(errors.first.message).to match(/name is required/)
+      expect(errors.first.message).to include("name is required")
     end
 
     it "returns error when name is empty string", :aggregate_failures do
       metadata = described_class.new(name: "", version: "1.0")
       errors = metadata.validate
       expect(errors.size).to eq(1)
-      expect(errors.first.message).to match(/name is required/)
+      expect(errors.first.message).to include("name is required")
     end
 
     it "returns error when version is nil", :aggregate_failures do
       metadata = described_class.new(name: "Test", version: nil)
       errors = metadata.validate
       expect(errors.size).to eq(1)
-      expect(errors.first.message).to match(/version is required/)
+      expect(errors.first.message).to include("version is required")
     end
 
     it "returns error when version is empty string", :aggregate_failures do
       metadata = described_class.new(name: "Test", version: "")
       errors = metadata.validate
       expect(errors.size).to eq(1)
-      expect(errors.first.message).to match(/version is required/)
+      expect(errors.first.message).to include("version is required")
     end
 
     it "returns multiple errors when both required fields missing",
@@ -113,8 +113,8 @@ RSpec.describe Lutaml::UmlRepository::PackageMetadata do
       errors = metadata.validate
       expect(errors.size).to eq(2)
       expect(errors.map(&:message)).to include(
-        match(/name is required/),
-        match(/version is required/),
+        include("name is required"),
+        include("version is required"),
       )
     end
   end
