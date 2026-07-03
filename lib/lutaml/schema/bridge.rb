@@ -10,8 +10,10 @@ module Lutaml
     # For each UML class it synthesizes a lutaml-model +Serializable+ subclass
     # whose attributes and +xml do ... end+ mapping are derived from the class's
     # attributes via an {EncodingRule}, then delegates to lutaml-model:
-    # +to_xsd+ for XSD and JSON Schema generation. The synthesized class is
-    # given a real +name+ (anonymous classes crash JSON Schema generation).
+    # +Lutaml::Model::Schema.to_xsd+ for XSD and
+    # +Lutaml::Json::Schema::JsonSchema.generate+ for JSON Schema. The
+    # synthesized class is given a real +name+ (anonymous classes crash JSON
+    # Schema generation).
     #
     # @example
     #   bridge = Lutaml::Schema::Bridge.new(repository.document)
@@ -53,6 +55,7 @@ module Lutaml
       # @param class_name [String] the UML class to realize
       # @return [String] the (pretty) JSON Schema document
       def to_json_schema(class_name)
+        require "lutaml/json"
         Lutaml::Json::Schema::JsonSchema.generate(
           serializable_for(class_name), pretty: true
         )
