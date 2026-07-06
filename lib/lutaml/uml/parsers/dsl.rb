@@ -150,19 +150,28 @@ module Lutaml
         end
 
         rule(:title_keyword) { kw_title >> spaces }
-        rule(:title_text) do
-          match['"\''].maybe >>
-            match['a-zA-Z0-9_\- ,.:;'].repeat(1).as(:title) >>
-            match['"\''].maybe
-        end
+        rule(:title_text) { quoted_or_plain_text(:title) }
         rule(:title_definition) { title_keyword >> title_text }
         rule(:caption_keyword) { kw_caption >> spaces }
-        rule(:caption_text) do
-          match['"\''].maybe >>
-            match['a-zA-Z0-9_\- ,.:;'].repeat(1).as(:caption) >>
-            match['"\''].maybe
-        end
+        rule(:caption_text) { quoted_or_plain_text(:caption) }
         rule(:caption_definition) { caption_keyword >> caption_text }
+
+        # A quoted string (any content except its quote char or a newline) or,
+        # for backward compatibility, an unquoted run of name-ish characters.
+        # The quoted form lets titles/captions carry parens, slashes, etc. and
+        # still round-trip through Document#to_lutaml.
+        def quoted_or_plain_text(key)
+          quoted_text('"', key) |
+            quoted_text("'", key) |
+            match['a-zA-Z0-9_\- ,.:;'].repeat(1).as(key)
+        end
+
+        def quoted_text(quote, key)
+          line_break = str("\n") | str("\r")
+          str(quote) >>
+            ((str(quote) | line_break).absent? >> any).repeat(1).as(key) >>
+            str(quote)
+        end
 
         rule(:fontname_keyword) { kw_fontname >> spaces }
         rule(:fontname_text) do
@@ -206,6 +215,12 @@ module Lutaml
 
         rule(:association_keyword) { kw_association >> spaces }
 
+        # Association end and role names accept the same extra characters as
+        # the one-line shorthand endpoints (':' and '.', for qualified names
+        # like Foo::Bar), so any association the shorthand parses can be
+        # re-emitted through the block form (Document#to_lutaml) and re-parsed.
+        rule(:assoc_end_name) { match['a-zA-Z0-9 _\-:.'].repeat(1) }
+
         %w[owner member].each do |association_end_type| # rubocop:disable Metrics/BlockLength
           rule("#{association_end_type}_cardinality") do
             spaces? >>
@@ -220,7 +235,7 @@ module Lutaml
           rule("#{association_end_type}_attribute_name") do
             str("#") >>
               visibility? >>
-              name.as("#{association_end_type}_end_attribute_name")
+              assoc_end_name.as("#{association_end_type}_end_attribute_name")
           end
           rule("#{association_end_type}_attribute_name?") do
             send(:"#{association_end_type}_attribute_name").maybe
@@ -228,7 +243,7 @@ module Lutaml
           rule("#{association_end_type}_definition") do
             send(:"kw_#{association_end_type}") >>
               spaces >>
-              name.as("#{association_end_type}_end") >>
+              assoc_end_name.as("#{association_end_type}_end") >>
               send(:"#{association_end_type}_attribute_name?") >>
               send(:"#{association_end_type}_cardinality?")
           end
@@ -261,6 +276,58 @@ module Lutaml
           association_keyword >>
             name.as(:name).maybe >>
             association_body
+        end
+
+        # -- Association shorthand (one-line, PlantUML-style operators)
+        #
+        # Compositional operator: [left adornment] -- [right adornment]
+        #   left  -> owner_end_type, right -> member_end_type
+        #   *  composition   o  aggregation   <| / |>  inheritance   < / >  direct
+        # Examples: A --> B | A o-- B | A o--> B | A --|> B | A *-- B | A -- B
+        rule(:assoc_op_left)  { str("*") | str("o") | str("<|") | str("<") }
+        rule(:assoc_op_right) { str("*") | str("o") | str("|>") | str(">") }
+        rule(:assoc_op) do
+          assoc_op_left.as(:op_left).maybe >>
+            str("--") >>
+            assoc_op_right.as(:op_right).maybe
+        end
+        # Operator-aware endpoint token: like a class name but whitespace-free,
+        # and it stops before an operator so `Test-Class --> Other` parses while
+        # `A-->B` splits correctly (a `-`/`:`/`.` is part of the name only when
+        # it does not begin an operator).
+        rule(:endpoint_name_chars) do
+          (assoc_op.absent? >> match['a-zA-Z0-9_\-:.']).repeat(1)
+        end
+        %w[owner member].each do |end_type|
+          rule("shortcut_#{end_type}_endpoint") do
+            endpoint_name_chars.as("#{end_type}_end") >>
+              (str("#") >>
+                # Consume an optional visibility marker (+/-/#/~) on the role
+                # name WITHOUT capturing it: the Association model has no role
+                # visibility, and capturing it as :visibility_modifier on both
+                # ends collides ("Duplicate subtrees") when owner and member are
+                # merged into the single assoc_shortcut subtree.
+                kw_visibility_modifier.maybe >>
+                endpoint_name_chars.as("#{end_type}_end_attribute_name")).maybe >>
+              (spaces? >>
+                str("[") >>
+                cardinality_body_definition.as("#{end_type}_end_cardinality") >>
+                str("]")).maybe
+          end
+        end
+        # Horizontal whitespace (space or tab) — the shared `spaces` rule only
+        # matches the space byte, so the operator separator uses this to accept
+        # tabs too.
+        rule(:hspace) { (str(" ") | str("\t")).repeat(1) }
+        # NOTE: whitespace around the operator is REQUIRED. The aggregation
+        # glyph `o` is also a name character, so a spaceless form like
+        # `Foo-->Bar` would mis-parse (`Foo`'s trailing `o` consumed as an
+        # `o--` adornment). Mandatory whitespace makes the operator unambiguous.
+        rule(:shortcut_association_definition) do
+          (shortcut_owner_endpoint >>
+            hspace >> assoc_op >> hspace >>
+            shortcut_member_endpoint)
+            .as(:assoc_shortcut)
         end
 
         # -- Class
@@ -384,6 +451,7 @@ module Lutaml
             primitive_definition.as(:primitives) |
             data_type_definition.as(:data_types) |
             association_definition.as(:associations) |
+            shortcut_association_definition |
             comment_definition |
             comment_multiline_definition
         end

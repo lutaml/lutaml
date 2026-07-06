@@ -97,7 +97,9 @@ module Lutaml
       def set_model_attribute(model, hash) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
         hash.each do |key, value|
           if key == :definition
-            value = value.to_s.gsub(/\\}/, "}").gsub(/\\{/, "{")
+            # Single-pass unescape of \\, \{ and \} (mirrors UmlToDsl escaping),
+            # so a leading backslash cannot swallow a following brace.
+            value = value.to_s.gsub(/\\([\\{}])/, '\1')
               .split("\n").map(&:strip).join("\n")
           end
 

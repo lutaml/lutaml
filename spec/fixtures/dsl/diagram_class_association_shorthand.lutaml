@@ -1,0 +1,16 @@
+diagram ShorthandView {
+  class A {}
+  class B {}
+
+  A --> B
+  A o-- B
+  A *-- B
+  A --|> B
+  A o--> B
+  A -- B
+  A <-- B
+  A <|-- B
+  A --o B
+  A#owns [1] --> B#owned [0..*]
+  Foo::Bar --> Baz::Qux
+}

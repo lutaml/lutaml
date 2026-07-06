@@ -67,50 +67,68 @@ Syntax:
 [source,java]
 ----
 association name {
-  owned_type association|composition|aggregation|generalization|uses
-  member_type association|composition|aggregation|generalization|uses
-  owned association_name[#attribute_name] [{property_string}][cardinality]
-  member association_name[#attribute_name] [{property_string}][cardinality]
+  owner_type aggregation|composition|direct|inheritance
+  member_type aggregation|composition|direct|inheritance
+  owner association_name[#attribute_name] [cardinality]
+  member association_name[#attribute_name] [cardinality]
 }
 ----
 
 where:
 
-* `owned_type` - optional, use to define a bidirectional association (`association`|`composition`|`aggregation`|`generalization`|`uses`)
-* `member_type` - association type (`association`|`composition`|`aggregation`|`generalization`|`uses`)
-* `owned|member` - end of association, use `\#attribute_name` to set a role name
-* `property_string` - property string for attibutes associations
-* `cardinality` - examples: '1..*', '*'
+* `owner_type` - optional, type of the owner end (`aggregation`|`composition`|`direct`|`inheritance`)
+* `member_type` - optional, type of the member end (`aggregation`|`composition`|`direct`|`inheritance`)
+* `owner|member` - end of association, use `\#attribute_name` to set a role name
+* `cardinality` - optional, in square brackets, e.g. `[1..*]`, `[0..*]`, `[*]`
 
 Example:
 
 [source,java]
 ----
-class Association {
-  +association:
+class AddressClassProfile {
+  +addressClassProfile
 }
-class Type {
-  +endType:
+class AttributeProfile {
+  +attributeProfile
 }
 
-association AssociatingTypeAndAssociation {
-  type uses
-  from Association#+association {subsets relationship}[*]
-  to Type#+/endType {readOnly, subsets relatedElement} [1..*]
+association BidirectionalAssociation {
+  owner_type aggregation
+  member_type direct
+  owner AddressClassProfile#addressClassProfile
+  member AttributeProfile#attributeProfile [0..*]
 }
 ----
 
-=== Undirected associations
+=== Single-line associations
 
-The simplest way to define relationship between two classes is to use `generalize` keyword:
+A relationship between two classes can be written on a single line using
+PlantUML-style operators, as a shorthand for the explicit `association { }`
+block:
 
 [source,java]
 ----
-class Pet {}
-class Cat {
-  generalize Pet
-}
+A --> B       // directed association (navigable to B)
+A o-- B       // aggregation (B is shared-owned by A)
+A *-- B       // composition (B is part of A)
+A --|> B      // generalization (A is a kind of B)
+A -- B        // plain association
 ----
+
+The operator desugars to the same `owner_type`/`member_type` ends as the block
+form: the left adornment sets the owner end and the right adornment sets the
+member end, so the two can be combined — e.g. `A o--> B` is an aggregation on
+A's end together with a navigable arrow on B's end. Role names and cardinality
+are optional on either end:
+
+[source,java]
+----
+Order#orders --> Customer#customer [1..*]
+----
+
+Whitespace around the operator is required — write `A --> B`, not `A-->B`.
+(The aggregation glyph `o` is also a name character, so a spaceless form would
+be ambiguous.)
 
 === Attribute relationship
 

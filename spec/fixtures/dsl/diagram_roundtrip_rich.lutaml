@@ -1,0 +1,41 @@
+diagram RichView {
+  title "rich round-trip"
+
+  class Person {
+    definition {
+      A human being.
+    }
+    +name: String [1]
+    -age: Integer
+    +email: String [0..1]
+    +ssn: String {
+      definition {
+        Social security number.
+      }
+    }
+  }
+
+  abstract class Animal {
+    +species: String
+  }
+
+  enum Color {
+    red
+    green
+    blue
+  }
+
+  data_type Money {
+    +amount: Integer
+    +currency: String [1]
+  }
+
+  primitive Boolean
+
+  association PersonAnimal {
+    owner_type aggregation
+    member_type direct
+    owner Person#pets [1..*]
+    member Animal#owner [0..*]
+  }
+}
