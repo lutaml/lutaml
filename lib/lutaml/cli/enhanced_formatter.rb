@@ -119,11 +119,6 @@ module Lutaml
         end
       end
 
-      # Format class details with enhanced visual formatting
-      #
-      # @param klass [Object] Class object to display
-      # @param path_formatter [Proc] Formatter for package paths
-      # @return [String] Enhanced class details
       # Append the resolved class qname to an attribute's type for display, when
       # it resolves to a (non-primitive) class. Best-effort: returns the raw
       # type when no repository is supplied or resolution does not apply.
@@ -145,6 +140,13 @@ module Lutaml
           result.qualified_name != attr.type
       end
 
+      # Format class details with enhanced visual formatting
+      #
+      # @param klass [Object] Class object to display
+      # @param path_formatter [Proc] Formatter for package paths
+      # @param repository [Lutaml::UmlRepository::Repository, nil] optional
+      #   repository used to resolve attribute types to qualified class names
+      # @return [String] Enhanced class details
       def self.format_class_details_enhanced(klass, _path_formatter = nil, repository: nil) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
         lines = []
 

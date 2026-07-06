@@ -79,14 +79,6 @@ module Lutaml
         builder.class_to_qname.freeze
       end
 
-      # Build the simple-name => [qualified name, ...] index on its own (used by
-      # LazyRepository so resolve_type gets the O(1) map instead of scanning).
-      def self.build_simple_name_to_qnames(document)
-        builder = new(document)
-        builder.build_qualified_name_index
-        freeze_values(builder.simple_name_to_qnames)
-      end
-
       # Freeze a hash-of-arrays and each of its value arrays, so the
       # immutability guarantee also covers the nested arrays reachable through
       # Repository#indexes.
@@ -123,7 +115,8 @@ module Lutaml
       # Build inheritance graph index
       #
       # @param document [Lutaml::Uml::Document] The UML document
-      # @param indexes [Hash, nil] Existing indexes (requires :qualified_names)
+      # @param indexes [Hash, nil] Existing indexes (reused when both
+      #   :qualified_names and :simple_name_to_qnames are present)
       # @return [Hash] Frozen hash mapping parent qnames to child qnames
       def self.build_inheritance_graph(document, indexes)
         builder = new(document)
@@ -134,9 +127,9 @@ module Lutaml
         else
           # The association index resolves leaf-name parents through the
           # simple-name map (it never scans), so build qualified_names AND that
-          # map together. A caller may pass qualified_names without the map
-          # (lazy repositories); rebuilding both keeps the lazy inheritance
-          # graph identical to the eager one.
+          # map together. The lazy repository ensures and passes both indexes,
+          # so this branch is defensive for direct callers — rebuilding both
+          # keeps any such graph identical to the eager one.
           builder.build_qualified_name_index
         end
         builder.build_inheritance_graph_index

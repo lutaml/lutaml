@@ -38,6 +38,7 @@ module Lutaml
                                             stereotypes
                                             inheritance_graph
                                             diagram_index
+                                            simple_name_to_qnames
                                           ])
 
         # Initialize runtime query services (not serialized to LUR)
@@ -228,8 +229,11 @@ module Lutaml
         when :stereotypes
           @indexes[:stereotypes] = IndexBuilder.build_stereotypes(@document)
         when :inheritance_graph
-          # Requires qualified_names first
-          ensure_index(:qualified_names)
+          # Requires qualified_names AND simple_name_to_qnames: with both
+          # present, build_inheritance_graph reuses them instead of
+          # re-traversing the whole document (the simple-name map derives
+          # cheaply from qualified_names below).
+          ensure_index(:simple_name_to_qnames)
           @indexes[:inheritance_graph] =
             IndexBuilder.build_inheritance_graph(@document, @indexes)
         when :diagram_index
@@ -241,7 +245,7 @@ module Lutaml
           # Derive from the already-built qualified_names (qname => classifier)
           # instead of re-traversing the whole document. Keyed by the
           # classifier's own name, in qualified_names insertion order, so it is
-          # identical to IndexBuilder.build_simple_name_to_qnames.
+          # identical to the map IndexBuilder#build_all produces.
           ensure_index(:qualified_names)
           @indexes[:simple_name_to_qnames] =
             derive_simple_name_to_qnames(@indexes[:qualified_names])
@@ -250,8 +254,8 @@ module Lutaml
         @index_builders_pending.delete(index_name)
       end
 
-      # Group qualified names by their classifier's own name, reproducing
-      # IndexBuilder.build_simple_name_to_qnames without a second traversal.
+      # Group qualified names by their classifier's own name, reproducing the
+      # eager IndexBuilder#build_all map without a second document traversal.
       def derive_simple_name_to_qnames(qualified_names)
         derived = {}
         qualified_names.each do |qname, classifier|
