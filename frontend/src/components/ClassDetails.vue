@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useDataStore } from '../stores/dataStore'
 import { useUiStore } from '../stores/uiStore'
+import type { SpaAttribute } from '../types'
 
 const data = useDataStore()
 const ui = useUiStore()
@@ -15,13 +16,19 @@ function formatCardinality(c: any): string {
   return `${c.min || '0'}..${c.max || '*'}`
 }
 
-function resolveType(typeName: string): { isBasic: boolean; classId: string | null } {
+function resolveType(attr: SpaAttribute): { isBasic: boolean; classId: string | null } {
+  // Prefer the backend's precomputed, deterministic typeRef; fall back to a
+  // client-side name lookup only for older data generated without it.
+  if (attr.typeRef?.classId) return { isBasic: false, classId: attr.typeRef.classId }
+  // Mirrors the backend TypeResolver::PRIMITIVE_TYPES (plus a few SPA-only
+  // names); only used as a fallback for legacy data without typeRef.
   const basicTypes = new Set([
-    'String', 'Integer', 'Boolean', 'Real', 'UnlimitedNatural',
-    'DateTime', 'URI', 'Any', 'Object',
+    'String', 'Integer', 'Boolean', 'Real', 'UnlimitedNatural', 'DateTime',
+    'Date', 'Float', 'Double', 'Long', 'Short', 'Byte', 'Char', 'Time',
+    'Decimal', 'URI', 'Any', 'Object',
   ])
-  if (basicTypes.has(typeName)) return { isBasic: true, classId: null }
-  const found = data.findClassByName(typeName)
+  if (basicTypes.has(attr.type)) return { isBasic: true, classId: null }
+  const found = data.findClassByName(attr.type)
   return { isBasic: false, classId: found ? found.id : null }
 }
 
@@ -103,12 +110,12 @@ function badgeType(c: any): string {
               <td>{{ data.getAttributeById(attrId)?.name }}</td>
               <td>
                 <template v-if="data.getAttributeById(attrId)?.type">
-                  <a v-if="resolveType(data.getAttributeById(attrId)!.type).classId"
+                  <a v-if="resolveType(data.getAttributeById(attrId)!).classId"
                      href="#" class="type-link"
-                     @click.prevent="ui.selectClass(resolveType(data.getAttributeById(attrId)!.type).classId!)">
+                     @click.prevent="ui.selectClass(resolveType(data.getAttributeById(attrId)!).classId!)">
                     {{ data.getAttributeById(attrId)?.type }}
                   </a>
-                  <span v-else-if="resolveType(data.getAttributeById(attrId)!.type).isBasic"
+                  <span v-else-if="resolveType(data.getAttributeById(attrId)!).isBasic"
                         class="uml-basic-type">
                     {{ data.getAttributeById(attrId)?.type }}
                   </span>
@@ -146,7 +153,18 @@ function badgeType(c: any): string {
             <tbody>
               <tr>
                 <td>{{ ia.attribute.name }}</td>
-                <td>{{ ia.attribute.type }}</td>
+                <td>
+                  <a v-if="resolveType(ia.attribute).classId"
+                     href="#" class="type-link"
+                     @click.prevent="ui.selectClass(resolveType(ia.attribute).classId!)">
+                    {{ ia.attribute.type }}
+                  </a>
+                  <span v-else-if="resolveType(ia.attribute).isBasic"
+                        class="uml-basic-type">
+                    {{ ia.attribute.type }}
+                  </span>
+                  <span v-else class="type-unresolved">{{ ia.attribute.type }}</span>
+                </td>
                 <td>{{ formatCardinality(ia.attribute.cardinality) }}</td>
               </tr>
             </tbody>

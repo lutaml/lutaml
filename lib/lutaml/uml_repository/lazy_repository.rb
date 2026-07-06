@@ -38,6 +38,7 @@ module Lutaml
                                             stereotypes
                                             inheritance_graph
                                             diagram_index
+                                            simple_name_to_qnames
                                           ])
 
         # Initialize runtime query services (not serialized to LUR)
@@ -68,6 +69,16 @@ module Lutaml
       # Lutaml::Uml::Enum, nil]
       def find_class(qualified_name, raise_on_error: false)
         ensure_index(:qualified_names)
+        super
+      end
+
+      # Resolve an attribute/type to its target class.
+      #
+      # Ensures the qualified_names and simple-name indexes are built first so
+      # resolution uses the O(1) map rather than scanning on every call.
+      def resolve_type(attr_or_type, from: nil)
+        ensure_index(:qualified_names)
+        ensure_index(:simple_name_to_qnames)
         super
       end
 
@@ -218,8 +229,11 @@ module Lutaml
         when :stereotypes
           @indexes[:stereotypes] = IndexBuilder.build_stereotypes(@document)
         when :inheritance_graph
-          # Requires qualified_names first
-          ensure_index(:qualified_names)
+          # Requires qualified_names AND simple_name_to_qnames: with both
+          # present, build_inheritance_graph reuses them instead of
+          # re-traversing the whole document (the simple-name map derives
+          # cheaply from qualified_names below).
+          ensure_index(:simple_name_to_qnames)
           @indexes[:inheritance_graph] =
             IndexBuilder.build_inheritance_graph(@document, @indexes)
         when :diagram_index
@@ -227,9 +241,27 @@ module Lutaml
           ensure_index(:package_paths)
           @indexes[:diagram_index] =
             IndexBuilder.build_diagram_index(@document, @indexes)
+        when :simple_name_to_qnames
+          # Derive from the already-built qualified_names (qname => classifier)
+          # instead of re-traversing the whole document. Keyed by the
+          # classifier's own name, in qualified_names insertion order, so it is
+          # identical to the map IndexBuilder#build_all produces.
+          ensure_index(:qualified_names)
+          @indexes[:simple_name_to_qnames] =
+            derive_simple_name_to_qnames(@indexes[:qualified_names])
         end
 
         @index_builders_pending.delete(index_name)
+      end
+
+      # Group qualified names by their classifier's own name, reproducing the
+      # eager IndexBuilder#build_all map without a second document traversal.
+      def derive_simple_name_to_qnames(qualified_names)
+        derived = {}
+        qualified_names.each do |qname, classifier|
+          (derived[classifier.name] ||= []) << qname
+        end
+        IndexBuilder.freeze_values(derived)
       end
     end
   end

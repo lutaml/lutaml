@@ -105,4 +105,69 @@ RSpec.describe Lutaml::UmlRepository::Presenters::AttributePresenter do
       expect(presenter).to be_a(described_class)
     end
   end
+
+  describe "resolved type (with repository + owner context)" do
+    let(:repository) do
+      Lutaml::UmlRepository::Repository.new(
+        document: create_resolution_test_document,
+      )
+    end
+    let(:alpha) { repository.find_class("ModelRoot::PkgA::Alpha") }
+    let(:owner_context) { { class_qname: "ModelRoot::PkgA::Alpha" } }
+
+    def presenter_for(attr_name, ctx: owner_context, repo: repository)
+      attr = alpha.attributes.find { |a| a.name == attr_name }
+      described_class.new(attr, repo, ctx)
+    end
+
+    it "adds a resolved-type line for a resolvable attribute" do
+      expect(presenter_for("refSame").to_text)
+        .to include("Resolved Type:  ModelRoot::PkgA::Beta")
+    end
+
+    it "marks a primitive type" do
+      expect(presenter_for("refPrimitive").to_text)
+        .to include("Resolved Type:  (primitive)")
+    end
+
+    it "notes ambiguity with the candidate count" do
+      echo = repository.find_class("ModelRoot::PkgC::Echo")
+      presenter = described_class.new(echo.attributes.first, repository,
+                                      class_qname: "ModelRoot::PkgC::Echo")
+      expect(presenter.to_text).to include("ambiguous: 2 candidates")
+    end
+
+    it "exposes resolved_* keys in to_hash", :aggregate_failures do
+      hash = presenter_for("refSame").to_hash
+      expect(hash[:resolved_type]).to eq("ModelRoot::PkgA::Beta")
+      expect(hash[:resolved_type_primitive]).to be(false)
+      expect(hash[:resolved_type_ambiguous]).to be(false)
+      expect(hash[:resolved_type_candidates]).to eq(["ModelRoot::PkgA::Beta"])
+    end
+
+    it "omits resolved info without a repository (backward compatible)",
+       :aggregate_failures do
+      presenter = presenter_for("refSame", repo: nil)
+      expect(presenter.to_text).not_to include("Resolved Type:")
+      expect(presenter.to_hash).not_to have_key(:resolved_type)
+    end
+
+    it "suppresses the resolved line for an already-qualified type" do
+      # refQualified's type IS the fully-qualified name, so there is nothing
+      # extra to show — matching the REPL/enhanced surfaces.
+      expect(presenter_for("refQualified").to_text)
+        .not_to include("Resolved Type:")
+    end
+
+    it "reports primitive and unresolved shapes in to_hash",
+       :aggregate_failures do
+      primitive = presenter_for("refPrimitive").to_hash
+      expect(primitive[:resolved_type]).to eq("String")
+      expect(primitive[:resolved_type_primitive]).to be(true)
+
+      unresolved = presenter_for("refUnresolved").to_hash
+      expect(unresolved[:resolved_type]).to be_nil
+      expect(unresolved[:resolved_type_candidates]).to eq([])
+    end
+  end
 end

@@ -16,6 +16,7 @@ RSpec.describe Lutaml::UmlRepository::IndexBuilder do
         :stereotypes,
         :inheritance_graph,
         :diagram_index,
+        :simple_name_to_qnames,
       )
     end
 
@@ -30,6 +31,88 @@ RSpec.describe Lutaml::UmlRepository::IndexBuilder do
       expect(indexes[:inheritance_graph]).to be_a(Hash)
       expect(indexes[:diagram_index]).to be_a(Hash)
       expect(indexes[:package_to_classes]).to be_a(Hash)
+      expect(indexes[:simple_name_to_qnames]).to be_a(Hash)
+    end
+  end
+
+  describe "simple_name_to_qnames index" do
+    let(:document) { create_resolution_test_document }
+
+    it "maps each simple class name to all its qualified names",
+       :aggregate_failures do
+      map = indexes[:simple_name_to_qnames]
+      expect(map["Shared"])
+        .to contain_exactly("ModelRoot::PkgA::Shared", "ModelRoot::PkgB::Shared")
+      expect(map["Beta"]).to eq(["ModelRoot::PkgA::Beta"])
+    end
+
+    it "only references qualified names that exist" do
+      qualified_names = indexes[:qualified_names]
+      indexes[:simple_name_to_qnames].each_value do |qname_list|
+        qname_list.each { |qname| expect(qualified_names).to have_key(qname) }
+      end
+    end
+
+    context "when two same-named classifiers collide on a qualified name" do
+      # e.g. a class and an enum both called "Status" in one package — a real
+      # EA-model shape. The qname is stored once, so the simple-name map must
+      # hold it once too, or resolution reports a spurious ambiguity.
+      let(:document) do
+        pkg = Lutaml::Uml::Package.new
+        pkg.name = "P"
+        klass = Lutaml::Uml::Class.new
+        klass.name = "Status"
+        enum = Lutaml::Uml::Enum.new(name: "Status")
+        pkg.classes = [klass]
+        pkg.enums = [enum]
+        doc = Lutaml::Uml::Document.new
+        doc.name = "M"
+        doc.packages = [pkg]
+        doc
+      end
+
+      it "stores the qname once and matches the lazy derivation",
+         :aggregate_failures do
+        eager = indexes[:simple_name_to_qnames]
+        expect(eager["Status"]).to eq(["ModelRoot::P::Status"])
+
+        lazy = Lutaml::UmlRepository::LazyRepository
+          .new(document: document, lazy: true)
+        result = lazy.resolve_type("Status", from: "ModelRoot")
+        expect(result.ambiguous?).to be(false)
+        expect(result.candidates).to eq(["ModelRoot::P::Status"])
+      end
+    end
+  end
+
+  describe "inheritance graph resolution of generalization parents" do
+    let(:document) do
+      mk_child = lambda do |name, general|
+        klass = Lutaml::Uml::Class.new(name: name, xmi_id: name)
+        klass.generalization = Lutaml::Uml::Generalization.new(general: general)
+        klass
+      end
+      pkg_b = Lutaml::Uml::Package.new(name: "PkgB", xmi_id: "pb")
+      pkg_b.classes = [Lutaml::Uml::Class.new(name: "Parent", xmi_id: "p1")]
+      pkg_a = Lutaml::Uml::Package.new(name: "PkgA", xmi_id: "pa")
+      pkg_a.classes = [
+        mk_child.call("CFull", "ModelRoot::PkgB::Parent"),
+        mk_child.call("CLeaf", "Parent"),
+        mk_child.call("CPartial", "PkgB::Parent"),
+      ]
+      doc = Lutaml::Uml::Document.new(name: "InheritanceModel")
+      doc.packages = [pkg_a, pkg_b]
+      doc
+    end
+
+    it "resolves fully-qualified and leaf parents but not partial ones",
+       :aggregate_failures do
+      children = indexes[:inheritance_graph]["ModelRoot::PkgB::Parent"] || []
+      expect(children).to include("ModelRoot::PkgA::CFull")
+      expect(children).to include("ModelRoot::PkgA::CLeaf")
+      # The association index stays map-only (no suffix scan), so a partially
+      # qualified parent creates no edge — preserving historical behaviour.
+      expect(children).not_to include("ModelRoot::PkgA::CPartial")
     end
   end
 

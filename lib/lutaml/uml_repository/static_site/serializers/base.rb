@@ -56,8 +56,19 @@ module Lutaml
               attribute, owner,
               id_generator: @id_generator,
               definition: format_definition(attribute.definition, @options),
-              stereotypes: normalize_stereotypes(attribute.stereotype)
+              stereotypes: normalize_stereotypes(attribute.stereotype),
+              type_ref: attribute_type_ref(attribute, owner)
             )
+          end
+
+          # Best-effort: a resolution failure must not abort the whole SPA build,
+          # so any error just yields no typeRef for that attribute.
+          def attribute_type_ref(attribute, owner)
+            Models::SpaTypeRef.from_resolution(
+              @repository.resolve_type(attribute, from: owner), @id_generator
+            )
+          rescue StandardError
+            nil
           end
         end
       end

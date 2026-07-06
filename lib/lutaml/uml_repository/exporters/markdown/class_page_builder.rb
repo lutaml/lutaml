@@ -29,7 +29,7 @@ module Lutaml
 
               #{build_inheritance_section(klass)}
 
-              #{build_attributes_section(klass)}
+              #{build_attributes_section(klass, qname)}
 
               #{build_operations_section(klass)}
 
@@ -74,7 +74,7 @@ module Lutaml
             ""
           end
 
-          def build_attributes_section(klass)
+          def build_attributes_section(klass, owner_qname)
             return "" unless klass.attributes&.any?
 
             content = "## Attributes\n\n"
@@ -84,11 +84,26 @@ module Lutaml
             klass.attributes.each do |attr|
               visibility = attr.visibility || ""
               cardinality = format_cardinality(attr.cardinality)
-              content += "| #{attr.name} | `#{attr.type}` | #{visibility} | " \
+              type_cell = format_attribute_type(attr.type, owner_qname)
+              content += "| #{attr.name} | #{type_cell} | #{visibility} | " \
                          "#{cardinality} |\n"
             end
 
             "#{content}\n"
+          end
+
+          # Render an attribute's type, linking to its resolved class page when
+          # the type resolves to a (non-primitive) class — the same link form
+          # association targets use — otherwise a plain code span.
+          def format_attribute_type(type, owner_qname)
+            result = @repository.resolve_type(type, from: owner_qname)
+            if result&.resolved? && !result.primitive?
+              "[#{type}](#{@link_resolver.class_link(result.qualified_name)})"
+            else
+              "`#{type}`"
+            end
+          rescue StandardError
+            "`#{type}`"
           end
 
           def build_operations_section(klass)

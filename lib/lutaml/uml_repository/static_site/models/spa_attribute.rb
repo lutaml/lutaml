@@ -12,6 +12,7 @@ module Lutaml
           attribute :owner, :string
           attribute :owner_name, :string
           attribute :cardinality, SpaCardinality
+          attribute :type_ref, SpaTypeRef
           attribute :definition, :string
           attribute :stereotypes, :string, collection: true,
                                            initialize_empty: true
@@ -27,6 +28,7 @@ module Lutaml
             map "owner", to: :owner
             map "ownerName", to: :owner_name
             map "cardinality", to: :cardinality
+            map "typeRef", to: :type_ref
             map "definition", to: :definition
             map "stereotypes", to: :stereotypes, render_empty: true
             map "isStatic", to: :is_static, render_default: true
@@ -35,7 +37,7 @@ module Lutaml
           end
 
           def self.from_uml(uml_attr, owner, id_generator:, definition:,
-stereotypes:)
+                            stereotypes:, type_ref: nil)
             new(
               id: id_generator.attribute_id(uml_attr, owner),
               name: uml_attr.name,
@@ -44,6 +46,7 @@ stereotypes:)
               owner: id_generator.class_id(owner),
               owner_name: owner.name,
               cardinality: SpaCardinality.from_uml(uml_attr.cardinality),
+              type_ref: type_ref,
               definition: definition,
               stereotypes: stereotypes,
               is_static: uml_attr.is_static,

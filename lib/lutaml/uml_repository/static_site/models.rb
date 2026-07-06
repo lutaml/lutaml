@@ -42,6 +42,8 @@ module Lutaml
                  "lutaml/uml_repository/static_site/models/spa_statistics"
         autoload :SpaTreeClassRef,
                  "lutaml/uml_repository/static_site/models/spa_tree_class_ref"
+        autoload :SpaTypeRef,
+                 "lutaml/uml_repository/static_site/models/spa_type_ref"
       end
     end
   end

@@ -396,4 +396,61 @@ RSpec.describe Lutaml::UmlRepository::Repository do
       expect(stats[:total_enums]).to eq(1)
     end
   end
+
+  describe "#resolve_type" do
+    let(:document) { create_resolution_test_document }
+    let(:repo) { described_class.new(document: document) }
+    let(:alpha) { repo.find_class("ModelRoot::PkgA::Alpha") }
+
+    def attr_for(name)
+      alpha.attributes.find { |a| a.name == name }
+    end
+
+    it "operates on a frozen repository (read-only)" do
+      expect(repo).to be_frozen
+    end
+
+    it "resolves a same-package attribute type", :aggregate_failures do
+      result = repo.resolve_type(attr_for("refSame"), from: alpha)
+      expect(result.qualified_name).to eq("ModelRoot::PkgA::Beta")
+      expect(result.classifier.name).to eq("Beta")
+      expect(result.ambiguous?).to be(false)
+    end
+
+    it "resolves an already-qualified type" do
+      expect(repo.resolve_type(attr_for("refQualified"), from: alpha).qualified_name)
+        .to eq("ModelRoot::PkgB::Gamma")
+    end
+
+    it "resolves a unique simple name across packages" do
+      expect(repo.resolve_type(attr_for("refCross"), from: alpha).qualified_name)
+        .to eq("ModelRoot::PkgB::Gamma")
+    end
+
+    it "flags an ambiguous reference while still resolving it",
+       :aggregate_failures do
+      echo = repo.find_class("ModelRoot::PkgC::Echo")
+      result = repo.resolve_type(echo.attributes.first, from: echo)
+      expect(result.ambiguous?).to be(true)
+      expect(result.resolved?).to be(true)
+      expect(result.candidates)
+        .to contain_exactly("ModelRoot::PkgA::Shared", "ModelRoot::PkgB::Shared")
+    end
+
+    it "marks a primitive type without a classifier", :aggregate_failures do
+      result = repo.resolve_type(attr_for("refPrimitive"), from: alpha)
+      expect(result.primitive?).to be(true)
+      expect(result.classifier).to be_nil
+    end
+
+    it "returns unresolved for an unknown type" do
+      expect(repo.resolve_type(attr_for("refUnresolved"), from: alpha).resolved?)
+        .to be(false)
+    end
+
+    it "accepts a bare type string with a qualified-name context" do
+      result = repo.resolve_type("Beta", from: "ModelRoot::PkgA::Alpha")
+      expect(result.qualified_name).to eq("ModelRoot::PkgA::Beta")
+    end
+  end
 end

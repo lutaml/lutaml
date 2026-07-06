@@ -331,6 +331,64 @@ module Lutaml
         attrs.find { |a| a.name == attr_name }
       end
 
+      # Resolve an attribute (or a bare type string) to the classifier its type
+      # refers to. Package-aware and deterministic, this is the single resolver
+      # reused by the SPA, CLI inspect, markdown export and REPL so every
+      # surface follows an attribute's type to the same class.
+      #
+      # @param attr_or_type [Lutaml::Uml::TopElementAttribute, String] an
+      #   attribute (its #type is resolved) or a raw type name
+      # @param from [Lutaml::Uml::Classifier, String, nil] the owning classifier
+      #   or its qualified name; supplies the same-package resolution context
+      # @return [TypeResolver::Result]
+      # @example
+      #   res = repo.resolve_type(attr, from: owning_class)
+      #   res.qualified_name # => "ModelRoot::Core::Address"
+      def resolve_type(attr_or_type, from: nil)
+        type = attr_or_type.is_a?(String) ? attr_or_type : attr_or_type.type
+        TypeResolver.resolve(
+          type: type,
+          package_path: owning_package_path(from),
+          qualified_names: @indexes[:qualified_names],
+          simple_name_to_qnames: @indexes[:simple_name_to_qnames],
+        )
+      end
+
+      # Package path of an owning element (classifier or its qualified name),
+      # used as the same-package context for #resolve_type. Returns nil when it
+      # cannot be derived (resolution then falls back to the simple-name match).
+      def owning_package_path(owner)
+        return if owner.nil?
+
+        qname = owner.is_a?(String) ? owner : qname_for_owner(owner)
+        return if qname.nil? || qname.empty?
+
+        parent = qname.rpartition("::").first
+        parent.empty? ? nil : parent
+      end
+
+      # Qualified name of an owning classifier. Prefers the O(1) class_to_qname
+      # forward index, falling back to the O(n) reverse lookup otherwise.
+      def qname_for_owner(owner)
+        indexed_owner_qname(owner) || qualified_name_for(owner)
+      end
+
+      # O(1) qualified name via class_to_qname, taken only when the index maps
+      # the xmi_id back to THIS exact owner instance. Otherwise returns nil to
+      # defer to qualified_name_for, so the result is always identical to that
+      # established lookup — this is purely a fast path, never a behaviour
+      # change. (qualified_name_for matches structurally, like the rest of the
+      # repository, so a duplicated owner resolves exactly as it did before.)
+      def indexed_owner_qname(owner)
+        return unless owner.is_a?(Lutaml::Uml::TopElement)
+
+        mapped = (@indexes[:class_to_qname] || {})[owner.xmi_id]
+        return unless mapped
+
+        qnames = @indexes[:qualified_names] || {}
+        mapped if qnames[mapped].equal?(owner)
+      end
+
       # Get all attributes across all classes in the repository.
       #
       # @return [Array<Lutaml::Uml::Attribute>] All attribute objects

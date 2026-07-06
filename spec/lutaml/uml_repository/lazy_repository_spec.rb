@@ -309,4 +309,28 @@ RSpec.describe Lutaml::UmlRepository::LazyRepository do
       expect(lazy_repo.indexes.values.compact.size).to eq(0)
     end
   end
+
+  describe "#resolve_type" do
+    let(:document) { create_resolution_test_document }
+
+    it "builds qualified_names and the simple-name map on demand, then resolves",
+       :aggregate_failures do
+      alpha = document.packages.find { |p| p.name == "PkgA" }
+        .classes.find { |c| c.name == "Alpha" }
+      same = alpha.attributes.find { |a| a.name == "refSame" }
+      cross = alpha.attributes.find { |a| a.name == "refCross" }
+
+      expect(repo.index_built?(:qualified_names)).to be false
+      expect(repo.index_built?(:simple_name_to_qnames)).to be false
+
+      expect(repo.resolve_type(same, from: "ModelRoot::PkgA::Alpha").qualified_name)
+        .to eq("ModelRoot::PkgA::Beta")
+      # cross-package resolution exercises the simple-name map (built lazily)
+      expect(repo.resolve_type(cross, from: "ModelRoot::PkgA::Alpha").qualified_name)
+        .to eq("ModelRoot::PkgB::Gamma")
+
+      expect(repo.index_built?(:qualified_names)).to be true
+      expect(repo.index_built?(:simple_name_to_qnames)).to be true
+    end
+  end
 end

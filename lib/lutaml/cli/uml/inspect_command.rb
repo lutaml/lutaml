@@ -67,10 +67,7 @@ module Lutaml
         end
 
         def display_element_details(element, identifier, repo)
-          presenter_class_name = ResourceRegistry
-            .config_for(identifier.type)[:presenter]
-          presenter_class = Lutaml::UmlRepository::Presenters.const_get(presenter_class_name)
-          presenter = presenter_class.new(element, repo)
+          presenter = build_presenter(element, identifier, repo)
 
           if options[:format] == "text"
             puts presenter.to_text
@@ -78,6 +75,23 @@ module Lutaml
             puts OutputFormatter.format(presenter.to_hash,
                                         format: options[:format])
           end
+        end
+
+        def build_presenter(element, identifier, repo)
+          presenter_class_name = ResourceRegistry
+            .config_for(identifier.type)[:presenter]
+          presenter_class = Lutaml::UmlRepository::Presenters
+            .const_get(presenter_class_name)
+          presenter_class.new(element, repo, presenter_context(identifier))
+        end
+
+        # Supply the owning-class context for attribute presenters so they can
+        # resolve the attribute's type to its target class (and so the class
+        # name displays correctly). Other element types need no context.
+        def presenter_context(identifier)
+          return {} unless identifier.type == :attribute
+
+          { class_qname: identifier.parent_path, qualified_name: identifier.path }
         end
       end
     end

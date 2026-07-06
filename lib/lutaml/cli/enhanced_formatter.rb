@@ -119,12 +119,35 @@ module Lutaml
         end
       end
 
+      # Append the resolved class qname to an attribute's type for display, when
+      # it resolves to a (non-primitive) class. Best-effort: returns the raw
+      # type when no repository is supplied or resolution does not apply.
+      def self.enhanced_attr_type(attr, owner, repository)
+        base = attr.type || "Unknown"
+        return base unless repository
+
+        result = repository.resolve_type(attr, from: owner)
+        return base unless navigable_type?(result, attr)
+
+        suffix = result.ambiguous? ? " (ambiguous)" : ""
+        "#{base} -> #{result.qualified_name}#{suffix}"
+      rescue StandardError
+        base
+      end
+
+      def self.navigable_type?(result, attr)
+        result&.resolved? && !result.primitive? &&
+          result.qualified_name != attr.type
+      end
+
       # Format class details with enhanced visual formatting
       #
       # @param klass [Object] Class object to display
       # @param path_formatter [Proc] Formatter for package paths
+      # @param repository [Lutaml::UmlRepository::Repository, nil] optional
+      #   repository used to resolve attribute types to qualified class names
       # @return [String] Enhanced class details
-      def self.format_class_details_enhanced(klass, _path_formatter = nil) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+      def self.format_class_details_enhanced(klass, _path_formatter = nil, repository: nil) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
         lines = []
 
         # Header box
@@ -159,7 +182,7 @@ module Lutaml
           attr_data = klass.attributes.map do |attr|
             {
               name: attr.name,
-              type: attr.type || "Unknown",
+              type: enhanced_attr_type(attr, klass, repository),
               cardinality: format_cardinality(attr),
             }
           end

@@ -149,6 +149,10 @@
           get cls() { return data.classes[currentClass]; },
           isUmlBasicType(type) { return window.UMLUtils.isUmlBasicType(type); },
           findClassByName(name) { return window.UMLUtils.findClassByName(data, name); },
+          typeTargetClassId(attr) {
+            if (attr.typeRef && attr.typeRef.classId) return attr.typeRef.classId;
+            return this.isUmlBasicType(attr.type) ? null : this.findClassByName(attr.type);
+          },
           getAssociationEnds(assoc, cls) {
             if (!assoc || !cls) return { local: {}, remote: {}, direction: '↔' };
             if (assoc.source && assoc.source.class === cls.xmiId) return { local: assoc.source, remote: assoc.target, direction: '→' };
@@ -243,13 +247,13 @@
                         <div class="cell-description" x-show="attr.definition" x-text="attr.definition"></div>
                       </td>
                       <td>
-                        <template x-if="isUmlBasicType(attr.type)">
+                        <template x-if="typeTargetClassId(attr)">
+                          <button class="type-link" @click="selectClass(typeTargetClassId(attr))" x-text="attr.type"></button>
+                        </template>
+                        <template x-if="!typeTargetClassId(attr) && isUmlBasicType(attr.type)">
                           <code class="uml-basic-type" x-text="attr.type"></code>
                         </template>
-                        <template x-if="!isUmlBasicType(attr.type) && findClassByName(attr.type)">
-                          <button class="type-link" @click="selectClass(findClassByName(attr.type))" x-text="attr.type"></button>
-                        </template>
-                        <template x-if="!isUmlBasicType(attr.type) && !findClassByName(attr.type)">
+                        <template x-if="!typeTargetClassId(attr) && !isUmlBasicType(attr.type)">
                           <span class="type-unresolved" x-text="attr.type"></span>
                         </template>
                       </td>
@@ -283,13 +287,13 @@
                         <tr x-data="{ attr: item.attribute }">
                           <td><code x-text="attr.name"></code></td>
                           <td>
-                            <template x-if="isUmlBasicType(attr.type)">
+                            <template x-if="typeTargetClassId(attr)">
+                              <button class="type-link" @click="selectClass(typeTargetClassId(attr))" x-text="attr.type"></button>
+                            </template>
+                            <template x-if="!typeTargetClassId(attr) && isUmlBasicType(attr.type)">
                               <code class="uml-basic-type" x-text="attr.type"></code>
                             </template>
-                            <template x-if="!isUmlBasicType(attr.type) && findClassByName(attr.type)">
-                              <button class="type-link" @click="selectClass(findClassByName(attr.type))" x-text="attr.type"></button>
-                            </template>
-                            <template x-if="!isUmlBasicType(attr.type) && !findClassByName(attr.type)">
+                            <template x-if="!typeTargetClassId(attr) && !isUmlBasicType(attr.type)">
                               <span class="type-unresolved" x-text="attr.type"></span>
                             </template>
                           </td>

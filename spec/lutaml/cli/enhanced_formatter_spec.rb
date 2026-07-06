@@ -175,6 +175,22 @@ RSpec.describe Lutaml::Cli::EnhancedFormatter do
       expect(result).to include("EmptyClass")
       expect(result).not_to include("Attributes")
     end
+
+    it "appends the resolved class to an attribute type when given a repository",
+       :aggregate_failures do
+      repository = Lutaml::UmlRepository::Repository.new(
+        document: create_resolution_test_document,
+      )
+      alpha = repository.find_class("ModelRoot::PkgA::Alpha")
+
+      result = described_class.format_class_details_enhanced(
+        alpha, repository: repository
+      )
+
+      expect(result).to include("Beta -> ModelRoot::PkgA::Beta")
+      # primitive types are not annotated
+      expect(result).not_to include("String -> ")
+    end
   end
 
   describe ".format_box" do

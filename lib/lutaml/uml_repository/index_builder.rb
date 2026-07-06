@@ -79,6 +79,14 @@ module Lutaml
         builder.class_to_qname.freeze
       end
 
+      # Freeze a hash-of-arrays and each of its value arrays, so the
+      # immutability guarantee also covers the nested arrays reachable through
+      # Repository#indexes.
+      def self.freeze_values(hash)
+        hash.each_value(&:freeze)
+        hash.freeze
+      end
+
       def self.build_classes(document)
         builder = new(document)
         builder.build_qualified_name_index
@@ -107,13 +115,21 @@ module Lutaml
       # Build inheritance graph index
       #
       # @param document [Lutaml::Uml::Document] The UML document
-      # @param indexes [Hash, nil] Existing indexes (requires :qualified_names)
+      # @param indexes [Hash, nil] Existing indexes (reused when both
+      #   :qualified_names and :simple_name_to_qnames are present)
       # @return [Hash] Frozen hash mapping parent qnames to child qnames
       def self.build_inheritance_graph(document, indexes)
         builder = new(document)
-        if indexes && indexes[:qualified_names]
+        if indexes && indexes[:qualified_names] &&
+            indexes[:simple_name_to_qnames]
           builder.qualified_names = indexes[:qualified_names]
+          builder.simple_name_to_qnames.replace(indexes[:simple_name_to_qnames])
         else
+          # The association index resolves leaf-name parents through the
+          # simple-name map (it never scans), so build qualified_names AND that
+          # map together. The lazy repository ensures and passes both indexes,
+          # so this branch is defensive for direct callers — rebuilding both
+          # keeps any such graph identical to the eager one.
           builder.build_qualified_name_index
         end
         builder.build_inheritance_graph_index
@@ -153,7 +169,8 @@ module Lutaml
 
       attr_accessor :package_paths, :qualified_names
       attr_reader :package_to_path, :class_to_qname, :classes, :associations,
-                  :stereotypes, :inheritance_graph, :diagram_index
+                  :stereotypes, :inheritance_graph, :diagram_index,
+                  :simple_name_to_qnames
 
       # Build all indexes and return them as a frozen hash
       #
@@ -176,7 +193,10 @@ module Lutaml
           class_to_qname: @class_to_qname.freeze,
           classes: @classes.freeze,
           associations: @associations.freeze,
-          package_to_classes: plain_hash(@package_to_classes).freeze,
+          package_to_classes:
+            self.class.freeze_values(plain_hash(@package_to_classes)),
+          simple_name_to_qnames:
+            self.class.freeze_values(plain_hash(@simple_name_to_qnames)),
         }.freeze
       end
 
