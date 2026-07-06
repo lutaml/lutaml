@@ -65,6 +65,18 @@ RSpec.describe Lutaml::Converter::UmlToDsl do
       expect(reparsed.title).to eq("Core (v1.2) / urf")
       expect(reparsed.caption).to eq("needs a \"quote\" inside")
     end
+
+    it "drops double quotes from a value containing both quote kinds" do
+      # The DSL grammar has no escape sequence, so a value holding both `"`
+      # and `'` cannot be emitted losslessly. dsl_quote deletes the double
+      # quotes to keep the output parseable — a deliberate tradeoff.
+      doc = Lutaml::Uml::Document.new(name: "M")
+      doc.title = %q(a "double" and a 'single')
+
+      reparsed = reparse(doc.to_lutaml)
+
+      expect(reparsed.title).to eq("a double and a 'single'")
+    end
   end
 
   describe "rich round-trip" do
