@@ -30,9 +30,11 @@ module Lutaml
         "date" => :date
       }.freeze
 
-      # An XML NCName (no namespace colon): a UML attribute name must be one to
-      # be realized as an element/attribute name.
-      NCNAME = /\A[A-Za-z_][\w.-]*\z/
+      # An XML NCName (no namespace colon): a UML class/attribute name must be
+      # one to be realized as an element/attribute name. Unicode-aware
+      # approximation of the XML 1.0 NCName production (letters, digits,
+      # combining marks, plus `_ . -`), so non-ASCII names like "Gebäude" pass.
+      NCNAME = /\A[\p{L}_][\p{L}\p{M}\p{Nd}._-]*\z/
 
       def initialize(document, encoding_rule: EncodingRule.new)
         @document = document
@@ -80,6 +82,20 @@ module Lutaml
         PRIMITIVE_TYPES.fetch(attribute.type.to_s.strip.downcase, :string)
       end
 
+      # Realize UML multiplicity: a max cardinality above 1 becomes a
+      # lutaml-model collection (JSON Schema: array with minItems/maxItems;
+      # XSD: minOccurs/maxOccurs). An unbounded "*" keeps no lower bound —
+      # lutaml-model collections take true or a finite Range. Bounds are
+      # free text from the source model; {#validate_multiplicity_bounds!}
+      # rejects unrecognized tokens before any class is synthesized.
+      def collection_options(attribute)
+        max = attribute.cardinality&.max.to_s.strip
+        return {} if max.empty? || %w[0 1].include?(max)
+        return { collection: true } if max == "*"
+
+        { collection: (attribute.cardinality.min.to_s.strip.to_i..max.to_i) }
+      end
+
       private
 
       def serializable_for(class_name)
@@ -95,15 +111,20 @@ module Lutaml
 
       def build_serializable(uml) # rubocop:disable Metrics/MethodLength,Metrics/AbcSize
         validate_class_name!(uml)
-        classified = @encoding_rule.classify(realizable_attributes(uml))
+        fields = realizable_attributes(uml)
+        validate_multiplicity_bounds!(uml, fields)
+        classified = @encoding_rule.classify(fields)
         elements = classified[:elements]
         xml_attributes = classified[:attributes]
         name = uml.name
         bridge = self
 
+        validate_attribute_multiplicities!(uml, xml_attributes)
+
         ::Class.new(Lutaml::Model::Serializable) do
           (elements + xml_attributes).each do |field|
-            attribute bridge.attr_key(field), bridge.primitive_for(field)
+            attribute bridge.attr_key(field), bridge.primitive_for(field),
+                      **bridge.collection_options(field)
           end
 
           xml do
@@ -150,6 +171,56 @@ module Lutaml
         raise ArgumentError,
               "Class #{uml.name.inspect} has duplicate attribute name(s): " \
               "#{duplicates.join(', ')}"
+      end
+
+      # Multiplicity bounds arrive as free text from the source model (QEA
+      # passes t_attribute columns through unmodified; XMI passes upper_value
+      # raw), so tokens like "n", "-1" or inverted ranges can reach the
+      # bridge. Reject them naming the class and attribute, rather than emit
+      # a maxItems: 0 schema or let lutaml-model raise an anonymous range
+      # error from inside the synthesized class.
+      def validate_multiplicity_bounds!(uml, attributes)
+        bad = attributes.reject { |field| valid_bounds?(field.cardinality) }
+        return if bad.empty?
+
+        bounds = bad.map do |field|
+          "#{xml_name(field)} (#{field.cardinality.min}..#{field.cardinality.max})"
+        end
+        raise ArgumentError,
+              "Class #{uml.name.inspect} has attribute(s) with unrecognized " \
+              "or inverted multiplicity bounds: #{bounds.join(', ')}"
+      end
+
+      # A max bound must be "*" or a non-negative integer. Min is validated
+      # whenever max is a finite integer — including 0/1, where a garbage or
+      # inverted min still indicates a broken source model even though no
+      # collection Range is built. Only a blank or "*" max skips min
+      # validation: an unbounded max ignores min by design.
+      def valid_bounds?(cardinality)
+        max = cardinality&.max.to_s.strip
+        return true if max.empty? || max == "*"
+
+        max.match?(/\A\d+\z/) && valid_min?(cardinality.min, max)
+      end
+
+      def valid_min?(raw_min, max)
+        min = raw_min.to_s.strip
+        min.empty? || (min.match?(/\A\d+\z/) && min.to_i <= max.to_i)
+      end
+
+      # An XML attribute cannot repeat, so a multi-valued UML attribute tagged
+      # xmlAttribute cannot be realized. Fail loudly rather than emit a schema
+      # that silently drops the multiplicity.
+      def validate_attribute_multiplicities!(uml, xml_attributes)
+        multi = xml_attributes.reject do |field|
+          collection_options(field).empty?
+        end
+        return if multi.empty?
+
+        names = multi.map { |field| xml_name(field) }
+        raise ArgumentError,
+              "Class #{uml.name.inspect} has multi-valued attribute(s) tagged " \
+              "xmlAttribute (an XML attribute cannot repeat): #{names.join(', ')}"
       end
 
       # The class name becomes the XSD root element name and the JSON Schema
