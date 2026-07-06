@@ -90,6 +90,41 @@ RSpec.describe Lutaml::UmlRepository::TypeResolver do
       expect(first.candidates).to eq(second.candidates)
     end
 
+    context "with duplicate qnames in a stored simple-name index" do
+      # A .lur exported before the collision guard can hold the same qname
+      # twice (two same-named classifiers in one package). One qualified name
+      # is one candidate — not a spurious ambiguity.
+      it "dedupes candidates before deciding ambiguity", :aggregate_failures do
+        dup_map = { "Gamma" => ["ModelRoot::PkgB::Gamma",
+                                "ModelRoot::PkgB::Gamma"] }
+        result = resolve("Gamma", "ModelRoot::PkgA",
+                         simple_name_to_qnames: dup_map)
+        expect(result.qualified_name).to eq("ModelRoot::PkgB::Gamma")
+        expect(result.ambiguous?).to be(false)
+        expect(result.candidates).to eq(["ModelRoot::PkgB::Gamma"])
+      end
+    end
+
+    context "with a prebuilt index (suffix scan gated on '::')" do
+      # The leaf-keyed map cannot answer "PkgB::Gamma", and a map miss on a
+      # bare name is definitive (every classifier name is a key) — so the
+      # suffix scan must run exactly when the type contains "::".
+      it "still scans qualified names by suffix", :aggregate_failures do
+        result = resolve("PkgB::Gamma", "ModelRoot::PkgA")
+        expect(result.qualified_name).to eq("ModelRoot::PkgB::Gamma")
+        expect(result.resolved?).to be(true)
+      end
+
+      it "never falls back to the scan for a bare name missing from the map" do
+        # "Gamma" is resolvable by suffix scan, so only an authoritative map
+        # miss — not a coincidental scan miss — explains an unresolved result.
+        incomplete = { "Beta" => ["ModelRoot::PkgA::Beta"] }
+        result = resolve("Gamma", "ModelRoot::PkgA",
+                         simple_name_to_qnames: incomplete)
+        expect(result.resolved?).to be(false)
+      end
+    end
+
     context "without a simple-name index (legacy .lur packages)" do
       it "rebuilds candidates from qualified_names" do
         result = resolve("Gamma", "ModelRoot::PkgA", simple_name_to_qnames: nil)

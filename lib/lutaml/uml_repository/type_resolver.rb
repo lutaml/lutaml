@@ -19,7 +19,8 @@ module Lutaml
       module_function
 
       # Primitive type names that resolve to themselves (no classifier).
-      # Single source of truth; also referenced by RepositoryValidator.
+      # Single source of truth; consumers (validator, association index,
+      # Repository#resolve_type) reach it via TypeResolver.resolve.
       PRIMITIVE_TYPES = %w[
         String Integer Boolean Date DateTime Float Double
         Long Short Byte Char Time Decimal
@@ -129,16 +130,29 @@ module Lutaml
       # validator's historical `end_with?("::<type>")` first-match exactly.
       def candidate_qnames(type, qualified_names, simple_name_to_qnames,
                            scan_fallback)
-        mapped = simple_name_to_qnames && simple_name_to_qnames[type]
-        return mapped if mapped && !mapped.empty?
+        mapped = mapped_candidates(type, simple_name_to_qnames)
+        return mapped if mapped
         return [] unless scan_fallback
+        # When the prebuilt map exists it is authoritative for bare (leaf)
+        # names — every classifier's name is a key — so a miss is a definitive
+        # miss and resolve falls through to the primitive step in O(1) instead
+        # of scanning every qualified name (primitives are the common case).
+        return [] if simple_name_to_qnames && !type.include?("::")
 
-        # Map miss (or no/empty map): scan qualified names by suffix. This also
-        # resolves PARTIALLY-qualified references like "Pkg::Class" that the
-        # leaf-keyed simple-name map cannot — matching the validator's historical
-        # end_with? behaviour exactly (and covers legacy .lur / lazy builds).
+        # No map (legacy packages whose stored indexes predate it), or a
+        # PARTIALLY-qualified reference like "Pkg::Class" that the leaf-keyed
+        # map cannot answer: scan qualified names by suffix, matching the
+        # validator's historical end_with? behaviour exactly.
         suffix = "::#{type}"
         qualified_names.keys.select { |qname| qname.end_with?(suffix) }
+      end
+
+      # uniq: a stored index may hold the same qname twice when two same-named
+      # classifiers in one package collided at build time — one qualified name
+      # is one candidate, not a spurious ambiguity. Returns nil on a map miss.
+      def mapped_candidates(type, simple_name_to_qnames)
+        mapped = simple_name_to_qnames && simple_name_to_qnames[type]
+        mapped.uniq if mapped && !mapped.empty?
       end
     end
   end

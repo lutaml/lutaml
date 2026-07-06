@@ -52,6 +52,37 @@ RSpec.describe Lutaml::UmlRepository::IndexBuilder do
         qname_list.each { |qname| expect(qualified_names).to have_key(qname) }
       end
     end
+
+    context "when two same-named classifiers collide on a qualified name" do
+      # e.g. a class and an enum both called "Status" in one package — a real
+      # EA-model shape. The qname is stored once, so the simple-name map must
+      # hold it once too, or resolution reports a spurious ambiguity.
+      let(:document) do
+        pkg = Lutaml::Uml::Package.new
+        pkg.name = "P"
+        klass = Lutaml::Uml::Class.new
+        klass.name = "Status"
+        enum = Lutaml::Uml::Enum.new(name: "Status")
+        pkg.classes = [klass]
+        pkg.enums = [enum]
+        doc = Lutaml::Uml::Document.new
+        doc.name = "M"
+        doc.packages = [pkg]
+        doc
+      end
+
+      it "stores the qname once and matches the lazy derivation",
+         :aggregate_failures do
+        eager = indexes[:simple_name_to_qnames]
+        expect(eager["Status"]).to eq(["ModelRoot::P::Status"])
+
+        lazy = Lutaml::UmlRepository::LazyRepository
+          .new(document: document, lazy: true)
+        result = lazy.resolve_type("Status", from: "ModelRoot")
+        expect(result.ambiguous?).to be(false)
+        expect(result.candidates).to eq(["ModelRoot::P::Status"])
+      end
+    end
   end
 
   describe "inheritance graph resolution of generalization parents" do

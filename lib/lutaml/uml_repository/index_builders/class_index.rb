@@ -79,14 +79,25 @@ module Lutaml
 
         def index_classifier(classifier, package_path)
           qualified_name = "#{package_path}::#{classifier.name}"
+          # Two same-named classifiers in one package (e.g. a class and an enum
+          # both called "Status") collide on the qualified name: the later one
+          # overwrites @qualified_names, and appending its qname again would
+          # leave a duplicate in the simple-name map — one qualified name must
+          # be one candidate, or resolution reports a spurious ambiguity.
+          collision = @qualified_names.key?(qualified_name)
           @qualified_names[qualified_name] = classifier
-          if classifier.xmi_id
-            @class_to_qname[classifier.xmi_id] =
-              qualified_name
+          index_classifier_by_xmi_id(classifier, qualified_name)
+          unless collision
+            (@simple_name_to_qnames[classifier.name] ||= []) << qualified_name
           end
-          @classes[classifier.xmi_id] = classifier if classifier.xmi_id
-          (@simple_name_to_qnames[classifier.name] ||= []) << qualified_name
           (@package_to_classes[package_path] ||= []) << classifier
+        end
+
+        def index_classifier_by_xmi_id(classifier, qualified_name)
+          return unless classifier.xmi_id
+
+          @class_to_qname[classifier.xmi_id] = qualified_name
+          @classes[classifier.xmi_id] = classifier
         end
 
         # Index classifiers by their stereotypes
