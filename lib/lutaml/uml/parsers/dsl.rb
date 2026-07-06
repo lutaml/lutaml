@@ -215,6 +215,12 @@ module Lutaml
 
         rule(:association_keyword) { kw_association >> spaces }
 
+        # Association end and role names accept the same extra characters as
+        # the one-line shorthand endpoints (':' and '.', for qualified names
+        # like Foo::Bar), so any association the shorthand parses can be
+        # re-emitted through the block form (Document#to_lutaml) and re-parsed.
+        rule(:assoc_end_name) { match['a-zA-Z0-9 _\-:.'].repeat(1) }
+
         %w[owner member].each do |association_end_type| # rubocop:disable Metrics/BlockLength
           rule("#{association_end_type}_cardinality") do
             spaces? >>
@@ -229,7 +235,7 @@ module Lutaml
           rule("#{association_end_type}_attribute_name") do
             str("#") >>
               visibility? >>
-              name.as("#{association_end_type}_end_attribute_name")
+              assoc_end_name.as("#{association_end_type}_end_attribute_name")
           end
           rule("#{association_end_type}_attribute_name?") do
             send(:"#{association_end_type}_attribute_name").maybe
@@ -237,7 +243,7 @@ module Lutaml
           rule("#{association_end_type}_definition") do
             send(:"kw_#{association_end_type}") >>
               spaces >>
-              name.as("#{association_end_type}_end") >>
+              assoc_end_name.as("#{association_end_type}_end") >>
               send(:"#{association_end_type}_attribute_name?") >>
               send(:"#{association_end_type}_cardinality?")
           end

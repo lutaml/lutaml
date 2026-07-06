@@ -116,9 +116,12 @@ RSpec.describe Lutaml::Converter::UmlToDsl do
 
   describe "classifier keyword round-trip" do
     it "preserves <<keyword>> on enums and data types", :aggregate_failures do
+      # Deliberately NON-default keywords: Enum defaults keyword to
+      # "enumeration", so asserting the default would pass even if the
+      # exporter dropped the keyword entirely.
       src = <<~LUTAML
         diagram D {
-          enum Color <<enumeration>> {
+          enum Color <<colours>> {
             red
           }
           data_type Money <<valueType>> {
@@ -128,8 +131,27 @@ RSpec.describe Lutaml::Converter::UmlToDsl do
       LUTAML
       reparsed = reparse(reparse(src).to_lutaml)
 
-      expect(reparsed.enums.first.keyword).to eq("enumeration")
+      expect(reparsed.enums.first.keyword).to eq("colours")
       expect(reparsed.data_types.first.keyword).to eq("valueType")
+    end
+  end
+
+  describe "qualified and dotted association names round-trip" do
+    it "re-parses shorthand-only names emitted via the block form",
+       :aggregate_failures do
+      src = <<~LUTAML
+        diagram D {
+          Foo::Bar --> Baz::Qux
+          A#x.y o--> B#other:role [0..*]
+        }
+      LUTAML
+      document = reparse(src)
+
+      reparsed = reparse(document.to_lutaml)
+
+      expect(association_tuples(reparsed)).to eq(association_tuples(document))
+      expect(reparsed.associations.first.owner_end).to eq("Foo::Bar")
+      expect(reparsed.associations.first.member_end).to eq("Baz::Qux")
     end
   end
 end
