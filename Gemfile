@@ -17,14 +17,11 @@ gem "rubocop-performance"
 gem "rubocop-rake"
 gem "rubocop-rspec"
 
-# Sibling-repo path dependencies — used during local development when
-# the sibling checkout exists. In CI and for gem install, fall back to
-# published rubygems versions.
+# Override gemspec deps with sibling paths during local development.
+# When siblings don't exist (CI, gem install), the gemspec's own
+# add_dependency declarations handle resolution — don't duplicate them
+# here (causes bundler circular loop).
 %w[canon lutaml-lml lutaml-uml].each do |sibling_gem|
   sibling_path = File.expand_path("../#{sibling_gem}", __dir__)
-  if File.directory?(sibling_path)
-    gem sibling_gem, path: sibling_path
-  else
-    gem sibling_gem
-  end
+  gem sibling_gem, path: sibling_path if File.directory?(sibling_path)
 end
