@@ -16,13 +16,20 @@ on:
           Also, you can pass 'skip' to skip 'git tag' and do 'gem push' for the current version
         required: true
         default: 'skip'
+      acknowledge_breaking_in_patch:
+        description: "Skip the release-breaking-check guard"
+        required: false
+        default: "true"
   repository_dispatch:
     types: [ do-release ]
 
 jobs:
   release:
-    uses: relaton/support/.github/workflows/release.yml@main
+    uses: metanorma/ci/.github/workflows/rubygems-release.yml@main
     with:
       next_version: ${{ github.event.inputs.next_version }}
+      acknowledge_breaking_in_patch: ${{ github.event.inputs.acknowledge_breaking_in_patch == 'true' }}
+      gated: false
     secrets:
       rubygems-api-key: ${{ secrets.LUTAML_CI_RUBYGEMS_API_KEY }}
+      pat_token: ${{ secrets.GITHUB_TOKEN }}
