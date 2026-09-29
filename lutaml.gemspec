@@ -34,6 +34,7 @@ Gem::Specification.new do |spec|
   # (fiddle was removed from Ruby 4.0 default gems, breaking reline on Windows)
   spec.add_dependency "fiddle"
   spec.add_dependency "lutaml-lml"
-  spec.add_dependency "lutaml-uml", "~> 0.5" # pin: 1.0.0 depends on lutaml (circular)
+  spec.add_dependency "lutaml-model", "~> 0.8.0"
+  spec.add_dependency "lutaml-uml", "~> 1.0"
   spec.metadata["rubygems_mfa_required"] = "true"
 end
