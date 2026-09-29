@@ -4,7 +4,6 @@ name: release
 
 permissions:
   contents: write
-  packages: write
   id-token: write
 
 on:
@@ -12,24 +11,27 @@ on:
     inputs:
       next_version:
         description: |
-          Next release version. Possible values: x.y.z, major, minor, patch (or pre|rc|etc).
-          Also, you can pass 'skip' to skip 'git tag' and do 'gem push' for the current version
+          Next release version. Possible values: x.y.z, major, minor, patch or pre|rc|etc
         required: true
         default: 'skip'
-      acknowledge_breaking_in_patch:
-        description: "Skip the release-breaking-check guard"
-        required: false
-        default: "true"
   repository_dispatch:
     types: [ do-release ]
+
+# One release at a time: concurrent bumps race the version commit
+# and half-published gems are worse than a queued release.
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
   release:
     uses: metanorma/ci/.github/workflows/rubygems-release.yml@main
     with:
       next_version: ${{ github.event.inputs.next_version }}
-      acknowledge_breaking_in_patch: ${{ github.event.inputs.acknowledge_breaking_in_patch == 'true' }}
-      gated: false
     secrets:
-      rubygems-api-key: ${{ secrets.LUTAML_CI_RUBYGEMS_API_KEY }}
-      pat_token: ${{ secrets.GITHUB_TOKEN }}
+      # OMIT rubygems-api-key: metanorma/ci switches to OIDC Trusted Publishing
+      # when the secret is empty (USE_OIDC = rubygems-api-key == ''). Trusted
+      # Publishing is already configured for the lutaml gems on rubygems.org.
+      # The removed `gated` input no longer exists in the reusable workflow
+      # and made every dispatch fail at startup.
+      pat_token: ${{ secrets.LUTAML_CI_PAT_TOKEN }}
