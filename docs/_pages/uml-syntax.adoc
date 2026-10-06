@@ -152,7 +152,7 @@ If this syntax is used inside a `class`/`enum`/`association` block, it will be c
   This is a
   multi-line
   document comment.
-*|
+|*
 
 class A
 enum B {
@@ -162,7 +162,7 @@ enum B {
     This is a
     multi-line
     class comment.
-  *|
+  |*
   bar
 }
 ----
@@ -279,15 +279,22 @@ following:
 
 The name of the element and its visibility are optional.
 
+[NOTE]
+--
+Visibility on package contents (classes, enums, packages) is not yet
+implemented; only attribute visibility (`+`, `-`, `#`, `~`) is parsed
+today. Element-level visibility is a candidate for adoption into the
+LML specification (RS 3001) pending an audit of UML round-trip
+requirements.
+--
+
 [example]
-.Declaring a package named "Ceramic" with a public visibility modifier
+.Declaring a package named "CeramicInformationModel"
 ====
 [source]
 ----
 package CeramicInformationModel {
   class Ceramic {}
-  - class PrivateCeramic {}
-  # class ProtectedCeramic {}
 }
 ----
 ====
@@ -584,7 +591,7 @@ Explicit syntax (`attribute` keyword included):
 [source]
 ----
 class A {
-  attribute my_attribute
+  attribute my_attribute, String
 }
 
 enum A {
@@ -669,6 +676,14 @@ class Figure {
 
 
 === Methods
+
+[NOTE]
+--
+Methods are not yet implemented by the LML parser. This section
+documents the planned surface; adoption into the LML specification
+(RS 3001) is pending an audit of downstream UML round-trip
+requirements (Enterprise Architect, XMI).
+--
 
 ==== General
 
@@ -881,8 +896,14 @@ association {
 ====
 [source]
 ----
+class Ceramic {}
+class Glaze {}
+
 association {
-  Ceramic -> Glaze
+  owner_type association
+  owner Ceramic
+  member_type association
+  member Glaze
 }
 ----
 ====
@@ -893,37 +914,32 @@ Syntax:
 
 [source]
 ----
-association name {
-  owned_type association|composition|aggregation|generalization|uses
+association [name] {
+  owner_type association|composition|aggregation|generalization|uses
+  owner class_name[#attribute_name]
   member_type association|composition|aggregation|generalization|uses
-  owned association_name[#attribute_name] [{property_string}][cardinality]
-  member association_name[#attribute_name] [{property_string}][cardinality]
+  member class_name[#attribute_name]
 }
 ----
 
 where:
 
-* `owned_type` - optional, use to define a bidirectional association (`association`|`composition`|`aggregation`|`generalization`|`uses`)
+* `owner_type` - optional, use to define a bidirectional association (`association`|`composition`|`aggregation`|`generalization`|`uses`)
 * `member_type` - association type (`association`|`composition`|`aggregation`|`generalization`|`uses`)
-* `owned|member` - end of association, use `\#attribute_name` to set a role name
-* `property_string` - property string for attributes associations
-* `cardinality` - examples: `1..*`, `*`
+* `owner`/`member` - end of association, use `#attribute_name` to set a role name
 
 Example:
 
 [source]
 ----
-class Association {
-  +association:
-}
-class Type {
-  +endType:
-}
+class Address {}
+class AddressComponent {}
 
-association AssociatingTypeAndAssociation {
-  type uses
-  from Association#+association {subsets relationship}[*]
-  to Type#+/endType {readOnly, subsets relatedElement} [1..*]
+association AddressesAssociation {
+  owner_type aggregation
+  owner Address
+  member_type association
+  member AddressComponent
 }
 ----
 
