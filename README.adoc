@@ -51,56 +51,19 @@ bundle exec jekyll serve
 
 === Parsing
 
-The `Lutaml::Parser.parse` method provides a single point of entry for parsing
-data model files, including:
-
-* EXPRESS files with `.exp` extension
-* YAML Compressed EXPRESS CACHE files
-* QEA files with `.qea` extension (Enterprise Architect databases)
-* XMI files with `.xmi` extension
-* XML files with `.xml` extension
-* LutaML files with `.lutaml` extension
-
-Depending on the input file type, `Lutaml::Parser.parse` returns:
-
-* `Expressir::Express::Model::Repository` for EXPRESS files
-* `Expressir::Express::Cache` for EXPRESS CACHE files
-* `Lutaml::Uml::Document` for QEA files (returned as single-element array)
-* `Lutaml::Uml::Document` for XMI files
-* `Lutaml::Uml::Document` for XML files
-* `Lutaml::Uml::Document` for LutaML files
-
-Examples to use the `Lutaml::Parser.parse`:
+Parse LutaML Model Language (`.lml`/`.lutaml`) files with
+link:https://github.com/lutaml/lutaml-lml[lutaml-lml]:
 
 [source,ruby]
 ----
 require "lutaml"
 
-# example.exp is an EXPRESS schema file
-model = Lutaml::Parser.parse([File.new("example.exp")])
-# => returns Expressir::Express::Model::Repository model
-
-# example.exp.yaml is an EXPRESS cache file created with Expressir
-model = Lutaml::Parser.parse([File.new("example.exp.yaml")], ::Lutaml::Parser::EXPRESS_CACHE_PARSE_TYPE)
-# => returns Expressir::Express::Cache model
-
-# example.xmi is an XMI file
-model = Lutaml::Parser.parse([File.new("example.xmi")])
-# => returns Lutaml::Uml::Document model
-
-# example.xml is an XML file
-model = Lutaml::Parser.parse([File.new("example.xml")])
-# => returns Lutaml::Uml::Document model
-
-# example.lutaml is an LutaML file
-model = Lutaml::Parser.parse([File.new("example.lutaml")])
-# => returns Lutaml::Uml::Document model
-
-# example.yaml is an LutaML YAML file
-model = Lutaml::Parser.parse([File.new("example.yaml")])
-# => returns Lutaml::Uml::Document model
+doc = Lutaml::Lml.parse_document(File.new("model.lutaml"))
+doc.classes.first.attributes.map(&:name)
 ----
 
+EXPRESS schemas parse through `Lutaml::Express::Parsers::Exp.parse(io)`;
+see README.md for the full family table and the repository layer.
 
 == Working with UML
 
