@@ -1,4 +1,0 @@
-class AttributeProfile {
-  imlicistAttributeProfile: CharacterString [0..1]
-  +attributeProfile: <<BasicDocument>> LocalizedString [0..1]
-}

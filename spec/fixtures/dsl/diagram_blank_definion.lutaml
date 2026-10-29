@@ -1,6 +1,0 @@
-diagram MyView {
-  class ImageMapAreaType {
-    definition {
-    }
-  }
-}

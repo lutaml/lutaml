@@ -104,12 +104,10 @@ The following results will be produced:
 [source,lutaml]
 ----
 diagram Address {
-  title ''
-  caption ''
   association {
     owner_type aggregation
-    owner
-    member_type direct
+    owner Address
+    member_type association
     member AddressComponent
   }
 }
