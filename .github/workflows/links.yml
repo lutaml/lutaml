@@ -6,9 +6,15 @@ on:
     - main
     paths:
     - 'docs/**'
+    - '.github/workflows/links.yml'
+    - 'scripts/check-site-urls.rb'
+    - 'scripts/check-vendor-link.py'
   pull_request:
     paths:
     - 'docs/**'
+    - '.github/workflows/links.yml'
+    - 'scripts/check-site-urls.rb'
+    - 'scripts/check-vendor-link.py'
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:

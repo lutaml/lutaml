@@ -21,6 +21,12 @@ site.glob("**/*.html").each do |file|
     local_url = uri.scheme.nil? && uri.host.nil?
     next unless own_url || local_url
 
+    if local_url && uri.path.start_with?("/") && !base.empty? &&
+        uri.path != base && !uri.path.start_with?("#{base}/")
+      errors << "#{file.relative_path_from(site)}: #{value} is outside baseurl #{base}"
+      next
+    end
+
     if own_url || uri.path.start_with?("/")
       next if own_url && uri.path != base && !uri.path.start_with?("#{base}/")
       path = URI::DEFAULT_PARSER.unescape(uri.path.delete_prefix(base)).sub(%r{^/}, "")
