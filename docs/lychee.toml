@@ -20,6 +20,11 @@ accept = [200, 203, 204, 206, 429]
 
 # Exclude URLs matching these regexes
 exclude = [
+    # This exact URL is probed separately; only an explicit challenge is deferred.
+    '^https://sparxsystems\.com/$',
+    # Checked against built files by scripts/check-site-urls.rb before lychee.
+    '^https://www\.lutaml\.org/lutaml(?:/|$)',
+    '^https://lutaml\.github\.io/lutaml(?:/|$)',
     '^https?://localhost(?:[:/]|$)',
     '^https?://127\.0\.0\.1(?:[:/]|$)',
     '^https?://example\.com(?:[:/]|$)',

@@ -1,4 +1,5 @@
 ---
+permalink: /tutorials/
 title: Tutorials
 nav_order: 2
 has_children: true
@@ -9,9 +10,9 @@ has_children: true
 
 This section provides step-by-step learning paths to help you accomplish specific tasks with LutaML. Each tutorial walks you through a complete workflow from start to finish.
 
-== Available Tutorials
+== Planned Tutorials
 
-=== link:/tutorials/getting-started[Getting Started with LutaML]
+=== Getting Started with LutaML (documentation planned)
 
 Your first steps with LutaML. Learn how to install, parse your first model file, and explore basic functionality.
 
@@ -26,7 +27,7 @@ Your first steps with LutaML. Learn how to install, parse your first model file,
 
 ---
 
-=== link:/tutorials/first-lur-package[Building Your First LUR Package]
+=== Building Your First LUR Package (documentation planned)
 
 Create a LutaML UML Repository (LUR) package from an XMI or QEA file for fast loading and querying.
 
@@ -41,7 +42,7 @@ Create a LutaML UML Repository (LUR) package from an XMI or QEA file for fast lo
 
 ---
 
-=== link:/tutorials/generating-diagrams[Generating Diagrams]
+=== Generating Diagrams (documentation planned)
 
 Generate pixel-perfect SVG diagrams from Enterprise Architect models with full styling support.
 
@@ -56,7 +57,7 @@ Generate pixel-perfect SVG diagrams from Enterprise Architect models with full s
 
 ---
 
-=== link:/tutorials/documentation-site[Creating a Documentation Site]
+=== Creating a Documentation Site (documentation planned)
 
 Build a complete SPA documentation website from your UML model with search and navigation.
 
@@ -71,7 +72,7 @@ Build a complete SPA documentation website from your UML model with search and n
 
 ---
 
-=== link:/tutorials/querying-models[Searching and Querying Models]
+=== Searching and Querying Models (documentation planned)
 
 Master the query DSL and search capabilities to find exactly what you need in large models.
 
@@ -90,7 +91,7 @@ Most tutorials assume you have:
 
 * Ruby 2.7+ installed
 * Basic command-line knowledge
-* LutaML installed (see link:/installation[Installation Guide])
+* LutaML installed (see link:{site-baseurl}/core/installation/[Installation Guide])
 
 == Tutorial Format
 
@@ -104,6 +105,6 @@ Each tutorial follows this structure:
 
 == Related Sections
 
-* link:/pages[Core Topics] - Fundamental concepts
-* link:/guides[Guides] - Task-oriented how-to documentation
-* link:/references[Reference] - Detailed specifications
+* link:{site-baseurl}/core/[Core Topics] - Fundamental concepts
+* link:{site-baseurl}/guides/[Guides] - Task-oriented how-to documentation
+* link:{site-baseurl}/references/[Reference] - Detailed specifications

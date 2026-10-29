@@ -33,6 +33,14 @@ jobs:
       run: bundle exec jekyll build --trace
       working-directory: docs
 
+    - name: Check local and canonical URLs against built pages
+      run: ruby scripts/check-site-urls.rb docs/_config.yml docs/_site
+
+    - name: Check vendor homepage with guarded anti-bot handling
+      run: |
+        python3 scripts/check-vendor-link.py --self-test
+        python3 scripts/check-vendor-link.py
+
     - name: Restore lychee cache
       uses: actions/cache@v4
       with:

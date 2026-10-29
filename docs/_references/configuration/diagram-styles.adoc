@@ -711,6 +711,6 @@ conn_style = resolver.resolve_connector_style(connector, diagram_link)
 
 == See Also
 
-* link:diagram-generation[Diagram Generation Guide]
-* link:../README[LutaML README]
-* link:../config/diagram_styles.yml[Default Configuration File]
+* link:{site-baseurl}/guides/diagram-generation/[Diagram Generation Guide]
+* link:https://github.com/lutaml/lutaml/blob/main/README.md[LutaML README]
+* Default Configuration File (reference not included)

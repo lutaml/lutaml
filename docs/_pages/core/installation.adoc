@@ -304,18 +304,18 @@ $ rm -rf ~/.lutaml
 
 Now that LutaML is installed:
 
-1. link:../tutorials/getting-started[Quick Start Tutorial] - Your first steps
-2. link:../guides/cli-usage[CLI Usage Guide] - Learn the commands
-3. link:../references/cli/commands[Command Reference] - Complete CLI docs
+1. Quick Start Tutorial (documentation planned) - Your first steps
+2. CLI Usage Guide (documentation planned) - Learn the commands
+3. Command Reference (documentation planned) - Complete CLI docs
 
 == Getting Help
 
 * **Documentation**: https://lutaml.github.io/lutaml/
 * **Issues**: https://github.com/lutaml/lutaml/issues
-* **Discussions**: https://github.com/lutaml/lutaml/discussions
+* **Contributions**: https://github.com/lutaml/lutaml/pulls
 
 == See Also
 
-* link:overview[What is LutaML?]
-* link:architecture[System Architecture]
-* link:../tutorials/getting-started[Getting Started Tutorial]
+* link:{site-baseurl}/core/overview/[What is LutaML?]
+* link:{site-baseurl}/core/architecture/[System Architecture]
+* Getting Started Tutorial (documentation planned)

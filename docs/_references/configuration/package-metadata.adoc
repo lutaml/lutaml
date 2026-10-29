@@ -407,10 +407,10 @@ bundle exec rspec spec/lutaml/uml_repository/package_metadata_spec.rb
 
 == Example Configuration
 
-See link:../config/package_metadata.example.yml[config/package_metadata.example.yml] for a complete example configuration file with detailed comments.
+See link:https://github.com/lutaml/lutaml-uml/blob/main/config/package_metadata.example.yml[config/package_metadata.example.yml] for a complete example configuration file with detailed comments.
 
 == See Also
 
-* link:README[LutaML README] - Main documentation
-* link:diagram_generation[Diagram Generation] - Diagram styling integration
-* link:../lib/lutaml/uml_repository/package_metadata.rb[PackageMetadata source] - Implementation
+* link:https://github.com/lutaml/lutaml/blob/main/README.md[LutaML README] - Main documentation
+* link:{site-baseurl}/guides/diagram-generation/[Diagram Generation] - Diagram styling integration
+* link:https://github.com/lutaml/lutaml-uml/blob/main/lib/lutaml/uml_repository/package_metadata.rb[PackageMetadata source] - Implementation

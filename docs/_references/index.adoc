@@ -1,4 +1,5 @@
 = Reference
+:page-permalink: /references/
 :nav_order: 4
 :has_children: true
 
@@ -8,26 +9,26 @@ This section provides detailed technical specifications, API documentation, and 
 
 == Command-Line Interface
 
-=== link:cli/commands[Complete Command Reference]
+=== Complete Command Reference (documentation planned)
 
 Comprehensive reference for all CLI commands, options, and arguments.
 
 === Individual Commands
 
-* link:cli/build[`lutaml uml build`] - Build LUR packages
-* link:cli/search[`lutaml uml search`] - Search models
-* link:cli/export[`lutaml uml export`] - Export data
-* link:cli/ls[`lutaml uml ls`] - List elements
-* link:cli/tree[`lutaml uml tree`] - Show hierarchy
-* link:cli/stats[`lutaml uml stats`] - Statistics
-* link:cli/docs[`lutaml uml docs`] - Generate docs
-* link:cli/serve[`lutaml uml serve`] - Start server
+* `lutaml uml build` (documentation planned) - Build LUR packages
+* `lutaml uml search` (documentation planned) - Search models
+* `lutaml uml export` (documentation planned) - Export data
+* `lutaml uml ls` (documentation planned) - List elements
+* `lutaml uml tree` (documentation planned) - Show hierarchy
+* `lutaml uml stats` (documentation planned) - Statistics
+* `lutaml uml docs` (documentation planned) - Generate docs
+* `lutaml uml serve` (documentation planned) - Start server
 
 == API Documentation
 
 === Core APIs
 
-==== link:api/repository[Repository API]
+==== Repository API (documentation planned)
 
 Complete API reference for `Lutaml::UmlRepository::Repository` class.
 
@@ -38,7 +39,7 @@ Complete API reference for `Lutaml::UmlRepository::Repository` class.
 * Index management
 * Statistics calculation
 
-==== link:api/parsers[Parser APIs]
+==== Parser APIs (documentation planned)
 
 Reference for all parser interfaces and implementations.
 
@@ -49,7 +50,7 @@ Reference for all parser interfaces and implementations.
 * Parser options
 * Error handling
 
-==== link:api/presenters[Presenter APIs]
+==== Presenter APIs (documentation planned)
 
 Documentation for element presentation and formatting.
 
@@ -75,7 +76,7 @@ Complete reference for the query DSL syntax and methods.
 
 == File Formats
 
-=== link:formats/qea-structure[QEA File Format]
+=== link:{site-baseurl}/references/formats/qea-structure/[QEA File Format]
 
 Complete specification of Enterprise Architect's QEA (SQLite) database format.
 
@@ -86,7 +87,7 @@ Complete specification of Enterprise Architect's QEA (SQLite) database format.
 * Data types
 * Supported EA versions
 
-=== link:formats/lur-format[LUR Package Format]
+=== LUR Package Format (documentation planned)
 
 Specification of LutaML's compressed repository format.
 
@@ -97,7 +98,7 @@ Specification of LutaML's compressed repository format.
 * Versioning
 * Metadata
 
-=== link:formats/lutaml-syntax[LutaML Syntax]
+=== link:{site-baseurl}/references/formats/lutaml-syntax/[LutaML Syntax]
 
 Complete syntax reference for LutaML's native DSL.
 
@@ -118,7 +119,7 @@ ISO 10303-11 EXPRESS schema support via Expressir.
 
 == Configuration
 
-=== link:configuration/diagram-styles[Diagram Styling Configuration]
+=== link:{site-baseurl}/references/configuration/diagram-styles/[Diagram Styling Configuration]
 
 Complete YAML schema for diagram style configuration.
 
@@ -129,7 +130,7 @@ Complete YAML schema for diagram style configuration.
 * Connector types
 * Priority rules
 
-=== link:configuration/package-metadata[Package Metadata Configuration]
+=== link:{site-baseurl}/references/configuration/package-metadata/[Package Metadata Configuration]
 
 YAML schema for package metadata including XML namespaces.
 
@@ -192,6 +193,6 @@ Operating system and platform compatibility.
 
 == Related Sections
 
-* link:../pages[Core Topics] - Fundamental concepts
-* link:../tutorials[Tutorials] - Step-by-step learning
-* link:../guides[Guides] - Task-oriented documentation
+* link:{site-baseurl}/core/[Core Topics] - Fundamental concepts
+* link:{site-baseurl}/tutorials/[Tutorials] - Step-by-step learning
+* link:{site-baseurl}/guides/[Guides] - Task-oriented documentation
