@@ -1344,10 +1344,10 @@ Connection pooling:: Reuses database connections
 
 === Documentation
 
-* Detailed table analysis (reference not included)
+* <<implemented-tables,Detailed table analysis>>
 * link:https://github.com/lutaml/lutaml/blob/main/README.md[LutaML main documentation]
-* Diagram implementation details (reference not included)
-* Object properties implementation (reference not included)
+* <<diagram-tables,Diagram table details>>
+* <<t_objectproperties-object-properties,Object property fields>>
 
 === Source code
 

@@ -1,0 +1,72 @@
+---
+permalink: /references/cli/commands/
+title: Command-Line Compatibility
+parent: Reference
+---
+= Command-Line Compatibility
+
+The LutaML family has been split into separate gems. Historical examples using
+`lutaml uml ...` are not a command reference for the current umbrella package.
+In `lutaml-uml` 1.0.3, the packaged `lutaml` executable requires
+`lutaml/cli`, but that implementation is absent from the gem. The umbrella
+checkout does not supply it either. Use the Ruby APIs below for these workflows.
+
+Do not interpret a command name in an older tutorial as evidence that the
+corresponding executable is available in your installed version.
+
+[[build]]
+== Build a package
+
+Use `repository.export_to_package("model.lur")` after constructing a UML
+repository. The link:{site-baseurl}/tutorials/first-lur-package/[package tutorial]
+has a complete runnable script, including current component initialization.
+
+[[search]]
+== Search
+
+Use `repository.search("Building", types: [:class])`. Read the grouped results
+and `:total` from the returned hash. For object filtering, use the
+link:{site-baseurl}/tutorials/querying-models/[query DSL].
+
+[[export]]
+== Export model data
+
+`repository.document.to_yaml` serializes the typed UML document to YAML.
+Write that string with `File.write("model.yaml", ...)` when you need a plain
+model file. Use `export_to_package` when you also need repository metadata
+and indexes in a LUR archive.
+
+[[ls]]
+== List elements
+
+Use `repository.list_packages("ModelRoot", recursive: true)` for package objects
+or `repository.classes_in_package(path, recursive: true)` for classifiers.
+These are Ruby return values; callers choose the text or table format.
+
+[[tree]]
+== Inspect the hierarchy
+
+`repository.package_tree("ModelRoot", max_depth: 3)` returns a nested hierarchy.
+It does not print a terminal tree by itself. Use the returned structure in your
+own presentation, or generate a model browser.
+
+[[stats]]
+== Read statistics
+
+`repository.statistics` returns a hash, including `:total_packages`,
+`:total_classes`, and `:total_diagrams`. Counts include the synthetic root
+package. Rebuild the repository if you change its underlying document.
+
+[[docs]]
+== Generate documentation
+
+Use `Lutaml::UmlRepository::StaticSite.generate(repository, output: "browser.html")`.
+See link:{site-baseurl}/tutorials/documentation-site/[Creating a Documentation Site]
+for output modes and local inspection.
+
+[[serve]]
+== Serve generated files
+
+The static output can be served by an ordinary HTTP server. For example,
+`python3 -m http.server 8000` serves the current directory when Python 3 is
+available. Publishing and server configuration are separate from model generation.

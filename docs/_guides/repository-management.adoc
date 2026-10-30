@@ -1,0 +1,44 @@
+---
+permalink: /guides/repository-management/
+title: Managing Repositories
+parent: Guides
+---
+= Managing Repositories
+
+Keep source models, parser configuration, and generated LUR packages distinct.
+A package accelerates repeated access; the original source remains necessary
+for re-importing after model or dependency changes.
+
+== Build and name artifacts
+
+Create a repository from a UML document and export it to a versioned output path.
+Record the source revision and retain your application's `Gemfile.lock`.
+Package metadata describes the model, while the lockfile records the dependency
+versions used to create it. See
+link:{site-baseurl}/references/configuration/package-metadata/[Package Metadata].
+
+== Refresh indexes
+
+`Repository.from_document` builds indexes from the document's current contents.
+If your application changes classes, packages, or relationships in memory,
+construct a new repository from the changed document before querying or exporting.
+Do not edit stored index YAML independently of the model.
+
+== Cache imported sources
+
+`Repository.from_file_cached(source_path, lur_path: cache_path)` takes a block
+that parses the source and returns a UML document. A cache at least as new as
+the source is reused; otherwise the block runs and a new package is written.
+That timestamp check does not detect changed parser options or dependencies.
+Choose a fresh cache path or explicitly regenerate after those changes.
+
+== Verify a saved package
+
+Load it with `Repository.from_package`, check a known qualified class name,
+and compare expected counts from `statistics`. The
+link:{site-baseurl}/tutorials/first-lur-package/[first package tutorial] performs
+an export/reload check rather than only checking that a file exists.
+
+For large packages, `from_package_lazy` defers index construction.
+Choose eager or lazy loading based on your access pattern; neither changes the
+source model's format or provides a QEA importer.

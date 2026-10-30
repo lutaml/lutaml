@@ -313,4 +313,4 @@ Planned features for future releases:
 
 * link:{site-baseurl}/references/configuration/diagram-styles/[Complete Configuration Reference]
 * link:https://github.com/lutaml/lutaml/blob/main/README.md[LutaML README]
-* Default Styles (reference not included)
+* link:{site-baseurl}/references/configuration/diagram-styles/#defaults[Default Styles]

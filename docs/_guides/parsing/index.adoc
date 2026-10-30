@@ -40,7 +40,7 @@ Enterprise Architect QEA format parsing is covered in multiple locations:
 
 * link:{site-baseurl}/concepts/qea-parsing/[Concept Overview] - Understanding QEA
 * link:{site-baseurl}/references/formats/qea-structure/[Format Specification] - Complete details
-* Tutorial (documentation planned) - Step-by-step walkthrough
+* link:{site-baseurl}/tutorials/getting-started/[Tutorial] - Step-by-step walkthrough
 
 == Common Parsing Patterns
 
@@ -74,5 +74,5 @@ end
 == Related Documentation
 
 * link:{site-baseurl}/references/formats/[Format Specifications] - Technical details
-* Getting Started (documentation planned) - Basic parsing tutorial
-* Parser API Reference (documentation planned) - Complete API docs
+* link:{site-baseurl}/tutorials/getting-started/[Getting Started] - Basic parsing tutorial
+* link:{site-baseurl}/references/api/parsers/[Parser API Reference] - Complete API docs

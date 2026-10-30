@@ -1,0 +1,42 @@
+---
+permalink: /tutorials/generating-diagrams/
+title: Generating an LML Diagram
+parent: Tutorials
+nav_order: 3
+---
+= Generating an LML Diagram
+
+Render a small textual LML model as SVG. This tutorial uses Graphviz layout;
+it does not reconstruct an Enterprise Architect diagram's saved coordinates.
+
+== Prerequisites
+
+Install the `lutaml` gem in your bundle. The Graphviz `dot` executable must
+already be available on `PATH`; check with `dot -V`.
+The Ruby formatter invokes that executable to perform layout and rendering.
+
+== Render the model
+
+Save this as `render_diagram.rb`:
+
+[source,ruby]
+----
+include::../examples/render_diagram.rb[]
+----
+
+Run `bundle exec ruby render_diagram.rb city.svg` with a new output filename.
+The script rejects output without an SVG root element. Open `city.svg` in a
+browser and check that the Building class appears.
+
+== Change the output
+
+Set `formatter.type = :png` and write to `city.png` for a raster image, or
+`:pdf` and `city.pdf` for PDF. The requested Graphviz format must be supported
+by your local Graphviz installation. Replace the SVG-specific output check
+when selecting another format. Changing the filename alone does not
+change the formatter's output type.
+
+For model browser generation, see
+link:{site-baseurl}/tutorials/documentation-site/[Creating a Documentation Site].
+For the distinction between LML parsing and UML repository models, see
+link:{site-baseurl}/references/api/parsers/[Parser APIs].

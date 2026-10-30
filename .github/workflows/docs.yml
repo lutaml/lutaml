@@ -23,7 +23,29 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  examples:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      - name: Run the documented Ruby examples
+        run: |
+          task_examples_dir="$PWD/docs/examples"
+          export BUNDLE_GEMFILE="$PWD/Gemfile"
+          task_output_dir="$(mktemp -d "${RUNNER_TEMP}/lutaml-docs.XXXXXX")"
+          cd "$task_output_dir"
+          for example in city_model build_package query_model build_site present_class; do
+            bundle exec ruby "$task_examples_dir/$example.rb"
+          done
+          bundle exec ruby -rlutaml -e 'abort "LML parse failed" unless Lutaml::Lml.parse_document("diagram City { class Building {} }").classes.first.name == "Building"'
+
   build:
+    needs: examples
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

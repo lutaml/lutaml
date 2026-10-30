@@ -1,0 +1,43 @@
+---
+permalink: /concepts/uml-models/
+title: UML Model Structure
+parent: Core Topics
+---
+= UML Model Structure
+
+`lutaml-uml` represents a model as a `Lutaml::Uml::Document`. A document contains
+packages, classifiers, associations, and diagrams. The repository adds indexes
+and queries around that document; it is not a second parser.
+
+== Elements and containment
+
+* `Document` contains top-level `packages`, `classes`, `data_types`, `enums`,
+  `associations`, and `diagrams`.
+* `Package` can contain nested packages and its own classifiers and diagrams.
+* `UmlClass` contains attributes, operations, stereotypes, and relationships.
+  The Ruby class is `Lutaml::Uml::UmlClass`, not `Lutaml::Uml::Class`.
+* `TopElementAttribute` describes a class attribute; `Association` describes
+  a relationship. These are separate from the Ruby language's class attributes.
+
+Elements derived from `TopElement` expose names, IDs, visibility, stereotypes,
+definitions, and tagged values. Preserve source IDs when importing a model so
+that relationships and diagram references can identify the same elements.
+
+== Repository paths
+
+The index builder places the document under the synthetic path `ModelRoot`.
+A Building class inside a City package therefore has the qualified name
+`ModelRoot::City::Building`, regardless of the document's display name.
+Nested packages extend that path with further `::` segments.
+
+`Repository.from_document(document)` builds indexes from these collections.
+If you mutate the document afterward, construct a fresh repository to refresh
+its indexes. The link:{site-baseurl}/tutorials/getting-started/[getting-started
+tutorial] creates this structure directly and checks the resulting lookup.
+
+== Language boundaries
+
+`Lutaml::Lml::Document` is the textual LML parser's model, while Expressir has
+its own EXPRESS models. Similar method names do not make these objects
+interchangeable with UML documents. Use an explicit importer or conversion step
+before indexing another language's result as a UML repository.

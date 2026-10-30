@@ -333,5 +333,5 @@ Diagram generation is **production-ready** with:
 
 * link:{site-baseurl}/guides/diagram-generation/[Diagram Generation Guide] - Complete walkthrough
 * link:{site-baseurl}/references/configuration/diagram-styles/[Styling Configuration] - Full config reference
-* Tutorial (documentation planned) - Step-by-step guide
+* link:{site-baseurl}/tutorials/generating-diagrams/[Tutorial] - Step-by-step guide
 * link:{site-baseurl}/core/architecture/[System Architecture] - Technical details

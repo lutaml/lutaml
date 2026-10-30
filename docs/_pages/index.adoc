@@ -34,7 +34,7 @@ Learn about Enterprise Architect's QEA format and why direct SQLite parsing is 1
 
 Understanding LutaML's compressed binary format for fast loading and efficient querying of UML models.
 
-==== UML Model Structure (documentation planned)
+==== link:{site-baseurl}/concepts/uml-models/[UML Model Structure]
 
 How LutaML represents UML models internally, including packages, classes, attributes, and relationships.
 

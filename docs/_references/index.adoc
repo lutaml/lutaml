@@ -9,26 +9,26 @@ This section provides detailed technical specifications, API documentation, and 
 
 == Command-Line Interface
 
-=== Complete Command Reference (documentation planned)
+=== link:{site-baseurl}/references/cli/commands/[Complete Command Reference]
 
-Comprehensive reference for all CLI commands, options, and arguments.
+Current executable compatibility and Ruby replacements for the historical UML commands.
 
-=== Individual Commands
+=== Historical Commands and Ruby Replacements
 
-* `lutaml uml build` (documentation planned) - Build LUR packages
-* `lutaml uml search` (documentation planned) - Search models
-* `lutaml uml export` (documentation planned) - Export data
-* `lutaml uml ls` (documentation planned) - List elements
-* `lutaml uml tree` (documentation planned) - Show hierarchy
-* `lutaml uml stats` (documentation planned) - Statistics
-* `lutaml uml docs` (documentation planned) - Generate docs
-* `lutaml uml serve` (documentation planned) - Start server
+* link:{site-baseurl}/references/cli/commands/#build[`lutaml uml build`] - Build LUR packages
+* link:{site-baseurl}/references/cli/commands/#search[`lutaml uml search`] - Search models
+* link:{site-baseurl}/references/cli/commands/#export[`lutaml uml export`] - Export data
+* link:{site-baseurl}/references/cli/commands/#ls[`lutaml uml ls`] - List elements
+* link:{site-baseurl}/references/cli/commands/#tree[`lutaml uml tree`] - Show hierarchy
+* link:{site-baseurl}/references/cli/commands/#stats[`lutaml uml stats`] - Statistics
+* link:{site-baseurl}/references/cli/commands/#docs[`lutaml uml docs`] - Generate docs
+* link:{site-baseurl}/references/cli/commands/#serve[`lutaml uml serve`] - Start server
 
 == API Documentation
 
 === Core APIs
 
-==== Repository API (documentation planned)
+==== link:{site-baseurl}/references/api/repository/[Repository API]
 
 Complete API reference for `Lutaml::UmlRepository::Repository` class.
 
@@ -39,9 +39,9 @@ Complete API reference for `Lutaml::UmlRepository::Repository` class.
 * Index management
 * Statistics calculation
 
-==== Parser APIs (documentation planned)
+==== link:{site-baseurl}/references/api/parsers/[Parser APIs]
 
-Reference for all parser interfaces and implementations.
+Entry points and result types for LML, EXPRESS, LUR, and external importers.
 
 **Topics:**
 
@@ -50,7 +50,7 @@ Reference for all parser interfaces and implementations.
 * Parser options
 * Error handling
 
-==== Presenter APIs (documentation planned)
+==== link:{site-baseurl}/references/api/presenters/[Presenter APIs]
 
 Documentation for element presentation and formatting.
 
@@ -69,8 +69,8 @@ Complete reference for the query DSL syntax and methods.
 
 * `Lutaml::Uml::Document`
 * `Lutaml::Uml::Package`
-* `Lutaml::Uml::Class`
-* `Lutaml::Uml::Attribute`
+* `Lutaml::Uml::UmlClass`
+* `Lutaml::Uml::TopElementAttribute`
 * `Lutaml::Uml::Association`
 * `Lutaml::Uml::Diagram`
 
@@ -87,7 +87,7 @@ Complete specification of Enterprise Architect's QEA (SQLite) database format.
 * Data types
 * Supported EA versions
 
-=== LUR Package Format (documentation planned)
+=== link:{site-baseurl}/references/formats/lur-format/[LUR Package Format]
 
 Specification of LutaML's compressed repository format.
 

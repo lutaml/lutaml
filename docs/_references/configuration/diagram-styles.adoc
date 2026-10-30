@@ -713,4 +713,4 @@ conn_style = resolver.resolve_connector_style(connector, diagram_link)
 
 * link:{site-baseurl}/guides/diagram-generation/[Diagram Generation Guide]
 * link:https://github.com/lutaml/lutaml/blob/main/README.md[LutaML README]
-* Default Configuration File (reference not included)
+* link:{site-baseurl}/references/configuration/diagram-styles/#configuration-file-format[Configuration File Format]

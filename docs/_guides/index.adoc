@@ -9,9 +9,9 @@ This section provides task-oriented how-to documentation for common workflows an
 
 == Command-Line Usage
 
-=== Complete CLI Guide (documentation planned)
+=== link:{site-baseurl}/guides/cli-usage/[Complete CLI Guide]
 
-Comprehensive guide to using LutaML's command-line interface, including all commands, options, and workflows.
+Run the supported Ruby scripts, inspect your bundle, and understand the current executable compatibility boundary.
 
 == Diagram Generation
 
@@ -46,22 +46,22 @@ Learn how to customize diagram colors, fonts, and styling using YAML configurati
 
 Configure XML namespaces, schema locations, and other metadata for UML packages.
 
-=== Managing Repositories (documentation planned)
+=== link:{site-baseurl}/guides/repository-management/[Managing Repositories]
 
-Best practices for organizing, versioning, and maintaining LUR repositories.
+Build, cache, and verify LUR repositories while preserving source models.
 
 == Parsing Guides
 
-=== Parsing QEA Files (documentation planned)
+=== link:{site-baseurl}/guides/parsing/qea-parsing/[Parsing QEA Files]
 
-How to parse Enterprise Architect QEA files directly from SQLite databases.
+Connect a separate QEA importer to the typed UML repository and verify its output.
 
 **Topics covered:**
 
-* File validation
-* Performance optimization
-* Handling large models
-* Error recovery
+* Importer and repository boundaries
+* Checking the returned document type
+* Preserving source IDs
+* Verifying imported results
 
 === link:{site-baseurl}/guides/parsing/xmi-parsing/[Parsing XMI Files]
 

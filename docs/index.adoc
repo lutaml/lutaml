@@ -26,7 +26,7 @@ LutaML provides a unified interface for:
 New to LutaML? Start here:
 
 * link:{site-baseurl}/core/installation/[Installation Guide] - Get LutaML up and running
-* Quick Start Tutorial (documentation planned) - Your first steps with LutaML
+* link:{site-baseurl}/tutorials/getting-started/[Quick Start Tutorial] - Your first steps with LutaML
 * link:{site-baseurl}/core/overview/[What is LutaML?] - Learn about the architecture and capabilities
 
 === Documentation Sections
@@ -52,8 +52,8 @@ Detailed technical specifications, API documentation, and configuration schemas.
 * https://github.com/lutaml/lutaml[GitHub Repository]
 * https://rubygems.org/gems/lutaml[RubyGems Package]
 * link:{site-baseurl}/core/installation/[Installation]
-* CLI Reference (documentation planned)
-* API Reference (documentation planned)
+* link:{site-baseurl}/references/cli/commands/[CLI Reference]
+* link:{site-baseurl}/references/api/repository/[API Reference]
 
 === Community
 

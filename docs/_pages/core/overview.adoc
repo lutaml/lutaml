@@ -176,7 +176,7 @@ See link:{site-baseurl}/core/architecture/[System Architecture] for details.
 Ready to start using LutaML?
 
 1. link:{site-baseurl}/core/installation/[Install LutaML] - Get set up
-2. Quick Start Tutorial (documentation planned) - Your first steps
+2. link:{site-baseurl}/tutorials/getting-started/[Quick Start Tutorial] - Your first steps
 3. link:{site-baseurl}/guides/[Guides] - Task-oriented documentation
 4. link:{site-baseurl}/references/[Reference] - Complete API documentation
 

@@ -304,9 +304,9 @@ $ rm -rf ~/.lutaml
 
 Now that LutaML is installed:
 
-1. Quick Start Tutorial (documentation planned) - Your first steps
-2. CLI Usage Guide (documentation planned) - Learn the commands
-3. Command Reference (documentation planned) - Complete CLI docs
+1. link:{site-baseurl}/tutorials/getting-started/[Quick Start Tutorial] - Your first steps
+2. link:{site-baseurl}/guides/cli-usage/[CLI Usage Guide] - Learn the commands
+3. link:{site-baseurl}/references/cli/commands/[Command Reference] - Complete CLI docs
 
 == Getting Help
 
@@ -318,4 +318,4 @@ Now that LutaML is installed:
 
 * link:{site-baseurl}/core/overview/[What is LutaML?]
 * link:{site-baseurl}/core/architecture/[System Architecture]
-* Getting Started Tutorial (documentation planned)
+* link:{site-baseurl}/tutorials/getting-started/[Getting Started Tutorial]

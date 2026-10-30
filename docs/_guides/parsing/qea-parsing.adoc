@@ -1,0 +1,47 @@
+---
+permalink: /guides/parsing/qea-parsing/
+title: Integrating QEA Parsing
+parent: Guides
+---
+= Integrating QEA Parsing
+
+QEA is Enterprise Architect's SQLite model format. In the split LutaML family,
+QEA import and UML repository indexing are separate operations.
+`lutaml-uml` 1.0.3 does not ship a QEA parser, and
+`Repository.from_file("model.qea")` deliberately rejects that extension.
+
+== Select and verify an importer
+
+Use a QEA-capable provider that supports your EA schema version. Follow that
+provider's installation and parsing contract; installing the `lutaml` umbrella
+alone does not add a QEA parser. Work from a consistent saved copy of the EA
+database so that its object and diagram tables describe the same model state.
+
+The repository integration requires a `Lutaml::Uml::Document`.
+Check the provider's result type and convert it explicitly if it uses a
+different model family. A similarly named `Document` class is not sufficient.
+
+== Build the repository
+
+Once your importer has produced `document`:
+
+[source,ruby]
+----
+raise TypeError, "Expected a UML document" unless document.is_a?(Lutaml::Uml::Document)
+
+repository = Lutaml::UmlRepository::Repository.from_document(document)
+puts repository.statistics
+----
+
+Verify a known package path and class, then inspect association and diagram
+counts. Preserve source IDs when converting objects so that relationship and
+diagram references remain meaningful. An empty repository is not proof of a
+successful import merely because no exception occurred.
+
+== Preserve and inspect results
+
+Export the verified repository as a LUR package, keeping the QEA source and
+importer configuration. See link:{site-baseurl}/tutorials/first-lur-package/[LUR
+package creation] and link:{site-baseurl}/references/formats/qea-structure/[QEA
+database structure]. Stored diagram objects and rendered SVG are different
+outputs; a successful object import alone does not establish rendering support.

@@ -1,0 +1,61 @@
+---
+permalink: /references/api/parsers/
+title: Parser APIs
+parent: Reference
+---
+= Parser APIs
+
+Select the parser for the input language and check its result type before
+passing the result to another component. The split gems do not share a
+universal `Lutaml::Parser.parse` entry point.
+
+[cols="1,2,2",options="header"]
+|===
+|Input |Entry point |Result
+|LML text |`Lutaml::Lml.parse_document(input)` |`Lutaml::Lml::Document`, without view resolution.
+|LML diagram/view |`Lutaml::Lml.parse(input)` |An LML document with view imports and filtering resolved.
+|EXPRESS |`Lutaml::Express::Parsers::Exp.parse(io)` |The EXPRESS repository returned by Expressir.
+|LUR package |`Lutaml::UmlRepository::Repository.from_package(path)` |A UML repository.
+|QEA or XMI |A separately installed format provider |A provider-specific result; convert it to a UML document before repository construction.
+|===
+
+== LML input
+
+[source,ruby]
+----
+require "lutaml"
+
+document = Lutaml::Lml.parse_document("diagram City { class Building {} }")
+puts document.classes.first.name
+----
+
+This prints `Building`. For files, open the input and pass the IO object.
+`parse` performs the additional view-resolution stage needed by diagram views.
+Parsing failures raise LML errors such as `Lutaml::Lml::ParsingError`.
+Do not treat an LML document as a `Lutaml::Uml::Document` merely because both
+have a `classes` collection.
+
+== EXPRESS input
+
+Pass an open IO to the umbrella's EXPRESS adapter:
+
+[source,ruby]
+----
+require "lutaml"
+
+repository = File.open("schema.exp") do |input|
+  Lutaml::Express::Parsers::Exp.parse(input)
+end
+----
+
+The result belongs to Expressir's model family. Use Expressir's repository
+operations rather than the UML query API on that result.
+
+== QEA and XMI integration
+
+`lutaml-uml` 1.0.3's repository layer does not import QEA or XMI itself.
+Its `from_file` method raises `ArgumentError` for those extensions.
+An importer must supply a `Lutaml::Uml::Document`; then use
+`Repository.from_document(document)`.
+See link:{site-baseurl}/guides/parsing/qea-parsing/[Integrating QEA Parsing]
+for the integration boundary and validation steps.

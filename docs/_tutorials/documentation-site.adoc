@@ -1,0 +1,47 @@
+---
+permalink: /tutorials/documentation-site/
+title: Creating a Documentation Site
+parent: Tutorials
+nav_order: 4
+---
+= Creating a Documentation Site
+
+Generate a model browser from the small repository in
+link:{site-baseurl}/tutorials/getting-started/[Getting Started].
+This uses the Ruby static-site API in `lutaml-uml`, rather than the historical
+`lutaml uml build-spa` command.
+
+== Generate the browser
+
+Save this as `build_site.rb` beside `city_model.rb`:
+
+[source,ruby]
+----
+include::../examples/build_site.rb[]
+----
+
+Run `bundle exec ruby build_site.rb browser.html` with a new output filename.
+The script verifies that the generator wrote a nonempty HTML file.
+It explicitly loads `lutaml/uml/version`, which the current generator uses
+when constructing its metadata.
+
+== Serve and inspect
+
+Serve the output directory with an HTTP server. For example, if Python 3 is
+available, run `python3 -m http.server 8000` there, then open
+`http://localhost:8000/browser.html`. Check that the City package and Building
+class appear, and search for Building.
+
+Generating a file does not publish a website. Upload the generated output to
+your chosen static host when you are ready to publish it.
+
+== Use an existing model
+
+Load a LUR package with `Repository.from_package` and pass the resulting
+repository to `StaticSite.generate`. Set `mode: :multi_file` and an output
+directory to produce separate assets instead of a single HTML file.
+Use `config_path:` to select a static-site configuration file; diagram styling
+and package metadata are separate configuration concerns.
+
+The example has no stored EA diagrams. Generating a model browser does not
+prove that QEA import or EA SVG rendering is available in the installed bundle.
