@@ -323,7 +323,7 @@ lib/lutaml/
 
 == Related Documentation
 
-* link:concepts/qea-parsing[QEA Parsing] - Parse layer details
-* link:concepts/lur-format[LUR Format] - Repository format
-* link:concepts/diagram-generation[Diagram Generation] - Rendering pipeline
-* link:../guides[Guides] - Implementation guides
+* link:{site-baseurl}/concepts/qea-parsing/[QEA Parsing] - Parse layer details
+* link:{site-baseurl}/concepts/lur-format/[LUR Format] - Repository format
+* link:{site-baseurl}/concepts/diagram-generation/[Diagram Generation] - Rendering pipeline
+* link:{site-baseurl}/guides/[Guides] - Implementation guides

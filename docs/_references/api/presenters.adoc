@@ -1,0 +1,43 @@
+---
+permalink: /references/api/presenters/
+title: Presenter APIs
+parent: Reference
+---
+= Presenter APIs
+
+Presenters turn UML elements into text, table rows, and hashes without changing
+the model. They live under `Lutaml::UmlRepository::Presenters`.
+
+== Present a class
+
+Save this beside `city_model.rb` from
+link:{site-baseurl}/tutorials/getting-started/[Getting Started]:
+
+[source,ruby]
+----
+include::../../examples/present_class.rb[]
+----
+
+Run it with `bundle exec ruby present_class.rb`. The output starts with
+`Class: Building`. Requiring the concrete class presenter registers it with
+the factory before the factory selects it.
+
+== Factory and output contract
+
+`PresenterFactory.create(element, repository = nil, context = nil)` chooses
+a registered presenter by the element's class, then by its ancestors.
+It raises `ArgumentError` if no presenter is registered for the type.
+
+Concrete presenters implement:
+
+* `to_text`: a text description.
+* `to_table_row`: a hash suitable for a table row.
+* `to_hash`: structured output for callers to serialize as JSON or YAML.
+
+The base `ElementPresenter` provides shared helpers; it does not implement
+those output methods. Instantiate a concrete presenter instead.
+
+For an application-specific type, subclass the base, implement all three
+outputs as public methods, then call
+`PresenterFactory.register(element_class, presenter_class)`.
+Keep the repository argument when output needs qualified names or relationships.

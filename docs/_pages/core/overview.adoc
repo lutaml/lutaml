@@ -169,29 +169,29 @@ This design ensures:
 * **Type safety** and validation
 * **Performance** through optimized transformations
 
-See link:architecture[System Architecture] for details.
+See link:{site-baseurl}/core/architecture/[System Architecture] for details.
 
 == Getting Started
 
 Ready to start using LutaML?
 
-1. link:/core/installation[Install LutaML] - Get set up
-2. link:/tutorials/getting-started[Quick Start Tutorial] - Your first steps
-3. link:/guides[Guides] - Task-oriented documentation
-4. link:/references[Reference] - Complete API documentation
+1. link:{site-baseurl}/core/installation/[Install LutaML] - Get set up
+2. link:{site-baseurl}/tutorials/getting-started/[Quick Start Tutorial] - Your first steps
+3. link:{site-baseurl}/guides/[Guides] - Task-oriented documentation
+4. link:{site-baseurl}/references/[Reference] - Complete API documentation
 
 == License and Community
 
 LutaML is open source and maintained by https://www.ribose.com[Ribose].
 
-* **License**: https://github.com/lutaml/lutaml/blob/main/LICENSE[BSD-3-Clause]
+* **License**: https://opensource.org/licenses/MIT[MIT]
 * **Source**: https://github.com/lutaml/lutaml[GitHub Repository]
 * **Package**: https://rubygems.org/gems/lutaml[RubyGems]
 * **Issues**: https://github.com/lutaml/lutaml/issues[Issue Tracker]
 
 == See Also
 
-* link:installation[Installation Guide]
-* link:architecture[System Architecture]
-* link:concepts/qea-parsing[QEA Parsing Concept]
-* link:concepts/lur-format[LUR Package Format]
+* link:{site-baseurl}/core/installation/[Installation Guide]
+* link:{site-baseurl}/core/architecture/[System Architecture]
+* link:{site-baseurl}/concepts/qea-parsing/[QEA Parsing Concept]
+* link:{site-baseurl}/concepts/lur-format/[LUR Package Format]

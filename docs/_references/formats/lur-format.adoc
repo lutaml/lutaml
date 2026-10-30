@@ -1,0 +1,39 @@
+---
+permalink: /references/formats/lur-format/
+title: LUR Package Format
+parent: Reference
+---
+= LUR Package Format
+
+A `.lur` file is a ZIP archive produced by the UML repository exporter.
+It packages a typed UML document, lookup indexes, and descriptive metadata.
+Use the repository loader and exporter instead of constructing an archive by hand.
+
+== Archive entries
+
+[cols="1,2",options="header"]
+|===
+|Entry |Contents
+|`metadata.yaml` |Package metadata, serialization format, timestamps, component version, and statistics.
+|`repository.yaml` |The serialized `Lutaml::Uml::Document`.
+|`indexes/all.yaml` |The repository's lookup indexes.
+|`index_tree.yaml` |A searchable package/class summary.
+|`statistics.yaml` |Repository statistics.
+|===
+
+These names describe the YAML package writer in `lutaml-uml` 1.0.3.
+Do not assume that an arbitrary ZIP or renamed XMI file is a valid LUR package.
+
+== Read and write
+
+Call `Repository.from_package(path)` to load a package and
+`repository.export_to_package(path)` to export it.
+The exporter defaults to YAML document serialization and compression level 6.
+It accepts package metadata through its options; see
+link:{site-baseurl}/references/configuration/package-metadata/[Package Metadata].
+The link:{site-baseurl}/tutorials/first-lur-package/[package tutorial] includes
+the version require needed by the current exporter and verifies a full round trip.
+
+The loader reports absent files with `ArgumentError` and reports invalid ZIP
+or deserialization failures as load errors. Keep your source model and lockfile
+so that you can regenerate the package when its model or dependency versions change.

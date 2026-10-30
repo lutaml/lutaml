@@ -44,7 +44,7 @@ back_to_top_text: "Back to top"
 # Footer content
 footer_content: >-
   Copyright &copy; 2025 Ribose. Distributed by a
-  <a href="https://github.com/lutaml/lutaml/blob/main/LICENSE">BSD-3-Clause license</a>.
+  <a href="https://opensource.org/licenses/MIT">MIT license</a>.
 
 # Footer last edit timestamp
 last_edit_timestamp: true

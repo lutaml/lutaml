@@ -1,4 +1,5 @@
 = Reference
+:page-permalink: /references/
 :nav_order: 4
 :has_children: true
 
@@ -8,26 +9,26 @@ This section provides detailed technical specifications, API documentation, and 
 
 == Command-Line Interface
 
-=== link:cli/commands[Complete Command Reference]
+=== link:{site-baseurl}/references/cli/commands/[Complete Command Reference]
 
-Comprehensive reference for all CLI commands, options, and arguments.
+Current executable compatibility and Ruby replacements for the historical UML commands.
 
-=== Individual Commands
+=== Historical Commands and Ruby Replacements
 
-* link:cli/build[`lutaml uml build`] - Build LUR packages
-* link:cli/search[`lutaml uml search`] - Search models
-* link:cli/export[`lutaml uml export`] - Export data
-* link:cli/ls[`lutaml uml ls`] - List elements
-* link:cli/tree[`lutaml uml tree`] - Show hierarchy
-* link:cli/stats[`lutaml uml stats`] - Statistics
-* link:cli/docs[`lutaml uml docs`] - Generate docs
-* link:cli/serve[`lutaml uml serve`] - Start server
+* link:{site-baseurl}/references/cli/commands/#build[`lutaml uml build`] - Build LUR packages
+* link:{site-baseurl}/references/cli/commands/#search[`lutaml uml search`] - Search models
+* link:{site-baseurl}/references/cli/commands/#export[`lutaml uml export`] - Export data
+* link:{site-baseurl}/references/cli/commands/#ls[`lutaml uml ls`] - List elements
+* link:{site-baseurl}/references/cli/commands/#tree[`lutaml uml tree`] - Show hierarchy
+* link:{site-baseurl}/references/cli/commands/#stats[`lutaml uml stats`] - Statistics
+* link:{site-baseurl}/references/cli/commands/#docs[`lutaml uml docs`] - Generate docs
+* link:{site-baseurl}/references/cli/commands/#serve[`lutaml uml serve`] - Start server
 
 == API Documentation
 
 === Core APIs
 
-==== link:api/repository[Repository API]
+==== link:{site-baseurl}/references/api/repository/[Repository API]
 
 Complete API reference for `Lutaml::UmlRepository::Repository` class.
 
@@ -38,9 +39,9 @@ Complete API reference for `Lutaml::UmlRepository::Repository` class.
 * Index management
 * Statistics calculation
 
-==== link:api/parsers[Parser APIs]
+==== link:{site-baseurl}/references/api/parsers/[Parser APIs]
 
-Reference for all parser interfaces and implementations.
+Entry points and result types for LML, EXPRESS, LUR, and external importers.
 
 **Topics:**
 
@@ -49,7 +50,7 @@ Reference for all parser interfaces and implementations.
 * Parser options
 * Error handling
 
-==== link:api/presenters[Presenter APIs]
+==== link:{site-baseurl}/references/api/presenters/[Presenter APIs]
 
 Documentation for element presentation and formatting.
 
@@ -68,14 +69,14 @@ Complete reference for the query DSL syntax and methods.
 
 * `Lutaml::Uml::Document`
 * `Lutaml::Uml::Package`
-* `Lutaml::Uml::Class`
-* `Lutaml::Uml::Attribute`
+* `Lutaml::Uml::UmlClass`
+* `Lutaml::Uml::TopElementAttribute`
 * `Lutaml::Uml::Association`
 * `Lutaml::Uml::Diagram`
 
 == File Formats
 
-=== link:formats/qea-structure[QEA File Format]
+=== link:{site-baseurl}/references/formats/qea-structure/[QEA File Format]
 
 Complete specification of Enterprise Architect's QEA (SQLite) database format.
 
@@ -86,7 +87,7 @@ Complete specification of Enterprise Architect's QEA (SQLite) database format.
 * Data types
 * Supported EA versions
 
-=== link:formats/lur-format[LUR Package Format]
+=== link:{site-baseurl}/references/formats/lur-format/[LUR Package Format]
 
 Specification of LutaML's compressed repository format.
 
@@ -97,7 +98,7 @@ Specification of LutaML's compressed repository format.
 * Versioning
 * Metadata
 
-=== link:formats/lutaml-syntax[LutaML Syntax]
+=== link:{site-baseurl}/references/formats/lutaml-syntax/[LutaML Syntax]
 
 Complete syntax reference for LutaML's native DSL.
 
@@ -118,7 +119,7 @@ ISO 10303-11 EXPRESS schema support via Expressir.
 
 == Configuration
 
-=== link:configuration/diagram-styles[Diagram Styling Configuration]
+=== link:{site-baseurl}/references/configuration/diagram-styles/[Diagram Styling Configuration]
 
 Complete YAML schema for diagram style configuration.
 
@@ -129,7 +130,7 @@ Complete YAML schema for diagram style configuration.
 * Connector types
 * Priority rules
 
-=== link:configuration/package-metadata[Package Metadata Configuration]
+=== link:{site-baseurl}/references/configuration/package-metadata/[Package Metadata Configuration]
 
 YAML schema for package metadata including XML namespaces.
 
@@ -192,6 +193,6 @@ Operating system and platform compatibility.
 
 == Related Sections
 
-* link:../pages[Core Topics] - Fundamental concepts
-* link:../tutorials[Tutorials] - Step-by-step learning
-* link:../guides[Guides] - Task-oriented documentation
+* link:{site-baseurl}/core/[Core Topics] - Fundamental concepts
+* link:{site-baseurl}/tutorials/[Tutorials] - Step-by-step learning
+* link:{site-baseurl}/guides/[Guides] - Task-oriented documentation

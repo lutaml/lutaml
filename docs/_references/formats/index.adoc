@@ -1,4 +1,5 @@
 ---
+permalink: /references/formats/
 title: File Formats
 parent: Reference
 nav_order: 3
@@ -11,7 +12,7 @@ Complete specifications for all file formats supported by LutaML.
 
 == Available Format Specifications
 
-=== link:qea-structure[QEA File Format]
+=== link:{site-baseurl}/references/formats/qea-structure/[QEA File Format]
 
 Enterprise Architect's native SQLite database format specification.
 
@@ -23,7 +24,7 @@ Enterprise Architect's native SQLite database format specification.
 * Performance characteristics
 * Configuration and usage
 
-=== link:lutaml-syntax[LutaML Syntax Reference]
+=== link:{site-baseurl}/references/formats/lutaml-syntax/[LutaML Syntax Reference]
 
 Complete syntax reference for LutaML's native modeling DSL.
 
@@ -38,5 +39,5 @@ Complete syntax reference for LutaML's native modeling DSL.
 
 == Related Documentation
 
-* link:../../guides/parsing[Parsing Guides] - How to parse these formats
-* link:../../pages[Core Topics] - Understanding model structures
+* link:{site-baseurl}/guides/parsing/[Parsing Guides] - How to parse these formats
+* link:{site-baseurl}/core/[Core Topics] - Understanding model structures

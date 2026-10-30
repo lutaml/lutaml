@@ -1,0 +1,43 @@
+---
+permalink: /guides/cli-usage/
+title: Running LutaML Workflows
+parent: Guides
+---
+= Running LutaML Workflows
+
+Run the supported Ruby workflows inside the bundle that declares `gem "lutaml"`.
+This keeps the umbrella, parser, and repository versions together.
+Check your resolved component versions with `bundle info lutaml-lml` and
+`bundle info lutaml-uml` when comparing your installation with these examples.
+
+== Start with a script
+
+Copy the script from link:{site-baseurl}/tutorials/getting-started/[Getting Started]
+into `city_model.rb`, then run `bundle exec ruby city_model.rb`.
+It prints `Building`, confirming that model creation and indexed lookup work.
+Do not replace this with an old `lutaml uml` invocation: the current packaged
+executable has a missing CLI dependency, as explained in
+link:{site-baseurl}/references/cli/commands/[Command-Line Compatibility].
+
+== Run a complete workflow
+
+. Create a typed model, or obtain a UML document from a format-specific importer.
+. Construct a repository with `Repository.from_document(document)`.
+. Query the repository or export it with `export_to_package`.
+. Load a saved package with `Repository.from_package` on subsequent runs.
+. Use `StaticSite.generate` when you need a browsable HTML representation.
+
+Each step has a runnable example in the link:{site-baseurl}/tutorials/[Tutorials].
+Choose a new output path when running examples so that you keep existing models
+and generated files available for comparison.
+
+== Diagnose failures
+
+* A `LoadError` for `lutaml/cli` indicates the executable compatibility issue;
+  it does not mean the model file has a syntax error.
+* `Repository.from_file` rejecting `.qea` or `.xmi` means parsing belongs to
+  an external provider. See link:{site-baseurl}/references/api/parsers/[Parser APIs].
+* A missing Graphviz `dot` executable affects diagram rendering, not UML lookup
+  or LUR package generation. Check `dot -V` before running that tutorial.
+* A failed lookup may use the wrong qualified path. Start with `ModelRoot` and
+  inspect `list_packages` before choosing the class path.

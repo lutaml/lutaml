@@ -1,4 +1,5 @@
 ---
+permalink: /guides/parsing/
 title: Parsing Guides
 parent: Guides
 nav_order: 20
@@ -11,7 +12,7 @@ Comprehensive guides for parsing different model formats with LutaML.
 
 == Available Parsing Guides
 
-=== link:express-parsing[EXPRESS Parsing]
+=== link:{site-baseurl}/guides/parsing/express-parsing/[EXPRESS Parsing]
 
 Guide for parsing ISO 10303-11 EXPRESS schemas used in industrial standards.
 
@@ -22,7 +23,7 @@ Guide for parsing ISO 10303-11 EXPRESS schemas used in industrial standards.
 * Model transformation
 * Integration examples
 
-=== link:xmi-parsing[XMI Parsing]
+=== link:{site-baseurl}/guides/parsing/xmi-parsing/[XMI Parsing]
 
 Guide for parsing OMG XMI format exports from UML tools.
 
@@ -37,9 +38,9 @@ Guide for parsing OMG XMI format exports from UML tools.
 
 Enterprise Architect QEA format parsing is covered in multiple locations:
 
-* link:../../pages/concepts/qea-parsing[Concept Overview] - Understanding QEA
-* link:../../references/formats/qea-structure[Format Specification] - Complete details
-* link:../../tutorials/getting-started[Tutorial] - Step-by-step walkthrough
+* link:{site-baseurl}/concepts/qea-parsing/[Concept Overview] - Understanding QEA
+* link:{site-baseurl}/references/formats/qea-structure/[Format Specification] - Complete details
+* link:{site-baseurl}/tutorials/getting-started/[Tutorial] - Step-by-step walkthrough
 
 == Common Parsing Patterns
 
@@ -72,6 +73,6 @@ end
 
 == Related Documentation
 
-* link:../../references/formats[Format Specifications] - Technical details
-* link:../../tutorials/getting-started[Getting Started] - Basic parsing tutorial
-* link:../../references/api/parsers[Parser API Reference] - Complete API docs
+* link:{site-baseurl}/references/formats/[Format Specifications] - Technical details
+* link:{site-baseurl}/tutorials/getting-started/[Getting Started] - Basic parsing tutorial
+* link:{site-baseurl}/references/api/parsers/[Parser API Reference] - Complete API docs

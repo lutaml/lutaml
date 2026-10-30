@@ -33,5 +33,5 @@ Since SysML extends UML, all UML modeling capabilities are available in SysML mo
 
 == See Also
 
-* link:uml-modeling[UML Modeling Guide]
-* link:../README[LutaML Documentation]
+* link:{site-baseurl}/guides/uml-modeling/[UML Modeling Guide]
+* link:https://github.com/lutaml/lutaml/blob/main/README.md[LutaML Documentation]

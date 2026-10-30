@@ -705,7 +705,7 @@ repo = Lutaml::UmlRepository::Repository.from_package("model.lur",
 
 == See Also
 
-* link:qea-parsing[QEA Direct Parsing]
-* link:../architecture[System Architecture]
-* link:../../tutorials/first-lur-package[Tutorial: Building LUR Packages]
-* link:../../guides[Repository Management Guide]
+* link:{site-baseurl}/concepts/qea-parsing/[QEA Direct Parsing]
+* link:{site-baseurl}/core/architecture/[System Architecture]
+* link:{site-baseurl}/tutorials/first-lur-package/[Tutorial: Building LUR Packages]
+* link:{site-baseurl}/guides/[Repository Management Guide]

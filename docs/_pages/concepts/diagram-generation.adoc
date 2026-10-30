@@ -331,7 +331,7 @@ Diagram generation is **production-ready** with:
 
 == See Also
 
-* link:../../guides/diagram-generation[Diagram Generation Guide] - Complete walkthrough
-* link:../../references/configuration/diagram-styles[Styling Configuration] - Full config reference
-* link:../../tutorials/generating-diagrams[Tutorial] - Step-by-step guide
-* link:../architecture[System Architecture] - Technical details
+* link:{site-baseurl}/guides/diagram-generation/[Diagram Generation Guide] - Complete walkthrough
+* link:{site-baseurl}/references/configuration/diagram-styles/[Styling Configuration] - Full config reference
+* link:{site-baseurl}/tutorials/generating-diagrams/[Tutorial] - Step-by-step guide
+* link:{site-baseurl}/core/architecture/[System Architecture] - Technical details

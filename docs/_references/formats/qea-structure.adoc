@@ -1344,10 +1344,10 @@ Connection pooling:: Reuses database connections
 
 === Documentation
 
-* link:QEA_DATABASE_TABLE_ANALYSIS.md[Detailed table analysis]
-* link:../README[LutaML main documentation]
-* link:DIAGRAM_SUPPORT_IMPLEMENTATION.md[Diagram implementation details]
-* link:OBJECT_PROPERTIES_IMPLEMENTATION.md[Object properties implementation]
+* <<implemented-tables,Detailed table analysis>>
+* link:https://github.com/lutaml/lutaml/blob/main/README.md[LutaML main documentation]
+* <<diagram-tables,Diagram table details>>
+* <<t_objectproperties-object-properties,Object property fields>>
 
 === Source code
 

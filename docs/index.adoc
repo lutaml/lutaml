@@ -25,25 +25,25 @@ LutaML provides a unified interface for:
 
 New to LutaML? Start here:
 
-* link:/installation[Installation Guide] - Get LutaML up and running
-* link:/tutorials/getting-started[Quick Start Tutorial] - Your first steps with LutaML
-* link:/overview[What is LutaML?] - Learn about the architecture and capabilities
+* link:{site-baseurl}/core/installation/[Installation Guide] - Get LutaML up and running
+* link:{site-baseurl}/tutorials/getting-started/[Quick Start Tutorial] - Your first steps with LutaML
+* link:{site-baseurl}/core/overview/[What is LutaML?] - Learn about the architecture and capabilities
 
 === Documentation Sections
 
-==== link:/core[Core Topics]
+==== link:{site-baseurl}/core/[Core Topics]
 
 Fundamental concepts and essential information about LutaML's architecture, components, and capabilities.
 
-==== link:/tutorials[Tutorials]
+==== link:{site-baseurl}/tutorials/[Tutorials]
 
 Step-by-step learning paths to help you accomplish specific tasks with LutaML.
 
-==== link:/guides[Guides]
+==== link:{site-baseurl}/guides/[Guides]
 
 Task-oriented how-to documentation for common workflows and operations.
 
-==== link:/references[Reference]
+==== link:{site-baseurl}/references/[Reference]
 
 Detailed technical specifications, API documentation, and configuration schemas.
 
@@ -51,14 +51,14 @@ Detailed technical specifications, API documentation, and configuration schemas.
 
 * https://github.com/lutaml/lutaml[GitHub Repository]
 * https://rubygems.org/gems/lutaml[RubyGems Package]
-* link:/installation[Installation]
-* link:/references/cli/commands[CLI Reference]
-* link:/references/api/repository[API Reference]
+* link:{site-baseurl}/core/installation/[Installation]
+* link:{site-baseurl}/references/cli/commands/[CLI Reference]
+* link:{site-baseurl}/references/api/repository/[API Reference]
 
 === Community
 
 LutaML is open source and maintained by https://www.ribose.com[Ribose].
 
 * Report issues: https://github.com/lutaml/lutaml/issues
-* Contribute: https://github.com/lutaml/lutaml/blob/main/CONTRIBUTING.md
-* License: https://github.com/lutaml/lutaml/blob/main/LICENSE[BSD-3-Clause]
+* Contribute: https://github.com/lutaml/lutaml/pulls
+* License: https://opensource.org/licenses/MIT[MIT]

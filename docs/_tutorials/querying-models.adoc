@@ -1,0 +1,44 @@
+---
+permalink: /tutorials/querying-models/
+title: Searching and Querying Models
+parent: Tutorials
+nav_order: 5
+---
+= Searching and Querying Models
+
+Use the model from link:{site-baseurl}/tutorials/getting-started/[Getting Started]
+to compare an exact lookup, a structured query, and a text search.
+
+== Run the query
+
+Save this as `query_model.rb` beside `city_model.rb`:
+
+[source,ruby]
+----
+include::../examples/query_model.rb[]
+----
+
+Run `bundle exec ruby query_model.rb`. It prints `Building`, followed by `1`.
+The assertion checks that the query returned the expected class.
+
+== Choose a lookup method
+
+* `find_class("ModelRoot::City::Building")` resolves a qualified name.
+  It returns `nil` when no class matches, unless `raise_on_error: true` is set.
+* `classes_in_package("ModelRoot::City", recursive: true)` includes child packages.
+  Use this method for package filtering with `lutaml-uml` 1.0.3; the query DSL's
+  `in_package` condition currently raises a `NameError` for `PackagePath`.
+* `query { |q| q.classes.where(name: /Building/) }.all` filters objects and
+  returns model instances. Chain `order_by(:name)` or `limit(10)` before `.all`.
+* `search("Building", types: [:class])` returns a hash with result groups and
+  `:total`; it does not return the same array as a structured query.
+
+Package paths start at `ModelRoot`, even when the document has a different name.
+Use `package_tree` to inspect the hierarchy instead of guessing paths from filenames.
+
+== Query a saved model
+
+Replace `CityModel.repository` with
+`Lutaml::UmlRepository::Repository.from_package("city.lur")` after completing
+the link:{site-baseurl}/tutorials/first-lur-package/[LUR package tutorial].
+The query methods work on the loaded repository in the same way.

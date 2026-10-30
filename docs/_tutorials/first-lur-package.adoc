@@ -1,0 +1,45 @@
+---
+permalink: /tutorials/first-lur-package/
+title: Building Your First LUR Package
+parent: Tutorials
+nav_order: 2
+---
+= Building Your First LUR Package
+
+Save the model from link:{site-baseurl}/tutorials/getting-started/[Getting Started]
+as a `.lur` file and verify that its class survives a reload.
+
+== Export and reload
+
+Keep `city_model.rb` in the same directory as this script, named `build_package.rb`:
+
+[source,ruby]
+----
+include::../examples/build_package.rb[]
+----
+
+Run `bundle exec ruby build_package.rb city.lur` with a new output filename.
+It writes `city.lur`, reloads it, and prints `Building`.
+The explicit version require supplies the constant used by the exporter in
+`lutaml-uml` 1.0.3; the umbrella's version is a separate constant.
+
+== Inspect the result
+
+A LUR package is a ZIP archive. Inspect its entry names with a ZIP viewer:
+`metadata.yaml`, `repository.yaml`, `indexes/all.yaml`, `index_tree.yaml`,
+and `statistics.yaml` describe the model and its lookup data.
+See link:{site-baseurl}/references/formats/lur-format/[LUR Package Format]
+for the loading contract.
+
+`Repository.from_file("city.lur")` is another way to load the package.
+It does not parse QEA or XMI files. Parse those formats with the appropriate
+provider first, then pass its UML document to `Repository.from_document`.
+
+== Maintain the package
+
+Keep the original model file and the bundle lockfile alongside generated
+artifacts. Rebuild a package when its source changes. Do not use the existence
+of an old `.lur` file as proof that it represents the latest source model.
+
+Next, link:{site-baseurl}/tutorials/querying-models/[search and query the model]
+or link:{site-baseurl}/tutorials/documentation-site/[generate a documentation site].

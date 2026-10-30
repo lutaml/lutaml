@@ -5,9 +5,11 @@ on:
     branches: [main]
     paths:
     - 'docs/**'
+    - '.github/workflows/docs.yml'
   pull_request:
     paths:
     - 'docs/**'
+    - '.github/workflows/docs.yml'
   repository_dispatch:
   workflow_dispatch:
 
@@ -21,7 +23,29 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  examples:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      - name: Run the documented Ruby examples
+        run: |
+          task_examples_dir="$PWD/docs/examples"
+          export BUNDLE_GEMFILE="$PWD/Gemfile"
+          task_output_dir="$(mktemp -d "${RUNNER_TEMP}/lutaml-docs.XXXXXX")"
+          cd "$task_output_dir"
+          for example in city_model build_package query_model build_site present_class; do
+            bundle exec ruby "$task_examples_dir/$example.rb"
+          done
+          bundle exec ruby -rlutaml -e 'abort "LML parse failed" unless Lutaml::Lml.parse_document("diagram City { class Building {} }").classes.first.name == "Building"'
+
   build:
+    needs: examples
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -35,12 +59,8 @@ jobs:
           cache-version: 0
           working-directory: docs
 
-      - name: Setup Pages
-        id: pages
-        uses: actions/configure-pages@v5
-
       - name: Build with Jekyll
-        run: bundle exec jekyll build --verbose --trace --baseurl "${{ steps.pages.outputs.base_path }}"
+        run: bundle exec jekyll build --verbose --trace
         working-directory: docs
         env:
           JEKYLL_ENV: production
@@ -58,6 +78,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

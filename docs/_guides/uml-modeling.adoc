@@ -11,7 +11,7 @@ converting it into various different formats.
 
 == Language
 
-See link:lutaml_syntax[LutaML syntax]
+See link:{site-baseurl}/uml-syntax/[LutaML syntax]
 
 == Usages
 

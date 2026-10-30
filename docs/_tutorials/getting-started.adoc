@@ -1,0 +1,45 @@
+---
+permalink: /tutorials/getting-started/
+title: Getting Started with LutaML
+parent: Tutorials
+nav_order: 1
+---
+= Getting Started with LutaML
+
+Create a small UML model and look up a class without an Enterprise Architect file.
+You need Ruby 3.2 or newer and the `lutaml` gem in your bundle.
+
+== Install
+
+Add `gem "lutaml"` to your Gemfile and run `bundle install`.
+The umbrella gem loads the LML language and UML repository components.
+
+== Create the model
+
+Save this example as `city_model.rb`:
+
+[source,ruby]
+----
+include::../examples/city_model.rb[]
+----
+
+Run `bundle exec ruby city_model.rb`. It prints `Building`.
+The explicit IDs identify elements within the model; the repository assigns the
+qualified path `ModelRoot::City::Building` from their package hierarchy.
+
+== Explore the repository
+
+In another script, load `city_model.rb` and call `CityModel.repository`.
+Use `classes_in_package("ModelRoot::City")` to list its classes, or
+`statistics` to obtain model counts. An empty model still has the synthetic
+`ModelRoot` package, so the example's package count is two.
+
+UML documents and LML documents are different types. For textual LML input use
+`Lutaml::Lml.parse_document`, rather than passing an LML document directly to
+the UML repository. See link:{site-baseurl}/references/api/parsers/[Parser APIs].
+
+== Next steps
+
+* link:{site-baseurl}/tutorials/first-lur-package/[Save and reload a LUR package].
+* link:{site-baseurl}/tutorials/querying-models/[Query the model].
+* link:{site-baseurl}/concepts/uml-models/[Understand the UML model structure].

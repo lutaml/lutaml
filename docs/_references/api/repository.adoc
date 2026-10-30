@@ -1,0 +1,67 @@
+---
+permalink: /references/api/repository/
+title: Repository API
+parent: Reference
+---
+= Repository API
+
+`Lutaml::UmlRepository::Repository`, supplied by `lutaml-uml`, wraps a
+`Lutaml::Uml::Document` with indexes, queries, statistics, and package I/O.
+Load it with `require "lutaml"` when using the umbrella gem.
+
+== Construction and package I/O
+
+[cols="2,3",options="header"]
+|===
+|Method |Contract
+|`.from_document(document, options = {})` |Build indexes for a typed UML document.
+|`.from_package(path)` |Load a LUR ZIP package, including its stored indexes.
+|`.from_file(path, options = {})` |Accept `.lur` files; reject other extensions with `ArgumentError`.
+|`.from_package_lazy(path)` |Load the document and defer index construction.
+|`#export_to_package(path, options = {})` |Write a LUR package from the repository.
+|===
+
+For export with `lutaml-uml` 1.0.3, also require `lutaml/uml/version` to load the
+component version used in package metadata. See the executable
+link:{site-baseurl}/tutorials/first-lur-package/[LUR package tutorial].
+
+`.from_file_cached(source_path, lur_path: nil) { |path| ... }` uses an existing
+cache when it is at least as new as the source. Otherwise, the block must
+return a UML document to index and save. The method does not choose an external
+QEA or XMI parser for you.
+
+== Lookups
+
+* `find_package(path, raise_on_error: false)` and
+  `find_class(qualified_name, raise_on_error: false)` return an element or `nil`.
+* `list_packages(path = "ModelRoot", recursive: false)` returns package objects.
+* `classes_in_package(path, recursive: false)` returns matching classifiers.
+* `find_classes_by_stereotype(name)` uses the stereotype index.
+* `package_tree(path = "ModelRoot", max_depth: nil)` returns the package hierarchy.
+* `find_diagram(name)`, `diagrams_in_package(path)`, and `all_diagrams` access
+  diagram objects already present in the document; they do not render SVG.
+
+Qualified paths use `::`, for example `ModelRoot::City::Building`.
+Use the actual package hierarchy rather than a source filename as the path.
+
+== Search, queries, and statistics
+
+`search(text, types: [:class, :attribute, :association], fields: [:name])`
+returns grouped results under `:classes`, `:attributes`, and `:associations`,
+plus `:total`. Structured queries return model objects:
+
+[source,ruby]
+----
+classes = repository.query do |query|
+  query.classes.where(name: /Building/).order_by(:name).limit(10)
+end.all
+----
+
+In `lutaml-uml` 1.0.3, the DSL's `in_package` condition raises `NameError` for
+an unresolved `PackagePath` constant. Use `classes_in_package(path)` for that
+operation rather than adding `in_package` to a query chain.
+
+`statistics` returns a hash of counts and model metrics.
+The synthetic `ModelRoot` contributes to package counts.
+See link:{site-baseurl}/tutorials/querying-models/[Searching and Querying Models]
+for a complete runnable example.
