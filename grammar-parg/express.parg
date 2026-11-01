@@ -1,0 +1,24 @@
+# EXPRESS grammar — PARG edition 2 (skeleton).
+#
+# The translation of lib/expressir/express/grammar/parser.rb, rule by
+# rule; see CONVENTIONS.md for the mapping and the parity-critical
+# surfaces. This skeleton carries the trivia machinery only: it compiles
+# and self-checks, proving the toolchain loop while the 252-rule body
+# translation proceeds in RULE-INVENTORY.txt order.
+grammar ExpressSyntax version "0.1.0" edition 2 {
+
+  # match[" \r\n\t\f"].repeat(1)
+  trivia = 1*(%x20 / %x0D / %x0A / %x09 / %x0C)
+
+  # The DSL's skip(:trivia, whitespace: :space, exempt: ...) — the
+  # exempted rules become `atomic` declarations as they land; the
+  # remark rules stay OUT of the skip surface (they are product data).
+  skip = trivia capture: space
+
+  # Placeholder entry: whitespace-only acceptance, until the rule body
+  # translation fills in (each landed rule replaces this line's
+  # dependencies, never the header or the skip declaration).
+  syntax = *trivia
+
+  entry syntax: syntax
+}
