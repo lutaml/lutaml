@@ -126,7 +126,7 @@ pinned commit) is measured via `rake conformance:w3c`:
 hint-following, pattern-alternative, identity-crash, engine-set,
 engine-refresh, IC value-space, IC field-resolution, facade-silence,
 regex-semantics, redefine-refresh, gmonth-refresh and digit-vintage
-rounds; moxml 0.5.178, lutaml-model 0.8.154, engine leptris
+rounds; moxml 0.5.178, lutaml-model 0.8.155, engine leptris
 1.9.399.0.) Same-stack comparison: 1.2.43 baseline 3961 (84.3%) →
 4039 (86.0%) → 4090 (87.1%) → 4360 (92.8%, lockfile refresh) → 4411
 (93.9%) → 4430 (94.3%) → 4435 (94.4%) → 4436 (94.5%) → 4439 (94.5%)

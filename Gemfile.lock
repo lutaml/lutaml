@@ -68,7 +68,7 @@ GEM
     liquid (5.14.0)
       bigdecimal
       strscan (>= 3.1.1)
-    lutaml-model (0.8.154)
+    lutaml-model (0.8.155)
       base64 (>= 0.1.1)
       bigdecimal
       canon
@@ -262,7 +262,7 @@ CHECKSUMS
   leptris (1.9.399.0-x86_64-linux-musl) sha256=f7cf698c4858e132a19bf00667587ad96add7c35b3c629cbe97fdb20ef8099ce
   lint_roller (1.1.0) sha256=2c0c845b632a7d172cb849cc90c1bce937a28c5c8ccccb50dfd46a485003cc87
   liquid (5.14.0) sha256=e1020c2b2ee58c7a4d3bfdc7a331537bd27a783353748bff0bf27c6ac0c17065
-  lutaml-model (0.8.154) sha256=ac09067fa4f6aa8279d06b0284e53ce0fa84b48c5cf394f8196f91b5e54f2340
+  lutaml-model (0.8.155) sha256=3d90f2fb4fdf41a42d4a05b62b3f6644b433070b82291a9371deaa8e68a1e02d
   lutaml-store (0.3.2) sha256=9c455dbab32b4c635c48a27213f6f56fda191731c4574eb6187184ba0588a672
   lutaml-xsd (1.2.73)
   memo_wise (1.13.0) sha256=30220c38c4cef410849bc73553c58664dc2c91c6379e4a1df22aea02358b716b
