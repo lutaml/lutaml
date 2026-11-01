@@ -68,15 +68,27 @@ Lutaml::Jsonschema::Spa::Generator.new(
   schema_set, dir, metadata: Lutaml::Jsonschema::Spa::Metadata.new
 ).generate
 
-page = File.join(dir, "index.html")
-File.write(File.join(dir, "audit.html"),
-           File.read(page).sub("</body>", "#{INJECT}\n</body>"))
+# an empty schema set must boot and stay accessible too: a JS crash on
+# missing sections would otherwise ship and only surface in production
+empty_dir = File.join(dir, "empty")
+FileUtils.mkdir_p(empty_dir)
+Lutaml::Jsonschema::Spa::Generator.new(
+  Lutaml::Jsonschema::SchemaSet.new, empty_dir,
+  metadata: Lutaml::Jsonschema::Spa::Metadata.new
+).generate
 
-# both locales gate: the default LTR render and the Arabic RTL render
-# (the mirrored layout must stay accessible, TODO.sota/09)
+File.write(File.join(dir, "audit.html"),
+           File.read(File.join(dir, "index.html")).sub("</body>", "#{INJECT}\n</body>"))
+File.write(File.join(dir, "audit-empty.html"),
+           File.read(File.join(empty_dir, "index.html")).sub("</body>", "#{INJECT}\n</body>"))
+
+# gate matrix: both locales on the real document (the mirrored layout
+# must stay accessible, TODO.sota/09), plus the empty document in the
+# default locale
 VARIANTS = [
-  { label: "en", query: "" },
-  { label: "ar (rtl)", query: "?locale=ar" },
+  { label: "en", page: "audit.html", query: "" },
+  { label: "ar (rtl)", page: "audit.html", query: "?locale=ar" },
+  { label: "empty doc", page: "audit-empty.html", query: "" },
 ].freeze
 
 failed = false
@@ -84,7 +96,7 @@ failed = false
 VARIANTS.each do |variant|
   dom, err, status = Open3.capture3(
     chrome, "--headless=new", "--disable-gpu", "--virtual-time-budget=20000",
-    "--dump-dom", "file://#{File.join(dir, 'audit.html')}#{variant[:query]}"
+    "--dump-dom", "file://#{File.join(dir, variant[:page])}#{variant[:query]}"
   )
   abort "axe audit: Chrome failed: #{err[0, 400]}" unless status.success?
 
