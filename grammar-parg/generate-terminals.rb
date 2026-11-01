@@ -48,3 +48,8 @@ KEYWORDS.each do |kw|
   out << "#{parg_name(kw)} = #{body} identGuard as #{parg_name(kw)}"
 end
 puts out.join("\n")
+
+# The DSL's anyKeyword = KEYWORDS.inject(:|) — the ordered union of all
+# keyword rules (the list order is longest-first within each family).
+puts
+puts "kwAny = #{KEYWORDS.map { |kw| parg_name(kw) }.join(' / ')}"
