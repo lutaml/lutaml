@@ -150,7 +150,6 @@ tWHILE = ("W" / "w") ("H" / "h") ("I" / "i") ("L" / "l") ("E" / "e") identGuard 
 tXOR = ("X" / "x") ("O" / "o") ("R" / "r") identGuard as tXOR
 
 kwAny = tABS / tABSTRACT / tACOS / tAGGREGATE / tALIAS / tAND / tANDOR / tARRAY / tAS / tASIN / tATAN / tBAG / tBASED_ON / tBEGIN / tBINARY / tBLENGTH / tBOOLEAN / tBY / tCASE / tCONSTANT / tCONST_E / tCOS / tDERIVE / tDIV / tELSE / tEND / tEND_ALIAS / tEND_CASE / tEND_CONSTANT / tEND_ENTITY / tEND_FUNCTION / tEND_IF / tEND_LOCAL / tEND_PROCEDURE / tEND_REPEAT / tEND_RULE / tEND_SCHEMA / tEND_SUBTYPE_CONSTRAINT / tEND_TYPE / tENTITY / tENUMERATION / tESCAPE / tEXISTS / tEXP / tEXTENSIBLE / tFALSE / tFIXED / tFOR / tFORMAT / tFROM / tFUNCTION / tGENERIC_ENTITY / tGENERIC / tHIBOUND / tHIINDEX / tIF / tIN / tINSERT / tINTEGER / tINVERSE / tLENGTH / tLIKE / tLIST / tLOBOUND / tLOCAL / tLOG / tLOG10 / tLOG2 / tLOGICAL / tLOINDEX / tMOD / tNOT / tNUMBER / tNVL / tODD / tOF / tONEOF / tOPTIONAL / tOR / tOTHERWISE / tPI / tPROCEDURE / tQUERY / tREAL / tREFERENCE / tREMOVE / tRENAMED / tREPEAT / tRETURN / tROLESOF / tRULE / tSCHEMA / tSELECT / tSELF / tSET / tSIN / tSIZEOF / tSKIP / tSQRT / tSTRING / tSUBTYPE / tSUBTYPE_CONSTRAINT / tSUPERTYPE / tTAN / tTHEN / tTO / tTRUE / tTYPE / tTYPEOF / tTOTAL_OVER / tUNIQUE / tUNKNOWN / tUNTIL / tUSE / tUSEDIN / tVALUE / tVALUE_IN / tVALUE_UNIQUE / tVAR / tWITH / tWHERE / tWHILE / tXOR
-
   # --- literal terminals (hand-translated) ---
   digit = %x30-39
   digits = 1*%x30-39
@@ -160,16 +159,49 @@ kwAny = tABS / tABSTRACT / tACOS / tAGGREGATE / tALIAS / tAND / tANDOR / tARRAY 
   simpleStringLiteral = "'" (*(!"'" %x01-10FFFF)) "'" as simpleStringLiteral
   octet = (%x30-39 / %x41-46 / %x61-66) (%x30-39 / %x41-46 / %x61-66)
   encodedStringLiteral = "'" octet octet octet octet "'" as encodedStringLiteral
-
+  # --- operator terminals (cstr(lit).as(name); trivia rides the skip) ---
+  op_asterisk = "*" as op_asterisk
+  op_colon = ":" as op_colon
+  op_colon_equals_colon = ":=:" as op_colon_equals_colon
+  op_colon_less_greater_colon = ":<>:" as op_colon_less_greater_colon
+  op_comma = "," as op_comma
+  op_decl = ":=" as op_decl
+  op_delim = ";" as op_delim
+  op_double_asterisk = "**" as op_double_asterisk
+  op_double_backslash = %x5C as op_double_backslash
+  op_double_pipe = "||" as op_double_pipe
+  op_equals = "=" as op_equals
+  op_greater_equal = ">=" as op_greater_equal
+  op_greater_than = ">" as op_greater_than
+  op_leftbracket = "[" as op_leftbracket
+  op_left_curly_brace = "{" as op_left_curly_brace
+  op_leftparen = "(" as op_leftparen
+  op_less_equal = "<=" as op_less_equal
+  op_less_greater = "<>" as op_less_greater
+  op_less_than = "<" as op_less_than
+  op_minus = "-" as op_minus
+  op_period = "." as op_period
+  op_pipe = "|" as op_pipe
+  op_plus = "+" as op_plus
+  op_query_begin = "<*" as op_query_begin
+  op_query_end = "*>" as op_query_end
+  op_question_mark = "?" as op_question_mark
+  op_rightbracket = "]" as op_rightbracket
+  op_right_curly_brace = "}" as op_right_curly_brace
+  op_rightparen = ")" as op_rightparen
+  op_slash = "/" as op_slash
+  # ordered-union the DSL builds for the operators where alternatives
+  # appear: longest-first at every alternation site that references them
+  # (op_colon_equals_colon / op_colon etc.) — the sites keep the DSL order.
+  # --- probe entries (mid-migration; the final entry is `syntax`) ---
   entry simpleId: simpleId
   entry simpleStringLiteral: simpleStringLiteral
   entry digits: digits
+  entry op_decl: op_decl
+  entry op_colon_less_greater_colon: op_colon_less_greater_colon
   entry tSCHEMA: tSCHEMA
   entry tBASED_ON: tBASED_ON
   entry tGENERIC_ENTITY: tGENERIC_ENTITY
   entry tEND_SUBTYPE_CONSTRAINT: tEND_SUBTYPE_CONSTRAINT
-
   entry syntax: syntax
-
-
 }

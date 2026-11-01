@@ -1,14 +1,16 @@
 # frozen_string_literal: true
 
-# Splices the generated keyword fragment + the literal batch into
-# express.parg, before the entry declarations. Idempotent: rebuilds the
-# file from its head (everything before the keyword block).
+# Splices the fragments into express.parg. Idempotent: rebuilds from the
+# head (everything before the keyword block). Order: keywords, literals,
+# operators, entries (the closing brace rides the entries fragment).
+FRAGMENTS = %w[
+  keywords.parg.frag
+  literals.parg.frag
+  operators.parg.frag
+  entries.parg.frag
+].freeze
+
 g = File.read("express.parg")
 head = g.split("# --- keyword terminals")[0]
-tail = g[g.index("  entry tSCHEMA:")..]
-File.write(
-  "express.parg",
-  head + File.read("keywords.parg.frag") + "\n" +
-          File.read("literals.parg.frag") + "\n" + tail,
-)
+File.write("express.parg", head + FRAGMENTS.map { |f| File.read(f) }.join)
 puts "spliced"
