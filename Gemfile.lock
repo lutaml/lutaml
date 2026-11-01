@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    lutaml-xsd (1.2.75)
+    lutaml-xsd (1.2.76)
       liquid (>= 4.0, < 6.0)
       lutaml-model (~> 0.8.123)
       lutaml-store (~> 0.3)
@@ -264,7 +264,7 @@ CHECKSUMS
   liquid (5.14.0) sha256=e1020c2b2ee58c7a4d3bfdc7a331537bd27a783353748bff0bf27c6ac0c17065
   lutaml-model (0.8.155) sha256=3d90f2fb4fdf41a42d4a05b62b3f6644b433070b82291a9371deaa8e68a1e02d
   lutaml-store (0.3.2) sha256=9c455dbab32b4c635c48a27213f6f56fda191731c4574eb6187184ba0588a672
-  lutaml-xsd (1.2.75)
+  lutaml-xsd (1.2.76)
   memo_wise (1.13.0) sha256=30220c38c4cef410849bc73553c58664dc2c91c6379e4a1df22aea02358b716b
   moxml (0.6.1) sha256=5b7677258bbad372f0725a421f8adeae37b65d6f7871da2747e2c1906cdac7ea
   nokogiri (1.19.4-aarch64-linux-gnu) sha256=1269fb644a6de405057a53dd5c762b1209b43ca7424f839454d3dbc677c31a8f
