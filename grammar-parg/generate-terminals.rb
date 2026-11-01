@@ -45,7 +45,7 @@ out << "# a letter, digit, or underscore (the DSL's match[a-zA-Z0-9_].absent?)."
 out << "identGuard = !(%x41-5A / %x61-7A / %x30-39 / \"_\")"
 KEYWORDS.each do |kw|
   body = kw.to_s.chars.map { |c| ci_char(c) }.join(" ")
-  out << "#{parg_name(kw)} = #{body} identGuard as #{parg_name(kw)}"
+  out << "#{parg_name(kw)} = ((#{body} identGuard) as str) as #{parg_name(kw)}"
 end
 puts out.join("\n")
 
