@@ -120,18 +120,18 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 4540/4696 (96.7%) |
+| pipeline | 4542/4696 (96.7%) |
 
-(2026-10-31, bundled-stack measurement on main with the escape,
+(2026-11-01, bundled-stack measurement on main with the escape,
 hint-following, pattern-alternative, identity-crash, engine-set,
 engine-refresh, IC value-space, IC field-resolution, facade-silence,
-regex-semantics, redefine-refresh and gmonth-refresh rounds; moxml
-0.5.178, lutaml-model 0.8.151, engine leptris 1.9.398.0.) Same-stack
-comparison: 1.2.43 baseline 3961 (84.3%) → 4039 (86.0%) → 4090
-(87.1%) → 4360 (92.8%, lockfile refresh) → 4411 (93.9%) → 4430
-(94.3%) → 4435 (94.4%) → 4436 (94.5%) → 4439 (94.5%) → 4454 (94.9%)
-→ 4495 (95.7%) → 4524 (96.3%) → 4534 (96.6%) → 4540 (96.7%), +579
-net over the 1.2.43 baseline. The escapes round (PR #197 — \d→\p{Nd},
+regex-semantics, redefine-refresh, gmonth-refresh and digit-vintage
+rounds; moxml 0.5.178, lutaml-model 0.8.154, engine leptris
+1.9.399.0.) Same-stack comparison: 1.2.43 baseline 3961 (84.3%) →
+4039 (86.0%) → 4090 (87.1%) → 4360 (92.8%, lockfile refresh) → 4411
+(93.9%) → 4430 (94.3%) → 4435 (94.4%) → 4436 (94.5%) → 4439 (94.5%)
+→ 4454 (94.9%) → 4495 (95.7%) → 4524 (96.3%) → 4534 (96.6%) → 4540
+(96.7%) → 4542 (96.7%), +581 net over the 1.2.43 baseline. The escapes round (PR #197 — \d→\p{Nd},
 \w/\W/\s to their XSD value spaces) collapses Regex 120→69;
 same-step pattern facets now behave as alternatives and
 whitespace-only text reaches the facets intact (PR #200), Regex
@@ -194,8 +194,10 @@ corners.
   The remainder that ARE measured (19 today: the reJ class — bugzilla
   4113, where the suite's expectation contradicts the Unicode 3.1
   tables XSD 1.0 cites; gMonth002/004 `--MM--` spellings — leptris
-  #1936, FIXED engine-side 1.9.398; reS17/38/51 `\d` vintage — leptris
-  #1936; addB188, double018_1956, particlesZ001 version skew;
+  #1936, FIXED engine-side 1.9.398; reS38/reS17 `\d` vintage —
+  leptris #1936, FIXED engine-side 1.9.399; reT51 `\D` vintage —
+  leptris #1936 open; addB188, double018_1956, particlesZ001 version
+  skew;
   gMonth_pattern001_1274.v — bugzilla 6901 queried 2009 then
   accepted-invalid 2012, but the pattern `--[0-9]{2}--` trivially
   matches the instance `--03--`, so our verdict follows the queried
@@ -285,7 +287,7 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   engine-set + engine-refresh + IC value-space + IC field-resolution
   + facade-silence + regex-semantics + redefine-refresh rounds,
   4534/4696 = 96.6%):
-  Regex (30 — ALL engine-bound: the whole remainder carries a leptris
+  Regex (28 — ALL engine-bound: the whole remainder carries a leptris
   verdict; the Ruby \d legacy-Nd fix cannot flip the reS/reT class
   while the engine's own \d keeps the ASCII vintage — leptris#1936),
   Schema (13 — remaining composed-schema shapes on moxml#510:
@@ -320,6 +322,14 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   +8 cases, 2 flips documented not chased: gMonth_pattern001_1274.v
   (bugzilla 6901 — see caveats) and particlesA013.i (cap-inert
   exposed a Particles under-detection). Suite 4540/4696 (96.7%).
+- DIGIT-VINTAGE ROUND (2026-11-01): lockfile leptris 1.9.398.0 →
+  1.9.399.0, lutaml-model 0.8.151 → 0.8.154 (perf) — the train
+  carried the \\d leg of leptris#1936 (the Unicode-3.1 legacy Nd set
+  joins the engine's digit class; the complement inherits it) —
+  reS38/reS17 flip, matching our own legacy-Nd translation from PR
+  #208. Regex 30→28; suite 4542/4696 (96.7%). Still open on #1936:
+  the reZ char-reference shapes and the stG/stH list-union member
+  lexicals; plus the moxml#510 addB116 straggler.
 - REGEX SEMANTICS ROUND (2026-10-31, PR #208): \w/\W now carry their
   Appendix F complements (\w = [^\p{P}\p{Z}\p{C}], class interiors
   via the exact positive partition L/M/N/S), \I/\C complements added
