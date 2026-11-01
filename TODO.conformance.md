@@ -120,20 +120,21 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 4542/4696 (96.7%) |
+| pipeline | 4546/4696 (96.8%) |
 
-(2026-11-01, bundled-stack measurement on main with the escape,
+(2026-11-02, bundled-stack measurement on main with the escape,
 hint-following, pattern-alternative, identity-crash, engine-set,
 engine-refresh, IC value-space, IC field-resolution, facade-silence,
-regex-semantics, redefine-refresh, gmonth-refresh and digit-vintage
-rounds; moxml 0.6.1 (gemspec floor `~> 0.6.0` per the owner — the
-0.6 line drops the Opal surface; measured conformance-neutral),
-lutaml-model 0.8.155, engine leptris
-1.9.399.0.) Same-stack comparison: 1.2.43 baseline 3961 (84.3%) →
+regex-semantics, redefine-refresh, gmonth-refresh, digit-vintage and
+stgh-refresh rounds; moxml 0.6.1 (gemspec floor `~> 0.6.0` per the
+owner — the 0.6 line drops the Opal surface; measured
+conformance-neutral), lutaml-model 0.8.155, engine leptris
+1.9.401.0.) Same-stack comparison: 1.2.43 baseline 3961 (84.3%) →
 4039 (86.0%) → 4090 (87.1%) → 4360 (92.8%, lockfile refresh) → 4411
 (93.9%) → 4430 (94.3%) → 4435 (94.4%) → 4436 (94.5%) → 4439 (94.5%)
 → 4454 (94.9%) → 4495 (95.7%) → 4524 (96.3%) → 4534 (96.6%) → 4540
-(96.7%) → 4542 (96.7%), +581 net over the 1.2.43 baseline. The escapes round (PR #197 — \d→\p{Nd},
+(96.7%) → 4542 (96.7%) → 4546 (96.8%), +585 net over the 1.2.43
+baseline. The escapes round (PR #197 — \d→\p{Nd},
 \w/\W/\s to their XSD value spaces) collapses Regex 120→69;
 same-step pattern facets now behave as alternatives and
 whitespace-only text reaches the facets intact (PR #200), Regex
@@ -225,7 +226,7 @@ corners.
 |---|---|---|
 | Facade strict re-check on composed schemas — remaining shapes (ctE019 attribute re-check, addB116 substitution admission) | ~8 | moxml#510 (+2 follow-up comments) |
 | Redefine self-extension drops the extension content model | 0 — FIXED in leptris 1.9.396 | leptris#1926 (closed) |
-| Built-in lexical tables reject valid forms (Unicode-3.1 digits, list/union members, char-reference shapes; gMonth spellings FIXED in 1.9.398) | ~12 | leptris#1936 |
+| Built-in lexical tables reject valid forms (char-reference shapes; gMonth FIXED 1.9.398, \d legacy-Nd FIXED 1.9.399, stG/stH list lexicals FIXED 1.9.400/401) | ~5 | leptris#1936 |
 | Automaton size cap surfaces as an instance error instead of engine-inert silence | 0 — FIXED in leptris 1.9.398 | moxml#514 (follow-up to #473) |
 | Regex dialect remainder (engine `\d` vintage, `\p{Is...}` blocks, char-reference shapes) | ~30 | engine-side of leptris#1936 |
 | Strict wildcard/attribute admission on further compositions | ~5 | moxml#510 thread |
@@ -296,7 +297,9 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   addB116-class substitution admission + schA1-class same-root
   multi-document crosstalk; the ctE019 attribute re-check FIXED in
   leptris 1.9.395), DataTypes (17), Particles (18), Group (19),
-  AttributeGroup (17), SimpleType (10), Attribute (10), Additional
+  AttributeGroup (17), SimpleType (6 — the stG/stH list-lexical
+  class FIXED in leptris 1.9.400/1.9.401; remainder is reZ-adjacent),
+  Attribute (10), Additional
   (7), IdentityConstraint (6 — idK012/idZ008/010/011/012/015
   singleton corners: cross-namespace keyrefs, IDREF defaults,
   complexContent constraint location — the redefine class FIXED in
@@ -332,6 +335,15 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   #208. Regex 30→28; suite 4542/4696 (96.7%). Still open on #1936:
   the reZ char-reference shapes and the stG/stH list-union member
   lexicals; plus the moxml#510 addB116 straggler.
+- STGH REFRESH ROUND (2026-11-02): lockfile leptris 1.9.399.0 →
+  1.9.401.0 (1.9.400 landed late on rubygems; 1.9.401 adds list
+  value-space whitespace collapse before facets) — the train
+  carried the stG/stH legs of OUR leptris#1936: inline anonymous
+  restriction bases drive list-item length and list lexicals are
+  collapsed before pattern/enumeration. All four cases flip
+  (stG010/012, stH005/007); SimpleType 10→6; suite 4546/4696
+  (96.8%), zero regressions. #1936 remainder: reZ char-reference
+  shapes, reT51 \D vintage; plus moxml#510 addB116 straggler.
 - REGEX SEMANTICS ROUND (2026-10-31, PR #208): \w/\W now carry their
   Appendix F complements (\w = [^\p{P}\p{Z}\p{C}], class interiors
   via the exact positive partition L/M/N/S), \I/\C complements added
