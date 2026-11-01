@@ -34,7 +34,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "liquid", ">= 4.0", "< 6.0"
   spec.add_dependency "lutaml-model", "~> 0.8.123"
   spec.add_dependency "lutaml-store", "~> 0.3"
-  spec.add_dependency "moxml", "~> 0.5.147"
+  spec.add_dependency "moxml", "~> 0.6.0"
   spec.add_dependency "paint", "~> 2.3"
   spec.add_dependency "rng", "~> 0.3.9"
   spec.add_dependency "rubyzip", "~> 3.4"

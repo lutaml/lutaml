@@ -63,7 +63,7 @@ Classes register themselves via `Lutaml::Xsd.register_model(self, :element_name)
 
 ### XML Stack: Moxml Only
 
-All XML handling goes through `Moxml::Context` (moxml ~> 0.5.147). Never
+All XML handling goes through `Moxml::Context` (moxml ~> 0.6.0). Never
 require or call Nokogiri/REXML/Ox directly in `lib/` — xsdvi keeps nokogiri
 in the lockfile transitively, but our code does not touch it.
 

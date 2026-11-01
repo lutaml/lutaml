@@ -5,7 +5,7 @@ PATH
       liquid (>= 4.0, < 6.0)
       lutaml-model (~> 0.8.123)
       lutaml-store (~> 0.3)
-      moxml (~> 0.5.147)
+      moxml (~> 0.6.0)
       paint (~> 2.3)
       rng (~> 0.3.9)
       rubyzip (~> 3.4)
@@ -20,17 +20,17 @@ GEM
     ast (2.4.3)
     base64 (0.3.0)
     bigdecimal (4.1.3)
-    canon (0.3.117)
+    canon (0.3.118)
       diff-lcs
       json
-      leptris (~> 1.9.376)
-      moxml (~> 0.5.149)
+      leptris (~> 1.9.398)
+      moxml (~> 0.6.0)
       paint
       rainbow
       table_tennis
       thor (~> 1.4)
       unicode-name
-      yeptris (~> 0.6.32)
+      yeptris (~> 0.6.52)
     concurrent-ruby (1.3.8)
     csv (3.3.7)
     diff-lcs (1.6.2)
@@ -82,7 +82,7 @@ GEM
       lutaml-model (~> 0.8.15)
       rubyzip (>= 2.3, < 4)
     memo_wise (1.13.0)
-    moxml (0.5.178)
+    moxml (0.6.1)
     nokogiri (1.19.4-aarch64-linux-gnu)
       racc (~> 1.4)
     nokogiri (1.19.4-aarch64-linux-musl)
@@ -235,7 +235,7 @@ CHECKSUMS
   base64 (0.3.0) sha256=27337aeabad6ffae05c265c450490628ef3ebd4b67be58257393227588f5a97b
   bigdecimal (4.1.3) sha256=61ebe1e5e559bdc3cc6f2c0ee7f427321fc838f59611c294356eb04d6e21cf66
   bundler (4.0.23) sha256=407ba8a1d928f412847f819aa5f8b6aef7c59fb51feb517112af8a165487287b
-  canon (0.3.117) sha256=37e9e33ec0edea95bf0b271acf1530ed7982f400c609d0186ec3fe5fffab0ad2
+  canon (0.3.118) sha256=a6d5e30b9a7af3b8cb264e3ddab54e47149f81b87753e4cc9b62e295ebfde173
   concurrent-ruby (1.3.8) sha256=b2f1be836e968ccc78ccfce277ea79c72a88633f22306782c16ff23fb415d1e1
   csv (3.3.7) sha256=15a3f16f6628da8664d455eb634e7f22031bcf53044923caf56975109e71b9f8
   diff-lcs (1.6.2) sha256=9ae0d2cba7d4df3075fe8cd8602a8604993efc0dfa934cff568969efb1909962
@@ -266,7 +266,7 @@ CHECKSUMS
   lutaml-store (0.3.2) sha256=9c455dbab32b4c635c48a27213f6f56fda191731c4574eb6187184ba0588a672
   lutaml-xsd (1.2.74)
   memo_wise (1.13.0) sha256=30220c38c4cef410849bc73553c58664dc2c91c6379e4a1df22aea02358b716b
-  moxml (0.5.178) sha256=7939938652fc6a435291a2fc62a6d3c059d096d5ed4df486ad18f5640561ae4f
+  moxml (0.6.1) sha256=5b7677258bbad372f0725a421f8adeae37b65d6f7871da2747e2c1906cdac7ea
   nokogiri (1.19.4-aarch64-linux-gnu) sha256=1269fb644a6de405057a53dd5c762b1209b43ca7424f839454d3dbc677c31a8f
   nokogiri (1.19.4-aarch64-linux-musl) sha256=35c65b9ce72b3bb03207bdbe7067915019dc18c1b9b59139684bd6690fdd01af
   nokogiri (1.19.4-arm-linux-gnu) sha256=a301313e38bb065d68239e79734bcd6f56fb6efaacebde29e9abf2a4735340ca
