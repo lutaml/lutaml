@@ -23,18 +23,21 @@ parser = Expressir::Express::Grammar::Parser.cached_parser
 SKIP_RULE = "space"
 ATOMIC_RULES = %w[simpleId digits spaces space embeddedRemark tailRemark].freeze
 RULE_NAMES = File.read(File.join(__dir__, "RULE-INVENTORY.txt"))
-                 .scan(/^\[ \] (\w+)$/).flatten + ["syntax"] +
-                KEYWORDS.map { |kw| "t#{kw}" }
+  .scan(/^\[ \] (\w+)$/).flatten + ["syntax"] +
+  KEYWORDS.map { |kw| "t#{kw}" }
 
 REJECTED = Hash.new(0)
 
 # The DSL skip configuration: skip(:trivia, whitespace: :space, exempt:
 # [simpleId digits spaces space embeddedRemark tailRemark]) — the trivia
 # channel is PURE WHITESPACE (remarks are product data, matched
-# explicitly by grammar bodies via `space`/`spaces`); `capture: space`
-# with a whitespace-only rule is the PARG form of the DSL's
-# source-preserving mode; the exempt list rides the `atomic` keyword.
-SKIP_DECL = "skip = trivia capture: space"
+# explicitly by grammar bodies via `space`/`spaces`); the exempt list
+# rides the `atomic` keyword. No `capture:` clause: the DSL's trivia
+# recording is builder-inert (find_slice skips :spaces, remarks ride
+# the RemarkScanner), and parsanol 1.3.123's TriviaCapture#record
+# crashes on this grammar (`lstrip` for nil) — plain Trivia keeps the
+# artifact lane on the backtracking, capture-free wrapper instead.
+SKIP_DECL = "skip = trivia"
 
 class AtomRenderer
   def initialize(rejected, alt_rules)
@@ -54,7 +57,21 @@ class AtomRenderer
       atom.alternatives.map { |c| child_alt(c) }.join(" / ")
     when Parsanol::Atoms::Repetition
       mx = atom.max
-      "#{atom.min}#{mx ? "*#{mx}" : "*"} #{child_rep(atom.parslet)}"
+      inner = child_rep(atom.parslet)
+      # PARG binds `as name` to the whole repetition, so an inline
+      # capture would hoist outside it (artifacts yield {item: [...]},
+      # never the DSL's per-iteration [{item: ...}, ...]). The extra
+      # paren layer keeps the capture inside the repetition body.
+      inner = "(#{inner})" if atom.parslet.is_a?(Parsanol::Atoms::Named)
+      if atom.min.zero? && mx == 1
+        # the DSL's .maybe: PARG's bracket-optional compiles to the
+        # :maybe tag (named flatten unwraps -> flat trees); a 0*1
+        # repetition compiles to :repetition (arrays even when named),
+        # which segments the tree exactly like the DSL never would
+        "[ #{inner} ]"
+      else
+        "#{atom.min}#{mx ? "*#{mx}" : '*'} #{inner}"
+      end
     when Parsanol::Atoms::Lookahead
       inner = render(atom.bound_parslet)
       atom.positive ? "&(#{inner})" : "!(#{inner})"
@@ -78,9 +95,7 @@ class AtomRenderer
 
   def child_rep(atom)
     raw = render(atom)
-    if atom.is_a?(Parsanol::Atoms::Sequence)
-      "(#{raw})"
-    elsif atom.is_a?(Parsanol::Atoms::Alternative)
+    if atom.is_a?(Parsanol::Atoms::Sequence) || atom.is_a?(Parsanol::Atoms::Alternative)
       "(#{raw})"
     else
       raw
@@ -97,7 +112,7 @@ class AtomRenderer
     else
       m = pattern.match(/\A\[(.*)\]\z/m) or return reject_re(pattern)
       body = m[1]
-      negated = body.sub!(/\A\^/, "")
+      negated = body.delete_prefix!("^")
       pairs = [] # [lo, hi] numeric pairs
       i = 0
       while i < body.length
@@ -108,8 +123,8 @@ class AtomRenderer
           if (code = codes[nxt])
             pairs << [code, code]
           elsif nxt == "s"
-            pairs.concat([[0x20, 0x20], [0x09, 0x09], [0x0A, 0x0A],
-                          [0x0D, 0x0D], [0x0C, 0x0C]])
+            pairs.push([0x20, 0x20], [0x09, 0x09], [0x0A, 0x0A],
+                       [0x0D, 0x0D], [0x0C, 0x0C])
           else
             return reject_re(pattern)
           end
@@ -174,10 +189,14 @@ end
 # at parse time.
 rules = {}
 RULE_NAMES.uniq.each do |name|
-  atom = parser.public_send(name) rescue next
+  atom = begin
+    parser.public_send(name)
+  rescue StandardError
+    next
+  end
   if atom.is_a?(Parsanol::Atoms::Entity) && atom.rule_name.to_s == name
     body = atom.instance_variable_get(:@cached_atom)
-    body ||= parser.instance_exec(&(atom.instance_variable_get(:@body)))
+    body ||= parser.instance_exec(&atom.instance_variable_get(:@body))
     rules[name] = body || atom
   else
     rules[name] = atom
@@ -204,7 +223,7 @@ out << "  #{SKIP_DECL}"
 out << "  entry syntax: syntax"
 out << "}"
 
-File.write(out_path, out.join("\n") + "\n")
+File.write(out_path, "#{out.join("\n")}\n")
 warn "wrote #{out_path} (#{out.size} lines)"
 unless REJECTED.empty?
   warn "REJECTED (#{REJECTED.values.sum}):"

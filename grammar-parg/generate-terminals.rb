@@ -25,10 +25,10 @@ KEYWORDS = %i[
 ].freeze
 
 # PARG text for one case-insensitive character (literal pair or single).
-def ci_char(ch)
-  return "\"#{ch}\"" unless ch.match?(/[a-zA-Z]/)
+def ci_char(char)
+  return "\"#{char}\"" unless char.match?(/[a-zA-Z]/)
 
-  "(\"#{ch.upcase}\" / \"#{ch.downcase}\")"
+  "(\"#{char.upcase}\" / \"#{char.downcase}\")"
 end
 
 def parg_name(sym)

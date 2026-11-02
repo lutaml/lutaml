@@ -126,6 +126,41 @@ module Expressir
           end
         end
 
+        # The compiled edition-2 PARG artifact: the DSL grammar's
+        # serialized twin (grammar-parg/express-grammar.parg, built by
+        # grammar-parg/atoms_to_parg.rb from the live atom tree). The
+        # artifact lane parses through parsanol's artifact VM and
+        # yields the same named trees the DSL path produces.
+        ARTIFACT_PATH = File.join(__dir__, "express-grammar.artifact.json")
+
+        def self.artifact_available?
+          return @artifact_available unless @artifact_available.nil?
+
+          @artifact_available = begin
+            require "parsanol/parg/artifact"
+            Parsanol::PARG::Artifact.respond_to?(:from_json) && File.exist?(ARTIFACT_PATH)
+          rescue LoadError
+            false
+          end
+        end
+
+        def self.parse_artifact(source)
+          raise LoadError, "Edition-2 artifact not available" unless artifact_available?
+
+          @parser_mutex.synchronize do
+            @artifact ||= Parsanol::PARG::Artifact.from_json(File.read(ARTIFACT_PATH))
+          end
+          @artifact.parse("syntax", source, mode: :ruby)
+        end
+
+        # The Ruby-lane parse: the edition-2 artifact first, the DSL
+        # parser as fallback (issue #578 STEP 4).
+        def self.parse_ruby(source)
+          parse_artifact(source)
+        rescue StandardError, NotImplementedError
+          cached_parser.parse(source)
+        end
+
         def cts(atom)
           spaces >> atom
         end

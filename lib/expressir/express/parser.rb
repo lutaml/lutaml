@@ -79,10 +79,10 @@ module Expressir
                     begin
                       Grammar::Parser.parse_native(source)
                     rescue StandardError
-                      Grammar::Parser.cached_parser.parse source
+                      Grammar::Parser.parse_ruby(source)
                     end
                   else
-                    Grammar::Parser.cached_parser.parse source
+                    Grammar::Parser.parse_ruby(source)
                   end
           rescue Parsanol::ParseFailed => e
             raise Error::SchemaParseFailure.new(schema_file, e)
@@ -483,7 +483,7 @@ include_source: nil, root_path: nil, use_native: nil, &block)
           ast = if use_native && Grammar::Parser.native_available?
                   Grammar::Parser.parse_native(content)
                 else
-                  Grammar::Parser.cached_parser.parse(content)
+                  Grammar::Parser.parse_ruby(content)
                 end
         rescue Parsanol::ParseFailed, StandardError => e
           raise Error::SchemaParseFailure.new("(from string)", e)
