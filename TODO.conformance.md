@@ -120,22 +120,29 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 4569/4696 (97.3%) |
+| pipeline | 4563/4696 (97.17%) |
 
-(2026-11-02, bundled-stack measurement on main with the escape,
+(2026-11-02, bundled-stack measurement with the escape,
 hint-following, pattern-alternative, identity-crash, engine-set,
 engine-refresh, IC value-space, IC field-resolution, facade-silence,
 regex-semantics, redefine-refresh, gmonth-refresh, digit-vintage,
-stgh-refresh, group-ref, attribute-group-redefine and
-notation-length rounds; moxml
-0.6.1 (gemspec floor `~> 0.6.0` per the owner — the 0.6 line drops
-the Opal surface; measured conformance-neutral), lutaml-model
-0.8.155, engine leptris 1.9.401.0.) Same-stack comparison: 1.2.43
+stgh-refresh, group-ref, attribute-group-redefine,
+notation-length and ref-namespace rounds; moxml
+0.6.2 (gemspec floor `~> 0.6.0` per the owner — the 0.6 line drops
+the Opal surface), lutaml-model
+0.8.157 (gemspec floor `~> 0.8.156` per the owner; the lockfile is
+no longer committed — measurements resolve fresh), engine leptris
+1.9.402.0. The 1.9.402/0.6.2/0.8.157 ride costs 8 net: engine
+fixed+EMPTY content regressions (9 cases, filed leptris-rs#25 —
+empty content satisfies the fixed facet per §3.12.2/§4.3.1.2),
+reU6 we-accept, MINUS two drift fixes (RegexTest_234, stE063).)
+Same-stack comparison: 1.2.43
 baseline 3961 (84.3%) → 4039 (86.0%) → 4090 (87.1%) → 4360 (92.8%,
 lockfile refresh) → 4411 (93.9%) → 4430 (94.3%) → 4435 (94.4%) →
 4436 (94.5%) → 4439 (94.5%) → 4454 (94.9%) → 4495 (95.7%) → 4524
 (96.3%) → 4534 (96.6%) → 4540 (96.7%) → 4542 (96.7%) → 4546 (96.8%)
-→ 4557 (97.0%) → 4565 (97.2%) → 4569 (97.3%), +608 net over the 1.2.43 baseline. The escapes round (PR #197 — \d→\p{Nd},
+→ 4557 (97.0%) → 4565 (97.2%) → 4569 (97.3%) → 4562 (drift raw) →
+4563 (97.17%, ref-namespace round), +602 net over the 1.2.43 baseline. The escapes round (PR #197 — \d→\p{Nd},
 \w/\W/\s to their XSD value spaces) collapses Regex 120→69;
 same-step pattern facets now behave as alternatives and
 whitespace-only text reaches the facets intact (PR #200), Regex
@@ -230,6 +237,8 @@ corners.
 | Built-in lexical tables reject valid forms (char-reference shapes; gMonth FIXED 1.9.398, \d legacy-Nd FIXED 1.9.399, stG/stH list lexicals FIXED 1.9.400/401) | ~5 | leptris#1936 |
 | Automaton size cap surfaces as an instance error instead of engine-inert silence | 0 — FIXED in leptris 1.9.398 | moxml#514 (follow-up to #473) |
 | Regex dialect remainder (engine `\d` vintage, `\p{Is...}` blocks, char-reference shapes) | ~30 | engine-side of leptris#1936 |
+| Empty content against a fixed element value rejected (1.9.402.0 regression — isDefault001/002/076, ctZ013a, elemQ019, stE065/066/096, particlesZ040) | 9 | leptris-rs#25 |
+| Unresolvable include/import/redefine schemaLocation raises at parse instead of warning (anyURI_a001/a002, schD7, schG8) | 4 | lutaml-model#1087 |
 | Strict wildcard/attribute admission on further compositions | ~5 | moxml#510 thread |
 | Ruby-side under-detections (Group 16, DataTypes 7, IC 6, Attribute 5, Additional 4, Particles 4, SimpleType 4, Element 1, Wildcards 1 — minus what the regex round banked) | ~60 | OURS — the remaining Ruby work queue |
 
@@ -388,6 +397,31 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   duration/dateTime/gMonthDay/gYear corners (engine-bound and
   contested-highlight), gMonth_pattern001 (bugzilla 6901 — do not
   chase), double018 (disputed reading).
+- REF-NAMESPACE ROUND (2026-11-02): +2 Particles (13→11, particlesDb001/
+  Db006). A ref particle names a declaration in ONE namespace, but the
+  match path resolved it against the CHILD's namespace first — a global
+  declaration duplicated across an imported namespace satisfied the ref
+  and foreign substitutes were accepted. The ref branch now prefers the
+  declaration in the content-model OWNER schema's target namespace
+  (threaded through the match chain), then the child's, then the
+  unique-name fallback; parsed particles carry no prefix map
+  (lutaml-model discards xmlns), so the owner namespace is the
+  strongest signal available. The engine — fed documents one at a
+  time — admits the substitute, so a targeted scan on the engine-accept
+  path reports the foreign child (scan_cross_namespace_refs). NIL
+  owner namespace means UNKNOWN, not "no namespace": resolve(local,
+  nil) only matches no-namespace declarations and a hint-loaded
+  document can supply a foreign namesake (idH021 regression caught
+  and fixed in-round). Zero regressions on the drifted stack.
+- STACK DRIFT (2026-11-02, same day): the lockfile is no longer
+  committed (owner chore) — measurements resolve fresh and rode
+  moxml 0.6.1→0.6.2, leptris 1.9.401.0→1.9.402.0, lutaml-model
+  0.8.155→0.8.157 at once. TWO fixes rode in (RegexTest_234,
+  stE063); the fixed+EMPTY engine regression cost 9 (leptris-rs#25)
+  and reU6 flipped to we-accept (regex class, untriaged). Suite
+  4569→4562 raw; 4563 with this round. NET -6 documented, not
+  chased — the fixed-empty leg reverses the moment leptris-rs#25
+  lands.
 - REGEX SEMANTICS ROUND (2026-10-31, PR #208): \w/\W now carry their
   Appendix F complements (\w = [^\p{P}\p{Z}\p{C}], class interiors
   via the exact positive partition L/M/N/S), \I/\C complements added
