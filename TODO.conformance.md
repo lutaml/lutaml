@@ -232,15 +232,19 @@ corners.
 
 | Class | Cases | Filed |
 |---|---|---|
-| Facade strict re-check on composed schemas — remaining shapes (ctE019 attribute re-check, addB116 substitution admission) | ~8 | moxml#510 (+2 follow-up comments) |
-| Redefine self-extension drops the extension content model | 0 — FIXED in leptris 1.9.396 | leptris#1926 (closed) |
-| Built-in lexical tables reject valid forms (char-reference shapes; gMonth FIXED 1.9.398, \d legacy-Nd FIXED 1.9.399, stG/stH list lexicals FIXED 1.9.400/401) | ~5 | leptris#1936 |
-| Automaton size cap surfaces as an instance error instead of engine-inert silence | 0 — FIXED in leptris 1.9.398 | moxml#514 (follow-up to #473) |
-| Regex dialect remainder (engine `\d` vintage, `\p{Is...}` blocks, char-reference shapes) | ~30 | engine-side of leptris#1936 |
-| Empty content against a fixed element value rejected (1.9.402.0 regression — isDefault001/002/076, ctZ013a, elemQ019, stE065/066/096, particlesZ040) | 9 | leptris-rs#25 |
+| Empty content against a fixed element value rejected (1.9.402.0 regression — isDefault001/002/076, ctZ013a, elemQ019, stE065/066/096, particlesZ040; attribute leg addB104, attO006) | 15 | leptris-rs#25 (+ case-list comment) |
+| Content model enforced on NILLED elements (QFE1700g2, particlesIa002) | 2 | leptris-rs#26 |
+| dateTime enumeration rejects timezone-equal forms (dateTime_enumeration005a/b) | 2 | leptris-rs#27 |
+| "-0" rejected against nonNegativeInteger (errE002) | 1 | leptris-rs#28 |
+| xsi:type override / substitution-member type binding false rejects (elemZ002, elemZ020) | 2 | leptris-rs#29 |
+| Built-in lexical tables (char-reference shapes reZ003v/004v/005v/006v/006i, reK88; \D vintage reT51) | 7 | leptris/leptris#1936 (+ case-list comment) |
+| Facade strict re-check on composed schemas — attributes (attgD005/019/020/021/022/025/027/029/031/033/034, attJ018) and composed type binding (schF1/G2/G7/P2) | 15 | moxml#510 (+ consolidated evidence comment) |
 | Unresolvable include/import/redefine schemaLocation raises at parse instead of warning (anyURI_a001/a002, schD7, schG8) | 4 | lutaml-model#1087 |
-| Strict wildcard/attribute admission on further compositions | ~5 | moxml#510 thread |
-| Ruby-side under-detections (Group 16, DataTypes 7, IC 6, Attribute 5, Additional 4, Particles 4, SimpleType 4, Element 1, Wildcards 1 — minus what the regex round banked) | ~60 | OURS — the remaining Ruby work queue |
+| Automaton size cap surfaces as an instance error instead of engine-inert silence | 0 — FIXED in leptris 1.9.398 | moxml#514 (follow-up to #473) |
+| Redefine self-extension drops the extension content model | 0 — FIXED in leptris 1.9.396 | leptris#1926 (closed) |
+| Ruby-side under-detections and false rejects (Regex dialect 18 — reJ/reS/reDH disputed families excluded; DataTypes corners duration028-030/dateTime013/gMonthDay006/dtZ86723; IC idK/idZ singletons; SimpleType stZ; Wildcards wildZ013; Group/Particles stragglers; Schema schT/D10/F2/errC007; Q032 chameleon import; particlesA013/A002/Ie004/Ig003/Ob012/015/Z001; mgO006/034; attF001/attJ002/003/attLa005; isDefault079) | ~55 | OURS — the remaining Ruby work queue |
+
+Engine-attribution census (2026-11-03): of the 123 current failures, 50 carry engine findings (all attributed above), 73 are Ruby-side.
 
 Suite history (same-stack where known): 71.8% baseline → 83.5%
 (pre-NFA) → 83.6% (NFA + guard, 1.2.41) → 84.3% (#180) → 86.0%
