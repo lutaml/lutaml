@@ -49,6 +49,7 @@ module Lutaml
           @named_types = {}
           @attributes = Hash.new { |hash, key| hash[key] = [] }
           @attribute_groups = {}
+          @redefined_originals = {}
           @elements = index_elements
         end
 
@@ -98,6 +99,16 @@ module Lutaml
         # @return [Lutaml::Xml::Schema::Xsd::AttributeGroup, nil]
         def resolve_attribute_group(local_name)
           @attribute_groups[local_name]
+        end
+
+        # The pre-redefinition declaration of an attributeGroup that an
+        # xs:redefine replaced — the target of the redefining body's
+        # self-reference hook.
+        #
+        # @param local_name [String]
+        # @return [Object, nil]
+        def redefined_original_for(local_name)
+          @redefined_originals[local_name]
         end
 
         # Owner schema's target namespace for a resolved declaration
@@ -537,6 +548,46 @@ module Lutaml
             next if held_signatures.include?(schema_signature(nested))
 
             index_schema(index, nested)
+          end
+
+          # xs:redefine replaces an attributeGroup with a body whose
+          # self-reference is the §4.2.2 hook to the ORIGINAL
+          # definition. lutaml-model does NOT chase the redefine
+          # target, so the original document is parsed here (relative
+          # to the defining file) and indexed; the original
+          # declaration is kept for that hook and the redefining body
+          # indexed under the name (attgC007/attgD036). Runs after the
+          # nested descent so included declarations are already in.
+          Array(schema.redefine).each do |red|
+            target_path = nil
+            base = begin
+              File.dirname(@repository.source_path_for(schema))
+            rescue StandardError
+              nil
+            end
+            if base && red.schema_path.to_s.match?(/\S/)
+              candidate = File.expand_path(red.schema_path.to_s, base)
+              target_path = candidate if File.exist?(candidate)
+            end
+            if target_path
+              begin
+                target = Lutaml::Xml::Schema::Xsd.parse(
+                  File.read(target_path), location: target_path
+                )
+                index_schema(index, target, held_signatures, namespace,
+                             defaults_schema)
+              rescue StandardError
+                nil
+              end
+            end
+            Array(red.attribute_group).each do |group|
+              name = group.name.to_s
+              next if name.empty?
+
+              original = @attribute_groups[name]
+              @redefined_originals[name] = original if original
+              @attribute_groups[name] = group
+            end
           end
         end
 

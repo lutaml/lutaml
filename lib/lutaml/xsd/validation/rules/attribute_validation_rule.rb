@@ -268,14 +268,23 @@ module Lutaml
             return [] if depth > 5
             return [] unless group
 
+            own = (group.name || group.ref).to_s.split(":").last
             attrs = Array(group.attribute)
 
             # An attributeGroup may reference other attributeGroups —
-            # their declarations flow into the expansion (attgD004).
+            # their declarations flow into the expansion (attgD004). A
+            # reference to the group's OWN name inside an xs:redefine
+            # body is the §4.2.2 hook to the ORIGINAL definition.
             Array(group.attribute_group).each do |nested_ref|
               local = (nested_ref.ref || nested_ref.name).to_s
                 .split(":").last
-              declaration = repository&.resolve_attribute_group(local)
+              declaration =
+                if !local.empty? && local == own &&
+                    repository&.redefined_original_for(local)
+                  repository.redefined_original_for(local)
+                else
+                  repository&.resolve_attribute_group(local)
+                end
               next unless declaration
 
               attrs.concat(expand_attribute_group(declaration, repository,
@@ -889,10 +898,15 @@ module Lutaml
                 complex_type_wildcard_support?
             wildcards << complex_wildcard if complex_wildcard
 
+            # A wildcard nested in an attributeGroup DECLARATION reaches
+            # the type only through the group's resolution — the type's
+            # ref particle carries no children of its own (attgD019).
             Array(schema_def.attribute_group).each do |group|
               Array(group.any_attribute).each do |wildcard|
                 wildcards << wildcard
               end
+
+              collect_group_wildcards(group, repository, wildcards, 0)
             end
 
             CONTENT_KINDS.each do |content_kind|
@@ -914,6 +928,29 @@ module Lutaml
             wildcards.concat(collect_any_attribute(base, repository)) if base
 
             wildcards
+          end
+
+          # The wildcards of an attributeGroup reference's DECLARATION,
+          # following nested attributeGroup refs (depth-guarded).
+          #
+          # @return [void]
+          def collect_group_wildcards(group, repository, wildcards, depth)
+            return if depth > 5
+
+            local = (group.ref || group.name).to_s.split(":").last
+            return if local.to_s.empty?
+
+            declaration = repository&.resolve_attribute_group(local)
+            return unless declaration
+
+            Array(declaration.any_attribute).each do |wildcard|
+              wildcards << wildcard
+            end
+
+            Array(declaration.attribute_group).each do |nested|
+              collect_group_wildcards(nested, repository, wildcards,
+                                      depth + 1)
+            end
           end
 
           # The named base type of the derivation shape, when present.

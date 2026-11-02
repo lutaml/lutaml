@@ -120,21 +120,21 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 4557/4696 (97.0%) |
+| pipeline | 4565/4696 (97.2%) |
 
 (2026-11-02, bundled-stack measurement on main with the escape,
 hint-following, pattern-alternative, identity-crash, engine-set,
 engine-refresh, IC value-space, IC field-resolution, facade-silence,
 regex-semantics, redefine-refresh, gmonth-refresh, digit-vintage,
-stgh-refresh and group-ref rounds; moxml 0.6.1 (gemspec floor
-`~> 0.6.0` per the owner — the 0.6 line drops the Opal surface;
-measured conformance-neutral), lutaml-model 0.8.155, engine leptris
-1.9.401.0.) Same-stack comparison: 1.2.43 baseline 3961 (84.3%) →
-4039 (86.0%) → 4090 (87.1%) → 4360 (92.8%, lockfile refresh) → 4411
-(93.9%) → 4430 (94.3%) → 4435 (94.4%) → 4436 (94.5%) → 4439 (94.5%)
-→ 4454 (94.9%) → 4495 (95.7%) → 4524 (96.3%) → 4534 (96.6%) → 4540
-(96.7%) → 4542 (96.7%) → 4546 (96.8%) → 4557 (97.0%), +596 net over
-the 1.2.43 baseline. The escapes round (PR #197 — \d→\p{Nd},
+stgh-refresh, group-ref and attribute-group-redefine rounds; moxml
+0.6.1 (gemspec floor `~> 0.6.0` per the owner — the 0.6 line drops
+the Opal surface; measured conformance-neutral), lutaml-model
+0.8.155, engine leptris 1.9.401.0.) Same-stack comparison: 1.2.43
+baseline 3961 (84.3%) → 4039 (86.0%) → 4090 (87.1%) → 4360 (92.8%,
+lockfile refresh) → 4411 (93.9%) → 4430 (94.3%) → 4435 (94.4%) →
+4436 (94.5%) → 4439 (94.5%) → 4454 (94.9%) → 4495 (95.7%) → 4524
+(96.3%) → 4534 (96.6%) → 4540 (96.7%) → 4542 (96.7%) → 4546 (96.8%)
+→ 4557 (97.0%) → 4565 (97.2%), +604 net over the 1.2.43 baseline. The escapes round (PR #197 — \d→\p{Nd},
 \w/\W/\s to their XSD value spaces) collapses Regex 120→69;
 same-step pattern facets now behave as alternatives and
 whitespace-only text reaches the facets intact (PR #200), Regex
@@ -358,6 +358,20 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   zero regressions. Group remainder: groupB009/010 + groupO004
   (false-reject class), groupH008/J003/006/008/L008 under-detections
   (choice-of-group capacity depth).
+- ATTRIBUTE-GROUP-REDEFINE ROUND (2026-11-02, PR #218): +8 net
+  (AttributeGroup 17→11, Schema 14→12, Attribute 10→9; suite
+  4557→4565 = 97.2%). lutaml-model does NOT chase xs:redefine
+  targets — the original document was never parsed, so the
+  redefined group's self-ref hook had nothing to hook to and
+  expansions truncated at the cycle guard. The resolver now chases
+  the redefine target itself (relative to the defining file, via
+  the repository's source path), indexes it, keeps the ORIGINAL
+  declaration as the hook target, and expands the redefining body
+  with the self-ref resolved to that original (attgC007/attgD036).
+  Wildcards nested in attributeGroup DECLARATIONS reach types
+  through the group's resolution (attgD019). All remaining
+  AttributeGroup failures are ENGINE-only strict re-checks on
+  composed shapes (the moxml#510 thread).
 - REGEX SEMANTICS ROUND (2026-10-31, PR #208): \w/\W now carry their
   Appendix F complements (\w = [^\p{P}\p{Z}\p{C}], class interiors
   via the exact positive partition L/M/N/S), \I/\C complements added
