@@ -3,7 +3,7 @@ PATH
   specs:
     lutaml-xsd (1.2.78)
       liquid (>= 4.0, < 6.0)
-      lutaml-model (~> 0.8.123)
+      lutaml-model (~> 0.8.156)
       lutaml-store (~> 0.3)
       moxml (~> 0.6.0)
       paint (~> 2.3)
@@ -68,13 +68,13 @@ GEM
     liquid (5.14.0)
       bigdecimal
       strscan (>= 3.1.1)
-    lutaml-model (0.8.155)
+    lutaml-model (0.8.156)
       base64 (>= 0.1.1)
       bigdecimal
       canon
       concurrent-ruby
       liquid (>= 4.0, < 6.0)
-      moxml (>= 0.5.139, < 0.7)
+      moxml (~> 0.6.0)
       ostruct
       rubyzip (~> 3.7)
       thor (~> 1.4)
@@ -262,7 +262,7 @@ CHECKSUMS
   leptris (1.9.401.0-x86_64-linux-musl) sha256=40c2222a670e80a7cdc0283ca48b4e7ce03b5a4690b60a0b1281d4afac5f3627
   lint_roller (1.1.0) sha256=2c0c845b632a7d172cb849cc90c1bce937a28c5c8ccccb50dfd46a485003cc87
   liquid (5.14.0) sha256=e1020c2b2ee58c7a4d3bfdc7a331537bd27a783353748bff0bf27c6ac0c17065
-  lutaml-model (0.8.155) sha256=3d90f2fb4fdf41a42d4a05b62b3f6644b433070b82291a9371deaa8e68a1e02d
+  lutaml-model (0.8.156) sha256=5c7d4eafa15bb0978ed8a05fa455b4dfa90a76ba5492c03f25e2612a28be767f
   lutaml-store (0.3.2) sha256=9c455dbab32b4c635c48a27213f6f56fda191731c4574eb6187184ba0588a672
   lutaml-xsd (1.2.78)
   memo_wise (1.13.0) sha256=30220c38c4cef410849bc73553c58664dc2c91c6379e4a1df22aea02358b716b
