@@ -210,6 +210,9 @@ module Expressir
         return self if path.nil? || path.empty?
 
         path_parts = path.safe_downcase.split(".").map do |current_path|
+          # `__note:two` is a remark item id, not a prefixed name
+          next current_path if current_path.start_with?("__")
+
           _, _, current_path = current_path.rpartition(":") # ignore prefix
           current_path
         end

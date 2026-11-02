@@ -930,6 +930,9 @@ module Expressir
 
       def normalize_path(path)
         return path unless path.include?(":")
+        # `__note:two` is one item id (a referable note/example), not a
+        # prefix:name pair to split into two path segments.
+        return path if path.split(".").last.start_with?("__")
 
         path_part, _, item_suffix = path.rpartition(":")
         "#{path_part}.#{item_suffix}"
@@ -1126,8 +1129,7 @@ module Expressir
       end
 
       def safe_reset_children_by_id(obj)
-        return unless obj
-        return unless obj.is_a?(Model::ScopeContainer)
+        return unless obj.respond_to?(:reset_children_by_id)
 
         obj.reset_children_by_id
       end
