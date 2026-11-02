@@ -227,14 +227,18 @@ module Lutaml
 
         # Whether an instance child matches a content-model particle.
         # Direct declarations compare name and expected namespace; ref
-        # particles take the name and namespace of the global declaration
-        # they reference, resolved against the child's namespace.
+        # particles name a qualified declaration — the owner schema's
+        # target namespace is preferred, then the child's, then the
+        # unique-name fallback (parsed particles carry no prefix map).
         #
         # @param child [XmlElement]
         # @param particle [Lutaml::Xsd::Element]
         # @param repository [SchemaDefinitionResolver, nil]
+        # @param owner_ns [String, nil] target namespace of the schema
+        #   owning the content model
         # @return [Boolean]
-        def particle_matches_declaration?(child, particle, repository)
+        def particle_matches_declaration?(child, particle, repository,
+                                          owner_ns = nil)
           ref = particle.ref.to_s
           if ref.empty?
             name = particle.name.to_s
@@ -245,7 +249,9 @@ module Lutaml
                                                          repository))
           else
             local = ref.split(":").last
-            declaration = repository&.resolve(local, child.namespace_uri) ||
+            declaration =
+              repository&.resolve(local, owner_ns) ||
+              repository&.resolve(local, child.namespace_uri) ||
               repository&.resolve(local, nil)
             return false unless declaration
 
@@ -413,10 +419,12 @@ module Lutaml
         # @param group_depth [Integer] recursion guard for group refs
         # @return [Boolean]
         def particle_matches_child?(child, particle, repository,
-                                    parent: nil, group_depth: 0)
+                                    parent: nil, group_depth: 0,
+                                    owner_ns: nil)
           case particle
           when Lutaml::Xsd::Element
-            particle_matches_declaration?(child, particle, repository) ||
+            particle_matches_declaration?(child, particle, repository,
+                                          owner_ns) ||
               substitution_member?(child, particle, repository)
           when Lutaml::Xsd::Any
             wildcard_permits?(particle, parent || child, child, repository)
@@ -425,13 +433,15 @@ module Lutaml
                                    group_depth).any? do |container|
               particle_matches_child?(child, container, repository,
                                       parent: parent,
-                                      group_depth: group_depth + 1)
+                                      group_depth: group_depth + 1,
+                                      owner_ns: owner_ns)
             end
           when Lutaml::Xsd::Sequence, Lutaml::Xsd::Choice, Lutaml::Xsd::All
             collect_content_particles(particle).any? do |leaf|
               particle_matches_child?(child, leaf, repository,
                                       parent: parent,
-                                      group_depth: group_depth)
+                                      group_depth: group_depth,
+                                      owner_ns: owner_ns)
             end
           else
             false

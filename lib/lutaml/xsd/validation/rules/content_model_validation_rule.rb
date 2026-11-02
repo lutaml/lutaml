@@ -94,8 +94,9 @@ module Lutaml
 
             # The engine does not check abstract-element usage; scan for
             # it regardless of whether the engine answered.
+            owner_ns = repository&.target_namespace_for(schema_def)
             scan_abstract_usage(xml_element, particles, collector,
-                                repository)
+                                repository, owner_ns)
 
             handled = if occurrence_guard(repository).particles_safe?(particles)
                         engine_content_check(xml_element,
@@ -107,10 +108,14 @@ module Lutaml
                         # (particlesZ034_b); the Ruby matcher decides those.
                         false
                       end
-            return if handled
+            if handled
+              scan_cross_namespace_refs(xml_element, particles, collector,
+                                        repository, owner_ns)
+              return
+            end
 
             validate_particle_sequence(xml_element, particles, collector,
-                                       repository)
+                                       repository, owner_ns)
           end
 
           private
@@ -133,14 +138,14 @@ module Lutaml
           #
           # @return [void]
           def validate_particle_sequence(xml_element, particles, collector,
-                                         repository)
+                                         repository, owner_ns = nil)
             return if particles.empty?
 
             children = Array(xml_element.children)
             matcher = ContentModelMatcher.new(
               particles,
               element_match: ->(child, particle) do
-                element_matches?(child, particle, repository)
+                element_matches?(child, particle, repository, owner_ns)
               end,
               wildcard_match: ->(child, wildcard) do
                 wildcard_permits?(wildcard, xml_element, child, repository)
@@ -155,13 +160,13 @@ module Lutaml
             result = matcher.match(children)
             if result.matched
               scan_wildcard_strict_usage(xml_element, particles, collector,
-                                         repository)
+                                         repository, owner_ns)
               return
             end
 
             known = collector.errors.size
             walk_sequence_diagnostics(xml_element, particles, collector,
-                                      repository)
+                                      repository, owner_ns)
             return if collector.errors.size > known
 
             report_matcher_failure(result, children, xml_element, collector)
@@ -317,15 +322,16 @@ module Lutaml
           # instances. Containers flatten to their leaf declarations —
           # the walk keeps them whole, the scan needs the leaves.
           def scan_abstract_usage(xml_element, particles, collector,
-                                  repository)
+                                  repository, owner_ns = nil)
             leaves = leaf_particles(particles, repository)
             xml_element.children.each do |child|
               leaves.each do |particle|
                 next unless particle.is_a?(Lutaml::Xsd::Element)
                 next unless particle_matches?(child, particle, repository,
-                                              parent: xml_element)
+                                              parent: xml_element,
+                                              owner_ns: owner_ns)
                 next unless element_declaration_abstract?(particle, child,
-                                                          repository)
+                                                          repository, owner_ns)
 
                 report_error(
                   collector,
@@ -360,7 +366,7 @@ module Lutaml
           #
           # @return [void]
           def scan_wildcard_strict_usage(xml_element, particles, collector,
-                                         repository)
+                                         repository, owner_ns = nil)
             leaves = leaf_particles(particles, repository)
             wildcards = leaves.select { |p| p.is_a?(Lutaml::Xsd::Any) }
             return if wildcards.empty?
@@ -370,7 +376,7 @@ module Lutaml
             end
             xml_element.children.each do |child|
               next if element_leaves.any? do |p|
-                element_matches?(child, p, repository)
+                element_matches?(child, p, repository, owner_ns)
               end
 
               wildcards.each do |wildcard|
@@ -391,7 +397,7 @@ module Lutaml
           #
           # @return [void]
           def walk_sequence_diagnostics(xml_element, particles, collector,
-                                         repository)
+                                        repository, owner_ns = nil)
             return if particles.empty?
 
             children = xml_element.children
@@ -418,13 +424,15 @@ module Lutaml
                 child = children[child_index]
 
                 break unless particle_matches?(child, particle, repository,
-                                               parent: xml_element)
+                                               parent: xml_element,
+                                               owner_ns: owner_ns)
 
                 if particle.is_a?(Lutaml::Xsd::Any)
                   check_strict_wildcard_child(child, particle, collector,
                                               repository)
                 elsif particle.is_a?(Lutaml::Xsd::Element) &&
-                    element_declaration_abstract?(particle, child, repository)
+                    element_declaration_abstract?(particle, child, repository,
+                                                  owner_ns)
                   report_error(
                     collector,
                     code: "abstract_element_used",
@@ -489,19 +497,74 @@ module Lutaml
           # declarations cannot appear directly in instances (substitution
           # members remain legal). Direct declarations carry their own
           # abstract flag; references resolve to the global declaration.
-          def element_declaration_abstract?(particle, child, repository)
-            declaration = declaration_for(particle, child, repository)
+          def element_declaration_abstract?(particle, child, repository,
+                                            owner_ns = nil)
+            declaration = declaration_for(particle, child, repository,
+                                          owner_ns)
             return false unless declaration
 
             truthy?(declaration.abstract) && child.name == declaration.name
           end
 
-          def declaration_for(particle, child, repository)
+          # A qualified ref names a declaration in ONE namespace.
+          # Global names duplicated across namespaces (import + main)
+          # resolve against the child's namespace today; when the owner
+          # schema's target namespace declares the same local name, a
+          # foreign child is an unexpected element (the engine — fed
+          # the documents one at a time — admits the substitute, so
+          # this runs on the engine-accept path). Wildcard territory
+          # is exempt.
+          #
+          # @return [void]
+          def scan_cross_namespace_refs(xml_element, particles, collector,
+                                        repository, owner_ns)
+            return if owner_ns.nil?
+
+            refs = leaf_particles(particles, repository).select do |p|
+              p.is_a?(Lutaml::Xml::Schema::Xsd::Element) &&
+                p.ref.to_s.match?(/\S/)
+            end
+            return if refs.empty?
+
+            xml_element.children.each do |child|
+              next if child.namespace_uri.to_s == owner_ns
+              next unless refs.any? do |r|
+                r.ref.to_s.split(":").last == child.name
+              end
+              next unless repository.resolve(child.name, owner_ns)
+              next if wildcard_covers_child?(xml_element, particles, child,
+                                             repository)
+
+              report_error(
+                collector,
+                code: "unexpected_element_in_sequence",
+                message: "Unexpected element '#{child.qualified_name}' " \
+                         "in sequence — the reference names the same " \
+                         "declaration in #{owner_ns}",
+                location: child.xpath,
+                context: { element: child.qualified_name },
+                suggestion: "Use the declaration's namespace or rename " \
+                            "the duplicate",
+              )
+            end
+          end
+
+          def wildcard_covers_child?(xml_element, particles, child,
+                                     repository)
+            leaf_particles(particles, repository).any? do |p|
+              next false unless p.is_a?(Lutaml::Xsd::Any)
+
+              wildcard_permits?(p, xml_element, child, repository)
+            end
+          end
+
+          def declaration_for(particle, child, repository, owner_ns = nil)
             return particle if particle.name.to_s.match?(/\S/)
             return nil unless repository
 
             local = particle.ref.to_s.split(":").last
-            repository.resolve(local, child.namespace_uri) ||
+            repository.resolve(local, owner_ns) ||
+              repository.resolve(local, child.namespace_uri) ||
               repository.resolve(local, nil)
           end
 
@@ -649,10 +712,11 @@ module Lutaml
           #   wildcard namespace constraints scoped to the target namespace
           # @return [Boolean]
           def particle_matches?(xml_element, particle, repository = nil,
-                                parent: nil, group_depth: 0)
+                                parent: nil, group_depth: 0, owner_ns: nil)
             particle_matches_child?(xml_element, particle, repository,
                                     parent: parent,
-                                    group_depth: group_depth)
+                                    group_depth: group_depth,
+                                    owner_ns: owner_ns)
           end
 
           # Check if XML element matches schema element.
@@ -663,9 +727,10 @@ module Lutaml
           # @param schema_element [Lutaml::Xsd::Element] The schema element
           # @param repository [SchemaDefinitionResolver, nil]
           # @return [Boolean]
-          def element_matches?(xml_element, schema_element, repository = nil)
+          def element_matches?(xml_element, schema_element, repository = nil,
+                               owner_ns = nil)
             particle_matches_declaration?(xml_element, schema_element,
-                                          repository) ||
+                                          repository, owner_ns) ||
               substitution_member?(xml_element, schema_element, repository)
           end
 
