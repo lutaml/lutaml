@@ -150,7 +150,10 @@ module Expressir
           @parser_mutex.synchronize do
             @artifact ||= Parsanol::PARG::Artifact.from_json(File.read(ARTIFACT_PATH))
           end
-          @artifact.parse("syntax", source, mode: :ruby)
+          # mode: :native rides the rs VM when the parsanol native ext
+          # is present and falls back to the ruby atom evaluation
+          # otherwise (Artifact#parse's own lane logic).
+          @artifact.parse("syntax", source)
         end
 
         # The Ruby-lane parse: the edition-2 artifact first, the DSL
