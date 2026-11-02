@@ -94,11 +94,26 @@ module Lutaml
                                          resolved_attributes,
                                          xml_attributes, collector)
 
+            # Step 1b: Check prohibited attributes are absent — the
+            # declaration exists, its USE does not (attF001). Three
+            # suite-arbitrated exemptions: a wildcard that admits the
+            # attribute shadows the prohibition (attZ002); fixed plus
+            # prohibited is an illegal declaration combo and the suite
+            # treats the whole declaration as inert (attP031); and a
+            # prohibition arriving through DERIVATION is refinement
+            # incoherence the suite ignores (attZ007v, attZ015).
+            validate_prohibited_attributes(xml_element, schema_attributes,
+                                           xml_attributes, collector,
+                                           wildcards: wildcards,
+                                           schema_element: schema_element,
+                                           repository: repository)
+
             # Step 2: Validate attribute values
             validate_attribute_values(xml_element, resolved_attributes,
                                       xml_attributes, collector,
                                       repository: repository,
-                                      schema_element: schema_element)
+                                      schema_element: schema_element,
+                                      raw_attrs: schema_attributes)
 
             # Step 3: Check for unexpected attributes
             validate_no_unexpected_attributes(xml_element,
@@ -224,7 +239,33 @@ module Lutaml
               attributes.concat(inherited_attributes(part.base, repository)) if part
             end
 
+            override_base_prohibitions(schema_def, attributes)
             attributes
+          end
+
+          # A derived type's OWN (type-level or derivation-body)
+          # non-prohibited declaration for a name overrides the base
+          # chain's prohibited (attZ007v: the extension re-adds att1
+          # required over Two's prohibited). A restriction body's own
+          # prohibited stands against the inherited plain declaration
+          # (attZ007i: e2 carrying att1 is invalid).
+          #
+          # @return [void]
+          def override_base_prohibitions(schema_def, attributes)
+            own_declarations = Array(schema_def.attribute)
+            content = schema_def.complex_content || schema_def.simple_content
+            CONTENT_PART_KINDS.each do |kind|
+              part = content && Array(content.public_send(kind)).first
+              own_declarations += Array(part&.attribute) if part
+            end
+            own_names = own_declarations
+              .reject { |a| a.use.to_s == "prohibited" }
+              .map { |a| a.name.to_s }
+            attributes.reject! do |a|
+              a.use.to_s == "prohibited" &&
+                own_names.include?(a.name.to_s) &&
+                !own_declarations.include?(a)
+            end
           end
 
           # The base type's attribute set flows into the derived type
@@ -275,7 +316,11 @@ module Lutaml
             return [] unless group
 
             own = (group.name || group.ref).to_s.split(":").last
-            attrs = Array(group.attribute)
+            # use=prohibited is illegal inside an attributeGroup
+            # DEFINITION (attZ015): the suite ignores such members.
+            attrs = Array(group.attribute).reject do |attr|
+              attr.use.to_s == "prohibited"
+            end
 
             # An attributeGroup may reference other attributeGroups —
             # their declarations flow into the expansion (attgD004). A
@@ -393,6 +438,46 @@ module Lutaml
             schema_attr.use == "required"
           end
 
+          # A prohibited attribute is DECLARED but its use is banned:
+          # any instance occurrence violates the schema (attF001).
+          #
+          # @return [void]
+          def validate_prohibited_attributes(xml_element, schema_attrs,
+                                             xml_attrs, collector,
+                                             wildcards: [],
+                                             schema_element: nil,
+                                             repository: nil)
+            schema_attrs.each do |schema_attr|
+              next unless schema_attr.use.to_s == "prohibited"
+              # fixed + prohibited is an illegal declaration combo
+              # (attP031): the suite treats the declaration as inert.
+              next if schema_attr.fixed
+
+              attr_name = schema_attr.name.to_s
+              next if attr_name.empty?
+
+              xml_attr = xml_attrs.find { |xa| xa.name == attr_name }
+              next unless xml_attr
+              next if wildcards.any? do |wildcard|
+                wildcard_permits_attribute?(wildcard, xml_element, xml_attr,
+                                            nil)
+              end
+
+              report_error(
+                collector,
+                code: "prohibited_attribute_present",
+                message: "Attribute '#{attr_name}' is prohibited here " \
+                         "but present",
+                location: xml_element.xpath,
+                context: {
+                  attribute: attr_name,
+                  element: xml_element.name,
+                },
+                suggestion: "Remove attribute: #{attr_name}",
+              )
+            end
+          end
+
           # Validate attribute values
           #
           # @param xml_element [XmlElement] The element
@@ -402,14 +487,22 @@ module Lutaml
           # @return [void]
           def validate_attribute_values(xml_element, schema_attrs, xml_attrs,
                                         collector, repository: nil,
-                                        schema_element: nil)
+                                        schema_element: nil, raw_attrs: [])
             xml_attrs.each do |xml_attr|
               schema_attr = find_schema_attribute(schema_attrs, xml_attr,
                                                   repository, schema_element)
               next unless schema_attr
 
+              # A ref's use site may carry facets the global declaration
+              # lacks (attLa005: ref="x:ga1" fixed="abc" at the use
+              # site); the instance value is checked against them too.
+              use_site = raw_attrs.find do |r|
+                r.name == schema_attr.name ||
+                  r.ref.to_s.split(":").last == schema_attr.name
+              end
               validate_attribute_value(xml_element, xml_attr, schema_attr,
-                                       collector, repository: repository)
+                                       collector, repository: repository,
+                                       use_site: use_site)
             end
           end
 
@@ -461,10 +554,11 @@ module Lutaml
           # "123").
           #
           # @return [Boolean]
-          def fixed_value_matches?(value, schema_attr)
+          def fixed_value_matches?(value, schema_attr, fixed_override = nil)
+            fixed = fixed_override || schema_attr.fixed
             rule = attribute_whitespace_rule(schema_attr)
             canonical_lexical(value, rule) ==
-              canonical_lexical(schema_attr.fixed, rule)
+              canonical_lexical(fixed, rule)
           end
 
           # @return [Symbol] :preserve, :replace or :collapse
@@ -499,21 +593,27 @@ module Lutaml
           # @param collector [ResultCollector] Result collector
           # @return [void]
           def validate_attribute_value(xml_element, xml_attr, schema_attr,
-                                       collector, repository: nil)
+                                       collector, repository: nil,
+                                       use_site: nil)
             value = xml_attr.value
+            fixed = if use_site && !use_site.fixed.nil?
+                      use_site.fixed
+                    else
+                      schema_attr.fixed
+                    end
 
             # Check fixed value constraint
-            if schema_attr.fixed
-              unless fixed_value_matches?(value, schema_attr)
+            if fixed
+              unless fixed_value_matches?(value, schema_attr, fixed)
                 report_error(
                   collector,
                   code: "fixed_attribute_value_mismatch",
                   message: "Attribute '#{xml_attr.name}' must have fixed " \
-                           "value '#{schema_attr.fixed}'",
+                           "value '#{fixed}'",
                   location: xml_element.xpath,
                   context: {
                     attribute: xml_attr.name,
-                    expected: schema_attr.fixed,
+                    expected: fixed,
                     actual: value,
                   },
                 )
