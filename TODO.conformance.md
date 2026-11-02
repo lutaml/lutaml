@@ -120,7 +120,7 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 4563/4696 (97.17%) |
+| pipeline | 4573/4696 (97.38%) |
 
 (2026-11-02, bundled-stack measurement with the escape,
 hint-following, pattern-alternative, identity-crash, engine-set,
@@ -142,7 +142,7 @@ lockfile refresh) → 4411 (93.9%) → 4430 (94.3%) → 4435 (94.4%) →
 4436 (94.5%) → 4439 (94.5%) → 4454 (94.9%) → 4495 (95.7%) → 4524
 (96.3%) → 4534 (96.6%) → 4540 (96.7%) → 4542 (96.7%) → 4546 (96.8%)
 → 4557 (97.0%) → 4565 (97.2%) → 4569 (97.3%) → 4562 (drift raw) →
-4563 (97.17%, ref-namespace round), +602 net over the 1.2.43 baseline. The escapes round (PR #197 — \d→\p{Nd},
+4563 (97.17%, ref-namespace round) → 4573 (97.38%, group-content round), +612 net over the 1.2.43 baseline. The escapes round (PR #197 — \d→\p{Nd},
 \w/\W/\s to their XSD value spaces) collapses Regex 120→69;
 same-step pattern facets now behave as alternatives and
 whitespace-only text reaches the facets intact (PR #200), Regex
@@ -422,6 +422,34 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   4569→4562 raw; 4563 with this round. NET -6 documented, not
   chased — the fixed-empty leg reverses the moment leptris-rs#25
   lands.
+- GROUP-CONTENT ROUND (2026-11-02): +13 (Group 8→0 — the family is
+  CLEAN at 126/126; Particles Db001/Db006 +2, Ea004/011/018 +3; suite
+  4563→4573 = 97.38% on the drifted stack, rspec green). FOUR Ruby
+  defects: (a) resolve_group scanned only top-level schemas — a group
+  declared in an IMPORTED document (the extension-body shape)
+  resolved to nothing (groupB009/010); nested resolved schemas are
+  now searched depth-guarded. (b) The NFA wiring missed the
+  lutaml-model container classes: a group whose declaration is xs:all
+  compiled ORDERED (groupO004), and with_occurrence gave min=0
+  particles one phantom extra copy (min=0/max=1 compiled capacity 2 —
+  masked for bare elements by the occurrence rule, visible wherever
+  nested group bounds lean on this verdict: groupJ003/J006/J008/L008
+  accepted forbidden repeats); a max=0 particle compiles to the empty
+  fragment (groupH008). (c) type_particles had no complexContent
+  restriction branch — a restriction body compiled EMPTY and children
+  passed unchecked (groupH008); a restriction replaces the base
+  content model. (d) The ref owner-namespace probe resolved ANY
+  declaration — including inline ones — so a qualified local namesake
+  hijacked unprefixed refs; the probe is GLOBAL-only (resolve_global),
+  the unprefixed ref canonically names a no-namespace declaration,
+  several distinct prefixed forms of one local name mean deliberate
+  disambiguation (no owner guess), and an unresolvable ref matches by
+  local name alone. KNOWN GAP left open: particlesQ032 — a
+  no-namespace document imported under an EXPLICIT namespace: its
+  globals must adopt the import namespace (MS-lenient chameleon
+  import; our index keeps them no-namespace so the four e2 refs
+  mis-resolve). Zero regressions; the drift entries above remain
+  (fixed-empty 9, reU6).
 - REGEX SEMANTICS ROUND (2026-10-31, PR #208): \w/\W now carry their
   Appendix F complements (\w = [^\p{P}\p{Z}\p{C}], class interiors
   via the exact positive partition L/M/N/S), \I/\C complements added
