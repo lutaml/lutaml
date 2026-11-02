@@ -263,9 +263,15 @@ warn "inlined: #{inlined.first(10).inspect}" if inlined.any?
 out = []
 out << "grammar ExpressSyntax version \"0.1.0\" edition 2 {"
 renderer = AtomRenderer.new(ATOMS, REJECTED, rule_def_ids)
-if rules[SKIP_RULE]
-  out << "  skip = #{renderer.render(ATOMS[rules[SKIP_RULE]]['Named']['atom'])} capture: space"
-end
+# The DSL's skip(:trivia, whitespace: :space, exempt: ...) — `space`
+# (whitespace | embeddedRemark | tailRemark) is the channel; remarks are
+# consumed by the skip and attached under :space for RemarkScanner.
+# parsanol inlines the space rule (no Named), so the body is emitted
+# from the known DSL definition.
+out << "  # whitespace channel rule (the DSL's match[\" \\r\\n\\t\\f\"]; the"
+out << "  # skip declaration accepts rule references only)"
+out << "  space_ws = (%x20 / %x0D / %x0A / %x09 / %x0C)"
+out << "  skip = (space_ws / embeddedRemark / tailRemark) capture: space"
 rules.sort_by { |_, id| id }.each do |name, id|
   body_id = ATOMS[id]["Named"]["atom"]
   decl = ATOMIC_RULES.include?(name) ? "atomic #{name} =" : "#{name} ="

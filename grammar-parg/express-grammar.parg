@@ -1,4 +1,8 @@
 grammar ExpressSyntax version "0.1.0" edition 2 {
+  # whitespace channel rule (the DSL's match[" \r\n\t\f"]; the
+  # skip declaration accepts rule references only)
+  space_ws = (%x20 / %x0D / %x0A / %x09 / %x0C)
+  skip = (space_ws / embeddedRemark / tailRemark) capture: space
   atomic embeddedRemark = "(" "*" ")" / ("(" "*" 0* (!("*" ")") (embeddedRemark / %x01-10FFFF)) "*" ")")
   atomic tailRemark = "-" "-" 0* (!(%x0A) %x01-10FFFF) 0*1 %x0A
   atomic spaces = 0* ((%x20 / %x0D / %x0A / %x09 / %x0C) / embeddedRemark / tailRemark)
