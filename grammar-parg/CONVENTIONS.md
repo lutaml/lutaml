@@ -81,3 +81,10 @@ finding).
   `%x5C`.
 - The `test` section's `accept` runs against the DEFAULT entry only;
   mid-migration probing uses declared entries instead.
+
+- The skip rule must be NON-NULLABLE (`skip = trivia` with `1*`); the
+  compiler rejects nullable skips (injection loops on empty). Injection
+  itself is optional-before-every-terminal (parsanol-ruby#134) and
+  entries get leading/trailing maybe-skips automatically.
+- The `parg parse` CLI uses the FIRST declared entry when `--entry` is
+  omitted — mid-migration probes must pass `--entry` explicitly.
