@@ -14,7 +14,7 @@ gem "irb"
 gem "lutaml-lml", "~> 0.3"
 # lutaml-lml 0.3.4's frozen grammar uses capture emission 1.
 # Parsanol 1.3.111 emits incompatible trees in the round-trip parser test.
-gem "parsanol", "= 1.3.109"
+gem "parsanol", "~> 1.3.109"
 # Ruby 4.0 moved pstore out of the default gems; the cddl chain
 # (regexp-examples) loads it
 gem "pstore"
