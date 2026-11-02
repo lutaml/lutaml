@@ -1,4 +1,5 @@
 use express_keywords
+use express_structure
 use express_remarks
 use express_literals
 use express_operators
@@ -18,12 +19,11 @@ grammar ExpressSyntax version "0.1.0" edition 2 {
   # The DSL's skip(:trivia, whitespace: :space, exempt: ...) — the
   # exempted rules become `atomic` declarations as they land; the
   # remark rules stay OUT of the skip surface (they are product data).
-  skip = trivia capture: space
+  skip = trivia
 
-  # Placeholder entry: whitespace-only acceptance, until the rule body
-  # translation fills in (each landed rule replaces this line's
-  # dependencies, never the header or the skip declaration).
-  syntax = *trivia
+  # Grows as structural bodies land; today: statement = skipStmt.
+  stmt = express_structure.skipStmt
+  syntax = *stmt
 
   # --- probe entries (mid-migration; the final entry is `syntax`) ---
   # local aliases over the namespaced imports (entry targets are local)
@@ -41,6 +41,9 @@ grammar ExpressSyntax version "0.1.0" edition 2 {
 
   entry embeddedRemark: embeddedRemark
   entry tailRemark: tailRemark
+  skipStmt = express_structure.skipStmt
+  entry skipStmt: skipStmt
+  entry syntax: syntax
   entry simpleId: simpleId
   entry simpleStringLiteral: simpleStringLiteral
   entry digits: digits
