@@ -37,6 +37,12 @@ module Lutaml
           CONTENT_KINDS = %i[complex_content simple_content].freeze
           CONTENT_PART_KINDS = %i[extension restriction].freeze
 
+          # length/minLength/maxLength are forbidden on QName and
+          # NOTATION and every type derived from them (XSD 1.0
+          # §4.3.1.2): a restriction carrying them is ignored there.
+          FORBIDDEN_LENGTH_BASES = %w[QName NOTATION].freeze
+          FORBIDDEN_LENGTH_DEPTH_LIMIT = 8
+
           # Rule category
           #
           # @return [Symbol] :constraint
@@ -662,7 +668,7 @@ module Lutaml
 
           def restriction_violation(value, restriction, repository, depth)
             base_violation(value, restriction, repository, depth) ||
-              facet_violations(value, restriction).first
+              facet_violations(value, restriction, repository, depth).first
           end
 
           # The restriction's base chain is validated first: a built-in
@@ -682,13 +688,34 @@ module Lutaml
           end
 
           # @return [Array<Hash>] every violated facet (first wins)
-          def facet_violations(value, restriction)
+          def facet_violations(value, restriction, repository, depth)
             violations = []
             violations << enumeration_violation(value, restriction)
             violations << pattern_violation(value, restriction)
-            violations << length_violation(value, restriction)
+            unless forbidden_length_base?(restriction, repository, depth)
+              violations << length_violation(value, restriction)
+            end
             violations << range_violation(value, restriction)
             violations.compact
+          end
+
+          def forbidden_length_base?(restriction, repository, depth)
+            return false if depth > FORBIDDEN_LENGTH_DEPTH_LIMIT
+
+            base = restriction.base.to_s
+            return false unless base.match?(/\S/)
+
+            local = base.split(":").last
+            return true if FORBIDDEN_LENGTH_BASES.include?(local)
+
+            named = repository&.resolve_named_type(local)
+            return false unless simple_type_model?(named)
+
+            named_restriction = named.restriction
+            return false unless named_restriction
+
+            forbidden_length_base?(named_restriction, repository,
+                                   depth + 1)
           end
 
           def enumeration_violation(value, restriction)
