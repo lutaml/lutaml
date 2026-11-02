@@ -120,13 +120,14 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 4565/4696 (97.2%) |
+| pipeline | 4569/4696 (97.3%) |
 
 (2026-11-02, bundled-stack measurement on main with the escape,
 hint-following, pattern-alternative, identity-crash, engine-set,
 engine-refresh, IC value-space, IC field-resolution, facade-silence,
 regex-semantics, redefine-refresh, gmonth-refresh, digit-vintage,
-stgh-refresh, group-ref and attribute-group-redefine rounds; moxml
+stgh-refresh, group-ref, attribute-group-redefine and
+notation-length rounds; moxml
 0.6.1 (gemspec floor `~> 0.6.0` per the owner — the 0.6 line drops
 the Opal surface; measured conformance-neutral), lutaml-model
 0.8.155, engine leptris 1.9.401.0.) Same-stack comparison: 1.2.43
@@ -134,7 +135,7 @@ baseline 3961 (84.3%) → 4039 (86.0%) → 4090 (87.1%) → 4360 (92.8%,
 lockfile refresh) → 4411 (93.9%) → 4430 (94.3%) → 4435 (94.4%) →
 4436 (94.5%) → 4439 (94.5%) → 4454 (94.9%) → 4495 (95.7%) → 4524
 (96.3%) → 4534 (96.6%) → 4540 (96.7%) → 4542 (96.7%) → 4546 (96.8%)
-→ 4557 (97.0%) → 4565 (97.2%), +604 net over the 1.2.43 baseline. The escapes round (PR #197 — \d→\p{Nd},
+→ 4557 (97.0%) → 4565 (97.2%) → 4569 (97.3%), +608 net over the 1.2.43 baseline. The escapes round (PR #197 — \d→\p{Nd},
 \w/\W/\s to their XSD value spaces) collapses Regex 120→69;
 same-step pattern facets now behave as alternatives and
 whitespace-only text reaches the facets intact (PR #200), Regex
@@ -372,6 +373,21 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   through the group's resolution (attgD019). All remaining
   AttributeGroup failures are ENGINE-only strict re-checks on
   composed shapes (the moxml#510 thread).
+- NOTATION-LENGTH ROUND (2026-11-02): +4 DataTypes cases (16→12,
+  suite 4565→4569 = 97.3%). length/minLength/maxLength are
+  FORBIDDEN on QName and NOTATION and every type derived from them
+  (XSD 1.0 §4.3.1.2) — a restriction carrying them is IGNORED there,
+  and the suite expects the instance to validate. The attribute side
+  had no such exemption (the element side already did): the rule now
+  walks the restriction's base chain — through NAMED simpleTypes,
+  depth-guarded — and skips the length-family check when it reaches
+  QName or NOTATION (NOTATION_length001/003, NOTATION_minLength003,
+  NOTATION_maxLength001; the direct base is a named type one hop
+  above NOTATION, so a direct-base check alone would miss them).
+  Zero regressions. DataTypes remainder: anyURI shapes (we-accept),
+  duration/dateTime/gMonthDay/gYear corners (engine-bound and
+  contested-highlight), gMonth_pattern001 (bugzilla 6901 — do not
+  chase), double018 (disputed reading).
 - REGEX SEMANTICS ROUND (2026-10-31, PR #208): \w/\W now carry their
   Appendix F complements (\w = [^\p{P}\p{Z}\p{C}], class interiors
   via the exact positive partition L/M/N/S), \I/\C complements added
