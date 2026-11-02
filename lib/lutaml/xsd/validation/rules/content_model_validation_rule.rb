@@ -563,7 +563,7 @@ module Lutaml
             return nil unless repository
 
             local = particle.ref.to_s.split(":").last
-            repository.resolve(local, owner_ns) ||
+            (owner_ns && repository.resolve(local, owner_ns)) ||
               repository.resolve(local, child.namespace_uri) ||
               repository.resolve(local, nil)
           end

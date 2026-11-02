@@ -249,8 +249,12 @@ module Lutaml
                                                          repository))
           else
             local = ref.split(":").last
+            # owner_ns nil means UNKNOWN (the caller has no owner
+            # context), not "no namespace" — resolve(local, nil) only
+            # matches no-namespace declarations, and a hint-loaded
+            # document can supply a foreign namesake.
             declaration =
-              repository&.resolve(local, owner_ns) ||
+              (owner_ns && repository&.resolve(local, owner_ns)) ||
               repository&.resolve(local, child.namespace_uri) ||
               repository&.resolve(local, nil)
             return false unless declaration
