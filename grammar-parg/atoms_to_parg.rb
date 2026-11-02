@@ -1,153 +1,104 @@
 # frozen_string_literal: true
 
-# STEP 1 (issue #578): serialize the built DSL atom tree — Parsanol::
-# Native.serialize_grammar's dump ({atoms: [...], root: N}) — to PARG
-# text at edition v2. The dump materializes all 253 DSL rules, including
-# the dynamic KEYWORD expansion; Named atoms carry both rule definitions
-# (referenced by Entity atoms) and inline captures (.as), disambiguated
-# by reference: a Named whose id is an Entity target is a rule.
-#
-# Output: express-grammar.parg. Compile with the parsanol exe; the
-# corpus parity loop (DSL vs artifact over examples/*.exp) gates it.
+# STEP 1 (issue #578): serialize the LIVE DSL atom tree to PARG text at
+# edition v2. The native serialize_grammar dump is a flattened VM
+# program — it CSE-mangles alias rules and drops leading lookaheads —
+# so this walks the real atoms from the cached parser instead: rule
+# bodies from Parser#send(name), Lookahead#bound_parslet for guards,
+# Named#parslet/#name for captures, Entity#rule_name for references.
 
-require "json"
+out_path = ARGV[0] || File.join(__dir__, "express-grammar.parg")
 
-dump_path = ARGV[0] || File.join(__dir__, "dsl-dump.json")
-out_path = ARGV[1] || File.join(__dir__, "express-grammar.parg")
+require "bundler/setup"
+require "expressir"
 
-dump = JSON.parse(File.read(dump_path))
-ATOMS = dump["atoms"]
-ROOT_ID = dump["root"]
+require_relative File.join(__dir__, "generate-terminals.rb")
 
-# The DSL skip configuration (parser.rb): skip(:trivia, whitespace:
-# :space, exempt: %i[simpleId digits spaces space embeddedRemark
-# tailRemark]) — the skip channel is the `space` rule, with these rules
-# atomic (self-managing trivia).
+# generate-terminals.rb prints its generated PARG text on load; silence
+# that noise — the serializer only needs its KEYWORDS constant.
+def puts(*); end
+
+parser = Expressir::Express::Grammar::Parser.cached_parser
+
 SKIP_RULE = "space"
 ATOMIC_RULES = %w[simpleId digits spaces space embeddedRemark tailRemark].freeze
-
 RULE_NAMES = File.read(File.join(__dir__, "RULE-INVENTORY.txt"))
-                 .scan(/^\[ \] (\w+)$/).flatten + ["syntax"]
+                 .scan(/^\[ \] (\w+)$/).flatten + ["syntax"] +
+                KEYWORDS.map { |kw| "t#{kw}" }
 
 REJECTED = Hash.new(0)
 
+# The DSL skip configuration: skip(:trivia, whitespace: :space, exempt:
+# [simpleId digits spaces space embeddedRemark tailRemark]) — the trivia
+# channel is PURE WHITESPACE (remarks are product data, matched
+# explicitly by grammar bodies via `space`/`spaces`); `capture: space`
+# with a whitespace-only rule is the PARG form of the DSL's
+# source-preserving mode; the exempt list rides the `atomic` keyword.
+SKIP_DECL = "skip = trivia capture: space"
+
 class AtomRenderer
-  def initialize(atoms, rejected, rule_def_ids)
-    @atoms = atoms
+  def initialize(rejected, alt_rules)
     @rejected = rejected
-    @rule_def_ids = rule_def_ids
-    @expanding = []
-    @grouped_wrapped = {}
+    @alt_rules = alt_rules
   end
 
-  def grouped_wrapped(id)
-    @grouped_wrapped[id]
-  end
-
-  def mark_grouped(id)
-    @grouped_wrapped[id] = true
-  end
-
-  def render(id, depth = 0)
-    return "<deep>" if depth > 200
-
-    a = @atoms[id]
-    type = a.keys.first
-    v = a[type]
-    case type
-    when "Str" then literal(v["pattern"])
-    when "Re"
-      simple_id_run(v["pattern"]) || hex_range(v["pattern"]) || begin
-        @rejected["Re #{v['pattern'].inspect}"] += 1
-        "<UNLOWERABLE-RE>"
-      end
-    when "Entity"
-      t = v["atom"]
-      target = @atoms[t]
-      if (nm = target["Named"]) && @rule_def_ids.include?(t)
-        nm["name"]
-      elsif @expanding.include?(t)
-        @rejected["cycle at atom #{t}"] += 1
-        "<CYCLE>"
-      else
-        # parsanol inlines non-capturing rules into callers: the target
-        # body lives in-pool, so expand it in place — parenthesized when
-        # the expansion is a sequence or alternative (a grouped class's
-        # leading paren is not grouping; only structure counts)
-        @expanding.push(t)
-        r = render(t, depth + 1)
-        @expanding.pop
-        if %w[Alternative Sequence].include?(@atoms[t].keys.first) &&
-           !@grouped_wrapped.include?(t)
-          r = "(#{r})"
-        end
-        r
-      end
-    when "Named"
-      "(#{render(v['atom'], depth + 1)}) as #{v['name']}"
-    when "Sequence"
-      v["atoms"].map { |c| child_seq(c, depth) }.join(" ")
-    when "Alternative"
-      v["atoms"].map { |c| child_alt(c, depth) }.join(" / ")
-    when "Repetition"
-      mx = v["max"]
-      "#{v['min']}#{mx ? "*#{mx}" : "*"} #{child_rep(v['atom'], depth)}"
-    when "Lookahead"
-      inner = render(v["atom"], depth + 1)
-      # keep the child's own grouping: ungrouped ranges inside !() do
-      # not parse (probe-verified); !((group)) does
-      v["positive"] ? "&(#{inner})" : "!(#{inner})"
+  def render(atom)
+    case atom
+    when Parsanol::Atoms::Str then literal(atom.str)
+    when Parsanol::Atoms::Re then lower_re(atom.re.source)
+    when Parsanol::Atoms::Entity then atom.rule_name.to_s
+    when Parsanol::Atoms::Named then "(#{render(atom.parslet)}) as #{atom.name}"
+    when Parsanol::Atoms::Sequence
+      atom.parslets.map { |c| child_seq(c) }.join(" ")
+    when Parsanol::Atoms::Alternative
+      atom.alternatives.map { |c| child_alt(c) }.join(" / ")
+    when Parsanol::Atoms::Repetition
+      mx = atom.max
+      "#{atom.min}#{mx ? "*#{mx}" : "*"} #{child_rep(atom.parslet)}"
+    when Parsanol::Atoms::Lookahead
+      inner = render(atom.bound_parslet)
+      atom.positive ? "&(#{inner})" : "!(#{inner})"
     else
-      @rejected["atom type #{type}"] += 1
-      "<REJECTED-#{type.upcase}>"
+      @rejected["atom #{atom.class}"] += 1
+      "<REJECTED>"
     end
   end
 
   private
 
-  # simpleId's single quantified Re (parsanol GH-69 — one Re consumes
-  # the whole identifier in one step): lower to a lead class + tail run.
-  def simple_id_run(pattern)
-    return nil unless pattern == "[a-zA-Z_][a-zA-Z0-9_]*"
-
-    lead = "%x41-5A / %x61-7A / %x5F"
-    "(#{lead}) *(%x41-5A / %x61-7A / %x30-39 / %x5F)"
+  def child_seq(atom)
+    raw = render(atom)
+    atom.is_a?(Parsanol::Atoms::Alternative) ? "(#{raw})" : raw
   end
 
-  private
-
-  def child_seq(id, depth)
-    a = @atoms[id]
-    raw = render(id, depth + 1)
-    a.keys.first == "Alternative" ? "(#{raw})" : raw
+  def child_alt(atom)
+    raw = render(atom)
+    atom.is_a?(Parsanol::Atoms::Sequence) && !raw.start_with?("(") ? "(#{raw})" : raw
   end
 
-  def child_alt(id, depth)
-    a = @atoms[id]
-    raw = render(id, depth + 1)
-    a.keys.first == "Sequence" && !raw.start_with?("(") ? "(#{raw})" : raw
-  end
-
-  def child_rep(id, depth)
-    a = @atoms[id]
-    raw = render(id, depth + 1)
-    if %w[Sequence Alternative].include?(a.keys.first) && !raw.start_with?("(")
+  def child_rep(atom)
+    raw = render(atom)
+    if atom.is_a?(Parsanol::Atoms::Sequence)
+      "(#{raw})"
+    elsif atom.is_a?(Parsanol::Atoms::Alternative)
       "(#{raw})"
     else
       raw
     end
   end
 
-  # Lower a single-character-class regex (match["..."] / /./) to PARG
-  # %x alternatives. Returns nil for anything it cannot lower exactly.
-  def hex_range(pattern)
+  # Lower a single-character-class regex to PARG %x alternatives.
+  def lower_re(pattern)
     case pattern
     when "." then "%x01-10FFFF"
+    # the one quantified concat in the grammar (identifier head+tail)
+    when "[a-zA-Z_][a-zA-Z0-9_]*"
+      "((%x41-5A / %x61-7A / %x5F) 0* (%x30-39 / %x41-5A / %x61-7A / %x5F))"
     else
-      m = pattern.match(/\A\[(.*)\]\z/m) or return nil
+      m = pattern.match(/\A\[(.*)\]\z/m) or return reject_re(pattern)
       body = m[1]
       negated = body.sub!(/\A\^/, "")
-      alts = []
+      pairs = [] # [lo, hi] numeric pairs
       i = 0
       while i < body.length
         ch = body[i]
@@ -155,129 +106,100 @@ class AtomRenderer
           nxt = body[i + 1]
           codes = { "r" => 0x0D, "n" => 0x0A, "t" => 0x09, "f" => 0x0C }
           if (code = codes[nxt])
-            alts << "%x#{format('%02X', code)}"
+            pairs << [code, code]
           elsif nxt == "s"
-            alts.concat(%w[%x20 %x09 %x0A %x0D %x0C])
+            pairs.concat([[0x20, 0x20], [0x09, 0x09], [0x0A, 0x0A],
+                          [0x0D, 0x0D], [0x0C, 0x0C]])
           else
-            return nil
+            return reject_re(pattern)
           end
           i += 2
         elsif i + 2 < body.length && body[i + 1] == "-"
-          return nil if ch == "\\"
+          return reject_re(pattern) if ch == "\\"
 
-          alts << "%x#{format('%02X', ch.ord)}-#{format('%02X', body[i + 2].ord)}"
+          pairs << [ch.ord, body[i + 2].ord]
           i += 3
-        elsif ch == '"'
-          alts << "%x22"
-          i += 1
-        elsif ch == "/"
-          alts << "%x2F"
-          i += 1
         else
-          printable = ch.match?(/[[:print:]]/) && !ch.match?(/[[:space:]]/)
-          alts << (printable ? "\"#{ch}\"" : "%x#{format('%02X', ch.ord)}")
+          pairs << [ch.ord, ch.ord]
           i += 1
         end
       end
-      return nil if alts.empty?
-
-      joined = alts.join(" / ")
-      # parenthesize multi-alternative classes: inside a sequence, a
-      # bare `a / b` would split the sequence across the alternatives
-      grouped = alts.size > 1 ? "(#{joined})" : joined
-      mark_grouped(joined) if alts.size > 1
       if negated
-        # PARG negation does not take ranges — emit the numeric
-        # complement over [0x01, 0x10FFFF] as explicit ranges
-        pairs = []
-        i = 0
-        while i < body.length
-          ch = body[i]
-          if ch == "\\" && i + 1 < body.length
-            nxt = body[i + 1]
-            codes = { "r" => 0x0D, "n" => 0x0A, "t" => 0x09, "f" => 0x0C }
-            if (code = codes[nxt])
-              pairs << [code, code]
-            elsif nxt == "s"
-              pairs.concat([[0x20, 0x20], [0x09, 0x09], [0x0A, 0x0A],
-                            [0x0D, 0x0D], [0x0C, 0x0C]])
-            end
-            i += 2
-          elsif i + 2 < body.length && body[i + 1] == "-"
-            pairs << [ch.ord, body[i + 2].ord]
-            i += 3
-          else
-            pairs << [ch.ord, ch.ord]
-            i += 1
-          end
-        end
+        # numeric complement over [0x01, 0x10FFFF]
+        comp = []
         lo = 1
-        ranges = []
         pairs.sort.each do |plo, phi|
           next if phi < lo
 
-          ranges << "%x#{format('%02X', lo)}-#{format('%02X', plo - 1)}" if plo > lo
+          comp << [lo, plo - 1] if plo > lo
           lo = [lo, phi + 1].max
         end
-        ranges << "%x#{format('%02X', lo)}-10FFFF" if lo <= 0x10FFFF
-        "(#{ranges.join(' / ')})"
+        comp << [lo, 0x10FFFF] if lo <= 0x10FFFF
+        render_ranges(comp)
       else
-        grouped
+        grouped = pairs.size > 1
+        text = render_ranges(pairs)
+        grouped ? "(#{text})" : text
       end
     end
   end
 
-  # PARG string literal for a printable literal; %xNN for the lexer's
-  # problem characters (its escaped forms are rejected).
-  def literal(pattern)
-    pattern.chars.map do |c|
+  def render_ranges(ranges)
+    ranges.map do |lo, hi|
+      lo == hi ? "%x#{format('%02X', lo)}" : "%x#{format('%02X', lo)}-#{format('%02X', hi)}"
+    end.join(" / ")
+  end
+
+  def reject_re(pattern)
+    @rejected["Re #{pattern.inspect}"] += 1
+    "<UNLOWERABLE-RE>"
+  end
+
+  def literal(text)
+    text.chars.map do |c|
       case c.ord
       when 0x22 then "%x22"
       when 0x5C then "%x5C"
       when 0x2F then "%x2F"
       else
-        c.match?(/[[:print:]]/) ? "\"#{c}\"" : "%x#{format('%02X', c.ord)}"
+        c.match?(/[[:print:]]/) && !c.match?(/[[:space:]]/) ? "\"#{c}\"" : "%x#{format('%02X', c.ord)}"
       end
     end.join(" ")
   end
 end
 
-# -- rule discovery --
-# A Named whose name is in the inventory defines that rule; wrapper
-# duplicates collapse to the first. parsanol inlines non-capturing
-# rules into callers, so some inventory names have no Named at all —
-# their bodies render inline inside their callers.
+# -- build the rule table: name -> body atom --
+# rule(:x) returns a lazy Entity holding @body (the DSL block); the body
+# materializes by instance_exec on the parser, exactly as parsanol does
+# at parse time.
 rules = {}
-ATOMS.each_with_index do |a, i|
-  next unless (nm = a["Named"]) && RULE_NAMES.include?(nm["name"])
-
-  rules[nm["name"]] = i unless rules.key?(nm["name"])
+RULE_NAMES.uniq.each do |name|
+  atom = parser.public_send(name) rescue next
+  if atom.is_a?(Parsanol::Atoms::Entity) && atom.rule_name.to_s == name
+    body = atom.instance_variable_get(:@cached_atom)
+    body ||= parser.instance_exec(&(atom.instance_variable_get(:@body)))
+    rules[name] = body || atom
+  else
+    rules[name] = atom
+  end
 end
-rule_def_ids = rules.values.to_set
 
-inlined = RULE_NAMES.uniq - rules.keys
-warn "rules: #{rules.size} defined, #{inlined.size} inlined by parsanol"
-warn "inlined: #{inlined.first(10).inspect}" if inlined.any?
+alt_rules = rules.select { |_, body| body.is_a?(Parsanol::Atoms::Alternative) }.keys
+warn "rules: #{rules.size}/#{RULE_NAMES.uniq.size}"
 
 # -- emit --
 out = []
 out << "grammar ExpressSyntax version \"0.1.0\" edition 2 {"
-renderer = AtomRenderer.new(ATOMS, REJECTED, rule_def_ids)
-# The DSL's skip(:trivia, whitespace: :space, exempt: ...) — `space`
-# (whitespace | embeddedRemark | tailRemark) is the channel; remarks are
-# consumed by the skip and attached under :space for RemarkScanner.
-# parsanol inlines the space rule (no Named), so the body is emitted
-# from the known DSL definition.
-out << "  # whitespace channel rule (the DSL's match[\" \\r\\n\\t\\f\"]; the"
-out << "  # skip declaration accepts rule references only)"
-out << "  space_ws = (%x20 / %x0D / %x0A / %x09 / %x0C)"
-out << "  skip = (space_ws / embeddedRemark / tailRemark) capture: space"
-rules.sort_by { |_, id| id }.each do |name, id|
-  body_id = ATOMS[id]["Named"]["atom"]
+out << "  # The DSL's trivia channel (match[\" \\r\\n\\t\\f\"].repeat(1)) is"
+out << "  # emitted below from the live rule; remarks stay product data."
+
+renderer = AtomRenderer.new(REJECTED, alt_rules)
+rules.sort_by { |name, _| name }.each do |name, body|
   decl = ATOMIC_RULES.include?(name) ? "atomic #{name} =" : "#{name} ="
-  # (space is inlined by parsanol, so it is not in ATOMIC_RULES here)
-  out << "  #{decl} #{renderer.render(body_id)}"
+  out << "  #{decl} #{renderer.render(body)}"
 end
+
+out << "  #{SKIP_DECL}"
 
 out << "  entry syntax: syntax"
 out << "}"
@@ -286,6 +208,6 @@ File.write(out_path, out.join("\n") + "\n")
 warn "wrote #{out_path} (#{out.size} lines)"
 unless REJECTED.empty?
   warn "REJECTED (#{REJECTED.values.sum}):"
-  REJECTED.sort_by { |_, n| -n }.first(10).each { |k, n| warn "  #{n}x #{k}" }
+  REJECTED.first(10).each { |k, n| warn "  #{n}x #{k}" }
 end
 exit REJECTED.empty? ? 0 : 1
