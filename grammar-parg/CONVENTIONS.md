@@ -64,3 +64,20 @@ parsanol parg check --source express.parg --artifact express.json
 
 Compile requires the full `use` closure in one directory (pubid bake
 finding).
+
+## Language facts learned while translating (parsanol 1.3.120/1.3.121)
+
+- Parenthesized groups do NOT span newlines — multi-line rule bodies use
+  the brace-block form (`rule = { ... }`), with the `as` inside.
+- Self-references inside a grammar file are UNQUALIFIED; a qualified
+  self-reference gets double-namespaced and fails.
+- `use <grammar>` sections sit at TOP LEVEL (before the grammar block);
+  imports resolve by FILENAME; chained/transitive imports and duplicate-
+  import collision detection work.
+- Entry targets must be LOCAL rules — alias imported rules and rebind
+  explicitly (`digits = (express_literals.digits) as digits`), or the
+  alias binds a namespaced tree key (a builder-parity trap).
+- Backslash literals: the escaped form is rejected by the lexer — use
+  `%x5C`.
+- The `test` section's `accept` runs against the DEFAULT entry only;
+  mid-migration probing uses declared entries instead.

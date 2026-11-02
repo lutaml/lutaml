@@ -1,4 +1,5 @@
 use express_keywords
+use express_remarks
 use express_literals
 use express_operators
 
@@ -26,6 +27,8 @@ grammar ExpressSyntax version "0.1.0" edition 2 {
 
   # --- probe entries (mid-migration; the final entry is `syntax`) ---
   # local aliases over the namespaced imports (entry targets are local)
+  embeddedRemark = express_remarks.embeddedRemark
+  tailRemark = express_remarks.tailRemark
   simpleId = express_literals.simpleId
   simpleStringLiteral = express_literals.simpleStringLiteral
   digits = (express_literals.digits) as digits
@@ -36,6 +39,8 @@ grammar ExpressSyntax version "0.1.0" edition 2 {
   tGENERIC_ENTITY = express_keywords.tGENERIC_ENTITY
   tEND_SUBTYPE_CONSTRAINT = express_keywords.tEND_SUBTYPE_CONSTRAINT
 
+  entry embeddedRemark: embeddedRemark
+  entry tailRemark: tailRemark
   entry simpleId: simpleId
   entry simpleStringLiteral: simpleStringLiteral
   entry digits: digits
