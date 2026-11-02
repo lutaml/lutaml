@@ -517,12 +517,16 @@ module Lutaml
 
           # A qualified ref names a declaration in ONE namespace.
           # Global names duplicated across namespaces (import + main)
-          # resolve against the child's namespace today; when the owner
-          # schema's target namespace declares the same local name, a
-          # foreign child is an unexpected element (the engine — fed
-          # the documents one at a time — admits the substitute, so
-          # this runs on the engine-accept path). Wildcard territory
-          # is exempt.
+          # resolve against the child's namespace today; a foreign
+          # child is an unexpected element (the engine — fed the
+          # documents one at a time — admits the substitute, so this
+          # runs on the engine-accept path). Wildcard territory is
+          # exempt. The PREFIX is the signal: an unprefixed ref
+          # canonically names a NO-NAMESPACE declaration (Q016 — its
+          # qualified local namesake is irrelevant), a prefixed one
+          # names some namespace: a child in the opposite territory,
+          # or — for the duplicated-name shape — in any namespace but
+          # the owner's, cannot match.
           #
           # @return [void]
           def scan_cross_namespace_refs(xml_element, particles, collector,
@@ -535,12 +539,35 @@ module Lutaml
             end
             return if refs.empty?
 
+            # Several DISTINCT prefixed forms of one local name mean the
+            # schema disambiguates by prefix on purpose (particlesQ032:
+            # foo:e2 / x:e2 / bar:e2) — the owner-namespace guess is
+            # untenable there.
+            single_prefixed_form = refs.select do |r|
+              r.ref.to_s.include?(":")
+            end.group_by { |r| r.ref.to_s.split(":").last }
+              .select { |_, group| group.map { |r| r.ref.to_s.split(":").first }.uniq.size == 1 }
+              .map(&:first)
+
             xml_element.children.each do |child|
-              next if child.namespace_uri.to_s == owner_ns
-              next unless refs.any? do |r|
-                r.ref.to_s.split(":").last == child.name
+              child_ns = child.namespace_uri.to_s
+              next if child_ns == owner_ns
+
+              hit = refs.find do |r|
+                ref = r.ref.to_s
+                next false unless ref.split(":").last == child.name
+
+                if ref.include?(":")
+                  next false unless single_prefixed_form.include?(child.name)
+
+                  child_ns.empty? ||
+                    (child_ns != owner_ns &&
+                     repository.resolve_global(child.name, owner_ns))
+                else
+                  child_ns.match?(/\S/)
+                end
               end
-              next unless repository.resolve(child.name, owner_ns)
+              next unless hit
               next if wildcard_covers_child?(xml_element, particles, child,
                                              repository)
 
@@ -549,7 +576,7 @@ module Lutaml
                 code: "unexpected_element_in_sequence",
                 message: "Unexpected element '#{child.qualified_name}' " \
                          "in sequence — the reference names the same " \
-                         "declaration in #{owner_ns}",
+                         "declaration in another namespace",
                 location: child.xpath,
                 context: { element: child.qualified_name },
                 suggestion: "Use the declaration's namespace or rename " \
@@ -572,7 +599,7 @@ module Lutaml
             return nil unless repository
 
             local = particle.ref.to_s.split(":").last
-            (owner_ns && repository.resolve(local, owner_ns)) ||
+            (owner_ns && repository.resolve_global(local, owner_ns)) ||
               repository.resolve(local, child.namespace_uri) ||
               repository.resolve(local, nil)
           end

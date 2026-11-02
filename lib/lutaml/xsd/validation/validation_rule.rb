@@ -252,12 +252,17 @@ module Lutaml
             # owner_ns nil means UNKNOWN (the caller has no owner
             # context), not "no namespace" — resolve(local, nil) only
             # matches no-namespace declarations, and a hint-loaded
-            # document can supply a foreign namesake.
+            # document can supply a foreign namesake. The owner probe
+            # is GLOBAL-only: a ref names a global declaration, and an
+            # inline namesake must not satisfy it.
             declaration =
-              (owner_ns && repository&.resolve(local, owner_ns)) ||
+              (owner_ns && repository&.resolve_global(local, owner_ns)) ||
               repository&.resolve(local, child.namespace_uri) ||
               repository&.resolve(local, nil)
-            return false unless declaration
+            # An unresolvable ref (particlesQ032: a no-namespace document
+            # imported under an explicit namespace — its globals index
+            # nowhere) is namespace-unconstrained: match by local name.
+            return child.name == local unless declaration
 
             child.name == declaration.name &&
               namespaces_match?(child.namespace_uri,

@@ -156,6 +156,27 @@ module Lutaml
           candidates.length == 1 ? candidates.first.first : nil
         end
 
+        # Global (top-level) element declaration only. A ref particle
+        # names a GLOBAL declaration; the index also holds inline ones,
+        # and a qualified local namesake must never satisfy the
+        # owner-namespace probe (particlesQ016: ref "foo" unprefixed vs
+        # the qualified local foo inside the restricted type).
+        #
+        # @param local_name [String]
+        # @param namespace_uri [String, nil]
+        # @return [Lutaml::Xml::Schema::Xsd::Element, nil]
+        def resolve_global(local_name, namespace_uri)
+          return nil if local_name.nil? || local_name.empty?
+
+          candidates = @elements[local_name]
+          return nil if candidates.empty?
+
+          exact = candidates.find do |_element, namespace, kind|
+            kind == :top && namespace_matches?(namespace, namespace_uri)
+          end
+          exact&.first
+        end
+
         # Named type for an element's `type="prefix:Name"` reference.
         #
         # @param schema_element [Lutaml::Xml::Schema::Xsd::Element, nil]
