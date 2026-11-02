@@ -386,7 +386,10 @@ module Lutaml
         end
 
         # Named group declaration by local name (for xs:group reference
-        # expansion in the content and occurrence walks).
+        # expansion in the content and occurrence walks). Group refs
+        # reach across imports (groupB009: an extension body references
+        # a group declared in the imported document), so nested
+        # resolved schemas are searched too.
         #
         # @param local_name [String]
         # @return [Lutaml::Xml::Schema::Xsd::Group, nil]
@@ -395,6 +398,25 @@ module Lutaml
 
           schemas.each do |schema|
             found = Array(schema.group).find { |g| g.name == local_name }
+            return found if found
+
+            found = find_nested_group(local_name, schema)
+            return found if found
+          end
+          nil
+        end
+
+        # @return [Object, nil]
+        def find_nested_group(local_name, schema, depth = 0)
+          return nil if depth > 8
+
+          (Array(schema.include) + Array(schema.import)).each do |nested|
+            next unless nested.is_a?(Lutaml::Xml::Schema::Xsd::Schema)
+
+            found = Array(nested.group).find { |g| g.name == local_name }
+            return found if found
+
+            found = find_nested_group(local_name, nested, depth + 1)
             return found if found
           end
           nil

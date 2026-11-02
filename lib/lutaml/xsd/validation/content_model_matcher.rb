@@ -134,13 +134,13 @@ module Lutaml
 
         def compile_particle(particle)
           case particle
-          when Lutaml::Xsd::Sequence
+          when Lutaml::Xsd::Sequence, Lutaml::Xml::Schema::Xsd::Sequence
             compile_bounded_container(particle)
-          when Lutaml::Xsd::Choice
+          when Lutaml::Xsd::Choice, Lutaml::Xml::Schema::Xsd::Choice
             with_occurrence(particle) do
               compile_choice_particles(@container_particles.call(particle))
             end
-          when Lutaml::Xsd::All
+          when Lutaml::Xsd::All, Lutaml::Xml::Schema::Xsd::All
             # The all's own bounds wrap the member bitmask: an optional
             # all accepts the empty sequence even with mandatory
             # members (addB31).
@@ -181,10 +181,17 @@ module Lutaml
         end
 
         # A group ref expands to its declaration's container, whose own
-        # kind (sequence vs choice) decides the wiring.
+        # kind (sequence vs choice vs all) decides the wiring. Imported
+        # documents parse to the lutaml-model container classes —
+        # groupO004's xs:all compiled ORDERED before both All classes
+        # were wired to the bitmask.
         def compile_container_body(container)
-          if container.is_a?(Lutaml::Xsd::Choice)
+          if container.is_a?(Lutaml::Xsd::Choice) ||
+              container.is_a?(Lutaml::Xml::Schema::Xsd::Choice)
             compile_choice_particles(@container_particles.call(container))
+          elsif container.is_a?(Lutaml::Xsd::All) ||
+              container.is_a?(Lutaml::Xml::Schema::Xsd::All)
+            with_occurrence(container) { compile_all(container) }
           else
             compile_particles(@container_particles.call(container))
           end
@@ -235,14 +242,20 @@ module Lutaml
 
         # Wraps a body fragment with the particle's occurrence range:
         # min mandatory copies, then an unbounded loop on one extra copy
-        # or (max - min) optional copies.
+        # or (max - min) optional copies. The first body copy counts
+        # toward the bound: with min=0 it IS the first optional copy, so
+        # only max-1 more are wired (min=0/max=1 used to compile with
+        # capacity 2 — masked for bare elements by the occurrence rule,
+        # visible wherever nested group bounds lean on this verdict).
         def with_occurrence(particle)
           min = parse_occurs(particle.min_occurs, 1)
           max = parse_max_occurs(particle.max_occurs, 1)
-          eff_min = [min, MAX_UNROLL].min
+          return empty_fragment if max.is_a?(Integer) && max.zero?
+
           entry, exit_state = yield
           cursor = exit_state
           last_entry = entry
+          eff_min = [min, MAX_UNROLL].min
           (eff_min - 1).times do
             c_entry, c_exit = yield
             @epsilons[cursor] << c_entry
@@ -259,7 +272,8 @@ module Lutaml
             @epsilons[exit_state] << final
           else
             @epsilons[cursor] << final
-            (max - min).times do
+            optional = max - min - (min.zero? && max.is_a?(Integer) ? 1 : 0)
+            optional.times do
               c_entry, c_exit = yield
               @epsilons[cursor] << c_entry
               @epsilons[c_exit] << final

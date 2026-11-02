@@ -299,6 +299,7 @@ module Lutaml
                 type.complex_content
               content = type.complex_content
               extension = Array(content.extension).first
+              restriction = Array(content.restriction).first
               if extension
                 base_local = extension.base.to_s.split(":").last
                 base_type = base_local && repository&.resolve_named_type(base_local)
@@ -310,6 +311,14 @@ module Lutaml
 
                     particles << particle
                   end
+                end
+              elsif restriction
+                # A restriction REPLACES the base content model: only
+                # the restriction body's particles apply (groupH008's
+                # prohibited group ref was previously compiled as an
+                # EMPTY model and the children passed unchecked).
+                particles = COMPLEX_PARTICLE_KINDS.flat_map do |kind|
+                  Array(restriction.public_send(kind)).compact
                 end
               end
             end
