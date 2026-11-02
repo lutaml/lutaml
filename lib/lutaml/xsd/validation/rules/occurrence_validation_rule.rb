@@ -501,24 +501,36 @@ module Lutaml
           end
 
           def composite_capacity(particle, repository, depth)
-            children = if particle.is_a?(Lutaml::Xml::Schema::Xsd::Group)
-                         container = expand_group_container(particle,
-                                                            repository).first
-                         container ? choice_alternatives(container) : []
-                       else
-                         # sequence: capacities add; choice: the largest
-                         choice_alternatives(particle)
-                       end
+            # The CONTAINER's kind decides aggregation: a group whose
+            # declaration is a sequence ADDS its members' capacities, a
+            # choice takes the largest — deciding from the ref particle
+            # itself always maxed (groupH class).
+            children, aggregate =
+              if particle.is_a?(Lutaml::Xml::Schema::Xsd::Group)
+                container = expand_group_container(particle,
+                                                   repository).first
+                if container
+                  [choice_alternatives(container),
+                   container_choice?(container) ? :max : :sum]
+                else
+                  [[], :max]
+                end
+              else
+                [choice_alternatives(particle),
+                 particle.is_a?(Lutaml::Xsd::Sequence) ? :sum : :max]
+              end
             caps = children.map do |child|
               branch_capacity(child, repository, depth + 1)
             end
             return :unbounded if caps.include?(:unbounded)
 
-            if particle.is_a?(Lutaml::Xsd::Sequence)
-              caps.sum
-            else
-              caps.max || 0
-            end
+            aggregate == :sum ? caps.sum : (caps.max || 0)
+          end
+
+          # @return [Boolean]
+          def container_choice?(container)
+            container.is_a?(Lutaml::Xsd::Choice) ||
+              container.is_a?(Lutaml::Xml::Schema::Xsd::Choice)
           end
 
           # Choice alternatives are particles of any kind.

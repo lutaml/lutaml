@@ -661,4 +661,69 @@ RSpec.describe "wildcard scoping, anyType and default content" do
       expect(codes(result)).not_to include("attribute_pattern_violation")
     end
   end
+
+  describe "derivation bodies that are bare group references" do
+    let(:schema) do
+      <<~XSD
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+          <xs:complexType name="base">
+            <xs:sequence>
+              <xs:element name="old"/>
+            </xs:sequence>
+          </xs:complexType>
+          <xs:group name="x">
+            <xs:sequence>
+              <xs:element name="x1"/>
+              <xs:element name="x2"/>
+            </xs:sequence>
+          </xs:group>
+          <xs:group name="y">
+            <xs:choice>
+              <xs:element name="y1"/>
+              <xs:element name="y2"/>
+            </xs:choice>
+          </xs:group>
+          <xs:group name="G">
+            <xs:choice>
+              <xs:group ref="x"/>
+              <xs:group ref="y"/>
+            </xs:choice>
+          </xs:group>
+          <xs:element name="elem">
+            <xs:complexType>
+              <xs:complexContent>
+                <xs:restriction base="base">
+                  <xs:group ref="G" minOccurs="1"/>
+                </xs:restriction>
+              </xs:complexContent>
+            </xs:complexType>
+          </xs:element>
+        </xs:schema>
+      XSD
+    end
+
+    it "enforces the restriction's group model" do
+      result = run_pipeline(schema, "<elem><y1/></elem>")
+
+      expect(codes(result)).not_to include("unexpected_element_in_sequence")
+    end
+
+    it "rejects content outside the restriction's group model" do
+      result = run_pipeline(schema, "<elem><old/></elem>")
+
+      expect(result.valid?).to be(false)
+    end
+
+    it "counts a group's sequence members as one branch" do
+      result = run_pipeline(schema, "<elem><x1/><x2/></elem>")
+
+      expect(codes(result)).not_to include("choice_max_occurs_violation")
+    end
+
+    it "rejects a second branch when the group ref allows one" do
+      result = run_pipeline(schema, "<elem><x1/><x2/><x1/><x2/></elem>")
+
+      expect(codes(result)).to include("choice_max_occurs_violation")
+    end
+  end
 end

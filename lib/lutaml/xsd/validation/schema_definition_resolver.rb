@@ -428,8 +428,12 @@ module Lutaml
             nil
           when Lutaml::Xml::Schema::Xsd::ExtensionComplexContent,
                Lutaml::Xml::Schema::Xsd::RestrictionComplexContent
+            # A derivation body may be a bare group reference — the
+            # ref's own minOccurs/maxOccurs govern the expanded model
+            # (groupG/groupH class).
             Array(type.sequence).first ||
-              Array(type.choice).first || Array(type.all).first
+              Array(type.choice).first || Array(type.all).first ||
+              Array(type.group).first
           end
         end
 

@@ -120,21 +120,21 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 4546/4696 (96.8%) |
+| pipeline | 4557/4696 (97.0%) |
 
 (2026-11-02, bundled-stack measurement on main with the escape,
 hint-following, pattern-alternative, identity-crash, engine-set,
 engine-refresh, IC value-space, IC field-resolution, facade-silence,
-regex-semantics, redefine-refresh, gmonth-refresh, digit-vintage and
-stgh-refresh rounds; moxml 0.6.1 (gemspec floor `~> 0.6.0` per the
-owner — the 0.6 line drops the Opal surface; measured
-conformance-neutral), lutaml-model 0.8.155, engine leptris
+regex-semantics, redefine-refresh, gmonth-refresh, digit-vintage,
+stgh-refresh and group-ref rounds; moxml 0.6.1 (gemspec floor
+`~> 0.6.0` per the owner — the 0.6 line drops the Opal surface;
+measured conformance-neutral), lutaml-model 0.8.155, engine leptris
 1.9.401.0.) Same-stack comparison: 1.2.43 baseline 3961 (84.3%) →
 4039 (86.0%) → 4090 (87.1%) → 4360 (92.8%, lockfile refresh) → 4411
 (93.9%) → 4430 (94.3%) → 4435 (94.4%) → 4436 (94.5%) → 4439 (94.5%)
 → 4454 (94.9%) → 4495 (95.7%) → 4524 (96.3%) → 4534 (96.6%) → 4540
-(96.7%) → 4542 (96.7%) → 4546 (96.8%), +585 net over the 1.2.43
-baseline. The escapes round (PR #197 — \d→\p{Nd},
+(96.7%) → 4542 (96.7%) → 4546 (96.8%) → 4557 (97.0%), +596 net over
+the 1.2.43 baseline. The escapes round (PR #197 — \d→\p{Nd},
 \w/\W/\s to their XSD value spaces) collapses Regex 120→69;
 same-step pattern facets now behave as alternatives and
 whitespace-only text reaches the facets intact (PR #200), Regex
@@ -242,7 +242,8 @@ moxml 0.5.170 + lutaml-model 0.8.147) → 93.9% (escape + hint rounds)
 4439) → 94.9% (IC field-resolution round PR #206, 4454) → 95.7%
 (facade-silence dep refresh, moxml 0.5.177, 4495) → 96.3% (regex
 semantics round PR #208, 4524) → 96.6% (redefine refresh, leptris
-1.9.396/1.9.397, 4534). Failure
+1.9.396/1.9.397, 4534) → 96.8% (stG/stH refresh, leptris 1.9.401,
+4546) → 97.0% (group-ref round PR #217, 4557). Failure
 concentration (the work queue, largest first):
 
 - `Regex_w3c` (131) — decomposed by error source (2026-10-25): the
@@ -344,6 +345,19 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   (stG010/012, stH005/007); SimpleType 10→6; suite 4546/4696
   (96.8%), zero regressions. #1936 remainder: reZ char-reference
   shapes, reT51 \D vintage; plus moxml#510 addB116 straggler.
+- GROUP-REF ROUND (2026-11-02, PR #217): +11 Group cases (19→8,
+  suite 4557/4696 = 97.0%). TWO Ruby defects: (a) `particle_for_type`
+  read sequence/choice/all from extension and restriction bodies but
+  NOT `group` — a derivation body that is a bare group reference
+  compiled to NO content model and the walk enforced nothing
+  (groupG/groupH class); (b) `composite_capacity` decided sum-vs-max
+  from the PARTICLE's class — for a Group ref it always took the max
+  branch even when the group's declaration is a SEQUENCE whose
+  members' capacities must ADD (groupH002: one branch of x1+x2 was
+  counted as two choice occurrences). Neighbors verified identical;
+  zero regressions. Group remainder: groupB009/010 + groupO004
+  (false-reject class), groupH008/J003/006/008/L008 under-detections
+  (choice-of-group capacity depth).
 - REGEX SEMANTICS ROUND (2026-10-31, PR #208): \w/\W now carry their
   Appendix F complements (\w = [^\p{P}\p{Z}\p{C}], class interiors
   via the exact positive partition L/M/N/S), \I/\C complements added
