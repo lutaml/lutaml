@@ -104,9 +104,7 @@ module Lutaml
             # incoherence the suite ignores (attZ007v, attZ015).
             validate_prohibited_attributes(xml_element, schema_attributes,
                                            xml_attributes, collector,
-                                           wildcards: wildcards,
-                                           schema_element: schema_element,
-                                           repository: repository)
+                                           wildcards: wildcards)
 
             # Step 2: Validate attribute values
             validate_attribute_values(xml_element, resolved_attributes,
@@ -444,9 +442,7 @@ module Lutaml
           # @return [void]
           def validate_prohibited_attributes(xml_element, schema_attrs,
                                              xml_attrs, collector,
-                                             wildcards: [],
-                                             schema_element: nil,
-                                             repository: nil)
+                                             wildcards: [])
             schema_attrs.each do |schema_attr|
               next unless schema_attr.use.to_s == "prohibited"
               # fixed + prohibited is an illegal declaration combo
@@ -501,7 +497,8 @@ module Lutaml
                   r.ref.to_s.split(":").last == schema_attr.name
               end
               validate_attribute_value(xml_element, xml_attr, schema_attr,
-                                       collector, repository: repository,
+                                       collector,
+                                       repository: repository,
                                        use_site: use_site)
             end
           end
