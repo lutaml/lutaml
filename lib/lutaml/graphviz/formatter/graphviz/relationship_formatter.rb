@@ -52,7 +52,7 @@ module Lutaml
           seen = Set.new
 
           groups.each do |group|
-            group.values.each do |group_name|
+            group.values.each do |group_name| # rubocop:disable Style/HashEachMethods
               matches = associations.select { |a| a.owner_end == group_name }
               matches.each { |a| add_unseen(a, result, seen) }
             end
