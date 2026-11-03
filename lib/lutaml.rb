@@ -7,6 +7,4 @@ require "lutaml/uml_repository"
 
 module Lutaml
   class Error < StandardError; end
-
-  autoload :Express, "lutaml/express"
 end

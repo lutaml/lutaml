@@ -29,10 +29,6 @@ Gem::Specification.new do |spec|
 
   spec.required_ruby_version = ">= 3.2.0"
 
-  spec.add_dependency "expressir", "~> 2.3"
-  # TODO: remove once reline declares fiddle as a dependency
-  # (fiddle was removed from Ruby 4.0 default gems, breaking reline on Windows)
-  spec.add_dependency "fiddle"
   spec.add_dependency "lutaml-lml"
   spec.add_dependency "lutaml-model", "~> 0.8.159"
   spec.add_dependency "lutaml-uml", "~> 1.0"
