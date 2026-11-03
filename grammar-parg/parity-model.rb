@@ -14,7 +14,9 @@ require "parsanol"
 require "json"
 
 artifact_path = File.join(__dir__, "express-grammar.artifact.json")
-artifact = Parsanol::PARG::Artifact.from_json(File.read(artifact_path))
+artifact = Parsanol::PARG::Artifact.from_json(
+  File.read(artifact_path), imports_dir: __dir__
+)
 
 pass = 0
 fail = 0

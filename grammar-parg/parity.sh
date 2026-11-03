@@ -6,7 +6,8 @@
 # (applies to the CLI artifact lane too, not just the in-process one)
 set -uo pipefail
 cd "$(dirname "$0")"
-EXE=/Users/mulgogi/.local/share/mise/installs/ruby/3.4.8/lib/ruby/gems/3.4.0/gems/parsanol-1.3.121-arm64-darwin/exe/parsanol
+EXE="${PARSANOL_EXE:-$(bundle exec which parsanol)}"
+ARTIFACT="$(pwd)/express-grammar.artifact.json"
 LIB="${PARITY_LIB:-}"
 
 # Oversized fixtures bypass the CLI argv limit: parse through the
@@ -14,14 +15,16 @@ LIB="${PARITY_LIB:-}"
 big_parity() {
   ruby ${LIB:+-I "$LIB"} -e '
     require "parsanol"
-    require "json"
-    artifact = Parsanol::PARG::Artifact.from_json(File.read("/tmp/serialized.json"))
+    # The split artifact replays its source; the component sources must
+    # sit beside it (imports_dir), exactly as the gem lane passes them.
+    artifact = Parsanol::PARG::Artifact.from_json(
+      File.read(ARGV[1]), imports_dir: File.dirname(ARGV[1]))
     begin
       artifact.parse("syntax", File.read(ARGV[0]), mode: :ruby)
       exit 0
     rescue StandardError
       exit 1
-    end' "$1" > /dev/null 2>&1
+    end' "$1" "$ARTIFACT" > /dev/null 2>&1
 }
 
 pass=0; fail=0; skipped=0
@@ -44,7 +47,7 @@ for f in $(find /Users/mulgogi/src/lutaml/expressir/spec -name "*.exp" | sort); 
   fi
   src="$(cat "$f")"
   # artifact accept?
-  if ruby ${LIB:+-I "$LIB"} "$EXE" parg parse /tmp/serialized.json --entry syntax "$src" \
+  if ruby ${LIB:+-I "$LIB"} "$EXE" parg parse "$ARTIFACT" --entry syntax "$src" \
       > /tmp/par-artifact.log 2>&1; then art=ok; else art=fail; fi
   # DSL accept?
   if bundle exec ruby -e '
