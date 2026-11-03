@@ -160,7 +160,7 @@ attribute batch_ids, String { cardinality 0..n }
 same optional block contents as the long form (but `type` comes from the
 comma position).
 
-==== Shorthand (convenience, inherited from the diagram syntax)
+==== Shorthand (convenience, inherited from the diagram syntax) [[attributes]]
 
 The UML shorthand attribute form is also accepted:
 

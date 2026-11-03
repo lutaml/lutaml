@@ -206,5 +206,5 @@ bundle exec rubocop
 
 == Documentation
 
-* RS 3001 — LutaML language: link:../docs/sources/lutaml-lang.adoc[lutaml-lang.adoc]
-* RS 3010 — declarations extension: link:../docs/sources/lml-declarations.adoc[lml-declarations.adoc]
+* RS 3001 — LutaML language: `lutaml-lang.adoc`
+* RS 3010 — declarations extension: `lml-declarations.adoc`
