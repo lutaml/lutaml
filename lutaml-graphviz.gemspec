@@ -26,8 +26,8 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
   spec.required_ruby_version = ">= 3.0"
 
-  # Today the LML model/formatter base live in lutaml-lml; after the L3
-  # absorption (lutaml/lutaml#231) this dependency becomes `lutaml`.
-  spec.add_dependency "lutaml-lml", ">= 0.3.6"
+  # The LML models and the formatter registry live in lutaml (lutaml-lml was
+  # absorbed into it, lutaml/lutaml#231).
+  spec.add_dependency "lutaml"
   spec.add_dependency "ruby-graphviz"
 end
