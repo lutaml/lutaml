@@ -1,0 +1,72 @@
+= lutaml monorepo
+
+One repository, one gem per directory under `packages/`, each with its own
+gemspec and version.
+
+[cols="1,3"]
+|===
+| Package | Role
+
+| `packages/lutaml` | the monogem: LML front, CLI, formatters (absorbs LML, #231)
+| `packages/lutaml-model` | model runtime, here until it is absorbed into `lutaml` (#233)
+| `packages/lutaml-xsd`, `packages/lutaml-jsonschema` | schema-language fronts
+| `packages/expressir` | EXPRESS front (Rust-backed)
+| `packages/lutaml-graphviz` | Graphviz renderer for the LML diagrams
+|===
+
+== Developing
+
+Each package is its own bundle. Sibling packages resolve by path, so a change
+in `lutaml-model` is seen by every package that depends on it:
+
+[source,sh]
+----
+cd packages/lutaml-xsd
+bundle install
+bundle exec rspec spec/lutaml/xsd/commands
+----
+
+Run targeted specs locally; CI runs the full suites.
+
+== CI
+
+`.github/workflows/rake.yml` runs `bundle exec rake` for every package on Ruby
+3.2, 3.3 and 3.4, plus the tests of `scripts/monorepo.rb`.
+metanorma/ci's `generic-rake.yml` and `rubygems-release.yml` run at the
+repository root and take no working-directory input, so they cannot serve a
+monorepo; the workflows here are self-contained.
+
+== Releasing a package
+
+Tags are `<package>-v<version>`: `lutaml-v0.12.0`, `lutaml-model-v0.8.163`.
+Each tag publishes one gem from `packages/<package>`.
+
+. Run the `release` workflow (workflow_dispatch) with the package and
+  `next_version` (`x.y.z`, `major`, `minor`, `patch`, or `skip` to release the
+  version already in the gemspec). It bumps that package's version file,
+  commits, and pushes the tag.
+. The tag push runs the publish job: `scripts/monorepo.rb check-tag` verifies
+  tag against gemspec, then `gem build` and `gem push` with RubyGems Trusted
+  Publishing.
+
+Release order while the dependency chain exists: `lutaml-model`, then `lutaml`,
+then `lutaml-graphviz` and the other fronts. Local checks:
+
+[source,sh]
+----
+scripts/monorepo.rb list
+scripts/monorepo.rb tag lutaml-model
+----
+
+== Preconditions before the first monorepo release
+
+* RubyGems Trusted Publishers: each gem must trust repository `lutaml/lutaml`,
+  workflow `release.yml` (already true for `lutaml`; to add for the other five).
+* `LUTAML_CI_PAT_TOKEN` secret present in this repository (already used by the
+  old workflows).
+* `lutaml-graphviz` is imported from its draft PR branch; its source repository
+  keeps `main` as a README until that PR lands.
+* `expressir` publishes precompiled native gems from its own
+  `packages/expressir/.github/workflows/native-gems.yml`, which GitHub does not
+  run from a subdirectory; the monorepo job pushes the source gem only.
+* Archiving the source repositories happens after the first monorepo release.
