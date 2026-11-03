@@ -50,6 +50,10 @@ module Lutaml
           @attributes = Hash.new { |hash, key| hash[key] = [] }
           @attribute_groups = {}
           @redefined_originals = {}
+          # Parsed xs:redefine target documents: their named types back
+          # the redefined bodies (schT3: b-ct/b-st live in the target,
+          # which the repository does not hold).
+          @redefined_targets = []
           @elements = index_elements
         end
 
@@ -200,16 +204,27 @@ module Lutaml
 
           result = nil
           schemas.each do |schema|
-            found = Array(schema.complex_type).find do |ct|
-              ct.name == local_name
-            end
-            found ||= Array(schema.simple_type).find do |st|
-              st.name == local_name
-            end
-            result = found || find_nested_named_type(local_name, schema)
+            result = named_type_in(local_name, schema)
             break if result
           end
+          if result.nil?
+            @redefined_targets.each do |schema|
+              result = named_type_in(local_name, schema)
+              break if result
+            end
+          end
           @named_types[local_name] = result
+        end
+
+        # @return [Object, nil]
+        def named_type_in(local_name, schema)
+          found = Array(schema.complex_type).find do |ct|
+            ct.name == local_name
+          end
+          found ||= Array(schema.simple_type).find do |st|
+            st.name == local_name
+          end
+          found || find_nested_named_type(local_name, schema)
         end
 
         # Named types declared in documents reached through resolved
@@ -617,6 +632,7 @@ module Lutaml
                 target = Lutaml::Xml::Schema::Xsd.parse(
                   File.read(target_path), location: target_path
                 )
+                @redefined_targets << target
                 index_schema(index, target, held_signatures, namespace,
                              defaults_schema)
               rescue StandardError

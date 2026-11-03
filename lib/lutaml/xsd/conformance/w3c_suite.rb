@@ -154,9 +154,10 @@ module Lutaml
           test_case.schema_paths.each do |path|
             schema = Lutaml::Xml::Schema::Xsd.parse(File.read(path),
                                                     location: path)
-            key = schema.target_namespace if
-              schema.target_namespace.to_s.match?(/\S/)
-            schemas[key] = schema
+            # Keyed by PATH, not target namespace: composed test
+            # documents may share a namespace (schT3's redefine pair),
+            # and a namespace key silently drops one of them.
+            schemas[path] = schema
             locations[path] = schema
           end
           config = Validation::ValidationConfiguration.new
