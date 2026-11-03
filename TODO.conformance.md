@@ -120,7 +120,7 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 4588/4696 (97.7%) |
+| pipeline | 4588/4696 (97.7%; the 1.9.403 engine ride nets zero — 17 filings-confirmed flips offset by 17 new strictness regressions, filed leptris-rs#35) |
 
 (2026-11-02, bundled-stack measurement with the escape,
 hint-following, pattern-alternative, identity-crash, engine-set,
@@ -234,7 +234,11 @@ corners.
 
 | Class | Cases | Filed |
 |---|---|---|
-| Empty content against a fixed element value rejected (1.9.402.0 regression — isDefault001/002/076, ctZ013a, elemQ019, stE065/066/096, particlesZ040; attribute leg addB104, attO006) | 15 | leptris-rs#25 (+ case-list comment) |
+| Fixed-empty bare elements FIXED in 1.9.403; CHILD-element leg still flagged (isDefault005/006/025/026/060_1) | 5 | leptris-rs#35 (sub 1; #25 comment) |
+| mixed="true" on a particle-less complexType rejects text (ctA033/ctA035) | 2 | leptris-rs#35 (sub 2) |
+| xs:redefine composition compiles to an EMPTY content model (idF025/033/034, idG018/019/027/028) | 7 | leptris-rs#35 (sub 3) |
+| Default-supplied content on an empty list-typed element (stZ072) | 1 | leptris-rs#35 (sub 4) |
+| Empty content against a fixed element value — BARE leg FIXED in 1.9.403 (attribute leg addB104, attO006 still open) | 2 | leptris-rs#25 (comment) |
 | Content model enforced on NILLED elements (QFE1700g2, particlesIa002) | 2 | leptris-rs#26 |
 | dateTime enumeration rejects timezone-equal forms (dateTime_enumeration005a/b) | 2 | leptris-rs#27 |
 | "-0" rejected against nonNegativeInteger (errE002) | 1 | leptris-rs#28 |
@@ -508,6 +512,23 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   checks bind the no-ns int ct-A to the ns-b boolean children —
   'true' vs xsd:int — the per-child type plumbing under hint
   layering), full type-redefine body semantics.
+- ENGINE-403 REFRESH ROUND (2026-11-03, net zero at 4588 = 97.7%):
+  leptris 1.9.402.0 -> 1.9.403.0 (the ride that closed #1936 and the
+  rs#25-29 wave — 17 suite cases FIXED, exactly our filings:
+  fixed-empty elements, nilled-content, "-0", xsi:type override,
+  dateTime enumeration, reZ/reK88 char-reference legs, schG7).
+  OFFSET by 17 NEW regressions, filed leptris-rs#35 in four
+  subclasses: (1) fixed+empty CHILD elements still flagged
+  (isDefault005/006/025/026/060_1 — #25 incomplete, the child path
+  was missed); (2) mixed="true" on a particle-less complexType
+  rejects text (ctA033/ctA035); (3) xs:redefine composition compiles
+  to an EMPTY content model (idF025/033/034, idG018/019/027/028 —
+  the redefined body particles are lost); (4) default-supplied
+  content on an empty list-typed element (stZ072). stZ073b/ba
+  flipped engine-silent (Ruby queue). The attributes-any runner
+  fixture carried a stray text node against an empty content model —
+  fixed (the 403 strictness is spec-correct there).
+
 - REGEX SEMANTICS ROUND (2026-10-31, PR #208): \w/\W now carry their
   Appendix F complements (\w = [^\p{P}\p{Z}\p{C}], class interiors
   via the exact positive partition L/M/N/S), \I/\C complements added
