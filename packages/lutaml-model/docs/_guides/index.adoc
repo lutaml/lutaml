@@ -1,0 +1,110 @@
+---
+title: Guides
+nav_order: 0
+---
+
+= Overview
+
+Task-oriented guides for accomplishing specific goals with Lutaml::Model.
+
+== XML serialization
+
+* link:../xml-mapping[XML Serialization Mapping] - Complete XML mapping reference
+* link:../xml-namespaces[XML Namespaces] - Multi-namespace documents
+* link:../xml-namespace-qualification[XML Namespace Qualification] - Advanced control
+* link:../xml-mappings-guide[XML Mappings Guide] - Complete XML reference
+* link:../xml/namespace-semantics[XML Namespace Semantics] - XML Namespace Semantics
+* link:../xml/namespace-presentation[XML Namespace Presentation] - XML Namespace Presentation
+* link:../xml/reusable-mapping-classes[Reusable Mapping Classes] - Share mappings across models
+
+== Key-value serialization
+
+* link:../custom-methods[Custom Serialization Methods] - with:/transform:, type-level serialization, of_* entry points
+* link:../keyvalue-serialization[Key-Value Serialization] - JSON/YAML/TOML/Hash
+* link:../collection-serialization[Collection Serialization] - JSONL and YAML Stream
+
+== Advanced mapping
+
+* link:../advanced-mapping[Advanced Attribute Mapping] - Same-name dispatch on attribute values (`when_attribute`), grouped declarations, custom methods, delegation
+* link:../grammar-backed-formats[Grammar-Backed String Formats] - Register a grammar engine as a serialization format (identifier strings, DSLs)
+
+== Model architecture and integration
+
+* link:../type-registers-contexts[Type Registers and Contexts] - Multi-version class trees, derived contexts, and model substitution
+* link:../gem-integration[Integrating lutaml-model in a Gem] - Dependency contract, adapter deferral, cross-adapter testing
+
+== Performance
+/
+* link:../native-engines[Native engines (leptris / yeptris / teptris)] - Drop-in XML/YAML/JSON/TOML engine upgrades via bundle opt-in
+
+== Linked Data serialization
+
+* link:../rdf-serialization[Unified RDF Serialization] - One `rdf` block for both JSON-LD and Turtle
+* link:../jsonld-serialization[JSON-LD Serialization] - W3C JSON-LD 1.1 with `@context`
+* link:../turtle-serialization[Turtle Serialization] - W3C RDF Turtle format
+
+== RDF infrastructure
+
+See link:../references/rdf-namespaces[RDF Namespaces] for namespace classes,
+`NamespaceSet`, `Iri`, and `Literal` value objects.
+
+== Advanced features
+
+* link:../value-transformations[Value Transformations] - Transform values during serialization
+* link:../missing-values-handling[Missing Values Handling] - Handle nil/empty/omitted
+* link:../advanced-mapping[Advanced Mapping] - Custom methods and delegation
+* link:../grammar-backed-formats[Grammar-Backed String Formats] - Grammar engines as serialization formats
+* link:../schema-generation[Schema Generation] - Generate schemas from models
+* link:../creating-xsd[Creating XSD Schemas] - Complete reference for XSD generation from LutaML models
+* link:../schema-import[Schema Import] - Import schemas to create models
+* link:../liquid-templates[Liquid Templates] - Template integration
+* link:../ooxml-examples[OOXML Examples] - Real-world Office Open XML
+* link:../consolidation-mapping[Consolidation Mapping] - Group sibling elements into structured models
+* link:../document-validation[Document Validation] - Document-level validation with rules, profiles, and remediation
+
+== Runtime environments
+
+* link:../opal[Opal Usage Guide] - Run Lutaml::Model in the browser via Opal (Ruby to JavaScript)
+
+== By task
+
+=== I want to serialize to XML
+
+. link:../xml-mapping[Start with XML Mapping basics]
+. link:../xml-namespaces[Add namespace support]
+. link:../xml-namespace-qualification[Control qualification]
+
+=== I want to serialize to JSON/YAML
+
+. link:../keyvalue-serialization[Key-Value Serialization guide]
+. link:../value-transformations[Transform values if needed]
+. link:../missing-values-handling[Handle nil/empty values]
+
+=== I want to serialize to JSON-LD or Turtle (Linked Data)
+
+. link:../rdf-serialization[Unified RDF Serialization] (recommended — one block for both formats)
+. link:../jsonld-serialization[JSON-LD Serialization guide] (legacy `jsonld do` block)
+. link:../turtle-serialization[Turtle Serialization guide] (legacy `turtle do` block)
+. link:../references/rdf-namespaces[RDF Namespaces reference]
+
+=== I want to work with collections
+
+. link:../collection-serialization[Collection Serialization]
+. link:../../collections[Collections reference]
+. link:../consolidation-mapping[Consolidation Mapping] - Group elements into structured models
+
+=== I want to transform data
+
+. link:../value-transformations[Value Transformations guide]
+. link:../advanced-mapping[Advanced Mapping techniques]
+
+=== I want to generate or import schemas
+
+. link:../schema-generation[Generate schemas (XSD, JSON Schema)]
+. link:../schema-import[Import schemas to models]
+
+== See also
+
+* link:../../tutorials/index[Tutorials] - Step-by-step learning
+* link:../../index[Core Topics] - Reference documentation
+* link:../../references/index[Reference] - Technical details

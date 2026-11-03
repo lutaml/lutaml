@@ -1,0 +1,897 @@
+# frozen_string_literal: true
+
+module Lutaml
+  module Model
+    module Serialize
+      # Handles attribute definition methods for Serialize::ClassMethods
+      #
+      # Extracted from serialize.rb to improve code organization.
+      # Provides methods for defining and validating model attributes.
+      module AttributeDefinition
+        # Whether the per-class accessors and the state-defaults seed are
+        # compiled from Ruby source with a String class_eval (the fast
+        # path). Opal has no runtime compiler unless opal-parser is
+        # bundled, so there every such method is defined from a block
+        # with define_method instead.
+        # Core dispatch for the block-form methods, bound per call so an
+        # attribute or method a model defines with one of these names
+        # (send, __send__, instance_variable_get, const_get, ...) is never invoked;
+        # the compiled form reads ivars and calls methods directly.
+        IVAR_GET = ::Kernel.instance_method(:instance_variable_get)
+        IVAR_SET = ::Kernel.instance_method(:instance_variable_set)
+        SEND = ::BasicObject.instance_method(:__send__)
+        CONST_GET = ::Module.instance_method(:const_get)
+
+        def self.source_compilation?
+          !Lutaml::Model.opal?
+        end
+
+        # Define attribute methods on the model class
+        #
+        # @param attr [Attribute] The attribute to define methods for
+        # @param register [Symbol, nil] The register for type resolution
+        # Compile (per class, cached) the method that seeds every attribute
+        # with its "no data arrived" sentinel: collections share the frozen
+        # LAZY_EMPTY_COLLECTION, scalars share the UninitializedClass
+        # singleton. Compiled once instead of walked per instance — the
+        # grammars-compile-don't-interpret rule applied to object state.
+        # Compile (per class and register, on demand) the method that
+        # seeds every attribute with its "no data arrived" sentinel:
+        # collections share the frozen LAZY_EMPTY_COLLECTION, scalars
+        # share the UninitializedClass singleton. Compiled once instead
+        # of walked per instance — grammars compile, they don't
+        # interpret.
+        def compiled_state_defaults_name!(register_id)
+          @state_defaults_names ||= {}
+          name = @state_defaults_names[register_id]
+          return name if name
+
+          method_name = :"__init_state_defaults_#{register_id}"
+          compile_state_defaults!(method_name, register_id)
+          @state_defaults_names[register_id] = method_name
+          method_name
+        end
+
+        def compile_state_defaults!(method_name, register_id = nil)
+          attrs = attributes(register_id)
+
+          if attrs.empty?
+            define_method(method_name) do
+              # no attributes to seed
+            end
+            return
+          end
+
+          unless AttributeDefinition.source_compilation?
+            seeds = attrs.map do |name, attr|
+              sentinel = if attr.collection?
+                           Lutaml::Model::Serialize::LAZY_EMPTY_COLLECTION
+                         else
+                           Lutaml::Model::UninitializedClass.instance
+                         end
+              [:"@#{name}", sentinel]
+            end
+            # Raw readers for every attribute the register sees, as the
+            # compiled form below does (#933).
+            attrs.each_key { |name| define_raw_state_reader(name) }
+            define_method(method_name) do
+              # Returns the last seeded value, as the compiled form's final
+              # assignment does.
+              seeds.reduce(nil) { |_, (ivar, sentinel)| IVAR_SET.bind_call(self, ivar, sentinel) }
+            end
+            return
+          end
+
+          lines = attrs.map do |name, attr|
+            if attr.collection?
+              "@#{name} = Lutaml::Model::Serialize::LAZY_EMPTY_COLLECTION"
+            else
+              "@#{name} = Lutaml::Model::UninitializedClass.instance"
+            end
+          end.join("\n")
+
+          # class_eval interpolates per-attribute `@name = <sentinel>` lines:
+          #   def __init_state_defaults_default
+          #     @id = Lutaml::Model::UninitializedClass.instance
+          #     @items = Lutaml::Model::Serialize::LAZY_EMPTY_COLLECTION
+          #   end
+          class_eval(<<~RUBY, __FILE__, __LINE__ + 1) # rubocop:disable Style/DocumentDynamicEvalDefinition
+            def #{method_name}
+            #{lines}
+            end
+          RUBY
+
+          # Raw readers compiled alongside the seeding so every
+          # attribute the register can see — including late-merged
+          # imports that bypass define_attribute_methods — carries
+          # one (#933). Idempotent with the declaration-time
+          # definition.
+          raw_lines = attrs.filter_map do |name, _attr|
+            next unless name.to_s.match?(PLAIN_NAME)
+
+            <<~RUBY
+              def __lutaml_raw_#{name}
+                @#{name}
+              end
+            RUBY
+          end.join
+          class_eval(<<~RUBY, __FILE__, __LINE__ + 1) # rubocop:disable Style/DocumentDynamicEvalDefinition
+            #{raw_lines}
+          RUBY
+        end
+
+        # The walk-side seed (#1003): constructor-equivalent state in one
+        # compiled pass. Unlike the deserialization seed (sentinels, lazy
+        # collections — readers answer uninitialized), the programmatic
+        # constructor resolves defaults and leaves non-defaulted
+        # attributes nil with explicit using-default marks; the KV walk's
+        # absent-attribute rendering contract depends on exactly that.
+        def walk_state_defaults_name!(register_id)
+          @walk_state_defaults_names ||= {}
+          name = @walk_state_defaults_names[register_id]
+          return name if name
+
+          method_name = :"__init_walk_state_defaults_#{register_id}"
+          compile_walk_state_defaults!(method_name, register_id)
+          @walk_state_defaults_names[register_id] = method_name
+          method_name
+        end
+
+        def compile_walk_state_defaults!(method_name, register_id = nil)
+          attrs = attributes(register_id)
+          marks = {}
+          simple = []
+          complex = []
+          lazy = []
+          attrs.each do |name, attr|
+            next if attr.derived?
+
+            # Inline only the provably-simple shape: no default, no
+            # value set (enum attributes materialize through their
+            # writer), plain ivar-safe name. The constructor's end
+            # state for that shape is exactly `nil` + a false mark.
+            # Everything else — defaults, enums, delegated and exotic
+            # attributes — routes through the constructor's own
+            # per-attribute code, so its state is identical by
+            # construction.
+            marks[name] = false
+            plain_name = name.to_s.match?(PLAIN_NAME)
+            if plain_name && attr.lazy_collection_default?
+              # The implicit empty-collection default: the constructor
+              # ends at `[]` + a default mark, and the LAZY sentinel
+              # answers `[]` from the reader — so seed the sentinel and
+              # skip the per-instance lambda (#1010). The false mark is
+              # what the XML unmatched-rule contract reads: a seeded
+              # collection must not render as a mid-parse default.
+              lazy << name
+            elsif attr.default_kind == :none && attr.options[:values].nil? &&
+                plain_name
+              simple << name
+            else
+              complex << name
+            end
+          end
+
+          marks_line = if marks.empty?
+                         "@using_default = {}"
+                       else
+                         pairs = marks.map { |k, v| "#{k.inspect} => #{v}" }
+                         "@using_default = { #{pairs.join(', ')} }"
+                       end
+          simple_lines = simple.map { |n| "@#{n} = nil" }
+          lazy_lines = lazy.map do |n|
+            "@#{n} = Lutaml::Model::Serialize::LAZY_EMPTY_COLLECTION"
+          end
+          complex_lines = complex.map do |n|
+            "initialize_single_attribute({}, #{n.inspect}, " \
+              "self.class.attributes(@lutaml_register)[#{n.inspect}], " \
+              "Serialize::DEFAULT_VALUE_MAP)"
+          end
+
+          unless AttributeDefinition.source_compilation?
+            define_method(method_name) do
+              @using_default = marks
+              simple.each { |n| IVAR_SET.bind_call(self, :"@#{n}", nil) }
+              lazy.each do |n|
+                IVAR_SET.bind_call(
+                  self, :"@#{n}", Lutaml::Model::Serialize::LAZY_EMPTY_COLLECTION
+                )
+              end
+              complex.each do |n|
+                initialize_single_attribute(
+                  {}, n, self.class.attributes(@lutaml_register)[n],
+                  Serialize::DEFAULT_VALUE_MAP
+                )
+              end
+            end
+            return
+          end
+
+          class_eval(<<~RUBY, __FILE__, __LINE__ + 1) # rubocop:disable Style/DocumentDynamicEvalDefinition
+            def #{method_name}
+              #{marks_line}
+              #{simple_lines.join("\n")}
+              #{lazy_lines.join("\n")}
+              #{complex_lines.join("\n")}
+            end
+          RUBY
+        end
+
+        # Block-form raw-state reader (no String eval), defined on self.
+        def define_raw_state_reader(name)
+          ivar = :"@#{name}"
+          define_method(:"__lutaml_raw_#{name}") do
+            IVAR_GET.bind_call(self, ivar)
+          end
+        end
+
+        # Historical getter shape for punctuation-named attributes and
+        # any name the compiled form cannot express.
+        def define_reflective_attribute_methods(name, attr)
+          if attr.collection?
+            define_method(name) do |*args|
+              if args.empty?
+                materialize_lazy_collection(name)
+              else
+                # Builder-style: g.member(item) appends to collection
+                value = args.first
+                current = instance_variable_get(:"@#{name}") || []
+                new_value = current.is_a?(Array) ? current + [value] : value
+                instance_variable_set(:"@#{name}", new_value)
+                record_mutation(name, value)
+                value
+              end
+            end
+          else
+            define_method(name) do |*args|
+              if args.empty?
+                instance_variable_get(:"@#{name}")
+              else
+                public_send(:"#{name}=", args.first)
+                args.first
+              end
+            end
+          end
+        end
+
+        def invalidate_state_defaults!
+          # Opal's method_defined? takes no inherit flag (see the
+          # setter_defined check in define_regular_attribute_methods).
+          (@state_defaults_names ||= {}).each_key do |compiled|
+            defined_now = if Lutaml::Model.opal?
+                            method_defined?(compiled)
+                          else
+                            method_defined?(compiled, false)
+                          end
+            remove_method(compiled) if defined_now
+          end
+          # The names cache must go with the methods: the memoized
+          # lookup answers stale names for removed methods otherwise.
+          @state_defaults_names.clear
+        end
+
+        def define_attribute_methods(attr, register = nil)
+          name = attr.name
+          register_id = extract_register_id(register)
+
+          # lutaml-model#922: raw-state reader for the deserializer's
+          # unmatched-rule handling. A custom writer that assigns a
+          # *different* attribute mid-parse (relaton's ICS Isoics
+          # fallback; any derived-value pattern) is invisible to the
+          # value_set tracker -- public setters don't mark it -- so the
+          # tracked "still default" state lies. The deserializer needs
+          # the raw stored state to know whether an attribute was
+          # writer-populated: still holding the initialized marker
+          # (sentinel / lazy collection) means unset; anything else was
+          # written since init and must never be overwritten by an
+          # unmatched rule's default assignment. Declared here (not in
+          # the state-defaults compilation) so late declarations get it
+          # too -- XMI's extension loader declares attributes after
+          # first parse.
+          # Without a source compiler, compile_state_defaults! defines
+          # its raw readers from blocks; define one for every name here
+          # too (define_method takes any name, not only plain ones).
+          # Both forms define on self: a bare `model` receiver resolves
+          # through the host class's own namespace (omml's Base answers
+          # a Store model) and defined the reader on the wrong object
+          # (#933).
+          if !AttributeDefinition.source_compilation?
+            define_raw_state_reader(name)
+          elsif name.to_s.match?(PLAIN_NAME)
+            class_eval(<<~RUBY, __FILE__, __LINE__ + 1) # rubocop:disable Style/DocumentDynamicEvalDefinition
+              def __lutaml_raw_#{name}
+                @#{name}
+              end
+            RUBY
+          end
+
+          if attr.enum?
+            add_enum_methods_to_model(
+              model,
+              name,
+              attr.options[:values],
+              collection: attr.options[:collection],
+            )
+          elsif attr.derived? && name != attr.method_name
+            unless method_defined?(name, false)
+              define_method(name) do
+                value = public_send(attr.method_name)
+                # Cast the derived value to the specified type. cast_derived,
+                # not cast_element: this reader is its own casting entry point,
+                # so it needs the same "nothing arrived, nothing to cast" rule
+                # the writers get, and a collection has to come back as one.
+                attr.cast_derived(value, register_id)
+              end
+            end
+          elsif attr.unresolved_type == Lutaml::Model::Type::Reference
+            Lutaml::Model::Store.reference_types_in_use!
+            define_reference_methods(name, register_id)
+          else
+            define_regular_attribute_methods(name, attr)
+          end
+        end
+
+        # Define reference-type attribute methods
+        #
+        # Reference types store a reference key that can be resolved to
+        # the actual object.
+        #
+        # @param name [Symbol] The attribute name
+        # @param register [Symbol] The register ID
+        def define_reference_methods(name, register)
+          register_id = register
+          attr = attributes[name]
+
+          unless method_defined?(:"#{name}_ref", false)
+            define_method("#{name}_ref") do
+              instance_variable_get(:"@#{name}_ref")
+            end
+          end
+
+          key_method_name = if attr.options[:collection]
+                              Utils.pluralize(attr.options[:ref_key_attribute].to_s)
+                            else
+                              attr.options[:ref_key_attribute]
+                            end
+
+          unless method_defined?(:"#{name}_#{key_method_name}", false)
+            define_method("#{name}_#{key_method_name}") do
+              ref = instance_variable_get(:"@#{name}_ref")
+              # attr.reference_key first: once a collection reader has stored
+              # its resolved objects, the key has to come back off the object.
+              resolve_reference_key(attr.reference_key(ref))
+            end
+          end
+
+          unless method_defined?(name, false)
+            if attr.options[:collection]
+              define_method(name) do
+                materialize_reference_collection(name)
+              end
+            else
+              define_method(name) do
+                ref = instance_variable_get(:"@#{name}_ref")
+                resolve_reference_value(ref)
+              end
+            end
+          end
+
+          unless method_defined?(:"#{name}=", false)
+            define_method(:"#{name}=") do |value|
+              value_set_for(name)
+              casted_value = value
+              unless casted_value.is_a?(Lutaml::Model::Type::Reference)
+                casted_value = attr.cast_value(value, register_id)
+              end
+
+              instance_variable_set(:"@#{name}_ref", casted_value)
+
+              resolved_reference = resolve_reference_key(casted_value)
+              instance_variable_set(:"@#{name}", resolved_reference)
+            end
+          end
+        end
+
+        # Define regular (non-reference, non-enum) attribute methods
+        #
+        # @param name [Symbol] The attribute name
+        # @param attr [Attribute] The attribute definition
+        # Plain identifier names compile to `@name` reads; punctuation
+        # names (`mixed?`) keep the reflective path (@name is not valid
+        # Ruby for them).
+        PLAIN_NAME = /\A[a-zA-Z_][a-zA-Z0-9_]*\z/
+
+        def define_regular_attribute_methods(name, attr)
+          unless name.to_s.match?(PLAIN_NAME)
+            return define_reflective_attribute_methods(name, attr)
+          end
+
+          # Getters compile with a sentinel default argument instead of a
+          # `*args` splat: the splat allocated an (almost always empty)
+          # Array on EVERY read — the largest per-call allocation source
+          # on instance-heavy parses (TODO.max-perf/06). The optional-arg
+          # form allocates nothing, and the read is a direct @ivar.
+          if !AttributeDefinition.source_compilation?
+            define_block_attribute_getter(name, attr)
+          elsif attr.collection?
+            # class_eval interpolates, e.g.:
+            #   def items(arg = Lutaml::Model::Serialize::NO_ARG)
+            #     if arg.equal?(Lutaml::Model::Serialize::NO_ARG)
+            #       materialize_lazy_collection(:items)
+            #     else
+            #       ... builder append ...
+            #     end
+            #   end
+            class_eval(<<~RUBY, __FILE__, __LINE__ + 1) # rubocop:disable Style/DocumentDynamicEvalDefinition
+              def #{name}(arg = Lutaml::Model::Serialize::NO_ARG)
+                if arg.equal?(Lutaml::Model::Serialize::NO_ARG)
+                  materialize_lazy_collection(:#{name})
+                else
+                  current = @#{name} || []
+                  new_value = current.is_a?(Array) ? current + [arg] : arg
+                  @#{name} = new_value
+                  record_mutation(:#{name}, arg)
+                  arg
+                end
+              end
+            RUBY
+          else
+            class_eval(<<~RUBY, __FILE__, __LINE__ + 1) # rubocop:disable Style/DocumentDynamicEvalDefinition
+              def #{name}(arg = Lutaml::Model::Serialize::NO_ARG)
+                if arg.equal?(Lutaml::Model::Serialize::NO_ARG)
+                  @#{name}
+                else
+                  public_send(:"#{name}=", arg)
+                  arg
+                end
+              end
+            RUBY
+          end
+
+          enum_shorthand_names = instance_variable_get(:@__enum_shorthand_names__) || Set.new
+          # Opal's Module#method_defined? only accepts 1 arg (MRI accepts
+          # the optional `inherit` flag). Skip the flag there — the
+          # difference only matters for inherited-method filtering.
+          setter_defined = if Lutaml::Model.opal?
+                             method_defined?(:"#{name}=")
+                           else
+                             method_defined?(:"#{name}=", false)
+                           end
+          return if setter_defined && !enum_shorthand_names.include?(name.to_s)
+
+          # class_eval'd bodies cannot close over locals; a hidden
+          # define_method accessor holds the Attribute handle.
+          attr_reader_method = :"__attribute_definition_#{name}"
+          reader_defined = if Lutaml::Model.opal?
+                             method_defined?(attr_reader_method)
+                           else
+                             method_defined?(attr_reader_method, false)
+                           end
+          define_method(attr_reader_method) { attr } unless reader_defined
+
+          if !AttributeDefinition.source_compilation?
+            define_block_attribute_setters(name, attr)
+          elsif attr.collection? && !attr.lazy_collection_default?
+            # class_eval interpolates, e.g.:
+            #   def items=(value)
+            #     value_set_for(:items)
+            #     value = ATTR.cast_value(value, lutaml_register)
+            #     current = @items
+            #     ... sentinel preservation ...
+            #     record_mutation_collection(:items, value)
+            #   end
+            # The compiled body writes @items directly: the define_method
+            # form interpolated "@items" name strings per call — one per
+            # setter invocation on instance-heavy parses (TODO.max-perf/06).
+            class_eval(<<~RUBY, __FILE__, __LINE__ + 1) # rubocop:disable Style/DocumentDynamicEvalDefinition
+              def #{name}=(value)
+                value_set_for(:#{name})
+                value = __attribute_definition_#{name}.cast_value(value, lutaml_register)
+                current = @#{name}
+                if current.equal?(Lutaml::Model::Serialize::LAZY_EMPTY_COLLECTION) &&
+                    (value.nil? || Lutaml::Model::Utils.uninitialized?(value))
+                  # Sentinel stays — no allocation for truly empty collections
+                else
+                  @#{name} = value
+                end
+                record_mutation_collection(:#{name}, value)
+              end
+
+              # TODO.max-perf/31: the deserialization transforms already
+              # cast through the format-aware path; this writer skips the
+              # setter's re-cast while keeping value_set_for marking and
+              # mutation recording. Public assignment keeps the caster.
+              def __assign_parsed_#{name}=(value)
+                value_set_for(:#{name})
+                current = @#{name}
+                if current.equal?(Lutaml::Model::Serialize::LAZY_EMPTY_COLLECTION) &&
+                    (value.nil? || Lutaml::Model::Utils.uninitialized?(value))
+                else
+                  @#{name} = value
+                end
+                record_mutation_collection(:#{name}, value)
+              end
+            RUBY
+          elsif attr.collection?
+            # Lazy-seeded default collections (#1010): a nil write is a
+            # real state here (initialize_empty reads nil after an
+            # explicit nil value), so it must land over the sentinel
+            # instead of preserving it.
+            class_eval(<<~RUBY, __FILE__, __LINE__ + 1) # rubocop:disable Style/DocumentDynamicEvalDefinition
+              def #{name}=(value)
+                value_set_for(:#{name})
+                value = __attribute_definition_#{name}.cast_value(value, lutaml_register)
+                @#{name} = value
+                record_mutation_collection(:#{name}, value)
+              end
+
+              def __assign_parsed_#{name}=(value)
+                value_set_for(:#{name})
+                @#{name} = value
+                record_mutation_collection(:#{name}, value)
+              end
+            RUBY
+          else
+            class_eval(<<~RUBY, __FILE__, __LINE__ + 1) # rubocop:disable Style/DocumentDynamicEvalDefinition
+              def #{name}=(value)
+                value_set_for(:#{name})
+                value = __attribute_definition_#{name}.cast_value(value, lutaml_register)
+                @#{name} = value
+                record_mutation(:#{name}, value)
+              end
+
+              # TODO.max-perf/31: see the collection branch above.
+              def __assign_parsed_#{name}=(value)
+                value_set_for(:#{name})
+                @#{name} = value
+                record_mutation(:#{name}, value)
+              end
+            RUBY
+          end
+        end
+
+        # Block form of the compiled getter in define_regular_attribute_methods,
+        # for runtimes without a source compiler (see source_compilation?).
+        def define_block_attribute_getter(name, attr)
+          name = name.to_sym # the compiled form passes :name literals
+          ivar = :"@#{name}"
+          if attr.collection?
+            # The compiled getter resolves Array in the model class's scope.
+            scope = self
+            define_method(name) do |arg = Lutaml::Model::Serialize::NO_ARG|
+              if arg.equal?(Lutaml::Model::Serialize::NO_ARG)
+                materialize_lazy_collection(name)
+              else
+                current = IVAR_GET.bind_call(self, ivar) || []
+                new_value = current.is_a?(CONST_GET.bind_call(scope, :Array)) ? current + [arg] : arg
+                IVAR_SET.bind_call(self, ivar, new_value)
+                record_mutation(name, arg)
+                arg
+              end
+            end
+          else
+            define_method(name) do |arg = Lutaml::Model::Serialize::NO_ARG|
+              if arg.equal?(Lutaml::Model::Serialize::NO_ARG)
+                IVAR_GET.bind_call(self, ivar)
+              else
+                public_send(:"#{name}=", arg)
+                arg
+              end
+            end
+          end
+        end
+
+        # Block form of the compiled setters in define_regular_attribute_methods.
+        # The Attribute is read through the same hidden accessor the
+        # compiled form calls, not captured: a setter redefined over an
+        # enum shorthand keeps casting with the accessor's Attribute.
+        def define_block_attribute_setters(name, attr)
+          name = name.to_sym # the compiled form passes :name literals
+          ivar = :"@#{name}"
+          handle = :"__attribute_definition_#{name}"
+          if attr.collection? && !attr.lazy_collection_default?
+            assign = lambda do |model, value|
+              current = IVAR_GET.bind_call(model, ivar)
+              unless current.equal?(Lutaml::Model::Serialize::LAZY_EMPTY_COLLECTION) &&
+                  (value.nil? || Lutaml::Model::Utils.uninitialized?(value))
+                IVAR_SET.bind_call(model, ivar, value)
+              end
+              SEND.bind_call(model, :record_mutation_collection, name, value)
+            end
+            define_method(:"#{name}=") do |value|
+              value_set_for(name)
+              assign.call(self, SEND.bind_call(self, handle).cast_value(value, lutaml_register))
+            end
+            define_method(:"__assign_parsed_#{name}=") do |value|
+              value_set_for(name)
+              assign.call(self, value)
+            end
+          elsif attr.collection?
+            # Lazy-seeded default collections (#1010): nil lands over the
+            # sentinel — see the source-compiled branch.
+            assign = lambda do |model, value|
+              IVAR_SET.bind_call(model, ivar, value)
+              SEND.bind_call(model, :record_mutation_collection, name, value)
+            end
+            define_method(:"#{name}=") do |value|
+              value_set_for(name)
+              assign.call(self, SEND.bind_call(self, handle).cast_value(value, lutaml_register))
+            end
+            define_method(:"__assign_parsed_#{name}=") do |value|
+              value_set_for(name)
+              assign.call(self, value)
+            end
+          else
+            define_method(:"#{name}=") do |value|
+              value_set_for(name)
+              value = SEND.bind_call(self, handle).cast_value(value, lutaml_register)
+              IVAR_SET.bind_call(self, ivar, value)
+              record_mutation(name, value)
+            end
+            define_method(:"__assign_parsed_#{name}=") do |value|
+              value_set_for(name)
+              IVAR_SET.bind_call(self, ivar, value)
+              record_mutation(name, value)
+            end
+          end
+        end
+
+        # Class-level documentation metadata (#356): `desc "text"` on
+        # the model class; a zero-argument call reads it back.
+        # Subclasses inherit the nearest ancestor's description — an
+        # explicit `desc` overrides. Consumed by documentation and
+        # schema tooling; the serialization paths never read it.
+        def desc(text = nil)
+          return @lutaml_desc = text if text
+
+          return @lutaml_desc if defined?(@lutaml_desc)
+
+          if superclass.is_a?(::Class) &&
+              superclass < ::Lutaml::Model::Serializable
+            superclass.desc
+          end
+        end
+
+        # Model evolution (#265): `version 1` (or a semver string)
+        # stamps the model schema version. Subclasses inherit the
+        # nearest ancestor's version; a family is the ancestor chain of
+        # version-declared classes, and detection routes within it.
+        def version(value = nil)
+          return @lutaml_model_version = value if value
+
+          return @lutaml_model_version if defined?(@lutaml_model_version)
+
+          if superclass.is_a?(::Class) &&
+              superclass < ::Lutaml::Model::Serializable
+            return superclass.version
+          end
+
+          nil
+        end
+
+        alias model_version version
+
+        # Wire-level version detection for the family (#265): the block
+        # receives the parsed document hash and returns the version the
+        # document was written against. Declared on the family head;
+        # `from_<format>` routes to the detected version's class before
+        # parsing. Opt-in — without a detector, parsing is unchanged.
+        def detect_version(&block)
+          return @lutaml_version_detector = block if block
+
+          return @lutaml_version_detector if defined?(@lutaml_version_detector)
+
+          if superclass.is_a?(::Class) &&
+              superclass < ::Lutaml::Model::Serializable
+            return superclass.detect_version
+          end
+
+          nil
+        end
+
+        # Declares wire-level migration steps from a former model
+        # version (#265). The block is evaluated on an EvolutionSteps
+        # collector (wire_rename, wire_move, wire_merge, wire_drop);
+        # the steps are applied by `evolve`, in declaration order, to a
+        # copy of the source document's wire hash before the target
+        # model parses it.
+        def evolution(from:, &block)
+          unless from.is_a?(::Class) && from < ::Lutaml::Model::Serializable
+            raise ArgumentError,
+                  "evolution from: must be a Lutaml::Model::Serializable " \
+                  "model class"
+          end
+
+          collector = Lutaml::Model::EvolutionSteps.new
+          collector.instance_eval(&block)
+          lutaml_evolutions[from] = collector.steps.freeze
+          nil
+        end
+
+        def lutaml_evolutions
+          @lutaml_evolutions ||= {}
+        end
+
+        # The class of the family that declares `version == value`.
+        # Walks the ancestor chain nearest-first; raises
+        # UnsupportedVersionError when no family member declares it.
+        def version_class_for(value)
+          klass = self
+          while klass.is_a?(::Class) &&
+              klass < ::Lutaml::Model::Serializable
+            return klass if klass.version == value
+
+            klass = klass.superclass
+          end
+
+          raise ::Lutaml::Model::UnsupportedVersionError.new(self, value)
+        end
+
+        # Migrate a document or instance of a former model version into
+        # this one (#265). The source's wire hash (its own `to_hash`
+        # for an instance) passes through the declared evolution chain
+        # — every family link between the source version and this
+        # class, in order — and the result parses as this model.
+        #
+        # @param source [Hash, Serializable] the old document or model
+        # @param from [Class] the source model class
+        # @param format [Symbol] the key-value format used to parse
+        #   the evolved hash
+        def evolve(source, from:)
+          chain = evolution_chain_from(from)
+          wire = if source.is_a?(::Hash)
+                   Lutaml::Model::Utils.deep_dup(source)
+                 else
+                   source.to_hash
+                 end
+          chain.each do |link_source|
+            steps = evolution_steps_for(link_source)
+            wire = steps.reduce(wire) { |hash, step| step.call(hash) }
+          end
+          from_hash(wire)
+        end
+
+        # Family members nearest-first, self included.
+        def evolution_family
+          members = []
+          klass = self
+          while klass.is_a?(::Class) &&
+              klass < ::Lutaml::Model::Serializable
+            members << klass
+            klass = klass.superclass
+          end
+          members
+        end
+
+        # Shortest declared-evolution path from the source class to
+        # self, as the list of link source classes. Edges are the
+        # family's `evolution from:` declarations. (Public: also serves
+        # introspection of declared family links.)
+        def evolution_chain_from(source_class)
+          return [] if source_class == self
+
+          edges = {}
+          evolution_family.each do |member|
+            member.lutaml_evolutions.each_key do |source|
+              (edges[source] ||= []) << member
+            end
+          end
+
+          parents = { source_class => nil }
+          frontier = [source_class]
+          until frontier.empty? || parents[self]
+            current = frontier.shift
+            (edges[current] || []).each do |target|
+              next if parents.key?(target)
+
+              parents[target] = current
+              frontier << target
+            end
+          end
+
+          unless parents[self]
+            raise ArgumentError,
+                  "no evolution path from #{source_class} to #{self} " \
+                  "is declared"
+          end
+
+          path = []
+          cursor = self
+          while cursor != source_class
+            path.unshift(cursor)
+            cursor = parents[cursor]
+          end
+          path.unshift(source_class)[0...-1]
+        end
+
+        # The family member (nearest-first) that declared steps for the
+        # given link source.
+        def evolution_steps_for(link_source)
+          member = evolution_family.find do |klass|
+            klass.lutaml_evolutions.key?(link_source)
+          end
+          member.lutaml_evolutions[link_source]
+        end
+
+        # Define an attribute for the model
+        #
+        # @param name [Symbol] The attribute name
+        # @param type [Class, Symbol, Hash] The attribute type
+        # @param options [Hash] Attribute options
+        # @return [Attribute] The created attribute
+        def attribute(name, type, options = {})
+          type, options = process_type_hash(type, options) if type.is_a?(::Hash)
+
+          if type.is_a?(::Array)
+            options = options.merge(union_member_types: type)
+            type = Lutaml::Model::Type::Union
+          end
+
+          # Handle direct method option in options hash
+          if options[:method]
+            options[:method_name] = options.delete(:method)
+          end
+
+          attr = Attribute.new(name, type, options)
+          lutaml_cow_fork!(:attributes)
+          @attributes[name] = attr
+          @merged_attributes_cache = nil
+          # Attributes can be declared after the model has been
+          # instantiated (forward references, post-hoc declarations);
+          # the interned writer table from the first instantiation must
+          # not outlive the attribute set it was built from.
+          @instantiate_writers = nil
+          invalidate_state_defaults!
+          define_attribute_methods(attr)
+
+          attr
+        end
+
+        # Restrict options on an existing attribute
+        #
+        # @param name [Symbol] The attribute name to restrict
+        # @param options [Hash] New options to merge
+        # @return [Symbol] The attribute name
+        def restrict(name, options = {})
+          register_id = options.delete(:register) || Lutaml::Model::Config.default_register
+          lutaml_cow_fork!(:attributes)
+          lutaml_cow_fork!(:registers)
+
+          if !@attributes.key?(name) && !register_record(register_id)&.dig(
+            :attributes, name
+          )
+            return restrict_attributes[name] = options if any_importable_models?
+
+            raise Lutaml::Model::UndefinedAttributeError.new(name, self)
+          end
+
+          validate_attribute_options!(name, options)
+          attr = attributes(register_id)[name]
+          attr.options.merge!(options)
+          attr.process_options!
+          name
+        end
+
+        # Check if there are any importable models
+        #
+        # @return [Boolean] True if there are pending imports
+        def any_importable_models?
+          importable_choices.any? || importable_models.any?
+        end
+
+        # Validate attribute options
+        #
+        # @param name [Symbol] The attribute name
+        # @param options [Hash] The options to validate
+        # @raise [InvalidAttributeOptionsError] If invalid options are present
+        def validate_attribute_options!(name, options)
+          invalid_opts = options.keys - Attribute::ALLOWED_OPTIONS
+          return if invalid_opts.empty?
+
+          raise Lutaml::Model::InvalidAttributeOptionsError.new(name,
+                                                                invalid_opts)
+        end
+      end
+    end
+  end
+end

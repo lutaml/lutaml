@@ -1,0 +1,50 @@
+# frozen_string_literal: true
+
+require "time"
+
+module Lutaml
+  module Model
+    module Type
+      class TimeWithoutDate < Value
+        # TODO: we probably want to do something like this because using
+        # Time.parse will set the date to today.
+        #
+        # time = ::Time.parse(value.to_s)
+        # ::Time.new(1, 1, 1, time.hour, time.min, time.sec)
+
+        def self.cast(value, _options = {})
+          return super if Utils.uninitialized?(value)
+          return nil if value.nil?
+
+          case value
+          when ::Time then value
+          else
+            # Check if input has invalid hour format (24:00:00 or higher)
+            if value.to_s =~ /^(\d+):/
+              hour = ::Regexp.last_match(1).to_i
+              return nil if hour >= 24
+            end
+
+            ::Time.parse(value.to_s)
+          end
+        rescue ArgumentError
+          nil
+        end
+
+        def self.serialize(value)
+          return nil if value.nil?
+
+          value = cast(value)
+          value.strftime("%H:%M:%S") # Format as HH:MM:SS
+        end
+
+        # XSD type for TimeWithoutDate
+        #
+        # @return [String] xs:time
+        def self.default_xsd_type
+          "xs:time"
+        end
+      end
+    end
+  end
+end

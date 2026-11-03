@@ -1,0 +1,210 @@
+require "spec_helper"
+require_relative "../../../lib/lutaml/model"
+
+module EnumSpec
+  class WithEnum < Lutaml::Model::Serializable
+    attribute :without_enum, :string
+    attribute :single_value, :string, values: %w[user admin super_admin]
+    attribute :multi_value, :string, values: %w[singular dual plural],
+                                     collection: true, initialize_empty: true
+  end
+
+  class WithCollision < Lutaml::Model::Serializable
+    attribute :align, :string, values: %w[left right center justify char]
+    attribute :char, :string
+
+    xml do
+      element "test"
+      map_attribute "align", to: :align
+      map_attribute "char", to: :char
+    end
+  end
+end
+
+RSpec.describe "Enum" do
+  let(:single_value_attr) do
+    EnumSpec::WithEnum.attributes[:single_value]
+  end
+
+  let(:multi_value_attr) do
+    EnumSpec::WithEnum.attributes[:multi_value]
+  end
+
+  let(:without_enum_attr) do
+    EnumSpec::WithEnum.attributes[:without_enum]
+  end
+
+  let(:object) do
+    EnumSpec::WithEnum.new
+  end
+
+  context "when values are provided for an attribute" do
+    it "is marked as enum for single_value" do
+      expect(single_value_attr.enum?).to be(true)
+    end
+
+    it "is marked as enum for multi_value" do
+      expect(multi_value_attr.enum?).to be(true)
+    end
+
+    context "with enum convinience methods" do
+      describe "#single_value" do
+        it "returns single value" do
+          expect { object.single_value = "user" }
+            .to change(object, :single_value)
+            .from(nil)
+            .to("user")
+        end
+
+        it "sets and unsets all enum values correctly" do
+          object.user = true
+          object.admin = false
+          object.super_admin = false
+
+          expect(object.user?).to be true
+          expect(object.admin?).to be false
+          expect(object.super_admin?).to be false
+
+          expect { object.user = false }
+            .to change(object, :user?)
+            .from(true)
+            .to(false)
+        end
+      end
+
+      describe "#multi_value" do
+        it "returns single value in array" do
+          expect { object.multi_value = "dual" }
+            .to change(object, :multi_value)
+            .from([])
+            .to(["dual"])
+        end
+
+        it "returns multiple value in array" do
+          expect { object.multi_value = %w[dual plural] }
+            .to change(object, :multi_value)
+            .from([])
+            .to(%w[dual plural])
+        end
+
+        it "sets and unsets all enum values correctly" do
+          object.singular = false
+          object.dual = true
+          object.plural = true
+
+          expect(object.singular?).to be false
+          expect(object.dual?).to be true
+          expect(object.plural?).to be true
+
+          expect { object.plural = false }
+            .to change(object, :plural?)
+            .from(true)
+            .to(false)
+
+          expect { object.dual = false }
+            .to change(object, :dual?)
+            .from(true)
+            .to(false)
+        end
+      end
+
+      EnumSpec::WithEnum.enums.each_value do |enum_attr|
+        enum_attr.enum_values.each do |value|
+          describe "##{value}=" do
+            it "sets the #{value} if true" do
+              expect { object.public_send(:"#{value}=", true) }
+                .to change { object.public_send(:"#{value}?") }
+                .from(false)
+                .to(true)
+            end
+
+            it "unsets the #{value} if false" do
+              object.public_send(:"#{value}=", true)
+
+              expect { object.public_send(:"#{value}=", false) }
+                .to change(object, "#{value}?")
+                .from(true)
+                .to(false)
+            end
+          end
+
+          describe "##{value}!" do
+            it "method #{value}? should be present" do
+              expect(object.respond_to?(:"#{value}!")).to be(true)
+            end
+
+            it "sets #{value} to true for enum" do
+              expect { object.public_send(:"#{value}!") }
+                .to change(object, "#{value}?")
+                .from(false)
+                .to(true)
+            end
+          end
+
+          describe "##{value}?" do
+            it "method #{value}? should be present" do
+              expect(object.respond_to?(:"#{value}?")).to be(true)
+            end
+
+            it "is false if role is not #{value}" do
+              expect(object.public_send(:"#{value}?")).to be(false)
+            end
+
+            it "is true if role is set to #{value}" do
+              expect { object.public_send(:"#{value}=", value) }
+                .to change(object, "#{value}?")
+                .from(false)
+                .to(true)
+            end
+          end
+
+          it "adds a method named #{value}=" do
+            expect(object.respond_to?(:"#{value}?")).to be(true)
+          end
+
+          it "adds a method named #{value}!" do
+            expect(object.respond_to?(:"#{value}!")).to be(true)
+          end
+        end
+      end
+    end
+  end
+
+  context "when values are not provided for an attribute" do
+    it "is not marked as enum" do
+      expect(without_enum_attr.enum?).to be(false)
+    end
+  end
+
+  context "when enum value name collides with a separate attribute name" do
+    let(:collision_class) do
+      EnumSpec::WithCollision
+    end
+
+    it "does not shadow the separate attribute getter" do
+      obj = collision_class.new(align: "center", char: ".")
+      expect(obj.char).to eq(".")
+    end
+
+    it "does not shadow the separate attribute setter" do
+      obj = collision_class.new
+      obj.char = "."
+      expect(obj.char).to eq(".")
+      expect(obj.align).to be_nil
+    end
+
+    it "preserves enum shorthand methods for non-colliding values" do
+      obj = collision_class.new
+      obj.center = true
+      expect(obj.center?).to be(true)
+      expect(obj.align).to eq("center")
+    end
+
+    it "parses both attributes correctly from XML" do
+      xml = '<test align="center" char="."/>'
+      obj = collision_class.from_xml(xml)
+      expect(obj.align).to eq("center")
+      expect(obj.char).to eq(".")
+    end
+  end
+end

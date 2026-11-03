@@ -1,0 +1,309 @@
+# frozen_string_literal: true
+
+module Lutaml
+  # Autoload top-level modules (outside Model namespace)
+  autoload :KeyValue, "#{__dir__}/key_value/format"
+  autoload :Json, "#{__dir__}/json/format"
+  autoload :Yaml, "#{__dir__}/yaml/format"
+  autoload :Toml, "#{__dir__}/toml/format"
+  autoload :HashFormat, "#{__dir__}/hash_format/format"
+  autoload :Jsonl, "#{__dir__}/jsonl/format"
+  autoload :Yamls, "#{__dir__}/yamls/format"
+  autoload :Xml, "#{__dir__}/xml/format"
+  autoload :JsonLd, "#{__dir__}/jsonld"
+  autoload :YamlLd, "#{__dir__}/yamlld"
+  autoload :Turtle, "#{__dir__}/turtle"
+
+  module Model
+    # Autoloads for lazy loading - set up BEFORE any requires
+    # These must be declared before files that reference these constants
+    autoload :RuntimeCompatibility, "#{__dir__}/model/runtime_compatibility"
+    autoload :UninitializedClass, "#{__dir__}/model/uninitialized_class"
+    autoload :Errors, "#{__dir__}/model/errors"
+    autoload :Services, "#{__dir__}/model/services"
+    autoload :VERSION, "#{__dir__}/model/version"
+    autoload :Type, "#{__dir__}/model/type"
+    autoload :TypeRegistry, "#{__dir__}/model/type_registry"
+    autoload :TypeSubstitution, "#{__dir__}/model/type_substitution"
+    autoload :TypeContext, "#{__dir__}/model/type_context"
+    autoload :TypeResolver, "#{__dir__}/model/type_resolver"
+    autoload :CachedTypeResolver, "#{__dir__}/model/cached_type_resolver"
+    autoload :ContextRegistry, "#{__dir__}/model/context_registry"
+    autoload :ImportRegistry, "#{__dir__}/model/import_registry"
+    autoload :GlobalContext, "#{__dir__}/model/global_context"
+    autoload :AdapterResolver, "#{__dir__}/model/adapter_resolver"
+    autoload :AdapterScope, "#{__dir__}/model/adapter_scope"
+    autoload :Utils, "#{__dir__}/model/utils"
+    autoload :DeepDupable, "#{__dir__}/model/deep_dupable"
+    autoload :Serializable, "#{__dir__}/model/serializable"
+    autoload :Error, "#{__dir__}/model/error"
+    autoload :Constants, "#{__dir__}/model/constants"
+    autoload :Config, "#{__dir__}/model/config"
+    autoload :Configuration, "#{__dir__}/model/configuration"
+    autoload :Instrumentation, "#{__dir__}/model/instrumentation"
+    autoload :GlobalRegister, "#{__dir__}/model/global_register"
+    autoload :Register, "#{__dir__}/model/register"
+    autoload :NamespaceBinding, "#{__dir__}/model/register/namespace_binding"
+    autoload :ModelTreeImporter, "#{__dir__}/model/register/model_tree_importer"
+    autoload :Transformation, "#{__dir__}/model/transformation"
+    autoload :EvolutionSteps, "#{__dir__}/model/evolution_steps"
+    autoload :CompiledRule, "#{__dir__}/model/compiled_rule"
+    autoload :FormatRegistry, "#{__dir__}/model/format_registry"
+    autoload :OneEntryCache, "#{__dir__}/model/one_entry_cache"
+    autoload :FinalizationCache, "#{__dir__}/model/finalization_cache"
+    autoload :Collection, "#{__dir__}/model/collection"
+    autoload :Store, "#{__dir__}/model/store"
+    autoload :Schema, "#{__dir__}/model/schema"
+    autoload :RenderPolicy, "#{__dir__}/model/render_policy"
+    autoload :Liquid, "#{__dir__}/model/liquid"
+    autoload :Liquefiable, "#{__dir__}/model/liquefiable"
+    autoload :Mapping, "#{__dir__}/model/mapping/mapping"
+    autoload :MappingRule, "#{__dir__}/model/mapping/mapping_rule"
+    autoload :Listener, "#{__dir__}/model/mapping/listener"
+    autoload :ModelMapping, "#{__dir__}/model/mapping/model_mapping"
+    autoload :ModelMappingRule, "#{__dir__}/model/mapping/model_mapping_rule"
+    autoload :TransformationBuilder, "#{__dir__}/model/transformation_builder"
+    autoload :TransformationRegistry, "#{__dir__}/model/transformation_registry"
+    autoload :ModelTransformer, "#{__dir__}/model/model_transformer"
+    autoload :MappingHash, "#{__dir__}/model/mapping_hash"
+    autoload :Transform, "#{__dir__}/model/transform"
+    autoload :Serialize, "#{__dir__}/model/serialize"
+    autoload :ComparableNil, "#{__dir__}/model/comparable_nil"
+    autoload :ComparableModel, "#{__dir__}/model/comparable_model"
+    autoload :CollectionHandler, "#{__dir__}/model/collection_handler"
+    autoload :RestrictionValidation, "#{__dir__}/model/restriction_validation"
+    autoload :AttributeValidator, "#{__dir__}/model/attribute_validator"
+    autoload :Attribute, "#{__dir__}/model/attribute"
+    autoload :ValuePolicy, "#{__dir__}/model/value_policy"
+    autoload :JsonAdapter, "#{__dir__}/model/json_adapter"
+    autoload :SchemaLocation, "#{__dir__}/model/schema_location"
+    autoload :Validation, "#{__dir__}/model/validation"
+    autoload :Lml, "#{__dir__}/model/lml"
+    autoload :Choice, "#{__dir__}/model/choice"
+    autoload :Sequence, "#{__dir__}/model/sequence"
+    autoload :Organization, "#{__dir__}/model/organization"
+    autoload :ConsolidationRule, "#{__dir__}/model/consolidation_rule"
+    autoload :ConsolidationMap, "#{__dir__}/model/consolidation_map"
+    autoload :GatherRule, "#{__dir__}/model/consolidation_rule/gather_rule"
+    autoload :DispatchBlock,
+             "#{__dir__}/model/consolidation_rule/dispatch_block"
+    autoload :DispatchBuilder,
+             "#{__dir__}/model/consolidation_rule/dispatch_block"
+    autoload :PatternElementRule,
+             "#{__dir__}/model/consolidation_rule/pattern_element_rule"
+    autoload :PatternContentRule,
+             "#{__dir__}/model/consolidation_rule/pattern_content_rule"
+    autoload :Consolidation, "#{__dir__}/model/consolidation/engine"
+    autoload :ValueTransformer, "#{__dir__}/model/value_transformer"
+    autoload :Registrable, "#{__dir__}/model/registrable"
+
+    # Backward compatibility namespace aliases (simple aliases, no registration logic)
+    autoload :Json, "#{__dir__}/model/json"
+    autoload :Yaml, "#{__dir__}/model/yaml"
+    autoload :Toml, "#{__dir__}/model/toml"
+    autoload :Hash, "#{__dir__}/model/hash"
+    autoload :Jsonl, "#{__dir__}/model/jsonl"
+    autoload :Yamls, "#{__dir__}/model/yamls"
+
+    # Services classes (defined in services/ but under Lutaml::Model namespace)
+    autoload :Logger, "#{__dir__}/model/services/logger"
+    autoload :RuleValueExtractor,
+             "#{__dir__}/model/services/rule_value_extractor"
+    autoload :Transformer, "#{__dir__}/model/services/transformer"
+    autoload :ImportTransformer, "#{__dir__}/model/services/transformer"
+    autoload :ExportTransformer, "#{__dir__}/model/services/transformer"
+    autoload :Validator, "#{__dir__}/model/services/validator"
+
+    # Error classes (defined in error/ but under Lutaml::Model namespace)
+    autoload :InvalidFormatError, "#{__dir__}/model/error/invalid_format_error"
+    autoload :InvalidValueError, "#{__dir__}/model/error/invalid_value_error"
+    autoload :InvalidAttributeTypeError,
+             "#{__dir__}/model/error/invalid_attribute_type_error"
+    autoload :LiquidNotEnabledError,
+             "#{__dir__}/model/error/liquid_not_enabled_error"
+    autoload :LiquidClassNotFoundError,
+             "#{__dir__}/model/error/liquid_class_not_found_error"
+    autoload :LiquidDropAlreadyRegisteredError,
+             "#{__dir__}/model/error/liquid_drop_already_registered_error"
+    autoload :NoAttributesDefinedLiquidError,
+             "#{__dir__}/model/error/no_attributes_defined_liquid_error"
+    autoload :IncorrectMappingArgumentsError,
+             "#{__dir__}/model/error/incorrect_mapping_argument_error"
+    autoload :PatternNotMatchedError,
+             "#{__dir__}/model/error/pattern_not_matched_error"
+    autoload :UnknownAdapterTypeError,
+             "#{__dir__}/model/error/unknown_adapter_type_error"
+    autoload :FormatAdapterNotSpecifiedError,
+             "#{__dir__}/model/error/format_adapter_not_specified_error"
+    autoload :CollectionCountOutOfRangeError,
+             "#{__dir__}/model/error/collection_count_out_of_range_error"
+    autoload :ElementCountOutOfRangeError,
+             "#{__dir__}/model/error/element_count_out_of_range_error"
+    autoload :ValidationError, "#{__dir__}/model/error/validation_error"
+    autoload :UnknownDiscriminatorError,
+             "#{__dir__}/model/error/unknown_discriminator_error"
+    autoload :TypeNotEnabledError,
+             "#{__dir__}/model/error/type_not_enabled_error"
+    autoload :TypeError, "#{__dir__}/model/error/type_error"
+    autoload :UnknownTypeError, "#{__dir__}/model/error/unknown_type_error"
+    autoload :RequiredAttributeMissingError,
+             "#{__dir__}/model/error/required_attribute_missing_error"
+    autoload :UnionSchemaUnsupportedError,
+             "#{__dir__}/model/error/union_schema_unsupported_error"
+    autoload :MultipleMappingsError,
+             "#{__dir__}/model/error/multiple_mappings_error"
+    autoload :CollectionTrueMissingError,
+             "#{__dir__}/model/error/collection_true_missing_error"
+    autoload :IncorrectSequenceError,
+             "#{__dir__}/model/error/incorrect_sequence_error"
+    autoload :ChoiceUpperBoundError,
+             "#{__dir__}/model/error/choice_upper_bound_error"
+    autoload :TypeOnlyMappingError,
+             "#{__dir__}/model/error/type_only_mapping_error"
+    autoload :NoRootMappingError, "#{__dir__}/model/error/no_root_mapping_error"
+    autoload :ImportModelWithRootError,
+             "#{__dir__}/model/error/import_model_with_root_error"
+    autoload :UnsupportedVersionError,
+             "#{__dir__}/model/error/unsupported_version_error"
+    autoload :UnknownMappingError,
+             "#{__dir__}/model/error/unknown_mapping_error"
+    autoload :InvalidChoiceRangeError,
+             "#{__dir__}/model/error/invalid_choice_range_error"
+    autoload :UnknownSequenceMappingError,
+             "#{__dir__}/model/error/unknown_sequence_mapping_error"
+    autoload :ChoiceLowerBoundError,
+             "#{__dir__}/model/error/choice_lower_bound_error"
+    autoload :NoMappingFoundError,
+             "#{__dir__}/model/error/no_mapping_found_error"
+    autoload :TypeOnlyNamespaceError,
+             "#{__dir__}/model/error/type_only_namespace_error"
+    autoload :NoRootNamespaceError,
+             "#{__dir__}/model/error/no_root_namespace_error"
+    autoload :PolymorphicError, "#{__dir__}/model/error/polymorphic_error"
+    autoload :ValidationFailedError,
+             "#{__dir__}/model/error/validation_failed_error"
+    autoload :InvalidAttributeNameError,
+             "#{__dir__}/model/error/invalid_attribute_name_error"
+    autoload :InvalidAttributeOptionsError,
+             "#{__dir__}/model/error/invalid_attribute_options_error"
+    autoload :UndefinedAttributeError,
+             "#{__dir__}/model/error/undefined_attribute_error"
+    autoload :SortingConfigurationConflictError,
+             "#{__dir__}/model/error/sorting_configuration_conflict_error"
+    autoload :TransformBlockNotDefinedError,
+             "#{__dir__}/model/error/transform_block_not_defined_error"
+    autoload :ReverseTransformBlockNotDefinedError,
+             "#{__dir__}/model/error/reverse_transform_block_not_defined_error"
+    autoload :MappingAttributeMissingError,
+             "#{__dir__}/model/error/mapping_attribute_missing_error"
+    autoload :MappingAttributeTypeError,
+             "#{__dir__}/model/error/mapping_attribute_type_error"
+    autoload :MappingAlreadyExistsError,
+             "#{__dir__}/model/error/mapping_already_exists_error"
+    autoload :ReverseTransformationDeclarationError,
+             "#{__dir__}/model/error/reverse_transformation_declaration_error"
+    autoload :UnresolvableTypeError,
+             "#{__dir__}/model/error/unresolvable_type_error"
+    autoload :MixedContentCollectionError,
+             "#{__dir__}/model/error/mixed_content_collection_error"
+    autoload :OrderedContentMappingError,
+             "#{__dir__}/model/error/ordered_content_mapping_error"
+    autoload :RestrictionError, "#{__dir__}/model/error/restriction_error"
+    autoload :MinInclusiveError,
+             "#{__dir__}/model/error/min_inclusive_error"
+    autoload :MaxInclusiveError,
+             "#{__dir__}/model/error/max_inclusive_error"
+    autoload :MinExclusiveError,
+             "#{__dir__}/model/error/min_exclusive_error"
+    autoload :MaxExclusiveError,
+             "#{__dir__}/model/error/max_exclusive_error"
+    autoload :MinLengthError, "#{__dir__}/model/error/min_length_error"
+    autoload :MaxLengthError, "#{__dir__}/model/error/max_length_error"
+    autoload :LengthError, "#{__dir__}/model/error/length_error"
+    autoload :TotalDigitsError, "#{__dir__}/model/error/total_digits_error"
+    autoload :FractionDigitsError,
+             "#{__dir__}/model/error/fraction_digits_error"
+
+    # Error for passing incorrect model type
+    #
+    # @api private
+    class IncorrectModelError < StandardError
+    end
+
+    class BaseModel < Serializable
+    end
+
+    # Module-level configuration
+    #
+    # @example
+    #   Lutaml::Model.configure do |config|
+    #     config.xml_adapter = :nokogiri
+    #     config.json_adapter = :oj
+    #   end
+    #
+    # @yield [Configuration] the configuration object
+    # @return [Configuration] the configuration object
+    def self.configure
+      @configuration ||= Configuration.new
+      yield @configuration if block_given?
+      @configuration
+    end
+
+    # Get the current configuration
+    #
+    # @return [Configuration] the current configuration
+    def self.configuration
+      @configuration ||= Configuration.new
+    end
+
+    # Reset configuration to defaults
+    #
+    # @return [void]
+    def self.reset_configuration!
+      @configuration = nil
+    end
+
+    # Convenience accessors for runtime/platform detection.
+    # Delegates to RuntimeCompatibility so call sites can write
+    # `Lutaml::Model.opal?` (or `Model.opal?` inside the namespace)
+    # instead of the long `Lutaml::Model::RuntimeCompatibility.opal?`.
+    def self.opal?
+      RuntimeCompatibility.opal?
+    end
+
+    def self.native?
+      RuntimeCompatibility.native?
+    end
+
+    def self.windows?
+      RuntimeCompatibility.windows?
+    end
+  end
+end
+
+# Format files register DSL methods - use require to ensure proper loading order
+# These files set up FormatRegistry and detect/configure adapters
+require "#{__dir__}/key_value/format"
+require "#{__dir__}/json/format"
+require "#{__dir__}/yaml/format"
+require "#{__dir__}/toml/format"
+require "#{__dir__}/hash_format/format"
+require "#{__dir__}/jsonl/format"
+require "#{__dir__}/yamls/format"
+require "#{__dir__}/xml/format"
+
+# Optional formats: require "lutaml/jsonld" or "lutaml/turtle" to enable.
+# These are not eagerly loaded because they depend on optional gems
+# (e.g., rdf-turtle) that most users don't need.
+
+# Prepend builder interface into Serialize
+# Builder must be prepended AFTER XML so its initialize runs first
+# (Builder -> XML InstanceMethods -> Serialize)
+Lutaml::Model::Serialize.prepend(Lutaml::Model::Serialize::Builder)
+
+# Opal does not propagate a module prepended into an already-included
+# module to classes that included it earlier (see lib/lutaml/xml/format.rb).
+# Serializable included Serialize at boot, so Builder goes onto it directly.
+if Lutaml::Model.opal?
+  Lutaml::Model::Serializable.prepend(Lutaml::Model::Serialize::Builder)
+end

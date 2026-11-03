@@ -1,0 +1,204 @@
+# frozen_string_literal: true
+
+require "spec_helper"
+
+# Adapter-agnostic XML round-trip scenarios, shared between Oga and
+# REXML smoke runs. Both adapters are pure Ruby and work under Opal;
+# this shared example is the contract that any future Opal-capable
+# adapter would also need to satisfy.
+# moxml 0.6's packaged REXML adapter references CustomizedRexml
+# (Formatter/EntityReference) but no longer ships the module, and the
+# vendored 0.5 formatter writes empty output against it under Opal
+# (tracked in lutaml/moxml). REXML stays parse-only under Opal until
+# that ships; Oga carries the serialize contract.
+REXML_SERIALIZE_SKIP = "moxml 0.6 REXML adapter lacks CustomizedRexml " \
+                       "under Opal (lutaml/moxml tracking)"
+
+RSpec.shared_examples "opal XML adapter round-trip" do |adapter_name|
+  before do
+    Lutaml::Model::Config.xml_adapter_type = adapter_name
+  end
+
+  it "round-trips XML through parse and serialize" do
+    skip(REXML_SERIALIZE_SKIP) if adapter_name == :rexml
+    klass = Class.new do
+      include Lutaml::Model::Serialize
+
+      attribute :name, :string
+      xml do
+        element "person"
+        map_element "name", to: :name
+      end
+    end
+
+    instance = klass.from_xml("<person><name>Alice</name></person>")
+    expect(instance.name).to eq("Alice")
+    expect(instance.to_xml).to include("<name>Alice</name>")
+  end
+
+  it "handles XML attributes" do
+    klass = Class.new do
+      include Lutaml::Model::Serialize
+
+      attribute :id, :string
+      attribute :value, :string
+      xml do
+        element "item"
+        map_attribute "id", to: :id
+        map_element "value", to: :value
+      end
+    end
+
+    instance = klass.from_xml('<item id="42"><value>test</value></item>')
+    expect(instance.id).to eq("42")
+    expect(instance.value).to eq("test")
+  end
+
+  it "handles nested elements" do
+    address = Class.new do
+      include Lutaml::Model::Serialize
+
+      attribute :city, :string
+      xml do
+        element "address"
+        map_element "city", to: :city
+      end
+    end
+
+    person = Class.new do
+      include Lutaml::Model::Serialize
+
+      attribute :name, :string
+      attribute :address, address
+      xml do
+        element "person"
+        map_element "name", to: :name
+        map_element "address", to: :address
+      end
+    end
+
+    instance = person.from_xml("<person><name>Alice</name><address><city>NYC</city></address></person>")
+    expect(instance.name).to eq("Alice")
+    expect(instance.address.city).to eq("NYC")
+  end
+
+  it "handles element collections" do
+    list = Class.new do
+      include Lutaml::Model::Serialize
+
+      attribute :items, :string, collection: true
+      xml do
+        element "list"
+        map_element "item", to: :items
+      end
+    end
+
+    instance = list.from_xml("<list><item>a</item><item>b</item><item>c</item></list>")
+    expect(instance.items).to eq(%w[a b c])
+  end
+
+  it "handles mixed content" do
+    paragraph = Class.new do
+      include Lutaml::Model::Serialize
+
+      attribute :content, :string, collection: true
+      xml do
+        element "p"
+        mixed_content
+        map_content to: :content
+      end
+    end
+
+    instance = paragraph.from_xml("<p>Hello <b>world</b> end</p>")
+    expect(instance.content.join).to include("Hello")
+  end
+
+  it "serializes to XML with correct structure" do
+    skip(REXML_SERIALIZE_SKIP) if adapter_name == :rexml
+    item = Class.new do
+      include Lutaml::Model::Serialize
+
+      attribute :title, :string
+      attribute :count, :integer
+      xml do
+        element "item"
+        map_element "title", to: :title
+        map_element "count", to: :count
+      end
+    end
+
+    instance = item.new(title: "Widget", count: 5)
+    xml = instance.to_xml
+    expect(xml).to include("<title>Widget</title>")
+    expect(xml).to include("<count>5</count>")
+  end
+end
+
+# Pure-Ruby XML adapters that ship in the Opal bundle. Each nested
+# group runs the shared contract for its adapter; the top-level guard
+# gates the whole file under Opal.
+RSpec.describe "XML adapters under Opal", if: RUBY_ENGINE == "opal" do
+  describe "with Oga (default)" do
+    it_behaves_like "opal XML adapter round-trip", :oga
+
+    it "uses Oga adapter by default under Opal" do
+      expect(Lutaml::Model::Config.xml_adapter_type).to eq(:oga)
+    end
+  end
+
+  describe "with REXML" do
+    it_behaves_like "opal XML adapter round-trip", :rexml
+
+    it "selects REXML when explicitly configured" do
+      Lutaml::Model::Config.xml_adapter_type = :rexml
+      expect(Lutaml::Model::Config.xml_adapter_type).to eq(:rexml)
+    end
+  end
+
+  # Opal does not carry modules prepended into Serialize over to
+  # Serializable, which included it at boot; lib/lutaml/model.rb and
+  # lib/lutaml/xml/format.rb prepend onto Serializable directly.
+  describe "Serializable subclasses" do
+    before { Lutaml::Model::Config.xml_adapter_type = :oga }
+
+    it "builds an ordered model from a builder block" do
+      klass = Class.new(Lutaml::Model::Serializable) do
+        attribute :first, :string
+        attribute :second, :string
+        xml do
+          element "pair"
+          ordered
+          map_element "first", to: :first
+          map_element "second", to: :second
+        end
+      end
+
+      instance = klass.new do
+        second "b"
+        first "a"
+      end
+
+      expect([instance.first, instance.second]).to eq(%w[a b])
+      expect(instance.element_order.map(&:name)).to eq(%w[second first])
+      expect(instance.to_xml)
+        .to include("<pair><second>b</second><first>a</first></pair>")
+    end
+
+    it "installs the XML accessors on a plain model class" do
+      plain = Class.new { attr_accessor :name }
+      mapper = Class.new(Lutaml::Model::Serializable) do
+        model plain
+        attribute :name, :string
+        xml do
+          element "person"
+          map_element "name", to: :name
+        end
+      end
+
+      expect(plain.method_defined?(:encoding=)).to be true
+      parsed = mapper.from_xml("<person><name>Alice</name></person>")
+      expect(parsed).to be_a(plain)
+      expect(parsed.name).to eq("Alice")
+    end
+  end
+end

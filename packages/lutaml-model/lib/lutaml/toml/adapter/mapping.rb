@@ -1,0 +1,26 @@
+# frozen_string_literal: true
+
+module Lutaml
+  module Toml
+    module Adapter
+      class Mapping < Lutaml::KeyValue::Mapping
+        def initialize
+          super(:toml)
+        end
+
+        def dup_instance
+          self.class.new
+        end
+
+        def validate!(key, to, with, render_nil, render_empty)
+          super
+
+          if [true, :as_nil].include?(render_nil) || render_empty == :as_nil
+            raise Lutaml::Model::IncorrectMappingArgumentsError,
+                  "nil values are not supported in toml format"
+          end
+        end
+      end
+    end
+  end
+end

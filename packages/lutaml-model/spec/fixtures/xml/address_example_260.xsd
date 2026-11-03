@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <!-- Complex type for Address with mixed content -->
+  <xs:complexType name="Address" mixed="true">
+    <xs:sequence>
+      <xs:element name="City" type="xs:string" minOccurs="1" maxOccurs="1"/>
+      <xs:element name="ZIP" type="xs:string" minOccurs="1" maxOccurs="1"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- Root element -->
+  <xs:element name="Address" type="Address"/>
+</xs:schema>

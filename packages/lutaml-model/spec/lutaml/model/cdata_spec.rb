@@ -1,0 +1,597 @@
+require "spec_helper"
+require_relative "../../../lib/lutaml/model"
+require "lutaml/xml/adapter/nokogiri_adapter"
+require "lutaml/xml/adapter/ox_adapter"
+require "lutaml/xml/adapter/oga_adapter"
+require "lutaml/xml/adapter/rexml_adapter"
+
+module CdataSpec
+  class Beta < Lutaml::Model::Serializable
+    attribute :element1, :string
+
+    xml do
+      element "beta"
+      map_content to: :element1, cdata: true
+    end
+  end
+
+  class Alpha < Lutaml::Model::Serializable
+    attribute :element1, :string
+    attribute :element2, :string, collection: true
+    attribute :element3, :string
+    attribute :beta, Beta
+
+    xml do
+      element "alpha"
+
+      map_element "element1", to: :element1, cdata: false
+      map_element "element2", to: :element2, cdata: true
+      map_element "element3", to: :element3, cdata: false
+      map_element "beta", to: :beta
+    end
+  end
+
+  class Address < Lutaml::Model::Serializable
+    attribute :street, :string
+    attribute :city, :string
+    attribute :house, :string
+    attribute :address, Address
+
+    xml do
+      element "address"
+      map_element "street", to: :street
+      map_element "city", with: { from: :city_from_xml, to: :city_to_xml },
+                          cdata: true
+      map_element "house", with: { from: :house_from_xml, to: :house_to_xml },
+                           cdata: false
+      map_element "address", to: :address
+    end
+
+    def house_from_xml(model, nodes)
+      model.house = nodes.first.children.first.text
+    end
+
+    def house_to_xml(model, _parent, doc)
+      doc.create_and_add_element("house") do |element|
+        element.add_text(element, model.house, cdata: false)
+      end
+    end
+
+    def city_from_xml(model, nodes)
+      model.city = nodes.first.children.first.text
+    end
+
+    def city_to_xml(model, _parent, doc)
+      doc.create_and_add_element("city") do |element|
+        element.add_text(element, model.city, cdata: true)
+      end
+    end
+  end
+
+  class CustomModelChild
+    attr_accessor :street, :city
+  end
+
+  class CustomModelParent
+    attr_accessor :first_name, :middle_name, :last_name, :child_mapper
+
+    def name
+      "#{first_name} #{last_name}"
+    end
+  end
+
+  class CustomModelChildMapper < Lutaml::Model::Serializable
+    model CustomModelChild
+
+    attribute :street, Lutaml::Model::Type::String
+    attribute :city, Lutaml::Model::Type::String
+
+    xml do
+      map_element :street, to: :street, cdata: true
+      map_element :city, to: :city, cdata: true
+    end
+  end
+
+  class CustomModelParentMapper < Lutaml::Model::Serializable
+    model CustomModelParent
+
+    attribute :first_name, Lutaml::Model::Type::String
+    attribute :middle_name, Lutaml::Model::Type::String
+    attribute :last_name, Lutaml::Model::Type::String
+    attribute :child_mapper, CustomModelChildMapper
+
+    xml do
+      element "CustomModelParent"
+      map_element :first_name, to: :first_name, cdata: true
+      map_element :middle_name, to: :middle_name, cdata: true
+      map_element :last_name, to: :last_name, cdata: false
+      map_element :CustomModelChild,
+                  with: { to: :child_to_xml, from: :child_from_xml }, cdata: true
+    end
+
+    def child_to_xml(model, _parent, doc)
+      doc.create_and_add_element("CustomModelChild") do |child_el|
+        child_el.create_and_add_element("street") do |street_el|
+          street_el.add_text(street_el, model.child_mapper.street, cdata: true)
+        end
+        child_el.create_and_add_element("city") do |city_el|
+          city_el.add_text(city_el, model.child_mapper.city, cdata: true)
+        end
+      end
+    end
+
+    def child_from_xml(model, value)
+      model.child_mapper ||= CustomModelChild.new
+      model.child_mapper.street = value.first.find_child_by_name("street").cdata
+      model.child_mapper.city = value.first.find_child_by_name("city").cdata
+    end
+  end
+
+  class RootMixedContent < Lutaml::Model::Serializable
+    attribute :id, :string
+    attribute :bold, :string, collection: true
+    attribute :italic, :string, collection: true
+    attribute :underline, :string
+    attribute :content, :string, collection: true
+
+    xml do
+      element "RootMixedContent"
+      mixed_content
+      map_attribute :id, to: :id
+      map_element :bold, to: :bold, cdata: true
+      map_element :italic, to: :italic, cdata: true
+      map_element :underline, to: :underline, cdata: true
+      map_content to: :content, cdata: true
+    end
+  end
+
+  class RootMixedContentNested < Lutaml::Model::Serializable
+    attribute :id, :string
+    attribute :data, :string, collection: true
+    attribute :content, RootMixedContent
+    attribute :sup, :string, collection: true
+    attribute :sub, :string, collection: true
+
+    xml do
+      element "RootMixedContentNested"
+      mixed_content
+      map_content to: :data, cdata: true
+      map_attribute :id, to: :id
+      map_element :sup, to: :sup, cdata: true
+      map_element :sub, to: :sub, cdata: false
+      map_element "MixedContent", to: :content
+    end
+  end
+
+  class DefaultValue < Lutaml::Model::Serializable
+    attribute :name, :string, default: -> { "Default Value" }
+    attribute :temperature, :integer, default: -> { 1050 }
+    attribute :opacity, :string, default: -> { "Opaque" }
+    attribute :content, :string, default: -> { " " }
+
+    xml do
+      element "DefaultValue"
+      map_element "name", to: :name, render_default: true, cdata: true
+      map_element "temperature", to: :temperature, render_default: true,
+                                 cdata: true
+      map_element "opacity", to: :opacity, cdata: false, render_default: true
+      map_content to: :content, cdata: true, render_default: true
+    end
+  end
+end
+
+RSpec.describe CdataSpec do
+  let(:parent_mapper) { CdataSpec::CustomModelParentMapper }
+  let(:child_mapper) { CdataSpec::CustomModelChildMapper }
+  let(:parent_model) { CdataSpec::CustomModelParent }
+  let(:child_model) { CdataSpec::CustomModelChild }
+
+  shared_examples "cdata behavior" do |adapter_class|
+    around do |example|
+      old_adapter = Lutaml::Model::Config.xml_adapter
+      Lutaml::Model::Config.xml_adapter = adapter_class
+      example.run
+    ensure
+      Lutaml::Model::Config.xml_adapter = old_adapter
+    end
+
+    context "with CDATA option" do
+      let(:xml) do
+        <<~XML.strip
+          <alpha>
+            <element1><![CDATA[foo]]></element1>
+            <element2><![CDATA[one]]></element2>
+            <element2><![CDATA[two]]></element2>
+            <element2><![CDATA[three]]></element2>
+            <element3>bar</element3>
+            <beta><![CDATA[child]]></beta>
+          </alpha>
+        XML
+      end
+
+      let(:expected_xml) do
+        <<~XML.strip
+          <alpha>
+            <element1>foo</element1>
+            <element2>
+              <![CDATA[one]]>
+            </element2>
+            <element2>
+              <![CDATA[two]]>
+            </element2>
+            <element2>
+              <![CDATA[three]]>
+            </element2>
+            <element3>bar</element3>
+            <beta>
+              <![CDATA[child]]>
+            </beta>
+          </alpha>
+        XML
+      end
+
+      it "maps xml to object" do
+        instance = CdataSpec::Alpha.from_xml(xml)
+
+        expect(instance.element1).to eq("foo")
+        expect(instance.element2).to eq(%w[one two three])
+        expect(instance.element3).to eq("bar")
+        expect(instance.beta.element1).to eq("child")
+      end
+
+      it "converts objects to xml" do
+        instance = CdataSpec::Alpha.new(
+          element1: "foo",
+          element2: %w[one two three],
+          element3: "bar",
+          beta: CdataSpec::Beta.new(element1: "child"),
+        )
+
+        expect(instance.to_xml).to be_xml_equivalent_to(expected_xml)
+      end
+    end
+
+    context "with custom methods" do
+      let(:xml) do
+        <<~XML
+          <address>
+            <street>A</street>
+            <city><![CDATA[B]]></city>
+            <house><![CDATA[H]]></house>
+            <address>
+              <street>C</street>
+              <city><![CDATA[D]]></city>
+              <house><![CDATA[G]]></house>
+            </address>
+          </address>
+        XML
+      end
+
+      let(:expected_xml) do
+        <<~XML
+          <address>
+            <street>A</street>
+            <city>
+              <![CDATA[B]]>
+            </city>
+            <house>H</house>
+            <address>
+              <street>C</street>
+              <city>
+                <![CDATA[D]]>
+              </city>
+              <house>G</house>
+            </address>
+          </address>
+        XML
+      end
+
+      it "round-trips XML" do
+        model = CdataSpec::Address.from_xml(xml)
+        expect(model.to_xml).to be_xml_equivalent_to(expected_xml)
+      end
+    end
+
+    context "with custom models" do
+      let(:input_xml) do
+        <<~XML
+          <CustomModelParent>
+            <first_name><![CDATA[John]]></first_name>
+            <last_name><![CDATA[Doe]]></last_name>
+            <CustomModelChild>
+              <street><![CDATA[Oxford Street]]></street>
+              <city><![CDATA[London]]></city>
+            </CustomModelChild>
+          </CustomModelParent>
+        XML
+      end
+
+      let(:expected_nokogiri_xml) do
+        <<~XML
+          <CustomModelParent>
+            <first_name><![CDATA[John]]></first_name>
+            <last_name>Doe</last_name>
+            <CustomModelChild>
+              <street><![CDATA[Oxford Street]]></street>
+              <city><![CDATA[London]]></city>
+            </CustomModelChild>
+          </CustomModelParent>
+        XML
+      end
+
+      let(:expected_ox_xml) do
+        <<~XML
+          <CustomModelParent>
+            <first_name>
+              <![CDATA[John]]>
+            </first_name>
+            <last_name>Doe</last_name>
+            <CustomModelChild>
+              <street>
+                <![CDATA[Oxford Street]]>
+              </street>
+              <city>
+                <![CDATA[London]]>
+              </city>
+            </CustomModelChild>
+          </CustomModelParent>
+        XML
+      end
+
+      let(:expected_oga_xml) do
+        "<CustomModelParent>" \
+          "<first_name><![CDATA[John]]></first_name>" \
+          "<last_name>Doe</last_name>" \
+          "<CustomModelChild>" \
+          "<street><![CDATA[Oxford Street]]></street>" \
+          "<city><![CDATA[London]]></city>" \
+          "</CustomModelChild>" \
+          "</CustomModelParent>"
+      end
+
+      describe ".from_xml" do
+        it "maps XML content to custom model using custom methods" do
+          instance = parent_mapper.from_xml(input_xml)
+
+          expect(instance.class).to eq(parent_model)
+          expect(instance.first_name).to eq("John")
+          expect(instance.last_name).to eq("Doe")
+          expect(instance.name).to eq("John Doe")
+
+          expect(instance.child_mapper.class).to eq(child_model)
+          expect(instance.child_mapper.street).to eq("Oxford Street")
+          expect(instance.child_mapper.city).to eq("London")
+        end
+      end
+
+      describe ".to_xml" do
+        it "with correct model converts objects to xml using custom methods" do
+          instance = parent_mapper.from_xml(input_xml)
+          result_xml = parent_mapper.to_xml(instance)
+
+          expected_output = if adapter_class == Lutaml::Xml::Adapter::OgaAdapter
+                              expected_oga_xml
+                            elsif adapter_class == Lutaml::Xml::Adapter::OxAdapter
+                              expected_ox_xml
+                            else
+                              expected_nokogiri_xml
+                            end
+
+          # Use semantic comparison since custom methods may produce different formatting
+          expect(result_xml).to be_xml_equivalent_to(expected_output)
+        end
+      end
+    end
+
+    context "when mixed_content is set for nested content" do
+      let(:xml) do
+        <<~XML
+          <RootMixedContentNested id="outer123">
+            <![CDATA[The following text is about the Moon.]]>
+              <MixedContent id="inner456">
+                <![CDATA[The Earth's Moon rings like a ]]>
+                <bold><![CDATA[bell]]></bold>
+                <![CDATA[ when struck by meteroids. Distanced from the Earth by ]]>
+                <italic><![CDATA[384,400 km]]></italic>,
+                <![CDATA[ ,its surface is covered in ]]>
+                <underline><![CDATA[craters]]></underline>.
+                <![CDATA[ .Ain't that ]]>
+                <bold><![CDATA[cool]]></bold>
+                <![CDATA[ ? ]]>
+              </MixedContent>
+            <sup><![CDATA[1]]></sup>: <![CDATA[The Moon is not a planet.]]>
+            <sup><![CDATA[2]]></sup>: <![CDATA[The Moon's atmosphere is mainly composed of helium in the form of He]]><sub><![CDATA[2]]></sub>.
+          </RootMixedContentNested>
+        XML
+      end
+
+      let(:expected_xml) do
+        # Note: Whitespace from input XML (comma, newline, indentation) is preserved
+        # as separate CDATA sections in the output
+        "<RootMixedContentNested id=\"outer123\"><![CDATA[The following text is about the Moon.]]><MixedContent id=\"inner456\"><![CDATA[The Earth's Moon rings like a ]]><bold><![CDATA[bell]]></bold><![CDATA[ when struck by meteroids. Distanced from the Earth by ]]><italic><![CDATA[384,400 km]]></italic><![CDATA[,\n      ]]><![CDATA[ ,its surface is covered in ]]><underline><![CDATA[craters]]></underline><![CDATA[.\n      ]]><![CDATA[ .Ain't that ]]><bold><![CDATA[cool]]></bold><![CDATA[ ? ]]></MixedContent><sup><![CDATA[1]]></sup><![CDATA[: ]]><![CDATA[The Moon is not a planet.]]><sup><![CDATA[2]]></sup><![CDATA[: ]]><![CDATA[The Moon's atmosphere is mainly composed of helium in the form of He]]><sub>2</sub><![CDATA[.\n      ]]></RootMixedContentNested>"
+      end
+
+      let(:expected_ox_xml) do
+        <<~XML
+          <RootMixedContentNested id="outer123">
+            <![CDATA[The following text is about the Moon.]]>
+            <MixedContent id="inner456">
+              <![CDATA[The Earth's Moon rings like a ]]>
+              <bold>
+                <![CDATA[bell]]>
+              </bold>
+              <![CDATA[ when struck by meteroids. Distanced from the Earth by ]]>
+              <italic>
+                <![CDATA[384,400 km]]>
+              </italic>
+              <![CDATA[ ,its surface is covered in ]]>
+              <underline>
+                <![CDATA[craters]]>
+              </underline>
+              <![CDATA[ .Ain't that ]]>
+              <bold>
+                <![CDATA[cool]]>
+              </bold>
+              <![CDATA[ ? ]]>
+            </MixedContent>
+            <sup>
+              <![CDATA[1]]>
+            </sup>
+            <![CDATA[: ]]>
+            <![CDATA[The Moon is not a planet.]]>
+            <sup>
+              <![CDATA[2]]>
+            </sup>
+            <![CDATA[: ]]>
+            <![CDATA[The Moon's atmosphere is mainly composed of helium in the form of He]]>
+            <sub>2</sub>
+            <![CDATA[.]]>
+          </RootMixedContentNested>
+        XML
+      end
+
+      let(:expected_nokogiri_xml) do
+        "<RootMixedContentNested id=\"outer123\"><![CDATA[The following text is about the Moon.]]><MixedContent id=\"inner456\"><![CDATA[The Earth's Moon rings like a ]]><bold><![CDATA[bell]]></bold><![CDATA[ when struck by meteroids. Distanced from the Earth by ]]><italic><![CDATA[384,400 km]]></italic><![CDATA[,\n      ]]><![CDATA[ ,its surface is covered in ]]><underline><![CDATA[craters]]></underline><![CDATA[.\n      ]]><![CDATA[ .Ain't that ]]><bold><![CDATA[cool]]></bold><![CDATA[ ? ]]></MixedContent><sup><![CDATA[1]]></sup><![CDATA[: ]]><![CDATA[The Moon is not a planet.]]><sup><![CDATA[2]]></sup><![CDATA[: ]]><![CDATA[The Moon's atmosphere is mainly composed of helium in the form of He]]><sub>2</sub><![CDATA[.\n      ]]></RootMixedContentNested>"
+      end
+
+      it "deserializes and serializes mixed content correctly" do
+        parsed = CdataSpec::RootMixedContentNested.from_xml(xml)
+
+        expected_content = [
+          "The Earth's Moon rings like a ",
+          " when struck by meteroids. Distanced from the Earth by ",
+          " ,its surface is covered in ",
+          " .Ain't that ",
+          " ? ",
+        ]
+
+        # due to the difference in capturing
+        # newlines in ox and nokogiri adapters
+        expected_result = if adapter_class == Lutaml::Xml::Adapter::NokogiriAdapter
+                            expected_nokogiri_xml
+                          elsif adapter_class == Lutaml::Xml::Adapter::OxAdapter
+                            expected_ox_xml
+                          else
+                            expected_xml
+                          end
+
+        expect(parsed.id).to eq("outer123")
+        expect(parsed.sup).to eq(["1", "2"])
+        expect(parsed.sub).to eq(["2"])
+        expect(parsed.content.id).to eq("inner456")
+        expect(parsed.content.bold).to eq(["bell", "cool"])
+        expect(parsed.content.italic).to eq(["384,400 km"])
+        expect(parsed.content.underline).to eq("craters")
+
+        if parsed.content.content.is_a?(Array)
+          parsed.content.content.each_with_index do |content, index|
+            expected_output = expected_content[index]
+
+            expect(content).to eq(expected_output)
+          end
+        else
+          expect(parsed.content.content).to eq(expected_content.join)
+        end
+
+        serialized = parsed.to_xml
+        # Use semantic comparison since CDATA handling and formatting may differ
+        # but XML is semantically equivalent
+        expect(serialized).to be_xml_equivalent_to(expected_result)
+      end
+    end
+
+    context "when defualt: true is set for attributes default values" do
+      let(:xml) do
+        <<~XML
+          <DefaultValue>
+            <![CDATA[The following text is about the Moon]]>
+            <temperature>
+              <![CDATA[500]]>
+            </temperature>
+            <![CDATA[The Moon's atmosphere is mainly composed of helium in the form]]>
+          </DefaultValue>
+        XML
+      end
+
+      let(:expected_xml) do
+        # Note: The actual output order differs from the expected - defaults are
+        # inserted at their mapping position while preserving parsed content order
+        "<DefaultValue><![CDATA[The following text is about the Moon]]><name><![CDATA[Default Value]]></name><![CDATA[The Moon's atmosphere is mainly composed of helium in the form]]><temperature><![CDATA[500]]></temperature><opacity>Opaque</opacity></DefaultValue>"
+      end
+
+      let(:expected_ox_xml) do
+        <<~XML
+          <DefaultValue>
+            <name>
+              <![CDATA[Default Value]]>
+            </name>
+            <temperature>
+              <![CDATA[500]]>
+            </temperature>
+            <opacity>Opaque</opacity>
+            <![CDATA[The following text is about the MoonThe Moon's atmosphere is mainly composed of helium in the form]]>
+          </DefaultValue>
+        XML
+      end
+
+      it "deserializes and serializes mixed content correctly" do
+        parsed = CdataSpec::DefaultValue.from_xml(xml)
+
+        # due to the difference in capturing
+        # newlines in ox and nokogiri adapters
+        expected_result = if adapter_class == Lutaml::Xml::Adapter::NokogiriAdapter
+                            expected_xml
+                          elsif adapter_class == Lutaml::Xml::Adapter::OxAdapter
+                            expected_ox_xml
+                          else
+                            expected_xml
+                          end
+
+        expected_content = [
+          "The following text is about the Moon",
+          "The Moon's atmosphere is mainly composed of helium in the form",
+        ]
+
+        expect(parsed.name).to eq("Default Value")
+        expect(parsed.opacity).to eq("Opaque")
+        expect(parsed.temperature).to eq(500)
+
+        if parsed.content.is_a?(Array)
+          parsed.content.each_with_index do |content, index|
+            expected_output = expected_content[index]
+
+            expect(content).to eq(expected_output)
+          end
+        else
+          expect(parsed.content).to eq(expected_content.join)
+        end
+
+        serialized = parsed.to_xml
+        # Use semantic comparison since CDATA handling and formatting may differ
+        expect(serialized).to be_xml_equivalent_to(expected_result)
+      end
+    end
+  end
+
+  describe Lutaml::Xml::Adapter::NokogiriAdapter do
+    it_behaves_like "cdata behavior", described_class
+  end
+
+  describe Lutaml::Xml::Adapter::OxAdapter do
+    if TestAdapterConfig.adapter_enabled?(:ox)
+      it_behaves_like "cdata behavior",
+                      described_class
+    end
+  end
+
+  describe Lutaml::Xml::Adapter::OgaAdapter do
+    it_behaves_like "cdata behavior", described_class
+  end
+
+  describe Lutaml::Xml::Adapter::RexmlAdapter do
+    if TestAdapterConfig.adapter_enabled?(:rexml)
+      it_behaves_like "cdata behavior",
+                      described_class
+    end
+  end
+end

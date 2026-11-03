@@ -1,0 +1,1276 @@
+# frozen_string_literal: true
+
+module Lutaml
+  module KeyValue
+    # KeyValue-specific transformation implementation.
+    #
+    # Transforms model instances into KeyValueElement trees without
+    # serialization concerns. This provides the same architectural
+    # pattern as Xml::Transformation but for key-value formats
+    # (JSON, YAML, TOML).
+    #
+    # Architecture:
+    # - Content Layer: KeyValueElement defines WHAT to serialize
+    # - Presentation Layer: Adapters define HOW to serialize
+    #
+    # This is a critical step toward symmetric OOP architecture
+    # across all serialization formats.
+    # Coerces values the model layer accepted into a rule's declared
+    # nested type (lutaml-model#1089): constructors and writers accept
+    # raw hashes, sibling Serializable instances, and content scalars,
+    # but the KeyValue serializer demanded exact declared-class
+    # instances — accept-then-explode mid-render. Hashes construct
+    # directly; Serializable siblings round-trip through the framework
+    # hash; scalars wrap onto the declared type's content attribute
+    # when its XML mapping declares one (`map_content to: :x` — the
+    # same semantics the XML lane applies to text). Genuinely
+    # un-coercible values pass through unchanged so the caller's
+    # validation raises with its own message.
+    module NestedValueCoercion
+      @content_attributes = {}.compare_by_identity
+
+      # The attribute a declared type's XML mapping designates as its
+      # textual content. Class-level memo: the answer is a static
+      # per-type mapping fact. Keyed by type only; register-specific
+      # content mappings are not a supported combination.
+      def self.content_attribute_for(type)
+        @content_attributes[type] ||= begin
+          mapping = type.mappings_for(:xml)
+          mapping&.content_mapping&.to
+        end
+      end
+
+      def self.coerce(value, declared_class)
+        if value.is_a?(::Hash)
+          declared_class.new(value)
+        elsif value.is_a?(Lutaml::Model::Serialize)
+          declared_class.new(value.to_hash)
+        elsif (content_key = content_attribute_for(declared_class))
+          declared_class.new(content_key => value)
+        else
+          value
+        end
+      end
+    end
+
+    class Transformation < Lutaml::Model::Transformation
+      # Builtin Value types whose cast of an already-native value is the
+      # identity — used by the serialize_value fast path.
+      NATIVE_VALUE_CLASS = {
+        ::Lutaml::Model::Type::String => ::String,
+        ::Lutaml::Model::Type::Integer => ::Integer,
+        ::Lutaml::Model::Type::Float => ::Float,
+        ::Lutaml::Model::Type::Date => ::Date,
+        ::Lutaml::Model::Type::Time => ::Time,
+        ::Lutaml::Model::Type::DateTime => ::DateTime,
+        ::Lutaml::Model::Type::Symbol => ::Symbol,
+      }.freeze
+
+      include Lutaml::Model::RenderPolicy
+
+      autoload :RuleCompiler, "#{__dir__}/transformation/rule_compiler"
+      autoload :ValueSerializer, "#{__dir__}/transformation/value_serializer"
+      autoload :CollectionSerializer,
+               "#{__dir__}/transformation/collection_serializer"
+
+      # Initialize serializers before calling super
+      # This must happen before super calls freeze
+      #
+      # @param model_class [Class] The model class to transform
+      # @param mapping_dsl [Mapping] The mapping DSL to compile
+      # @param format [Symbol] The format (:json, :yaml, :toml)
+      # @param register [Register, nil] The register for type resolution
+      def initialize(model_class, mapping_dsl, format, register)
+        # Extract register_id before super
+        register_id = extract_register_id(register)
+        # #985: the catch-all target (collected unknown keys) — merged
+        # after the compiled rules on serialize; mapped keys win. The
+        # DSL object is a KeyValue::Mapping by contract, and the target
+        # must be a declared attribute: a typo fails here, at compile
+        # time, not as a silent no-op on the wire.
+        @unmapped_attribute = mapping_dsl.unmapped_attribute
+        if @unmapped_attribute &&
+            !model_class.attributes(register_id).key?(@unmapped_attribute)
+          raise ArgumentError,
+                "map_unmapped target :#{@unmapped_attribute} is not a " \
+                "declared attribute of #{model_class}"
+        end
+        transformation_factory = ->(type_class) {
+          build_child_transformation(type_class)
+        }
+
+        # Set up serializers before calling super
+        # The super will call compile_rules and freeze
+        # Pre-declared: the transformation is frozen after compile, and
+        # the type-transformation memo mutates this hash in place.
+        @lutaml_type_transformations = {}
+        @rule_compiler = RuleCompiler.new(
+          model_class: model_class,
+          register_id: register_id,
+          format: format,
+          transformation_factory: transformation_factory,
+        )
+
+        @value_serializer = ValueSerializer.new(
+          format: format,
+          register_id: register_id,
+          model_class: model_class,
+          transformation_factory: transformation_factory,
+        )
+
+        @collection_serializer = CollectionSerializer.new(
+          format: format,
+          register_id: register_id,
+          value_serializer: @value_serializer,
+          transformation_factory: transformation_factory,
+        )
+
+        super
+      end
+
+      # Extract register_id from register parameter
+      #
+      # @param register [Register, Symbol, nil] The register
+      # @return [Symbol, nil] The register ID
+      def extract_register_id(register)
+        case register
+        when Lutaml::Model::Register
+          register.id
+        when Symbol
+          register
+        else
+          Lutaml::Model::Config.default_register
+        end
+      end
+
+      # Build child transformation for nested model
+      #
+      # @param type_class [Class] The nested model class
+      # @param format [Symbol] The format
+      # @param register [Register, nil] The register
+      # @return [Transformation, nil] Child transformation or nil
+      def build_child_transformation(type_class, format = self.format,
+register = self.register)
+        return nil unless type_class.is_a?(Class) &&
+          type_class.include?(Lutaml::Model::Serialize)
+
+        # Prevent infinite recursion for self-referential models
+        compilation_stack = Thread.current[:lutaml_compilation_stack] ||= []
+        return nil if compilation_stack.include?(type_class)
+
+        compilation_stack.push(type_class)
+        begin
+          # Get the mapping for the current format
+          mapping = type_class.mappings_for(format,
+                                            extract_register_id(register))
+
+          # Create a new Transformation instance with the mapping
+          self.class.new(type_class, mapping, format, register)
+        ensure
+          compilation_stack.pop
+        end
+      end
+
+      # lutaml-model#88: rules sharing a wire key through when_attribute
+      # must serialize as ONE value — group them here, before freeze.
+      # Rules with custom `to` methods or delegates keep their own path;
+      # a key mixing them with discriminator rules is not a partition.
+      def after_compile
+        partitioned_names = nil
+        compiled_rules.each do |rule|
+          pairs = rule.option(:when_attribute)
+          next if pairs.nil? || pairs.empty?
+
+          (partitioned_names ||= {})[rule.serialized_name] = true
+        end
+        return unless partitioned_names
+
+        groups = {}
+        by_rule = {}.compare_by_identity
+        compiled_rules.each do |rule|
+          name = rule.serialized_name
+          next unless partitioned_names[name]
+          next if (rule.custom_methods || {}).key?(:to) || rule.option(:delegate)
+
+          entry = (groups[name] ||= [])
+          entry << rule
+          by_rule[rule] = entry
+        end
+        groups.each_value(&:freeze)
+
+        @partition_groups = groups.freeze
+        @partitioned_rules = by_rule
+      end
+
+      private
+
+      # Get the register ID, handling both Symbol and Register objects
+      # This normalizes the register to an ID for backward compatibility
+      #
+      # @return [Symbol, nil] The register ID
+      def register_id
+        return @register if @register.is_a?(Symbol)
+
+        @register_id
+      end
+
+      # Compile key-value mapping DSL into pre-compiled rules
+      #
+      # @param mapping_dsl [Mapping::KeyValueMapping] The mapping to compile
+      # @return [Array<CompiledRule>] Array of compiled transformation rules
+      def compile_rules(mapping_dsl)
+        rule_compiler.compile(mapping_dsl)
+      end
+
+      # Get the rule compiler instance
+      #
+      # @return [RuleCompiler] The rule compiler
+      def rule_compiler
+        @rule_compiler
+      end
+
+      # Get the value serializer instance
+      #
+      # @return [ValueSerializer] The value serializer
+      def value_serializer
+        @value_serializer
+      end
+
+      # Get the collection serializer instance
+      #
+      # @return [CollectionSerializer] The collection serializer
+      def collection_serializer
+        @collection_serializer
+      end
+
+      # Check if a mapping rule should be applied based on only/except options
+      #
+      # @param rule [CompiledRule] The rule to check
+      # @param options [Hash] Transformation options (may contain :only, :except)
+      # @return [Boolean] true if the rule should be applied
+      def valid_mapping?(rule, options)
+        rule_compiler.valid_mapping?(rule, options)
+      end
+
+      public
+
+      # Transform a model instance into KeyValueElement tree
+      #
+      # @param model_instance [Object] The model instance to transform
+      # @param options [Hash] Transformation options (supports :only, :except for filtering)
+      # @return [Lutaml::KeyValue::DataModel::Element] The root element
+      def transform(model_instance, options = {})
+        # For key-value formats, we typically don't have a named root
+        # Instead, we create an anonymous root that holds all attributes
+        # Hash-direct emission (TODO.perf 19): the output hash is built
+        # directly; the intermediate Element tree and its flatten are gone.
+        root = {}
+
+        # Apply each compiled rule (with filtering support). A
+        # when_attribute partition applies once for its whole key.
+        handled_groups = nil
+        compiled_rules.each do |rule|
+          # Check if this rule should be applied based on only/except options
+          next unless valid_mapping?(rule, options)
+
+          if @partitioned_rules && (group = @partitioned_rules[rule])
+            next if handled_groups&.include?(group)
+
+            (handled_groups ||= []) << group
+            apply_partition_group(root, group, model_instance, options)
+          else
+            apply_rule(root, rule, model_instance, options)
+          end
+        end
+
+        if @unmapped_attribute
+          extras = model_instance.public_send(@unmapped_attribute)
+          extras.each { |key, value| root[key] ||= value } if extras.is_a?(::Hash)
+        end
+
+        if ENV["DEBUG_KEYED_COLLECTION"]
+          puts "=== TRANSFORM COMPLETE ==="
+          puts "root: #{root.inspect}"
+        end
+
+        root
+      end
+
+      private
+
+      # The rule's value on the instance, initializing an absent
+      # delegate target like apply_rule does.
+      def extract_rule_value(rule, model_instance)
+        delegate = rule.option(:delegate)
+        unless delegate
+          return model_instance.public_send(rule.attribute_name)
+        end
+
+        delegated_object = model_instance.public_send(delegate)
+        if delegated_object.nil? ||
+            Lutaml::Model::Utils.uninitialized?(delegated_object)
+          delegate_attr = model_class.attributes(register_id)&.[](delegate)
+          if delegate_attr
+            delegated_object = delegate_attr.type(register_id).new
+            model_instance.public_send(:"#{delegate}=", delegated_object)
+          end
+        end
+        delegated_object&.public_send(rule.attribute_name)
+      end
+
+      # Serialize one when_attribute partition: every rule on the key
+      # contributes its items in declaration order, each stamped with
+      # its rule's discriminator pairs (unless the item's own mapping
+      # already wrote the key). The wire value is an array whenever any
+      # rule had a present value.
+      def apply_partition_group(parent, group, model_instance, options)
+        items = []
+        present = false
+        group.each do |rule|
+          next unless valid_mapping?(rule, options)
+
+          value = extract_rule_value(rule, model_instance)
+          next if should_skip_value?(value, rule, model_instance,
+                                     rule.option(:delegate))
+
+          value = rule.transform_value(value, :export) if rule.value_transformer
+
+          present = true
+          Array(value).each do |item|
+            child = create_value_for_item(rule, item, options)
+            next if child.nil?
+
+            items << stamp_discriminator(child, rule)
+          end
+        end
+        return unless present
+
+        # Items are stamped hashes or primitives: the tree's
+        # children_to_array semantics, expressed directly.
+        parent[group.first.serialized_name] = items
+      end
+
+      def stamp_discriminator(item, rule)
+        pairs = rule.option(:when_attribute)
+        return item if pairs.nil? || pairs.empty? || !item.is_a?(::Hash)
+
+        missing = {}
+        pairs.each do |name, expected|
+          unless Lutaml::Model::Utils.string_or_symbol_key?(item, name)
+            missing[name.to_s] = expected.to_s
+          end
+        end
+        missing.empty? ? item : item.merge(missing)
+      end
+
+      # Apply a single transformation rule
+      #
+      # @param parent [Lutaml::KeyValue::DataModel::Element] Parent element
+      # @param rule [CompiledRule] The rule to apply
+      # @param model_instance [Object] The model instance
+      # @param options [Hash] Transformation options
+      def apply_rule(parent, rule, model_instance, options)
+        # DEBUG for keyed collections
+        if ENV["DEBUG_KEYED_COLLECTION"]
+          puts "apply_rule: #{rule.serialized_name}, collection?: #{rule.collection?}"
+          if rule.collection?
+            puts "  collection_info: #{rule.collection_info.inspect}"
+            puts "  child_mappings: #{rule.collection_info && rule.collection_info[:child_mappings].inspect}"
+          end
+        end
+
+        # Handle custom serialization methods (e.g., with: { to: ... })
+        if rule.has_custom_methods? && rule.custom_methods[:to]
+          to_method = rule.custom_methods[:to]
+          # Custom methods receive an Element "doc" and populate it
+          # (public contract, TODO.perf 19 keeps it): only the doc's
+          # payload — the merged children or the direct value hash —
+          # is merged into the output.
+          doc = Lutaml::KeyValue::DataModel::Element.new(rule.serialized_name)
+          # Custom methods may write children, or doc.value[key]=, or
+          # nothing at all (pubid 2.0 regression: an empty scratch
+          # flattened to {key => nil} and crashed the merge). Seed the
+          # value hash and merge only hash-shaped results.
+          doc.value = {}
+          # lutaml-model#550: custom methods may declare a third context
+          # parameter to receive the options passed to `to_*`.
+          if Lutaml::Model::MappingRule.custom_method_arity(model_instance.class, to_method).to_i >= 3
+            model_instance.public_send(to_method, model_instance,
+                                       doc, options[:context])
+          else
+            model_instance.public_send(to_method, model_instance, doc)
+          end
+          # The 0.8.68 contract: only the method's doc mutations count —
+          # its return value is ignored. (A mutation-style handler whose
+          # last statement is an assignment returns the assigned inner
+          # value; honoring it merged child content at the wrong level —
+          # lutaml-model#892.) A doc whose payload is not a hash — nil
+          # (untouched), a scalar, or an array of primitives — serializes
+          # as nothing, matching the pre-0.8.74 behavior.
+          merged = doc.payload
+          parent.update(merged) if merged.is_a?(::Hash)
+          return
+        end
+
+        # Handle delegation - extract value from delegated object
+        delegate = rule.option(:delegate)
+        if delegate
+          # Get the delegated object
+          delegated_object = model_instance.public_send(delegate)
+
+          # Initialize delegated object if nil/uninitialized (like legacy does)
+          if delegated_object.nil? || Lutaml::Model::Utils.uninitialized?(delegated_object)
+            # Get the delegate attribute from model to create a new instance
+            delegate_attr = model_class.attributes(register_id)&.[](delegate)
+            if delegate_attr
+              delegated_object = delegate_attr.type(register_id).new
+              model_instance.public_send(:"#{delegate}=", delegated_object)
+            end
+          end
+
+          # Extract value from delegated object
+          value = delegated_object&.public_send(rule.attribute_name)
+        else
+          # Get attribute value directly
+          value = model_instance.public_send(rule.attribute_name)
+        end
+
+        # Handle raw mapping (map_all directive)
+        # Raw mappings parse the stored content and merge it directly into the parent
+        if rule.option(:mapping_type) == :raw
+          return handle_raw_mapping(parent, value, options)
+        end
+
+        # Check if value should be skipped
+        skip_result = should_skip_value?(value, rule, model_instance,
+                                         delegate)
+
+        return if skip_result
+
+        # Apply export transformation if present
+        if rule.value_transformer
+          value = rule.transform_value(value, :export)
+        end
+
+        # Create element for this attribute
+        if rule.collection?
+          # For collections, apply value_map conversion with tracking flags
+          # so the collection serializer knows the original intent
+          converted_from_empty_to_nil = false
+          converted_from_nil_to_empty = false
+          value_map = rule.option(:value_map) || {}
+          to_map = value_map[:to] || {}
+
+          if value.nil?
+            to_nil = to_map[:nil]
+            if to_nil == :empty
+              converted_from_nil_to_empty = true
+            end
+          elsif Lutaml::Model::Utils.empty?(value)
+            to_empty = to_map[:empty] # nil → no conversion (default: omit)
+            if to_empty == :nil
+              value = nil
+              converted_from_empty_to_nil = true
+            end
+          end
+
+          collection_serializer.serialize(parent, value, rule, options,
+                                          converted_from_empty_to_nil: converted_from_empty_to_nil,
+                                          converted_from_nil_to_empty: converted_from_nil_to_empty)
+        else
+          # For non-collections, pass original value directly.
+          # create_value_element handles all value_map conversions with full context.
+          create_value_element(parent, rule, value, options)
+        end
+      end
+
+      # Check if value should be skipped based on render options
+      #
+      # Delegates to the shared RenderPolicy module for consistent
+      # behavior across XML and KeyValue formats.
+      #
+      # @param value [Object] The value to check
+      # @param rule [CompiledRule] The rule
+      # @param model_instance [Object] The model instance
+      # @param delegate [Symbol, nil] The delegate attribute name if present
+      # @return [Boolean] true if should skip
+      def should_skip_value?(value, rule, model_instance, delegate = nil)
+        if delegate
+          delegate_obj = model_instance.public_send(delegate)
+          should_skip_delegated_value?(value, rule, delegate_obj)
+        else
+          super(value, rule, model_instance)
+        end
+      end
+
+      # Create a collection element
+      #
+      # @param parent [Lutaml::KeyValue::DataModel::Element] Parent element
+      # @param rule [CompiledRule] The rule
+      # @param collection [Array] The collection value
+      # @param options [Hash] Options
+      # @param converted_from_empty_to_nil [Boolean] True if value was converted from empty to nil
+      # @param converted_from_nil_to_empty [Boolean] True if value should be converted from nil to empty
+      def create_collection_element(parent, rule, collection, options,
+converted_from_empty_to_nil: false, converted_from_nil_to_empty: false)
+        # Handle nil collection - skip if nil unless should render
+        if collection.nil?
+          to_map = (rule.option(:value_map) || {})[:to] || {}
+          nil_mapping = to_map[:nil]
+          if nil_mapping == :empty || converted_from_nil_to_empty
+            parent[rule.serialized_name] = []
+          elsif nil_mapping == :nil || converted_from_empty_to_nil
+            parent[rule.serialized_name] = nil
+          else
+            # Skip nil collection
+          end
+          return
+        end
+
+        # Convert to array for consistent handling
+        items = Array(collection)
+
+        # Check if this has root_mappings - merge directly into parent
+        root_mappings = rule.option(:root_mappings)
+        if root_mappings
+          # For root_mappings, the collection items are keyed and merged directly into parent
+          # Find the attribute to use as key
+          key_attribute = root_mappings.key(:key)
+          # Find the attribute to use as value (optional - if not provided, serialize all attributes)
+          value_attribute = root_mappings.key(:value)
+
+          # Initialize parent's value as a hash if it's nil
+          parent.value ||= {} if parent.value.nil?
+
+          # Case 1: Both key and value attributes specified
+          if key_attribute && value_attribute
+            items.each do |item|
+              next if item.nil?
+
+              # Get the key value from the item
+              key_value = if item.is_a?(Lutaml::Model::Serialize) && item.class.attributes.key?(key_attribute)
+                            item.public_send(key_attribute)
+                          end
+              next if key_value.nil?
+
+              # Get the value from the item
+              attr_value = if item.is_a?(Lutaml::Model::Serialize) && item.class.attributes.key?(value_attribute)
+                             item.public_send(value_attribute)
+                           end
+              next if attr_value.nil? || Lutaml::Model::Utils.uninitialized?(attr_value)
+
+              # For the value, we need to transform it appropriately
+              # First, check if it's a single nested model
+              item_class = item.class
+              attr_def = item_class.attributes(register_id)&.[](value_attribute)
+
+              if attr_def && attr_value.is_a?(Lutaml::Model::Serialize)
+                # Single nested model - transform it to a hash
+                attr_type = attr_def.type(register_id)
+                if attr_type.is_a?(Class) && attr_type < Lutaml::Model::Serialize
+                  # Get the mapping for the value's class
+                  value_class_mapping = attr_value.class.mappings_for(format,
+                                                                      register_id)
+
+                  # Build a transformation for the value's class
+                  value_transformation = self.class.new(attr_value.class,
+                                                        value_class_mapping, format, register)
+
+                  # Transform the value to a KeyValueElement
+                  value_root = value_transformation.transform(attr_value,
+                                                              options)
+
+                  # transform emits the output hash directly (TODO.perf 19)
+                  parent[key_value.to_s] = value_root
+                  next
+                end
+              end
+
+              # Check if it's a collection
+              if attr_value.is_a?(Array) || attr_value.is_a?(Lutaml::Model::Collection)
+                # Get the attribute definition for the value attribute from the item's class
+                item_class = item.class
+                attr_def = item_class.attributes(register_id)&.[](value_attribute)
+                next unless attr_def
+
+                # Get the type of items in the collection
+                item_type = attr_def.type(register_id)
+
+                # Get the child transformation for the collection item type
+                if item_type.is_a?(Class) && item_type < Lutaml::Model::Serialize
+                  # Create a temporary parent KeyValueElement to hold the collection
+                  temp_parent = {}
+
+                  # Convert to array
+                  coll_items = Array(attr_value)
+
+                  # Get the mapping for the item's class
+                  item_class_mapping = item_class.mappings_for(format,
+                                                               register_id)
+
+                  # Build a temporary transformation for the item's class
+                  item_class_transformation = self.class.new(item_class,
+                                                             item_class_mapping, format, register)
+
+                  # Find the rule for the value_attribute in the item's class mapping
+                  item_rule = item_class_transformation.compiled_rules.find do |r|
+                    r.attribute_name == value_attribute
+                  end
+
+                  if item_rule&.collection_info && item_rule.collection_info[:child_mappings]
+                    # Use the keyed collection handling
+                    child_mappings = item_rule.collection_info[:child_mappings]
+                    coll_key_attr = keyed_collection_key_attribute(child_mappings)
+
+                    if coll_key_attr
+                      # Create a keyed collection directly
+                      create_keyed_collection_element(temp_parent, item_rule,
+                                                      coll_items, coll_key_attr, child_mappings, options)
+                    else
+                      create_array_collection_element(temp_parent, item_rule,
+                                                      coll_items, options)
+                    end
+                  elsif item_rule
+                    # No child_mappings - serialize as array
+                    create_array_collection_element(temp_parent, item_rule,
+                                                    coll_items, options)
+                  end
+
+                  coll_value = temp_parent[value_attribute.to_s]
+
+                  parent[key_value.to_s] = coll_value
+                  next
+                end
+              end
+
+              # Fallback: just use the value directly
+              parent[key_value.to_s] = attr_value
+            end
+          # Case 2: Only key attribute specified - serialize all other attributes
+          elsif key_attribute
+            items.each do |item|
+              next if item.nil?
+
+              key_value = if item.is_a?(Lutaml::Model::Serialize) && item.class.attributes.key?(key_attribute)
+                            item.public_send(key_attribute)
+                          end
+              next if key_value.nil?
+
+              # Serialize all attributes except the key
+              item_hash = {}
+              item_class = item.class
+
+              # Get the mapping for the item's class to find serialized names
+              if item_class.is_a?(Class) && item_class.include?(Lutaml::Model::Serialize)
+                item_class_mapping = item_class.mappings_for(format,
+                                                             register_id)
+
+                item_class.attributes(register_id).each do |attr_name, attr_def|
+                  # Skip the key attribute since it's used as the hash key
+                  next if attr_name == key_attribute
+
+                  attr_value = item.public_send(attr_name)
+                  next if attr_value.nil? || Lutaml::Model::Utils.uninitialized?(attr_value)
+
+                  # Serialize the attribute value
+                  serialized_value = serialize_collection_item_value(
+                    attr_value, attr_def, options
+                  )
+
+                  # Determine the path for this attribute based on root_mappings
+                  # root_mappings format: { attr_name => path_spec }
+                  # where path_spec can be:
+                  # - :key (used as hash key, already skipped above)
+                  # - "string" (single key, use the string)
+                  # - [:path, :to, :nested] (array of path segments)
+                  path_spec = root_mappings[attr_name]
+
+                  # Use the path_spec if present, otherwise use the serialized name from mapping
+                  if path_spec
+                    if path_spec.is_a?(Array)
+                      # Build nested structure: [:path, :to, :nested] -> item_hash["path"]["to"]["nested"] = value
+                      current = item_hash
+                      path_spec[0...-1].each do |key|
+                        key_str = key.to_s
+                        current[key_str] ||= {}
+                        current = current[key_str]
+                      end
+                      current[path_spec.last.to_s] = serialized_value
+                    elsif path_spec == :key
+                      # Skip - key is used as the hash key
+                      next
+                    else
+                      # Use the path_spec as a single key
+                      item_hash[path_spec.to_s] = serialized_value
+                    end
+                  else
+                    # No path_spec in root_mappings - use the serialized name from the mapping
+                    serialized_name = attr_name.to_s
+                    if item_class_mapping
+                      mapping_rule = item_class_mapping.mappings.find do |m|
+                        m.to == attr_name
+                      end
+                      serialized_name = mapping_rule.name.to_s if mapping_rule&.name
+                    end
+
+                    item_hash[serialized_name] = serialized_value
+                  end
+                end
+              end
+
+              parent[key_value.to_s] = item_hash unless item_hash.empty?
+            end
+          end
+
+          return
+        end
+
+        # Check if this is a keyed collection (map_key feature)
+        child_mappings = rule.collection_info && rule.collection_info[:child_mappings]
+        key_attribute = keyed_collection_key_attribute(child_mappings)
+
+        if key_attribute
+          # Serialize as hash keyed by the key attribute
+          create_keyed_collection_element(parent, rule, items, key_attribute,
+                                          child_mappings, options)
+        else
+          # Serialize as array (default)
+          create_array_collection_element(parent, rule, items, options)
+        end
+      end
+
+      # Create a keyed collection element (map_key feature)
+      #
+      # @param parent [Lutaml::KeyValue::DataModel::Element] Parent element
+      # @param rule [CompiledRule] The rule
+      # @param items [Array] The collection items
+      # @param key_attribute [Symbol] The attribute to use as hash key
+      # @param child_mappings [Hash] The child mappings configuration
+      # @param options [Hash] Options
+      def create_keyed_collection_element(parent, rule, items, key_attribute,
+child_mappings, options)
+        # Create hash to hold keyed items
+        keyed_hash = {}
+
+        # Check if there's a value mapping (map_value as_attribute: :name)
+        # This means we should serialize just the specified attribute value, not the full item hash
+        value_attribute = nil
+        child_mappings&.each do |attr_name, mapping_type|
+          value_attribute = attr_name if mapping_type == :value
+        end
+
+        if ENV["DEBUG_KEYED_COLLECTION"]
+          puts "create_keyed_collection_element: items.count=#{items.count}, key_attribute=#{key_attribute}, value_attribute=#{value_attribute.inspect}"
+        end
+
+        items.each do |item|
+          # Get the key value from the item
+          key_value = if item.is_a?(Lutaml::Model::Serialize) && item.class.attributes.key?(key_attribute)
+                        item.public_send(key_attribute)
+                      end
+
+          if ENV["DEBUG_KEYED_COLLECTION"]
+            puts "  item: #{item.inspect}, key_value=#{key_value.inspect}"
+          end
+
+          next if key_value.nil?
+
+          # If there's a value mapping, serialize just that attribute value
+          if value_attribute
+            attr_value = if item.is_a?(Lutaml::Model::Serialize) && item.class.attributes.key?(value_attribute)
+                           item.public_send(value_attribute)
+                         end
+            next if attr_value.nil? || Lutaml::Model::Utils.uninitialized?(attr_value)
+
+            # Get the attribute definition for proper serialization
+            attr_def = nil
+            item_class = item.class
+            if item_class.is_a?(Class) && item_class.include?(Lutaml::Model::Serialize)
+              attr_def = item_class.attributes(register_id)&.[](value_attribute)
+            end
+
+            # Serialize the attribute value
+            serialized_value = if attr_def
+                                 serialize_collection_item_value(attr_value,
+                                                                 attr_def, options)
+                               else
+                                 attr_value
+                               end
+
+            unless serialized_value.nil?
+              keyed_hash[key_value.to_s] =
+                serialized_value
+            end
+          else
+            # No value mapping - serialize all attributes as a hash
+            item_hash = {}
+
+            # Check if child_mappings only contains :key/:value (no nested paths)
+            # In that case, we should also serialize other attributes not in child_mappings
+            has_nested_paths = child_mappings&.any? do |_, path_spec|
+              path_spec.is_a?(Array)
+            end
+
+            # Use child_mappings to determine where each attribute goes in the nested hash
+            if child_mappings && (has_nested_paths || child_mappings.any? do |_, path_spec|
+              path_spec != :key && path_spec != :value
+            end)
+              # child_mappings format: { attr_name => path_spec }
+              # where path_spec can be:
+              # - :key (used as hash key, already handled)
+              # - :value (use the value directly)
+              # - [:path, :to, :nested] (nested path)
+              # - :simple (single key, same as attr_name)
+
+              if ENV["DEBUG_KEYED_COLLECTION"]
+                puts "  Using child_mappings: #{child_mappings.inspect}"
+              end
+
+              child_mappings.each do |attr_name, path_spec|
+                # Skip :key mappings - they're used as the hash key
+                next if path_spec == :key
+                # Skip :value mappings - handled separately
+                next if path_spec == :value
+
+                # Get the attribute value
+                attr_value = if item.is_a?(Lutaml::Model::Serialize) && item.class.attributes.key?(attr_name)
+                               item.public_send(attr_name)
+                             end
+
+                if ENV["DEBUG_KEYED_COLLECTION"]
+                  puts "    #{attr_name}: path_spec=#{path_spec.inspect}, attr_value=#{attr_value.inspect}"
+                end
+
+                next if attr_value.nil? || Lutaml::Model::Utils.uninitialized?(attr_value)
+
+                # Get the attribute definition for proper serialization
+                attr_def = nil
+                item_class = item.class
+                if item_class.is_a?(Class) && item_class.include?(Lutaml::Model::Serialize)
+                  attr_def = item_class.attributes(register_id)&.[](attr_name)
+                end
+
+                # Serialize the attribute value
+                serialized_value = if attr_def
+                                     serialize_collection_item_value(
+                                       attr_value, attr_def, options
+                                     )
+                                   else
+                                     attr_value
+                                   end
+
+                next if serialized_value.nil?
+
+                # Build the nested hash structure based on path_spec
+                # path_spec can be:
+                # - [:path, :to, :nested] - array of path segments
+                # - :simple - single key
+                if path_spec.is_a?(Array)
+                  # Build nested structure: [:path, :to, :nested] -> item_hash["path"]["to"]["nested"] = value
+                  current = item_hash
+                  path_spec[0...-1].each do |key|
+                    key_str = key.to_s
+                    current[key_str] ||= {}
+                    current = current[key_str]
+                  end
+                  current[path_spec.last.to_s] = serialized_value
+                else
+                  # Single key - use attr_name as key
+                  item_hash[attr_name.to_s] = serialized_value
+                end
+              end
+            end
+
+            # Always serialize all attributes (as fallback) for keyed collections
+            # This handles the case where child_mappings only has :key mapping
+            item_class = item.class
+            if item_class.is_a?(Class) && item_class.include?(Lutaml::Model::Serialize)
+              if ENV["DEBUG_KEYED_COLLECTION"]
+                puts "  item_class.attributes(#{register_id}): #{item_class.attributes(register_id).inspect}"
+              end
+              item_class.attributes(register_id).each do |attr_name, attr_def|
+                # Skip the key attribute since it's used as the hash key
+                next if attr_name == key_attribute
+                # Skip attributes already processed by child_mappings
+                next if child_mappings&.key?(attr_name)
+
+                attr_value = item.public_send(attr_name)
+
+                if ENV["DEBUG_KEYED_COLLECTION"]
+                  puts "    #{attr_name}: attr_value=#{attr_value.inspect}"
+                end
+
+                next if attr_value.nil? || Lutaml::Model::Utils.uninitialized?(attr_value)
+
+                # Serialize the attribute value
+                serialized_value = serialize_collection_item_value(attr_value,
+                                                                   attr_def, options)
+                if ENV["DEBUG_KEYED_COLLECTION"]
+                  puts "      serialized_value=#{serialized_value.inspect}"
+                end
+                unless serialized_value.nil?
+                  item_hash[attr_name.to_s] =
+                    serialized_value
+                end
+              end
+            end
+
+            if ENV["DEBUG_KEYED_COLLECTION"]
+              puts "  item_hash: #{item_hash.inspect}"
+            end
+
+            # Add to keyed hash
+            keyed_hash[key_value.to_s] = item_hash unless item_hash.empty?
+          end
+        end
+
+        if ENV["DEBUG_KEYED_COLLECTION"]
+          puts "  keyed_hash: #{keyed_hash.inspect}"
+        end
+
+        parent[rule.serialized_name] = keyed_hash
+      end
+
+      # Create an array collection element (default)
+      #
+      # @param parent [Lutaml::KeyValue::DataModel::Element] Parent element
+      # @param rule [CompiledRule] The rule
+      # @param items [Array] The collection items
+      # @param options [Hash] Options
+      def create_array_collection_element(parent, rule, items, options)
+        # children_to_array semantics directly: always an array,
+        # nil children skipped (explicit nil check — booleans matter).
+        built = items.each_with_object([]) do |item, memo|
+          child_value = create_value_for_item(rule, item, options)
+          memo << child_value unless child_value.nil?
+        end
+        parent[rule.serialized_name] = built
+      end
+
+      # Get the key attribute for a keyed collection from child_mappings
+      #
+      # @param child_mappings [Hash] The child mappings (e.g., { id: :key })
+      # @return [Symbol, nil] The attribute name to use as key, or nil
+      def keyed_collection_key_attribute(child_mappings)
+        return nil unless child_mappings
+
+        # Find the attribute mapped to :key
+        child_mappings.each do |attr_name, mapping|
+          return attr_name.to_sym if mapping == :key
+        end
+
+        nil
+      end
+
+      # Serialize a collection item value (for keyed collections)
+      #
+      # @param value [Object] The value to serialize
+      # @param attr_def [Attribute] The attribute definition
+      # @param options [Hash] Options
+      # @return [Object] The serialized value
+      def serialize_collection_item_value(value, attr_def, options)
+        return nil if value.nil? || Lutaml::Model::Utils.uninitialized?(value)
+
+        # Check if this is a collection attribute
+        attr_type = attr_def.type(register_id)
+        if attr_def.collection?
+          # For collections, check if it's a collection of Serialize models
+          if attr_type.is_a?(Class) && attr_type < Lutaml::Model::Serialize
+            # Create child transformation for the item type
+            mapping = attr_type.mappings_for(format, register_id)
+            child_transformation = self.class.new(attr_type, mapping, format,
+                                                  register)
+
+            # Serialize each item in the collection
+            items = Array(value)
+            if items.empty?
+              []
+            else
+              # For keyed collections (with child_mappings), serialize as hash
+              # For regular collections, serialize as array
+              # We need to check if the mapping has child_mappings for this attribute
+              # Since we don't have direct access to the parent mapping here,
+              # serialize as array for now (default behavior)
+              items.map do |item|
+                child_transformation.transform(item, options)
+              end
+            end
+          else
+            # Primitive collection - return as-is (already an array)
+            value
+          end
+        elsif attr_type.is_a?(Class) && attr_type < Lutaml::Model::Serialize
+          # Single value - check if it's a nested model
+          mapping = attr_type.mappings_for(format, register_id)
+          child_transformation = self.class.new(attr_type, mapping, format,
+                                                register)
+          child_transformation.transform(value, options)
+        # Use the transformation to serialize the nested model
+        elsif attr_type.is_a?(Class) && attr_type < Lutaml::Model::Type::Value
+          wrapped_value = attr_type.new(value)
+          wrapped_value.public_send(:"to_#{format}")
+        else
+          value
+        end
+      end
+
+      # Create a value element
+      #
+      # @param parent [Lutaml::KeyValue::DataModel::Element] Parent element
+      # @param rule [CompiledRule] The rule
+      # @param value [Object] The value
+      # @param options [Hash] Options
+      def create_value_element(parent, rule, value, options)
+        to_map = (rule.option(:value_map) || {})[:to] || {}
+
+        # Handle value_map conversions for nil/uninitialized/empty values.
+        # Skip logic (should_skip_value?) already filters omitted cases,
+        # so here we only handle render directives.
+        if value.nil?
+          nil_mapping = to_map[:nil]
+          case nil_mapping
+          when :omitted
+            return
+          when :nil
+            parent[rule.serialized_name] = nil
+            return
+          when :empty
+            parent[rule.serialized_name] = ""
+            return
+          end
+
+          # nil with no mapping → skip (default behavior)
+          return
+        elsif Lutaml::Model::Utils.uninitialized?(value)
+          omitted_mapping = to_map[:omitted]
+          if omitted_mapping == :nil
+            parent[rule.serialized_name] = nil
+            return
+          elsif omitted_mapping == :empty
+            parent[rule.serialized_name] = ""
+            return
+          end
+          # uninitialized with no/omitted mapping → skip (default behavior)
+          return
+        elsif Lutaml::Model::Utils.empty?(value)
+          empty_mapping = to_map[:empty]
+          if empty_mapping == :nil
+            parent[rule.serialized_name] = nil
+            return
+          elsif empty_mapping == :omitted
+            return
+          end
+          # empty with :empty or no mapping → fall through to normal serialization
+        end
+
+        # Normal value serialization
+        child_value = create_value_for_item(rule, value, options)
+
+        parent[rule.serialized_name] = child_value unless child_value.nil?
+      end
+
+      # Create value for an item (handles nested models and primitives)
+      #
+      # @param rule [CompiledRule] The rule
+      # @param value [Object] The value
+      # @param options [Hash] Options
+      # @return [Object] The value (could be Hash, primitive, or KeyValueElement)
+      def coerce_accepted_nested_value(value, declared_class)
+        NestedValueCoercion.coerce(value, declared_class)
+      end
+
+      # Child transformations memoized on this transformation instance:
+      # the factory binds this instance's mapping/format/register, so
+      # the memo is register-safe, and building one per serialized node
+      # is a Transformation per nested model per instance.
+      def transformation_for_type(type_class)
+        (@lutaml_type_transformations ||= {})[type_class] ||=
+          build_child_transformation(type_class)
+      end
+
+      def create_value_for_item(rule, value, options)
+        return nil if value.nil?
+
+        # Union: dispatch on the value's own class (stateless, like polymorphism).
+        # A model member serializes via its class; a scalar member emits as-is.
+        union = Lutaml::Model::Type::Union.rule?(rule)
+        is_nested_model = if union
+                            value.is_a?(Lutaml::Model::Serialize)
+                          else
+                            rule.attribute_type.is_a?(Class) &&
+                              rule.attribute_type < Lutaml::Model::Serialize
+                          end
+
+        if is_nested_model && !value.is_a?(Lutaml::Model::Serialize)
+          # The KV mirror of the XML lane's #971 collapse: a tolerated
+          # singular attribute holding an over-assigned collection
+          # serializes its leading value instead of raising.
+          attr = if model_class.respond_to?(:attributes)
+                   model_class.attributes[rule.attribute_name.to_sym]
+                 end
+          value = value.first if attr&.tolerates_singular_overflow?(value)
+        end
+
+        if is_nested_model
+          # Validate that value matches the expected type
+          # There are three valid cases:
+          # 1. attribute_type is a mapper class (has model method) and value is an instance of that model
+          # 2. attribute_type is a regular Serializable class and value is an instance of it (or subclass)
+          # 3. value's class is a registered type substitution for attribute_type
+          context = Lutaml::Model::GlobalContext.context(register_id)
+          subs = context.substitution_for(rule.attribute_type)
+          uses_type_substitution = subs.any? { |s| s.to_type == value.class }
+
+          if rule.attribute_type.is_a?(Class) && rule.attribute_type.include?(Lutaml::Model::Serialize) && rule.attribute_type.model
+            # Mapper class: value should be an instance of the mapped model
+            # or a valid substituted type
+            unless value.is_a?(rule.attribute_type.model) || uses_type_substitution
+              value = coerce_accepted_nested_value(value, rule.attribute_type.model)
+              unless value.is_a?(rule.attribute_type.model)
+                msg = "attribute '#{rule.attribute_name}' value is a '#{value.class}' but should be a '#{rule.attribute_type.model}'"
+                raise Lutaml::Model::IncorrectModelError, msg
+              end
+            end
+          else
+            # Regular Serializable class: value should be a Serialize instance
+            # or a valid substituted type
+            unless value.is_a?(Lutaml::Model::Serialize) || uses_type_substitution
+              value = coerce_accepted_nested_value(value, rule.attribute_type)
+              unless value.is_a?(Lutaml::Model::Serialize)
+                msg = "attribute '#{rule.attribute_name}' value is a '#{value.class}' but should be a kind of 'Lutaml::Model::Serialize'"
+                raise Lutaml::Model::IncorrectModelError, msg
+              end
+            end
+          end
+
+          # Use the actual runtime type for polymorphism support
+          # If value is a subclass of the declared type, use its mappings instead
+          # Also handle type substitution the same way
+          actual_type = value.class
+          uses_polymorphism = union ||
+            (actual_type != rule.attribute_type &&
+              actual_type < rule.attribute_type) || uses_type_substitution
+
+          # Get child transformation - may be cached or need to create
+          child_transformation = rule.child_transformation
+
+          # If not cached (e.g., due to cycles) or using polymorphism, create it now
+          if !child_transformation || uses_polymorphism
+            # For polymorphic types, use the actual runtime type's mappings
+            type_for_mapping = uses_polymorphism ? actual_type : rule.attribute_type
+            child_transformation = transformation_for_type(type_for_mapping)
+          end
+
+          if child_transformation
+            child_root = child_transformation.transform(value, options)
+            # transform emits the content hash directly (TODO.perf 19);
+            # an empty serialization still returns nil so render_nil:
+            # false keeps working for nested models.
+            child_root.empty? ? nil : child_root
+          else
+            # Fallback: serialize as primitive
+            serialize_value(value, rule)
+          end
+        elsif union
+          # Union scalar: serialize through the value type matching the value's
+          # own class so output is canonical (e.g. BigDecimal -> "1.5"), not a
+          # raw Ruby object.
+          Lutaml::Model::Type::Union.serialize_scalar(value, format)
+        else
+          # Serialize primitive value
+          serialize_value(value, rule)
+        end
+      end
+
+      # Handle raw mapping (map_all directive)
+      #
+      # Raw mappings parse the stored content (JSON/YAML/TOML string) and merge it
+      # directly into the parent element, rather than creating a child element.
+      #
+      # @param parent [Lutaml::KeyValue::DataModel::Element] Parent element
+      # @param value [String] The raw content (JSON/YAML/TOML string)
+      # @param options [Hash] Options
+      def handle_raw_mapping(parent, value, options)
+        return if value.nil? || Lutaml::Model::Utils.uninitialized?(value)
+        return if Lutaml::Model::Utils.empty?(value)
+
+        # Get the adapter for the current format and parse the raw content
+        adapter = Lutaml::Model::Config.adapter_for(format)
+        parsed_content = adapter.parse(value, options)
+
+        # Merge the parsed content into the parent element
+        # For each key-value pair in the parsed content, add as a child element
+        if parsed_content.is_a?(::Hash)
+          parsed_content.each do |key, val|
+            parent[key.to_s] = val
+          end
+        elsif !parsed_content.nil?
+          # A raw mapping's content must be a key-value document — it is
+          # merged into the parent by key. Any other shape (an Array, a
+          # scalar) has no representation here; serializing it under a
+          # synthetic key would leak that key into the document.
+          raise ArgumentError,
+                "raw mapping content must parse to a Hash, got " \
+                "#{parsed_content.class}"
+        end
+      end
+
+      # Serialize a value to appropriate representation
+      #
+      # @param value [Object] The value to serialize
+      # @param rule [CompiledRule] The rule
+      # @return [Object] Serialized value
+      def serialize_value(value, rule)
+        return nil if value.nil?
+        return nil if Lutaml::Model::Utils.uninitialized?(value)
+
+        # Rule-invariant resolution (attribute lookup, Reference probe,
+        # nested-type class) is compiled once per rule — the per-value
+        # hash lookups dominated primitive-heavy serialization.
+        # Transformation freezes itself after compile; the plan cache
+        # lives on the ValueSerializer (same model_class/register_id).
+        plan = value_serializer.serialize_value_plan(rule)
+
+        if plan[:reference]
+          return plan[:attr].serialize(value, format, register_id, {})
+        end
+
+        # Validate that value is an instance of the expected Serializable type
+        # When attribute_type is a Serializable class, value must be an instance of that class
+        if plan[:nested]
+          unless value.is_a?(rule.attribute_type)
+            value = coerce_accepted_nested_value(value, rule.attribute_type)
+            unless value.is_a?(rule.attribute_type)
+              msg = "attribute '#{rule.attribute_name}' value is a '#{value.class}' but should be a '#{rule.attribute_type}'"
+              raise Lutaml::Model::IncorrectModelError, msg
+            end
+          end
+
+          # Value is a valid Serialize instance - serialize it using its own to_#{format} method
+          return value.public_send(:"to_#{format}")
+        end
+
+        # Wrap value in type and call to_#{format} instance method (like legacy Attribute#serialize_value)
+        # This allows custom type subclasses to override to_json, to_yaml, etc.
+        if rule.attribute_type.is_a?(Class) && rule.attribute_type < Lutaml::Model::Type::Value
+          type = rule.attribute_type
+          # Identity fast path (TODO.perf/07): a builtin type with no custom
+          # to_<format>/from_<format> behavior emits an already-native value
+          # unchanged — the wrap only re-casts and re-emits it.
+          native = NATIVE_VALUE_CLASS[type]
+          if native && value.instance_of?(native) &&
+              !::Lutaml::Model::Type::Value
+                  .format_type_serializer_for(format, type)&.fetch(:to, nil) &&
+              !::Lutaml::Model::Attribute.custom_from_probe?(type)
+            return value
+          end
+
+          wrapped_value = type.new(value)
+          wrapped_value.public_send(:"to_#{format}")
+        else
+          value
+        end
+      end
+    end
+  end
+end

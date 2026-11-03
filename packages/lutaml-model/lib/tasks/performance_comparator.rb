@@ -1,0 +1,130 @@
+# frozen_string_literal: true
+
+require_relative "performance_helpers"
+
+class PerformanceComparator
+  REPO_ROOT = File.expand_path(File.join(__dir__, "..", ".."))
+  DEFAULT_RUN_TIME = 20 # seconds
+  DEFAULT_THRESHOLD = 0.05 # 5%
+  DEFAULT_BASE = "main"
+  TMP_PERF_DIR = File.join(REPO_ROOT, "tmp", "performance")
+  BENCH_SCRIPT = File.join(TMP_PERF_DIR, "benchmark_runner.rb")
+
+  BENCHMARK_MATRIX = {
+    xml: %i[nokogiri ox oga rexml],
+    json: %i[standard_json multi_json oj yeptris],
+    yaml: %i[standard_yaml yeptris],
+    toml: %i[toml_rb tomlib teptris],
+  }.freeze
+
+  DIRECTIONS = %i[from to].freeze
+
+  def run
+    setup_environment
+    run_benchmarks_comparison
+  ensure
+    cleanup
+  end
+
+  private
+
+  def setup_environment
+    Dir.chdir(REPO_ROOT)
+    FileUtils.mkdir_p(TMP_PERF_DIR)
+    FileUtils.cp(File.join(REPO_ROOT, "lib", "tasks", "benchmark_runner.rb"),
+                 BENCH_SCRIPT)
+
+    PerformanceHelpers.load_into_namespace(PerformanceHelpers::Current,
+                                           BENCH_SCRIPT)
+    PerformanceHelpers.clone_base_repo(DEFAULT_BASE, TMP_PERF_DIR, BENCH_SCRIPT)
+  end
+
+  def run_benchmarks_comparison
+    all_current = {}
+    all_base = {}
+
+    BENCHMARK_MATRIX.each do |format_sym, adapters|
+      adapters.each do |adapter_sym|
+        if skip_adapter?(format_sym, adapter_sym)
+          puts "\n== Skipping #{format_sym}:#{adapter_sym} (not supported on this platform) =="
+          next
+        end
+        puts "\n== Running #{format_sym}:#{adapter_sym} (base then current) =="
+        run_format_benchmarks(format_sym, adapter_sym, all_base, all_current)
+      end
+    end
+
+    summary = PerformanceHelpers.summary_report(
+      all_current,
+      all_base,
+      DEFAULT_BASE,
+      DEFAULT_RUN_TIME,
+      DEFAULT_THRESHOLD,
+    )
+
+    handle_results(summary)
+  end
+
+  def run_format_benchmarks(format_sym, adapter_sym, all_base, all_current)
+    DIRECTIONS.each do |direction|
+      base_runner = PerformanceHelpers::Base::BenchmarkRunner.new(
+        run_time: DEFAULT_RUN_TIME,
+        format: format_sym,
+        adapter: adapter_sym,
+        direction: direction,
+      )
+
+      current_runner = PerformanceHelpers::Current::BenchmarkRunner.new(
+        run_time: DEFAULT_RUN_TIME,
+        format: format_sym,
+        adapter: adapter_sym,
+        direction: direction,
+      )
+
+      PerformanceHelpers.run_benchmarks(
+        base_runner,
+        current_runner,
+        DEFAULT_THRESHOLD,
+        all_base,
+        all_current,
+      )
+    end
+  end
+
+  def handle_results(summary)
+    return unless summary[:regressions].any?
+
+    warn "Performance regressions detected!"
+    exit(1)
+  end
+
+  def cleanup
+    FileUtils.rm_rf(TMP_PERF_DIR)
+  end
+
+  def skip_adapter?(format_sym, adapter_sym)
+    case [format_sym, adapter_sym]
+    in [:toml, :tomlib]
+      # Skip tomlib on Windows due to segmentation fault issues
+      Gem.win_platform?
+    in [:yaml | :json, :yeptris]
+      # yeptris ships prebuilt platform gems for linux/darwin only
+      Gem.win_platform?
+    in [:toml, :teptris]
+      teptris_loadable?
+    else
+      false
+    end
+  end
+
+  # A teptris platform gem whose native library cannot load (the 0.2.17/
+  # 0.2.18 x86_64-linux/x64-mingw-ucrt soname gap) must skip its cell,
+  # not crash the comparator run.
+  def teptris_loadable?
+    require "teptris"
+    false
+  rescue LoadError, StandardError
+    warn "performance comparator: teptris not loadable here — skipping its cell"
+    true
+  end
+end

@@ -1,0 +1,95 @@
+module Lutaml
+  module KeyValue
+    class MappingRule < Lutaml::Model::MappingRule
+      attr_accessor :child_mappings,
+                    :root_mappings
+
+      attr_reader :unmatched
+
+      def initialize(
+        name,
+        to:,
+        to_instance: nil,
+        as_attribute: nil,
+        render_nil: false,
+        render_default: false,
+        render_empty: false,
+        treat_nil: :nil,
+        treat_empty: :empty,
+        treat_omitted: :nil,
+        with: {},
+        delegate: nil,
+        child_mappings: nil,
+        root_mappings: nil,
+        polymorphic: {},
+        polymorphic_map: {},
+        transform: {},
+        value_map: {},
+        when_attribute: {},
+        unmatched: :drop,
+        serialize: true
+      )
+        super(
+          name,
+          to: to,
+          to_instance: to_instance,
+          as_attribute: as_attribute,
+          render_nil: render_nil,
+          render_default: render_default,
+          render_empty: render_empty,
+          treat_nil: treat_nil,
+          treat_empty: treat_empty,
+          treat_omitted: treat_omitted,
+          with: with,
+          delegate: delegate,
+          polymorphic: polymorphic,
+          polymorphic_map: polymorphic_map,
+          transform: transform,
+          value_map: value_map,
+          when_attribute: when_attribute,
+          serialize: serialize,
+        )
+
+        @child_mappings = child_mappings
+        @root_mappings = root_mappings
+        # lutaml-model#88: policy for occurrences claimed by no rule
+        @unmatched = unmatched
+      end
+
+      def hash_mappings
+        @hash_mappings = @root_mappings || @child_mappings if @hash_mappings.nil?
+        @hash_mappings
+      end
+
+      def deep_dup
+        self.class.new(
+          name.dup,
+          to: to.dup,
+          render_nil: render_nil.dup,
+          render_default: render_default.dup,
+          render_empty: render_empty.dup,
+          with: Lutaml::Model::Utils.deep_dup(custom_methods),
+          delegate: delegate,
+          child_mappings: Lutaml::Model::Utils.deep_dup(child_mappings),
+          root_mappings: Lutaml::Model::Utils.deep_dup(root_mappings),
+          value_map: Lutaml::Model::Utils.deep_dup(@value_map),
+          when_attribute: when_attribute,
+          unmatched: @unmatched,
+          serialize: serialize?,
+        )
+      end
+
+      def root_mapping?
+        @root_mapping = name == "root_mapping" if @root_mapping.nil?
+        @root_mapping
+      end
+
+      # The writer symbol for this rule's target, interned once per
+      # rule: the interpolation allocated a String and interned it per
+      # row per document in the transform's hot loop.
+      def kv_setter
+        @kv_setter ||= :"#{to}="
+      end
+    end
+  end
+end

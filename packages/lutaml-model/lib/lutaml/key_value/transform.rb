@@ -1,0 +1,1223 @@
+module Lutaml
+  module KeyValue
+    MISSING = Object.new.freeze
+    class Transform < Lutaml::Model::Transform
+      def data_to_model(data, format, options = {})
+        # Use child's own default register if it has one
+        # This ensures versioned schemas (e.g., MML v2 with lutaml_default_register = :mml_v2)
+        # are instantiated with their native context
+        # TODO.max-perf/32: constant per (model class, register) — the
+        # transform itself is cached per that pair, so resolve once.
+        child_register = @kv_child_register ||= Lutaml::Model::Register
+          .resolve_for_child(
+            model_class, lutaml_register
+          )
+
+        # TODO.max-perf/37: eligible models hydrate in one pass —
+        # collect raw values per rule, recurse into eligible child
+        # models, build every instance through the bulk constructor.
+        # Falls back to the per-rule walk for anything ineligible.
+        if !options.key?(:mappings) && data.is_a?(::Hash) &&
+            %i[json yaml toml hash].include?(format) &&
+            (group = self.class.kv_group_plan(model_class, format,
+                                              lutaml_register)) &&
+            (instance = kv_group_build(group, data, format, child_register,
+                                       options))
+          root_and_parent_assignment(instance, options)
+          return instance
+        end
+
+        if model_class.include?(Lutaml::Model::Serialize)
+          # #1003: constructor-equivalent state via the compiled walk
+          # seed — no per-attribute determine_value walk per instance.
+          instance = model_class.allocate_for_walk(child_register)
+        else
+          instance = model_class.new
+          register_accessor_methods_for(instance, child_register)
+        end
+        root_and_parent_assignment(instance, options)
+        mappings = extract_mappings(options, format)
+
+        rules = mappings.mappings(lutaml_register)
+        # lutaml-model#88: nil unless the mapping partitions a wire key
+        # with when_attribute rules — the common case pays one scan.
+        partition = kv_partition(rules)
+        rules.each do |rule|
+          process_mapping_rule(data, instance, format, rule, options, partition)
+        end
+        collect_unmapped_keys(data, instance, mappings, rules)
+
+        instance
+      end
+
+      # #985: with `map_unmapped to:` declared, document keys no rule
+      # claims are collected verbatim into the target attribute, exactly
+      # as the model would have kept them outside a mapping.
+      def collect_unmapped_keys(data, instance, mappings, rules)
+        return unless data.is_a?(::Hash)
+
+        target = validated_unmapped_target(mappings)
+        return if target.nil?
+
+        claimed = {}
+        rules.each do |rule|
+          Array(rule.name).each { |name| claimed[name.to_s] = true } if rule.name
+        end
+
+        extras = nil
+        data.each do |key, value|
+          next if claimed[key.to_s]
+
+          (extras ||= {})[key] = value
+        end
+        return if extras.nil?
+
+        existing = instance.public_send(target)
+        merged = existing.is_a?(::Hash) ? existing.merge(extras) : extras
+        instance.public_send(:"#{target}=", merged)
+      end
+
+      # Memoized on the cached transform (one instance per model class
+      # and register): a typo'd map_unmapped target raises at first
+      # parse, naming the class and the target, instead of NoMethodError
+      # from inside the walk.
+      def validated_unmapped_target(mappings)
+        target = mappings.unmapped_attribute
+        return if target.nil?
+        return @lutaml_unmapped_target if @lutaml_unmapped_target == target
+
+        unless model_class.attributes(lutaml_register).key?(target)
+          raise ArgumentError,
+                "map_unmapped target :#{target} is not a declared " \
+                "attribute of #{model_class}"
+        end
+
+        @lutaml_unmapped_target = target
+      end
+
+      def model_to_data(instance, format, options = {})
+        # NEW ARCHITECTURE: Use KeyValue::Transformation if available
+        # This provides symmetric OOP architecture with XmlDataModel
+        if context.is_a?(Class) && context.include?(Lutaml::Model::Serialize)
+          transformation = context.transformation_for(
+            format, lutaml_register, mapping: @lutaml_mapping_override
+          )
+
+          # transformation_for returns nil for cyclic dependencies or :building sentinel
+          # Fall back to legacy approach in these cases
+          if transformation.is_a?(Lutaml::KeyValue::Transformation)
+            # transform emits the output hash directly (TODO.perf 19)
+            return transformation.transform(instance, options)
+          end
+        end
+
+        # LEGACY ARCHITECTURE: Fall back to Hash-based approach
+        # This maintains backward compatibility for models without transformations
+        mappings = extract_mappings(options, format)
+
+        rules = mappings.mappings(lutaml_register)
+        partition = kv_partition(rules)
+        hash = {}
+        handled_groups = nil
+        rules.each do |rule|
+          next unless valid_mapping?(rule, options)
+
+          group = partition && kv_partition_group(rule, partition)
+          if group
+            next if handled_groups&.include?(group)
+
+            (handled_groups ||= []) << group
+            process_partition_group!(instance, group, hash, format, options)
+          else
+            process_rule!(instance, rule, hash, format, mappings, options)
+          end
+        end
+        merge_unmapped_on_serialize(instance, mappings, hash)
+
+        hash.keys == [""] ? hash[""] : hash
+      end
+
+      # #985: re-emit the collected unknown keys after the mapped rules,
+      # so a mapped key colliding with a collected one wins. The
+      # attribute was declared in the mapping and validated at compile,
+      # so the accessor exists on every instance shape.
+      def merge_unmapped_on_serialize(instance, mappings, hash)
+        target = mappings.unmapped_attribute
+        return if target.nil?
+
+        extras = instance.public_send(target)
+        extras.each { |key, value| hash[key] ||= value } if extras.is_a?(::Hash)
+      end
+
+      # ---- TODO.max-perf/37: group-then-instantiate fast path ----
+
+      # [model class, format, register] -> rows or false (ineligible).
+      # Rows: [[rule, attr, kind, child_rows]] with kind :scalar or
+      # :model; child_rows is the child model's own row set. Cycle-safe:
+      # an in-progress model resolves false, so self-referential models
+      # take the interpretive walk.
+      # Concurrent::Map under threaded MRI, plain Hash under Opal
+      # (Concurrent is unavailable there) — the RULE_RECORDS pattern.
+      # Writes are idempotent (the same deterministic plan is computed),
+      # so a lost race costs a duplicate build, never a wrong value.
+      KV_GROUP_PLANS = if Lutaml::Model.opal?
+                         {}
+                       else
+                         Lutaml::Model::RuntimeCompatibility
+                           .require_native("concurrent")
+                         Concurrent::Map.new
+                       end
+
+      # [model class, register, format, generation] -> { rule => plan }.
+      # Class-level, generation-retired: the whole dispatch table for a
+      # model mapping compiles once — kind (scalar/custom/hash_map/
+      # interpretive/skip/invalid), target attribute and validity — so
+      # process_mapping_rule stops re-probing rule predicates at every
+      # node (~12 predicate calls plus a key array per rule per node;
+      # 154k+154k allocations per heroku.json parse). Same
+      # idempotent-write pattern as KV_GROUP_PLANS.
+      KV_WALK_PLANS = if Lutaml::Model.opal?
+                        {}
+                      else
+                        Lutaml::Model::RuntimeCompatibility
+                          .require_native("concurrent")
+                        Concurrent::Map.new
+                      end
+
+      def self.kv_group_plan(model_class, format, register)
+        # Context generation: specs (and apps) reset registers between
+        # parses; a plan cached across a reset references dead attribute
+        # objects. The generation key retires stale plans for free.
+        key = [model_class, format, register,
+               Lutaml::Model::GlobalContext.context_generation]
+        plan = KV_GROUP_PLANS[key]
+        return plan unless plan.nil?
+
+        # Cycle detection rides a THREAD-LOCAL recursion stack: a shared
+        # in-progress set races (a concurrent same-key build would cache
+        # false permanently), and the stack is per-build by definition.
+        # The false at the cycle point is NOT cached — the outermost
+        # build completes and caches the model's real verdict.
+        stack = (Thread.current[:kv_group_plan_stack] ||= [])
+        return false if stack.include?(key)
+
+        stack.push(key)
+        begin
+          KV_GROUP_PLANS[key] = build_kv_group_plan(model_class, format,
+                                                    register)
+        ensure
+          stack.pop
+        end
+      end
+
+      def self.build_kv_group_plan(model_class, format, register)
+        return false unless model_class.is_a?(Class) &&
+          model_class.include?(Lutaml::Model::Serialize)
+
+        mapping = model_class.mappings_for(format, register)
+        return false if mapping.nil?
+
+        attrs = model_class.attributes(register)
+        # The catch-all compiles as a row: unclaimed document keys are
+        # collected into the target attribute after the rules hydrate,
+        # mirroring the interpretive collect's position and merge. A
+        # typo'd target raises here, exactly as the walk raises at
+        # first parse.
+        unmapped_target = mapping.unmapped_attribute
+        if unmapped_target && !attrs.key?(unmapped_target)
+          raise ArgumentError,
+                "map_unmapped target :#{unmapped_target} is not a " \
+                "declared attribute of #{model_class}"
+        end
+        rows = nil
+        claimed = nil
+        mapping.mappings(register).each do |rule|
+          eligible = !rule.name.nil? && !rule.multiple_mappings? &&
+            rule.delegate.nil? &&
+            !rule.has_custom_method_for_deserialization? &&
+            !rule.raw_mapping? && !rule.root_mapping? &&
+            rule.when_attribute.empty? &&
+            !(if rule.polymorphic.is_a?(::Hash)
+                !rule.polymorphic.empty?
+              else
+                !!rule.polymorphic
+              end) &&
+            rule.transform.is_a?(::Hash) && rule.transform.empty? &&
+            rule.value_map(:from) ==
+              Lutaml::Model::Serialize::DEFAULT_VALUE_MAP
+          return false unless eligible
+
+          attr = attrs[rule.to]
+          return false if attr.nil? || attr.derived?
+          # Declared ranges keep their eager validation on the
+          # interpretive walk; polymorphic/union/custom-collection
+          # dispatch and registered type substitutions own their cast
+          # (the per-rule walk threads them through cast options).
+          return false if attr.collection? && attr.collection.is_a?(Range)
+          return false if attr.polymorphic? || attr.union? ||
+            attr.custom_collection?
+
+          type = attr.type(register)
+          return false if Lutaml::Model::GlobalContext.context(register)
+            .substitution_for(type).any?
+
+          if rule.hash_mappings
+            # #1003: compiled child-map row. The compiled ChildMapPlan
+            # reproduces translate_mappings' per-child lookups; shapes
+            # the compile cannot cover (unmappable child attribute,
+            # singular target, non-model child type) keep the whole
+            # model interpretive.
+            return false unless attr.collection? &&
+              type.is_a?(Class) && type.include?(Lutaml::Model::Serialize)
+
+            child_plan = compile_group_child_plan(type, format, register,
+                                                  rule.hash_mappings)
+            return false unless child_plan
+
+            rows ||= []
+            rows << [rule, attr, :child_map, child_plan, nil, nil]
+            next
+          end
+
+          if type.is_a?(Class) && type.include?(Lutaml::Model::Serialize)
+            child_register = Lutaml::Model::Register
+              .resolve_for_child(type, register)
+            child_rows = kv_group_plan(type, format, child_register)
+            return false unless child_rows
+
+            rows ||= []
+            # child_register rides the row: the plan was BUILT under it,
+            # and rebuilding the resolution per model row per document
+            # cost a Concurrent::Map hop each time (TODO.perf 14).
+            rows << [rule, attr, :model, type, child_rows, child_register]
+          elsif type.is_a?(Class) && type < Lutaml::Model::Type::Value &&
+              !attr.value_policy.whole_value?(type) &&
+              !Lutaml::Model::Attribute.custom_from_probe?(type)
+            rows ||= []
+            rows << [rule, attr, :scalar, nil, nil, nil]
+          else
+            return false
+          end
+        end
+        if unmapped_target
+          claimed = {}
+          mapping.mappings(register).each do |rule|
+            Array(rule.name).each { |name| claimed[name.to_s] = true } if rule.name
+          end
+          claimed.freeze
+          (rows ||= []) << [nil, nil, :unmapped, unmapped_target, claimed,
+                            nil]
+        end
+        # No eligible rows at all (empty mapping) — nothing to gain.
+        rows
+      end
+
+      # Class-level twin of the walk's child-map compile: the registry
+      # lookups (child rules, per-attribute wire names, path casts)
+      # resolve once per plan instead of once per node per child. nil
+      # keeps the model interpretive (preserving the walk's raise
+      # timing for declaration errors).
+      def self.compile_group_child_plan(child_class, format, register,
+child_mappings)
+        child_rules = child_class.mappings_for(format, register)
+        wire_names = {}
+        paths = {}
+        child_mappings.each do |attr_name, path|
+          attr_rule = child_rules.find_by_to!(attr_name)
+          wire_names[attr_name] = attr_rule.from.to_s
+          paths[attr_name] = case path
+                             when :key then :key
+                             when :value then :value
+                             else Array(path).map(&:to_s).freeze
+                             end
+        end
+        ChildMapPlan.new(child_mappings, wire_names, paths,
+                         child_mappings.values == [:key], child_rules,
+                         child_class)
+      rescue Lutaml::Model::NoMappingFoundError
+        nil
+      end
+
+      # Build values bottom-up, then ONE instance per model: present
+      # keys through the casting setters, ABSENT rules through the real
+      # per-rule walk (their extractor/defaults/sentinel semantics are
+      # the walk's own — reproducing them here would fork them). The
+      # per-rule walk is eliminated exactly for the present-key hot
+      # path. Returns nil (caller falls back) on any shape the plan
+      # does not cover, e.g. a non-Hash item where a model was expected.
+      def kv_group_build(rows, doc, format, register, options)
+        # Positional values, not per-row [name, value] pairs: rows are a
+        # fixed per-class list, so the writer to apply lives at the row's
+        # index and the pair arrays were the lane's biggest allocation
+        # (~6 arrays per node on hydrate-heavy corpora).
+        values = Array.new(rows.size, MISSING)
+        children = []
+        # Lazy: the present-key hot path never pushes, and this runs
+        # once per hydrated model instance.
+        absent = nil
+        unmapped = nil
+        i = 0
+        rows.each do |rule, attr, kind, type, child_rows, child_register|
+          if kind == :unmapped
+            unmapped = [type, child_rows]
+            i += 1
+            next
+          end
+
+          # One hash pass per row: fetch with a sentinel distinguishes
+          # absent keys from present-nil values (both read as nil), so
+          # the separate string_or_symbol_key? probe goes away.
+          v = Lutaml::Model::Utils.fetch_str_or_sym(doc, rule.name, MISSING)
+          if v.equal?(MISSING)
+            (absent ||= []) << rule
+            i += 1
+            next
+          end
+
+          if kind == :child_map
+            # Compiled translate_mappings (#1003): per-child lookups
+            # are plan constants. Children hydrate through their own
+            # compiled walk (the mappings: option routes them there);
+            # parent/root wiring rides the shared children pass. A
+            # non-Hash value falls back to the walk, which owns that
+            # error.
+            return nil unless v.is_a?(::Hash)
+
+            built = []
+            keys_only = type.keys_only && v.values.all?(::Hash)
+            v.each do |child_key, child_value|
+              child_hash = {}
+              type.child_mappings.each_key do |attr_name|
+                child_hash[type.wire_names[attr_name]] =
+                  extract_compiled_child_value(type.paths[attr_name],
+                                               child_key, child_value)
+              end
+              child_hash.update(child_value) if keys_only
+              built << self.class.data_to_model(type.attr_type,
+child_hash, format, { mappings: type.child_rules })
+            end
+            values[i] = built
+            children.concat(built)
+            i += 1
+            next
+          end
+
+          if kind == :scalar
+            values[i] = v
+            i += 1
+            next
+          end
+
+          if attr.collection?
+            # A present-but-nil collection reaches the per-rule walk,
+            # which owns the sentinel interplay for that edge
+            # (render_nil :as_empty semantics).
+            return nil if v.nil?
+
+            items = v.is_a?(::Array) ? v : [v]
+            built = []
+            items.each do |item|
+              return nil unless item.is_a?(::Hash)
+
+              child = self.class.kv_group_instance(type, child_rows, item,
+                                                   format, child_register,
+                                                   options)
+              return nil if child.nil?
+
+              built << child
+            end
+            values[i] = built
+            children.concat(built)
+          else
+            return nil unless v.is_a?(::Hash)
+
+            child = self.class.kv_group_instance(type, child_rows, v,
+                                                 format, child_register,
+                                                 options)
+            return nil if child.nil?
+
+            values[i] = child
+            children << child
+          end
+          i += 1
+        end
+        instance = model_class.allocate_for_walk(register)
+        i = 0
+        rows.each do |rule, _attr, kind, *_rest|
+          v = values[i]
+          i += 1
+          next if v.equal?(MISSING) || kind == :unmapped
+
+          instance.public_send(rule.kv_setter, v)
+        end
+        absent&.each do |rule|
+          process_mapping_rule(doc, instance, format, rule, options, nil)
+        end
+        children.each do |child|
+          child.lutaml_parent = instance
+          child.lutaml_root ||= instance.lutaml_root || instance
+        end
+        if unmapped
+          target, claimed = unmapped
+          extras = nil
+          doc.each do |key, value|
+            next if claimed.key?(key.to_s)
+
+            (extras ||= {})[key] = value
+          end
+          if extras
+            existing = instance.public_send(target)
+            merged = existing.is_a?(::Hash) ? existing.merge(extras) : extras
+            instance.public_send(:"#{target}=", merged)
+          end
+        end
+        instance
+      end
+
+      def self.kv_group_instance(model_class, rows, doc, format, register,
+options)
+        # cached_transform is per (class, register); format rides the
+        # call, not the cache.
+        cached_transform(model_class, register)
+          .kv_group_build(rows, doc, format, register, options)
+      end
+
+      private
+
+      def process_rule!(instance, rule, hash, format, _mappings, options)
+        return handle_delegate(instance, rule, hash, format) if rule.delegate
+
+        process_mapping_for_instance(instance, hash, format, rule, options)
+      end
+
+      def process_mapping_for_instance(instance, hash, format, rule, options)
+        if rule.custom_methods[:to]
+          to_method = rule.custom_methods[:to]
+          # lutaml-model#550: custom methods may declare a third context
+          # parameter to receive the options passed to `to_*`.
+          if Lutaml::Model::MappingRule.custom_method_arity(instance.class, to_method).to_i >= 3
+            return instance.public_send(to_method, instance, hash,
+                                        options[:context])
+          end
+
+          return instance.public_send(to_method, instance, hash)
+        end
+
+        attribute = attributes[rule.to]
+
+        # TODO.max-perf/10: plain scalar/collection rules take a fast
+        # lane — memoized wire name, shared render? semantics, one
+        # serialize dispatch — collapsing the interpretive branch
+        # probes below. Rules with any special feature stay on the
+        # full path.
+        if (plan = kv_serialize_plan(rule, attribute, instance))
+          value = instance.public_send(attribute.name)
+          if rule.render?(value, instance)
+            hash[plan.wire] = attribute.serialize(value, format,
+                                                  lutaml_register, options)
+          end
+          return
+        end
+
+        value = rule.serialize(instance)
+
+        if rule.can_transform_to?(attribute, format)
+          hash[rule_from_name(rule)] =
+            rule.transform_value(attribute, value, :to, format)
+          return
+        end
+
+        if rule.raw_mapping?
+          return handle_raw_mapping(hash, value, format,
+                                    options)
+        end
+        if rule.root_mapping?
+          return handle_root_mappings(hash, value, format, rule,
+                                      attribute)
+        end
+
+        # Use the format parameter passed in instead of hardcoding to :json
+        value = ExportTransformer.call(value, rule, attribute,
+                                       format: format,
+                                       context: options[:context])
+
+        value = serialize_value(value, rule, attribute, format, options)
+
+        return unless rule.render?(value, instance)
+
+        value = apply_value_map(value, rule.value_map(:to, options), attribute)
+
+        hash[rule_from_name(rule)] = value
+      end
+
+      def valid_mapping?(rule, options)
+        # rule is always Lutaml::Model::MappingRule; serialize? is
+        # statically defined (the hydrate-only marker).
+        return false unless rule.serialize?
+
+        only = options[:only]
+        except = options[:except]
+        name = rule.to
+
+        (except.nil? || !except.include?(name)) &&
+          (only.nil? || only.include?(name))
+      end
+
+      def handle_raw_mapping(hash, value, format, options)
+        result = Lutaml::Model::Config.adapter_for(format).parse(value, options)
+
+        hash.merge!(result)
+      end
+
+      def handle_root_mappings(hash, value, format, rule, attr)
+        hash.merge!(
+          generate_hash_from_child_mappings(
+            attr,
+            value,
+            format,
+            rule.root_mappings,
+          ),
+        )
+      end
+
+      def serialize_value(value, rule, attr, format, options)
+        unless rule.child_mappings
+          return attr.serialize(value, format, lutaml_register,
+                                options)
+        end
+
+        generate_hash_from_child_mappings(
+          attr, value, format, rule.child_mappings
+        )
+      end
+
+      def rule_from_name(rule)
+        rule.multiple_mappings? ? rule.from.first.to_s : rule.from.to_s
+      end
+
+      def generate_hash_from_child_mappings(attr, value, format, child_mappings)
+        return value unless child_mappings
+
+        hash = {}
+
+        generate_remaining_mappings_for_value(child_mappings, value, format)
+
+        attr_type = attr.type(lutaml_register)
+        rules = attr_type.mappings_for(format)
+        pairs = child_mappings.map do |attr_name, path|
+          [rules.find_by_to!(attr_name), path]
+        end
+
+        value.each do |child_obj|
+          hash.merge!(
+            extract_hash_for_child_mapping(pairs, child_obj, format),
+          )
+        end
+
+        hash
+      end
+
+      # Generates remaining child mappings for all attributes when only
+      # the :key mapping (e.g., { name: :key }) is provided.
+      # If any additional mappings (e.g., { name: :key, id: :identifier })
+      # are specified, no additional child mappings will be generated.
+      def generate_remaining_mappings_for_value(child_mappings, value, format)
+        return if child_mappings.values != [:key]
+
+        klass = value.first.class
+        mappings = klass.mappings_for(format, lutaml_register)
+
+        klass.attributes(lutaml_register).each_key do |name|
+          next if Utils.string_or_symbol_key?(child_mappings, name)
+
+          child_mappings[name.to_sym] = child_mapping_for(name, mappings)
+        end
+      end
+
+      def child_mapping_for(name, mappings)
+        mappings.find_by_to(name)&.name.to_s
+      end
+
+      def extract_hash_for_child_mapping(pairs, child_obj, format)
+        key = nil
+        value = {}
+
+        pairs.each do |rule, path|
+          attr_value = normalize_attribute_value(child_obj, rule, format)
+
+          next unless rule&.render?(attr_value, nil)
+          next key = attr_value if path == :key
+
+          value = extract_hash_value_for_child_mapping(path, attr_value, value)
+        end
+
+        value = nil if value.empty?
+        { key => value }
+      end
+
+      # The child's wire-form value for one attribute, produced through
+      # the same pipeline the child's own serializer uses for a rendered
+      # value (rule transform, then attribute serialization) — without
+      # the serialize-parse string round-trip this read previously paid
+      # per child per attribute.
+      def normalize_attribute_value(child_obj, rule, format)
+        child_attr = child_obj.class.attributes(lutaml_register)[rule.to]
+        value = child_obj.public_send(rule.to)
+        value = rule.transform_value(child_attr, value, :to, format)
+        child_attr.serialize(value, format, lutaml_register)
+      end
+
+      def extract_hash_value_for_child_mapping(path, value, map_value)
+        return value if path == :value
+
+        path = [path] unless path.is_a?(Array)
+        path[0...-1].inject(map_value) do |acc, k|
+          acc[k.to_s] ||= {}
+        end.public_send(:[]=, path.last.to_s, value)
+
+        map_value
+      end
+
+      def handle_delegate(instance, rule, hash, format)
+        value = extract_value_for_delegate(instance, rule)
+        return if value.nil? && rule.value_map(:to)[:nil] == :omitted
+
+        attribute = instance.public_send(rule.delegate).class.attributes(lutaml_register)[rule.to]
+        hash[rule_from_name(rule)] =
+          attribute.serialize(value, format, lutaml_register)
+      end
+
+      def extract_value_for_delegate(instance, rule)
+        instance.public_send(rule.delegate).public_send(rule.to)
+      end
+
+      def extract_mappings(options, format)
+        options[:mappings] || mappings_for(format, lutaml_register)
+      end
+
+      # ---- lutaml-model#88: when_attribute for key-value formats ----
+
+      # Wire keys partitioned by when_attribute rules: key -> { rules: all
+      # rules on the key in declaration order, discriminators: the subset
+      # carrying when_attribute }. nil unless any rule uses when_attribute.
+      def kv_partition(rules)
+        partitions = nil
+        rules.each do |rule|
+          next if rule.when_attribute.empty?
+
+          partitions ||= {}
+          key = kv_partition_key(rule)
+          entry = (partitions[key] ||= { rules: [], discriminators: [] })
+          entry[:discriminators] << rule
+        end
+        return nil unless partitions
+
+        rules.each do |rule|
+          key = kv_partition_key(rule)
+          partitions[key][:rules] << rule if partitions.key?(key)
+        end
+        partitions
+      end
+
+      def kv_partition_key(rule)
+        name = rule.name
+        name = name.first if name.is_a?(Array)
+        name.to_s
+      end
+
+      # The partition entry covering any of the rule's wire names.
+      def kv_partition_group(rule, partition)
+        return nil if partition.nil?
+
+        if rule.multiple_mappings?
+          rule.name.each do |name|
+            entry = partition[name.to_s]
+            return entry if entry
+          end
+          nil
+        else
+          partition[rule.name.to_s]
+        end
+      end
+
+      # A value at a partitioned key, filtered for one rule: a
+      # discriminator rule keeps its matches; a plain rule keeps the
+      # occurrences no discriminator claimed (single-capture, mirroring
+      # the XML side).
+      def apply_kv_when_attribute(value, rule, entry, attr = nil)
+        if rule.when_attribute.empty?
+          return kv_partition_value(value, attr) do |item|
+            entry[:discriminators].none? { |s| kv_item_matches?(item, s) }
+          end
+        end
+
+        plain_sibling = entry[:rules].any? { |r| r.when_attribute.empty? }
+        if rule.unmatched == :raise && !plain_sibling
+          check_unclaimed_kv_items!(value, rule, entry)
+        end
+        kv_partition_value(value, attr) { |item| kv_item_matches?(item, rule) }
+      end
+
+      def kv_item_matches?(item, rule)
+        return false unless item.is_a?(::Hash)
+
+        rule.when_attribute.all? do |name, expected|
+          actual = Lutaml::Model::Utils.fetch_str_or_sym(item, name.to_s)
+          !actual.nil? && actual.to_s == expected.to_s
+        end
+      end
+
+      # select/reject over the occurrence shape: an Array filters per
+      # item; a single occurrence is kept or dropped as a whole; nil
+      # passes through. A dropped occurrence existed on the wire, so a
+      # collection attribute reads it as [] rather than absent. A
+      # non-hash item satisfies no discriminator, so plain rules keep it
+      # and discriminator rules drop it.
+      def kv_partition_value(value, attr = nil, &block)
+        case value
+        when ::Array
+          value.select(&block)
+        when nil
+          nil
+        else
+          if yield(value)
+            value
+          else
+            attr&.collection? ? [] : nil
+          end
+        end
+      end
+
+      # lutaml-model#88: fail closed for `unmatched: :raise` — an item
+      # no rule on the key claims is exactly the data the default
+      # policy silently drops.
+      def check_unclaimed_kv_items!(value, rule, entry)
+        items = value.is_a?(::Array) ? value : [value]
+        tested = entry[:discriminators].flat_map { |s| s.when_attribute.keys }
+          .uniq.map(&:to_s)
+        items.each do |item|
+          next if entry[:discriminators].any? { |s| kv_item_matches?(item, s) }
+
+          values = tested.filter_map do |name|
+            v = item.is_a?(::Hash) &&
+              Lutaml::Model::Utils.fetch_str_or_sym(item, name)
+            "#{name}=#{v.inspect}" if v
+          end
+          raise ::Lutaml::Model::UnknownDiscriminatorError,
+                "Item at <#{kv_partition_key(rule)}> (#{values.join(', ')}) " \
+                "is claimed by no rule: it matches no when_attribute " \
+                "discriminator and no plain rule shares the key. Cover the " \
+                "value, add a plain rule, or opt out with unmatched: :drop"
+        end
+        nil
+      end
+
+      # Serialize a partitioned key as one wire value: every rule on the
+      # key contributes its items in declaration order, each stamped with
+      # its rule's discriminator pairs (unless the item already carries
+      # the key — the value's own mapping wins).
+      def process_partition_group!(instance, group, hash, format, options)
+        wire = rule_from_name(group[:rules].first)
+        items = []
+        present = false
+        group[:rules].each do |rule|
+          next unless valid_mapping?(rule, options)
+
+          scratch = {}
+          process_mapping_for_instance(instance, scratch, format, rule, options)
+          value = scratch[rule_from_name(rule)]
+          next if value.nil?
+
+          present = true
+          Array(value).each do |item|
+            items << kv_stamp_discriminator(item, rule)
+          end
+        end
+        return unless present
+
+        hash[wire] = items
+      end
+
+      def kv_stamp_discriminator(item, rule)
+        return item unless item.is_a?(::Hash)
+
+        missing = {}
+        rule.when_attribute.each do |name, expected|
+          unless Lutaml::Model::Utils.string_or_symbol_key?(item, name)
+            missing[name.to_s] = expected.to_s
+          end
+        end
+        missing.empty? ? item : item.merge(missing)
+      end
+
+      def process_mapping_rule(doc, instance, format, rule, options = {},
+partition = nil)
+        plans = walk_plans_for(format)
+        plan = plans[rule] ||= build_walk_plan(format, rule)
+        kind = plan.kind
+        return if kind == :skip
+
+        raise "Attribute '#{rule.to}' not found in #{self}" unless plan.valid
+
+        attr = plan.attr
+
+        # lutaml-model#88: discriminator rules (and plain rules on a
+        # partitioned key) must filter the raw value, so they keep the
+        # interpretive path.
+        partitioned = partition && kv_partition_group(rule, partition)
+        if partitioned.nil? && kind == :scalar &&
+            (value = kv_fast_extract(doc, plan))
+          rule.deserialize(instance, kv_fast_cast(value, plan, instance),
+                           attributes, self, options[:context], pre_cast: true)
+          return
+        end
+
+        value = rule_value_extractor_class.call(rule, doc, format, attr,
+                                                lutaml_register, options, instance)
+        if partitioned && !Lutaml::Model::Utils.uninitialized?(value)
+          value = apply_kv_when_attribute(value, rule, partitioned, attr)
+        end
+        value = apply_value_map(value, rule.value_map(:from, options), attr)
+
+        # An empty value ("", [], {}) is a present value per the
+        # missing-values semantics and must reach the custom method;
+        # only nil (non-existent) skips it (lutaml-model#746).
+        if (kind == :custom) && value.nil?
+          return
+        end
+
+        if kind == :custom
+          return rule.deserialize(instance, value, attributes, model_class,
+                                  options[:context])
+        end
+
+        value = rule.transform_value(attr, value, :from, format)
+        # Hash/child-mapping rules translate a hash document; an absent
+        # or explicit-null key has nothing to translate — the attribute
+        # keeps its uninitialized/default state (a nil here previously
+        # crashed translate_mappings).
+        return if value.nil? && kind == :hash_map
+
+        child_plan = plan.child_map
+        value = if child_plan
+                  translate_child_map_compiled(value, child_plan, attr,
+                                               format, instance)
+                else
+                  translate_mappings(value, rule.hash_mappings, attr, format,
+                                     instance)
+                end
+        unless kind == :hash_map
+          value = cast_value(value, attr, format, rule,
+                             instance)
+        end
+
+        # Range errors stay eager here. The over-count error only fires when the
+        # attribute is not a collection, so this guard defers exactly that case
+        # to `.validate` while leaving declared ranges checked at parse. A mapped
+        # PORO has no `.validate` to defer into, so it keeps the eager check.
+        # singular_tolerance: :first on the KV lane (#971): collapse an
+        # over-ingested collection before the writer stores it whole.
+        value = value.first if attr.tolerates_singular_overflow?(value)
+
+        if attr.collection? || !instance.is_a?(Lutaml::Model::Serialize)
+          attr.valid_collection!(value, context)
+        end
+        # No pre_cast here: the interpretive attr.cast is not the full
+        # cast chain — whole-value Type policies (e.g. a custom
+        # Type::Value that receives the whole hash) are shaped by the
+        # setter's cast_value, which must still run.
+        rule.deserialize(instance, value, attributes, self,
+                         options[:context])
+      end
+
+      # Compiled rule plans (TODO.perf/07): for plain scalar rules the
+      # per-value interpretation (extraction dispatch, type resolution,
+      # per-element probes, validation inside casts) collapses to a
+      # precomputed wire name, target class, and identity-guard cast.
+      # Guard + cached target — an inline cache per rule. Complex rules
+      # (custom methods, transforms, value maps, delegates, hash mappings,
+      # unions, polymorphism) return nil and keep the interpretive path.
+      WalkPlan = ::Struct.new(:kind, :attr, :valid, :wire, :klass,
+                              :collection, :child_map)
+
+      # Compiled child-map translation (#986b): the per-node registry
+      # lookups (attribute type, child mapping rules, per-attribute wire
+      # names, path string casts) collapse to per-rule constants. nil
+      # child_map keeps the interpretive translate path (including its
+      # declaration-error timing).
+      ChildMapPlan = ::Struct.new(:child_mappings, :wire_names, :paths,
+                                  :keys_only, :child_rules, :attr_type)
+
+      # Memoized (per transform) wire name for plain rules — the from
+      # spelling never changes after definition.
+      KvSerializePlan = ::Struct.new(:wire)
+
+      def build_child_map_plan(format, rule, attr)
+        child_mappings = rule.hash_mappings
+        return nil unless child_mappings.is_a?(::Hash)
+
+        attr_type = attr.type(lutaml_register)
+        return nil unless attr_type.is_a?(Class) &&
+          attr_type.include?(Lutaml::Model::Serialize)
+
+        child_rules = attr_type.mappings_for(format, lutaml_register)
+        wire_names = {}
+        paths = {}
+        child_mappings.each do |attr_name, path|
+          attr_rule = child_rules.find_by_to!(attr_name)
+          wire_names[attr_name] = attr_rule.from.to_s
+          paths[attr_name] = compile_child_map_path(path)
+        end
+        ChildMapPlan.new(child_mappings, wire_names, paths,
+                         child_mappings.values == [:key], child_rules,
+                         attr_type)
+      rescue Lutaml::Model::NoMappingFoundError
+        nil
+      end
+
+      def compile_child_map_path(path)
+        case path
+        when :key then :key
+        when :value then :value
+        else Array(path).map(&:to_s).freeze
+        end
+      end
+
+      # Compiled translate_mappings (#986b). Same shape as the
+      # interpretive pair: keys_only is decided once per rule VALUE (the
+      # original tests the whole document hash, not each child).
+      def translate_child_map_compiled(value, child_plan, attr, format,
+                                       instance)
+        child_options = {
+          mappings: child_plan.child_rules,
+          lutaml_parent: instance,
+          lutaml_root: instance.lutaml_root || instance,
+        }
+        keys_only = child_plan.keys_only && value.values.all?(::Hash)
+        wire_names = child_plan.wire_names
+        paths = child_plan.paths
+        child_mappings = child_plan.child_mappings
+
+        value.map do |key, child_value|
+          child_hash = {}
+          child_mappings.each_key do |attr_name|
+            child_hash[wire_names[attr_name]] =
+              extract_compiled_child_value(paths[attr_name], key, child_value)
+          end
+          child_hash.merge!(child_value) if keys_only
+          map_child_data(child_hash, attr, format, instance, child_plan,
+                         child_options)
+        end
+      end
+
+      def extract_compiled_child_value(compiled_path, key, value)
+        case compiled_path
+        when :key then key
+        when :value then value
+        else value.dig(*compiled_path)
+        end
+      end
+
+      def kv_serialize_plan(rule, attr, _instance)
+        return nil if rule.delegate || rule.raw_mapping? || rule.root_mapping? ||
+          rule.hash_mappings || rule.child_mappings ||
+          rule.has_custom_method_for_serialization? ||
+          rule.when_attribute? || rule.multiple_mappings? ||
+          polymorphic_rule?(rule) ||
+          (rule.transform.is_a?(Hash) && !rule.transform.empty?) ||
+          rule.transform.is_a?(Class) || attr.nil? || attr.derived? ||
+          attr.union? || attr.polymorphic? || attr.custom_collection? ||
+          attr.transform ||
+          rule.value_map(:to) != Lutaml::Model::Serialize::DEFAULT_VALUE_MAP
+
+        @kv_serialize_plans ||= {}.compare_by_identity
+        @kv_serialize_plans[rule] ||= KvSerializePlan.new(rule_from_name(rule))
+      end
+
+      def walk_plans_for(format)
+        generation = Lutaml::Model::GlobalContext.context_generation
+        if @lutaml_walk_plans.nil? || @lutaml_walk_generation != generation ||
+            @lutaml_walk_format != format
+          key = [model_class, lutaml_register, format, generation,
+                 @lutaml_mapping_override]
+          @lutaml_walk_plans =
+            (KV_WALK_PLANS[key] ||= build_walk_plans(format))
+          @lutaml_walk_generation = generation
+          @lutaml_walk_format = format
+        end
+        @lutaml_walk_plans
+      end
+
+      def build_walk_plans(format)
+        plans = {}.compare_by_identity
+        mappings_for(format).mappings(lutaml_register).each do |rule|
+          plans[rule] = build_walk_plan(format, rule)
+        end
+        plans
+      end
+
+      # The per-rule dispatch compile. Kind precedence mirrors the
+      # interpretive method exactly: skip (derived) > invalid >
+      # custom (deserialization custom method) > hash_map
+      # (hash_mappings truthy — translate, never cast) > scalar (the
+      # fast-extract eligibility) > interpretive.
+      def build_walk_plan(format, rule, _attrs = nil)
+        attr = attribute_for_rule(rule)
+        return WalkPlan.new(:skip, nil, false, nil, nil, false) if attr&.derived?
+
+        valid = valid_rule?(rule, attr)
+        kind =
+          if rule.has_custom_method_for_deserialization?
+            :custom
+          elsif rule.hash_mappings
+            :hash_map
+          else
+            plan = build_kv_rule_plan(format, rule, attr)
+            plan ? :scalar : :interpretive
+          end
+
+        if kind == :hash_map && attr
+          child = build_child_map_plan(format, rule, attr)
+          return WalkPlan.new(:hash_map, attr, valid, nil, nil, false, child)
+        end
+
+        plan || WalkPlan.new(kind, attr, valid, nil, nil, false)
+      end
+
+      # `rule.polymorphic` defaults to an empty Hash, which is truthy —
+      # presence is emptiness-based, mirroring MappingRule#polymorphic_mapping?.
+      def polymorphic_rule?(rule)
+        poly = rule.polymorphic
+        poly.respond_to?(:empty?) ? !poly.empty? : !!poly
+      end
+
+      def build_kv_rule_plan(_format, rule, attr)
+        return nil if rule.raw_mapping? ||
+          rule.has_custom_method_for_deserialization? ||
+          rule.hash_mappings || rule.multiple_mappings? ||
+          polymorphic_rule?(rule) || rule.delegate ||
+          (rule.transform.is_a?(Hash) && !rule.transform.empty?) ||
+          rule.transform.is_a?(Class) ||
+          attr.derived? ||
+          attr.union? || attr.polymorphic? ||
+          attr.custom_collection?
+
+        type = attr.type(lutaml_register)
+        return nil unless type.is_a?(Class) &&
+          type < ::Lutaml::Model::Type::Value &&
+          !attr.value_policy.whole_value?(type) &&
+          !Lutaml::Model::Attribute.custom_from_probe?(type)
+
+        WalkPlan.new(:scalar, attr, true, rule.name.to_s, type,
+                     attr.collection?)
+      end
+
+      # Extraction fast path: plain hash fetch for a present, non-blank
+      # value. nil/blank values keep the interpretive path — their
+      # value-map/missing-value semantics must not be duplicated here.
+      def kv_fast_extract(doc, plan)
+        return nil unless doc.is_a?(::Hash)
+
+        v = doc[plan.wire]
+        return nil if v.nil?
+        return nil if v.is_a?(::String) && v.empty?
+        return nil if v.is_a?(::Array) && (v.empty? || !plan.collection)
+        # Structured values on scalar plans keep the interpretive path —
+        # its collection guidance error and cast semantics own them.
+        return nil if v.is_a?(::Hash)
+
+        v
+      end
+
+      # Cast fast path: identity when the value already has the target
+      # class (the overwhelming case for engine-typed scalars), the type's
+      # cast otherwise. Collections cast per element.
+      def kv_fast_cast(value, plan, _instance)
+        if plan.collection
+          unless value.is_a?(::Array)
+            return value.is_a?(plan.klass) ? value : plan.klass.cast(value)
+          end
+
+          klass = plan.klass
+          value.map { |e| e.is_a?(klass) ? e : klass.cast(e) }
+        else
+          value.is_a?(plan.klass) ? value : plan.klass.cast(value)
+        end
+      end
+
+      def cast_value(value, attr, format, rule, instance)
+        cast_options = rule.polymorphic ? { polymorphic: rule.polymorphic } : {}
+        cast_options[:lutaml_parent] = instance if instance
+        if instance
+          cast_options[:lutaml_root] =
+            (instance.lutaml_root || instance)
+        end
+        attr.cast(value, format, lutaml_register, cast_options)
+      end
+
+      def translate_mappings(hash, child_mappings, attr, format, instance)
+        return hash unless child_mappings
+
+        hash.map do |key, value|
+          process_child_mapping(key, value, child_mappings, attr, format, hash,
+                                instance)
+        end
+      end
+
+      def process_child_mapping(key, value, child_mappings, attr, format, hash,
+instance)
+        child_hash = build_child_hash(key, value, child_mappings, attr, format)
+
+        if only_keys_mapped?(child_mappings, hash)
+          child_hash.merge!(value)
+        end
+
+        map_child_data(child_hash, attr, format, instance)
+      end
+
+      def build_child_hash(key, value, child_mappings, attr, format)
+        attr_type = attr.type(lutaml_register)
+        child_mappings.to_h do |attr_name, path|
+          attr_value = extract_attr_value(path, key, value)
+          attr_rule = attr_type.mappings_for(format,
+                                             lutaml_register).find_by_to!(attr_name)
+          [attr_rule.from.to_s, attr_value]
+        end
+      end
+
+      def extract_attr_value(path, key, value)
+        case path
+        when :key then key
+        when :value then value
+        else
+          path = Array(path)
+          value.dig(*path.map(&:to_s))
+        end
+      end
+
+      def only_keys_mapped?(child_mappings, hash)
+        child_mappings.values == [:key] && hash.values.all?(::Hash)
+      end
+
+      def map_child_data(child_hash, attr, format, instance,
+child_plan = nil, child_options = nil)
+        if child_plan
+          self.class.data_to_model(child_plan.attr_type, child_hash, format,
+                                   child_options)
+        else
+          attr_type = attr.type(lutaml_register)
+          options = {
+            mappings: attr_type.mappings_for(format, lutaml_register),
+            lutaml_parent: instance,
+            lutaml_root: instance.lutaml_root || instance,
+          }
+          self.class.data_to_model(attr_type, child_hash, format, options)
+        end
+      end
+
+      def rule_value_extractor_class
+        Lutaml::Model::RuleValueExtractor
+      end
+    end
+  end
+end

@@ -1,0 +1,399 @@
+# frozen_string_literal: true
+
+module Lutaml
+  module KeyValue
+    class Transformation
+      # Serializes values (primitives and nested models) for key-value formats.
+      #
+      # This is an independent class with explicit dependencies that can be
+      # tested in isolation from Transformation.
+      #
+      # @example Basic usage
+      #   serializer = ValueSerializer.new(
+      #     format: :json,
+      #     register_id: :default,
+      #     transformation_factory: ->(type) { Transformation.new(type, ...) }
+      #   )
+      #   result = serializer.serialize_item(value, rule, options)
+      #
+      class ValueSerializer
+        include Lutaml::Model::RenderPolicy
+
+        # @return [Symbol] The serialization format (:json, :yaml, :toml)
+        attr_reader :format
+
+        # @return [Symbol, nil] The register ID for attribute lookup
+        attr_reader :register_id
+
+        # @return [Proc] Factory lambda for creating child transformations
+        attr_reader :transformation_factory
+
+        # @return [Class, nil] The model class for attribute lookup
+        attr_reader :model_class
+
+        # Initialize the ValueSerializer with explicit dependencies.
+        #
+        # @param format [Symbol] The serialization format
+        # @param register_id [Symbol, nil] The register ID
+        # @param transformation_factory [Proc] Factory lambda ->(type_class) { Transformation }
+        # @param model_class [Class, nil] The model class for attribute lookup
+        def initialize(format:, register_id:, transformation_factory:,
+model_class: nil)
+          @format = format
+          @register_id = register_id
+          @transformation_factory = transformation_factory
+          @model_class = model_class
+          # Pre-declared: the serializer may be frozen after setup, and
+          # the type-transformation memo mutates this hash in place.
+          @lutaml_type_transformations = {}
+        end
+
+        # Serialize a value for an item (handles nested models and primitives).
+        #
+        # This is the main entry point for value serialization.
+        #
+        # @param value [Object] The value to serialize
+        # @param rule [CompiledRule] The compiled rule
+        # @param options [Hash] Serialization options
+        # @return [Object, nil] The serialized value (Hash, primitive, or nil)
+        def serialize_item(value, rule, options = {})
+          return nil if value.nil?
+          return nil if Lutaml::Model::Utils.uninitialized?(value)
+
+          # Compiled serialize plan (TODO.perf/07): the rule-invariant
+          # probes — identity-fast builtin scalars, Reference, union,
+          # nested-model classification — resolve once per rule; the
+          # per-field hash lookups dominated primitive-heavy docs.
+          plan = serialize_plan(rule)
+          if plan[:identity_type] &&
+              !value.is_a?(::Lutaml::Model::Serialize) &&
+              !value.is_a?(::Hash) && !value.is_a?(::Array)
+            return value
+          end
+
+          # Check for Reference type first - even if value is a Serializable,
+          # it should be serialized as a key, not as a nested model
+          if plan[:reference]
+            return serialize_reference(value, rule)
+          end
+
+          if plan[:union]
+            serialize_union(value, options)
+          elsif plan[:nested]
+            serialize_nested_model(value, rule, options)
+          else
+            serialize_primitive(value, rule)
+          end
+        end
+
+        # Union: dispatch on the value's own class (stateless). A model member
+        # serializes via its class transformation; a scalar emits as-is.
+        def serialize_union(value, options)
+          unless value.is_a?(Lutaml::Model::Serialize)
+            return Lutaml::Model::Type::Union.serialize_scalar(value, format)
+          end
+
+          transform_nested_model(value, create_transformation(value.class),
+                                 options)
+        end
+
+        # Check if a value is a nested model based on the rule.
+        #
+        # @param rule [CompiledRule] The compiled rule
+        # @return [Boolean] true if the rule defines a nested model
+        def nested_model?(rule)
+          # Use include? instead of < because < returns nil (not false) for non-subclasses
+          rule.attribute_type.is_a?(Class) &&
+            rule.attribute_type.include?(Lutaml::Model::Serialize)
+        end
+
+        # Serialize a nested model to a hash representation.
+        #
+        # @param value [Object] The model instance to serialize
+        # @param rule [CompiledRule] The compiled rule
+        # @param options [Hash] Serialization options
+        # @return [Hash, nil] The serialized hash or nil if empty
+        def serialize_nested_model(value, rule, options = {})
+          value = coerce_nested_for_rule(value, rule)
+          validate_nested_model_type!(value, rule)
+
+          # Determine the actual type for polymorphism support
+          actual_type = determine_actual_type(value, rule)
+          uses_polymorphism = actual_type != rule.attribute_type
+
+          # Get or create child transformation
+          child_transformation = if uses_polymorphism
+                                   transformation_for_type(actual_type)
+                                 else
+                                   rule.child_transformation ||
+                                     transformation_for_type(rule.attribute_type)
+                                 end
+
+          if child_transformation
+            transform_nested_model(value, child_transformation, options)
+          else
+            serialize_primitive(value, rule)
+          end
+        end
+
+        # Serialize a primitive value to the appropriate representation.
+        #
+        # @param value [Object] The primitive value
+        # @param rule [CompiledRule] The compiled rule
+        # @return [Object] The serialized value
+        def serialize_primitive(value, rule)
+          return nil if value.nil?
+          return nil if Lutaml::Model::Utils.uninitialized?(value)
+
+          # For Reference types, use attribute's serialize method
+          if reference_type?(rule)
+            return serialize_reference(value, rule)
+          end
+
+          # For Serializable types, use to_#{format} method
+          if rule.attribute_type.is_a?(Class) &&
+              rule.attribute_type < Lutaml::Model::Serialize
+            value = coerce_nested_for_rule(value, rule)
+            validate_serializable_type!(value, rule)
+            return value.public_send(:"to_#{format}")
+          end
+
+          if rule.attribute_type.is_a?(Class) && rule.attribute_type < Lutaml::Model::Type::Value
+            plan = serialize_plan(rule)
+            # Identity only under identity_fast_type's exact condition
+            # (no custom to AND no custom from): a custom from means the
+            # wrapper constructor normalizes the value, so the raw value
+            # must still pass through it.
+            # No custom to_<format> serializer means the wrapper's
+            # to_<format> is the inherited identity — the raw value IS the
+            # serialized form, whatever its class (the old
+            # value.instance_of?(TypeClass) check could never match raw
+            # scalars, so every Integer/Boolean/String paid the
+            # wrap-allocate-cast ceremony).
+            if plan[:identity_type] && !value.is_a?(::Lutaml::Model::Serialize) && !value.is_a?(::Hash) && !value.is_a?(::Array)
+              return value
+            end
+            if (to_fn = plan[:to_fn])
+              return to_fn.call(rule.attribute_type.new(value))
+            end
+
+            wrapped_value = rule.attribute_type.new(value)
+            wrapped_value.public_send(:"to_#{format}")
+          else
+            value
+          end
+        end
+
+        # Per-rule serialize plan: the type class for builtin scalars with
+        # no custom to_<format> serializer (identity serialization), nil
+        # otherwise. Memoized per [rule].
+        # Rule-invariant resolution for Transformation#serialize_value,
+        # memoized here (Transformation freezes itself after compile;
+        # the ValueSerializer shares its model_class/register_id).
+        def serialize_value_plan(rule)
+          @serialize_value_plans ||= {}
+          @serialize_value_plans[rule] ||= begin
+            attr = model_class.attributes(register_id)&.[](rule.attribute_name)
+            attr ||= model_class.attributes&.[](rule.attribute_name)
+            {
+              attr: attr,
+              reference: attr && attr.unresolved_type == Lutaml::Model::Type::Reference,
+              nested: rule.attribute_type.is_a?(Class) &&
+                rule.attribute_type < Lutaml::Model::Serialize,
+            }
+          end
+        end
+
+        def serialize_plan(rule)
+          @serialize_plans ||= {}
+          @serialize_plans[rule] ||= {
+            identity_type: identity_fast_type(rule),
+            reference: reference_type?(rule),
+            union: ::Lutaml::Model::Type::Union.rule?(rule),
+            nested: nested_model?(rule),
+            # The custom to_<format> serializer, resolved once per rule:
+            # the default path is pure identity (to_<format> returns the
+            # wrapped .value), so values without a custom serializer skip
+            # the wrap-allocate-cast ceremony entirely, and custom ones
+            # skip the per-value registry lookup.
+            to_fn: custom_to_fn(rule),
+          }
+        end
+
+        def custom_to_fn(rule)
+          type = rule.attribute_type
+          return nil unless type.is_a?(::Class) && type < ::Lutaml::Model::Type::Value
+
+          ::Lutaml::Model::Type::Value
+            .format_type_serializer_for(@format, type)&.fetch(:to, nil)
+        end
+
+        # Builtin scalars whose type registers no custom to_<format>
+        # serializer serialize as the value itself — Type::Value#to_<format>'s
+        # default — without the wrap-allocate-cast ceremony per field.
+        def identity_fast_type(rule)
+          type = rule.attribute_type
+          return nil unless type.is_a?(::Class) && type < ::Lutaml::Model::Type::Value
+
+          serializer = ::Lutaml::Model::Type::Value
+            .format_type_serializer_for(@format, type)
+          # Only a registered custom to_<format> serializer blocks the
+          # identity path: #to_<format>'s default is the inherited identity,
+          # so the wrapper ceremony is a no-op for every other type. (The
+          # custom FROM probe is a parse-direction concern and does not
+          # change what serialization emits.)
+          serializer && serializer[:to] ? nil : type
+        end
+
+        private
+
+        # Coerce a value the model accepted into the rule's declared
+        # nested class (#1089) before the validators run. Registered
+        # type substitutions pass through untouched — the validators
+        # accept them as-is.
+        #
+        # @param value [Object] The stored attribute value
+        # @param rule [CompiledRule] The compiled rule
+        # @return [Object] The coerced value, or the value unchanged
+        def coerce_nested_for_rule(value, rule)
+          expected = rule.attribute_type.model || rule.attribute_type
+          return value if value.is_a?(expected)
+
+          context = Lutaml::Model::GlobalContext.context(register_id)
+          return value if context.substitution_for(rule.attribute_type)
+            .any? { |s| s.to_type == value.class }
+
+          NestedValueCoercion.coerce(value, expected)
+        end
+
+        # Validate that a nested model value matches the expected type.
+        #
+        # @param value [Object] The value to validate
+        # @param rule [CompiledRule] The compiled rule
+        # @raise [Lutaml::Model::IncorrectModelError] if type mismatch
+        def validate_nested_model_type!(value, rule)
+          context = Lutaml::Model::GlobalContext.context(register_id)
+          subs = context.substitution_for(rule.attribute_type)
+          uses_type_substitution = subs.any? { |s| s.to_type == value.class }
+
+          if rule.attribute_type.is_a?(Class) && rule.attribute_type.include?(Lutaml::Model::Serialize) && rule.attribute_type.model
+            # Mapper class: value should be an instance of the mapped model
+            unless value.is_a?(rule.attribute_type.model) || uses_type_substitution
+              msg = "attribute '#{rule.attribute_name}' value is a '#{value.class}' " \
+                    "but should be a '#{rule.attribute_type.model}'"
+              raise Lutaml::Model::IncorrectModelError, msg
+            end
+          else
+            # Regular Serializable class
+            unless value.is_a?(Lutaml::Model::Serialize) || uses_type_substitution
+              msg = "attribute '#{rule.attribute_name}' value is a '#{value.class}' " \
+                    "but should be a kind of 'Lutaml::Model::Serialize'"
+              raise Lutaml::Model::IncorrectModelError, msg
+            end
+          end
+        end
+
+        # Validate that a Serializable value matches the expected type.
+        #
+        # @param value [Object] The value to validate
+        # @param rule [CompiledRule] The compiled rule
+        # @raise [Lutaml::Model::IncorrectModelError] if type mismatch
+        def validate_serializable_type!(value, rule)
+          unless value.is_a?(rule.attribute_type)
+            msg = "attribute '#{rule.attribute_name}' value is a '#{value.class}' " \
+                  "but should be a '#{rule.attribute_type}'"
+            raise Lutaml::Model::IncorrectModelError, msg
+          end
+        end
+
+        # Determine the actual type for polymorphism support.
+        #
+        # @param value [Object] The value
+        # @param rule [CompiledRule] The compiled rule
+        # @return [Class] The actual type to use
+        def determine_actual_type(value, rule)
+          context = Lutaml::Model::GlobalContext.context(register_id)
+          subs = context.substitution_for(rule.attribute_type)
+          uses_type_substitution = subs.any? { |s| s.to_type == value.class }
+
+          if (value.class < rule.attribute_type) || uses_type_substitution
+            value.class
+          else
+            rule.attribute_type
+          end
+        end
+
+        # Create a transformation for a type class.
+        #
+        # @param type_class [Class] The type class
+        # @return [Transformation] The transformation instance
+        def create_transformation(type_class)
+          transformation_factory.call(type_class)
+        end
+
+        # Memoized on this object: the factory binds this object's
+        # mapping/format/register, so the memo is register-safe, and
+        # building one per serialized node is a Transformation per
+        # nested model per instance.
+        def transformation_for_type(type_class)
+          (@lutaml_type_transformations ||= {})[type_class] ||=
+            create_transformation(type_class)
+        end
+
+        # Transform a nested model using the child transformation.
+        #
+        # @param value [Object] The model instance
+        # @param child_transformation [Transformation] The child transformation
+        # @param options [Hash] Serialization options
+        # @return [Hash, nil] The serialized hash or nil if empty
+        def transform_nested_model(value, child_transformation, options)
+          # transform emits the content hash directly (TODO.perf 19);
+          # nil for empty keeps render_nil: false working.
+          child_root = child_transformation.transform(value, options)
+          child_root.empty? ? nil : child_root
+        end
+
+        # Check if the rule defines a Reference type.
+        #
+        # @param rule [CompiledRule] The compiled rule
+        # @return [Boolean] true if Reference type
+        def reference_type?(rule)
+          return false unless rule.is_a?(Lutaml::Model::CompiledRule)
+          return false unless model_class
+
+          # Get the attribute from the model class to check unresolved_type
+          attr = model_class.attributes(register_id)&.[](rule.attribute_name)
+          attr ||= model_class.attributes&.[](rule.attribute_name)
+
+          attr && attr.unresolved_type == Lutaml::Model::Type::Reference
+        end
+
+        # Serialize a Reference type value.
+        #
+        # @param value [Object] The value to serialize
+        # @param rule [CompiledRule] The compiled rule
+        # @return [Object] The serialized reference (the key)
+        def serialize_reference(value, rule)
+          return value if value.nil?
+
+          # Get the attribute from model_class to use its serialize method
+          if model_class
+            attr = model_class.attributes(register_id)&.[](rule.attribute_name)
+            attr ||= model_class.attributes&.[](rule.attribute_name)
+
+            if attr
+              return attr.serialize(value, format, register_id, {})
+            end
+          end
+
+          # Fallback: just call to_format on the value
+          if value.is_a?(Lutaml::Model::Type::Value) || value.is_a?(Lutaml::Model::Serialize)
+            value.public_send(:"to_#{format}")
+          else
+            value
+          end
+        end
+      end
+    end
+  end
+end

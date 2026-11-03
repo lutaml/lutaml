@@ -1,0 +1,1511 @@
+# frozen_string_literal: true
+
+module Lutaml
+  module Model
+    class Attribute
+      attr_reader :name, :options
+
+      # Format scalars a mapped-model attribute may be handed in the
+      # key-value lanes (#978). Adapter element nodes and other object
+      # forms belong to the mapping lane and must not divert.
+      SCALAR_CAST_TYPES = [
+        ::String,
+        ::Numeric,
+        ::Symbol,
+        ::Time,
+        ::Date,
+        ::DateTime,
+        ::TrueClass,
+        ::FalseClass,
+      ].freeze
+
+      include CollectionHandler
+      include DeepDupable
+      include RestrictionValidation
+
+      # Symbol interpolation (:"to_#{format}") allocates a String and a
+      # Symbol per call on the serialization hot path; the table serves
+      # the known formats and the fallback keeps exotic ones working.
+      TO_FORMAT_METHODS = {
+        xml: :to_xml,
+        json: :to_json,
+        yaml: :to_yaml,
+        toml: :to_toml,
+        hash: :to_hash,
+      }.freeze
+
+      ALLOWED_OPTIONS = %i[
+        raw
+        default
+        delegate
+        collection
+        values
+        pattern
+        transform
+        choice
+        sequence
+        method
+        method_name
+        polymorphic
+        polymorphic_class
+        initialize_empty
+        validations
+        required
+        ref_model_class
+        ref_key_attribute
+        xsd_type
+        union_member_types
+        min
+        max
+        signed
+        min_length
+        max_length
+        desc
+        singular_tolerance
+      ].freeze
+
+      # Per-type-class memo of the custom from_xml/from_json probe used by #cast.
+      # Isolated cache holder: enclosing-class freezes (some suites freeze
+      # Lutaml::Model::Attribute) would freeze a constant Hash with it.
+      TypeProbeCache = ::Class.new do
+        class << self
+          def cache
+            @cache ||= {}
+          end
+        end
+      end
+
+      class << self
+        # Public reader for compiled rule plans: does this type class carry a
+        # custom from_xml/from_json (answer static, probed once)?
+        def custom_from_probe?(type)
+          cache = TypeProbeCache.cache
+          return cache[type] if cache.key?(type)
+
+          base = Lutaml::Model::Type::Value.singleton_class
+          cache[type] =
+            type.method(:from_xml).owner != base ||
+            type.method(:from_json).owner != base
+        end
+      end
+
+      MODEL_STRINGS = [
+        Lutaml::Model::Type::String,
+        "String",
+        :string,
+      ].freeze
+
+      # Delegate propagation to DeserializationContext for single source of truth.
+      CHILD_PROPAGATION_KEYS = Serialize::DeserializationContext::PROPAGATION_KEYS
+
+      # Methods where accidental override is likely to cause issues
+      # All names are allowed - this list only controls which ones get a warning
+      # Format-specific serialization methods (to_xml, to_json, etc.) are pushed
+      # by each format plugin at load time via format_specific_warn_names.
+      WARN_ON_OVERRIDE = %i[
+        # Ruby core - overriding breaks fundamental behavior
+        hash object_id class send method
+
+        # Object lifecycle - overriding without super breaks things
+        initialize
+
+        # Serialization methods - overriding breaks serialization
+        to_format
+
+        # Internal helpers - overriding breaks internal logic
+        attr_value attribute_exist? key_exist? key_value
+        using_default? using_default_for value_set_for
+        method_missing respond_to_missing?
+      ].freeze
+
+      # Format-specific warning names, appended at load time by format modules.
+      # Uses a class ivar instead of a constant since it's mutated at load time.
+      @format_specific_warn_names = []
+
+      def self.format_specific_warn_names
+        @format_specific_warn_names
+      end
+
+      def self.warn_on_override_names
+        WARN_ON_OVERRIDE + @format_specific_warn_names
+      end
+
+      def self.cast_type!(type)
+        case type
+        when Symbol then cast_from_symbol!(type)
+        when String then cast_from_string!(type)
+        when Class then type
+        else
+          raise ArgumentError, "Unknown Lutaml::Model::Type: #{type}"
+        end
+      end
+
+      def self.cast_from_symbol!(type)
+        Type.lookup(type)
+      rescue UnknownTypeError
+        raise ArgumentError, "Unknown Lutaml::Model::Type: #{type}"
+      end
+
+      def self.cast_from_string!(type)
+        Type.const_get(type)
+      rescue NameError
+        raise ArgumentError, "Unknown Lutaml::Model::Type: #{type}"
+      end
+
+      def initialize(name, type, options = {})
+        skip_validation = options.fetch(:skip_validation, false)
+
+        unless skip_validation
+          validate_name!(
+            name, reserved_methods: Lutaml::Model::Serializable.instance_methods
+          )
+        end
+
+        @name = name
+        @options = options.except(:skip_validation)
+
+        validate_presence!(type) unless skip_validation
+        @type = type
+        @unresolved_type = type
+        process_options! unless skip_validation
+      end
+
+      # Cache the resolver reference — GlobalContext.resolver is a singleton
+      # that never changes during the process lifetime. Avoids repeated
+      # singleton access overhead on every type() call.
+      def resolver
+        @resolver ||= GlobalContext.resolver
+      end
+
+      # The value-shaping policy for this attribute. Constructed lazily so
+      # the collection/union/ref flags are settled; memoized because they
+      # are fixed after definition.
+      def value_policy
+        @value_policy ||= ValuePolicy.new(
+          collection: collection?,
+          union: union?,
+          reference: !@options[:ref_model_class].nil?,
+        )
+      end
+
+      # Resolution that never materializes deferred model classes:
+      # raises UnknownTypeError for a not-yet-loaded class name.
+      # Mapping-time validation uses this so finalizing one mapping
+      # cannot fire an autoload that re-enters another model file
+      # mid-definition.
+      def loaded_type(context_or_register = nil)
+        return if unresolved_type.nil?
+
+        context = normalize_context(context_or_register)
+        resolver.resolve(unresolved_type, context, materialize: false)
+      end
+
+      def type(context_or_register = nil)
+        return if unresolved_type.nil?
+
+        # Performance: Fast path for nil or default register (most common case during deserialization)
+        if context_or_register.nil? || context_or_register == :default
+          return @cached_type_default ||= begin
+            context = normalize_context(context_or_register)
+            resolver.resolve(unresolved_type, context)
+          end
+        end
+
+        # Register/Symbol path: the resolution is a static fact of
+        # (attribute, register id), but the old code walked
+        # GlobalContext.context — a singleton hop, a delegation, a to_sym
+        # normalization and a registry lookup — on every call (2.4 M calls,
+        # 3.9 M GlobalContext#context hits per ISO-13849 parse). Cache keyed
+        # on the register id itself; a context replaced under the same id
+        # bumps GlobalContext.context_generation and flushes the cache.
+        register_id = case context_or_register
+                      when Symbol
+                        context_or_register
+                      when Lutaml::Model::Register
+                        context_or_register.id
+                      end
+
+        if register_id
+          cache = (@type_cache_by_register ||= {})
+          generation = GlobalContext.context_generation
+          if @type_cache_generation != generation
+            cache.clear
+            @type_cache_generation = generation
+          end
+          cached = cache[register_id]
+          return cached if cached
+
+          context = GlobalContext.context(register_id)
+          # An unregistered id falls back to the (thread-local) default
+          # context — do not pin that answer in the shared cache.
+          return resolver.resolve(unresolved_type, context || GlobalContext.default_context) unless context
+
+          resolved = resolver.resolve(unresolved_type, context)
+          cache[register_id] = resolved
+          resolved
+        elsif context_or_register.is_a?(Lutaml::Model::TypeContext)
+          # Performance: Cache per TypeContext identity.
+          # When type substitution replaces a TypeContext, the object_id changes,
+          # so old cache entries are never hit again (safe invalidation).
+          cache_key = context_or_register.object_id
+          @type_cache ||= {}
+          cached = @type_cache[cache_key]
+          return cached if cached
+
+          resolved = resolver.resolve(unresolved_type, context_or_register)
+          @type_cache[cache_key] = resolved
+          resolved
+        else
+          @cached_type_default ||= begin
+            context = normalize_context(context_or_register)
+            resolver.resolve(unresolved_type, context)
+          end
+        end
+      end
+
+      # @api public
+      # Get type with namespace-aware resolution.
+      #
+      # Uses the register's resolve_in_namespace method for version-aware
+      # type resolution. Falls back to standard resolution if no namespace
+      # or register is provided.
+      #
+      # @param register [Lutaml::Model::Register, Symbol, nil] The register or register ID
+      # @param namespace_uri [String, nil] The namespace URI for version awareness
+      # @return [Class, nil] The type class or nil
+      def type_with_namespace(register, namespace_uri = nil)
+        return type(register) unless register && namespace_uri
+        return if unresolved_type.nil?
+
+        # Performance: Memoize type resolution per (register, namespace_uri) pair
+        # This avoids repeated resolve_in_namespace calls for the same attribute
+        @type_with_namespace_cache ||= {}
+        cache_key = [register, namespace_uri]
+        return @type_with_namespace_cache[cache_key] if @type_with_namespace_cache.key?(cache_key)
+
+        # Resolve register from symbol if needed
+        actual_register = if register.is_a?(Symbol)
+                            Lutaml::Model::GlobalRegister.lookup(register)
+                          else
+                            register
+                          end
+
+        # If we don't have an actual Register object, fall back to standard resolution
+        result = if actual_register.is_a?(Lutaml::Model::Register)
+                   actual_register.resolve_in_namespace(unresolved_type,
+                                                        namespace_uri)
+                 end
+        result ||= type(register)
+
+        @type_with_namespace_cache[cache_key] = result
+        result
+      end
+
+      # Extract the Register from the context_or_register argument
+      def extract_register(_context_or_register)
+        # Register backward compatibility - now always returns nil
+        # Type resolution uses GlobalContext directly
+        nil
+      end
+
+      # Normalize register/context to TypeContext for resolution
+      # Performance: Optimized to reduce allocations in hot path
+      def normalize_context(context_or_register)
+        # Fast path for nil - most common case
+        return default_type_context if context_or_register.nil?
+
+        # Fast path for TypeContext - no conversion needed
+        return context_or_register if context_or_register.is_a?(Lutaml::Model::TypeContext)
+
+        # Handle Register and Symbol cases
+        context_id = case context_or_register
+                     when Lutaml::Model::Register
+                       context_or_register.id
+                     when Symbol
+                       context_or_register
+                     else
+                       return GlobalContext.default_context
+                     end
+
+        GlobalContext.context(context_id) || GlobalContext.default_context
+      end
+
+      # Performance: Cache default type context lookup
+      def default_type_context
+        @default_type_context ||= begin
+          default_id = Lutaml::Model::Config.default_register
+          ctx = GlobalContext.context(default_id)
+          ctx || GlobalContext.default_context
+        end
+      end
+
+      def unresolved_type
+        @unresolved_type || @type
+      end
+
+      def reference_type?
+        (@reference_type ||= unresolved_type == Lutaml::Model::Type::Reference)
+      end
+
+      def value_map_boolean?
+        (@value_map_boolean ||=
+           type == Lutaml::Model::Type::Boolean ||
+           unresolved_type == Lutaml::Model::Type::Boolean)
+      end
+
+      def polymorphic?
+        @options[:polymorphic_class]
+      end
+
+      def union?
+        return @union unless @union.nil?
+
+        @union = unresolved_type == Lutaml::Model::Type::Union
+      end
+
+      def union_member_types
+        @union_member_types ||=
+          @options[:union_member_types].map { |member| cast_type!(member) }
+      end
+
+      def derived?
+        !method_name.nil?
+      end
+
+      def delegate
+        @options[:delegate]
+      end
+
+      # Performance: Frozen empty hash to reduce allocations
+      EMPTY_TRANSFORM_HASH = {}.freeze
+
+      # Default-argument options for the serialize lane. The per-call
+      # `options = {}` literal allocated one Hash per serialize call
+      # (two per mapped XML row); every consumer of the argument only
+      # reads it or derives a new hash (merge), so a shared frozen
+      # empty is safe.
+      EMPTY_OPTIONS = {}.freeze
+
+      def transform
+        # Options are fixed after definition (value_policy memoizes the
+        # same way) — the per-call @options[:transform] Hash#[] was hit
+        # 2.9 M times on the ISO-13849 parse profile.
+        @transform ||= @options[:transform] || EMPTY_TRANSFORM_HASH
+      end
+
+      def method_name
+        @options[:method_name]
+      end
+
+      def initialize_empty?
+        @options[:initialize_empty]
+      end
+
+      # True when the default is the empty-collection lambda installed by
+      # set_default_for_collection: the one default whose constructor
+      # state (a plain empty Array) the LAZY_EMPTY_COLLECTION sentinel
+      # materializes to on first read, so walk-state seeding can use the
+      # sentinel instead of running the lambda per instance (#1010).
+      # Restricted to plain-Array collections because the lazy reader
+      # materializes []; custom Collection classes would lose their type.
+      def lazy_collection_default?
+        @implicit_collection_default == true && collection? &&
+          collection_class == ::Array && !enum?
+      end
+
+      def validations
+        @options[:validations]
+      end
+
+      def cast_type!(type)
+        self.class.cast_type!(type)
+      end
+
+      # Per-(attribute, register) memo for the dominant scalar case: the
+      # resolved type is a plain Type::Value with no custom probes, the
+      # attribute is not a collection/union/reference, and the input is a
+      # String (the shape every wire format hands over). The full cast
+      # chain resolves the same type and lands on the same
+      # `resolved_type.cast(value)` call — this skips the eight
+      # intermediate checks per value. Generation-guarded like
+      # #type's register cache: a replaced register context flushes it.
+      def fast_scalar_type(register)
+        generation = GlobalContext.context_generation
+        cache = (@fast_scalar_types ||= {}.compare_by_identity)
+        if @fast_scalar_generation != generation
+          cache.clear
+          @fast_scalar_generation = generation
+        end
+
+        cache[register] ||= begin
+          resolved = type(register)
+          resolved if resolved.is_a?(Class) &&
+            resolved < Lutaml::Model::Type::Value &&
+            resolved != Lutaml::Model::Type::Hash &&
+            !union? && !collection? && @options[:ref_model_class].nil? &&
+            !self.class.custom_from_probe?(resolved)
+        end
+      end
+
+      def cast_value(value, register)
+        if value.is_a?(::String) && (fast = fast_scalar_type(register))
+          return fast.cast(value)
+        end
+
+        if list_like?(value)
+          items = cast_items(value, register)
+        elsif coerce_to_collection?(value)
+          items = cast_items([value], register)
+        else
+          return cast_element(value, register)
+        end
+        # cast_items already returns a fresh array, so the plain-Array
+        # collection needs no re-wrap — build_collection's
+        # collection_class.new would copy it again.
+        assert_flat_collection_items!(items)
+        return items if !custom_collection? && collection_class == ::Array
+
+        build_collection(items, register: register)
+      end
+
+      # Fail loudly on nested arrays. A collection's declared element
+      # type never admits an Array as an item; the legacy
+      # build_collection flatten silently absorbed mis-spliced builder
+      # output (expressir#506 surfaced it three frames away in a
+      # formatter). The error must land at the assignment boundary.
+      def assert_flat_collection_items!(items)
+        return unless items.any?(::Array)
+
+        raise TypeError,
+              "collection '#{name}': item " \
+              "#{items.index { |item| item.is_a?(::Array) }} is an Array " \
+              "where the declared element type is expected; nested arrays " \
+              "are not flattened — splice list results before assignment"
+      end
+
+      # Plain Arrays count as list input. On singular attributes
+      # collection_instance? matches Arrays too (their collection class is
+      # Array), preserving the Array so strict cardinality can flag it.
+      def list_like?(value)
+        collection_instance?(value) || (collection? && value.is_a?(::Array))
+      end
+
+      # Prepare the seed items for a collection. Custom Collection classes
+      # cast their own items (idempotently) in #initialize, so hand them a
+      # plain array of the existing elements — rebuilding a fresh collection
+      # avoids sharing a mutable default across instances. Plain collections
+      # cast each element here.
+      def cast_items(value, register)
+        return value.to_a if custom_collection?
+
+        value.map { |v| cast_element(v, register) }
+      end
+
+      # Cast the value a derived reader just recomputed.
+      #
+      # A derived attribute has no ivar and no writer. Its reader runs the
+      # source method and casts the result on every call, which makes the
+      # reader a casting entry point of its own — nothing a writer-side guard
+      # can reach. A collection still has to come back as a collection here,
+      # even when the source method returned nothing.
+      #
+      # @param value [Object] whatever the source method returned
+      # @param register [Symbol] register for type resolution
+      # @return [Object] the cast value, or an empty collection
+      def cast_derived(value, register)
+        return cast_element(value, register) unless collection?
+        return build_collection if no_data?(value)
+        return cast_value(value, register) if collection_instance?(value)
+        # A plain Array is a list of source elements even when the attribute
+        # declares its own collection class, which collection_instance? only
+        # recognises by that class. Without this it becomes one element whose
+        # value is the inspected Array.
+        if value.is_a?(::Array)
+          return build_collection(value.map { |v| cast_element(v, register) })
+        end
+
+        build_collection(cast_element(value, register))
+      end
+
+      # Apply a value map to transform a value.
+      #
+      # value_map keys (:nil, :empty, :omitted) each map either to a symbolic
+      # option (:nil, :empty, :omitted) or, for Boolean attributes, directly
+      # to true/false. The nested form value_map[:from][key] = true/false is
+      # accepted unconditionally; the bare form value_map[key] = true/false
+      # is gated on the attribute being a Boolean type.
+      def apply_value_map(value, value_map)
+        key = if value.nil? then :nil
+              elsif Utils.empty?(value) then :empty
+              elsif Utils.uninitialized?(value) then :omitted
+              end
+        return value unless key
+
+        nested = value_map.dig(:from, key)
+        return nested if nested.is_a?(TrueClass) || nested.is_a?(FalseClass)
+
+        option = value_map[key]
+        if (option.is_a?(TrueClass) || option.is_a?(FalseClass)) &&
+            value_map_boolean?
+          return option
+        end
+
+        case option
+        when :nil
+          nil
+        when :empty
+          if key == :empty then value
+          elsif collection? then build_collection
+          else ""
+          end
+        else
+          Lutaml::Model::UninitializedClass.instance
+        end
+      end
+
+      def required_value_set?(value)
+        return true unless options[:required]
+        return false if value.nil?
+        return false if Utils.empty?(value)
+
+        true
+      end
+
+      # True when the value is "nothing arrived" rather than data.
+      #
+      # nil and the uninitialized sentinel both mean the source carried no
+      # value. Neither is something a type can be asked to turn into an
+      # instance.
+      #
+      # @param value [Object]
+      # @return [Boolean]
+      def no_data?(value)
+        value.nil? || Utils.uninitialized?(value)
+      end
+
+      def cast_element(value, register)
+        # Resolve first: an undeclared type has to raise UnknownTypeError
+        # even for a nil value (the 0.8.33 behavior).
+        resolved_type = type(register)
+
+        return value if Utils.uninitialized?(value)
+
+        # nil reaches the type's cast — the long-shipped contract
+        # ST_OnOff-style types depend on (absent attribute -> cast(nil)
+        # -> false; lutaml-model#795). What nil must NOT do is
+        # manufacture a typed INSTANCE from nothing: that is the
+        # phantom #793 removed, suppressed by the post-check below.
+        if value.nil?
+          result = cast_element_present(value, register, resolved_type)
+          return result if result.nil?
+          return nil if result.is_a?(Lutaml::Model::Type::Value) ||
+            result.is_a?(Lutaml::Model::Serialize)
+
+          return result
+        end
+
+        cast_element_present(value, register, resolved_type)
+      end
+
+      def cast_element_present(value, register, resolved_type = nil)
+        resolved_type ||= type(register)
+
+        return cast_union(value, nil, register) if union?
+        return resolved_type.new(value) if value.is_a?(::Hash) && !hash_type?
+
+        # Special handling for Reference types - pass the metadata
+        # (the comparison is attribute-constant; memoize the verdict)
+        if reference_type?
+          return resolved_type.cast_with_metadata(value,
+                                                  @options[:ref_model_class], @options[:ref_key_attribute])
+        end
+
+        # The castability verdict is a class-hierarchy fact, immutable
+        # per resolved type — check once, not per value (TODO.max-perf/15).
+        checked = (@castable_types ||= {}.compare_by_identity)
+        unless checked[resolved_type]
+          validate_attr_type!(resolved_type)
+          checked[resolved_type] = true
+        end
+
+        resolved_type.cast(value)
+      end
+
+      def hash_type?
+        type == Lutaml::Model::Type::Hash
+      end
+
+      def setter
+        :"#{@name}="
+      end
+
+      # Collection methods are provided by CollectionHandler module
+
+      def raw?
+        @raw
+      end
+
+      def enum?
+        !enum_values.empty?
+      end
+
+      def default(register = Lutaml::Model::Config.default_register,
+instance_object = nil)
+        if instance_object.nil?
+          @default_cache ||= {}
+          cached = @default_cache[register]
+          return cached if cached
+
+          result = cast_value(default_value(register, nil), register)
+          if immutable_value?(result)
+            @default_cache[register] = result
+          end
+          result
+        else
+          cast_value(default_value(register, instance_object), register)
+        end
+      end
+
+      def immutable_value?(value)
+        value.nil? || value.is_a?(Numeric) || value.is_a?(String) ||
+          value.is_a?(Symbol) || value == true || value == false ||
+          value.equal?(::Lutaml::Model::UninitializedClass.instance) ||
+          value.frozen?
+      end
+
+      # Static classification of this attribute's default form (:none,
+      # :static, :proc, :delegate) — the constructor's determine_value
+      # and the compiled walk-seed share it.
+      def default_kind
+        @default_kind ||= _default_kind
+      end
+
+      def default_value(register, instance_object = nil)
+        # The kind is fixed at definition; the common case (no default
+        # at all) paid three option checks per absent attribute per
+        # instantiation before the memo.
+        case (@default_kind ||= _default_kind)
+        when :none
+          Lutaml::Model::UninitializedClass.instance
+        when :static
+          options[:default]
+        when :proc
+          if instance_object
+            ::Lutaml::Model::Attribute.evaluating_default do
+              instance_object.instance_exec(&options[:default])
+            end
+          else
+            options[:default].call
+          end
+        else # :delegate
+          type(register).attributes(register)[to].default(register,
+                                                          instance_object)
+        end
+      end
+
+      def _default_kind
+        return :delegate if delegate
+        return :proc if options[:default].is_a?(Proc)
+        return :static if options.key?(:default)
+
+        :none
+      end
+
+      # Marks the dynamic extent in which a default proc runs against a
+      # model instance, so Serialize#method_missing can fall back to the
+      # model class for methods the instance does not define (0.7.x
+      # compatibility, lutaml-model#745).
+      def self.evaluating_default
+        previous = Thread.current[:__lutaml_evaluating_default]
+        Thread.current[:__lutaml_evaluating_default] = true
+        yield
+      ensure
+        Thread.current[:__lutaml_evaluating_default] = previous
+      end
+
+      def self.default_evaluation?
+        Thread.current[:__lutaml_evaluating_default] == true
+      end
+
+      def default_set?(register, instance_object = nil)
+        !Utils.uninitialized?(default_value(register, instance_object))
+      end
+
+      def pattern
+        options[:pattern]
+      end
+
+      # Documentation metadata (#356): the `:desc` attribute option,
+      # consumed by documentation and schema tooling.
+      def desc
+        options[:desc]
+      end
+
+      # Performance: Frozen empty array to reduce allocations
+      EMPTY_VALUES_ARRAY = [].freeze
+
+      def enum_values
+        @options.key?(:values) ? @options[:values] : EMPTY_VALUES_ARRAY
+      end
+
+      def transform_import_method
+        transform[:import]
+      end
+
+      def transform_export_method
+        transform[:export]
+      end
+
+      def valid_value!(value)
+        # nil is never tested against the value set, whether it arrives as the
+        # whole value or as one element of a collection (this method recurses
+        # per element). valid_pattern! skips nil the same way, and an unset
+        # attribute is validate_required!'s business, not the enum's.
+        return true if value.nil?
+        return true unless enum?
+        return true if Utils.uninitialized?(value)
+
+        # Collection attributes hold multiple values; validate each element
+        # against the allowed set rather than the coerced collection itself.
+        if value.is_a?(::Array) || collection_instance?(value)
+          return value.all? { |v| valid_value!(v) }
+        end
+
+        unless valid_value?(value)
+          raise Lutaml::Model::InvalidValueError.new(name, value, enum_values)
+        end
+
+        true
+      end
+
+      def valid_value?(value)
+        return true unless options[:values]
+
+        options[:values].include?(value)
+      end
+
+      # Pattern binds actual string values only. For a plain :string attribute
+      # every element is a string; for a union the pattern applies to whichever
+      # elements took the :string branch (non-string members are exempt). A nil
+      # element is skipped along with every other non-string, and Array(value)
+      # flattens both plain Arrays and custom Collections so the pattern applies
+      # per element instead of to the collection as a whole.
+      def valid_pattern!(value, _resolved_type)
+        return true unless pattern
+
+        Array(value).each do |item|
+          next unless item.is_a?(::String)
+          next if pattern.match?(item)
+
+          raise Lutaml::Model::PatternNotMatchedError.new(name, pattern, item)
+        end
+
+        true
+      end
+
+      # Check if the value to be assigned is valid for the attribute
+      #
+      # Currently there are 2 validations
+      #   1. Value should be from the values list if they are defined
+      #      e.g values: ["foo", "bar"] is set then any other value for this
+      #          attribute will raise `Lutaml::Model::InvalidValueError`
+      #
+      #   2. Value count should be between the collection range if defined
+      #      e.g if collection: 0..5 is set then the value greater then 5
+      #          will raise `Lutaml::Model::CollectionCountOutOfRangeError`
+      def validate_value!(value, register, instance_object: nil)
+        # Use the default value if the value is nil
+        validate_required!(value)
+
+        if value.nil?
+          value = cast_value(default_value(register, instance_object),
+                             register)
+        end
+        resolved_type = type(register)
+        validate_restriction_configuration!(resolved_type)
+
+        # Shape before contents. An over-count is a cardinality violation, not
+        # an enum or pattern one, and checking it first keeps those predicates
+        # from reporting on a value whose shape is already wrong.
+        valid_collection!(value, instance_object&.class) &&
+          valid_value!(value) &&
+          valid_pattern!(value, resolved_type) &&
+          validate_polymorphic!(value, resolved_type) &&
+          execute_validations!(value)
+
+        validate_restriction_values!(value, resolved_type)
+      end
+
+      # execute custom validations on the attribute value
+      # i.e presence: true, numericality: true, etc
+      def execute_validations!(value)
+        return true if Utils.blank?(value)
+
+        memoization_container = {}
+        errors = Lutaml::Model::Validator.call(value, validations,
+                                               memoization_container)
+
+        return if errors.empty?
+
+        raise Lutaml::Model::ValidationFailedError.new(errors)
+      end
+
+      def validate_polymorphic(value, resolved_type)
+        if value.is_a?(Array)
+          return value.all? do |v|
+            validate_polymorphic!(v, resolved_type)
+          end
+        end
+        return true unless options[:polymorphic]
+
+        valid_polymorphic_type?(value, resolved_type)
+      end
+
+      def validate_polymorphic!(value, resolved_type)
+        return true if validate_polymorphic(value, resolved_type)
+
+        raise Lutaml::Model::PolymorphicError.new(value, options, resolved_type)
+      end
+
+      def validate_collection_range
+        range = @options[:collection]
+        return if range == true
+        return if custom_collection?
+
+        unless range.is_a?(Range)
+          raise ArgumentError, "Invalid collection range: #{range}"
+        end
+
+        validate_range!(range)
+      end
+
+      def validate_range!(range)
+        if range.begin.nil?
+          raise ArgumentError,
+                "Invalid collection range: #{range}. Begin must be specified."
+        end
+
+        if range.begin.negative?
+          raise ArgumentError,
+                "Invalid collection range: #{range}. " \
+                "Begin must be non-negative."
+        end
+
+        if range.end && range.end < range.begin
+          raise ArgumentError,
+                "Invalid collection range: #{range}. " \
+                "End must be greater than or equal to begin."
+        end
+      end
+
+      # Singular-overflow tolerance (#971): ingest can hand a singular
+      # attribute a collection — relaton's upstream documents carry
+      # multiple <formattedref> elements per bibitem. With
+      # singular_tolerance: :first the leading value is kept instead of
+      # raising CollectionTrueMissingError; the default stays strict.
+      def tolerates_singular_overflow?(value)
+        !collection? && @options[:singular_tolerance] == :first &&
+          collection_instance?(value) &&
+          !value_policy.whole_value?(unresolved_type)
+      end
+
+      def valid_collection!(value, caller)
+        if collection_instance?(value) && !collection? &&
+            !value_policy.whole_value?(unresolved_type)
+          raise Lutaml::Model::CollectionTrueMissingError.new(name,
+                                                              caller)
+        end
+
+        return true unless collection?
+
+        # Allow any value for unbounded collections
+        return true if collection == true
+
+        unless collection_instance?(value)
+          # An absent value satisfies a zero minimum and has nothing to size.
+          return true if (value.nil? || Utils.uninitialized?(value)) &&
+            resolved_collection.min.zero?
+
+          raise Lutaml::Model::CollectionCountOutOfRangeError.new(
+            name,
+            value,
+            collection,
+          )
+        end
+
+        # cover? rather than between?, so an exclusive range such as (0...5)
+        # rejects a count of 5.
+        in_range = if resolved_collection.end.infinite?
+                     value.size >= resolved_collection.begin
+                   else
+                     resolved_collection.cover?(value.size)
+                   end
+
+        unless in_range
+          raise Lutaml::Model::CollectionCountOutOfRangeError.new(
+            name,
+            value,
+            collection,
+          )
+        end
+
+        # Truthy on success: validate_value! chains this with && before the
+        # value/pattern/polymorphic/custom checks, so falling through as nil would
+        # silently skip them for a valid bounded-range collection.
+        true
+      end
+
+      def serialize(value, format, register, options = EMPTY_OPTIONS)
+        value ||= build_collection if collection? && initialize_empty?
+        return value if value.nil? || Utils.uninitialized?(value)
+
+        resolved_type = options[:resolved_type] || type(register)
+        value = reference_key(value) if unresolved_type == Lutaml::Model::Type::Reference
+        if collection_instance?(value)
+          return serialize_array(value, format, register,
+                                 options.merge(resolved_type: resolved_type))
+        end
+        if resolved_type <= Serialize
+          return serialize_model(value, format, register,
+                                 options)
+        end
+
+        serialize_value(value, format, resolved_type)
+      end
+
+      def reference_key(value)
+        return nil unless value
+        return value.map { |item| reference_key(item) } if value.is_a?(Array)
+
+        return value.public_send(@options[:ref_key_attribute]) if model_instance?(value)
+
+        value
+      end
+
+      def model_instance?(value)
+        return false unless @options[:ref_model_class]
+
+        value.class.name == @options[:ref_model_class]
+      end
+
+      def cast(value, format, register, options = {})
+        # Sentinel: never a cast input. nil flows on — absent values
+        # reach the type's cast (ST_OnOff booleans, #795); a cast that
+        # manufactures a typed instance from nothing is the phantom
+        # #793 removed, suppressed here as in cast_element.
+        return value if Utils.uninitialized?(value)
+
+        if value.nil?
+          result = cast_present(value, format, register, options)
+          return result if result.nil?
+          return nil if result.is_a?(Lutaml::Model::Type::Value) ||
+            result.is_a?(Lutaml::Model::Serialize)
+
+          return result
+        end
+
+        cast_present(value, format, register, options)
+      end
+
+      def cast_present(value, format, register, options = {})
+        # Namespace-aware type resolution: use type_with_namespace if namespace_uri provided
+        namespace_uri = options[:namespace_uri]
+        resolved_type = if options[:resolved_type]
+                          options[:resolved_type]
+                        elsif register && namespace_uri
+                          type_with_namespace(register, namespace_uri)
+                        else
+                          type(register)
+                        end
+        if (collection_instance?(value) || value.is_a?(Array)) &&
+            !value_policy.whole_value?(resolved_type)
+          merged_opts = options.merge(resolved_type: resolved_type,
+                                      converted: true)
+          return build_collection(value.map do |v|
+            cast(v, format, register, merged_opts)
+          end, register: register)
+        end
+
+        return value if already_serialized?(resolved_type, value)
+
+        return cast_union(value, format, register) if union?
+
+        # Special handling for Reference types - pass the metadata
+        # Check @options[:ref_model_class] which is set when type is { ref: [...] }
+        if @options[:ref_model_class] && resolved_type == Lutaml::Model::Type::Reference
+          return resolved_type.cast_with_metadata(value,
+                                                  @options[:ref_model_class], @options[:ref_key_attribute])
+        end
+
+        # Fast path for Type::Value subclasses (String, Integer, Boolean, etc.)
+        # These are never Serializable, so skip expensive can_serialize? and needs_conversion? checks
+        # Skip if type has custom from_xml/from_json methods (defined on the class itself, not inherited).
+        # The probe allocated two Method objects per cast call; the answer is
+        # static per type class, so it is resolved once.
+        if resolved_type.is_a?(Class) && resolved_type < Lutaml::Model::Type::Value && !self.class.custom_from_probe?(resolved_type)
+          return resolved_type.cast(value)
+        end
+
+        klass = resolve_polymorphic_class(resolved_type, value, options)
+        # A scalar handed to a mapped-model attribute crashed
+        # apply_mappings with an internal NoMethodError (key? on
+        # String, #978). A type declaring its own .cast owns scalar
+        # construction; base-cast identity types fall through to the
+        # legacy conversion chain, whose parse error names the token.
+        # Non-scalar input (adapter elements, hashes, arrays) rides
+        # the mapping lane untouched.
+        if serializable_type?(register) && !value.nil? &&
+            SCALAR_CAST_TYPES.any? { |type| value.is_a?(type) } &&
+            klass.respond_to?(:cast) &&
+            klass.method(:cast).owner == klass.singleton_class
+          casted = klass.cast(value)
+          return casted if casted.is_a?(klass)
+
+          raise Lutaml::Model::IncorrectModelError,
+                "attribute '#{name}': the #{format} input for type " \
+                "#{klass} is a #{value.class}, and #{klass}.cast did " \
+                "not build one (received #{casted.class})"
+        end
+
+        if can_serialize?(klass, value, format, options)
+          propagated = Serialize::DeserializationContext.propagate(options)
+          klass.apply_mappings(value, format,
+                               propagated.merge(register: register))
+        elsif needs_conversion?(klass, value)
+          klass.public_send(:"from_#{format}", value)
+        else
+          # No need to use register#get_class,
+          # can_serialize? method already checks if type is Serializable or not.
+          Type.lookup(klass).cast(value)
+        end
+      end
+
+      def serializable?(register)
+        type(register) <= Serialize
+      end
+
+      # Cached version of serializable? check for hot deserialization path
+      # Called millions of times in resolve_rule_names_with_type and value_for_rule
+      def serializable_type?(register = nil)
+        register_key = register || :default
+        return @serializable_type_cache[register_key] if defined?(@serializable_type_cache) && @serializable_type_cache&.key?(register_key)
+
+        resolved_type = type(register_key)
+        result = resolved_type.is_a?(Class) && resolved_type.include?(Serialize)
+        @serializable_type_cache ||= {}
+        @serializable_type_cache[register_key] = result
+      end
+
+      # resolved_collection is provided by CollectionHandler module
+
+      def sequenced_appearance_count(element_order, mapped_name, current_index)
+        elements = element_order[current_index..]
+        element_count = elements.take_while do |element|
+          element == mapped_name
+        end.count
+        return element_count if element_count.between?(*resolved_collection.minmax)
+
+        raise Lutaml::Model::ElementCountOutOfRangeError.new(
+          mapped_name,
+          element_count,
+          collection,
+        )
+      end
+
+      def validate_choice_content!(elements)
+        return elements.count unless resolved_collection
+        return 1 if elements.count.between?(*resolved_collection.minmax)
+
+        elements.each_slice(resolved_collection.max).count
+      end
+
+      # min_collection_zero? is provided by CollectionHandler module
+
+      def choice
+        @options[:choice]
+      end
+
+      def process_options!
+        validate_options!(@options)
+        if union?
+          @options[:union_member_types] =
+            Lutaml::Model::Type::Union.validate_members!(@options[:union_member_types])
+          Lutaml::Model::Type::Union.validate_combo!(@options)
+        end
+        # `restrict` merges new options into the SAME attribute object
+        # post-construction — the option-derived memos must reset here or
+        # collection?/transform keep answering from the pre-restrict state.
+        remove_instance_variable(:@collection_option) if defined?(@collection_option)
+        remove_instance_variable(:@transform) if defined?(@transform)
+        @raw = !!@options[:raw]
+        if @raw
+          warn "[DEPRECATED] attribute :#{name}, :string, raw: true is deprecated. " \
+               "Use map_element \"name\", to: :#{name}, raw: :content instead."
+        end
+        @validations = @options[:validations]
+        tolerance = @options[:singular_tolerance]
+        unless tolerance.nil? || tolerance == :first
+          raise ArgumentError,
+                "Invalid singular_tolerance: #{tolerance.inspect} for " \
+                "attribute '#{name}'. Supported: :first"
+        end
+        set_default_for_collection if collection?
+      end
+
+      def deep_dup
+        # Don't deep_dup the entire options hash because:
+        # 1. Lambdas/Procs (like :default) should not be duplicated
+        # 2. Classes (like :collection class) are immutable
+        # 3. Deep dupping creates circular references when lambdas close over the attribute
+
+        # Selectively copy options using direct type checks to avoid method calls
+        duped_options = { skip_validation: true }
+        options.each do |key, value|
+          duped_options[key] = case value
+                               when Symbol, TrueClass, FalseClass, Numeric, Class, Module, Proc, Method, NilClass
+                                 value # Immutable, don't dup
+                               when Range
+                                 # Only dup if bounds are mutable strings
+                                 if value.begin.is_a?(String) || (value.end && value.end.is_a?(String))
+                                   Range.new(value.begin.dup, value.end&.dup, value.exclude_end?)
+                                 else
+                                   value # Immutable bounds, safe to reuse
+                                 end
+                               when Hash
+                                 Utils.deep_dup(value)
+                               when Array
+                                 Utils.deep_dup(value)
+                               else
+                                 value # Keep as-is (might be a complex object)
+                               end
+        end
+
+        # Skip validation during deep_dup - options are already validated in original
+        # This prevents infinite recursion when process_options! tries to access collection
+        self.class.new(name, unresolved_type, duped_options).tap do |dup_attr|
+          dup_attr.copy_internal_state_from(self)
+        end
+      end
+
+      # @api public
+      # Get namespace class from Type::Value or Model class
+      #
+      # @param register [Symbol, nil] register ID for type resolution
+      # @return [Class, nil] XmlNamespace class if type has namespace
+      def type_namespace_class(register = nil)
+        register_key = register || :default
+        return @type_ns_class_cache[register_key] if defined?(@type_ns_class_cache) && @type_ns_class_cache&.key?(register_key)
+
+        # Resolve type namespace via type() which uses GlobalContext.resolver
+        resolved_type = type(register_key)
+        result = nil
+
+        # Check if type is a Type::Value class
+        # Type namespaces are ONLY declared on Type::Value subclasses,
+        # not on Serializable models. Serializable models have element
+        # namespaces, which are handled separately.
+        if resolved_type.is_a?(Class) && resolved_type <= Lutaml::Model::Type::Value
+          result = resolved_type.namespace_class
+        end
+
+        @type_ns_class_cache ||= {}
+        @type_ns_class_cache[register_key] = result
+      end
+
+      # @api public
+      # Get namespace URI from type
+      #
+      # @param register [Symbol, nil] register ID for type resolution
+      # @return [String, nil] namespace URI
+      def type_namespace_uri(register = nil)
+        register_key = register || :default
+        return @type_ns_uri_cache[register_key] if defined?(@type_ns_uri_cache) && @type_ns_uri_cache&.key?(register_key)
+
+        result = type_namespace_class(register_key)&.uri
+        @type_ns_uri_cache ||= {}
+        @type_ns_uri_cache[register_key] = result
+      end
+
+      # @api public
+      # Get namespace prefix from type
+      #
+      # @param register [Symbol, nil] register ID for type resolution
+      # @return [String, nil] namespace prefix
+      def type_namespace_prefix(register = nil)
+        type_namespace_class(register)&.prefix_default
+      end
+
+      # Copy internal state from another Attribute instance.
+      # Used by `dup` to transfer processed state without calling private writers.
+      def copy_internal_state_from(source)
+        @raw = source.raw?
+        @validations = source.validations
+      end
+
+      # Clear type resolution caches for this attribute.
+      # Called by GlobalContext.clear_caches to ensure stale entries
+      # from GC'd TypeContext objects don't persist.
+      def clear_type_cache
+        @type_cache&.clear
+        @cached_type_default = nil
+        @default_type_context = nil
+        @type_cache_by_register&.clear
+        @type_cache_generation = nil
+      end
+
+      # Public validation contract: mappings check their targets at
+      # finalize (lutaml-model#296), the cast path checks per value.
+      def validate_attr_type!(resolved_type)
+        return true if resolved_type <= Serializable || resolved_type <= Type::Value
+        return true if resolved_type.include?(Serialize)
+
+        raise Lutaml::Model::InvalidAttributeTypeError.new(name,
+                                                           resolved_type.name)
+      end
+
+      private
+
+      attr_writer :raw, :validations
+
+      def cast_union(value, format, register)
+        match = Lutaml::Model::Type::Union.conforming_member(
+          value, union_member_types, format: format, register: register
+        )
+        match&.last
+      end
+
+      # validated_range_object is provided by CollectionHandler module
+
+      def validate_name!(name, reserved_methods:)
+        # No errors - all names are allowed
+        # Only warn for methods where accidental override is problematic
+        return unless reserved_methods.include?(name.to_sym)
+        return unless self.class.warn_on_override_names.include?(name.to_sym)
+
+        warn_name_conflict(name)
+      end
+
+      def warn_name_conflict(name)
+        # Find the first caller location outside the lutaml-model gem's lib directory
+        # This ensures we report the user's code line, not internal gem code
+        gem_lib_dir = File.expand_path("../..", __dir__)
+        location = caller_locations.find do |cl|
+          !cl.absolute_path.to_s.start_with?(gem_lib_dir)
+        end
+
+        Logger.warn(
+          "Attribute `#{name}` overrides a method. " \
+          "Ensure you call `super` if needed, or consider renaming.",
+          location || caller_locations(1..1).first,
+        )
+      end
+
+      def resolve_polymorphic_class(type, value, options)
+        return type unless polymorphic_map_defined?(options, value)
+
+        val = value[options[:polymorphic][:attribute]]
+        klass_name = options[:polymorphic][:class_map][val]
+        Object.const_get(klass_name)
+      end
+
+      def polymorphic_map_defined?(polymorphic_options, value)
+        !value.nil? &&
+          polymorphic_options[:polymorphic] &&
+          !polymorphic_options[:polymorphic].empty? &&
+          value[polymorphic_options[:polymorphic][:attribute]]
+      end
+
+      def castable?(value, format)
+        value.is_a?(::Hash) ||
+          ((castable_type = FormatRegistry.castable_type_for(format)) && value.is_a?(castable_type))
+      end
+
+      def can_serialize?(klass, value, format, options)
+        return false unless klass <= Serialize
+
+        castable?(value, format) || options[:converted]
+      end
+
+      # custom_collection? is provided by CollectionHandler module
+
+      def needs_conversion?(klass, value)
+        !value.nil? && !value.is_a?(klass) && Utils.initialized?(value)
+      end
+
+      def already_serialized?(klass, value)
+        klass <= Serialize && value.is_a?(klass.model)
+      end
+
+      def serialize_array(value, format, register, options)
+        value.map { |v| serialize(v, format, register, options) }
+      end
+
+      def serialize_model(value, format, register, options)
+        # Use the value's own lutaml_register if available (proper OOP - model carries its context)
+        # This ensures child models serialize using their native context, not the parent's
+        value_register = if value.is_a?(Lutaml::Model::Serializable) && value.lutaml_register
+                           value.lutaml_register
+                         else
+                           register
+                         end
+
+        as_options = Serialize::DeserializationContext.propagate(options).merge(register: value_register)
+
+        # Respect mapping layer policy: render_empty from MappingRule
+        # Allow empty Serializable models when render_empty: true
+        render_empty = options[:render_empty]
+        if render_empty && value.is_a?(Lutaml::Model::Serializable)
+          # Mapping layer says render this empty model - bypass present check
+        else
+          return unless Utils.present?(value)
+        end
+
+        resolved_type = as_options.delete(:resolved_type) || type(register)
+        if value.is_a?(resolved_type)
+          return value.class.as(format, value,
+                                as_options)
+        end
+
+        resolved_type.as(format, value, as_options)
+      end
+
+      def serialize_value(value, format, resolved_type)
+        # The Value wrapper is a pass-through on the to_ side (its
+        # to_<format> returns the wrapped raw value unless a custom
+        # format serializer is registered), so the common path returns
+        # the raw value and lets the caller stringify — one object
+        # instead of three per serialized scalar. Reference and
+        # custom-serializer rows keep the wrapped path.
+        if resolved_type <= Type::Reference ||
+            (registered_to = Type::Value.format_type_serializer_for(format, resolved_type)&.dig(:to))
+          # String→String under the default :xml serializer is the
+          # identity — the wrapper mint per string value on the XML
+          # serialize path is pure waste. A consumer override of the
+          # serializer disables the fast path via the proc comparison.
+          if resolved_type == Type::String && value.is_a?(::String) &&
+              registered_to == Lutaml::Xml::Type::Serializers::STRING_XML_TO
+            return value
+          end
+
+          value = wrap_in_type_if_needed(value, resolved_type)
+          return value.public_send(TO_FORMAT_METHODS[format] || :"to_#{format}")
+        end
+
+        value
+      end
+
+      def wrap_in_type_if_needed(value, resolved_type)
+        return value if value.is_a?(Type::Value)
+
+        if resolved_type == Type::Reference
+          create_reference_instance(resolved_type, value)
+        else
+          resolved_type.new(value)
+        end
+      end
+
+      def create_reference_instance(resolved_type, key = nil)
+        resolved_type.new(@options[:ref_model_class],
+                          @options[:ref_key_attribute], key)
+      end
+
+      def validate_presence!(type)
+        return if type
+
+        raise ArgumentError, "type must be set for an attribute"
+      end
+
+      def validate_required!(value)
+        return if required_value_set?(value)
+
+        raise Lutaml::Model::RequiredAttributeMissingError.new(name)
+      end
+
+      def set_default_for_collection
+        validate_collection_range
+        attr = self
+        if initialize_empty? && !@options[:default]
+          @options[:default] = -> { attr.build_collection }
+          @implicit_collection_default = true
+        end
+      end
+
+      def validate_options!(options)
+        if (invalid_opts = options.keys - ALLOWED_OPTIONS).any?
+          raise Lutaml::Model::InvalidAttributeOptionsError.new(name,
+                                                                invalid_opts)
+        end
+
+        # Deprecation warning for :xsd_type attribute option
+        if options.key?(:xsd_type)
+          warn "[DEPRECATION] The :xsd_type attribute option is deprecated and will be removed in v1.0.0. " \
+               "Create a custom Type::Value class with xsd_type at class level instead. " \
+               "See: docs/migration-guides/xsd-type-migration.adoc " \
+               "Called from #{caller(1..1).first}"
+        end
+
+        # pattern applies to string values: a plain :string attribute, or a
+        # union that includes a :string member (the pattern binds that branch).
+        # Guarded by the pattern key so non-pattern attributes never resolve
+        # their type here (custom types may be absent from the default register).
+        if options.key?(:pattern)
+          union_with_string =
+            type == Lutaml::Model::Type::Union &&
+            Array(options[:union_member_types]).intersect?(MODEL_STRINGS)
+          unless MODEL_STRINGS.include?(type) || union_with_string
+            raise StandardError,
+                  "Invalid option `pattern` given for `#{name}`, " \
+                  "`pattern` is only allowed for :string type or a union " \
+                  "including a :string member"
+          end
+        end
+
+        if initialize_empty? && !collection?
+          raise StandardError,
+                "Invalid option `initialize_empty` given without `collection: true` option"
+        end
+
+        # Length facets are XSD nonNegativeInteger; reject a misconfigured
+        # type here so a String/Float/nil fails fast instead of raising an
+        # opaque TypeError later at `value.length >= min`.
+        %i[min_length max_length].each do |key|
+          next unless options.key?(key)
+
+          value = options[key]
+          next if value.is_a?(::Integer) && !value.negative?
+
+          raise ArgumentError,
+                "Invalid options for `#{name}`: " \
+                "`#{key}` must be a non-negative Integer, got #{value.inspect}"
+        end
+
+        # `signed` is true|false per issue #191; a non-boolean (e.g. "false")
+        # would silently read as signed, so reject it up front.
+        if options.key?(:signed) && ![true, false].include?(options[:signed])
+          raise ArgumentError,
+                "Invalid options for `#{name}`: " \
+                "`signed` must be true or false, got #{options[:signed].inspect}"
+        end
+        true
+      end
+
+      def validate_type!(type)
+        return true if [Symbol,
+                        String].include?(type.class) || type.is_a?(Class)
+
+        raise ArgumentError,
+              "Invalid type: #{type}, must be a Symbol, String or a Class"
+      end
+
+      def valid_polymorphic_type?(value, resolved_type)
+        return value.is_a?(type) unless has_polymorphic_list?
+
+        options[:polymorphic].include?(value.class) && value.is_a?(resolved_type)
+      end
+
+      def has_polymorphic_list?
+        options[:polymorphic]&.is_a?(Array)
+      end
+    end
+  end
+end

@@ -1,0 +1,825 @@
+# frozen_string_literal: true
+
+module Lutaml
+  module Model
+    module Serialize
+      # Handles initialization and namespace methods for Serialize::ClassMethods
+      #
+      # Extracted from serialize.rb to improve code organization.
+      # Provides methods for class initialization and namespace handling.
+      module Initialization
+        # Class-level namespace getter/setter.
+        #
+        # No-op by default. When XML format is loaded, this is overridden
+        # via prepend to provide XML namespace handling.
+        #
+        # @param _ns_class [Class, nil] Namespace class (handled by format modules)
+        # @return [Class, nil] the namespace class
+        def namespace(_ns_class = nil)
+          @namespace_class
+        end
+
+        # Get the namespace URI for this Model
+        #
+        # @return [String, nil] the namespace URI
+        def namespace_uri
+          nil
+        end
+
+        # Get the default namespace prefix for this Model
+        #
+        # @return [String, nil] the namespace prefix
+        def namespace_prefix
+          nil
+        end
+
+        # Set the register context for this Model class.
+        #
+        # This is called by Register#register_model to ensure the class
+        # knows its register context for proper instance initialization.
+        #
+        # @param register_id [Symbol] The register ID
+        # @return [void]
+        def set_register_context(register_id)
+          return if instance_variable_defined?(:@register)
+
+          @register = register_id
+        end
+
+        # Get or set the default register for this Model class.
+        #
+        # Override in subclasses to specify a preferred default register context.
+        # This allows versioned schemas (e.g., MML v2, v3) to use their own
+        # register by default when instances are created without explicit register.
+        #
+        # @return [Symbol, nil] The default register ID or nil to use Config.default_register
+        #
+        # @example
+        #   module Mml
+        #     class V2Base < Lutaml::Model::Serializable
+        #       def self.lutaml_default_register
+        #         :mml_v2
+        #       end
+        #     end
+        #   end
+        #
+        #   class Mml::V2::Math < V2Base
+        #     # Mml::V2::Math.new uses :mml_v2 by default
+        #   end
+        def lutaml_default_register
+          nil
+        end
+
+        # Handle inheritance by copying parent's configuration
+        #
+        # @param subclass [Class] The inheriting class
+        def inherited(subclass)
+          super
+          subclass.initialize_attrs(self)
+        end
+
+        # Handle inclusion by extending with ClassMethods
+        #
+        # @param base [Class] The including class
+        def included(base)
+          base.extend(ClassMethods)
+          base.initialize_attrs(self)
+        end
+
+        # Copy-on-write structure status. Two bits per structure
+        # (mappings, attributes, choices, registers): 0 = inherited and
+        # shared with the source class, 1 = owned and private (safe to
+        # mutate in place), 2 = owned but shared with subclasses (fork
+        # before mutating so they keep the pre-mutation state).
+        LUTAML_COW_STRUCTURES = %i[mappings attributes choices registers].freeze
+
+        # Initialize class attributes from a source class
+        #
+        # @param source_class [Class] The source class to copy from
+        def initialize_attrs(source_class)
+          if source_class.equal?(self)
+            # A subclass that says `include Lutaml::Model::Serialize`
+            # again re-enters this hook with itself as the source. It
+            # already carries the state `inherited` installed, and the
+            # eager implementation re-copied that state; here it must
+            # survive untouched, so only a brand-new class initializes.
+            initialize_empty_attrs if @attributes.nil?
+          else
+            @mappings = source_class.mappings
+            @attributes = source_class.class_attributes
+            @choice_attributes = source_class.class_choice_attributes
+            @register_records = source_class.register_records
+            @lutaml_cow_status = 0
+            lutaml_cow_mark_ancestors_shared!(source_class)
+            # A choice binds its owning class and stamps itself onto
+            # the attribute options, so a subclass must rebind its
+            # choices to itself. Models without choices — the vast
+            # majority — keep sharing the empty array.
+            lutaml_cow_fork!(:choices) if @choice_attributes&.any?
+          end
+          model(self)
+        end
+
+        def initialize_empty_attrs
+          # `Liquefiable` may already have created the mapping store
+          # before this class included `Serialize`; that state is the
+          # class's own and must survive initialization.
+          @mappings ||= {}
+          @attributes ||= {}
+          @choice_attributes ||= []
+          @register_records ||= ::Hash.new do |hash, key|
+            hash[key] = { attributes: {}, choice_attributes: [] }
+          end
+          @lutaml_cow_status = Lutaml::Model::Serialize::Initialization
+            .lutaml_cow_status_for(1)
+        end
+
+        # Status value for every structure, encoded per structure
+        def self.lutaml_cow_status_for(state)
+          LUTAML_COW_STRUCTURES.each_index.sum do |i|
+            state << (i * 2)
+          end
+        end
+
+        def lutaml_cow_status(structure)
+          shift = LUTAML_COW_STRUCTURES.index(structure) * 2
+          ((@lutaml_cow_status || 0) >> shift) & 3
+        end
+
+        # Pack one structure's state back into the status word
+        def lutaml_cow_set_status!(structure, state)
+          shift = LUTAML_COW_STRUCTURES.index(structure) * 2
+          @lutaml_cow_status = ((@lutaml_cow_status || 0) & ~(3 << shift)) |
+            (state << shift)
+        end
+
+        # The structures this class inherited are about to gain a second
+        # referencer (the new subclass). Every ancestor whose current
+        # object for a structure is the object being shared must flip
+        # from owned-private to owned-shared, or its next in-place
+        # mutation would leak into the new subclass.
+        def lutaml_cow_mark_ancestors_shared!(source_class)
+          LUTAML_COW_STRUCTURES.each do |structure|
+            shared = lutaml_cow_structure(structure)
+            klass = source_class
+            loop do
+              if klass.lutaml_cow_structure(structure).equal?(shared) &&
+                  klass.lutaml_cow_status(structure) == 1
+                klass.lutaml_cow_set_status!(structure, 2)
+              end
+              break unless klass.is_a?(Class)
+
+              klass = klass.superclass
+              break unless klass.include?(Lutaml::Model::Serialize)
+            end
+          end
+        end
+
+        def lutaml_cow_structure(structure)
+          case structure
+          when :mappings then @mappings
+          when :attributes then @attributes
+          when :choices then @choice_attributes
+          when :registers then @register_records
+          end
+        end
+
+        # Replace a shared structure with a class-owned copy. The copy
+        # becomes the snapshot for every existing subclass, which is what
+        # keeps post-fork mutations invisible to them (the eager-copy
+        # semantics).
+        #
+        # Public on purpose: code that mutates `mappings`, `attributes`,
+        # `choices` or `registers` outside the DSL — sibling classes pruning
+        # inherited elements (relaton's Item-header prunes) or importing
+        # models — must fork the structure first, or the mutation lands on
+        # the object shared with the superclass and every sibling class.
+        def lutaml_cow_fork!(structure)
+          return if lutaml_cow_status(structure) == 1
+
+          # The merged attribute view is built from the structures
+          # below; a replacement makes any cached merge stale.
+          @merged_attributes_cache = nil
+          case structure
+          when :mappings
+            # Entries are shared with the source class as well as the
+            # hash itself: a sibling inheriting the same object must
+            # not see this class's DSL. Copying every entry here is
+            # the lazy equivalent of the eager snapshot the previous
+            # implementation took in `inherited`.
+            @mappings = Utils.deep_dup(@mappings) || {}
+          when :attributes
+            @attributes = Utils.deep_dup(@attributes) || {}
+          when :choices
+            # Choice duplication rebinds Attribute objects through
+            # `attributes`, so the attributes fork must land first.
+            lutaml_cow_fork!(:attributes)
+            @choice_attributes = deep_duplicate_choice_attributes(self)
+          when :registers
+            @register_records = Utils.deep_dup(@register_records) ||
+              ::Hash.new do |hash, key|
+                hash[key] = { attributes: {}, choice_attributes: [] }
+              end
+          end
+          lutaml_cow_set_status!(structure, 1)
+        end
+
+        # Return the mapping object a format DSL may mutate. Forking
+        # the mappings structure copies every entry, so the object
+        # returned here is this class's own.
+        def lutaml_cow_mapping_for_dsl!(format)
+          lutaml_cow_fork!(:mappings)
+          @mappings[format]
+        end
+
+        # Return the register record a format DSL may mutate. The
+        # register store is copy-on-write, so write access forks it
+        # away from the parent class before handing out the record.
+        def register_record_for_dsl!(register_id)
+          lutaml_cow_fork!(:registers)
+          @register_records[register_id] ||= { attributes: {},
+                                               choice_attributes: [] }
+        end
+
+        # Deep duplicate choice attributes from a source class
+        #
+        # @param source_class [Class] The source class
+        # @return [Array] The duplicated choice attributes
+        def deep_duplicate_choice_attributes(source_class, register = nil)
+          choice_attrs = Array(source_class.choice_attributes)
+          choice_attrs.map do |choice_attr|
+            choice_attr.deep_duplicate(self, register)
+          end
+        end
+
+        # Get all attributes for this model
+        #
+        # Merges class-level attributes with register-specific attributes.
+        # Memoized per register: this is on the per-element deserialization
+        # hot path, and the merged hash is stable until an attribute, import
+        # or register record mutates (those clear @merged_attributes_cache).
+        #
+        # @param register [Symbol, nil] The register context
+        # @return [Hash] The attributes hash
+        def attributes(register = nil)
+          # Cache hit first: a filled entry can only exist after imports
+          # were ensured for that register (the fill path below runs
+          # ensure_imports! first), and mutations that invalidate the
+          # merge clear @merged_attributes_cache. The lookup was walked
+          # per rule application (751k per ISO-13849 parse).
+          if @register_records&.any?
+            register_id = extract_register_id(register)
+            cached = (@merged_attributes_cache ||= {})[register_id]
+            return cached if cached
+
+            ensure_imports!(register) if finalized?
+            # ensure_imports! may re-entrantly run clear_cache (restrict /
+            # import resolution), which nils @merged_attributes_cache —
+            # compute the merge first and re-materialize the memo store
+            # at write time (#815: standalone to_xml on register-bound
+            # models crashed with nil[] here).
+            merged = @attributes.merge(@register_records[register_id][:attributes])
+            (@merged_attributes_cache ||= {})[register_id] = merged
+          else
+            ensure_imports!(register) if finalized?
+            @attributes
+          end
+        end
+
+        # Raw class-level attributes without register merging.
+        # Used by initialize_attrs during class inheritance.
+        # @return [Hash] The raw attributes hash
+        def class_attributes
+          @attributes
+        end
+
+        # Raw class-level choice attributes without register merging.
+        # Used by initialize_attrs during class inheritance.
+        # @return [Array] The raw choice attributes array
+        def class_choice_attributes
+          @choice_attributes
+        end
+
+        # Get all choice attributes for this model
+        #
+        # Merges class-level choice attributes with register-specific choice attributes.
+        #
+        # @param register [Symbol, nil] The register context
+        # @return [Array] The choice attributes array
+        def choice_attributes(register = nil)
+          ensure_imports!(register) if finalized?
+          if @register_records&.any?
+            @choice_attributes + @register_records[extract_register_id(register)][:choice_attributes]
+          else
+            @choice_attributes
+          end
+        end
+
+        # Ensure all imports are resolved
+        #
+        # @param register [Symbol, nil] The register context
+        def ensure_imports!(register = nil)
+          # Bounded re-entry for the resolution chain. Each leg's
+          # record_import_attempt tail calls attributes(), which calls
+          # back into ensure_imports!; nested passes converge imports
+          # whose targets only become resolvable after an earlier leg
+          # (so they must not be dropped), but with a permanently
+          # pending import the tail re-entered unboundedly and crashed
+          # with SystemStackError (#938). Two levels allow one nested
+          # convergence pass; deeper re-entry is suppressed per
+          # register and the counter unwinds on error.
+          register_id = extract_register_id(register)
+          (@ensure_imports_depth ||= {})[register_id] ||= 0
+          return if @ensure_imports_depth[register_id] >= 2
+
+          @ensure_imports_depth[register_id] += 1
+          begin
+            ensure_model_imports!(register)
+            ensure_choice_imports!(register)
+            ensure_restrict_attributes!(register)
+            # Hook for format-specific mapping import resolution.
+            # XML overrides this to call mappings[:xml]&.ensure_mappings_imported!(register)
+            ensure_format_mapping_imports!(register)
+          ensure
+            @ensure_imports_depth[register_id] -= 1
+          end
+        end
+
+        # Hook for format-specific mapping import resolution.
+        # Override in format modules (e.g., XML prepends to resolve XML mapping imports).
+        #
+        # @param _register [Symbol, nil] The register context
+        def ensure_format_mapping_imports!(_register = nil)
+          # No-op by default; XML overrides via prepend
+        end
+
+        # Clear all cached data for this model class
+        #
+        # Centralized caching (Phase 11.5):
+        # - Type caches: GlobalContext.resolver
+        # - Mapping caches: TransformationRegistry
+        # - Transformation caches: TransformationRegistry
+        #
+        # @param register_id [Symbol, nil] If provided, only clear cache for this specific context
+        def clear_cache(register_id = nil)
+          # Clear centralized type cache in GlobalContext.resolver
+          if defined?(Lutaml::Model::GlobalContext)
+            GlobalContext.resolver.clear_cache(register_id)
+          end
+
+          # Clear memoized attribute merge (see .attributes)
+          @merged_attributes_cache = nil
+          @instantiate_writers = nil
+          @instantiate_attr_pairs = nil
+
+          # Clear per-Attribute type caches (stale entries from GC'd TypeContext objects)
+          class_attributes.each_value(&:clear_type_cache)
+          @register_records&.each_value do |record|
+            record[:attributes]&.each_value(&:clear_type_cache)
+          end
+
+          # Clear centralized mapping and transformation caches
+          # (Single Source of Truth - no longer uses instance variables)
+          TransformationRegistry.instance.clear
+
+          # Clear Transform cache (uses class identity as key)
+          Transform.invalidate_for(self, register_id)
+
+          # Clear import resolution guard flags so imports can be re-resolved
+          instance_variables.each do |ivar|
+            ivar_s = ivar.to_s
+            remove_instance_variable(ivar) if ivar_s.start_with?("@_imports_resolved_") ||
+              ivar_s == "@_register_methods_defined"
+          end
+        end
+
+        # Get or set the model class
+        #
+        # @param klass [Class, nil] The model class to set
+        # @return [Class] The model class
+        def model(klass = nil)
+          if klass
+            @model = klass
+            add_custom_handling_methods_to_model(klass)
+          else
+            @model
+          end
+        end
+
+        # Add custom handling methods to a model class
+        #
+        # @param klass [Class] The model class
+        def add_custom_handling_methods_to_model(klass)
+          Utils.add_method_if_not_defined(klass,
+                                          :using_default_for) do |attribute_name|
+            @using_default ||= {}
+            @using_default[attribute_name] = true
+          end
+
+          Utils.add_method_if_not_defined(klass,
+                                          :value_set_for) do |attribute_name|
+            @using_default ||= {}
+            @using_default[attribute_name] = false
+          end
+
+          Utils.add_method_if_not_defined(klass,
+                                          :values_set_for) do |attribute_names|
+            @using_default ||= {}
+            attribute_names.each { |name| @using_default[name] = false }
+          end
+
+          Utils.add_method_if_not_defined(klass,
+                                          :using_default?) do |attribute_name|
+            @using_default ||= {}
+            !!@using_default[attribute_name]
+          end
+
+          # Hook for format-specific model methods (e.g., XML adds ordered, mixed, element_order)
+          add_format_specific_model_methods(klass)
+        end
+
+        # Hook for format-specific model methods.
+        # XML overrides via FormatConversion prepend to add XML accessors.
+        #
+        # @param _klass [Class] The model class
+        def add_format_specific_model_methods(_klass)
+          # No-op by default
+        end
+
+        # Cast a value (pass-through implementation)
+        #
+        # @param value [Object] The value to cast
+        # @return [Object] The same value
+        def cast(value)
+          value
+        end
+
+        # Whether instances of this class should be registered in the
+        # global Store for reference resolution. Defaults to true for
+        # backward compatibility. Use `skip_reference_registration` to
+        # opt out for classes that never participate in cross-referencing.
+        def reference_resolvable?
+          return true unless instance_variable_defined?(:@skip_reference_registration)
+
+          !@skip_reference_registration
+        end
+
+        # Opt out of Store registration for this class.
+        # Instances will not be tracked in the global Store, saving
+        # memory and registration overhead for classes that are never
+        # resolved by reference (no xml_id or similar attributes).
+        def skip_reference_registration
+          @skip_reference_registration = true
+        end
+
+        # Define a choice constraint
+        #
+        # @param min [Integer] Minimum number of choices
+        # @param max [Integer] Maximum number of choices
+        # @param block [Proc] The choice definition block
+        def choice(min: 1, max: 1, format: nil, &block)
+          lutaml_cow_fork!(:choices)
+          @choice_attributes << Choice.new(self, min, max,
+                                           format: format).tap do |c|
+            c.instance_eval(&block)
+          end
+        end
+
+        # Get the register record for a specific register ID
+        #
+        # @param register_id [Symbol, nil] The register context
+        # @return [Hash, nil] The register record hash or nil
+        def register_record(register_id = nil)
+          register_records[extract_register_id(register_id)]
+        end
+
+        # Convert register parameter to symbol
+        #
+        # @param name [Symbol, String, nil] The register name
+        # @return [Symbol, nil] The register name as a symbol
+        def register(name)
+          name&.to_sym
+        end
+
+        # Allocate an instance for deserialization without calling initialize.
+        #
+        # Skips the expensive initialize_attributes pass (which iterates all
+        # attributes to set defaults). The XML mapping pipeline sets values
+        # directly via rule.deserialize instead. Uses Hash.new(true) as the
+        # default for @using_default so that using_default? returns true for
+        # all attributes until value_set_for is called.
+        #
+        # @param register [Symbol, nil] The register context
+        # @return [Object] The allocated instance
+        # Walk-side allocation (#1003): the KV walk's instantiation —
+        # constructor-equivalent state via the compiled walk seed
+        # (defaults resolved, non-defaulted attributes nil) without the
+        # per-attribute determine_value walk.
+        def allocate_for_walk(register = nil)
+          register_id = extract_register_id(register)
+          ensure_imports!(register_id) if finalized? && deferred_imports_pending?(register_id)
+          # Classes with their own initialize set up internal state the
+          # compiled seed cannot know about (SchemaRepository's
+          # @parsed_schemas/@namespace_registry/@type_index): construct
+          # through the real constructor for them, exactly as the walk
+          # did before the compiled seed existed, register included. The
+          # seed stays the fast path for classes using the standard
+          # initializer.
+          return new(lutaml_register: register) if constructs_through_initialize?
+
+          instance = allocate
+          instance.init_walk_state(register_id)
+          instance
+        end
+
+        # True when the class does not use Serializable's standard
+        # initializer — its initialize is constructor contract, not
+        # optional setup, and the compiled walk seed would skip it.
+        # (The standard initializer's owner is Serialize::Builder; a
+        # class- or parent-defined initialize makes the owner the class.)
+        def constructs_through_initialize?
+          @constructs_through_initialize ||=
+            instance_method(:initialize).owner != Lutaml::Model::Serialize::Builder
+        end
+
+        def allocate_for_deserialization(register = nil)
+          register_id = extract_register_id(register)
+          # Deferred imports (symbol-form import_model_attributes) must
+          # resolve before state defaults compile: the compiled seeding
+          # and the raw readers cover the post-import attribute set, and
+          # the transform's records already carry the mapping's rules
+          # for imported names — CTR's <m:br> parsed before resolution
+          # had no reader (#933). The constructor path ensures the same
+          # way (initialize_attributes). Guarded: deep object graphs
+          # (XSD schema trees) allocate recursively, and the ensure
+          # chain's frames per level pushed that recursion past the
+          # stack limit — models without pending deferred imports skip
+          # it entirely.
+          ensure_imports!(register_id) if finalized? && deferred_imports_pending?(register_id)
+          # Custom-initialize classes (#1032's twin): their initialize is
+          # constructor contract — internal state the compiled seeding
+          # cannot know about — so they construct through the real
+          # constructor, then carry the parse's register context.
+          # Attribute state then goes back to the deserialization
+          # markers: the parse reads them to tell an absent element from
+          # a value a writer assigned (#922), so constructor-seeded
+          # defaults would otherwise count as set and a render_default:
+          # false element would be written back out.
+          if constructs_through_initialize?
+            # (#1059) Run the custom initialize against COMPILED
+            # constructor-equivalent state — the walk seed (defaults
+            # resolved, non-defaulted attributes nil), not the
+            # deserialization seed: constructor bodies branch on
+            # truthiness and is_a? checks of plain state, and an
+            # UninitializedClass sentinel is truthy, so seeding
+            # sentinels here would misfire every convenience-conversion
+            # branch (uniword's convert_flat_attributes! constructed
+            # wrapper objects per node). The generic attribute walk is
+            # still stood down for the run — it would only re-materialize
+            # the same defaults the seed already wrote — and #922's
+            # finalize then resets attribute state to the deserialization
+            # markers, so constructor-seeded defaults do not count as
+            # set, exactly as before.
+            instance = allocate
+            instance.init_walk_state(register_id)
+            instance.lutaml_constructor_seeded = true
+            instance.send(:initialize)
+            instance.lutaml_constructor_seeded = nil
+            instance.finalize_deserialization(register_id)
+            return instance
+          end
+          instance = allocate
+          instance.finalize_deserialization(register_id)
+          instance
+        end
+
+        # Fast bulk constructor for deserialization-heavy callers
+        # (native extensions building object trees bottom-up).
+        #
+        # Allocates without running #initialize and applies each present
+        # attribute through its compiled writer, which casts the value
+        # and marks it as explicitly set — so defaults, to_hash output,
+        # and using_default? behave exactly as if the instance had been
+        # produced by from_hash. Values may be primitives or already
+        # built instances (instances pass through casting unchanged);
+        # absent keys keep their defaults. Unknown keys raise.
+        #
+        # @param attrs [Hash] attribute names (String or Symbol) to
+        #   pre-cast values
+        # @param register [Symbol, nil] The register context
+        # @return [Object] The hydrated instance
+        def instantiate(attrs = {}, register = nil)
+          instance = allocate_for_deserialization(register)
+          register_id = instance.lutaml_register
+          attrs_by = attributes(register_id)
+          writers = instantiate_writers(register_id)
+          raw_readers = instantiate_raw_readers(register_id)
+          given = 0
+          # Memoized pair array: Hash#each mints a [name, attr] pair
+          # per attribute per instance (~5 allocs/instance on
+          # hydration-heavy corpora); Array#each reuses its elements.
+          instantiate_attr_pairs(register_id).each do |name, attr, str_name|
+            next if attr.derived?
+
+            # Symbol keys hit directly (native-extension callers);
+            # string keys fall back with one allocated name.
+            key = if attrs.key?(name)
+                    given += 1
+                    name
+                  elsif attrs.key?(str_name)
+                    given += 1
+                    str_name
+                  end
+            if key
+              instance.public_send(writers[name], attrs[key])
+            else
+              # Absent keys seed their default explicitly, mirroring
+              # initialize_attributes: every mapped attribute ends up
+              # set (nil when no default), never left as the
+              # uninitialized sentinel — readers and formatters touch
+              # absent attributes freely.
+              #
+              # lutaml-model#922: unless a custom writer already
+              # populated it. An earlier kwarg's writer may have
+              # assigned this attribute as a side effect (relaton's ICS
+              # populates <text> from the Isoics dataset inside code=);
+              # the raw state is the truth — still at its initialized
+              # marker (sentinel / lazy collection) means unset, and
+              # only then is the default seeded. The writer's own
+              # value_set_for (inside the compiled writer) already
+              # marked it set, so it renders.
+              raw = instance.public_send(raw_readers[name])
+              unset = raw.nil? ||
+                raw.equal?(Lutaml::Model::UninitializedClass.instance) ||
+                raw.equal?(Lutaml::Model::Serialize::LAZY_EMPTY_COLLECTION)
+              next unless unset
+
+              default = attr.default_value(register_id, instance)
+              if raw.nil? && Lutaml::Model::Utils.uninitialized?(default)
+                # The constructor-seeded path (#1059) already wrote nil for
+                # non-defaulted attributes and marked them using-default — a
+                # nil write through the cast chain here would be pure re-work.
+                # (Sentinels and lazy collections fall through: they need the
+                # seeding branch.)
+                instance.using_default_for(name)
+                next
+              end
+              value = if Lutaml::Model::Utils.uninitialized?(default)
+                        nil
+                      else
+                        attr.cast_value(default, register_id)
+                      end
+              instance.public_send(writers[name], value)
+              instance.using_default_for(name)
+            end
+          end
+          reserved = (attrs.key?(:lutaml_register) ? 1 : 0) +
+            (attrs.key?("lutaml_register") ? 1 : 0)
+          if given + reserved < attrs.size
+            known = attrs_by.keys
+            unknown = attrs.keys.find { |k| !known.include?(k.to_sym) }
+            raise Error, "unknown attribute '#{unknown}' for #{self}"
+          end
+          instance.clear_mutated_after_parse!
+          instance
+        end
+
+        # Writer method symbols for instantiate, memoized per register
+        # alongside the attribute merge (cleared with it).
+        def instantiate_writers(register_id = nil)
+          (@instantiate_writers ||= {})[register_id] ||= attributes(register_id)
+            .each_with_object({}) do |(name, _attr), memo|
+              memo[name] = :"#{name}="
+            end
+        end
+
+        # [name, attr] pairs in attributes order — instantiate's loop
+        # iterates this instead of the attributes Hash so the per-call
+        # pair array disappears (see the instantiate comment).
+        def instantiate_attr_pairs(register_id = nil)
+          (@instantiate_attr_pairs ||= {})[register_id] ||=
+            attributes(register_id).map do |name, attr|
+              # The string name is precomputed beside the symbol: the
+              # absent-key fallback (string-keyed callers, from_hash)
+              # would otherwise mint `name.to_s` per attribute per
+              # instance — one fresh string per absent attribute.
+              [name, attr, name.to_s]
+            end.freeze
+        end
+
+        # Raw-state reader names, precomputed once per (class, register):
+        # instantiating interpolates the reader symbol per absent
+        # attribute per instance otherwise — a fresh string + symbol
+        # lookup for state that is identical for every instance.
+        def instantiate_raw_readers(register_id = nil)
+          (@instantiate_raw_readers ||= {})[register_id] ||=
+            attributes(register_id).to_h do |name, _|
+              [name, :"__lutaml_raw_#{name}"]
+            end.freeze
+        end
+
+        # Define register-specific attribute methods on the class itself.
+        #
+        # Called once per (class, register) combination. Replaces per-instance
+        # singleton class allocation with class-level method definitions,
+        # preserving Ruby's inline method cache optimization.
+        #
+        # @param register_id [Symbol] The register ID
+        def ensure_register_methods_defined(register_id)
+          return if register_id == :default
+
+          @_register_methods_defined ||= {}
+          return if @_register_methods_defined[register_id]
+
+          reg_record = register_records[register_id]
+          return unless reg_record
+
+          default_attrs = class_attributes || {}
+          reg_record_attrs = reg_record[:attributes] || {}
+
+          reg_record_attrs.each do |name, attr|
+            next if default_attrs.key?(name)
+            next if method_defined?(name, false)
+
+            if attr.collection?
+              define_collection_register_methods(name)
+            else
+              define_scalar_register_methods(name)
+            end
+          end
+
+          @_register_methods_defined[register_id] = true
+        end
+
+        private
+
+        # Define getter/setter for a scalar register-specific attribute.
+        def define_scalar_register_methods(name)
+          define_method(name) do |*args|
+            if args.empty?
+              instance_variable_get(:"@#{name}")
+            else
+              public_send(:"#{name}=", args.first)
+              args.first
+            end
+          end
+
+          define_method(:"#{name}=") do |value|
+            value_set_for(name)
+            reg_attr = resolve_register_attr(name)
+            value = reg_attr.cast_value(value, lutaml_register)
+            instance_variable_set(:"@#{name}", value)
+            record_mutation(name, value)
+          end
+        end
+
+        # Define getter/setter for a collection register-specific attribute.
+        def define_collection_register_methods(name)
+          define_method(name) do |*args|
+            if args.empty?
+              # Store the materialized Array instead of discarding it, so
+              # `model.items << x` on a register-scoped model reaches the model
+              # rather than a throwaway copy.
+              materialize_lazy_collection(name)
+            else
+              value = args.first
+              current = instance_variable_get(:"@#{name}")
+              current = [] if current.equal?(LAZY_EMPTY_COLLECTION)
+              new_value = current.is_a?(Array) ? current + [value] : value
+              instance_variable_set(:"@#{name}", new_value)
+              record_mutation(name, value)
+              value
+            end
+          end
+
+          define_method(:"#{name}=") do |value|
+            value_set_for(name)
+            reg_attr = resolve_register_attr(name)
+            value = reg_attr.cast_value(value, lutaml_register)
+            current = instance_variable_get(:"@#{name}")
+            if current.equal?(LAZY_EMPTY_COLLECTION) &&
+                (value.nil? || Lutaml::Model::Utils.uninitialized?(value))
+              # Sentinel stays — no allocation for empty collections
+            else
+              instance_variable_set(:"@#{name}", value)
+            end
+            record_mutation_collection(name, value)
+          end
+        end
+
+        # Extract and normalize register ID with default fallback
+        #
+        # Resolution order:
+        # 1. Explicit register parameter
+        # 2. Class's lutaml_default_register (for versioned schemas)
+        # 3. Global Config.default_register
+        #
+        # @param register [Symbol, String, nil] The register identifier
+        # @return [Symbol] The normalized register ID
+        def extract_register_id(register)
+          register&.to_sym || lutaml_default_register || Lutaml::Model::Config.default_register
+        end
+      end
+    end
+  end
+end

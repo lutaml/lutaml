@@ -1,0 +1,1026 @@
+---
+title: Custom Registers
+nav_order: 4
+---
+
+= LutaML Registers
+
+== Introduction
+
+There are three types of registers in Lutaml::Model:
+
+1. *TypeRegister*
+2. *ModelRegister*
+3. *GlobalRegister*
+
+=== TypeRegister
+
+The TypeRegister is a registry class that registers and looks up the `Lutaml::Model::Type::Value` classes only.
+
+==== Register a Type::Value class
+
+The following syntax registers a `Type::Value` class:
+```ruby
+# assuming we have a `CustomString` class that inherits from Lutaml::Model::Type::Value
+Lutaml::Model::Type.register(:custom_string, Lutaml::Model::Type::CustomString)
+```
+NOTE: `TypeError` is raised if the class does not inherit from `Lutaml::Model::Type::Value`.
+
+==== Lookup a *Type::Value* class
+Lookup a `Type::Value` class using the assigned name:
+```ruby
+Lutaml::Model::Type.lookup(:custom_string) # returns Lutaml::Model::Type::CustomString
+```
+
+NOTE: `Lutaml::Model::Type::UnknownTypeError` is raised if the name is not found in the registry.
+
+When looking up a class, the class is returned without looking up in the registry.
+
+```ruby
+Lutaml::Model::Type.lookup(Lutaml::Model::Type::CustomString) # returns Lutaml::Model::Type::CustomString even if it's not registered in the registry
+```
+
+==== Lazy type registration with Ruby autoload
+
+For large schema libraries with many model classes, you can defer loading until a type is actually needed by registering a *Proc* instead of a class. The Proc is resolved on first `lookup`, and Ruby's `autoload` triggers the file load at that point.
+
+```ruby
+# Declare autoload so Ruby loads the file when the constant is first referenced
+autoload :Divergence, "mml/v3/vector_calculus"
+
+# Register a Proc — the file is NOT loaded yet
+Lutaml::Model::Type.register(:divergence, -> { Mml::V3::Divergence })
+
+# The first lookup triggers autoload and resolves the class
+Lutaml::Model::Type.lookup(:divergence)
+# => Mml::V3::Divergence (file loaded now, Proc result cached)
+
+# Subsequent lookups return the cached class directly
+Lutaml::Model::Type.lookup(:divergence)
+# => Mml::V3::Divergence (no Proc call)
+```
+
+Why a Proc and not a bare Symbol? A Symbol (`:Divergence`) has no namespace context. A Proc captures the full constant path (`Mml::V3::Divergence`) and triggers `autoload` when called.
+
+This pattern is especially useful in library entry points where you declare many types but only a subset is used at runtime. It pairs naturally with Ruby's built-in `autoload` for lazy file loading.
+
+If the Proc raises (e.g., `NameError` from a missing constant), the error propagates naturally and the registry is not mutated, so a retry is possible after the autoload path is configured.
+
+=== ModelRegister
+
+The *ModelRegister* is a registry class that registers and looks up the `Lutaml::Model::Registrable` classes (by default, `Lutaml::Model::Serializable` classes are `Registrable` classes). For consistency, the `Lutaml::Model::Type::Value` classes are registered similarly, but within the TypeRegister registry, as referenced in the <<TypeRegister, previous section>>.
+
+NOTE: Make sure to register the ModelRegister in GlobalRegister before using it.
+
+==== Register a Class
+
+Register a Model class using the following syntax:
+```ruby
+# assuming we have a `CustomModel` class that inherits from Lutaml::Model::Serializable
+Lutaml::Model::Register.register_model(Lutaml::Model::CustomModel, id: :custom_model)
+```
+This method `register_model` registers the class and assigns it the passed ID, which is `:custom_model` in this case. But if a model is registered without an ID, the class name is used as the ID. For example:
+```ruby
+Lutaml::Model::Register.register_model(Lutaml::Model::AnotherCustomModel)
+```
+
+This will register the class `AnotherCustomModel` with the ID `:another_custom_model`.
+
+==== Register model tree
+
+The `register_model_tree` method registers all the classes in the provided Model's hierarchy. For example:
+```ruby
+register = Lutaml::Model::Register.new(:v1)
+
+module Mathml
+  class Mrow < Lutaml::Model::Serializable
+    attribute :mstyle, Mstyle
+  end
+
+  class Mstyle < Lutaml::Model::Serializable
+    attribute :mi, :string
+  end
+
+  class Math < Lutaml::Model::Serializable
+    attribute :mrow, Mrow
+    attribute :mstyle, Mstyle
+  end
+end
+
+register.register_model_tree(Mathml::Math) # registers all the classes in the Mathml::Math model tree, in this case Mathml::Mstyle and Mathml::Mrow
+```
+
+==== Lookup a Class
+
+Lookup a Model class using the assigned name:
+```ruby
+register = Lutaml::Model::Register.new(:v1)
+register.get_class(:custom_model) # returns Lutaml::Model::CustomModel
+```
+The class returned from the `get_class` method is also aware of the *ModelRegister* it was registered in. This is useful when you want to use the class directly. For example:
+
+```ruby
+register = Lutaml::Model::Register.new(:v1)
+json_hash = {
+  "mstyle": {
+    "mrow": {
+      "mi": "x",
+      "mo": "+"
+    }
+  },
+  "mrow": {
+    "mi": "z",
+  }
+}
+module Mathml
+  class Mrow < Lutaml::Model::Serializable
+    attribute :mi, :string
+    attribute :mo, :string
+  end
+  class Mstyle < Lutaml::Model::Serializable
+    attribute :mrow, Mrow
+    attribute :mi, :string
+    attribute :mo, :string
+  end
+  class Math < Lutaml::Model::Serializable
+    attribute :mrow, Mrow
+    attribute :mstyle, Mstyle
+  end
+end
+register.register_model_tree(Mathml::Math) # registers all the classes in the Mathml::Math model tree, in this case Mstyle and Mrow
+# lookup the class and call the desired method, in current case from_json
+register.get_class(:math).from_json(json_hash.to_json)
+> #<Testing::Math:0x00000002ccd5a678
+    @mrow=#<Testing::Mrow:0x00000002cc50a1f8 @mi="z", @mo=nil>,
+    @mstyle=#<Testing::Mstyle:0x00000002cc50a108 @mi=nil, @mo=nil, @mrow=#<Testing::Mrow:0x00000002cc509fc8 @mi="x", @mo="+">>>
+```
+
+NOTE: If the class is not found in either the `ModelRegister` or the `TypeRegister`, a `Lutaml::Model::UnknownTypeError` is raised.
+
+==== Global Type substitution
+
+The `Lutaml::Model::Register` class also provides a method to substitute a type globally. This is useful when you want to replace a type with another type in the entire model tree. For example:
+
+```ruby
+register = Lutaml::Model::Register.new(:v1)
+json_hash = {
+  "mstyle": {
+    "mrow": {
+      "mi": "x",
+      "mo": "+"
+    }
+  },
+  "mrow": {
+    "mi": "z",
+    "mstyle": {
+      "mrow": {
+        "mi": "x",
+        "mo": "+"
+      }
+    }
+  }
+}
+module Mathml
+  class String < Lutaml::Model::Type::Value
+    def to_json(*args)
+      "custom-string: #{super(*args).to_json}"
+    end
+  end
+
+  class Mrow < Lutaml::Model::Serializable
+    attribute :mi, :string
+    attribute :mo, :string
+  end
+  class Mstyle < Lutaml::Model::Serializable
+    attribute :mrow, Mrow
+    attribute :mi, :string
+    attribute :mo, :string
+  end
+  class Math < Lutaml::Model::Serializable
+    attribute :mrow, Mrow
+    attribute :mstyle, Mstyle
+  end
+
+  class ExtendedMrow < Mrow
+    attribute :mstyle, :mstyle
+  end
+end
+register.register_model_tree(Mathml::Math) # registers all the classes in the Mathml::Math model tree, in this case Mstyle and Mrow
+# Substitute the Mrow class with the ExtendedMrow class globally
+register.register_global_type_substitution(
+  from_type: Mathml::Mrow,
+  to_type: Mathml::ExtendedMrow
+) # this will replace all instances of Mrow with ExtendedMrow in the entire model tree for this register
+register.register_global_type_substitution(
+  from_type: Lutaml::Model::Type::String,
+  to_type: Mathml::String
+)
+# lookup the class and call the desired method, in current case from_json
+models = register.get_class(:math).from_json(json_hash.to_json)
+models.to_json
+> "{\"mrow\":{\"mi\":\"custom-string: \\\"z\\\"\",\"mstyle\":{\"mrow\":{\"mi\":\"custom-string: \\\"x\\\"\",\"mo\":\"custom-string: \\\"+\\\"\"}}},\"mstyle\":{\"mrow\":{\"mi\":\"custom-string: \\\"x\\\"\",\"mo\":\"custom-string: \\\"+\\\"\"}}}"
+```
+
+==== Resolve a class
+
+The `resolve` method resolves a class passed as a string if registered in the ModelRegister. For example:
+
+```ruby
+register = Lutaml::Model::Register.new(:v1)
+register.register_model(Mathml::Math, id: :math)
+register.resolve("Mathml::Math") # returns Lutaml::Model::Math
+```
+
+=== GlobalRegister
+
+The GlobalRegister is a singleton that registers all the ModelRegisters.
+Model registers can be registered using the following syntax:
+
+```ruby
+v1_register = Lutaml::Model::Register.new(:v1)
+global_register = Lutaml::Model::GlobalRegister
+global_register.register(v1_register) # register a Model register
+# OR
+global_register.instance.register(v1_register) # register a Model register
+```
+
+The `register` method registers the ModelRegister based on its ID. The ID is used to look up the ModelRegister using the following syntax:
+```ruby
+global_register.lookup(:v2) # fetch a Model register
+# OR
+global_register.instance.lookup(:v2) # fetch a Model register
+```
+
+If a register is not needed anymore, it can be removed using the following syntax:
+```ruby
+global_register.remove(:v1) # remove a ModelRegister using the its ID
+# OR
+global_register.instance.remove(:v1) # remove a ModelRegister using the it's ID
+```
+
+== Register resolution fallback
+
+=== General
+
+Model registers support hierarchical fallback register resolution, which allows
+registers to depend on other registers for type resolution.
+
+The following use cases benefit from this feature:
+
+* Shared types: Common types like `xs:annotation`, `xs:documentation` can
+resolved from parent registers without duplicating them in every register
+
+* Isolation: Registers can disable fallback for strict schema isolation
+
+* Inheritance: Specialized schemas can extend base schemas by falling back to
+core registers
+
+=== Default behavior
+
+By default, all custom registers (except `:default`) automatically fall back to
+the `:default` (global) register.
+
+This means if a type is not found in a custom register, it will be searched in
+the `:default` register.
+
+[source,ruby]
+----
+register = Lutaml::Model::Register.new(:my_schema)
+register.fallback  # => [:default]
+----
+
+The `:default` register itself has no fallback chain:
+
+[source,ruby]
+----
+default_register = Lutaml::Model::GlobalRegister.lookup(:default)
+default_register.fallback  # => []
+----
+
+=== Isolated registers
+
+To create a register that does not fall back to any other register (complete
+isolation), pass an empty array as the `fallback` parameter:
+
+[source,ruby]
+----
+isolated = Lutaml::Model::Register.new(:pristine, fallback: [])
+isolated.fallback  # => []
+----
+
+Isolated registers will only resolve models explicitly registered within them.
+
+This is useful for:
+
+* Testing schema isolation
+* Ensuring no dependency on external types
+* Strict schema validation
+
+=== Explicit fallback chains
+
+For complex schema hierarchies, you can specify an explicit fallback chain:
+
+[source,ruby]
+----
+# Multi-level fallback: :profile → :core → :default
+profile = Lutaml::Model::Register.new(
+  :gml_profile,
+  fallback: [:gml_core, :iso_types, :default]
+)
+
+profile.fallback  # => [:gml_core, :iso_types, :default]
+----
+
+Resolution order is by the order of the fallback array.
+
+For example, when resolving a type in the `:gml_profile` register:
+
+. Search in local register (`:gml_profile`)
+. If not found, search in first fallback (`:gml_core`)
+. If not found, search in second fallback (`:iso_types`)
+. If not found, search in third fallback (`:default`)
+. If still not found, raise `UnknownTypeError`
+
+
+=== Use cases
+
+==== Vertical separation (schema profiles)
+
+Use fallback chains when specialized schemas extend base schemas:
+
+.GML Profile extending GML Core
+[example]
+====
+[source,ruby]
+----
+# Base schema with core types
+core_register = Lutaml::Model::Register.new(:gml_core)
+Lutaml::Model::GlobalRegister.instance.register(core_register)
+core_register.register_model(GeometryType, id: :geometry_type)
+core_register.register_model(CoordinateType, id: :coordinate_type)
+
+# Specialized profile extends core
+profile_register = Lutaml::Model::Register.new(
+  :gml_profile,
+  fallback: [:gml_core, :default]
+)
+Lutaml::Model::GlobalRegister.instance.register(profile_register)
+profile_register.register_model(ProfileGeometryType, id: :profile_geometry)
+
+# Profile models can use both profile-specific and core types
+class ProfileDocument < Lutaml::Model::Serializable
+  @register = profile_register
+
+  attribute :geometry, :profile_geometry    # From :gml_profile
+  attribute :coordinate, :coordinate_type   # From :gml_core (fallback)
+end
+----
+====
+
+==== Multi-version schema support
+
+Use fallback when newer schema versions build on older versions:
+
+.UnitsML v0.9.19 falling back to common types
+[example]
+====
+[source,ruby]
+----
+# Generate UnitsML schema with module namespace
+Lutaml::Model::Schema::XmlCompiler.to_models(
+  xsd_content,
+  module_namespace: "UnitsMLV0919",
+  register_id: :unitsmlv0919,  # Implicitly falls back to :default
+  output_dir: "lib/unitsml",
+  create_files: true
+)
+
+# Load models
+require "unitsml/unitsmlv0919_registry"
+UnitsMLV0919.register_all
+
+# UnitsMLV0919 models resolve:
+# 1. Domain-specific types from :unitsmlv0919 register
+# 2. Common types (annotation, documentation) from :default register (fallback)
+doc = UnitsMLV0919::UnitsMLType.from_xml(xml)
+----
+====
+
+[[per-class-default-register]]
+== Per-class default register
+
+When using versioned schemas (e.g., MathML v2, v3, v4), each version may have its own
+register context. The `lutaml_default_register` class method allows a Serializable
+subclass to specify its preferred default register context.
+
+=== The problem
+
+Without `lutaml_default_register`, when you instantiate a class without an explicit
+`register:` option, it falls back to `Config.default_register` (`:default`):
+
+[source,ruby]
+----
+# :mml_v2 context has different type mappings than :default
+math = Mml::V2::Math.new  # Falls back to :default register
+# => UnknownTypeError because :default doesn't have MML types
+----
+
+You must explicitly pass `register: :mml_v2`:
+
+[source,ruby]
+----
+math = Mml::V2::Math.new({}, register: :mml_v2)  # Works
+----
+
+=== The solution
+
+Define `lutaml_default_register` in a base class for your version:
+
+[source,ruby]
+----
+module Mml
+  class V2Base < Lutaml::Model::Serializable
+    def self.lutaml_default_register
+      :mml_v2
+    end
+  end
+
+  class Math < V2Base
+    attribute :mrow, Mrow
+
+    xml do
+      element "math"
+    end
+  end
+end
+----
+
+Now `Mml::Math.new` automatically uses `:mml_v2` as the default register:
+
+[source,ruby]
+----
+math = Mml::Math.new  # Uses :mml_v2 by default
+math.to_xml  # Works correctly with v2 types
+----
+
+=== Resolution order
+
+The register ID is resolved in this order:
+
+1. **Explicit `register:` option** - passed to `new` or `from_xml` etc.
+2. **`lutaml_default_register`** - class method returning Symbol or nil
+3. **`@register` instance variable** - set by `register_model_tree`
+4. **`Config.default_register`** - global fallback (`:default`)
+
+[source,ruby]
+----
+# Resolution examples for a class with lutaml_default_register = :mml_v2
+math = Math.new                         # => :mml_v2 (from lutaml_default_register)
+math = Math.new({}, register: :mml_v3)  # => :mml_v3 (explicit option wins)
+math = Math.new({}, register: nil)      # => :mml_v2 (lutaml_default_register still used)
+math = Math.new({}, register: false)    # => :default (false is falsy)
+----
+
+=== Using with versioned base classes
+
+This pattern is especially useful for schema libraries with multiple versions:
+
+[source,ruby]
+----
+module Mml
+  # Base class for v2
+  class V2Base < Lutaml::Model::Serializable
+    def self.lutaml_default_register
+      :mml_v2
+    end
+  end
+
+  # Base class for v3
+  class V3Base < Lutaml::Model::Serializable
+    def self.lutaml_default_register
+      :mml_v3
+    end
+  end
+
+  # V2-specific classes
+  class V2::Math < V2Base
+    # Uses :mml_v2 by default
+  end
+
+  class V2::Factorof < V2Base
+    # Uses :mml_v2 by default
+  end
+
+  # V3-specific classes
+  class V3::Math < V3Base
+    # Uses :mml_v3 by default
+  end
+end
+----
+
+Each version's classes automatically use their correct register without requiring
+explicit `register:` options everywhere.
+
+=== Thread safety
+
+`lutaml_default_register` is a class method that returns a constant value, so it is
+thread-safe. Unlike modifying `Config.default_register` (which is global state),
+each class specifies its own default independently.
+
+[[instance-level-register-context]]
+=== Instance-level register context during XML parsing
+
+When parsing XML documents with nested elements, the parser must determine which
+register context to use for each element's type resolution. The key insight is that
+when a Serializable model instance has a `lutaml_register` (set during instantiation),
+that instance-level register is used for all child element processing.
+
+==== The problem
+
+Consider a document that embeds MathML v2 elements:
+
+[source,ruby]
+----
+class MyDocument < Lutaml::Model::Serializable
+  attribute :math, Mml::V2::Math  # Has lutaml_default_register = :mml_v2
+
+  xml do
+    element "document"
+    map_element "math", to: :math
+  end
+end
+----
+
+When parsing:
+[source,xml]
+----
+<document>
+  <math xmlns="http://www.w3.org/1998/Math/MathML">
+    <mmultiscripts><mi>x</mi></mmultiscripts>
+  </math>
+</document>
+----
+
+Without proper instance-level register context:
+
+1. `MyDocument` is in `:default` register
+2. Parser creates `Mml::V2::Math` instance with `lutaml_register = :mml_v2` (correct)
+3. When processing `<mmultiscripts>`, the parser was using `:default` (parent's register)
+4. `:mmultiscripts` only exists in `:mml_v2` → `UnknownTypeError`
+
+==== The solution: effective_register
+
+The XML parsing infrastructure uses an `effective_register` computed from the
+instance being populated, not the Transform object:
+
+[source,ruby]
+----
+effective_register = if instance.is_a?(::Lutaml::Model::Serialize) &&
+                        instance.respond_to?(:lutaml_register) &&
+                        instance.lutaml_register
+                      instance.lutaml_register
+                    else
+                      lutaml_register
+                    end
+----
+
+This `effective_register` is then used for:
+
+* Mapping resolution (`mappings_for(:xml, effective_register)`)
+* Type resolution (`attr.type(effective_register)`)
+* Nested element casting (`attr.cast(child, :xml, effective_register, options)`)
+* Namespace-aware type resolution
+
+==== Requirements
+
+For this to work correctly:
+
+1. **The child class must have `lutaml_default_register`** declared, OR
+2. **The child instance must be created with the correct `lutaml_register`**
+
+When both conditions are met, the instance's `lutaml_register` takes precedence,
+ensuring child elements are resolved in the correct context.
+
+[source,ruby]
+----
+# Versioned base class declares its default register
+module Mml
+  class V2Base < Lutaml::Model::Serializable
+    def self.lutaml_default_register
+      :mml_v2
+    end
+  end
+
+  class Math < V2Base
+    attribute :mmultiscripts_value, Mmultiscripts, collection: true
+  end
+end
+
+# When parsing, the Math instance uses its lutaml_register (:mml_v2)
+# for all child element resolution
+doc = MyDocument.from_xml(xml)
+doc.math.lutaml_register  # => :mml_v2
+doc.math.mmultiscripts_value.first.class  # => Mml::V2::Mmultiscripts
+----
+
+==== Complete example: embedding versioned schemas
+
+[source,ruby]
+----
+# 1. Define versioned base class
+module Mml
+  class V2Base < Lutaml::Model::Serializable
+    def self.lutaml_default_register
+      :mml_v2
+    end
+  end
+
+  class Mmultiscripts < V2Base
+    attribute :mi_value, :string
+
+    xml do
+      element "mmultiscripts"
+      map_element "mi", to: :mi_value
+    end
+  end
+
+  class Math < V2Base
+    attribute :mmultiscripts_value, Mmultiscripts, collection: true
+
+    xml do
+      element "math"
+      map_element "mmultiscripts", to: :mmultiscripts_value
+    end
+  end
+end
+
+# 2. Register in the versioned register
+mml_v2_register = Lutaml::Model::Register.new(:mml_v2)
+mml_v2_register.register_model_tree(Mml::Math)
+Lutaml::Model::GlobalRegister.instance.register(mml_v2_register)
+
+# 3. Use in a document with different register context
+class MyDocument < Lutaml::Model::Serializable
+  attribute :id, :string
+  attribute :math, Mml::Math
+
+  xml do
+    element "document"
+    map_attribute "id", to: :id
+    map_element "math", to: :math
+  end
+end
+
+# 4. Parse works regardless of MyDocument's register
+xml = <<~XML
+  <document id="test">
+    <math xmlns="http://www.w3.org/1998/Math/MathML">
+      <mmultiscripts><mi>x</mi></mmultiscripts>
+    </math>
+  </document>
+XML
+
+doc = MyDocument.from_xml(xml)
+doc.math.lutaml_register     # => :mml_v2 (from lutaml_default_register)
+doc.math.mmultiscripts_value.first.mi_value  # => "x"
+----
+
+[[cross-register-resolution]]
+== Cross-register child resolution
+
+When a parent model in one register embeds a child model from a different register,
+the child's types must resolve in the child's register context — not the parent's.
+This is handled automatically by `Register.resolve_for_child`.
+
+=== The problem
+
+A `:default`-register parent that embeds a `:mml_v2` child encounters
+`UnknownTypeError` when the child's symbol types (e.g., `:mmultiscripts`) are
+looked up in `:default` instead of `:mml_v2`:
+
+[source,ruby]
+----
+class MyDocument < Lutaml::Model::Serializable
+  attribute :math, Mml::V2::Math  # Has lutaml_default_register = :mml_v2
+
+  xml do
+    element "document"
+    map_element "math", to: :math
+  end
+end
+
+# Without Register.resolve_for_child:
+# UnknownTypeError: Unknown type 'mmultiscripts' in context 'default'
+----
+
+=== The solution: `Register.resolve_for_child`
+
+`Register.resolve_for_child(child_class, parent_register)` is the canonical API
+for determining which register to use for a child type. It is called automatically
+at every model entry point:
+
+* `transformation_for` — transformation compilation
+* `mappings_for` — mapping resolution
+* `DeclarationPlanner` — XML serialization namespace planning
+* `NamespaceCollector` — XML serialization namespace collection
+* `TypeNamespaceResolver` — type namespace reference resolution
+
+You should rarely need to call it directly. The resolution policy is:
+
+[cols="1,4"]
+|===
+| Rule | Resolution
+
+| Child has no `lutaml_default_register`
+| Use `parent_register`
+
+| `parent_register` is nil
+| Use child's default
+
+| `parent_register` matches child's default
+| Use child's default (no conflict)
+
+| `parent_register` is `:default` (global)
+| Use child's default (child knows better)
+
+| `parent_register`'s fallback chain includes child's default
+| Use `parent_register` (has substitutions)
+
+| Otherwise
+| Use child's default (child is self-contained)
+|===
+
+=== MML use case: versioned MathML schemas
+
+The `mml` gem defines MathML v2 and v3 as separate registers, each with their
+own type set. A document embedding MathML uses `lutaml_default_register` on the
+version-specific base class:
+
+[source,ruby]
+----
+module Mml
+  class V2Base < Lutaml::Model::Serializable
+    def self.lutaml_default_register
+      :mml_v2
+    end
+  end
+
+  class Math < V2Base
+    attribute :mmultiscripts, Mmultiscripts, collection: true
+    # :mmultiscripts type symbol resolves in :mml_v2 context
+  end
+end
+
+# Any document can embed Mml::V2::Math and it "just works"
+class Article < Lutaml::Model::Serializable
+  attribute :formula, Mml::V2::Math
+
+  xml do
+    element "article"
+    map_element "math", to: :formula
+  end
+end
+
+doc = Article.from_xml(xml)  # No explicit register needed
+doc.formula.mmultiscripts.first.mi_value  # => "x"
+----
+
+=== XMI use case: namespace-bound version registers
+
+The `xmi` gem defines registers for each XMI version (20131001, 20161101),
+bound to XML namespace URIs. A mixed-version XMI document may use types from
+multiple registers simultaneously.
+
+When the XMI parser detects namespace versions at parse time, it may need to
+dynamically extend the fallback chain. Use `Register#add_fallback` for this —
+it coordinates both the Register-level fallback array AND the frozen
+`TypeContext`, and invalidates caches:
+
+[source,ruby]
+----
+# Dynamically add a fallback at runtime (e.g., for mixed-version documents)
+register.add_fallback(:xmi_20161101)
+
+# This is equivalent to but safer than:
+# register.fallback << :xmi_20161101  # UNSAFE: doesn't update TypeContext
+----
+
+WARNING: Never mutate `register.fallback` directly. Always use `add_fallback`
+to keep the Register and TypeContext in sync.
+
+[[namespace-bound-registers]]
+== Namespace-bound registers
+
+A `Register` manages models and type resolution in a format-agnostic way — it has no
+knowledge of the serialization format (XML, YAML, JSON, etc.). However, the
+`NamespaceBinding` mechanism specifically works with `Lutaml::Xml::Namespace` subclasses.
+The format-agnostic design allows this to be extended in the future; for now, the
+binding API accepts XML namespace classes.
+
+Namespace binding enables *version-aware type resolution*: the same type name can resolve
+to different classes depending on the namespace in the document. This is essential when
+different versions of a specification share the same type name but with different
+structures.
+
+=== Core concept
+
+A register can be *bound* to one or more `Lutaml::Xml::Namespace` subclasses. When
+resolving a type, the register checks whether the current XML namespace URI is one it
+handles and resolves accordingly. The binding is mediated by `Lutaml::Model::NamespaceBinding`,
+which stores the namespace class and its URI.
+
+[source,ruby]
+----
+# Define namespace classes inheriting from Lutaml::Xml::Namespace
+class Xmi20131001 < Lutaml::Xml::Namespace
+  uri "http://www.omg.org/spec/XMI/20131001"
+  prefix :xmi
+  element_form_default :qualified
+end
+
+# Create and bind a register to the namespace
+register = Lutaml::Model::Register.new(:spec_20131001)
+register.bind_namespace(Xmi20131001)
+
+register.handles_namespace?("http://www.omg.org/spec/XMI/20131001")
+# => true
+
+Once bound, the register becomes the authoritative register for that namespace.
+`GlobalContext` maintains a bidirectional mapping so that namespace URIs can be
+looked up to find the correct register, and vice versa.
+
+=== Bind a register to namespaces
+
+Use `Register#bind_namespace` to bind multiple `Lutaml::Xml::Namespace` subclasses to the
+same register. Each namespace class contributes its URI to the register's binding map:
+
+[source,ruby]
+----
+register.bind_namespace(Xmi20131001)
+register.bind_namespace(Uml20131001)
+register.bind_namespace(UmlDi20131001)
+register.bind_namespace(UmlDc20131001)
+
+# Each namespace URI maps to a binding in the register
+register.bound_namespace_uris
+# => [
+#      "http://www.omg.org/spec/XMI/20131001",
+#      "http://www.omg.org/spec/UML/20131001",
+#      "http://www.omg.org/spec/UML/20131001/UMLDI",
+#      "http://www.omg.org/spec/UML/20131001/UMLDC"
+#    ]
+----
+
+=== Namespace-aware type resolution
+
+Use `resolve_in_namespace` to resolve a type given an XML namespace URI. The XML parsing
+infrastructure supplies the namespace URI at parse time when building model objects,
+ensuring the correct version-specific class is instantiated:
+
+[source,ruby]
+----
+# Resolve :documentation in the context of the XMI 20131001 namespace
+klass = register.resolve_in_namespace(:documentation, "http://www.omg.org/spec/XMI/20131001")
+# Returns the class registered under :documentation in this register
+
+# Without a namespace, falls back to normal resolution through the fallback chain
+register.resolve_in_namespace(:documentation, nil)
+----
+
+=== Hierarchical fallback with namespace bindings
+
+When a newer specification version extends an older one (e.g., XMI 20161101
+extends XMI 20131001), the newer register falls back to the older register:
+
+[source,ruby]
+----
+# Older version
+v20131001 = Lutaml::Model::Register.new(:xmi_20131001)
+v20131001.bind_namespace(Xmi20131001)
+v20131001.register_model(V20131001::Documentation, id: :documentation)
+
+# Newer version extends older version
+v20161101 = Lutaml::Model::Register.new(:xmi_20161101, fallback: [:xmi_20131001])
+v20161101.bind_namespace(Xmi20161101)
+v20161101.register_model(V20161101::Extension, id: :extension)
+
+# V20161101::Extension is registered locally; V20131001::Documentation is
+# found via fallback chain resolution
+----
+
+WARNING: Do not create circular fallback chains. If register A falls back to B,
+and B already falls back to A (directly or indirectly), type resolution will
+enter an infinite loop. Always verify the fallback chain before use.
+
+=== Mixed namespace documents
+
+Some XML documents use different namespace versions for XMI, UML, UMLDI, and
+UMLDC. For example, an XMI document may declare:
+
+[source,xml]
+----
+<xmi:XMI xmlns:xmi="http://www.omg.org/spec/XMI/20131001"
+         xmlns:uml="http://www.omg.org/spec/UML/20161101">
+----
+
+Here the XMI namespace is version 20131001, but the UML namespace is 20161101.
+When parsing this document, the XMI register must:
+
+1. Handle the XMI 20131001 namespace (primary)
+2. Also handle the UML 20161101 namespace (additional)
+3. Fall back to the UML 20161101 register for types specific to that version
+
+This is handled by *extending the fallback chain* for additional namespace
+versions. Given a primary register and a list of all detected versions:
+
+[source,ruby]
+----
+# Detect all namespace versions from the document
+versions = NamespaceDetector.detect_versions(xml_content)
+# => { xmi: "20131001", uml: "20161101", umldi: nil, umldc: nil }
+
+primary_register = register_for_version(versions[:xmi])  # xmi_20131001
+all_versions = [versions[:xmi], versions[:uml]].compact.uniq
+
+# For each additional version, bind its namespace URIs and extend the fallback
+all_versions.drop(1).each do |ver|
+  reg = register_for_version(ver)  # xmi_20161101
+  reg.bound_namespace_uris.each do |uri|
+    primary_register.bind_namespace(resolve_namespace_class(uri))
+  end
+  primary_register.fallback << reg.id unless reg.fallback.include?(primary_register.id)
+end
+----
+
+This ensures:
+
+* The primary register handles all namespace URIs present in the document
+* Type resolution searches the fallback chain for version-specific types
+* No cycles are introduced (guarded by checking whether the additional
+  register's fallback already includes the primary register)
+
+=== GlobalContext namespace registry
+
+`GlobalContext` maintains the global namespace-to-register mapping:
+
+[source,ruby]
+----
+# Bind a register to a namespace in GlobalContext
+register.bind_namespace(XmiNamespace)
+# This also calls GlobalContext.bind_register_to_namespace internally
+
+# Look up which register handles a namespace
+Lutaml::Model::GlobalContext.register_for_namespace(
+  "http://www.omg.org/spec/XMI/20131001"
+)
+# => the register bound to XmiNamespace
+----
+
+The `GlobalContext#register_for_namespace` method is the central lookup used by
+the parsing infrastructure to route XML elements to the correct register based
+on their namespace URI.
+
+=== Complete example: versioned schema with XML namespace bindings
+
+Here is a complete example showing how to set up a registry hierarchy with
+namespace bindings, suitable for a multi-version XML specification:
+
+[source,ruby]
+----
+# 1. Define Xml::Namespace subclasses for each version
+class Xmi20131001 < Lutaml::Xml::Namespace
+  uri "http://www.omg.org/spec/XMI/20131001"
+  prefix :xmi
+end
+
+class Xmi20161101 < Lutaml::Xml::Namespace
+  uri "http://www.omg.org/spec/XMI/20161101"
+  prefix :xmi
+end
+
+# 2. Create version-specific registers with fallback chains
+v20131001 = Lutaml::Model::Register.new(:spec_20131001)
+v20131001.bind_namespace(Xmi20131001)
+
+v20161101 = Lutaml::Model::Register.new(:spec_20161101, fallback: [:spec_20131001])
+v20161101.bind_namespace(Xmi20161101)
+
+# 3. Register models in each version
+v20131001.register_model(V20131001::Documentation, id: :documentation)
+v20131001.register_model(V20131001::Extension, id: :extension)
+
+v20161101.register_model(V20161101::Extension, id: :extension)  # different structure
+
+# 4. Register in GlobalRegister for global lookup
+Lutaml::Model::GlobalRegister.instance.register(v20131001)
+Lutaml::Model::GlobalRegister.instance.register(v20161101)
+
+# 5. Parse with the appropriate register
+doc = MyModel.from_xml(xml_content, register: v20161101)
+
+# 6. Detect the right register from document content
+detected = MyVersionRegistry.detect_register(xml_content)
+# Returns the appropriate register, with namespaces and fallbacks
+# already configured for the document
+doc = MyModel.from_xml(xml_content, register: detected)
+----

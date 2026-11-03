@@ -1,0 +1,711 @@
+# frozen_string_literal: true
+
+module Lutaml
+  module Xml
+    module Leptris
+      # Serialize-side mirror of the plan fast path: builds the output
+      # tree directly through leptris's fused create_child chain — no
+      # XmlElement tree, no DeclarationPlanner pass, no builder context
+      # stack, no moxml wrapper minting. Serialized shapes must be the
+      # plain ones (attributes, scalars, collections, nested models,
+      # raw fragments, content runs); custom-method, polymorphic,
+      # union, and multi-spelling rows keep the interpretive serializer
+      # (their output flows through hash-shaped custom APIs).
+      #
+      # Ordered/mixed models serialize from element_order when the
+      # instance carries one (parsed models): text runs, comments, and
+      # element entries in document order, mirroring the interpretive
+      # order applier — including its content-attr-first text reads
+      # (mutations to the model show up) and CDATA flattening. Models
+      # without element_order fall back interpretively (return nil).
+      # Writer-added values the order snapshot does not cover ride the
+      # OrderReconciler: the walk consumes the reconciled order and
+      # unplaceable rules emit appended (the interpretive
+      # apply_remaining_rules contract).
+      module PlanSerializer
+        SERIALIZABLE_KINDS = %i[scalar collection_native collection_cb
+                                nested ordered_deferred raw content
+                                content_deferred].freeze
+        PLAN_SERIALIZABLE_KINDS = SERIALIZABLE_KINDS
+        CONTENT_KINDS = %i[content content_deferred].freeze
+
+        # Reconciler host: the interpretive support modules are written
+        # against the Transformation's combined surface (the reconciler
+        # consumes applier helpers such as find_rule_for_element and
+        # rule_discriminator), so the plan lane drives them through a
+        # dedicated host holding both. The helpers are pure functions
+        # of their arguments — the frozen host carries no state.
+        class ReconcilerHost
+          include(TransformationSupport::OrderedApplier)
+          include(TransformationSupport::OrderReconciler)
+          include(TransformationSupport::SkipLogic)
+        end
+        RECONCILER = ReconcilerHost.new.freeze
+
+        class << self
+          # plan: the compiler's entry for instance's class
+          def call(instance, plan, register = nil)
+            # The child model's declared lutaml_default_register takes
+            # precedence over the ambient register — the resolve_for_child
+            # contract (#876); without it, child plans and attribute
+            # serialization resolve in the parent context.
+            register = Lutaml::Model::Register.resolve_for_child(
+              instance.class,
+              register || Lutaml::Model::Config.default_register,
+            )
+            return nil if plan[:ordered] && instance.element_order.nil?
+
+            # The native lane first: purely namespace-less trees emit
+            # through the engine's result builder and writers, all-C
+            # after the ops list — 2.4x the DOM-mint loop on the
+            # audit corpus. Everything else keeps the DOM lane below
+            # (namespaced spellings are instance-dependent; ordered,
+            # wildcard, raw, and callback shapes are not
+            # ops-expressible).
+            # element_order is the order contract: a model carrying it —
+            # parse-captured or programmatically tracked (#977) — must
+            # serialize through the ordered walk, not the flat
+            # schema-order native ops layout.
+            return NativeEmission.emit(instance, plan, register) if
+              NativeEmission.compatible?(plan) && instance.element_order.nil?
+
+            doc = ::Leptris::XML::Document.create
+            ns_ctx = Namespaces.new(instance, plan, register)
+            return nil if ns_ctx.unspellable?
+
+            root = doc.create_element(
+              ns_ctx.spell(plan[:tree][:name], plan[:tree][:ns]),
+            )
+            doc.root = root
+            ns_ctx.declare_on(root)
+            # The interpretive writer's raw schemaLocation re-emission
+            # (handle_schema_location): the parse-captured string rides
+            # back as xsi:schemaLocation with its declaration.
+            if instance.is_a?(::Lutaml::Model::Serialize) &&
+                instance.raw_schema_location &&
+                !instance.raw_schema_location.empty?
+              root.set_attribute(
+                "xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance"
+              )
+              root.set_attribute("xsi:schemaLocation",
+                                 instance.raw_schema_location)
+            end
+            built = if plan[:ordered] || !instance.element_order.nil?
+                      build_ordered(root, instance, plan, doc, register, ns_ctx)
+                    else
+                      build(root, instance, plan, doc, register, ns_ctx)
+                    end
+            return nil unless built
+
+            doc.to_xml(indent: 2, no_decl: true)
+          end
+
+          # Namespace spelling for namespaced plans (#847): every ns
+          # form resolves to a wire spelling (prefix:local, or local
+          # under a default xmlns), and every distinct (prefix, uri)
+          # pair is declared exactly once on the output root in
+          # first-encounter order — the #1558 contract on the DOM
+          # path. A nested plan's own tree ns overrides the inherited
+          # one; rows without an ns form inherit.
+          # Namespace spelling sourced from the interpretive writer's
+          # own machinery: NamespaceCollector + DeclarationPlanner
+          # decide prefix-vs-default per namespace exactly as the
+          # interpretive path does — no heuristic divergence (the
+          # uniword FontScheme/Image regressions). Option-bearing
+          # calls (prefix: true) never reach here; the serializer's
+          # plain spelling is the interpretive writer's plain
+          # spelling.
+          class Namespaces
+            attr_reader :unspellable
+
+            def initialize(instance, plan, register)
+              @forms = {}
+              @hoisted = {}
+              @declared = {}
+              @unspellable = false
+              mapping = plan[:mapping]
+              # The interpretive writer plans from the BUILT element
+              # tree: absent attributes (nil values) and absent
+              # children contribute no namespace needs, so an element
+              # whose own namespace would otherwise be prefix-hoisted
+              # (W3C: prefixed attributes need a prefix declaration)
+              # falls back to default-ns format. Collecting from the
+              # instance reproduces that — collecting from nil (type
+              # analysis) hoists every declared need and diverges
+              # (`<w:b xmlns:w>` vs the interpretive `<b xmlns>` when
+              # val=true omits the only prefixed attribute).
+              ns_prefix = if instance.is_a?(::Lutaml::Model::Serialize)
+                            instance.xml_namespace_prefix
+                          end
+              collect_options = { mapper_class: instance.class }
+              if ns_prefix && !ns_prefix.empty?
+                collect_options[:__xml_namespace_prefix] = ns_prefix
+              end
+              needs = Lutaml::Xml::NamespaceCollector.new(register).collect(
+                instance, mapping, **collect_options
+              )
+              planner = Lutaml::Xml::DeclarationPlanner.new(register)
+              declared_plan = planner.plan(
+                instance.class, mapping, needs, options: {}
+              )
+              declared_plan.root_node&.hoisted_declarations&.each do |prefix, uri|
+                @hoisted[uri] = prefix
+                @forms[uri] = { prefix: prefix, uri: uri }
+              end
+              # Format preservation (the interpretive writer's
+              # rule): an instance parsed from a PREFIXED source keeps
+              # its prefixes — the model's own namespace hoists with
+              # the instance's recorded prefix even when the fresh
+              # planner preferred the default-ns format.
+              model_uri = plan[:tree][:ns] && plan[:tree][:ns][:exact]
+              if ns_prefix && !ns_prefix.empty? && model_uri &&
+                  @hoisted.key?(model_uri)
+                @hoisted[model_uri] = ns_prefix
+                @forms[model_uri] = { prefix: ns_prefix, uri: model_uri }
+              end
+              # Source declaration preservation (the interpretive
+              # writer's stored-plan merge): prefixes the parsed source
+              # declared are kept for URIs the document emits. The
+              # planner's class-analysis path has no stored-plan
+              # access, so the merge reads the instance's recorded plan
+              # directly.
+              stored = if instance.is_a?(::Lutaml::Model::Serialize)
+                         instance.import_declaration_plan
+                       end
+              if stored.is_a?(Lutaml::Xml::DeclarationPlan) &&
+                  stored.root_node.is_a?(
+                    Lutaml::Xml::DeclarationPlan::ElementNode,
+                  ) && (ns_prefix.nil? || ns_prefix.empty?)
+                original_uris = stored.original_namespace_uris || {}
+                stored.root_node.hoisted_declarations.each do |prefix, uri|
+                  effective_uri = original_uris[uri] || uri
+                  already = @hoisted.value?(effective_uri) ||
+                    @hoisted.value?(uri)
+                  @hoisted[prefix] = uri if already && !@hoisted.key?(prefix)
+                end
+              end
+              collect(plan[:tree])
+            end
+
+            def unspellable?
+              @unspellable
+            end
+
+            def collect(tree)
+              check(tree[:ns])
+              (tree[:attributes] || []).each { |a| check(a[:ns]) }
+              (tree[:children] || []).each do |row|
+                check(row[:ns]) if row[:ns].is_a?(Hash)
+                collect(row[:plan]) if row[:kind] == :nested && row[:plan]
+              end
+            end
+
+            # An exact form the planner did not declare cannot be
+            # spelled — the serializer falls back interpretively.
+            def check(ns_form)
+              return if ns_form.nil? || ns_form == :none || ns_form == :any
+
+              uri = ns_form[:exact]
+              @unspellable = true if uri && !@forms.key?(uri)
+            end
+
+            # The planner's hoisted prefix for a URI (nil when hoisted
+            # as the default namespace).
+            def prefix_for(uri)
+              @hoisted[uri]
+            end
+
+            # The wire spelling for a local name under this form: the
+            # planner's hoisted prefix for the URI, or unprefixed when
+            # hoisted as the default namespace.
+            def spell(local, ns_form = nil)
+              uri = if ns_form.is_a?(Hash)
+                      ns_form[:exact]
+                    else
+                      @forms.key?(ns_form) ? @forms[ns_form][:uri] : nil
+                    end
+              prefix = uri ? @hoisted[uri] : nil
+              prefix ? "#{prefix}:#{local}" : local
+            end
+
+            def form_for(ns_form)
+              return nil if ns_form.nil? || ns_form == :none
+
+              ns_form.is_a?(Hash) ? { prefix: @hoisted[ns_form[:exact]], uri: ns_form[:exact] } : @forms[ns_form]
+            end
+
+            # Declaration order matches the interpretive writer: the
+            # prefixed namespaces sorted by prefix, the default
+            # namespace last.
+            def declare_on(root, _attr_form_prefix = nil)
+              @hoisted.sort_by { |_uri, prefix| [prefix ? 0 : 1, prefix.to_s] }
+                .each do |uri, prefix|
+                  key = uri
+                  next if key.nil? || @declared[key]
+
+                  @declared[key] = true
+                  root.add_namespace_definition(prefix, uri)
+                end
+            end
+          end
+
+          # Whether the compiled plan is serialize-shaped. Ordered/mixed
+          # models serialize through build_ordered from element_order;
+          # plain models through plan rows.
+          def serializable?(plan)
+            plan[:rows].all? do |_rule, _attr, kind, _sp, _del|
+              PLAN_SERIALIZABLE_KINDS.include?(kind)
+            end
+          end
+
+          private
+
+          def register
+            Lutaml::Model::Config.default_register
+          end
+
+          def build(element, instance, plan, doc, reg = nil, ns_ctx = nil,
+                    inherited_ns = nil)
+            reg ||= register
+            write_attributes(element, instance, plan, reg, ns_ctx)
+            ns_index = ns_index_for(plan)
+            nested_plans = nested_plans_for(plan)
+            plan[:rows].each do |rule, attr, kind, spelling, delegate|
+              value = value_of(instance, attr, delegate)
+              next unless rule.render?(value, instance)
+
+              case kind
+              when :scalar
+                # Multi-capture parity: an attribute that collected
+                # several occurrences serializes one element per item,
+                # as the interpretive writer does. A plain scalar skips
+                # the Array() wrap — the common case.
+                row_ns = ns_index[row_name(rule, spelling)] || inherited_ns
+                if value.is_a?(::Array)
+                  value.each do |item|
+                    add_leaf(element,
+                             ns_ctx ? ns_ctx.spell(row_name(rule, spelling), row_ns) : row_name(rule, spelling),
+                             attr.serialize(item, :xml, reg), doc,
+                             attrs: rule.when_attribute)
+                  end
+                else
+                  add_leaf(element,
+                           ns_ctx ? ns_ctx.spell(row_name(rule, spelling), row_ns) : row_name(rule, spelling),
+                           attr.serialize(value, :xml, reg), doc,
+                           attrs: rule.when_attribute)
+                end
+              when :collection_native, :collection_cb
+                row_ns = ns_index[rule.name.to_s] || inherited_ns
+                Array(value).each do |item|
+                  add_leaf(element,
+                           ns_ctx ? ns_ctx.spell(rule.name.to_s, row_ns) : rule.name.to_s,
+                           attr.serialize(item, :xml, reg), doc,
+                           attrs: rule.when_attribute)
+                end
+              when :nested, :ordered_deferred
+                Array(value).each do |item|
+                  # Keyed by [class, row name]: distinct rows (sz, szCs)
+                  # can share one class with different root names.
+                  child_plan = nested_plans[[item.class, rule.name.to_s]] ||
+                    (nested_plans[[item.class, rule.name.to_s]] = PlanCompiler.compile(item.class, reg))
+                  child_ns = child_plan[:tree][:ns] || inherited_ns
+                  # The ROW's wire name wins over the child plan's
+                  # root — distinct rows (sz, szCs) share one class.
+                  child = element.create_child(
+                    ns_ctx ? ns_ctx.spell(row_name(rule, spelling), child_ns) : row_name(rule, spelling),
+                  )
+                  ns_ctx&.collect(child_plan[:tree])
+                  if child_plan[:ordered] || !item.element_order.nil?
+                    build_ordered(child, item, child_plan,
+                                  doc, reg, ns_ctx, child_ns) || return
+                  else
+                    build(child, item, child_plan, doc, reg, ns_ctx, child_ns) || return
+                  end
+                end
+              when :raw
+                Array(value).each { |raw| element.add_child(raw.to_s) }
+              when :child_deferred
+                # A plan-less child carrying a value (a cycle point
+                # with data, e.g. bibliography's Author → author):
+                # the interpretive serializer owns the model — the
+                # plan lane has no faithful spelling for it. Empty
+                # deferred rows ride the fast lane untouched.
+                return nil unless Array(value).empty?
+              when :content, :content_deferred
+                Array(value).each { |run| append_text(element, run.to_s, doc) }
+              end
+            end
+          end
+
+          # Per-plan lazy indexes: the name→ns lookup and the
+          # per-class child-plan resolution are per-instance calls on
+          # the serialize hot path — memoized once per compiled plan
+          # they cost nothing per row (the old per-row children#find
+          # plus PlanCompiler key arrays were ~4 allocs/row).
+          def ns_index_for(plan)
+            plan[:ns_index] ||= begin
+              h = {}
+              (plan[:tree][:children] || []).each do |r|
+                h[r[:name]] = r[:ns] unless h.key?(r[:name])
+              end
+              h
+            end
+          end
+
+          def nested_plans_for(plan)
+            plan[:nested_plans] ||= {}
+          end
+
+          # The row's exact element URI — the child type's namespace,
+          # the same source the interpretive matcher dispatches by for
+          # (URI, local) element identity. Nil for scalar/raw/content
+          # rows (any-qualification binding). Memoized per plan (rules
+          # are stable per compiled plan).
+          def row_exact_uri(rule, attr, kind, type, reg, plan)
+            return nil unless %i[nested ordered_deferred].include?(kind)
+
+            cache = plan[:row_exact_uris] ||= {}.compare_by_identity
+            return cache[rule] if cache.key?(rule)
+
+            child_type = type || attr.type(reg)
+            child_plan = child_type && PlanCompiler.compile(child_type, reg)
+            tree_ns = child_plan && child_plan[:tree][:ns]
+            cache[rule] = tree_ns.is_a?(Hash) ? tree_ns[:exact] : tree_ns
+          end
+
+          def ordered_layout_for(plan, inherited_ns, ns_index, reg)
+            cache = plan[:ordered_layouts] ||= {}.compare_by_identity
+            return cache[inherited_ns] if cache.key?(inherited_ns)
+
+            rows_by_name = {}
+            name_keys = ::Hash.new { |h, k| h[k] = [] }
+            plan[:rows].each do |rule, attr, kind, spelling, delegate, type|
+              next unless rule.name
+
+              exact = row_exact_uri(rule, attr, kind, type, reg, plan)
+              name = rule.name.to_s
+              key = exact ? [exact, name] : [nil, name]
+              rows_by_name[key] ||= [rule, attr, kind, spelling,
+                                     delegate,
+                                     ns_index ? ns_index[name] || inherited_ns : inherited_ns]
+              name_keys[name] << key
+            end
+            name_keys.default = nil
+            cache[inherited_ns] = [rows_by_name, name_keys]
+          end
+
+          # Element_order-driven emission (the interpretive order
+          # applier's contract): text runs and comments verbatim, each
+          # element entry consuming the next item of its collection
+          # (document order). Text reads prefer the content attribute
+          # when it lines up with the text-node count, so mutations to
+          # the model are reflected; element_order text is the fallback.
+          # PIs drop (interpretive parity). A nested ordered instance
+          # without element_order (built by Ruby, not parsed) falls
+          # back to declaration order — the interpretive behavior.
+          def build_ordered(element, instance, plan, doc, reg = nil,
+                            ns_ctx = nil, inherited_ns = nil)
+            if instance.element_order.nil?
+              return build(element, instance, plan, doc, reg, ns_ctx,
+                           inherited_ns)
+            end
+
+            reg ||= register
+            ns_ctx&.collect(plan[:tree])
+            write_attributes(element, instance, plan, reg, ns_ctx)
+            ns_index = ns_ctx ? ns_index_for(plan) : nil
+            # (URI, local) row keys — the interpretive matcher's
+            # typed-element identity: same-name rows in different
+            # namespaces (w14:docId vs w15:docId) must not share one
+            # dispatch slot. Name-keyed rows (no exact URI) bind any
+            # qualification. The layout is static per (plan, inherited
+            # ns) — the reconciliation corpus re-serializes thousands
+            # of same-shaped paragraphs, so it is memoized.
+            rows_by_name, name_keys =
+              ordered_layout_for(plan, inherited_ns, ns_index, reg)
+            content_entry = plan[:rows].find do |rule, _attr, kind, _sp, _del|
+              CONTENT_KINDS.include?(kind) && rule.name.nil?
+            end
+            # Writer-added values sit outside the order snapshot — the
+            # reconciler inserts their entries at the interpretive
+            # anchors and returns the rules it could not place for
+            # appended emission (silent drops are data loss). The
+            # reconciler speaks CompiledRule — the interpretive
+            # transformation's memoized set; the plan's MappingRule
+            # rows cannot drive it. Pristine parsed instances skip the
+            # scan entirely: the parse-built order covers every set
+            # value, and the writer-set flag is the only flow that can
+            # produce deficits.
+            rules = if instance.mutated_after_parse?
+                      compiled_rules_for(instance.class, reg)
+                    end
+            if rules
+              order, fallback_rules =
+                RECONCILER.reconciled_element_order(instance, rules, {})
+            else
+              order = instance.element_order
+              fallback_rules = []
+            end
+            element_indices = ::Hash.new(0)
+            content_attr = content_entry && content_entry[1]
+            content_value = content_attr &&
+              value_of(instance, content_attr, content_entry[4])
+            text_node_count = order.count { |o| o.type == "Text" }
+            use_content_index = content_value.is_a?(Array) &&
+              content_value.length == text_node_count
+            content_cdata = content_entry && content_entry[0].cdata
+            text_node_index = 0
+
+            order.each do |object|
+              case object.type
+              when "Text"
+                text = if content_attr && !content_value.nil?
+                         if use_content_index
+                           content_value[text_node_index].to_s
+                         elsif !content_value.is_a?(Array) && text_node_count <= 1
+                           content_value.to_s
+                         else
+                           object.text_content || object.name
+                         end
+                       else
+                         object.text_content || object.name
+                       end
+                text_node_index += 1
+                next if text.nil?
+                # Mixed content keeps whitespace; ordered-only skips it
+                next if content_attr.nil? && text.strip.empty?
+
+                element.add_child(content_cdata ? doc.create_cdata(text) : doc.create_text_node(text))
+              when "Comment"
+                element.add_child(doc.create_comment(object.text_content))
+              when "Element"
+                # A uniquely-named row absorbs the entry at any
+                # qualification (the interpretive matcher's lenient
+                # binding — order entries written by consumers carry no
+                # namespace). Contested names dispatch strictly by
+                # (URI, local), falling back to URI-less rows.
+                name = object.name
+                # Order entries may carry names with no mapped row (the
+                # parse records every child in document order); the
+                # layout cache kills its default proc to stay
+                # mutation-free, so a miss reads nil and drops below.
+                keys = name_keys[name]
+                if keys&.length == 1
+                  dispatch_key = keys.first
+                  entry = rows_by_name[dispatch_key]
+                else
+                  dispatch_key = [object.namespace_uri, name]
+                  entry = rows_by_name[dispatch_key]
+                  unless entry
+                    dispatch_key = [nil, name]
+                    entry = rows_by_name[dispatch_key]
+                  end
+                end
+                next unless entry
+
+                _, attr, kind, _spelling, delegate, row_ns = entry
+                value = value_of(instance, attr, delegate)
+                case kind
+                when :collection_native, :collection_cb
+                  index = element_indices[dispatch_key]
+                  items = Array(value)
+                  next unless index < items.length
+
+                  element_indices[dispatch_key] += 1
+                  add_leaf(element,
+                           ns_ctx ? ns_ctx.spell(object.name, row_ns) : object.name,
+                           attr.serialize(items[index], :xml, reg), doc)
+                when :nested, :ordered_deferred
+                  item = if attr.collection?
+                           index = element_indices[dispatch_key]
+                           element_indices[dispatch_key] += 1
+                           Array(value)[index]
+                         else
+                           value
+                         end
+                  next unless item
+
+                  child_plan = nested_plans_for(plan)[[item.class, object.name]] ||
+                    (nested_plans_for(plan)[[item.class, object.name]] = PlanCompiler.compile(item.class, reg))
+                  child_ns = child_plan[:tree][:ns] || row_ns || inherited_ns
+                  child = element.create_child(
+                    ns_ctx ? ns_ctx.spell(object.name, child_ns) : object.name,
+                  )
+                  if child_plan[:ordered] || !item.element_order.nil?
+                    return nil unless build_ordered(child, item, child_plan,
+                                                    doc, reg, ns_ctx, child_ns)
+                  else
+                    build(child, item, child_plan, doc, reg, ns_ctx, child_ns) || return
+                  end
+                when :raw
+                  element.add_child(value.to_s) unless value.nil?
+                when :child_deferred
+                  # Valued cycle-point children: interpretive lane (see
+                  # build).
+                  return nil unless Array(value).empty?
+                when :scalar
+                  add_leaf(element,
+                           ns_ctx ? ns_ctx.spell(object.name, row_ns) : object.name,
+                           attr.serialize(value, :xml, reg), doc)
+                end
+              end
+            end
+            return nil if !fallback_rules.empty? &&
+              !emit_uncovered_values(element, instance, plan, fallback_rules,
+                                     doc, reg, ns_ctx, inherited_ns)
+
+            true
+          end
+
+          # OrderReconciler fallback: element rules the reconciled order
+          # could not place but that still hold a value — emit them
+          # appended, the ordinary way (the interpretive
+          # apply_remaining_rules contract for the plan row model).
+          def emit_uncovered_values(element, instance, plan, fallback, doc,
+                                    reg, ns_ctx, inherited_ns)
+            by_attr = {}
+            plan[:rows].each { |row| by_attr[row[1].name] ||= row if row[1] }
+            fallback.each do |rule|
+              entry = by_attr[rule.attribute_name]
+              next unless entry
+
+              _rule, attr, kind, _spelling, delegate, row_ns = entry
+              value = value_of(instance, attr, delegate)
+              name = rule.name.to_s
+              Array(value).each do |item|
+                case kind
+                when :collection_native, :collection_cb, :scalar
+                  add_leaf(element,
+                           ns_ctx ? ns_ctx.spell(name, row_ns) : name,
+                           attr.serialize(item, :xml, reg), doc)
+                when :nested, :ordered_deferred
+                  next if item.nil?
+
+                  child_plan =
+                    nested_plans_for(plan)[[item.class, name]] ||
+                    (nested_plans_for(plan)[[item.class, name]] =
+                       PlanCompiler.compile(item.class, reg))
+                  child_ns = child_plan[:tree][:ns] || row_ns || inherited_ns
+                  child = element.create_child(
+                    ns_ctx ? ns_ctx.spell(name, child_ns) : name,
+                  )
+                  if child_plan[:ordered] || !item.element_order.nil?
+                    return nil unless build_ordered(child, item, child_plan,
+                                                    doc, reg, ns_ctx, child_ns)
+                  else
+                    built = build(child, item, child_plan, doc, reg, ns_ctx,
+                                  child_ns)
+                    return nil unless built
+                  end
+                end
+              end
+              # Valued cycle-point rows keep the walk's contract.
+              return nil if kind == :child_deferred && !Array(value).empty?
+            end
+            true
+          end
+
+          def compiled_rules_for(klass, reg)
+            klass.transformation_for(:xml, reg)&.compiled_rules
+          end
+
+          # Attributes in document order when the instance recorded it
+          # (parsed models), else plan row order.
+          def write_attributes(element, instance, plan, reg = nil,
+                               ns_ctx = nil)
+            recorded = instance.attribute_order
+            attr_prefixes = nil
+            if ns_ctx && !(plan[:tree][:attributes] || []).empty?
+              attr_prefixes = {}
+              (plan[:tree][:attributes] || []).each do |a|
+                form = a[:ns].is_a?(Hash) ? a[:ns] : nil
+                # Namespaced attributes always spell prefixed (W3C:
+                # attributes cannot use the default namespace) — the
+                # interpretive writer emits the type namespace's own
+                # prefix even when the element hoists the same URI as
+                # the default namespace (updateFields w:val under
+                # xmlns="...").
+                attr_prefixes[a[:name]] =
+                  if form
+                    form[:prefix] || ns_ctx.prefix_for(form[:exact])
+                  end
+              end
+            end
+            if recorded && !recorded.empty?
+              by_name = {}
+              plan[:attr_rows].each do |rule, attr, _sp, delegate|
+                by_name[rule.name.to_s] = [rule, attr, delegate]
+              end
+              names = recorded |
+                plan[:attr_rows].map { |rule, _a, _s, _d| rule.name.to_s }
+              names.each do |name|
+                write_attribute(element, instance, name, by_name[name],
+                                reg, attr_prefixes && attr_prefixes[name])
+              end
+            else
+              plan[:attr_rows].each do |rule, attr, _sp, delegate|
+                write_attribute(element, instance, rule.name.to_s,
+                                [rule, attr, delegate], reg,
+                                attr_prefixes && attr_prefixes[rule.name.to_s])
+              end
+            end
+          end
+
+          def write_attribute(element, instance, name, entry, reg = nil,
+                              prefix = nil)
+            return unless entry
+
+            rule, attr, delegate = entry
+            value = value_of(instance, attr, delegate)
+            return if value.nil?
+            return unless rule.render?(value, instance)
+
+            spelled = prefix ? "#{prefix}:#{name}" : name
+            element.set_attribute(spelled,
+                                  attr.serialize(value, :xml, reg || register).to_s)
+          end
+
+          # Partition rows (#88) re-emit their discriminator: the wire
+          # element carries the when_attribute pairs so the round trip
+          # re-routes to the same attribute on reparse.
+          def add_leaf(element, name, value, doc, attrs: nil)
+            child = element.create_child(name)
+            attrs&.each { |k, v| child[k.to_s] = v.to_s }
+            append_text(child, value.to_s, doc) unless value.nil?
+            child
+          end
+
+          # Text attach: the address face (leptris#408 adoption)
+          # passes raw node addresses — the pointer face mints an
+          # FFI::Pointer wrapper per fresh node, the last per-row
+          # Ruby-side allocation on the DOM build.
+          def append_text(parent, text, doc)
+            node = doc.create_text_node(text)
+            status = ::Leptris::XML::FFI.leptris_element_add_child_addr(
+              parent.c_address, node.c_address
+            )
+            unless status.zero?
+              raise ::Leptris::XML::Error,
+                "text attach failed (status=#{status})"
+            end
+
+            node
+          end
+
+          def value_of(instance, attr, delegate)
+            if delegate
+              target = instance.public_send(delegate)
+              target&.public_send(attr.name)
+            else
+              instance.public_send(attr.name)
+            end
+          end
+
+          def row_name(rule, spelling)
+            (spelling || rule.name).to_s
+          end
+        end
+      end
+    end
+  end
+end

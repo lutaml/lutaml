@@ -1,0 +1,59 @@
+name: dependent-gems-test
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ v* ]
+    paths-ignore:
+      - '**.adoc'
+  pull_request:
+    paths-ignore:
+      - '**.adoc'
+  workflow_dispatch:
+  repository_dispatch:
+    types: [ release-passed ]
+
+jobs:
+  # The dependent lanes run Ruby 4.0 only: the matrix_ruby value is
+  # raw-interpolated into the reusable workflow's jq program, hence the
+  # JSON array literal (metanorma/ci#462 supplies the input). Today's
+  # default slice is 3.3-only.
+  rake:
+    uses: metanorma/ci/.github/workflows/dependent-rake.yml@main
+    with:
+      # #1020: the spec-file count distinguishes a truncated checkout from
+      # a full one, and the explicit rspec-exit line separates an
+      # in-process exit (green summary, nonzero code) from test failures.
+      # set +e keeps the capture alive under the runner's errexit; the
+      # final exit preserves rspec's own status — nothing is masked.
+      # The Failure/Error excerpts follow the list: tail -25 shows only
+      # the failed-example names, and a deterministic CI-only failure
+      # (the glossarist/iev leg, 2026-10-31) cannot be diagnosed from
+      # names alone.
+      command: set +e; echo "spec-files=$(find spec -name '*_spec.rb' 2>/dev/null | wc -l)"; bundle exec rspec > rspec-run.log 2>&1; code=$?; echo "rspec-exit=$code"; tail -25 rspec-run.log; grep -B2 -A14 "Failure/Error" rspec-run.log | head -160; exit $code
+      repos-json-file: .github/workflows/dependent-repos.json
+      matrix_ruby: '[{"version":"4.0","rubygems":"latest","bundler":"default","experimental":false}]'
+      after-setup-ruby: |
+        if [ -f frontend/package.json ]; then cd frontend && npm install && npm run build; fi
+    secrets:
+      pat_token: ${{ secrets.LUTAML_CI_PAT_TOKEN }}
+
+  # Dependents whose suites invoke the tools: ukiryu wraps
+  # inkscape/imagemagick/ghostscript and raises if absent, and its
+  # smoke suite exercises exiftool, yq and ffmpeg too; the metanorma
+  # renderers run full document renders.
+  rake-with-tools:
+    uses: metanorma/ci/.github/workflows/dependent-rake.yml@main
+    with:
+      command: set +e; echo "spec-files=$(find spec -name '*_spec.rb' 2>/dev/null | wc -l)"; bundle exec rspec; code=$?; echo "rspec-exit=$code"; exit $code
+      repos-json-file: .github/workflows/dependent-repos-tools.json
+      setup-tools: 'inkscape,ghostscript,exiftool,ffmpeg,imagemagick,yq'
+      matrix_ruby: '[{"version":"4.0","rubygems":"latest","bundler":"default","experimental":false}]'
+      after-setup-ruby: |
+        if [ -f frontend/package.json ]; then cd frontend && npm install && npm run build; fi
+    secrets:
+      pat_token: ${{ secrets.LUTAML_CI_PAT_TOKEN }}
