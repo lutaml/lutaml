@@ -5,7 +5,7 @@ require "open3"
 require "lutaml/xml"
 
 RSpec.describe Lutaml::Xml do
-  let(:lib_path) { File.expand_path("../../../lib", __dir__) }
+  let(:lib_path) { LUTAML_LIB }
 
   def run_ruby(script)
     stdout, stderr, status = Open3.capture3(

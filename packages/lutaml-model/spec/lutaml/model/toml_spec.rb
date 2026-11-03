@@ -15,7 +15,7 @@ RSpec.describe Lutaml::Model::Toml do
       end
 
       allow(Lutaml::Model::RuntimeCompatibility).to receive(:opal?).and_return(true)
-      load File.expand_path("../../../lib/lutaml/toml/adapter.rb", __dir__)
+      load File.join(LUTAML_LIB, "lutaml/toml/adapter.rb")
 
       expect(Lutaml::Toml::Adapter.autoload?(:TomlRbAdapter)).to be_nil
       expect(Lutaml::Toml::Adapter.autoload?(:TomlibAdapter)).to be_nil

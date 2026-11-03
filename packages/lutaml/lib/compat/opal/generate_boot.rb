@@ -59,15 +59,18 @@ def resolve_path(raw, declaring_file)
   elsif raw.start_with?("\#{File.dirname(__FILE__)}/")
     subdir = raw.sub("\#{File.dirname(__FILE__)}/", "").delete_suffix(".rb")
     (declaring_dir + subdir).relative_path_from(LIB).to_s.delete_suffix(".rb")
-  elsif raw.start_with?("lutaml/")
-    raw.delete_suffix(".rb")
   else
     raw.delete_suffix(".rb")
   end
 end
 
 paths = []
+# The lutaml gem also carries the LML front (lutaml/lml*), which is not part
+# of the model runtime boot.
+LML_FRONT = %r{\A#{Regexp.escape(LIB.to_s)}/lutaml/lml(/|\.rb\z)}
 Dir.glob("#{LIB}/lutaml/**/*.rb").each do |file|
+  next if file.match?(LML_FRONT)
+
   src = File.read(file)
   # Strip full-line and trailing comments so commented-out autoload
   # examples (e.g. in type_registry.rb) don't end up in the boot file.

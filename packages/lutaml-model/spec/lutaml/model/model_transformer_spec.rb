@@ -2,7 +2,7 @@
 
 require "spec_helper"
 require "date"
-require_relative "../../../lib/lutaml/model/model_transformer"
+require "lutaml/model/model_transformer"
 
 class ProcValue < Lutaml::Model::Serializable
   attribute :val, :string

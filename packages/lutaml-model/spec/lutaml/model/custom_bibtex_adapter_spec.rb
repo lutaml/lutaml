@@ -149,7 +149,7 @@
 #   end
 #
 require "spec_helper"
-require_relative "../../../lib/lutaml/model/serialization_adapter"
+require "lutaml/model/serialization_adapter"
 
 # This is a custom BibTeX adapter that can serialize and deserialize BibTeX
 # entries. It is used to demonstrate how to create a custom adapter for a

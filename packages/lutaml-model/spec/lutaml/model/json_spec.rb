@@ -5,7 +5,7 @@ require "lutaml/json"
 
 RSpec.describe Lutaml::Model::Json do
   describe "standalone loading" do
-    let(:lib_path) { File.expand_path("../../../lib", __dir__) }
+    let(:lib_path) { LUTAML_LIB }
 
     it "loads require 'lutaml/json' without preloading lutaml/model" do
       # rubocop:disable-next Style/CommandLiteral
@@ -23,7 +23,7 @@ RSpec.describe Lutaml::Model::Json do
       end
 
       allow(Lutaml::Model::RuntimeCompatibility).to receive(:opal?).and_return(true)
-      load File.expand_path("../../../lib/lutaml/json/adapter.rb", __dir__)
+      load File.join(LUTAML_LIB, "lutaml/json/adapter.rb")
 
       expect(Lutaml::Json::Adapter.autoload?(:OjAdapter)).to be_nil
       expect(Lutaml::Json::Adapter.autoload?(:MultiJsonAdapter)).to be_nil

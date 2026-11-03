@@ -1,4 +1,4 @@
-require_relative "../../lib/lutaml/model"
+require "lutaml/model"
 
 module GeolexicaV2
   # --- Leaf types ---

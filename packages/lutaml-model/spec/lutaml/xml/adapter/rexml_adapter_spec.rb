@@ -2,7 +2,7 @@ require "spec_helper"
 
 if TestAdapterConfig.adapter_enabled?(:rexml)
   require "rexml/document"
-  require_relative "../../../../lib/lutaml/xml/adapter/rexml_adapter"
+  require "lutaml/xml/adapter/rexml_adapter"
 
   RSpec.describe Lutaml::Xml::Adapter::RexmlAdapter do
     let(:xml_string) do

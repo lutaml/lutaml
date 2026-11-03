@@ -1,5 +1,5 @@
 require "spec_helper"
-require_relative "../../../lib/lutaml/model"
+require "lutaml/model"
 
 class CustomSerialization < Lutaml::Model::Serializable
   attribute :full_name, :string

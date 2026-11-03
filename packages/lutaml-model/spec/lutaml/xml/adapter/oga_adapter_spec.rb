@@ -1,6 +1,6 @@
 require "spec_helper"
 require "oga"
-require_relative "../../../../lib/lutaml/xml/adapter/oga_adapter"
+require "lutaml/xml/adapter/oga_adapter"
 
 RSpec.describe Lutaml::Xml::Adapter::OgaAdapter, :oga_adapter do
   let(:xml_string) do

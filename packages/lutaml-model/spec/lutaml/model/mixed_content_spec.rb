@@ -1,7 +1,7 @@
 # spec/lutaml/model/mixed_content_spec.rb
 
 require "spec_helper"
-require_relative "../../../lib/lutaml/model"
+require "lutaml/model"
 require "lutaml/xml/adapter/nokogiri_adapter"
 require "lutaml/xml/adapter/ox_adapter"
 require "lutaml/xml/adapter/oga_adapter"

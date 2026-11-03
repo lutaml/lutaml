@@ -1,7 +1,7 @@
 # frozen_string: true
 
 require "spec_helper"
-require_relative "../../../lib/lutaml/model"
+require "lutaml/model"
 
 # lutaml-model#758: a plain (unnamespaced) map_attribute rule on an
 # element-namespaced class must not absorb a namespaced sibling attribute

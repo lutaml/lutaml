@@ -3,6 +3,9 @@
 source "https://rubygems.org"
 
 # Specify your gem's dependencies in lutaml-model.gemspec
+
+# The runtime these specs exercise lives in the lutaml package (#233).
+gem "lutaml", path: "../lutaml"
 gemspec
 
 # Opal-compatible forks of oga and ruby-ll. The forks add pure-Ruby lexer

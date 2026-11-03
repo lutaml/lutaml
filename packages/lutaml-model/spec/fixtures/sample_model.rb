@@ -1,4 +1,4 @@
-require_relative "../../lib/lutaml/model"
+require "lutaml/model"
 
 class SampleModelTag < Lutaml::Model::Serializable
   attribute :text, :string, default: -> { "" }

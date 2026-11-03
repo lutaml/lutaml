@@ -1,7 +1,7 @@
 # spec/lutaml/xml/content_model_validation_spec.rb
 
 require "spec_helper"
-require_relative "../../../lib/lutaml/model"
+require "lutaml/model"
 
 RSpec.describe "Content model validation" do
   describe "OrderedContentMappingError" do

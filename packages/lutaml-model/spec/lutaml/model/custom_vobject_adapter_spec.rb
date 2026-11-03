@@ -114,7 +114,7 @@
 # - :property_group - Grouping of related properties
 require "spec_helper"
 
-require_relative "../../../lib/lutaml/model/serialization_adapter"
+require "lutaml/model/serialization_adapter"
 
 module CustomVobjectAdapterSpec
   class VobjectParser
