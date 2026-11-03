@@ -120,7 +120,7 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 4588/4696 (97.7%; the 1.9.403 engine ride nets zero — 17 filings-confirmed flips offset by 17 new strictness regressions, filed leptris-rs#35) |
+| pipeline | 4592/4696 (97.79%; the 1.9.403 ride nets zero, filed leptris-rs#35; the lutaml-model 0.8.161 ride adds +4 via #1087) |
 
 (2026-11-02, bundled-stack measurement with the escape,
 hint-following, pattern-alternative, identity-crash, engine-set,
@@ -144,7 +144,7 @@ lockfile refresh) → 4411 (93.9%) → 4430 (94.3%) → 4435 (94.4%) →
 → 4557 (97.0%) → 4565 (97.2%) → 4569 (97.3%) → 4562 (drift raw) →
 4563 (97.17%, ref-namespace round) → 4573 (97.38%, group-content
 round) → 4578 (97.49%, attribute-prohibition round) → 4585 (97.64%,
-multi-document round) → 4588 (97.7%, type-binding round), +627 net over the 1.2.43 baseline. The escapes round (PR #197 — \d→\p{Nd},
+multi-document round) → 4588 (97.7%, type-binding round) → 4592 (97.79%, model-161 ride), +631 net over the 1.2.43 baseline. The escapes round (PR #197 — \d→\p{Nd},
 \w/\W/\s to their XSD value spaces) collapses Regex 120→69;
 same-step pattern facets now behave as alternatives and
 whitespace-only text reaches the facets intact (PR #200), Regex
@@ -512,6 +512,26 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   checks bind the no-ns int ct-A to the ns-b boolean children —
   'true' vs xsd:int — the per-child type plumbing under hint
   layering), full type-redefine body semantics.
+- MODEL-161 REFRESH ROUND (2026-11-03, owner "check all upstream"):
+  lutaml-model 0.8.157 -> 0.8.161, lutaml-store 0.3.3 -> 0.3.8,
+  yeptris 0.6.56.1 -> 0.6.59.1 (leptris 1.9.403 and moxml 0.6.2
+  already current). The train carries the lutaml-model#1087 fix:
+  unresolvable include/import/redefine schemaLocations now WARN and
+  assemble without the referenced components — anyURI_a001/a002 and
+  schD7/schG8 flip (+4; Schema 7->5, DataTypes 12->10). ALL FILINGS
+  CLOSED upstream: leptris-rs #25-29+#35, leptris#1936, moxml#510,
+  lutaml-model#1087. Suite 4592/4696 = 97.79%, zero regressions,
+  rspec green. STILL PENDING UPSTREAM: the leptris #35 wave fixes
+  ride on libleptris 1.9.404 — the Ruby gem publish has not shipped
+  yet (~+15 when it lands). REMAINING (104): Regex 22 (engine-bound
+  dialect), IC 13 (idF/G redefine-empty = leptris-rs#35 sub 3;
+  idK/idZ singletons), SimpleType 12 (stZ072 = #35 sub 4; stE fixed
+  -empty children = #35 sub 1; stZ073b/ba Ruby), Additional 11
+  (isDefault fixed-children = #35 sub 1), AttributeGroup 11
+  (moxml#510 thread), DataTypes 10 (corners), Particles 6, Schema 5
+  (schA1/D10/F2 Ruby + F1/G2/P2 #510), Attribute 4 (J018 #510;
+  O006/O009/O011), Wildcards 3, ComplexType 2 (ctA033/035 = #35 sub
+  2), Element 2, ModelGroups 2, Errata10 1.
 - ENGINE-403 REFRESH ROUND (2026-11-03, net zero at 4588 = 97.7%):
   leptris 1.9.402.0 -> 1.9.403.0 (the ride that closed #1936 and the
   rs#25-29 wave — 17 suite cases FIXED, exactly our filings:
