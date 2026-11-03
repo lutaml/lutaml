@@ -17,6 +17,8 @@ plugins:
 
 AllCops:
   TargetRubyVersion: 3.2
+  Exclude:
+    - 'lib/lutaml/lml/grammar/lml.artifact.json'
 
 # VerifiedDoubles is disabled because many spec files use double() to mock
 # UML model classes (Lutaml::Uml::Class, Package, etc.) that don't implement
@@ -27,3 +29,21 @@ RSpec/VerifiedDoubles:
   Enabled: false
   Exclude:
     - 'spec/**/*'
+
+# LML front (absorbed from lutaml-lml): its corpus predates gating, so
+# metrics are off and the Rakefile's rubocop_ratchet task gates NEW
+# offenses on changed files.
+Metrics:
+  Enabled: false
+Style/StringLiterals:
+  Enabled: false
+Style/StringLiteralsInInterpolation:
+  Enabled: false
+Style/TrailingCommaInArguments:
+  EnforcedStyleForMultiline: comma
+Style/TrailingCommaInArrayLiteral:
+  EnforcedStyleForMultiline: comma
+Style/TrailingCommaInHashLiteral:
+  EnforcedStyleForMultiline: comma
+Layout/LineLength:
+  Enabled: false

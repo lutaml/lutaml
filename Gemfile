@@ -11,7 +11,7 @@ gem "rspec"
 # Override gemspec deps with sibling paths or GitHub during local
 # development. In CI these don't resolve and bundler uses the gemspec's
 # own add_dependency declarations against rubygems.
-sibling_overrides = %w[canon lutaml-lml lutaml-uml]
+sibling_overrides = %w[canon lutaml-uml]
 sibling_overrides.each do |sibling_gem|
   sibling_path = File.expand_path("../#{sibling_gem}", __dir__)
   gem sibling_gem, path: sibling_path if File.directory?(sibling_path)
@@ -21,3 +21,21 @@ github_override = File.expand_path("../lutaml-model", __dir__)
 if File.directory?(github_override)
   gem "lutaml-model", path: github_override
 end
+
+# LML front development and conformance gates (absorbed from lutaml-lml).
+gem "rubocop"
+# Property-based generation for the LML round-trip laws. 2.x is the last
+# series that installs on the supported Ruby floor.
+gem "rantly", "~> 2.0"
+# ELK layout for the `--layout elk` diagram engine (soft dependency:
+# the gemspec does not require it; Formatter::Elk guides installation)
+gem "elkrb", ">= 1.0"
+# Diagram output conformance gate (spec/lutaml/lml/svg_conformance_spec.rb)
+gem "nokogiri" # svg_conform resolves its lutaml-model XML adapter through it
+gem "svg_conform"
+# Output format conversion for the ELK engine: SVG -> EMF/PS/EPS
+gem "vectory"
+# Direct PDF emission for the ELK engine: SVG -> PDF, no external tools
+gem "pdfrb"
+# Graphviz rendering lives in lutaml-graphviz (never in this gemspec).
+gem "lutaml-graphviz", github: "lutaml/lutaml-graphviz"

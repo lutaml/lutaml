@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "lutaml/version"
-require "lutaml/lml"
+require_relative "lutaml/lml"
 require "lutaml/uml"
 require "lutaml/uml_repository"
 
