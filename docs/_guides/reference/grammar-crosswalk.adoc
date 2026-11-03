@@ -230,6 +230,7 @@ grammar are classified with one of these statuses:
 | `simpleFactorExpression` | simple_factor | decomposed | 
 | `simpleFactorUnaryExpression` | simple_factor | decomposed | 
 | `simpleId` | simple_id | aligned | 
+| `unguardedId` | simple_id | aligned | 
 | `simpleStringLiteral` | simple_string_literal | aligned | 
 | `simpleTypes` | simple_types | aligned | 
 | `skipStmt` | skip_stmt | aligned | 

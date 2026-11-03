@@ -633,6 +633,9 @@ rules:
 - rule: simpleId
   production: simple_id
   status: aligned
+- rule: unguardedId
+  production: simple_id
+  status: aligned
 - rule: simpleStringLiteral
   production: simple_string_literal
   status: aligned
