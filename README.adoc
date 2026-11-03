@@ -5,7 +5,6 @@
 LutaML aims to be a unified data model accessor that allows parsing
 data models in multiple languages, including:
 
-* EXPRESS (https://www.expresslang.org[EXPRESS Language Foundation], ISO 10303-11)
 * Enterprise Architect UML models in QEA format or exported as OMG XMI
 * UML in LutaML format
 
@@ -62,8 +61,9 @@ doc = Lutaml::Lml.parse_document(File.new("model.lutaml"))
 doc.classes.first.attributes.map(&:name)
 ----
 
-EXPRESS schemas parse through `Lutaml::Express::Parsers::Exp.parse(io)`;
-see README.md for the full family table and the repository layer.
+EXPRESS schemas are not handled by `lutaml`; use the
+link:https://github.com/lutaml/expressir[expressir] gem, which is the EXPRESS
+front. See README.md for the full family table and the repository layer.
 
 == Working with UML
 

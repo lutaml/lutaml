@@ -3,7 +3,6 @@
 
 require "bundler/setup"
 require "lutaml"
-require "lutaml/express"
 require "lutaml/uml"
 require "lutaml/xmi"
 

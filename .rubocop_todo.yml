@@ -328,7 +328,6 @@ RSpec/RepeatedExampleGroupDescription:
 # SupportedInflectors: default, active_support
 RSpec/SpecFilePathFormat:
   Exclude:
-    - 'spec/express/parsers/exp_spec.rb'
     - 'spec/lutaml/parsers/parse_xmi_spec.rb'
     - 'spec/lutaml/parsers/serialize_xmi_to_liquid_spec.rb'
     - 'spec/lutaml/uml_repository/web_ui/app_spec.rb'

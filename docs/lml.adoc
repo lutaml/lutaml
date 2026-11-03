@@ -1,0 +1,210 @@
+= LML: the LutaML Model Language
+
+NOTE: LML was formerly the separate `lutaml-lml` gem; it is now part of `lutaml`
+(`require "lutaml"` or `require "lutaml/lml"`). `lutaml-lml` remains as a
+transitional alias that depends on `lutaml`.
+
+LutaML Model Language (LML) — a text DSL for describing UML-style
+models and their data instances, parsed into typed domain models and
+rendered as diagrams via GraphViz (provided by the separate
+`lutaml-graphviz` gem; add it to your Gemfile).
+
+== Status
+
+RS 3001 (LutaML language, `lutaml-lang.adoc`) is the authoritative
+base and is fully implemented: classes, enums, data types, attributes
+(including `values` sets, `pattern`, cardinality, defaults), the
+canonical `value` construct, packages, namespacing, instances and
+instance collections with references, and the validation rules
+(uniqueness, mandatory attributes, type and pattern conformity,
+reference validity and circularity). Every normative example of the
+specification is vendored as a conformance corpus and runs in CI.
+
+RS 3010 (declarations extension, `lml-declarations.adoc`) covers
+serialization mappings (XML elements/attributes/content, key-value
+wire names, namespaces), `isa`, `derive`, `string_format`, enum
+member payloads and `from_table` artifact references.
+
+Tooling: a canonical form with a `lutaml format [--check]` formatter and
+an idempotence guarantee; structured diagnostics (code, position,
+remedy) across parse, validation, and hydration; a stdio language
+server (`lutaml-lml-lsp`); language-version negotiation via the
+`lml "x.y"` prologue; and seeded generative round-trip laws (value,
+key, document, idempotence) that run at reduced depth in CI and
+nightly at full depth.
+
+== Installation
+
+....
+gem install lutaml-lml
+....
+
+== Usage
+
+Parse an LML document:
+
+....
+require "lutaml/lml"
+
+# parse_document: pipeline only — raw collections, unresolved imports.
+doc = Lutaml::Lml.parse_document(File.new("model.lml"))
+# parse: pipeline + view resolution (imports expanded, show/hide
+# filters applied, association labels enriched).
+doc = Lutaml::Lml.parse(File.new("model.lml"))
+doc.classes.first.attributes.map(&:name)
+....
+
+Validate against the RS 3001 rules:
+
+....
+violations = Lutaml::Lml::Validator.diagnostics(doc)
+violations.each { |diagnostic| puts diagnostic }
+# 1:7: [validation/LML-V01] 'Tile' is defined 2 times in the document root
+#   remedy: Rename or remove the duplicate definition.
+....
+
+== Diagnostics
+
+Parse, validation, hydration, and contract failures are
+`Lutaml::Lml::Diagnostic` records: `code`, `severity`, `file`, `line`,
+`column`, `length`, `message`, and `remedy`. Parse failures raise an
+error carrying the record (`error.diagnostic`); validation returns them
+from `Lutaml::Lml::Validator.diagnostics`. `lutaml validate --format
+json` emits the diagnostic array machine-readably.
+
+[cols="1,2,2",options="header"]
+|===
+|Code |Meaning |Remedy
+
+|`parse/LML-001` |Syntax error |Fix the syntax at the reported position.
+|`parse/LML-002` |Unterminated block comment |Terminate the block comment with `*/`.
+|`parse/LML-003` |Include could not be read or is circular |Check the include path and the included file.
+|`validation/LML-V01` |Duplicate definition in a scope |Rename or remove the duplicate definition.
+|`validation/LML-V02` |Duplicate attribute in a definition |Rename or remove the duplicate attribute.
+|`validation/LML-V03` |Mandatory attribute not populated |Populate the mandatory attribute on the instance.
+|`validation/LML-V04` |Value does not match the declared primitive type |Use a value matching the declared primitive type.
+|`validation/LML-V05` |Value outside the declared value set |Use one of the values declared for the attribute.
+|`validation/LML-V06` |Instance attribute is not declared |Declare the attribute or remove it from the instance.
+|`validation/LML-V07` |Reference does not resolve |Point the reference at an existing instance or attribute.
+|`validation/LML-V08` |Circular reference |Break the reference cycle.
+|`validation/LML-V09` |Value does not match the attribute pattern |Use a value matching the attribute pattern.
+|`validation/LML-V10` |Attribute pattern does not compile |Fix the attribute pattern so that it compiles.
+|`hydration/LML-H01` |Instance data could not be hydrated |Check the instance data against the compiled model.
+|`contract/LML-C01` |Input file not found |Check the path of the input file.
+|`contract/LML-C02` |Unsupported input format |Use one of the supported input formats.
+|`contract/LML-C03` |Input file could not be read or parsed in its format |Check the input file and its format.
+|`contract/LML-C04` |Invalid cardinality token while compiling |Use a cardinality token such as `1`, `0..1`, or `0..n`.
+|`contract/LML-C05` |View import could not be resolved |Check the imported view path and the imported files.
+|`contract/LML-C06` |Document declares a newer language version |Use a supported language version or upgrade lutaml-lml.
+|===
+
+== Value semantics
+
+String values are quoted (double or single) with exactly two escape
+sequences — `\"` and `\\` — strict in both quote kinds; a backslash
+before anything else does not form a string. Quoted content is
+verbatim: padding, embedded quotes, and backslashes survive
+parse/emit round-trips (the emitter escapes values and attribute
+keys; attribute keys may be quoted whenever they are not bare words).
+
+`null` is a value: an explicit `null` assignment denotes the null
+value, an unassigned optional attribute is absent, and the empty
+string `""` is a present, zero-length value — the three are distinct.
+
+....
+instance R {
+  name = "Raku \"kiln\" fired"        // escapes
+  note = ""                            // present, empty
+  retired = null                       // null value
+  // an attribute simply not assigned here is absent
+}
+....
+
+Compile model definitions into `Lutaml::Model::Serializable` classes and
+hydrate instance data. Pass `namespace:` to register the compiled classes
+as constants (a String namespace is created if absent) — named classes are
+what JSON Schema / YAML Schema generation requires:
+
+....
+compiler = Lutaml::Lml::ModelCompiler.new(namespace: "MyModels")
+compiler.compile(File.new("model.lml"))
+klass = compiler.compiled_classes["Ceramic"]
+instance = compiler.hydrate(File.new("data.lml"))
+
+Lutaml::Model::Schema.to_json(klass)   # JSON Schema document
+Lutaml::Model::Schema.to_yaml(klass)   # YAML Schema document
+....
+
+Command line:
+
+....
+lutaml generate model.lml      # diagram via GraphViz
+lutaml generate model.lml --layout elk -o diagram.pdf   # in-process ELK layout; PDF via pdfrb (also svg, ps, eps, emf)
+lutaml validate model.lml      # parse + RS 3001 rule violations
+lutaml format model.lml        # rewrite into the RS 3001 canonical form
+lutaml format model.lml --check   # report non-canonical files with a diff; exit 1
+lutaml compile model.lml       # lutaml-model classes
+lutaml compile model.lml --schema json -o schemas/
+lutaml compile model.lml --schema yaml -o ceramic.schema.yaml
+....
+
+== Language version
+
+A document may declare the LML grammar version it speaks with an
+optional first line:
+
+....
+lml "1.0"
+
+class Ceramic { }
+....
+
+The supported version is the version compiled into the grammar artifact.
+A document declaring a newer version parses, with a warning diagnostic
+(`contract/LML-C06`): forward compatibility is preserved and the
+declaration is recorded on `Document#lml_version`.
+
+== Editor support (LSP)
+
+The gem ships `lutaml-lml-lsp`, a Language Server Protocol server over
+stdin/stdout:
+
+....
+lutaml-lml-lsp
+....
+
+It provides push and pull diagnostics (`Lutaml::Lml::Diagnostic`
+records), document symbols (packages, classes, enums, attributes,
+instances, values), go-to-definition and find-references (types,
+values-set references, `ref:(path)` targets), hover (type, cardinality,
+default, pattern, definitions, and the null/empty/absence note),
+completion (keywords read from the compiled grammar artifact plus model
+names), and canonical formatting through the formatter. Unparseable
+documents publish a parse diagnostic and leave the server running.
+
+== Architecture
+
+The language grammar is written in PARG
+(`lib/lutaml/lml/grammar/lml.parg`) and compiled by
+https://github.com/parsanol/parsanol-ruby[parsanol]; the compiled
+artifact is committed for fast cold loads (`rake parg` regenerates it).
+Comments and whitespace are grammar-level skip trivia. Comments are
+consumed between any two tokens; quoted strings never start comments.
+
+Pipeline: preprocessor (include expansion) → PARG parser → transform →
+data processor → document builder → post-parse resolvers (imports,
+views, association labels).
+
+== Development
+
+....
+bundle install
+bundle exec rake spec     # test suite incl. the RS 3001 corpus
+bundle exec rake parg     # regenerate the compiled grammar artifact
+bundle exec rubocop
+....
+
+== Documentation
+
+* RS 3001 — LutaML language: `lutaml-lang.adoc`
+* RS 3010 — declarations extension: `lml-declarations.adoc`
