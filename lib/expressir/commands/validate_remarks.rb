@@ -52,10 +52,22 @@ module Expressir
       end
 
       def validate_from_paths(paths)
-        parsed = schema_paths(paths).map do |path|
-          repository = Expressir::Express::Parser.from_file(path)
-          [path, repository.schemas]
-        end
+        files = schema_paths(paths)
+        # The parses fan out across forked workers (issue #584); a
+        # parse failure raises in input order, exactly like the
+        # sequential pass did. Small sets stay sequential (the
+        # facility's own threshold).
+        parse = ->(path) { Expressir::Express::Parser.from_file(path) }
+        results =
+          if Expressir::Express::ParallelFiles.sequential?(files, jobs_count)
+            files.map { |path| parse.call(path) }
+          else
+            Expressir::Express::ParallelFiles.run(
+              files, parse: parse, max_processes: jobs_count, strict: true
+            )
+          end
+        parsed = files.zip(results)
+          .filter_map { |path, repository| repository && [path, repository.schemas] }
         schema_ids = parsed.flat_map { |_, schemas| schemas.map(&:id) }
           .map { |id| id.to_s.downcase }
 

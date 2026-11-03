@@ -29,6 +29,9 @@ module Expressir
       DESC
       method_option :verbose, type: :boolean, default: false,
                               desc: "Show verbose output"
+      method_option :jobs, type: :numeric,
+                           desc: "Parallel parse workers (issue #584; " \
+                                 "default: every core, 1 = sequential)"
       def load(*paths)
         ValidateLoad.new(options).run(paths)
       end
@@ -83,6 +86,9 @@ module Expressir
       desc "remarks PATH_OR_MANIFEST",
            "Validate remark blocks: a block anchor ([[name]]) must be " \
            "defined in a single remark scope per schema"
+      method_option :jobs, type: :numeric,
+                           desc: "Parallel parse workers (issue #584; " \
+                                 "default: every core, 1 = sequential)"
       def remarks(*paths)
         ValidateRemarks.new(options).run(paths)
       end

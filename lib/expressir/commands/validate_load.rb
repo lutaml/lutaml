@@ -40,18 +40,36 @@ module Expressir
         no_version = []
         no_valid = []
 
-        paths.each do |path|
+        # The parses fan out across forked workers (issue #584); the
+        # reporting stays on the main thread, in input order. Small
+        # sets stay sequential (the facility's own threshold).
+        parse = ->(path) do
+          Expressir::Express::Parser.from_file(path)
+        rescue StandardError
+          nil
+        end
+        results =
+          if Expressir::Express::ParallelFiles.sequential?(paths, jobs_count)
+            paths.map { |path| parse.call(path) }
+          else
+            Expressir::Express::ParallelFiles.run(
+              paths, parse: parse, max_processes: jobs_count
+            )
+          end
+
+        paths.zip(results).each do |path, repository|
           x = Pathname.new(path).realpath.relative_path_from(Dir.pwd)
           say "Validating #{x}"
-          ret = validate_schema(path)
 
-          if ret.nil?
+          if repository.nil?
             no_valid << "Failed to parse: #{x}"
             next
           end
 
-          ret.each do |schema_id|
-            no_version << "Missing version string: schema `#{schema_id}` | #{x}"
+          repository.schemas.each do |schema|
+            unless schema.version&.value
+              no_version << "Missing version string: schema `#{schema.id}` | #{x}"
+            end
           end
         end
 
@@ -66,16 +84,6 @@ module Expressir
         end
 
         say "Validation passed for all EXPRESS schemas."
-      end
-
-      def validate_schema(path)
-        repository = Expressir::Express::Parser.from_file(path)
-        repository.schemas.inject([]) do |acc, schema|
-          acc << schema.id unless schema.version&.value
-          acc
-        end
-      rescue StandardError
-        nil
       end
 
       def print_validation_errors(type, array)
