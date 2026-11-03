@@ -52,8 +52,12 @@ module Lutaml
           @redefined_originals = {}
           # Parsed xs:redefine target documents: their named types back
           # the redefined bodies (schT3: b-ct/b-st live in the target,
-          # which the repository does not hold).
+          # which the repository does not hold). Names a redefine BODY
+          # redefines are NOT served from the target: the body is the
+          # effective type and is not resolvable here, so those keep
+          # the lenient unresolvable path (idF/idG/idH class).
           @redefined_targets = []
+          @redefined_body_names = []
           @elements = index_elements
         end
 
@@ -207,7 +211,7 @@ module Lutaml
             result = named_type_in(local_name, schema)
             break if result
           end
-          if result.nil?
+          if result.nil? && !@redefined_body_names.include?(local_name)
             @redefined_targets.each do |schema|
               result = named_type_in(local_name, schema)
               break if result
@@ -617,36 +621,60 @@ module Lutaml
           # indexed under the name (attgC007/attgD036). Runs after the
           # nested descent so included declarations are already in.
           Array(schema.redefine).each do |red|
-            target_path = nil
-            base = begin
-              File.dirname(@repository.source_path_for(schema))
+            index_redefine(index, schema, red, held_signatures, namespace,
+                           defaults_schema)
+          end
+        end
+
+        # xs:redefine replaces an attributeGroup with a body whose
+        # self-reference is the §4.2.2 hook to the ORIGINAL
+        # definition. lutaml-model does NOT chase the redefine
+        # target, so the original document is parsed here (relative
+        # to the defining file) and indexed; the original
+        # declaration is kept for that hook and the redefining body
+        # indexed under the name (attgC007/attgD036). Runs after the
+        # nested descent so included declarations are already in.
+        def index_redefine(index, schema, red, held_signatures, namespace,
+                           defaults_schema)
+          target_path = nil
+          base = begin
+            File.dirname(@repository.source_path_for(schema))
+          rescue StandardError
+            nil
+          end
+          if base && red.schema_path.to_s.match?(/\S/)
+            candidate = File.expand_path(red.schema_path.to_s, base)
+            target_path = candidate if File.exist?(candidate)
+          end
+          if target_path
+            begin
+              target = Lutaml::Xml::Schema::Xsd.parse(
+                File.read(target_path), location: target_path
+              )
+              @redefined_targets << target
+              index_schema(index, target, held_signatures, namespace,
+                           defaults_schema)
             rescue StandardError
               nil
             end
-            if base && red.schema_path.to_s.match?(/\S/)
-              candidate = File.expand_path(red.schema_path.to_s, base)
-              target_path = candidate if File.exist?(candidate)
-            end
-            if target_path
-              begin
-                target = Lutaml::Xml::Schema::Xsd.parse(
-                  File.read(target_path), location: target_path
-                )
-                @redefined_targets << target
-                index_schema(index, target, held_signatures, namespace,
-                             defaults_schema)
-              rescue StandardError
-                nil
-              end
-            end
-            Array(red.attribute_group).each do |group|
-              name = group.name.to_s
-              next if name.empty?
+          end
+          # Names the body redefines: served by the body (not
+          # resolvable here), never by the target originals.
+          Array(red.complex_type).each do |body|
+            name = body.name.to_s
+            @redefined_body_names << name unless name.empty?
+          end
+          Array(red.simple_type).each do |body|
+            name = body.name.to_s
+            @redefined_body_names << name unless name.empty?
+          end
+          Array(red.attribute_group).each do |group|
+            name = group.name.to_s
+            next if name.empty?
 
-              original = @attribute_groups[name]
-              @redefined_originals[name] = original if original
-              @attribute_groups[name] = group
-            end
+            original = @attribute_groups[name]
+            @redefined_originals[name] = original if original
+            @attribute_groups[name] = group
           end
         end
 

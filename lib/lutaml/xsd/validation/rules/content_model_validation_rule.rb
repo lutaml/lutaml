@@ -302,7 +302,8 @@ module Lutaml
               restriction = Array(content.restriction).first
               if extension
                 base_local = extension.base.to_s.split(":").last
-                base_type = base_local && repository&.resolve_named_type(base_local)
+                base_type = base_local &&
+                  repository&.resolve_named_type(base_local)
                 particles = type_particles(base_type, repository, seen) +
                   particles
                 COMPLEX_PARTICLE_KINDS.each do |kind|

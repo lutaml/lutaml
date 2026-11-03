@@ -222,7 +222,11 @@ module Lutaml
               # Base attributes flow through both derivations — a
               # restriction narrows them but cannot drop them (XSD 1.0
               # §3.4.2).
-              attributes.concat(inherited_attributes(part.base, repository)) if part
+              if part
+                attributes.concat(
+                  inherited_attributes(part, repository),
+                )
+              end
             end
 
             # Handle simple content
@@ -234,7 +238,11 @@ module Lutaml
               )
               part = Array(schema_def.simple_content.extension).first ||
                 Array(schema_def.simple_content.restriction).first
-              attributes.concat(inherited_attributes(part.base, repository)) if part
+              if part
+                attributes.concat(
+                  inherited_attributes(part, repository),
+                )
+              end
             end
 
             override_base_prohibitions(schema_def, attributes)
@@ -267,11 +275,13 @@ module Lutaml
           end
 
           # The base type's attribute set flows into the derived type
-          # through extension and restriction alike.
+          # through extension and restriction alike. The base resolves
+          # through the derivation so a redefine body's own base hooks
+          # to the original definition.
           #
           # @return [Array<Lutaml::Xml::Schema::Xsd::Attribute>]
-          def inherited_attributes(base_name, repository)
-            local = base_name.to_s.split(":").last
+          def inherited_attributes(part, repository)
+            local = part.base.to_s.split(":").last
             return [] if local.to_s.empty?
 
             base = repository&.resolve_named_type(local)
