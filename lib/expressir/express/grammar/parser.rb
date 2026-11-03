@@ -247,7 +247,13 @@ module Expressir
           (generalRef >> qualifier.repeat.as(:qualifier) >> op_decl >> expression >> op_delim).as(:assignmentStmt)
         end
         rule(:attributeDecl) do
-          (attributeId | redeclaredAttribute).as(:attributeDecl)
+          # redeclaredAttribute first: it anchors on SELF, so plain
+          # attribute names fail it instantly; the reverse order lets
+          # the unguarded fallback match a bare "SELF" and packrat
+          # memoization then blocks the retry (issue #581). The
+          # unguarded fallback rides only the definition site (the
+          # colon anchors it); references keep the guarded simpleId.
+          (redeclaredAttribute | (simpleId | unguardedId).as(:attributeId)).as(:attributeDecl)
         end
         rule(:attributeId) { simpleId.as(:attributeId) }
         rule(:attributeQualifier) do
@@ -685,6 +691,16 @@ module Expressir
           # "r FOR" as one simpleId). A quantified Re consumes the
           # whole identifier in a single step — parsanol GH-69.
           anyKeyword.absent? >> cts(match("[a-zA-Z_][a-zA-Z0-9_]*").as(:str)).as(:simpleId)
+        end
+        rule(:unguardedId) do
+          # issue #581: keyword-named attributes ("value : INTEGER")
+          # are real-world EXPRESS and the core lane has always
+          # accepted them. Only the COLON-ANCHORED attribute-definition
+          # position takes this fallback — there the ":" stops the
+          # match before a closing keyword; guarded simpleId stays
+          # everywhere else (a keyword swallowed as an identifier
+          # expression would break "WHERE TRUE; END_TYPE").
+          cts(match("[a-zA-Z_][a-zA-Z0-9_]*").as(:str)).as(:simpleId)
         end
         rule(:simpleStringLiteral) do
           cts((str("'") >> (str("'").absent? >> any).repeat >> str("'")).as(:str)).as(:simpleStringLiteral)

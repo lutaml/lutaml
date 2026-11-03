@@ -21,9 +21,9 @@ def puts(*); end
 parser = Expressir::Express::Grammar::Parser.cached_parser
 
 SKIP_RULE = "space"
-ATOMIC_RULES = %w[simpleId digits spaces space embeddedRemark tailRemark].freeze
+ATOMIC_RULES = %w[simpleId unguardedId digits spaces space embeddedRemark tailRemark].freeze
 RULE_NAMES = File.read(File.join(__dir__, "RULE-INVENTORY.txt"))
-  .scan(/^\[ \] (\w+)$/).flatten + ["syntax"] +
+  .scan(/^\[ \] (\w+)$/).flatten + ["syntax"] + ["unguardedId"] +
   KEYWORDS.map { |kw| "t#{kw}" }
 
 REJECTED = Hash.new(0)

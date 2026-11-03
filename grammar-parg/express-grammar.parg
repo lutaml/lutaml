@@ -15,7 +15,7 @@ grammar ExpressSyntax version "0.1.0" edition 2 {
   anyKeyword = tABS / tABSTRACT / tACOS / tAGGREGATE / tALIAS / tAND / tANDOR / tARRAY / tAS / tASIN / tATAN / tBAG / tBASED_ON / tBEGIN / tBINARY / tBLENGTH / tBOOLEAN / tBY / tCASE / tCONSTANT / tCONST_E / tCOS / tDERIVE / tDIV / tELSE / tEND / tEND_ALIAS / tEND_CASE / tEND_CONSTANT / tEND_ENTITY / tEND_FUNCTION / tEND_IF / tEND_LOCAL / tEND_PROCEDURE / tEND_REPEAT / tEND_RULE / tEND_SCHEMA / tEND_SUBTYPE_CONSTRAINT / tEND_TYPE / tENTITY / tENUMERATION / tESCAPE / tEXISTS / tEXP / tEXTENSIBLE / tFALSE / tFIXED / tFOR / tFORMAT / tFROM / tFUNCTION / tGENERIC / tGENERIC_ENTITY / tHIBOUND / tHIINDEX / tIF / tIN / tINSERT / tINTEGER / tINVERSE / tLENGTH / tLIKE / tLIST / tLOBOUND / tLOCAL / tLOG / tLOG10 / tLOG2 / tLOGICAL / tLOINDEX / tMOD / tNOT / tNUMBER / tNVL / tODD / tOF / tONEOF / tOPTIONAL / tOR / tOTHERWISE / tPI / tPROCEDURE / tQUERY / tREAL / tREFERENCE / tREMOVE / tRENAMED / tREPEAT / tRETURN / tROLESOF / tRULE / tSCHEMA / tSELECT / tSELF / tSET / tSIN / tSIZEOF / tSKIP / tSQRT / tSTRING / tSUBTYPE / tSUBTYPE_CONSTRAINT / tSUPERTYPE / tTAN / tTHEN / tTO / tTRUE / tTYPE / tTYPEOF / tTOTAL_OVER / tUNIQUE / tUNKNOWN / tUNTIL / tUSE / tUSEDIN / tVALUE / tVALUE_IN / tVALUE_UNIQUE / tVAR / tWITH / tWHERE / tWHILE / tXOR
   arrayType = (tARRAY boundSpec tOF [ tOPTIONAL ] [ tUNIQUE ] instantiableType) as arrayType
   assignmentStmt = (generalRef (0* qualifier) as qualifier op_decl expression op_delim) as assignmentStmt
-  attributeDecl = (attributeId / redeclaredAttribute) as attributeDecl
+  attributeDecl = (redeclaredAttribute / (simpleId / unguardedId) as attributeId) as attributeDecl
   attributeId = (simpleId) as attributeId
   attributeQualifier = (op_period attributeRef) as attributeQualifier
   attributeRef = (attributeId) as attributeRef
@@ -365,6 +365,7 @@ grammar ExpressSyntax version "0.1.0" edition 2 {
   typeRef = (typeId) as typeRef
   unaryOp = (op_plus / op_minus / tNOT) as unaryOp
   underlyingType = (concreteTypes / constructedTypes) as underlyingType
+  atomic unguardedId = (spaces (((%x41-5A / %x61-7A / %x5F) 0* (%x30-39 / %x41-5A / %x61-7A / %x5F))) as str) as simpleId
   uniqueClause = (tUNIQUE (uniqueRule op_delim 0* (uniqueRule (op_delim) as op_delim2)) as listOf_uniqueRule) as uniqueClause
   uniqueRule = ([ (ruleLabelId op_colon) ] (referencedAttribute 0* (op_comma referencedAttribute)) as listOf_referencedAttribute) as uniqueRule
   untilControl = (tUNTIL logicalExpression) as untilControl
