@@ -247,7 +247,9 @@ module Lutaml
             xsi = repository && xsi_attribute(xml_element, "type")
             if xsi&.value.to_s.match?(/\S/)
               local = xsi.value.to_s.split(":").last
-              named = repository.resolve_named_type(local)
+              named = repository.resolve_named_type(
+                local, repository.target_namespace_for(schema_def)
+              )
               return nil unless named
 
               return type_particles(named, repository, {}.compare_by_identity)
@@ -303,7 +305,9 @@ module Lutaml
               if extension
                 base_local = extension.base.to_s.split(":").last
                 base_type = base_local &&
-                  repository&.resolve_named_type(base_local)
+                  repository&.resolve_named_type(
+                    base_local, repository&.target_namespace_for(type)
+                  )
                 particles = type_particles(base_type, repository, seen) +
                   particles
                 COMPLEX_PARTICLE_KINDS.each do |kind|

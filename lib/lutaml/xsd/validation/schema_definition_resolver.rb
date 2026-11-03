@@ -186,6 +186,9 @@ module Lutaml
         end
 
         # Named type for an element's `type="prefix:Name"` reference.
+        # Same-local-name types across composed documents resolve by
+        # the OWNING declaration's namespace (schA1: ct-A exists in
+        # ns-a/ns-b/no-namespace; the reference binds its own).
         #
         # @param schema_element [Lutaml::Xml::Schema::Xsd::Element, nil]
         # @return [Object, nil]
@@ -195,40 +198,67 @@ module Lutaml
           reference = schema_element.type
           return nil if reference.nil? || reference.to_s.empty?
 
-          resolve_named_type(reference.to_s.split(":").last)
+          resolve_named_type(reference.to_s.split(":").last,
+                             target_namespace_for(schema_element))
         end
 
-        # Named complex or simple type by local name.
+        # Named complex or simple type by local name, preferring a
+        # candidate declared in owner_ns.
         #
         # @param local_name [String]
+        # @param owner_ns [String, nil] the referencing declaration's
+        #   target namespace
         # @return [Object, nil]
-        def resolve_named_type(local_name)
+        def resolve_named_type(local_name, owner_ns = nil)
           return nil if local_name.nil? || local_name.empty?
-          return @named_types[local_name] if @named_types.key?(local_name)
 
-          result = nil
-          schemas.each do |schema|
-            result = named_type_in(local_name, schema)
-            break if result
+          list = named_type_candidates(local_name)
+          return nil if list.empty?
+          # A nil owner means the referencing declaration lives in NO
+          # namespace (schA1_c): prefer the no-namespace candidate, not
+          # just the first.
+          if owner_ns.nil?
+            return list.find { |t| @namespaces[t].to_s.empty? } ||
+                list.first
           end
-          if result.nil? && !@redefined_body_names.include?(local_name)
-            @redefined_targets.each do |schema|
-              result = named_type_in(local_name, schema)
-              break if result
-            end
-          end
-          @named_types[local_name] = result
+
+          list.find { |t| @namespaces[t] == owner_ns } || list.first
         end
 
-        # @return [Object, nil]
-        def named_type_in(local_name, schema)
-          found = Array(schema.complex_type).find do |ct|
-            ct.name == local_name
+        # Every top-level and nested declaration of the name, in
+        # document order: schemas first, then parsed redefine targets
+        # (names a redefine body redefines stay off the targets).
+        #
+        # @return [Array<Object>]
+        def named_type_candidates(local_name)
+          cache = @named_type_lists ||= {}
+          return cache[local_name] if cache.key?(local_name)
+
+          list = []
+          schemas.each do |schema|
+            found = Array(schema.complex_type).find do |ct|
+              ct.name == local_name
+            end
+            found ||= Array(schema.simple_type).find do |st|
+              st.name == local_name
+            end
+            list << found if found
+
+            nested = find_nested_named_type(local_name, schema)
+            list << nested if nested
           end
-          found ||= Array(schema.simple_type).find do |st|
-            st.name == local_name
+          unless @redefined_body_names.include?(local_name)
+            @redefined_targets.each do |schema|
+              found = Array(schema.complex_type).find do |ct|
+                ct.name == local_name
+              end
+              found ||= Array(schema.simple_type).find do |st|
+                st.name == local_name
+              end
+              list << found if found
+            end
           end
-          found || find_nested_named_type(local_name, schema)
+          cache[local_name] = list.uniq
         end
 
         # Named types declared in documents reached through resolved
@@ -767,6 +797,7 @@ module Lutaml
         def index_type(index, complex_type, namespace, schema)
           return unless complex_type
 
+          @namespaces[complex_type] = namespace
           each_particle_element(complex_type, schema) do |element|
             index_element(index, element, namespace, :inline, schema)
           end
