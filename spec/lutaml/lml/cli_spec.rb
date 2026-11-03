@@ -46,6 +46,8 @@ RSpec.describe Lutaml::Cli::LmlCommands do
   # So a missing binary at the render step is a pass, and any other error
   # still fails the example.
   def reload_through_cli(path, dir)
+    skip "lutaml-graphviz not installed" unless gem_available?("lutaml/graphviz")
+
     generate(path, dir)
     :rendered
   rescue Errno::ENOENT => e
