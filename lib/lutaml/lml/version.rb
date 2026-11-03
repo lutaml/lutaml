@@ -1,7 +1,10 @@
 # frozen_string_literal: true
 
+require_relative "../version"
+
 module Lutaml
   module Lml
-    VERSION = "0.3.6"
+    # LML ships inside the lutaml gem; one version line.
+    VERSION = Lutaml::VERSION
   end
 end
