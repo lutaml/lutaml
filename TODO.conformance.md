@@ -120,7 +120,7 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 4585/4696 (97.64%) |
+| pipeline | 4588/4696 (97.7%) |
 
 (2026-11-02, bundled-stack measurement with the escape,
 hint-following, pattern-alternative, identity-crash, engine-set,
@@ -144,7 +144,7 @@ lockfile refresh) → 4411 (93.9%) → 4430 (94.3%) → 4435 (94.4%) →
 → 4557 (97.0%) → 4565 (97.2%) → 4569 (97.3%) → 4562 (drift raw) →
 4563 (97.17%, ref-namespace round) → 4573 (97.38%, group-content
 round) → 4578 (97.49%, attribute-prohibition round) → 4585 (97.64%,
-multi-document round), +624 net over the 1.2.43 baseline. The escapes round (PR #197 — \d→\p{Nd},
+multi-document round) → 4588 (97.7%, type-binding round), +627 net over the 1.2.43 baseline. The escapes round (PR #197 — \d→\p{Nd},
 \w/\W/\s to their XSD value spaces) collapses Regex 120→69;
 same-step pattern facets now behave as alternatives and
 whitespace-only text reaches the facets intact (PR #200), Regex
@@ -494,6 +494,20 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   lutaml-model Redefine model shape study). Remaining Schema 9:
   schA1/Q1/D10/F2 (ours), schD7/G8 (lutaml-model#1087),
   schF1/G2/G7/P2 (moxml#510 composed bindings).
+- TYPE-BINDING ROUND (2026-11-03): +3 (Schema 9→8 — schQ1/schF2
+  flip; Particles 12→8 cumulatively with the collision round; suite
+  4585→4588 = 97.7%, zero regressions, rspec green). Same-local-name
+  types across a composition (three documents each declaring ct-A in
+  ns-a/ns-b/no-namespace) resolved to the FIRST candidate; the
+  resolver now keeps every candidate in document order and prefers
+  the one declared in the OWNING declaration's namespace (type
+  namespaces indexed at index time), with the no-namespace owner
+  preferring the no-namespace candidate; xsi:type overrides and
+  extension-base walks thread the deriving type namespace through.
+  STILL OPEN: schA1/schD10 (the hinted composition's CHILD value
+  checks bind the no-ns int ct-A to the ns-b boolean children —
+  'true' vs xsd:int — the per-child type plumbing under hint
+  layering), full type-redefine body semantics.
 - REGEX SEMANTICS ROUND (2026-10-31, PR #208): \w/\W now carry their
   Appendix F complements (\w = [^\p{P}\p{Z}\p{C}], class interiors
   via the exact positive partition L/M/N/S), \I/\C complements added
