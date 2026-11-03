@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/complex.json",
+  "title": "Complex",
+  "description": "Complex schema testing $defs, array items $ref, enum definitions",
+  "$defs": {
+    "MD_Metadata": {
+      "type": "object",
+      "title": "Metadata",
+      "description": "Root metadata object",
+      "properties": {
+        "name": { "type": "string" },
+        "identifiers": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/MD_Identifier" }
+        },
+        "topicCategory": {
+          "$ref": "#/$defs/MD_TopicCategoryCode"
+        },
+        "contacts": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/CI_Contact" },
+          "minItems": 1
+        }
+      },
+      "required": ["name"]
+    },
+    "MD_Identifier": {
+      "type": "object",
+      "title": "Identifier",
+      "properties": {
+        "code": { "type": "string" },
+        "codeSpace": { "type": "string", "format": "uri" }
+      },
+      "required": ["code"]
+    },
+    "MD_TopicCategoryCode": {
+      "type": "string",
+      "title": "Topic Category",
+      "enum": ["farming", "biota", "boundaries", "climatology", "economy", "elevation"]
+    },
+    "MD_ObligationCode": {
+      "type": "string",
+      "enum": ["mandatory", "optional", "conditional"]
+    },
+    "CI_Contact": {
+      "type": "object",
+      "properties": {
+        "phone": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/CI_Telephone" }
+        }
+      }
+    },
+    "CI_Telephone": {
+      "type": "object",
+      "properties": {
+        "number": { "type": "string" },
+        "numberType": { "$ref": "#/$defs/CI_TelephoneTypeCode" }
+      }
+    },
+    "CI_TelephoneTypeCode": {
+      "type": "string",
+      "enum": ["voice", "facsimile"]
+    },
+    "DurationType": {
+      "type": "string",
+      "format": "duration",
+      "pattern": "^P.*$"
+    },
+    "Abstract_ConstraintUnion": {
+      "oneOf": [
+        { "$ref": "#/$defs/MD_LegalConstraints" },
+        { "$ref": "#/$defs/MD_SecurityConstraints" }
+      ]
+    },
+    "MD_LegalConstraints": {
+      "type": "object",
+      "title": "Legal Constraints",
+      "properties": {
+        "useLimitation": { "type": "string" }
+      }
+    },
+    "MD_SecurityConstraints": {
+      "type": "object",
+      "title": "Security Constraints",
+      "properties": {
+        "classification": { "type": "string" }
+      }
+    }
+  }
+}

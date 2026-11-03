@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.com/post.schema.json",
+  "title": "Post",
+  "type": "object",
+  "properties": {
+    "id": { "type": "string", "format": "uuid" },
+    "title": { "type": "string" },
+    "body": { "type": "string" },
+    "author": { "$ref": "user.json#/properties/id" }
+  },
+  "required": ["id", "title"]
+}

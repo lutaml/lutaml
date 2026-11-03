@@ -1,0 +1,27 @@
+/.bundle/
+/.yardoc
+/_yardoc/
+/coverage/
+/doc/
+/pkg/
+/spec/reports/
+/tmp/
+
+# rspec failure tracking
+.rspec_status
+
+# Frontend
+frontend/dist/
+frontend/node_modules/
+node_modules/
+
+# Editor / OS
+.DS_Store
+*.swp
+*~
+.idea/
+
+# Ruby
+Gemfile.lock
+
+TODO*

@@ -1,0 +1,57 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.com/person.schema.json",
+  "title": "Person",
+  "description": "A person object",
+  "type": "object",
+  "properties": {
+    "firstName": {
+      "type": "string",
+      "description": "The person's first name.",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "lastName": {
+      "type": "string",
+      "description": "The person's last name.",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "age": {
+      "description": "Age in years.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "email": {
+      "type": "string",
+      "format": "email"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "address": {
+      "$ref": "#/definitions/address"
+    }
+  },
+  "required": ["firstName", "lastName"],
+  "additionalProperties": false,
+  "definitions": {
+    "address": {
+      "type": "object",
+      "title": "Address",
+      "description": "A physical address",
+      "properties": {
+        "street": { "type": "string" },
+        "city": { "type": "string" },
+        "state": { "type": "string" },
+        "zip": { "type": "string", "pattern": "[0-9]{5}" }
+      },
+      "required": ["street", "city", "state", "zip"]
+    }
+  }
+}

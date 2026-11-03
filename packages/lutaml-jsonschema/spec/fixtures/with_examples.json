@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/with-examples.schema.json",
+  "title": "Product",
+  "description": "A product with examples on properties and at schema level",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique product identifier",
+      "examples": ["01234567-89ab-cdef-0123-456789abcdef", "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"]
+    },
+    "name": {
+      "type": "string",
+      "description": "Product name",
+      "minLength": 1,
+      "maxLength": 200,
+      "example": "Acme Widget"
+    },
+    "price": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Price in USD",
+      "examples": ["9.99", "19.95"]
+    },
+    "active": {
+      "type": "boolean",
+      "description": "Whether the product is currently available",
+      "default": "true"
+    },
+    "category": {
+      "type": "string",
+      "enum": ["electronics", "clothing", "food", "books"],
+      "description": "Product category"
+    }
+  },
+  "required": ["id", "name", "price"],
+  "$defs": {
+    "tag": {
+      "type": "object",
+      "title": "Tag",
+      "description": "A label for categorization",
+      "properties": {
+        "label": {
+          "type": "string",
+          "examples": ["featured", "sale"]
+        },
+        "color": {
+          "type": "string",
+          "example": "#FF5733"
+        }
+      }
+    }
+  }
+}
