@@ -1,0 +1,19 @@
+= lutaml-graphviz
+
+Graphviz diagram rendering for LutaML (LML) models. `ruby-graphviz` and the
+`dot` toolchain live in this gem only; the `lutaml` core never depends on them.
+
+[source,ruby]
+----
+require "lutaml/graphviz"
+
+doc = Lutaml::Lml.parse(File.read("model.lml"))
+svg = Lutaml::Formatter::Graphviz.new.tap { |f| f.type = :svg }.format(doc)
+----
+
+Requiring `lutaml/graphviz` registers the `graphviz` formatter in
+`Lutaml::Formatter` (model-driven registry), which `lutaml lml generate`
+discovers.
+
+Output parity with the former in-gem converter (lutaml-lml <= 0.3.6) is
+pinned by the golden `.dot` fixtures in `spec/fixtures/generated_dot/`.
