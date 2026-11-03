@@ -13,7 +13,7 @@ magnus = { version = "0.9" }
 # Pinned core release (M1, TODO.parity-ee/19): the ext never floats
 # main — bump the tag per expressir release, alongside the validation
 # run that pins it.
-expressir-rs = { git = "https://github.com/lutaml/expressir-rs", tag = "v0.1.9" }
+expressir-rs = { git = "https://github.com/lutaml/expressir-rs", tag = "v0.1.10" }
 serde_json = "1.0"
 
 

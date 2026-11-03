@@ -40,6 +40,13 @@ module Expressir
         JSON.parse(::Expressir::Core.parse_to_model_hash(source, path))
       end
 
+      # Scan remarks (issue #20): an Array of Hashes mirroring
+      # RemarkScanner::Remark's fields (position, end_position, line,
+      # text, tag, format), straight from the Rust scanner.
+      def self.scan_remarks(source)
+        ::Expressir::Core.scan_remarks(source)
+      end
+
       # Parse EXPRESS source into the hydrated model directly: the
       # extension walks the wire definition once and constructs every
       # node through Serializable.instantiate (lutaml-model's fast

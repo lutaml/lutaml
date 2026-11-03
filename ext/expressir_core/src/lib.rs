@@ -47,6 +47,37 @@ fn model_json(ruby: &Ruby, source: String, path: String) -> Result<String, Error
     })
 }
 
+/// The remark scanner (issue #20): each unit mirrors
+/// `Expressir::Express::RemarkScanner::Remark` — position,
+/// end_position, line, text, tag (nil when untagged), format.
+fn scan_remarks(ruby: &Ruby, source: String) -> Result<magnus::Value, Error> {
+    let units = expressir_rs::remark::scan(&source);
+    let array = ruby.ary_new_capa(units.len());
+    for unit in &units {
+        let hash = ruby.hash_new();
+        hash.aset(
+            ruby.sym_new("position"),
+            ruby.integer_from_i64(unit.position as i64),
+        )?;
+        hash.aset(
+            ruby.sym_new("end_position"),
+            ruby.integer_from_i64(unit.end_position as i64),
+        )?;
+        hash.aset(ruby.sym_new("line"), ruby.integer_from_i64(unit.line as i64))?;
+        hash.aset(ruby.sym_new("text"), ruby_str(ruby, &unit.text));
+        hash.aset(
+            ruby.sym_new("tag"),
+            match unit.tag.as_deref() {
+                Some(tag) => ruby_str(ruby, tag),
+                None => ruby.qnil().as_value(),
+            },
+        );
+        hash.aset(ruby.sym_new("format"), ruby_str(ruby, unit.format));
+        array.push(hash)?;
+    }
+    Ok(array.as_value())
+}
+
 /// Resolves `Expressir::Model::*` classes by their wire `_class` name,
 /// caching each lookup (the class set is closed).
 #[derive(Default)]
@@ -486,6 +517,7 @@ fn init(ruby: &Ruby) -> Result<(), Error> {
     let module = ruby.define_module("Expressir")?.define_module("Core")?;
     module.define_singleton_method("parse_to_model_hash", function!(model_json, 2))?;
     module.define_singleton_method("parse_to_model", function!(model_object, 2))?;
+    module.define_singleton_method("scan_remarks", function!(scan_remarks, 1))?;
     module.define_singleton_method("write_set", function!(set_write, 3))?;
     let batch_class = module.define_class("BatchStream", ruby.class_object())?;
     batch_class.define_singleton_method("start", function!(batch_start, 2))?;

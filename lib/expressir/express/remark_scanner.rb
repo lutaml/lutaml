@@ -74,14 +74,35 @@ module Expressir
       end
 
       # Returns an Array of {Remark}, in source order (by byte position).
+      # Runs on the Rust core's scanner when the native extension is
+      # loaded; the pure-Ruby state machine below stays as the fallback.
       # @return [Array<Remark>]
       def scan
+        return native_scan if native_available?
+
         run_state_machine
       end
 
       alias call scan
 
       private
+
+      def native_available?
+        defined?(Core) && Core::NATIVE_AVAILABLE
+      end
+
+      def native_scan
+        Core.scan_remarks(@source).map do |unit|
+          Remark.new(
+            position: unit[:position],
+            end_position: unit[:end_position],
+            line: unit[:line],
+            text: unit[:text],
+            tag: unit[:tag],
+            format: unit[:format],
+          )
+        end
+      end
 
       # Detects the `(*)` overlap pattern: opener `(*` (positions pos, pos+1)
       # and closer `*)` (positions pos+1, pos+2) share the `*` character.
