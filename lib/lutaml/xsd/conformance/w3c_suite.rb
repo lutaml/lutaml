@@ -154,10 +154,18 @@ module Lutaml
           test_case.schema_paths.each do |path|
             schema = Lutaml::Xml::Schema::Xsd.parse(File.read(path),
                                                     location: path)
-            # Keyed by PATH, not target namespace: composed test
-            # documents may share a namespace (schT3's redefine pair),
-            # and a namespace key silently drops one of them.
-            schemas[path] = schema
+            # Keyed by target namespace like production, EXCEPT that a
+            # same-namespace collision suffixes the key instead of
+            # dropping the document (schT3's redefine pair both declare
+            # ns-a). The resolver iterates values; keys only need to
+            # keep every document present.
+            key = if schema.target_namespace.to_s.match?(/\S/)
+                    schema.target_namespace
+                  else
+                    path
+                  end
+            key = "#{key}##{path}" while schemas.key?(key)
+            schemas[key] = schema
             locations[path] = schema
           end
           config = Validation::ValidationConfiguration.new
