@@ -24,6 +24,10 @@ end
 
 # LML front development and conformance gates (absorbed from lutaml-lml).
 gem "rubocop"
+# Plugins named by .rubocop.yml; without them the rubocop_ratchet task cannot load.
+gem "rubocop-performance"
+gem "rubocop-rake"
+gem "rubocop-rspec"
 # Property-based generation for the LML round-trip laws. 2.x is the last
 # series that installs on the supported Ruby floor.
 gem "rantly", "~> 2.0"

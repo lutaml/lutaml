@@ -30,7 +30,7 @@ RSpec.describe Lutaml::Lml::Diagnostic do
     end
 
     it "is documented in the README" do
-      readme = File.read(File.expand_path("../../../docs/lml.adoc", __dir__))
+      readme = File.read(File.expand_path("../../../../../docs/lml.adoc", __dir__))
 
       described_class::CODES.each_key do |code|
         expect(readme).to include("`#{code}`")

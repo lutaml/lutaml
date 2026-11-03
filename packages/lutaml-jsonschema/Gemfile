@@ -24,3 +24,8 @@ gem "benchmark"
 gem "rspec", "~> 3.0"
 gem "rubocop", "~> 1.21"
 gem "rubocop-performance", "~> 1.0"
+
+# Monorepo: resolve the sibling lutaml-model package by path (the gemspec's
+# own `~> 0.8` constraint still applies to the sibling's version).
+model = File.expand_path("../lutaml-model", __dir__)
+gem "lutaml-model", path: model if File.directory?(model)
