@@ -1,0 +1,1212 @@
+grammar {
+
+## Document
+document = 
+element document {
+  ## A globally unique identifier for the document in an agreed identifier schema. The identifier is to be used for tracking interactions with the document without depending on formal document registries; it would be exemplified by a GUID, rather than a document registry identifier such as "`ISO 639`", which belongs to `bibdata`
+  attribute identifier { text }?,
+  ## A bibliographic description, capturing bibliographic metadata about the document itself, including authors, title, and date of production
+  bibdata,
+  ## Hierarchically arranged units of textual content within the document
+  sections,
+  ## Bibliographic content
+  references*
+}
+
+## Bibliographic description of a document, used as metadata, expressed in the Relaton model
+bibdata =
+  element bibdata { BibData }
+
+sections = 
+  element sections {
+    section+
+}
+
+## Section: groups of blocks within text, which can also contain other sections
+section =
+  element section { 
+    Basic-Section,
+    ## Sections contained within the current section. The relation is recursive,
+    ## so the hierarchical arrangement of sections can be arbitrarily deep
+    section*
+  }
+
+## Two-letter language code taken from ISO 639, indicating the language in which the content is written
+LanguageType = text
+
+## Four-letter script code taken from ISO 15924, indicating the script in which the content is written
+ScriptType = text
+
+## (Two-letter) Country and country subdivisions identifier taken from ISO 3166, indicating the locale in which the content is written
+LocaleType = text
+
+## Group of blocks within text, which is a leaf node in the hierarchical organisation of text (does not contain any sections of its own)
+Basic-Section =
+    Basic-Section-Attributes,
+    ## Title of the section
+    section-title?,
+    ## Blocks, containing the textual content of the section
+    ## (but excluding subsections, which are only present in Hierarchical Sections)
+    BasicBlock*
+
+Basic-Section-Attributes =
+    OptionalId,
+    LocalizedStringAttributes
+
+## Sections containing zero or more bibliographical items (as described in Relaton), along with any prefatory text
+references =
+  element references {
+    OptionalId,
+    ## Title of section
+    section-title?,
+    ## Prefatory text
+    BasicBlock*,
+    ## Bibliographical items included in the References section
+    bibitem*
+  }
+
+## Title of a section
+section-title =
+  element title { TextElement* }
+
+## Block of textual content
+BasicBlock =  paragraph-with-footnote | table | formula | admonition | ol | ul | dl | figure |
+  quote | sourcecode | example | review | pre | note | pagebreak | hr | bookmark | amend
+
+## Block of textual content: optional ID attributes (for use in Relaton, metadata)
+BasicBlockNoId =  paragraph-with-footnote-no-id | table-no-id | formula-no-id | admonition-no-id | ol-no-id | ul-no-id | 
+  dl-no-id | figure-no-id |
+  quote-no-id | sourcecode-no-id | example-no-id | review | pre-no-id | note-no-id | pagebreak | hr | bookmark | amend
+
+## Block describing a change in a document, intended for human readers
+amend = 
+  element amend { AmendType }
+
+AmendType =
+    OptionalId,
+    ## The type of change described in this block
+    attribute change { "add" | "modify" | "delete" | "replace" },
+    ## The span within location where the change applies to,
+    ## if location defines a container larger than the scope of the change
+    attribute path { text }?,
+    ## The end of the span within location where the change applies to,
+    ## if location defines a container larger than the scope of the change.
+    ## Applicable to modify and delete
+    attribute path_end { text }?,
+    ## Optional caption of this block
+    attribute title { text }?,
+    ## For an "add" change, whether the change is added before or after the location
+    attribute position { "before" | "after" }?,
+    ## The location(s) in the original document which have undergone the change described in this block
+    element location { (locality | localityStack)* }?,
+    ## Description(s) of the change described in this block
+    element description { BasicBlock+ }*,
+    ## New content to be added to the document; applicable to add and modify.
+    ## Can be blocks and/or sections
+    element newcontent {
+        OptionalId,
+        BasicBlock*,
+        section*
+    }?,
+    ## Classification of the change
+    classification*,
+    ## Contributor responsible for the change
+    contributor*
+
+## Key-value classification of an entity
+classification = element classification {
+  ## Key for the classification
+  classification_tag,
+  ## Value for the classification
+  classification_value
+}
+
+classification_tag = element tag { text }
+classification_value = element value { text }
+
+## Default block of textual content. 
+## Unlike the case for other document models, paragraphs _cannot_
+## contain other blocks, such as lists, tables, or figures: they are modelled as a basic building block of text
+## Does not contain foonotes. While most paragraphs in a document can contain footnotes (paragraph-with-footnote),
+## the distinction is necessary, as footnotes are not appropriate for all instances of paragraph content 
+## in a document (e.g. sourcecode annotations)
+paragraph =
+  element p { ParagraphType }
+
+## The alignment of the paragraph against the margins of the document
+Alignments = ( "left" | "right" | "center" | "justified" )
+
+## Type of cross-references to elements. In BasicDoc, these always point to id { xsd:ID } 
+IdRefType = xsd:IDREF
+
+## Mandatory anchor of element, to be used for cross-references within the document
+RequiredId = 
+    attribute id { xsd:ID }
+
+## Optional anchor of element
+OptionalId = 
+    attribute id { xsd:ID }?
+
+ParagraphAttributes =
+    ## The alignment of the paragraph against the margins of the document
+    attribute align { Alignments }?
+
+ParagraphType =
+    RequiredId,
+    ParagraphAttributes,
+    ParagraphBody
+
+## Inline elements constituting the content of the paragraph, excluding footnotes
+ParagraphBody =
+   ## Inline elements constituting the content of the paragraph
+   TextElement*,
+   ## Notes whose scope is the current block
+   note*
+
+## Inline elements constituting the content of the paragraph, including footnotes
+ParagraphFnBody =
+   (
+     ## Inline elements constituting the content of the paragraph
+     TextElement |
+     ## Footnotes interspersed with paragraph content
+     fn
+   )*,
+   ## Notes whose scope is the current block
+   note*
+
+## Paragraph containing no footnotes: optional ID attributes (for use in Relaton, metadata) 
+paragraph-no-id =
+  element p {
+    OptionalId,
+    ParagraphAttributes,
+    ParagraphBody
+  }
+
+## A paragraph which may contain footnotes.
+paragraph-with-footnote =
+  element p {
+    RequiredId,
+    ParagraphAttributes,
+    ParagraphFnBody
+}
+
+## A paragraph which may contain footnotes: optional ID attributes (for use in Relaton, metadata)
+paragraph-with-footnote-no-id =
+  element p {
+    OptionalId,
+    ParagraphAttributes,
+    ParagraphFnBody
+}
+
+## Note block
+note =
+  element note {
+    RequiredId,
+    NoteAttributes,
+    NoteBody
+  }
+
+## Note block: optional ID attributes (for use in Relaton, metadata)
+note-no-id =
+  element note {
+    OptionalId,
+    NoteAttributes,
+    NoteNoIdBody
+  }
+
+NoteAttributes = NumberingAttributes
+
+NoteBody =
+    paragraph+
+
+NoteNoIdBody =
+    paragraph-no-id+
+
+## Block intended to capture reviewer comments about some text in the document
+review =
+  element review {
+  RequiredId,
+  ReviewAttributes,
+  ## Reviewer comments content
+  paragraph+
+}
+
+ReviewAttributes =
+  ## The party who has offered the comment
+  attribute reviewer { text },
+  ## The type of reviewer comment
+  attribute type { text }?,
+  ## The date when the comment was made
+  attribute date { xsd:dateTime }?,
+  ## Identifier for the start of the text or point in the text to which the comment applies.
+  ## If not provided, the comment applies in the vicinity of the place it has been inserted into the text
+  attribute from { IdRefType }?,
+  ## Identifier for the end of the text to which the comment applies
+  attribute to { IdRefType }?
+
+NumberingAttributes =
+    ## Do not number this block in rendering
+    attribute unnumbered { xsd:boolean }?,
+    ## Define a subsequence for numbering of this block; e.g. if this block would be numbered
+    ## as 7, but it has a subsequence value of XYZ, this block, and all consecutive blocks
+    ## of the same class and with the same subsequence value, will be numbered consecutively
+    ## with the same number and in a subsequence: 7a, 7b, 7c etc
+    attribute subsequence { text }?
+
+## Block containing a mathematical expression or other formulas
+formula =
+  element formula {
+    RequiredId,
+    FormulaAttributes,
+    FormulaBody
+}
+
+## Block containing a mathematical expression or other formulas: optional ID attributes (for use in Relaton, metadata)
+formula-no-id =
+  element formula {
+    OptionalId,
+    FormulaAttributes,
+    FormulaNoIdBody
+}
+
+FormulaAttributes =
+    NumberingAttributes,
+    ## Indication that the formula is to be labelled as an Inequality, if inequalities are differentiated from equations
+    attribute inequality { xsd:boolean }?
+
+FormulaBody =
+    ## The content of the formula, as a mathematical expression
+    stem,
+    ## A definitions list defining any symbols used in the formula
+    dl?,
+    ## Notes whose scope is the current block
+    note*
+
+FormulaNoIdBody =
+    ## The content of the formula, as a mathematical expression
+    stem,
+    ## A definitions list defining any symbols used in the formula
+    dl-no-id?,
+    ## Notes whose scope is the current block
+    note-no-id*
+
+## Block quotation, containing extensive textual content originally authored outside of the current document
+quote =
+  element quote {
+    RequiredId,
+    QuoteAttributes,
+    QuoteBody
+}
+
+## Block quotation: optional ID attributes (for use in Relaton, metadata)
+quote-no-id =
+  element quote {
+    OptionalId,
+    QuoteAttributes,
+    QuoteNoIdBody
+}
+
+QuoteAttributes =
+    ## The alignment of the quote against the margins of the document
+    attribute alignment { Alignments }?
+
+QuoteBody =
+    ## Bibliographic citation for the quotation
+    quote-source?,
+    ## Author of the quotation. The `author` attribute of the quotation is redundant with `source`,
+    ## since it restates information about the author that should be recoverable from the `source` citation.
+    ## It is included for convenience, in case processing the citation to extract the author is prohibitive for rendering tools
+    quote-author?,
+    ## Content of quote
+    paragraph-with-footnote+,
+    ## Notes whose scope is the current block
+    note*
+
+QuoteNoIdBody =
+    ## Bibliographic citation for the quotation
+    quote-source?,
+    ## Author of the quotation. The `author` attribute of the quotation is redundant with `source`,
+    ## since it restates information about the author that should be recoverable from the `source` citation.
+    ## It is included for convenience, in case processing the citation to extract the author is prohibitive for rendering tools
+    quote-author?,
+    ## Content of quote
+    paragraph-with-footnote-no-id+,
+    ## Notes whose scope is the current block
+    note-no-id*
+
+quote-source =
+  element source { erefType }
+
+quote-author =
+  element author { text }
+
+## Block containing computer code or comparable text
+sourcecode =
+  element sourcecode {
+    RequiredId,
+    SourceAttributes,
+    SourceBody
+  }
+
+## Block containing computer code or comparable text: optional ID attributes (for use in Relaton, metadata)
+sourcecode-no-id =
+  element sourcecode {
+    OptionalId,
+    SourceAttributes,
+    SourceNoIdBody
+  }
+
+SourceAttributes =
+    NumberingAttributes,
+    ## The computer language or other notational convention that the source code is expressed in
+    attribute lang { text }?
+
+SourceBody =
+    ## The caption of the block
+    tname?,
+    ## The sourcecode content
+    sourcecodebody,
+    ## Annotations to the source code; each annotation consists of zero or more paragraphs,
+    ## and is intended to be referenced by a callout within the source code
+    annotation*,
+    ## Notes whose scope is the current block
+    note*
+
+SourceNoIdBody =
+    ## The caption of the block
+    tname?,
+    ## The sourcecode content
+    sourcecodebody,
+    ## Annotations to the source code; each annotation consists of zero or more paragraphs,
+    ## and is intended to be referenced by a callout within the source code
+    annotation*,
+    ## Notes whose scope is the current block
+    note-no-id*
+
+## The computer code or other such text presented in the block, as a single unformatted string. 
+## (The string should be treated as pre-formatted text, with whitespace treated as significant)
+sourcecodebody = element body {
+(
+       text |
+       ## Zero or more cross-references; these are intended to be embedded within the content string, and link to annotations
+       callout
+    )+
+}
+
+## Pre-formatted block. Wrapper for text to be rendered with fixed-width typeface, and preserving spaces including line breaks. 
+## They are intended for a restricted number of functions, most typically ASCII Art (which is still in prominent use in some 
+## standards documents), and computer output. In most cases, sourcecode blocks are more appropriate in markup, 
+## as it is more clearly motivated semantically
+pre =
+  element pre {
+    RequiredId,
+    PreAttributes,
+    PreBody
+  }
+
+## Pre-formatted block: optional ID attributes (for use in Relaton, metadata)
+pre-no-id =
+  element pre {
+    OptionalId,
+    PreAttributes,
+    PreNoIdBody
+  }
+
+PreAttributes =
+    ## Accessible description of the preformatted text
+    attribute alt { text }?
+
+PreBody =
+    ## The caption of the block
+    tname?,
+    ## The pre-formatted text presented in the block, as a single unformatted string. (Whitespace is treated as significant)
+    text,
+    ## Notes whose scope is the current block
+    note*
+
+PreNoIdBody =
+    ## The caption of the block
+    tname?,
+    ## The pre-formatted text presented in the block, as a single unformatted string. (Whitespace is treated as significant)
+    text,
+    ## Notes whose scope is the current block
+    note-no-id*
+
+## Tabular arrangement of text
+table =
+  element table {
+    RequiredId,
+    TableAttributes,
+    TableBody
+  }
+
+## Tabular arrangement of text: optional ID attributes recursively (for use in Relaton, metadata)
+table-no-id =
+  element table {
+    OptionalId,
+    TableAttributes,
+    TableNoIdBody
+  }
+
+TableAttributes =
+    NumberingAttributes,
+    ## Accessible description of the tabular text, in case the table cannot be rendered accessibly (HTML 5)
+    attribute alt { text }?,
+    ## Alternative more extensive summary of table to be provided for accessibility purposes, 
+    ## in case the table cannot be rendered accessibly (HTML 5)
+    attribute summary { text }?,
+    ## Online location of content of table (in case the table is available as a separate external document) (HTML 5)
+    attribute uri { xsd:anyURI }?
+
+## Elements of table
+TableBody =
+    ## Caption for the table
+    tname?,
+    ## Table rows constituting the table header
+    thead?,
+    ## Table rows constituting the table body
+    tbody,
+    ## Table rows constituting the table footer
+    tfoot?,
+    ## Definitions list defining any symbols used in the table
+    dl?,
+    ## Notes specific to this block
+    table-note*
+
+## Elements of table: optional ID attributes recursively (for use in Relaton, metadata)
+TableNoIdBody =
+    ## Caption for the table
+    tname?,
+    ## Table rows constituting the table header
+    thead-no-id?,
+    ## Table rows constituting the table body
+    tbody-no-id,
+    ## Table rows constituting the table footer
+    tfoot-no-id?,
+    ## Definitions list defining any symbols used in the table
+    dl-no-id?,
+    ## Notes specific to this block
+    table-note-no-id*
+
+tname = element name { NestedTextElement+ }
+thead = element thead { tr }
+thead-no-id = element thead { tr-no-id }
+tfoot = element tfoot { tr }
+tfoot-no-id = element tfoot { tr-no-id }
+tbody = element tbody { tr+ }
+tbody-no-id = element tbody { tr-no-id+ }
+
+table-note = element note { paragraph }
+table-note-no-id = element note { paragraph-no-id }
+
+## Sequence of cells to be displayed as a row in a table
+tr =
+  element tr { 
+    TrAttributes,
+    (
+    ## Data cells in a table row
+    td | 
+    ## Header cells in a table row
+    th 
+    )+
+}
+
+TrAttributes = empty
+
+## Sequence of cells to be displayed as a row in a table: optional ID attributes recursively (for use in Relaton, metadata)
+tr-no-id =
+  element tr { ( td-no-id | th-no-id )+ }
+
+## Textual content constituting a basic building block of a table: data cell
+td =
+  element td {
+    TdAttributes,
+    TdBody
+}
+
+## Data cell: optional ID attributes recursively (for use in Relaton, metadata)
+td-no-id =
+  element td {
+    TdAttributes,
+    TdNoIdBody
+}
+
+TdAttributes =
+    ## Number of columns in the underlying table grid which the cell spans
+    attribute colspan { text }?,
+    ## Number of rows in the underlying table grid which the cell spans
+    attribute rowspan { text }?,
+    ## Horizontal textual alignment of the cell against the underlying table grid
+    attribute align { "left" | "right" | "center" }?,
+    ## Vertical alignment of the cell against the underlying table grid
+    attribute valign { "top" | "middle" | "bottom" | "baseline" }?
+
+TdBody =
+    (
+      ## Table cell is a block
+      (TextElement )* |
+      ## Table cell contains a block
+      paragraph-with-footnote+
+    )
+
+TdNoIdBody =
+    (
+      ## Table cell is a block
+      (TextElement )* |
+      ## Table cell contains a block
+      paragraph-with-footnote-no-id+
+    )
+
+## Textual content constituting a basic building block of a table, treated as a header: header cell
+th =
+  element th {
+    ThAttributes,
+    ThBody
+}
+
+## Header cell: optional ID attributes recursively (for use in Relaton, metadata)
+th-no-id =
+  element th {
+    ThAttributes,
+    ThNoIdBody
+}
+
+ThAttributes = TdAttributes
+
+ThBody = TdBody
+
+ThNoIdBody = TdNoIdBody
+
+## Block containing an example illustrating a claim made in the main flow of text
+example =
+  element example {
+    RequiredId,
+    ExampleAttributes,
+    ExampleBody
+}
+
+## Example block: optional ID attributes recursively (for use in Relaton, metadata)
+example-no-id =
+  element example {
+    OptionalId,
+    ExampleAttributes,
+    ExampleNoIdBody
+}
+
+ExampleAttributes =
+    NumberingAttributes
+
+ExampleBody =
+    ## The caption of the example
+    tname?,
+    ## Content of the example
+    ( formula | ul | ol | dl | quote | sourcecode | paragraph-with-footnote )+,
+    ## Notes whose scope is the current block
+    note*
+
+ExampleNoIdBody =
+    ## The caption of the example
+    tname?,
+    ## Content of the example
+    ( formula-no-id | ul-no-id | ol-no-id | dl-no-id | quote-no-id | sourcecode-no-id | paragraph-with-footnote-no-id )+,
+    ## Notes whose scope is the current block
+    note-no-id*
+
+## A sidebar block outside of the main flow of text, conveying particular warnings or supplementary text to the reader
+admonition =
+  element admonition {
+    RequiredId,
+    AdmonitionAttributes,
+    AdmonitionBody
+}
+
+## A sidebar block outside of the main flow of text: optional ID attributes recursively (for use in Relaton, metadata)
+admonition-no-id =
+  element admonition {
+    OptionalId,
+    AdmonitionAttributes,
+    AdmonitionNoIdBody
+}
+
+AdmonitionAttributes =
+    ## Subclass of admonition determining how it is to be rendered. 
+    ## Distinct admonition types are often associated with distinct icons or rendering
+    attribute type { AdmonitionType },
+    ## Subclass of admonition, allowing different runs of admonitions to be labelled
+    ## and auto-numbered differently, even if they are of the same type.
+    ## Typically is a subclass of an admonition type
+    attribute class { text }?,
+    ## Location where the content of the admonition is accessible as an external document
+    attribute uri { xsd:anyURI }?
+
+AdmonitionBody =
+    ## Caption of admonition
+    tname?,
+    ## Admonition content
+    paragraph-with-footnote*,
+    ## Notes whose scope is the current block
+    note*
+
+AdmonitionNoIdBody =
+    ## Caption of admonition
+    tname?,
+    ## Admonition content
+    paragraph-with-footnote-no-id*,
+    ## Notes whose scope is the current block
+    note-no-id*
+
+## Subclass of admonition determining how it is to be rendered
+AdmonitionType =
+  ## Warning to reader, note of risk to be avoided
+  "warning" |
+  ## Supplementary, explanatory information
+  "note" |
+  ## Instructive information to assist in the fulfilment of tasks related to content
+  "tip" |
+  ## Note to reader of something crucial to be borne in mind
+  "important" |
+  ## Caution to reader, note of potential surprise or difficulty
+  "caution" 
+
+## Block containing a figure: a visual rather than textual asset, possibly with accompanying text
+figure =
+  element figure {
+    RequiredId,
+    FigureAttributes,
+    FigureBody
+  }
+
+## Block containing a figure: optional ID attributes recursively (for use in Relaton, metadata)
+figure-no-id =
+  element figure {
+    OptionalId,
+    FigureAttributes,
+    FigureNoIdBody
+  }
+
+FigureAttributes =
+    NumberingAttributes,
+    ## The semantic category of the figure. This is to allow different classes of figure (e.g. _Plate_, _Chart_, _Diagram_) 
+    ## to be auto-numbered and captioned differently
+    attribute class { text }?
+
+FigureBody =
+     ## The caption of the block
+     tname?, 
+     ## Content of the figure
+     (image | video | audio | pre | paragraph-with-footnote+ | figure*), 
+     ## Footnotes specific to the figure
+     fn*,
+     ## An optional definitions list defining any symbols used in the figure
+     dl?,
+     ## Notes whose scope is the current block
+     note*,
+     ## A URI or other reference intended to link to an externally hosted image (or equivalent)
+     source?
+
+FigureNoIdBody =
+     ## A URI or other reference intended to link to an externally hosted image (or equivalent)
+     source?,
+     ## The caption of the block
+     tname?, 
+     ## Content of the figure
+     (image-no-id | video-no-id | audio-no-id | pre-no-id | paragraph-with-footnote-no-id+ | figure-no-id*), 
+     ## Footnotes specific to the figure
+     fn*,
+     ## An optional definitions list defining any symbols used in the figure
+     dl-no-id?,
+     ## Notes whose scope is the current block
+     note-no-id*
+
+## Any inline element containing text and associated formatting information.
+## Includes inline elements that are identifiers or references to identifiers
+TextElement =
+  text | em | eref | strong | stem | sub | sup | tt | underline | keyword | ruby |
+  strike | smallcap | xref | br | hyperlink | hr | pagebreak | bookmark | image | index | index-xref
+
+## Inline element containing text and associated formatting information,
+## but which does not contain any associated identifiers or references to identifiers.
+## Restricted recursively to contain only other such inline elements with no identifiers or references to identifiers
+PureTextElement =
+  text | pure_em | pure_strong | sub | sup | pure_tt | pure_underline | pure_strike | pure_smallcap | br | stem
+
+## Contents of TextElement tags: leaves out tags that should occur only at top level of block: bookmark image hr pagebreak
+NestedTextElement = PureTextElement|eref|xref|hyperlink|index|index-xref|ruby|keyword
+
+source = element source { TypedUri }
+
+## Emphasised text. Corresponds to HTML `em`, `i`
+em = element em { NestedTextElement* }
+## Emphasised text for PureTextElement
+pure_em = element em { PureTextElement* }
+## Strong text. Corresponds to HTML `strong`, `b`
+strong = element strong { NestedTextElement* }
+## Strong text for PureTextElement
+pure_strong = element strong { PureTextElement* }
+## Monospace text. Corresponds to HTML `tt`, `code`
+tt = element tt { NestedTextElement* }
+## Monospace text for PureTextElement
+pure_tt = element tt { PureTextElement* }
+## Keyword text
+keyword = element keyword { (PureTextElement|index|index-xref)* }
+## Subscript text. Corresponds to HTML `sub`
+sub = element sub { PureTextElement* }
+## Superscript text. Corresponds to HTML `sup`
+sup = element sup { PureTextElement* }
+## Strikethrough text. Corresponds to HTML 4 `s`
+strike = element strike { NestedTextElement* }
+## Strikethrough for PureTextElement
+pure_strike = element strike { PureTextElement* }
+## Underlined text. Corresponds to HTML 4 `u`
+underline = element underline { 
+  ## CSS style to apply to underline (intended for text-decoration-style attribute keyword values: solid double dotted dashed wavy)
+  attribute style { text }?,
+  NestedTextElement*
+}
+## Underlined text for PureTextElement
+pure_underline = element underline { 
+  attribute style { text }?,
+  PureTextElement*
+}
+## Small caps text
+smallcap = element smallcap { NestedTextElement* }
+## Small caps text for PureTextElement
+pure_smallcap = element smallcap { PureTextElement* }
+
+## Text with Ruby annotations in East Asian languages. Corresponds to HTML `ruby`
+ruby = element ruby { 
+  (
+    ## Ruby annotation giving pronunciation
+    ruby_pronunciation | 
+    ## Ruby annotation giving other (semantic) information
+    ruby_annotation
+  ), ( 
+     ## Ruby annotated text which contains no further annotations
+     text | 
+     ## Ruby annotated text which itself contains other Ruby annotations
+     ruby 
+  ) 
+}
+
+## Ruby annotation giving pronunciation of text
+ruby_pronunciation = element pronunciation {
+  ## Ruby annotation value
+  attribute value { text },
+  LocalizedStringAttributes
+}
+
+## Ruby annotation giving information other than pronunciation of text
+ruby_annotation = element annotation {
+  ## Ruby annotation value
+  attribute value { text },
+  LocalizedStringAttributes
+}
+
+## Line break
+br = element br { empty }
+## Horizontal rule
+hr = element hr { empty }
+## Page break. Only applicable in paged layouts (e.g. PDF, Word), and not flow layouts (e.g. HTML)
+pagebreak = element pagebreak { empty }
+
+## Index term, defined as applying to the location in the text where the index element appears, as a milestone
+index = element index {
+  ## A reference to an anchor element (typically a bookmark), 
+  ## to indicate that the index range covers a range of locations between the current index element and the `to` anchor
+  attribute to { IdRefType }?,
+  ## Primary index term to be recorded at the current location
+  index-primary,
+  ## Secondary index term to be recorded at the current location
+  index-secondary,
+  ## Tertiary index term to be recorded at the current 
+  index-tertiary
+}
+
+## A reference to an index term, cross-referenced within an index as an
+## alternative index entry, either as a "see" or a "see also" cross-reference.
+## The text in the inline element is the primary index term to be be cross-referenced
+index-xref = element index-xref {
+  ## The cross-reference is to be treated as "see also" rather than as "see"
+  attribute also { xsd:boolean },
+  ## The primary index term to be cross-referenced
+  index-primary,
+  ## The secondary index term to be cross-referenced
+  index-secondary,
+  ## The tertiary index term to be cross-referenced
+  index-tertiary,
+  ## The index term to be cross-referenced to
+  element target { PureTextElement+ }
+}
+
+index-primary = element primary { PureTextElement+ }
+index-secondary = element secondary { PureTextElement+ }
+index-tertiary = element tertiary { PureTextElement+ }
+
+## Anchors within a block under the BasicDocument model cannot span across a number of inline elements; 
+## bookmarks are intended as point anchors. For that reason, the Review block has a starting reference and an optional ending reference, 
+## which can be bookmarks as well as block or section references
+bookmark =
+  element bookmark {
+  RequiredId,
+  empty
+}
+
+## The type of Reference Element, prescribing how it is to be rendered
+ReferenceFormat =
+  ## Reference to an external document
+  "external" |
+  ## Reference to another element in the same document
+  "inline" |
+  ## Inline reference to a block to be rendered as a footnote
+  "footnote" |
+  ## Inline reference to a block to be referenced as a sourcecode callout
+  "callout"
+
+## An external reference to a bibliographic entity
+eref =
+  element eref { erefType }
+
+erefType =
+    erefAttributes,
+    ## Reference cross-reference: modelled as cross-reference to the corresponding bibliographical item in a References section
+    CitationType,
+    ## The textual content of the element. The `text` is what we wish to show the link as (e.g., the "content" of `<xx>my link text</xx>`)
+    ErefBody
+
+erefAttributes =
+    ## Whether the reference is to be treated as normative or informative, particularly in the context of normative documents such as standards
+    attribute normative { xsd:boolean }?,
+    ## Form that the bibliographic citation should take when it is rendered
+    attribute citeas { text },
+    ## The type of Reference Element, prescribing how it is to be rendered
+    attribute type { ReferenceFormat }?,
+    ## Alternate text, used for accessibility
+    attribute alt { text }?
+
+## A reference to an external document or resource
+hyperlink =
+  element link {
+    HyperlinkAttributes,
+    ## The textual content of the element. The `text` is what we wish to show the link as (e.g., the "content" of `<xx>my link text</xx>`)
+    PureTextElement+
+}
+
+HyperlinkAttributes =
+    ## The location or online identifier of the external document or resource
+    attribute target { xsd:anyURI },
+    ## The type of Reference Element, prescribing how it is to be rendered
+    attribute type { ReferenceFormat }?,
+    ## Alternate text, used for accessibility
+    attribute alt { text }?
+
+## Inline element, which references an identifier of a document, a block in a document, or an element in a document
+xref =
+  element xref {
+     XrefAttributes,
+     XrefBody
+}
+
+XrefAttributes =
+     ## The identifier of a section, block or inlined element being referenced
+     attribute target { IdRefType },
+     ## The type of Reference Element, prescribing how it is to be rendered
+     attribute type { ReferenceFormat }?,
+     ## Alternate text, used for accessibility
+     attribute alt { text }?
+
+## The textual content of the element. The `text` is what we wish to show the link as (e.g., the "content" of `<xx>my link text</xx>`)
+XrefBody = element display-text {
+     PureTextElement+
+}?
+
+ErefBody = element display-text {
+     ## The textual content of the element. The `text` is what we wish to show the link as (e.g., the "content" of `<xx>my link text</xx>`)
+     PureTextElement+
+}?
+
+## Inline reference to a paragraph or paragraphs, appearing as a footnote.
+## The target of a footnote is the location it is embedded in within the text
+fn =
+  element fn {
+    FnAttributes,
+    FnBody
+}
+
+FnBody =
+    ## The content of the footnote
+    paragraph+
+
+FnAttributes =
+    ## The number of the footnote, used to identify it visually
+    attribute reference { text }
+
+## Inline reference to a paragraph or paragraphs, appearing as annotation of source code
+callout =
+  element callout {
+    ## The target of the callout is understood to be the location of the callout within the source code; 
+    ## the extent of the target is not expressed overtly
+    attribute target { IdRefType },
+    ## The label of the callout, used to identify its target within the source code
+    text
+  }
+
+## Container for image content
+image = element image { 
+    RequiredId,
+    ImageAttributes
+}
+
+## Container for image content: optional ID attributes recursively (for use in Relaton, metadata)
+image-no-id = element image { 
+    OptionalId,
+    ImageAttributes
+}
+
+ImageAttributes =
+    MediaAttributes,
+    MediaAccessibilityAttributes,
+    ## Height of image
+    attribute width { ImageSize }?,
+    ## Width of image
+    attribute height { ImageSize }?
+
+## MIME encoding of media type
+MIMEType = text
+
+## Legal values for image height and width.
+## Attributes are realised as a real number, with optional percent sign,
+## or as the string "auto"
+ImageSize = xsd:string { pattern = "\d+([.]\d+)?(%?)" } | "auto"
+
+## Container for video content
+video =
+  element video {
+    RequiredId,
+    VideoAttributes,
+    VideoBody
+}
+
+## Container for video content: optional ID attributes recursively (for use in Relaton, metadata)
+video-no-id = 
+  element video {
+    OptionalId,
+    VideoAttributes,
+    VideoBody
+}
+
+VideoAttributes =
+    MediaAttributes,
+    MediaAccessibilityAttributes,
+    ## Width of video
+    attribute width { ImageSize }?,
+    ## Height of video
+    attribute height { ImageSize }?
+
+VideoBody =
+    ## Alternative files to use as media
+    altsource*
+
+## Container for audio content
+audio =
+  element audio {
+    RequiredId,
+    AudioAttributes,
+    AudioBody
+}
+
+## Container for audio content: optional ID attributes recursively (for use in Relaton, metadata)
+audio-no-id =
+  element audio {
+    OptionalId,
+    AudioAttributes,
+    AudioBody
+}
+
+AudioAttributes =
+    MediaAttributes,
+    MediaAccessibilityAttributes
+
+AudioBody =
+    ## Alternative files to use as media
+    altsource*
+
+## Alternative file to use as media
+altsource =
+  element altsource { MediaAttributes }
+
+MediaAttributes =
+    ## URI of the media file
+    attribute src { xsd:anyURI },
+    ## Type of the media file, in MIME
+    attribute mimetype { MIMEType },
+    ## File name corresponding to the media, to which the media can be extracted if it is represented inline
+    ## (e.g. in Base64 encoding in the URI)
+    attribute filename { text }?
+
+MediaAccessibilityAttributes =
+    ## Alternate text, supplied for accessibility
+    attribute alt { text }?,
+    ## Title, supplied for accessibility
+    attribute title { text }?,
+    ## URI pointing to more extensive alternate text description, supplied for accessibility
+    attribute longdesc { xsd:anyURI }?
+
+## Mathematically formatted text
+stem =
+  element stem {
+    StemAttributes,
+    ## The content of the mathematically formatted text
+    ( text | AnyElement )+
+}
+
+StemAttributes =
+    ## The notation used to mathematically format the text
+    attribute type { "MathML" | "AsciiMath" | "LaTeX" }
+
+annotation =
+  element annotation {
+    RequiredId,
+    paragraph+
+}
+
+## Unordered list block
+ul =
+  element ul {
+    RequiredId,
+    UlAttributes,
+    UlBody
+}
+
+## Unordered list block: optional ID attributes recursively (for use in Relaton, metadata)
+ul-no-id =
+  element ul {
+    OptionalId,
+    UlAttributes,
+    UlNoIdBody
+}
+
+UlAttributes = empty
+
+UlBody =
+    ## List items
+    li+,
+    ## Notes whose scope is the current block
+    note*
+
+UlNoIdBody =
+    ## List items
+    li-no-id+,
+    ## Notes whose scope is the current block
+    note-no-id*
+
+## Item in a list block
+li =
+  element li {
+    OptionalId,
+    LiAttributes,
+    LiBody
+}
+
+## Item in a list block: optional ID attributes recursively (for use in Relaton, metadata)
+li-no-id =
+  element li {
+    OptionalId,
+    LiAttributes,
+    LiNoIdBody
+}
+
+LiAttributes = empty
+
+LiBody =
+    paragraph-with-footnote+
+
+LiNoIdBody =
+    paragraph-with-footnote-no-id+
+
+## Ordered list, with numbering applied to the list items
+ol =
+  element ol {
+    RequiredId,
+    OlAttributes,
+    OlBody
+}
+
+## Ordered list: optional ID attributes recursively (for use in Relaton, metadata)
+ol-no-id =
+  element ol {
+    OptionalId,
+    OlAttributes,
+    OlNoIdBody
+}
+
+OlAttributes =
+    ## Type of numbering to be applied to the list items
+    attribute type { ( "roman" | "alphabet" | "arabic" | "roman_upper" | "alphabet_upper" ) },
+    ## Starting value for numbering of the list items; is a number, regardless of the type,
+    ## and is mapped to the ordinal represented in the type
+    attribute start { text }?
+
+OlBody =
+    ## List item
+    li+,
+    ## Notes whose scope is the current block
+    note*
+
+OlNoIdBody =
+    ## List item
+    li-no-id+,
+    ## Notes whose scope is the current block
+    note-no-id*
+
+## Definition list, composed of definitions rather than list items
+dl =
+  element dl {
+    RequiredId,
+    DlAttributes,
+    DlBody
+}
+
+## Definition list: optional ID attributes recursively (for use in Relaton, metadata)
+dl-no-id =
+  element dl {
+    OptionalId,
+    DlNoIdBody
+}
+
+DlAttributes = empty
+
+DlBody =
+    ## Entry-Definition pair used to constitute a definition list
+    (
+      ## Entry being defined in the definition
+      dt,
+      ## Definition of the entry
+      dd
+    )+,
+    ## Notes whose scope is the current block
+    note*
+
+DlNoIdBody =
+    ## Entry-Definition pair used to constitute a definition list
+    (
+      ## Entry being defined in the definition
+      dt,
+      ## Definition of the entry
+      dd-no-id
+    )+,
+    ## Notes whose scope is the current block
+    note-no-id*
+
+## Entry in a definition list
+dt =
+  element dt { TextElement* }
+
+## Definition in a definition list
+dd =
+  element dd { paragraph-with-footnote* }
+
+## Definition in a definition list: optional ID attributes recursively (for use in Relaton, metadata)
+dd-no-id =
+  element dd { paragraph-with-footnote-no-id* }
+
+}

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://example.com/product"
+           xmlns:tns="http://example.com/product"
+           elementFormDefault="qualified">
+  
+  <xs:element name="product" type="tns:ProductType"/>
+  
+  <xs:complexType name="ProductType">
+    <xs:sequence>
+      <xs:element name="name" type="xs:string"/>
+      <xs:element name="price" type="xs:decimal"/>
+      <xs:element name="quantity" type="xs:integer"/>
+    </xs:sequence>
+    <!-- XSD 1.1 assertion: price must be positive -->
+    <xs:assert test="price gt 0"/>
+    <!-- XSD 1.1 assertion: quantity must be non-negative -->
+    <xs:assert test="quantity ge 0"/>
+    <xs:attribute name="id" type="xs:ID" use="required"/>
+  </xs:complexType>
+  
+</xs:schema>

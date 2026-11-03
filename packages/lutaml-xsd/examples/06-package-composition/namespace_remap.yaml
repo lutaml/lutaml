@@ -1,0 +1,51 @@
+# Namespace URI Remapping Example
+#
+# This example demonstrates how to remap namespace URIs during composition
+# to avoid conflicts when multiple packages use the same namespace URI.
+
+base_packages:
+  # First package - use original namespace URIs
+  - package: ../01-simple/simple.lxr
+    priority: 0
+    conflict_resolution: keep
+    # No remapping - keep original namespaces
+
+  # Second package - remap namespaces to avoid conflicts
+  - package: ../03-unitsml/unitsml.lxr
+    priority: 10
+    conflict_resolution: override
+    namespace_remapping:
+      # Remap the UnitsML namespace to a custom namespace
+      - from_uri: "urn:oasis:names:tc:unitsml:schema:xsd:UnitsMLSchema-1.0"
+        to_uri: "http://example.com/custom/unitsml/v1"
+      
+      # Example: Remap multiple namespaces if needed
+      # - from_uri: "http://old.example.com/ns"
+      #   to_uri: "http://new.example.com/ns"
+
+# Use case scenarios for namespace remapping:
+#
+# 1. Avoiding namespace conflicts:
+#    Two packages define the same namespace URI but with different types.
+#    Remap one to a unique URI.
+#
+# 2. Version migration:
+#    Map old version namespace to new version namespace.
+#    from_uri: http://example.com/v1
+#    to_uri: http://example.com/v2
+#
+# 3. Organization standards:
+#    Align external schemas with internal namespace conventions.
+#    from_uri: http://external.org/schemas
+#    to_uri: http://internal.example.com/external
+#
+# 4. Testing/Development:
+#    Use local test namespaces instead of production URIs.
+#    from_uri: http://production.com/api
+#    to_uri: http://localhost/test/api
+
+namespace_mappings:
+  - prefix: "person"
+    uri: "http://example.com/person"
+  - prefix: "units"
+    uri: "http://example.com/custom/unitsml/v1"  # Use remapped URI

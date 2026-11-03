@@ -1,0 +1,1285 @@
+= Documentation Maintenance Guide
+:toc:
+:toc-placement!:
+:toclevels: 3
+
+Comprehensive procedures for maintaining the lutaml-xsd documentation system.
+
+toc::[]
+
+== Overview
+
+This guide provides systematic procedures for maintaining high-quality documentation throughout the project lifecycle.
+
+=== Maintenance philosophy
+
+The documentation system follows these principles:
+
+* **Proactive**: Regular checks prevent issues before they impact users
+* **Automated**: Tools validate quality continuously
+* **User-focused**: Maintenance prioritizes user experience
+* **Measurable**: Quality metrics track improvement
+
+=== Maintenance roles
+
+Documentation Maintainer::
+* Performs routine maintenance tasks
+* Reviews and merges documentation updates
+* Monitors quality metrics
+
+Content Reviewer::
+* Reviews content for accuracy
+* Updates examples and code samples
+* Ensures consistency
+
+Technical Writer::
+* Creates new documentation
+* Restructures content for clarity
+* Maintains style guide
+
+Release Manager::
+* Updates version-specific content
+* Manages changelog
+* Coordinates documentation releases
+
+== Monthly maintenance tasks
+
+=== Link validation
+
+**Frequency:** Monthly (1st of each month)
+
+**Purpose:** Ensure all links remain valid and accessible
+
+**Procedure:**
+
+. Run automated link checker:
++
+[source,shell]
+----
+cd docs
+bundle exec jekyll build
+bundle exec htmlproofer ./_site \
+  --assume-extension \
+  --check-html \
+  --check-external-hash \
+  --allow-hash-href
+----
+
+. Review results:
++
+* Internal links: Should be 100% valid
+* External links: 95%+ expected
+* Note any consistently failing domains
+
+. Fix broken links:
++
+[source,shell]
+----
+# Replace broken links
+# Update outdated URLs
+# Remove links to defunct resources
+# Consider web.archive.org for historical content
+----
+
+. Document findings:
++
+Create issue if broken links exceed threshold:
++
+[source,markdown]
+----
+## Monthly Link Check - [YYYY-MM]
+
+**Summary:**
+- Internal links: XX/XX valid (XX%)
+- External links: XX/XX valid (XX%)
+
+**Issues Found:**
+- [List broken links]
+
+**Actions Taken:**
+- [List fixes applied]
+
+**Follow-up Required:**
+- [List items needing attention]
+----
+
+=== Code example validation
+
+**Frequency:** Monthly (15th of each month)
+
+**Purpose:** Verify all code examples remain syntactically correct
+
+**Procedure:**
+
+. Extract code examples:
++
+[source,shell]
+----
+# Create validation script if not exists
+cat > validate_examples.rb << 'EOF'
+#!/usr/bin/env ruby
+require 'find'
+
+errors = []
+Find.find('docs') do |path|
+  next unless path.end_with?('.adoc')
+
+  content = File.read(path)
+  # Extract Ruby code blocks
+  content.scan(/\[source,ruby\]\n----\n(.*?)\n----/m) do |code|
+    begin
+      eval("BEGIN { throw :valid }; #{code[0]}")
+    rescue SyntaxError => e
+      errors << "#{path}: #{e.message}"
+    catch :valid
+    end
+  end
+end
+
+if errors.empty?
+  puts "✓ All examples valid"
+  exit 0
+else
+  puts "✗ Errors found:"
+  errors.each { |e| puts "  #{e}" }
+  exit 1
+end
+EOF
+
+chmod +x validate_examples.rb
+ruby validate_examples.rb
+----
+
+. Test complex examples manually:
++
+* Copy example to test file
+* Run with actual lutaml-xsd library
+* Verify output matches documentation
+
+. Update outdated examples:
++
+* Check for deprecated methods
+* Update to current API
+* Add version notes if applicable
+
+=== Dependency updates
+
+**Frequency:** Monthly (as needed)
+
+**Purpose:** Keep dependencies secure and up-to-date
+
+**Procedure:**
+
+. Check for updates:
++
+[source,shell]
+----
+cd docs
+bundle outdated
+----
+
+. Update dependencies:
++
+[source,shell]
+----
+# Update all gems
+bundle update
+
+# Or update specific gems
+bundle update jekyll
+bundle update jekyll-asciidoc
+----
+
+. Test documentation build:
++
+[source,shell]
+----
+bundle exec jekyll clean
+bundle exec jekyll build
+bundle exec jekyll serve
+----
+
+. Verify functionality:
++
+* [ ] Site builds without errors
+* [ ] Navigation works
+* [ ] AsciiDoc rendering correct
+* [ ] No visual regressions
+
+. Commit updates:
++
+[source,shell]
+----
+git add docs/Gemfile.lock
+git commit -m "chore(deps): update documentation dependencies"
+git push
+----
+
+=== Security patches
+
+**Frequency:** As vulnerabilities are discovered
+
+**Purpose:** Address security issues promptly
+
+**Procedure:**
+
+. Monitor security advisories:
++
+* GitHub Dependabot alerts
+* Ruby security mailing list
+* Jekyll security announcements
+
+. Assess impact:
++
+* Determine if vulnerability affects documentation
+* Check if patch available
+* Evaluate urgency
+
+. Apply patches:
++
+[source,shell]
+----
+# Update vulnerable gem
+bundle update [gem-name]
+
+# Or update all
+bundle update
+----
+
+. Test and deploy:
++
+[source,shell]
+----
+# Test locally
+bundle exec jekyll build
+
+# Deploy immediately if critical
+git add docs/Gemfile.lock
+git commit -m "security: patch [vulnerability-id]"
+git push
+----
+
+== Quarterly maintenance tasks
+
+=== Content freshness review
+
+**Frequency:** Quarterly (January, April, July, October)
+
+**Purpose:** Ensure content remains current and relevant
+
+**Procedure:**
+
+. Review all documentation pages:
++
+Create a spreadsheet to track:
++
+[cols="2,1,1,3"]
+|===
+|Page |Last Updated |Status |Notes
+
+|Getting Started
+|2024-Q4
+|Current
+|
+
+|API Reference
+|2024-Q3
+|Needs update
+|Add new methods
+
+|Examples
+|2024-Q4
+|Current
+|
+
+|===
+
+. Check for outdated content:
++
+* Version numbers
+* Screenshots
+* API examples
+* External references
+* Tool recommendations
+
+. Update stale content:
++
+Priority order:
++
+. Critical paths (Getting Started, Installation)
+. Frequently accessed pages
+. Advanced topics
+. Historical reference
+
+. Add freshness indicators:
++
+[source,asciidoc]
+----
+[NOTE]
+====
+Last updated: 2024-10-27 +
+Verified for: lutaml-xsd v0.7.0
+====
+----
+
+=== Update outdated examples
+
+**Frequency:** Quarterly
+
+**Purpose:** Keep examples aligned with current best practices
+
+**Procedure:**
+
+. Identify outdated examples:
++
+* Using deprecated methods
+* Following old patterns
+* Missing new features
+* Poor performance
+
+. Update examples:
++
+[source,ruby]
+----
+# Before (outdated)
+schema = Lutaml::XSD::Schema.new
+schema.load(path)
+
+# After (current)
+schema = Lutaml::XSD::Schema.from_file(path)
+----
+
+. Add version notes:
++
+[source,asciidoc]
+----
+NOTE: This example uses the simplified API introduced in v0.7.0.
+For earlier versions, see link:legacy-examples.adoc[legacy examples].
+----
+
+. Test all updated examples:
++
+* Verify syntax
+* Run actual code
+* Check output
+* Update expected results
+
+=== User feedback review
+
+**Frequency:** Quarterly
+
+**Purpose:** Incorporate user insights to improve documentation
+
+**Procedure:**
+
+. Collect feedback sources:
++
+* GitHub issues labeled `documentation`
+* Pull request comments
+* User surveys (if conducted)
+* Community forum discussions
+* Support tickets
+
+. Categorize feedback:
++
+[cols="1,1,3"]
+|===
+|Category |Priority |Action
+
+|Confusion
+|High
+|Clarify or rewrite
+
+|Missing info
+|High
+|Add content
+
+|Error
+|Critical
+|Fix immediately
+
+|Enhancement
+|Medium
+|Consider for next quarter
+
+|===
+
+. Implement improvements:
++
+* Fix errors immediately
+* Address confusion within 2 weeks
+* Plan enhancements for next quarter
+
+. Track metrics:
++
+* Feedback volume trends
+* Common pain points
+* Improvement impact
+
+=== Quality metrics update
+
+**Frequency:** Quarterly
+
+**Purpose:** Measure and track documentation quality
+
+**Procedure:**
+
+. Calculate current metrics:
++
+[source,shell]
+----
+# Documentation coverage
+find docs -name "*.adoc" | wc -l
+
+# Link health
+bundle exec htmlproofer ./_site --log-level :info 2>&1 | \
+  grep -c "successfully"
+
+# Average page quality score
+# (manual review of sample pages)
+----
+
+. Update metrics dashboard:
++
+Create `docs/metrics/YYYY-QN.md`:
++
+[source,markdown]
+----
+# Documentation Metrics - 2024 Q4
+
+## Coverage
+- Total pages: 45
+- Core topics: 100%
+- Advanced topics: 100%
+- Examples: 95%
+
+## Quality
+- Average quality score: 9.7/10
+- Link health: 100%
+- Example validity: 95%
+- Visual aids: 90%
+
+## User Engagement
+- Page views: [from analytics]
+- Average time on page: [from analytics]
+- Bounce rate: [from analytics]
+
+## Trends
+- Coverage: +5% from Q3
+- Quality: +0.2 from Q3
+- User satisfaction: Stable
+----
+
+. Identify improvement areas:
++
+* Pages below quality threshold
+* Topics with high bounce rate
+* Frequently searched but missing content
+
+. Set next quarter goals:
++
+* Specific metrics to improve
+* New content to create
+* Quality issues to address
+
+== Per-release maintenance tasks
+
+=== Update version numbers
+
+**Frequency:** Each release
+
+**Purpose:** Ensure documentation reflects current version
+
+**Procedure:**
+
+. Update version references:
++
+[source,shell]
+----
+# Find all version references
+grep -r "v0\.6\." docs/
+
+# Update to new version
+find docs -type f -name "*.adoc" -exec \
+  sed -i 's/v0\.6\./v0.7./g' {} +
+----
+
+. Update `_config.yml`:
++
+[source,yaml]
+----
+version: "0.7.0"
+release_date: "2024-10-27"
+----
+
+. Update installation instructions:
++
+[source,asciidoc]
+----
+gem install lutaml-xsd -v 0.7.0
+----
+
+. Update example outputs:
++
+* Re-run examples with new version
+* Capture actual output
+* Update documentation
+
+=== Update changelog
+
+**Frequency:** Each release
+
+**Purpose:** Document changes for users
+
+**Procedure:**
+
+. Review all changes since last release:
++
+[source,shell]
+----
+git log --oneline v0.6.0..HEAD
+----
+
+. Categorize changes:
++
+[source,asciidoc]
+----
+== Version 0.7.0 (2024-10-27)
+
+=== Added
+* New smart loading system for XSD schemas
+* Coverage analysis tools
+* Enhanced CLI commands
+
+=== Changed
+* Improved schema repository performance
+* Updated namespace handling
+* Refactored type resolution
+
+=== Fixed
+* Schema loading edge cases
+* Memory leaks in large schemas
+* Validation error messages
+
+=== Deprecated
+* Old schema loading API (use `from_file` instead)
+
+=== Removed
+* Legacy compatibility layer
+
+=== Security
+* Updated dependencies to patch CVE-XXXX-XXXXX
+----
+
+. Link to migration guide:
++
+[source,asciidoc]
+----
+For migration instructions, see link:guides/migration/v0.6-to-v0.7.adoc[Migration Guide].
+----
+
+. Update in documentation:
++
+* `docs/CHANGELOG.md`
+* Main `CHANGELOG.md` in repository root
+* Release notes
+
+=== Review API changes
+
+**Frequency:** Each release with API changes
+
+**Purpose:** Update documentation to reflect API modifications
+
+**Procedure:**
+
+. Identify API changes:
++
+[source,shell]
+----
+# Compare public API
+git diff v0.6.0..HEAD -- lib/**/*.rb | \
+  grep -E "^\+.*def |^\-.*def "
+----
+
+. Document new methods:
++
+[source,asciidoc]
+----
+=== New: `Schema.from_file(path)` (v0.7.0)
+
+Simplified method to load schema from file.
+
+[source,ruby]
+----
+schema = Lutaml::XSD::Schema.from_file("path/to/schema.xsd")
+----
+----
+
+. Mark deprecated methods:
++
+[source,asciidoc]
+----
+=== Deprecated: `Schema.new.load(path)`
+
+[WARNING]
+====
+This method is deprecated and will be removed in v1.0.
+Use `Schema.from_file(path)` instead.
+====
+----
+
+. Update all examples:
++
+* Search for deprecated API usage
+* Replace with current API
+* Add version notes
+
+=== Update migration guides
+
+**Frequency:** Major and minor releases
+
+**Purpose:** Help users upgrade smoothly
+
+**Procedure:**
+
+. Create migration guide:
++
+Create a file `docs/guides/migration/v0.6-to-v0.7.adoc` with content like:
++
+----
+= Migration Guide: v0.6 to v0.7
+
+This guide helps you migrate from lutaml-xsd v0.6 to v0.7.
+
+=== Breaking Changes
+
+Schema Loading API changed:
+
+Before (v0.6):
+  schema = Lutaml::XSD::Schema.new
+  schema.load("path/to/schema.xsd")
+
+After (v0.7):
+  schema = Lutaml::XSD::Schema.from_file("path/to/schema.xsd")
+
+=== New Features
+
+Smart Loading automatically loads dependencies:
+  repo = Lutaml::XSD::SchemaRepository.new
+  repo.add_schema("schema.xsd")
+
+=== Deprecated Features
+
+- Schema.new.load(path) - Use Schema.from_file(path)
+- Legacy namespace mapping - Use new NamespaceMapping class
+----
+
+. Test migration path:
++
+* Create test project with v0.6
+* Follow migration guide
+* Verify successful upgrade
+
+. Document gotchas:
++
+* Common migration issues
+* Workarounds
+* Compatibility notes
+
+== Quality monitoring procedures
+
+=== Validation tools usage
+
+**Tools available:**
+
+Link checker::
++
+[source,shell]
+----
+bundle exec htmlproofer ./_site
+----
+
+AsciiDoc validator::
++
+[source,shell]
+----
+asciidoctor -a skip-front-matter -o /dev/null docs/**/*.adoc
+----
+
+Spell checker::
++
+[source,shell]
+----
+# Install aspell
+brew install aspell  # macOS
+sudo apt-get install aspell  # Ubuntu
+
+# Check documentation
+find docs -name "*.adoc" -exec aspell check {} \;
+----
+
+Code syntax checker::
++
+[source,shell]
+----
+ruby validate_examples.rb
+----
+
+=== Metrics tracking
+
+**Key metrics to monitor:**
+
+Completeness::
+* Pages documented vs. total needed
+* Features documented vs. features available
+* Examples provided vs. use cases
+
+Accuracy::
+* Code examples that run successfully
+* Links that work
+* Information that matches current version
+
+Clarity::
+* Average reading level (target: 8th grade)
+* Average sentence length (target: < 20 words)
+* Technical jargon explained
+
+Usability::
+* Time to complete common tasks (from analytics)
+* Search success rate
+* User satisfaction scores
+
+**Tracking procedure:**
+
+. Collect data monthly:
++
+[source,shell]
+----
+# Create metrics report
+cat > docs/metrics/$(date +%Y-%m).md << EOF
+# Metrics Report - $(date +%Y-%m)
+
+## Completeness
+- Documentation coverage: XX%
+- Feature coverage: XX%
+- Example coverage: XX%
+
+## Accuracy
+- Link health: XX%
+- Example validity: XX%
+- Version alignment: XX%
+
+## Clarity
+- Average reading level: X.X
+- Pages meeting clarity standards: XX%
+
+## Usability
+- User satisfaction: X.X/10
+- Search success rate: XX%
+EOF
+----
+
+. Analyze trends:
++
+* Compare to previous months
+* Identify declining metrics
+* Celebrate improvements
+
+. Set improvement goals:
++
+* Specific, measurable targets
+* Timeline for achievement
+* Responsible parties
+
+=== User feedback integration
+
+**Feedback channels:**
+
+GitHub Issues::
+* Label: `documentation`
+* Review weekly
+* Respond within 3 days
+
+Pull Requests::
+* Documentation PRs
+* Review within 2 days
+* Provide constructive feedback
+
+Community Forum::
+* Documentation questions
+* Common pain points
+* Feature requests
+
+User Surveys::
+* Quarterly (optional)
+* Target: 50+ responses
+* Mix of quantitative and qualitative
+
+**Integration procedure:**
+
+. Collect feedback:
++
+[source,shell]
+----
+# Export GitHub issues
+gh issue list --label documentation --json title,body,number
+
+# Analyze common themes
+----
+
+. Categorize and prioritize:
++
+[cols="1,1,1,3"]
+|===
+|Type |Priority |Effort |Action
+
+|Critical error
+|P0
+|Low
+|Fix immediately
+
+|Confusing content
+|P1
+|Medium
+|Clarify within 1 week
+
+|Missing content
+|P1
+|High
+|Add within 2 weeks
+
+|Enhancement
+|P2
+|Variable
+|Plan for next quarter
+
+|===
+
+. Implement changes:
++
+* Quick fixes: < 1 day
+* Medium changes: < 1 week
+* Major additions: Plan in roadmap
+
+. Close feedback loop:
++
+* Update issue with fix
+* Thank contributor
+* Ask for verification
+
+=== Issue triage process
+
+**Daily triage:**
+
+. Review new issues:
++
+* Documentation-related?
+* Legitimate concern?
+* Duplicate of existing issue?
+
+. Label appropriately:
++
+* `documentation`: All doc issues
+* `good first issue`: Beginner-friendly
+* `help wanted`: Community welcome
+* `priority: high/medium/low`: Urgency
+
+. Assign if possible:
++
+* Known expert for topic
+* Issue creator (if capable)
+* Volunteer from community
+
+. Set milestone:
++
+* Current release: Critical fixes
+* Next release: Important improvements
+* Backlog: Nice-to-have enhancements
+
+**Weekly review:**
+
+. Check issue status:
++
+* Stale issues (> 30 days no activity)
+* Blocked issues
+* Nearly complete issues
+
+. Update priorities:
++
+* Re-prioritize based on user impact
+* Adjust milestones
+* Close resolved issues
+
+. Communicate status:
++
+* Weekly summary to team
+* Update project board
+* Notify affected users
+
+== Maintenance automation
+
+=== Automated checks
+
+Set up automated quality checks:
+
+**GitHub Actions workflow:**
+
+[source,yaml]
+----
+name: Documentation Quality
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly on Sunday
+  workflow_dispatch:
+
+jobs:
+  link-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build docs
+        run: |
+          cd docs
+          bundle install
+          bundle exec jekyll build
+      - name: Check links
+        run: |
+          bundle exec htmlproofer ./_site \
+            --assume-extension \
+            --allow-hash-href \
+            --check-external-hash
+      - name: Report results
+        if: failure()
+        uses: actions/create-issue@v2
+        with:
+          title: 'Weekly link check failed'
+          body: 'Automated link check found broken links'
+          labels: 'documentation,automated'
+
+  spell-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Spell check
+        uses: rojopolis/spellcheck-github-actions@v0
+        with:
+          config_path: .spellcheck.yml
+----
+
+=== Scheduled tasks
+
+Create cron jobs for regular maintenance:
+
+**Monthly link check:**
+
+[source,shell]
+----
+# Add to crontab
+0 0 1 * * cd /path/to/lutaml-xsd && make check-links
+----
+
+**Quarterly metrics:**
+
+[source,shell]
+----
+# Add to crontab
+0 0 1 */3 * cd /path/to/lutaml-xsd && make generate-metrics
+----
+
+=== Notification system
+
+Set up alerts for important events:
+
+**Email notifications:**
+
+[source,yaml]
+----
+# .github/workflows/notify.yml
+- name: Send email
+  if: failure()
+  uses: dawidd6/action-send-mail@v3
+  with:
+    server_address: smtp.gmail.com
+    server_port: 465
+    username: ${{ secrets.EMAIL_USERNAME }}
+    password: ${{ secrets.EMAIL_PASSWORD }}
+    subject: Documentation maintenance alert
+    body: Automated check failed. Please review.
+    to: maintainers@lutaml.org
+----
+
+**Slack notifications:**
+
+[source,yaml]
+----
+- name: Send Slack notification
+  uses: 8398a7/action-slack@v3
+  with:
+    status: ${{ job.status }}
+    text: 'Documentation build failed'
+    webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+----
+
+== Best practices
+
+=== Documentation standards
+
+Follow these standards for all documentation:
+
+**Writing style:**
+
+* Use active voice
+* Write in present tense
+* Keep sentences concise (< 20 words)
+* Use simple words when possible
+* Define technical terms on first use
+
+**Structure:**
+
+* Start with overview
+* Progress from simple to complex
+* Use consistent heading hierarchy
+* Include examples for concepts
+* End with next steps or related topics
+
+**Code examples:**
+
+* Test all examples before publishing
+* Include complete, runnable code
+* Add comments for clarity
+* Show expected output
+* Provide error handling
+
+**Visual aids:**
+
+* Use diagrams for complex concepts
+* Include screenshots for UI elements
+* Add callouts to highlight key points
+* Ensure images have alt text
+* Keep file sizes optimized
+
+=== Review checklist
+
+Before merging documentation changes:
+
+**Content review:**
+
+* [ ] Technically accurate
+* [ ] Complete and comprehensive
+* [ ] Clear and understandable
+* [ ] Examples tested and working
+* [ ] No spelling or grammar errors
+
+**Structure review:**
+
+* [ ] Proper heading hierarchy
+* [ ] Logical flow
+* [ ] Cross-references valid
+* [ ] Table of contents accurate
+* [ ] Navigation intuitive
+
+**Quality review:**
+
+* [ ] Meets style guidelines
+* [ ] Follows AsciiDoc conventions
+* [ ] Links work correctly
+* [ ] Images display properly
+* [ ] Code syntax highlighted
+
+**Technical review:**
+
+* [ ] Jekyll builds successfully
+* [ ] No broken links
+* [ ] Valid HTML output
+* [ ] Mobile responsive
+* [ ] Accessible (WCAG AA)
+
+=== Continuous improvement
+
+**Regular retrospectives:**
+
+* Monthly: What worked well? What didn't?
+* Quarterly: Are we meeting quality goals?
+* Yearly: Major lessons learned?
+
+**Metrics-driven improvement:**
+
+* Identify lowest-scoring areas
+* Set specific improvement goals
+* Measure impact of changes
+* Iterate and refine
+
+**Community involvement:**
+
+* Welcome contributions
+* Provide clear guidelines
+* Give constructive feedback
+* Recognize contributors
+
+== Troubleshooting
+
+=== Common issues
+
+**Build failures:**
+
+Issue:: Jekyll build fails with Liquid error
+Solution::
++
+[source,shell]
+----
+# Check for invalid Liquid syntax
+grep -r "{{.*}}" docs/
+grep -r "{%.*%}" docs/
+
+# Validate AsciiDoc
+asciidoctor -a skip-front-matter -o /dev/null [file]
+----
+
+**Broken links:**
+
+Issue:: External links frequently break
+Solution::
++
+* Use web.archive.org for historical content
+* Link to official documentation, not blog posts
+* Maintain list of known unstable domains
+* Consider self-hosting critical references
+
+**Performance issues:**
+
+Issue:: Documentation site loads slowly
+Solution::
++
+[source,shell]
+----
+# Optimize images
+find docs -name "*.png" -exec optipng {} \;
+find docs -name "*.jpg" -exec jpegoptim {} \;
+
+# Enable minification in _config.yml
+sass:
+  style: compressed
+----
+
+=== Getting help
+
+Resources:
+
+* link:DEPLOYMENT_GUIDE.adoc[Deployment Guide]
+* link:README.md[Documentation README]
+* https://docs.asciidoctor.org/[AsciiDoc Documentation]
+* https://jekyllrb.com/docs/[Jekyll Documentation]
+
+Support channels:
+
+* GitHub Issues: Technical problems
+* Discussions: Questions and ideas
+* Email: maintainers@lutaml.org
+
+== Appendix
+
+=== Maintenance schedule
+
+Quick reference calendar:
+
+[cols="1,2,3"]
+|===
+|Frequency |Task |Due Date
+
+|Weekly
+|Check GitHub issues
+|Every Monday
+
+|Monthly
+|Link validation
+|1st of month
+
+|Monthly
+|Code example check
+|15th of month
+
+|Monthly
+|Dependency updates
+|As needed
+
+|Quarterly
+|Content review
+|Jan, Apr, Jul, Oct
+
+|Quarterly
+|Metrics update
+|Jan, Apr, Jul, Oct
+
+|Per Release
+|Version updates
+|With each release
+
+|Per Release
+|Changelog update
+|With each release
+
+|===
+
+=== Useful commands
+
+Quick reference:
+
+[source,shell]
+----
+# Build documentation
+cd docs && bundle exec jekyll build
+
+# Serve locally
+cd docs && bundle exec jekyll serve
+
+# Check links
+bundle exec htmlproofer ./_site
+
+# Update dependencies
+cd docs && bundle update
+
+# Validate AsciiDoc
+asciidoctor -a skip-front-matter -o /dev/null docs/**/*.adoc
+
+# Find broken links
+grep -r "http://" docs/ | grep -v "localhost"
+
+# Count documentation pages
+find docs -name "*.adoc" | wc -l
+
+# Generate metrics report
+ruby scripts/generate_metrics.rb
+----
+
+=== Maintenance log template
+
+Track maintenance activities:
+
+[source,markdown]
+----
+# Maintenance Log - YYYY-MM
+
+## Date: YYYY-MM-DD
+
+### Tasks Completed
+- [ ] Link validation
+- [ ] Code example check
+- [ ] Dependency updates
+- [ ] Content review
+
+### Issues Found
+1. Issue description
+   - Severity: High/Medium/Low
+   - Action taken: Description
+   - Status: Resolved/Pending
+
+### Metrics
+- Link health: XX%
+- Example validity: XX%
+- Quality score: X.X/10
+
+### Notes
+- Additional observations
+- Recommendations for next month
+----

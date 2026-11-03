@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://example.com/company"
+           xmlns:c="http://example.com/company"
+           xmlns:p="http://example.com/person"
+           elementFormDefault="qualified">
+
+  <!-- Import person schema for reuse -->
+  <xs:import namespace="http://example.com/person"
+             schemaLocation="person.xsd"/>
+
+  <!-- Complex Company schema with references -->
+
+  <xs:element name="company" type="c:CompanyType">
+    <xs:annotation>
+      <xs:documentation>
+        A company with employees and departments
+      </xs:documentation>
+    </xs:annotation>
+  </xs:element>
+
+  <xs:complexType name="CompanyType">
+    <xs:annotation>
+      <xs:documentation>
+        Company type with basic info, departments, and employees
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="name" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Company name</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="founded" type="xs:date">
+        <xs:annotation>
+          <xs:documentation>Date company was founded</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="departments" type="c:DepartmentsType">
+        <xs:annotation>
+          <xs:documentation>Company departments</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="employees" type="c:EmployeesType">
+        <xs:annotation>
+          <xs:documentation>Company employees</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="id" type="xs:ID" use="required">
+      <xs:annotation>
+        <xs:documentation>Unique company identifier</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="DepartmentsType">
+    <xs:sequence>
+      <xs:element name="department" type="c:DepartmentType"
+                  minOccurs="1" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="DepartmentType">
+    <xs:annotation>
+      <xs:documentation>
+        Department with name and optional manager reference
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="name" type="xs:string"/>
+      <xs:element name="manager" type="xs:IDREF" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>
+            Reference to employee ID who manages this department
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="id" type="xs:ID" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="EmployeesType">
+    <xs:sequence>
+      <xs:element name="employee" type="c:EmployeeType"
+                  minOccurs="1" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="EmployeeType">
+    <xs:annotation>
+      <xs:documentation>
+        Employee extending PersonType with hire date and department
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexContent>
+      <xs:extension base="p:PersonType">
+        <xs:sequence>
+          <xs:element name="hireDate" type="xs:date">
+            <xs:annotation>
+              <xs:documentation>Date employee was hired</xs:documentation>
+            </xs:annotation>
+          </xs:element>
+          <xs:element name="departmentRef" type="xs:IDREF">
+            <xs:annotation>
+              <xs:documentation>
+                Reference to department ID where employee works
+              </xs:documentation>
+            </xs:annotation>
+          </xs:element>
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+</xs:schema>

@@ -1,0 +1,7 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:element name="event">
+    <xs:complexType>
+      <xs:attribute name="date" type="xs:date" use="required"/>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

@@ -1,0 +1,1595 @@
+= Package Composition Guide
+:toc:
+:toc-title: Table of Contents
+:toclevels: 3
+:sectnums:
+
+== Introduction
+
+Package composition allows you to create a unified XSD schema repository by combining multiple LXR packages. This powerful feature enables:
+
+* **Modular schema organization** - Split large schema sets into logical packages
+* **Schema reuse** - Combine common base packages with domain-specific packages
+* **Namespace management** - Remap namespace URIs to avoid conflicts
+* **Selective inclusion** - Filter which schemas to include from each package
+* **Conflict detection** - Automatically detect and resolve overlapping definitions
+* **Priority-based resolution** - Control which package wins when conflicts occur
+
+=== Why Package Composition?
+
+In real-world XSD development, schemas are often distributed across multiple packages:
+
+* **Standards libraries** - Common standards like GML, ISO 19115
+* **Organization schemas** - Internal schemas for your organization
+* **Project-specific schemas** - Custom schemas for a specific project
+* **Version variants** - Different versions of the same schema
+
+Package composition lets you combine these disparate sources into a cohesive repository without manual file manipulation or complex build scripts.
+
+=== Key Concepts
+
+**Base Packages**:: LXR packages that serve as building blocks for your composed repository.
+
+**Priority**:: Numeric value (0-999) determining precedence when conflicts occur. Lower number = higher priority.
+
+**Conflict Resolution Strategy**:: How to handle overlapping definitions:
+* `keep` - Keep the first definition (highest priority package)
+* `override` - Use the last definition (allows lower priority to override)
+* `error` - Fail if any conflicts are detected
+
+**Namespace Remapping**:: Transform namespace URIs during composition to avoid conflicts.
+
+**Schema Filtering**:: Include or exclude specific schemas from a package using glob patterns.
+
+== Quick Start
+
+The simplest package composition uses the default behavior - combine all schemas from multiple packages:
+
+[source,yaml]
+----
+# my_config.yml
+base_packages:
+  - ../examples/01-simple/simple.lxr
+  - ../examples/03-unitsml/unitsml.lxr
+----
+
+Load and use this configuration:
+
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Load from YAML configuration
+repo = Lutaml::Xsd::SchemaRepository.from_yaml_file('my_config.yml')
+repo.parse.resolve
+
+# Query types from any package
+result = repo.find_type('Person')
+if result.resolved?
+  puts "Found: #{result.definition.name}"
+end
+----
+
+Or use the CLI:
+
+[source,bash]
+----
+# List all types in composed repository
+lutaml-xsd pkg ls my_config.yml
+
+# Find a specific type
+lutaml-xsd pkg type my_config.yml "Person"
+
+# Generate documentation
+lutaml-xsd doc generate my_config.yml --output docs/
+----
+
+== Understanding Conflicts
+
+When composing multiple packages, three types of conflicts can occur:
+
+=== Namespace URI Conflicts
+
+Two packages define the same namespace URI with different schemas or types.
+
+.Example: Namespace Conflict
+====
+**Package A** defines namespace `http://example.com/ns` with types: `PersonType`, `AddressType`
+
+**Package B** also defines namespace `http://example.com/ns` but with types: `PersonType`, `ContactType`
+
+**Conflict**: Both packages claim ownership of `http://example.com/ns`. They share `PersonType` but have different type sets.
+====
+
+**Resolution Options**:
+
+1. **Use priority** - Package with higher priority (lower number) wins
+2. **Remap namespace** - Change the URI in one package to avoid collision
+3. **Accept override** - Use `override` strategy to let lower priority types replace higher priority
+
+=== Type Name Conflicts
+
+Two packages define types with the same qualified name.
+
+.Example: Type Conflict
+====
+**Package A** (priority: 0) defines `{http://example.com/ns}PersonType` with attributes: `name`, `age`
+
+**Package B** (priority: 10) defines `{http://example.com/ns}PersonType` with attributes: `name`, `age`, `email`
+
+**Conflict**: Both packages define the same type with different structures.
+====
+
+**Resolution**:
+
+[source,yaml]
+----
+base_packages:
+  - package: package_a.lxr
+    priority: 0
+    conflict_resolution: keep  # Package A wins
+
+  - package: package_b.lxr
+    priority: 10
+    conflict_resolution: keep  # Package A still wins (higher priority)
+----
+
+Result: Package A's version of `PersonType` is used (has fewer attributes).
+
+=== Schema File Conflicts
+
+Two packages contain schema files with the same basename, potentially with different content.
+
+.Example: Schema File Conflict
+====
+**Package A** contains `schemas/common/person.xsd` defining `PersonType`
+
+**Package B** contains `schemas/types/person.xsd` defining `PersonType` differently
+
+**Conflict**: Both files are named `person.xsd` and may be referenced by their basename in imports.
+====
+
+**Resolution**:
+
+* **Priority-based** - File from package with higher priority (lower number) is used
+* **Filtering** - Exclude one or both files to eliminate conflict
+* **Manual resolution** - Rename files before packaging
+
+== Configuration Reference
+
+=== Basic Configuration
+
+The minimal configuration specifies only package paths:
+
+[source,yaml]
+----
+base_packages:
+  - path/to/package1.lxr
+  - path/to/package2.lxr
+  - path/to/package3.lxr
+----
+
+**Default Behavior**:
+* Priority: 0 for all packages (loaded in order)
+* Conflict resolution: `error` (fail on any conflict)
+* No namespace remapping
+* All schemas included
+
+=== Complete Configuration
+
+A fully-specified package configuration uses all available options:
+
+[source,yaml]
+----
+base_packages:
+  - package: path/to/package1.lxr
+    priority: 0
+    conflict_resolution: keep
+    namespace_remapping:
+      - from_uri: http://old.example.com/ns
+        to_uri: http://new.example.com/ns
+      - from_uri: http://legacy.example.com/v1
+        to_uri: http://current.example.com/v2
+    exclude_schemas:
+      - "**/test_*.xsd"
+      - "**/deprecated_*.xsd"
+      - "schemas/experimental/**"
+    include_only_schemas:
+      - "**/core/*.xsd"
+      - "**/essential/*.xsd"
+
+  - package: path/to/package2.lxr
+    priority: 10
+    conflict_resolution: override
+    exclude_schemas:
+      - "**/internal_*.xsd"
+----
+
+=== Configuration Field Descriptions
+
+==== `package` (required)
+
+Path to the LXR package file. Can be:
+
+* **Absolute path**: `/home/user/schemas/package.lxr`
+* **Relative path**: `../packages/package.lxr` (relative to config file)
+* **Home directory**: `~/schemas/package.lxr` (expanded by shell)
+
+==== `priority` (optional, default: 0)
+
+Integer determining precedence (0-999 recommended).
+
+* **Lower number = higher priority**
+* **0 = highest priority** (processed first, wins conflicts by default)
+* **999 = lowest priority** (processed last, loses conflicts by default)
+
+**Usage**:
+
+[source,yaml]
+----
+base_packages:
+  - package: critical.lxr
+    priority: 0      # Highest priority
+
+  - package: standard.lxr
+    priority: 50     # Medium priority
+
+  - package: optional.lxr
+    priority: 100    # Lower priority
+----
+
+==== `conflict_resolution` (optional, default: "error")
+
+Strategy for handling conflicts detected in this package.
+
+**Valid values**:
+
+* `keep` - Keep first definition (from higher priority package)
+* `override` - Allow override (this package can replace higher priority definitions)
+* `error` - Fail if conflicts detected
+
+**Behavior**:
+
+[source,yaml]
+----
+base_packages:
+  - package: base.lxr
+    priority: 0
+    conflict_resolution: keep     # Base package wins conflicts
+
+  - package: extension.lxr
+    priority: 10
+    conflict_resolution: override # Can replace base definitions
+
+  - package: strict.lxr
+    priority: 20
+    conflict_resolution: error    # Fail if any conflicts
+----
+
+==== `namespace_remapping` (optional, default: [])
+
+List of namespace URI transformations to apply to schemas in this package.
+
+**Structure**:
+
+[source,yaml]
+----
+namespace_remapping:
+  - from_uri: http://old.uri.com/ns
+    to_uri: http://new.uri.com/ns
+  - from_uri: http://another.old.com/v1
+    to_uri: http://another.new.com/v2
+----
+
+**Fields**:
+
+* `from_uri` (required) - Original namespace URI to replace
+* `to_uri` (required) - New namespace URI to use
+
+**Validation**:
+
+* Both URIs must be non-empty
+* URIs must be different
+* Format should be valid URIs (not enforced, but recommended)
+
+==== `exclude_schemas` (optional, default: [])
+
+Glob patterns matching schemas to exclude from this package.
+
+**Pattern matching**:
+
+* Uses Ruby's `File.fnmatch` with `File::FNM_PATHNAME` flag
+* `*` matches any characters within a path component
+* `**` matches across directory boundaries
+* `?` matches a single character
+
+**Common patterns**:
+
+[source,yaml]
+----
+exclude_schemas:
+  # Exclude test files
+  - "**/test_*.xsd"
+  - "**/*_test.xsd"
+  - "tests/**"
+
+  # Exclude deprecated files
+  - "**/deprecated_*.xsd"
+  - "legacy/**"
+
+  # Exclude specific directories
+  - "schemas/internal/**"
+  - "examples/**"
+
+  # Exclude by extension or suffix
+  - "**/*.draft.xsd"
+----
+
+==== `include_only_schemas` (optional, default: [])
+
+Glob patterns matching ONLY the schemas to include. All others are excluded.
+
+**Important**: If specified, ONLY matching schemas are included. Use with caution.
+
+[source,yaml]
+----
+include_only_schemas:
+  # Include only core schemas
+  - "**/core/*.xsd"
+  - "**/essential/*.xsd"
+
+  # Include specific files
+  - "schemas/person.xsd"
+  - "schemas/address.xsd"
+----
+
+**Filter precedence**:
+
+1. If `exclude_schemas` matches → exclude
+2. If `include_only_schemas` is set and doesn't match → exclude
+3. Otherwise → include
+
+== Conflict Resolution Strategies
+
+=== Strategy: `keep` (First Wins)
+
+The `keep` strategy preserves the first definition encountered (from the package with higher priority).
+
+**When to use**:
+
+* Base package provides canonical definitions
+* Extension packages should not override base types
+* Consistency is more important than having latest version
+
+.Example: Keep Strategy
+====
+[source,yaml]
+----
+base_packages:
+  - package: gml_3.2.1.lxr        # Official GML package
+    priority: 0
+    conflict_resolution: keep
+
+  - package: custom_gml.lxr       # Local GML extensions
+    priority: 10
+    conflict_resolution: keep     # Won't override GML types
+----
+
+**Result**: If both packages define `{http://www.opengis.net/gml/3.2}FeatureType`, the version from `gml_3.2.1.lxr` is used.
+====
+
+**Behavior**:
+
+* Conflicts are logged but not treated as errors
+* First definition is kept in repository
+* Later definitions are ignored
+* Package statistics show which types were skipped
+
+=== Strategy: `override` (Last Wins)
+
+The `override` strategy allows a lower priority package to replace types from higher priority packages.
+
+**When to use**:
+
+* Patching or fixing types from base package
+* Using newer version of a schema
+* Project-specific customizations override standards
+
+.Example: Override Strategy
+====
+[source,yaml]
+----
+base_packages:
+  - package: standard_v1.lxr
+    priority: 0
+    conflict_resolution: keep     # Standard v1 definitions
+
+  - package: standard_v2.lxr
+    priority: 10
+    conflict_resolution: override # New version overrides old
+----
+
+**Result**: Types defined in both packages use the v2 definition from `standard_v2.lxr`.
+====
+
+**Behavior**:
+
+* Lower priority package can replace higher priority types
+* Conflicts are logged as "overridden"
+* Original definition is discarded
+* Useful for applying patches or updates
+
+**Warning**: Use carefully - may lead to inconsistencies if base packages depend on specific type structures.
+
+=== Strategy: `error` (Fail on Conflict)
+
+The `error` strategy treats any conflict as a fatal error, preventing composition.
+
+**When to use**:
+
+* Detecting unintended overlaps
+* Ensuring clean composition
+* Development/testing environments
+* Strict validation requirements
+
+.Example: Error Strategy
+====
+[source,yaml]
+----
+base_packages:
+  - package: package_a.lxr
+    priority: 0
+    conflict_resolution: error
+
+  - package: package_b.lxr
+    priority: 10
+    conflict_resolution: error
+----
+
+If any conflicts detected:
+
+[source]
+----
+Lutaml::Xsd::PackageMergeError: Conflicts detected with 'error' resolution strategy
+
+Namespace Conflicts (1):
+  - http://example.com/ns
+    Packages: package_a.lxr (priority 0), package_b.lxr (priority 10)
+
+Type Conflicts (2):
+  - {http://example.com/ns}PersonType
+    Packages: package_a.lxr (priority 0), package_b.lxr (priority 10)
+----
+====
+
+**Behavior**:
+
+* `Lutaml::Xsd::PackageMergeError` raised immediately on conflict detection
+* Detailed conflict report included in error
+* No packages are loaded (atomic failure)
+* Use for build validation or CI/CD checks
+
+=== Mixed Strategies
+
+Different packages can use different strategies:
+
+[source,yaml]
+----
+base_packages:
+  - package: trusted_base.lxr
+    priority: 0
+    conflict_resolution: keep     # Base never overridden
+
+  - package: extensions.lxr
+    priority: 10
+    conflict_resolution: override # Extensions can override
+
+  - package: strict_addon.lxr
+    priority: 20
+    conflict_resolution: error    # No conflicts with this one
+----
+
+**Behavior**:
+
+* Each package's strategy applies to conflicts involving that package
+* `error` strategy on ANY conflicting package causes failure
+* Otherwise, the package with more permissive strategy determines resolution
+
+== Namespace URI Remapping
+
+Namespace remapping transforms namespace URIs during package loading to avoid conflicts or align with conventions.
+
+=== Use Cases
+
+1. **Avoiding namespace conflicts** - Multiple packages use the same namespace URI
+2. **Version migration** - Map old namespace to new version
+3. **Organization standards** - Align external schemas with internal URIs
+4. **Testing/development** - Use local namespace URIs
+
+=== Remapping Configuration
+
+[source,yaml]
+----
+base_packages:
+  - package: external_package.lxr
+    namespace_remapping:
+      - from_uri: http://external.org/schemas/v1
+        to_uri: http://internal.example.com/external/v1
+
+      - from_uri: http://external.org/schemas/core
+        to_uri: http://internal.example.com/external/core
+----
+
+**Effect**:
+
+* All references to `http://external.org/schemas/v1` become `http://internal.example.com/external/v1`
+* Type lookups use remapped URIs
+* Namespace registry records both original and remapped URIs
+* Schema serialization uses remapped URIs
+
+=== Remapping Example: Resolving Conflicts
+
+.Scenario: Two packages with overlapping namespaces
+====
+**Package A**: Uses `http://example.com/schemas` for types `PersonType`, `AddressType`
+
+**Package B**: Uses `http://example.com/schemas` for types `ProductType`, `OrderType`
+
+**Problem**: Same namespace URI, different types - potential for confusion.
+
+**Solution**: Remap Package B's namespace:
+
+[source,yaml]
+----
+base_packages:
+  - package: package_a.lxr
+    priority: 0
+    # No remapping - keep original namespace
+
+  - package: package_b.lxr
+    priority: 10
+    namespace_remapping:
+      - from_uri: http://example.com/schemas
+        to_uri: http://example.com/schemas/package_b
+----
+
+**Result**:
+
+* Package A types: `{http://example.com/schemas}PersonType`, `{http://example.com/schemas}AddressType`
+* Package B types: `{http://example.com/schemas/package_b}ProductType`, `{http://example.com/schemas/package_b}OrderType`
+* No namespace conflict!
+====
+
+=== Remapping Example: Version Migration
+
+.Scenario: Migrating from v1 to v2 namespace
+====
+**Old schema**: Uses `http://example.com/v1` namespace
+
+**New project**: Uses `http://example.com/v2` namespace
+
+**Legacy package**: Contains `http://example.com/v1` types you need
+
+**Solution**: Remap legacy namespace to v2:
+
+[source,yaml]
+----
+base_packages:
+  - package: legacy_v1.lxr
+    namespace_remapping:
+      - from_uri: http://example.com/v1
+        to_uri: http://example.com/v2
+
+  - package: current_v2.lxr
+    priority: 10
+    conflict_resolution: override  # v2 types override remapped v1
+----
+
+**Result**: Legacy v1 types available under v2 namespace, can be overridden by current v2 definitions.
+====
+
+=== Multiple Remappings
+
+A single package can have multiple namespace remappings:
+
+[source,yaml]
+----
+base_packages:
+  - package: multi_namespace.lxr
+    namespace_remapping:
+      - from_uri: http://old.com/ns1
+        to_uri: http://new.com/ns1
+
+      - from_uri: http://old.com/ns2
+        to_uri: http://new.com/ns2
+
+      - from_uri: http://different.org/v1
+        to_uri: http://unified.example.com/all
+----
+
+**Use case**: Consolidating multiple external namespaces into a unified internal namespace structure.
+
+=== Remapping Validation
+
+Namespace remapping rules are validated on load:
+
+[source]
+----
+✗ Invalid namespace remapping:
+  - from_uri cannot be empty
+  - to_uri cannot be empty
+  - from_uri and to_uri must be different
+----
+
+If validation fails, `Lutaml::Xsd::ValidationFailedError` is raised with details.
+
+== Schema Filtering
+
+Schema filtering allows selective inclusion of schemas from a package using glob patterns.
+
+=== Filtering with `exclude_schemas`
+
+Exclude specific schemas while including everything else.
+
+.Example: Excluding Test Files
+====
+[source,yaml]
+----
+base_packages:
+  - package: full_package.lxr
+    exclude_schemas:
+      - "**/test_*.xsd"
+      - "**/*_test.xsd"
+      - "tests/**"
+----
+
+**Effect**:
+
+* Schemas matching any exclude pattern are skipped
+* All other schemas are included
+* Test files and test directories are excluded
+====
+
+.Example: Excluding Deprecated Schemas
+====
+[source,yaml]
+----
+base_packages:
+  - package: mixed_package.lxr
+    exclude_schemas:
+      - "**/deprecated_*.xsd"
+      - "legacy/**"
+      - "archived/**"
+      - "**/*.old.xsd"
+----
+
+**Effect**: All deprecated, legacy, archived, and *.old.xsd files are excluded.
+====
+
+=== Filtering with `include_only_schemas`
+
+Include ONLY schemas matching the patterns (whitelist approach).
+
+.Example: Including Only Core Schemas
+====
+[source,yaml]
+----
+base_packages:
+  - package: large_package.lxr
+    include_only_schemas:
+      - "**/core/*.xsd"
+      - "**/essential/*.xsd"
+      - "schemas/base.xsd"
+----
+
+**Effect**:
+
+* Only schemas in `core/` or `essential/` directories are included
+* Plus the specific `schemas/base.xsd` file
+* All other schemas are excluded
+====
+
+=== Combining Include and Exclude
+
+When both filters are specified, exclude takes precedence:
+
+[source,yaml]
+----
+base_packages:
+  - package: complex_package.lxr
+    include_only_schemas:
+      - "schemas/**"           # Include everything in schemas/
+
+    exclude_schemas:
+      - "**/test_*.xsd"        # Except test files
+      - "schemas/internal/**"  # And internal directory
+----
+
+**Evaluation order**:
+
+1. Check `exclude_schemas` - if matches, exclude
+2. Check `include_only_schemas` - if doesn't match, exclude
+3. Otherwise, include
+
+**Result**: Only schemas in `schemas/**` directory, excluding test files and internal directory.
+
+=== Common Filtering Patterns
+
+.Exclude Development/Test Files
+[source,yaml]
+----
+exclude_schemas:
+  - "**/test_*.xsd"
+  - "**/*_test.xsd"
+  - "**/spec_*.xsd"
+  - "tests/**"
+  - "spec/**"
+----
+
+.Include Only Production Schemas
+[source,yaml]
+----
+include_only_schemas:
+  - "production/**"
+  - "release/**"
+  - "**/v[0-9]*/*.xsd"  # Version directories
+----
+
+.Exclude Experimental/Draft Schemas
+[source,yaml]
+----
+exclude_schemas:
+  - "**/experimental/**"
+  - "**/*.draft.xsd"
+  - "**/*.wip.xsd"
+  - "drafts/**"
+----
+
+.Include Only Specific Namespaces
+[source,yaml]
+----
+include_only_schemas:
+  - "schemas/gml/**"
+  - "schemas/iso/**"
+  - "schemas/core/**"
+----
+
+== Priority System
+
+Priority determines the order in which packages are processed and which package wins conflicts.
+
+=== Priority Rules
+
+1. **Lower number = higher priority**
+   * Priority 0 is the highest priority
+   * Process first, wins conflicts by default
+
+2. **Packages without explicit priority default to 0**
+   * All at same priority, processed in order
+
+3. **Priority range: typically 0-999**
+   * Can use larger values, but 0-999 is conventional
+
+4. **Ties broken by order in configuration**
+   * If same priority, first in config wins
+
+=== Priority Workflow
+
+[source]
+----
+Configuration:                    Processing Order:
+  
+  Package A (priority 10)         1. Package C (priority 0)  ← highest
+  Package B (priority 50)         2. Package A (priority 10)
+  Package C (priority 0)          3. Package B (priority 50) ← lowest
+----
+
+=== Priority Example: Standard + Extensions
+
+.Scenario: Standards library with local extensions
+====
+[source,yaml]
+----
+base_packages:
+  # Core standards - highest priority
+  - package: standards/gml_3.2.1.lxr
+    priority: 0
+    conflict_resolution: keep
+
+  - package: standards/iso_19115.lxr
+    priority: 0
+    conflict_resolution: keep
+
+  # Organization extensions - medium priority
+  - package: internal/organization_extensions.lxr
+    priority: 50
+    conflict_resolution: override  # Can override standards
+
+  # Project-specific - lowest priority
+  - package: projects/current_project.lxr
+    priority: 100
+    conflict_resolution: override  # Can override org extensions
+----
+
+**Behavior**:
+
+1. Standards loaded first (priority 0)
+2. Organization extensions can override standards (override strategy)
+3. Project schemas can override organization extensions
+4. If project conflicts with standards and uses `keep`, standards win
+====
+
+=== Priority Example: Version Progression
+
+.Scenario: Loading multiple versions with latest taking precedence
+====
+[source,yaml]
+----
+base_packages:
+  - package: schemas_v1.0.lxr
+    priority: 30
+
+  - package: schemas_v1.1.lxr
+    priority: 20
+
+  - package: schemas_v2.0.lxr
+    priority: 10
+    conflict_resolution: override
+
+  - package: schemas_v2.1.lxr
+    priority: 0
+    conflict_resolution: override
+----
+
+**Result**:
+
+* v2.1 types used where available (highest priority)
+* v2.0 types used if not in v2.1
+* v1.1 types used if not in v2.x
+* v1.0 types used if nowhere else
+
+**Use case**: Maintaining backward compatibility while using latest available definitions.
+====
+
+=== Priority Best Practices
+
+1. **Use meaningful gaps**
+   ```yaml
+   priority: 0    # Core/base
+   priority: 25   # Extensions level 1
+   priority: 50   # Extensions level 2
+   priority: 100  # Project-specific
+   ```
+
+2. **Reserve 0 for most trusted sources**
+   * Official standards
+   * Validated schemas
+   * Organization-wide base
+
+3. **Use ascending order for layers**
+   * Base: 0-10
+   * Extensions: 20-50
+   * Projects: 100+
+
+4. **Document priority reasoning**
+   ```yaml
+   base_packages:
+     - package: base.lxr
+       priority: 0   # Official GML 3.2.1 - never override
+     
+     - package: ext.lxr
+       priority: 50  # Organization extensions - can augment
+   ```
+
+== Troubleshooting
+
+=== Error: "Conflicts detected with 'error' resolution strategy"
+
+**Cause**: Packages define overlapping types/namespaces and at least one uses `error` strategy.
+
+**Solution options**:
+
+1. **Change strategy to `keep` or `override`**
+   ```yaml
+   base_packages:
+     - package: pkg1.lxr
+       conflict_resolution: keep  # or override
+   ```
+
+2. **Adjust priorities** to control which package wins
+
+3. **Use namespace remapping** to eliminate conflicts
+   ```yaml
+   namespace_remapping:
+     - from_uri: http://conflict.com/ns
+       to_uri: http://unique.com/ns
+   ```
+
+4. **Filter schemas** to exclude conflicting files
+   ```yaml
+   exclude_schemas:
+     - "**/conflicting_file.xsd"
+   ```
+
+=== Error: "Base package not found: path/to/package.lxr"
+
+**Cause**: Package file doesn't exist at specified path.
+
+**Check**:
+
+1. **Verify file exists**
+   ```bash
+   ls -la path/to/package.lxr
+   ```
+
+2. **Check path is correct** - relative to config file location, not current directory
+
+3. **Use absolute path** if relative path is problematic
+   ```yaml
+   package: /absolute/path/to/package.lxr
+   ```
+
+=== Error: "Invalid conflict_resolution: xyz"
+
+**Cause**: Invalid strategy value.
+
+**Valid values**: `keep`, `override`, `error`
+
+**Fix**:
+```yaml
+conflict_resolution: keep  # Not 'xyz'
+```
+
+=== Error: "Package path is required"
+
+**Cause**: Missing `package` field in configuration.
+
+**Fix**:
+```yaml
+base_packages:
+  - package: path/to/file.lxr  # Must have 'package' field
+    priority: 0
+```
+
+=== Error: "Priority must be non-negative"
+
+**Cause**: Negative priority value.
+
+**Fix**:
+```yaml
+priority: 0  # Not -1
+```
+
+=== Warning: "Schema file not found in package"
+
+**Cause**: Package references schema files that don't exist in the LXR.
+
+**Common reasons**:
+
+1. **Package built incorrectly** - schemas not included
+2. **Filtering too aggressive** - excluded all schemas
+3. **Package corruption** - ZIP file damaged
+
+**Check package contents**:
+```bash
+lutaml-xsd pkg ls package.lxr
+```
+
+=== Conflict Report Shows Unexpected Conflicts
+
+**Debugging steps**:
+
+1. **Check namespace declarations** in original XSD files
+
+2. **Verify type names** are what you expect
+   ```bash
+   lutaml-xsd pkg type package.lxr "TypeName"
+   ```
+
+3. **Review package statistics**
+   ```bash
+   lutaml-xsd pkg stats package.lxr
+   ```
+
+4. **Use verbose output** to see detailed loading process
+   ```ruby
+   repo.parse(verbose: true).resolve(verbose: true)
+   ```
+
+== Real-World Examples
+
+=== Example 1: Merging Two Simple Packages
+
+**Scenario**: Combine schemas for persons and products.
+
+[source,yaml]
+----
+# simple_composition.yml
+base_packages:
+  - ../examples/01-simple/simple.lxr
+  - ../examples/03-unitsml/unitsml.lxr
+----
+
+**Usage**:
+
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+repo = Lutaml::Xsd::SchemaRepository.from_yaml_file('simple_composition.yml')
+repo.parse.resolve
+
+# Query types from either package
+person = repo.find_type('Person')
+unit = repo.find_type('Unit')
+
+puts "Person found: #{person.resolved?}"
+puts "Unit found: #{unit.resolved?}"
+----
+
+**CLI**:
+
+[source,bash]
+----
+# List all types
+lutaml-xsd pkg ls simple_composition.yml
+
+# Generate combined documentation
+lutaml-xsd doc generate simple_composition.yml --output docs/
+----
+
+=== Example 2: Resolving Namespace Conflicts
+
+**Scenario**: Two GML packages with overlapping namespaces.
+
+[source,yaml]
+----
+# namespace_resolution.yml
+base_packages:
+  # Official GML 3.2.1
+  - package: gml/gml_3.2.1.lxr
+    priority: 0
+    conflict_resolution: keep
+
+  # Custom GML extensions with same namespace
+  - package: custom/gml_extensions.lxr
+    priority: 10
+    conflict_resolution: override
+    namespace_remapping:
+      - from_uri: http://www.opengis.net/gml/3.2
+        to_uri: http://example.com/gml/extensions
+----
+
+**Result**:
+
+* Official GML types in `{http://www.opengis.net/gml/3.2}`
+* Extensions in `{http://example.com/gml/extensions}`
+* No conflicts!
+
+=== Example 3: Filtering Test Schemas
+
+**Scenario**: Package includes test files we don't want in production.
+
+[source,yaml]
+----
+# production.yml
+base_packages:
+  - package: full_development.lxr
+    exclude_schemas:
+      - "**/test_*.xsd"
+      - "**/*_test.xsd"
+      - "tests/**"
+      - "spec/**"
+      - "**/examples/**"
+----
+
+**Result**: Production-ready repository without test files.
+
+=== Example 4: Complex Multi-Package Composition
+
+**Scenario**: Enterprise system with standards, organizational, and project schemas.
+
+[source,yaml]
+----
+# enterprise_repository.yml
+base_packages:
+  # Core Standards Layer (Priority 0-10: Highest)
+  - package: standards/gml_3.2.1.lxr
+    priority: 0
+    conflict_resolution: keep
+
+  - package: standards/iso_19115_2014.lxr
+    priority: 1
+    conflict_resolution: keep
+
+  - package: standards/iso_19139_2007.lxr
+    priority: 2
+    conflict_resolution: keep
+
+  # Organization Base Layer (Priority 20-40: High)
+  - package: organization/common_types.lxr
+    priority: 20
+    conflict_resolution: override  # Can override standards if needed
+    exclude_schemas:
+      - "**/deprecated_*.xsd"
+
+  - package: organization/business_objects.lxr
+    priority: 30
+    conflict_resolution: override
+    namespace_remapping:
+      - from_uri: http://legacy.org.com/v1
+        to_uri: http://current.org.com/v2
+
+  # Department Extensions Layer (Priority 50-70: Medium)
+  - package: departments/engineering.lxr
+    priority: 50
+    conflict_resolution: override
+    include_only_schemas:
+      - "**/core/*.xsd"
+      - "**/shared/*.xsd"
+
+  - package: departments/operations.lxr
+    priority: 60
+    conflict_resolution: override
+    exclude_schemas:
+      - "**/training_*.xsd"
+
+  # Project Layer (Priority 100+: Low)
+  - package: projects/current_project.lxr
+    priority: 100
+    conflict_resolution: override
+    exclude_schemas:
+      - "**/test_*.xsd"
+      - "**/*.draft.xsd"
+
+  - package: projects/integration_schemas.lxr
+    priority: 110
+    conflict_resolution: error  # Must not conflict with project schemas
+    namespace_remapping:
+      - from_uri: http://external.partner.com/api
+        to_uri: http://internal.org.com/partner/api
+----
+
+**Package hierarchy**:
+
+[source]
+----
+Priority 0-2: Standards (GML, ISO) - Highest authority
+    ↓
+Priority 20-30: Organization common + business objects
+    ↓
+Priority 50-60: Department-specific extensions
+    ↓
+Priority 100-110: Project-specific schemas - Most specific
+----
+
+**Resolution behavior**:
+
+* Standards never overridden (priority 0-2, `keep` strategy)
+* Organization can extend standards (priority 20-30, `override` strategy)
+* Departments can extend organization (priority 50-60, `override` strategy)
+* Project can extend everything except integration schemas (priority 100-110)
+* Integration schemas must be conflict-free (`error` strategy)
+
+**Usage**:
+
+[source,ruby]
+----
+repo = Lutaml::Xsd::SchemaRepository.from_yaml_file('enterprise_repository.yml')
+
+# Parse with verbose output to see package loading
+repo.parse(verbose: true).resolve(verbose: true)
+
+# Query unified repository
+stats = repo.statistics
+puts "Total schemas: #{stats[:total_schemas]}"
+puts "Total types: #{stats[:total_types]}"
+puts "Namespaces: #{stats[:total_namespaces]}"
+
+# Find types from any layer
+gml_feature = repo.find_type('gml:AbstractFeatureType')  # From standards
+org_type = repo.find_type('org:BusinessObject')          # From organization
+proj_type = repo.find_type('proj:ProjectSpecific')       # From project
+----
+
+== Best Practices
+
+=== Organization and Structure
+
+1. **Layer packages by stability**
+   * Stable base packages: priority 0-20
+   * Extensions and customizations: priority 50-80
+   * Volatile/experimental: priority 100+
+
+2. **Use meaningful priority gaps**
+   * Leave room for inserting packages later
+   * Example: 0, 25, 50, 100 instead of 0, 1, 2, 3
+
+3. **Document priority rationale in configuration**
+   ```yaml
+   - package: base.lxr
+     priority: 0  # Official standard - never override
+   ```
+
+4. **Group related packages at similar priorities**
+   ```yaml
+   # All organization extensions at priority 50-59
+   - package: org/ext1.lxr
+     priority: 50
+   - package: org/ext2.lxr
+     priority: 51
+   ```
+
+=== Conflict Management
+
+1. **Use `error` strategy during development**
+   * Detect unintended conflicts early
+   * Switch to `keep`/`override` only when conflicts are understood
+
+2. **Document expected conflicts**
+   ```yaml
+   - package: updated_version.lxr
+     priority: 10
+     conflict_resolution: override
+     # Intentionally overrides base package types with fixes
+   ```
+
+3. **Prefer namespace remapping over `override`**
+   * More explicit
+   * Preserves both definitions
+   * Less risk of breaking dependencies
+
+4. **Keep conflict reports**
+   * Save conflict detection output
+   * Review before changing strategies
+   * Document resolution decisions
+
+=== Namespace Management
+
+1. **Use consistent namespace conventions**
+   ```yaml
+   namespace_remapping:
+     - from_uri: http://external.com/v1
+       to_uri: http://internal.example.com/external/v1
+       # Always map to internal namespace structure
+   ```
+
+2. **Version namespaces explicitly**
+   * Use `/v1`, `/v2` suffixes
+   * Makes version conflicts obvious
+
+3. **Avoid remapping standards**
+   * GML, ISO, OGC should keep original namespaces
+   * Only remap when absolutely necessary
+
+4. **Document namespace mapping decisions**
+   ```yaml
+   # Remapping to avoid conflict with official GML
+   namespace_remapping:
+     - from_uri: http://www.opengis.net/gml/3.2
+       to_uri: http://example.com/custom-gml/3.2
+   ```
+
+=== Schema Filtering
+
+1. **Exclude before including**
+   * Start with full package
+   * Add excludes for unwanted schemas
+   * Use `include_only` only when most schemas should be excluded
+
+2. **Use consistent file naming for filtering**
+   ```
+   *_test.xsd    - Test files
+   *_draft.xsd   - Draft files
+   deprecated_*  - Deprecated files
+   ```
+
+3. **Test filters before deployment**
+   ```ruby
+   # Verify correct schemas included
+   repo.files.each { |f| puts f }
+   ```
+
+4. **Document filter rationale**
+   ```yaml
+   exclude_schemas:
+     - "**/test_*.xsd"  # Exclude test fixtures for production
+   ```
+
+=== Performance and Maintenance
+
+1. **Cache composed repositories as LXR packages**
+   ```ruby
+   repo.to_package('composed.lxr')
+   # Reuse composed.lxr instead of recomposing every time
+   ```
+
+2. **Use resolution modes appropriately**
+   * `:resolved` for production
+   * `:bare` for development if faster loading needed
+
+3. **Monitor package sizes**
+   * Large packages slow loading
+   * Split if package exceeds ~100 schemas
+
+4. **Version control configuration files**
+   * Track changes to composition
+   * Document why priorities changed
+
+5. **Validate before deployment**
+   ```ruby
+   repo = Lutaml::Xsd::SchemaRepository.from_yaml_file('config.yml')
+   errors = repo.validate
+   raise "Invalid repository" unless errors.empty?
+   ```
+
+=== Testing and Validation
+
+1. **Test with `error` strategy first**
+   ```yaml
+   conflict_resolution: error  # During development
+   ```
+
+2. **Create test configurations**
+   * One for each deployment environment
+   * Different filtering for dev/staging/production
+
+3. **Validate composed repository**
+   ```ruby
+   repo.parse.resolve
+   stats = repo.statistics
+   raise "Unexpected type count" if stats[:total_types] < expected_minimum
+   ```
+
+4. **Check for missing types**
+   ```ruby
+   required_types = %w[PersonType AddressType CompanyType]
+   required_types.each do |type|
+     raise "Missing #{type}" unless repo.type_exists?(type)
+   end
+   ```
+
+== Ruby API Usage
+
+=== Basic Composition
+
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Create repository with base packages
+repo = Lutaml::Xsd::SchemaRepository.new(
+  base_packages: [
+    'package1.lxr',
+    'package2.lxr'
+  ]
+)
+
+# Parse and resolve
+repo.parse.resolve
+
+# Query types
+result = repo.find_type('PersonType')
+puts result.definition.name if result.resolved?
+----
+
+=== Advanced Composition with Configuration Objects
+
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Create configuration objects
+config1 = Lutaml::Xsd::BasePackageConfig.new(
+  package: 'base.lxr',
+  priority: 0,
+  conflict_resolution: 'keep'
+)
+
+config2 = Lutaml::Xsd::BasePackageConfig.new(
+  package: 'extension.lxr',
+  priority: 10,
+  conflict_resolution: 'override',
+  namespace_remapping: [
+    Lutaml::Xsd::NamespaceUriRemapping.new(
+      from_uri: 'http://old.com/ns',
+      to_uri: 'http://new.com/ns'
+    )
+  ],
+  exclude_schemas: ['**/test_*.xsd']
+)
+
+# Create repository
+repo = Lutaml::Xsd::SchemaRepository.new(
+  base_packages: [config1, config2]
+)
+
+repo.parse(verbose: true).resolve(verbose: true)
+----
+
+=== Programmatic Conflict Detection
+
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Create configurations
+configs = [
+  Lutaml::Xsd::BasePackageConfig.new(
+    package: 'pkg1.lxr',
+    priority: 0
+  ),
+  Lutaml::Xsd::BasePackageConfig.new(
+    package: 'pkg2.lxr',
+    priority: 10
+  )
+]
+
+# Detect conflicts
+detector = Lutaml::Xsd::PackageConflictDetector.new(configs)
+report = detector.detect_conflicts
+
+if report.has_conflicts?
+  puts "Conflicts detected:"
+  puts "  Namespaces: #{report.namespace_conflicts.size}"
+  puts "  Types: #{report.type_conflicts.size}"
+  puts "  Schemas: #{report.schema_conflicts.size}"
+  
+  # Print detailed report
+  puts report.to_s
+else
+  puts "No conflicts detected!"
+end
+
+# Resolve conflicts
+resolver = Lutaml::Xsd::PackageConflictResolver.new(report, report.package_sources)
+ordered_sources = resolver.resolve
+
+# Load packages in resolved order
+ordered_sources.each do |source|
+  puts "Loading: #{source.package_path} (priority: #{source.priority})"
+end
+----
+
+=== Loading from YAML with Validation
+
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Load configuration
+repo = Lutaml::Xsd::SchemaRepository.from_yaml_file('config.yml')
+
+# Validate configuration
+errors = repo.validate(strict: false)
+unless errors.empty?
+  puts "Validation errors:"
+  errors.each { |e| puts "  - #{e}" }
+  exit 1
+end
+
+# Parse with error handling
+begin
+  repo.parse(verbose: true).resolve(verbose: true)
+rescue Lutaml::Xsd::PackageMergeError => e
+  puts "Composition failed:"
+  puts e.message
+  puts "\nConflict Report:"
+  puts e.conflict_report.to_s if e.respond_to?(:conflict_report)
+  exit 1
+end
+
+# Success!
+puts "\nRepository Statistics:"
+puts repo.export_statistics(format: :text)
+----
+
+=== Creating Composed Package
+
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Compose from base packages
+repo = Lutaml::Xsd::SchemaRepository.from_yaml_file('composition_config.yml')
+repo.parse.resolve
+
+# Export as new LXR package
+repo.to_package(
+  'composed_result.lxr',
+  xsd_mode: :include_all,
+  resolution_mode: :resolved,
+  serialization_format: :marshal,
+  metadata: {
+    description: 'Composed repository from multiple base packages',
+    created_at: Time.now.iso8601,
+    base_packages: repo.base_packages
+  }
+)
+
+puts "Created composed package: composed_result.lxr"
+----
+
+== See Also
+
+* link:LXR_PACKAGES.adoc[LXR Package Guide] - Building individual packages
+* link:PACKAGE_CONFIGURATION.adoc[Package Configuration] - Detailed config reference
+* link:CLI.adoc[CLI Reference] - Command-line tools
+* link:core-concepts/NAMESPACES.adoc[Namespace Guide] - Understanding XSD namespaces
+* link:SCHEMA_MAPPINGS.adoc[Schema Mapping] - Location mappings for imports
+
+== Appendix: Complete Configuration Example
+
+[source,yaml]
+----
+# Complete package composition configuration example
+# File: complete_example.yml
+
+# Configure base packages to compose
+base_packages:
+  # Package 1: Official standards
+  - package: /path/to/standards/gml_3.2.1.lxr
+    priority: 0
+    conflict_resolution: keep
+    # No remapping - use official namespaces
+    # No filtering - include all
+
+  # Package 2: Organization common types
+  - package: ../packages/organization_common.lxr
+    priority: 25
+    conflict_resolution: override
+    namespace_remapping:
+      - from_uri: http://legacy.org.com/v1
+        to_uri: http://current.org.com/v2
+    exclude_schemas:
+      - "**/deprecated_*.xsd"
+      - "archive/**"
+
+  # Package 3: Project-specific schemas
+  - package: ./project_schemas.lxr
+    priority: 50
+    conflict_resolution: override
+    exclude_schemas:
+      - "**/test_*.xsd"
+      - "**/*_test.xsd"
+      - "tests/**"
+      - "examples/**"
+    include_only_schemas:
+      - "schemas/core/**"
+      - "schemas/production/**"
+
+  # Package 4: External partner schemas
+  - package: ~/schemas/partner_api.lxr
+    priority: 100
+    conflict_resolution: error  # Must not conflict
+    namespace_remapping:
+      - from_uri: http://partner.external.com/api/v1
+        to_uri: http://internal.org.com/partner/v1
+    include_only_schemas:
+      - "api/public/**"
+
+# Optional: Additional namespace mappings
+namespace_mappings:
+  - prefix: gml
+    uri: http://www.opengis.net/gml/3.2
+  - prefix: org
+    uri: http://current.org.com/v2
+  - prefix: proj
+    uri: http://project.org.com/schemas
+
+# Optional: Schema location mappings for imports
+schema_location_mappings:
+  - from: http://www.opengis.net/gml/3.2/gml.xsd
+    to: /path/to/local/schemas/gml.xsd
+----
+
+== Change Log
+
+[cols="1,3,6"]
+|===
+|Version |Date |Changes
+
+|1.0.0
+|2025-12-02
+|Initial package composition documentation
+|===

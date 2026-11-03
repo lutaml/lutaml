@@ -1,0 +1,139 @@
+include "relaton-ietf.rnc" { }
+include "isodoc.rnc" {
+
+ParagraphAttributes =
+    attribute align { Alignments }?,
+    attribute keep-with-next { xsd:boolean }?,
+    attribute keep-with-previous { xsd:boolean }?,
+    attribute indent { text }?
+
+UlAttributes =
+    attribute nobullet { xsd:boolean }?,
+    attribute spacing { text }?,
+    attribute indent { text }?,
+    attribute bare { xsd:boolean }?
+
+UlBody =
+    li+, note*
+
+OlAttributes =
+    attribute type { ( "roman" | "alphabet" | "arabic" |
+                       "roman_upper" | "alphabet_upper" | "text" ) },
+    attribute group { text }?,
+    attribute spacing { text }?,
+    attribute start { text }?,
+    attribute indent { text }?
+
+OlBody =
+    li+, note*
+
+DlAttributes =
+    attribute newline { text }?,
+    attribute indent { text }?,
+    attribute spacing { text }?
+
+DlBody =
+    (dt, dd)+, note*
+
+NoteAttributes =
+    attribute removeInRFC { text }?
+
+NoteBody =
+    tname?, paragraph+
+
+PreAttributes =
+    attribute alt { text }?,
+    attribute align { text }?
+
+xref =
+  element xref {
+     attribute target { xsd:IDREF },
+     attribute type { ReferenceFormat }?,
+     attribute alt { text }?,
+     attribute format { text }?,
+     XrefBody
+}
+
+erefType =
+    attribute normative { xsd:boolean }?,
+    attribute citeas { text },
+    attribute type { ReferenceFormat },
+    attribute alt { text }?,
+    attribute displayFormat { text }?,
+    attribute relative { text }?,
+    CitationType,
+    text
+
+quote-source =
+  element source { erefTypeURI }
+
+Clause-Section =
+    Section-Attributes,
+    attribute numbered { text }?,
+    attribute removeInRFC { text }?,
+    attribute toc { text }?,
+    section-title?,
+    (
+      ( BasicBlock* ),
+       (clause-subsection | terms | definitions)*
+    )
+
+annex =
+  element annex {
+    Annex-Section-Attributes,
+    attribute numbered { text }?,
+    attribute removeInRFC { text }?,
+    attribute toc { text }?,
+    section-title?,
+    ( ( BasicBlock* ), clause-subsection* )
+}
+
+Content-Section =
+    Section-Attributes,
+    attribute numbered { text }?,
+    attribute removeInRFC { text }?,
+    attribute toc { text }?,
+    section-title?,
+    ( (BasicBlock*),
+      content-subsection* )
+
+
+index = element index {
+  attribute to { xsd:IDREF }?,
+  attribute primary { xsd:boolean }?,
+  index-primary,
+  index-secondary,
+  index-tertiary
+}
+
+}
+
+# end overrides
+
+TextElement |= review
+
+ReviewAttributes &=
+  attribute display { text }?
+
+ImageAttributes &=
+    attribute align { text }?
+
+SourceAttributes &=
+    attribute markers { text }?
+
+TableAttributes &=
+    attribute align { text }?
+
+erefTypeURI =
+    attribute normative { xsd:boolean }?,
+    attribute citeas { text }?,
+    attribute type { ReferenceFormat },
+    attribute alt { text }?,
+    attribute displayFormat { text }?,
+    attribute relative { text }?,
+    attribute bibitemid { xsd:IDREF }?,
+    attribute uri { xsd:anyURI }?,
+    locality*, date?,
+    text
+
+

@@ -1,0 +1,55 @@
+include "relaton-bsi.rnc" { }
+include "isostandard.rnc" {
+
+Clause-Section =
+    Section-Attributes,
+    attribute type { text }?,
+    section-title?,
+    (
+      ( ( BasicBlock+ ) | amend) | (clause-subsection | floating-title)+
+    )
+
+annex =
+  element annex {
+    Annex-Section-Attributes,
+    section-title?,
+    # allow hanging paragraps in annexes: they introduce lists
+    #( paragraph-with-footnote | table | note | formula | admonition | ol | ul | dl | figure | quote | sourcecode | review | example )*,
+    BasicBlock*,
+    (clause-hanging-paragraph-with-footnote | floating-title)*,
+    annex-appendix*
+  }
+
+clause-hanging-paragraph-with-footnote =
+  element clause {
+    Section-Attributes,
+    section-title?,
+    # allow hanging paragraphs in annexes: they introduce lists
+    BasicBlock*,
+    (clause-hanging-paragraph-with-footnote | floating-title)*
+  }
+
+sections =
+  element sections {
+    (note | admonition)*, (floating-title | floating-section-title)?, clause, (floating-title | floating-section-title)?, 
+    (term-clause | terms)?, (floating-title | floating-section-title)?, definitions?, (floating-title | floating-section-title)?,
+    (clause | term-clause | terms | floating-title | floating-section-title)+
+  } 
+
+}
+
+# end overrides
+
+floating-section-title =
+  element section-title {
+    attribute id { xsd:ID },
+    attribute depth { xsd:int },
+    TextElement*
+}
+
+
+AdmonitionType |= "commentary"
+
+AdmonitionAttributes &=
+    attribute target { xsd:IDREF }?
+

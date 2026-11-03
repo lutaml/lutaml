@@ -1,0 +1,12 @@
+---
+layout: default
+title: Advanced
+nav_order: 60
+has_children: true
+---
+
+== Advanced
+
+This section covers advanced topics for working with Lutaml::XSD.
+
+Learn about performance tuning, integration patterns, debugging techniques, and schema mapping patterns.

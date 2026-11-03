@@ -1,0 +1,12 @@
+# Simple Example Configuration
+# Purpose: Learn basics of LXR package building with simple schemas
+
+files:
+  - schemas/person.xsd
+  - schemas/company.xsd
+
+namespace_mappings:
+  - prefix: "p"
+    uri: "http://example.com/person"
+  - prefix: "c"
+    uri: "http://example.com/company"

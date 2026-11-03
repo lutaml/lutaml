@@ -1,0 +1,668 @@
+---
+layout: default
+title: CityGML example
+nav_order: 3
+parent: Guides
+---
+= CityGML example
+:toc:
+:toclevels: 3
+
+== Purpose
+
+This guide demonstrates how to work with CityGML schemas using lutaml-xsd. CityGML is a complex standard with multiple modules and extensive dependencies on GML, making it an excellent real-world example for understanding schema mapping and package creation.
+
+== General
+
+CityGML (City Geography Markup Language) is an open standardized data model and XML-based format for the storage and exchange of virtual 3D city models. CityGML schemas present several challenges:
+
+* **Complex dependencies**: Multiple CityGML modules depend on GML 3.1.1 and other OGC standards
+* **Remote schema locations**: Many imports reference `http://schemas.opengis.net/`
+* **Hierarchical structure**: Schemas organized across multiple directories
+* **Version management**: Multiple CityGML versions (1.0, 2.0, 3.0) with different dependencies
+
+This guide shows you how to handle these challenges effectively.
+
+== Common challenges with CityGML
+
+=== Challenge 1: Remote schema references
+
+CityGML schemas import from remote URLs:
+
+.Remote schema imports in CityGML
+[example]
+====
+[source,xml]
+----
+<xs:import
+  namespace="http://www.opengis.net/gml"
+  schemaLocation="http://schemas.opengis.net/gml/3.1.1/base/gml.xsd"/>
+
+<xs:import
+  namespace="http://www.opengis.net/citygml/2.0"
+  schemaLocation="http://schemas.opengis.net/citygml/2.0/cityGMLBase.xsd"/>
+----
+====
+
+**Solution**: Use schema location mappings to redirect to local copies.
+
+=== Challenge 2: Nested module structure
+
+CityGML has multiple modules (building, appearance, transportation) that cross-reference each other:
+
+.CityGML module structure
+[source]
+----
+citygml/
+├── 2.0/
+│   ├── cityGMLBase.xsd
+│   ├── building/
+│   │   └── building.xsd
+│   ├── appearance/
+│   │   └── appearance.xsd
+│   └── transportation/
+│       └── transportation.xsd
+└── profiles/
+    └── base/
+        └── CityGML.xsd
+----
+
+**Solution**: Use pattern-based mappings to handle entire directory structures.
+
+=== Challenge 3: GML dependency versions
+
+Different CityGML versions depend on different GML versions:
+
+* CityGML 1.0 → GML 3.1.1
+* CityGML 2.0 → GML 3.1.1
+* CityGML 3.0 → GML 3.2.1
+
+**Solution**: Organize schemas by version and use precise mappings.
+
+== Setting up schema mappings for CityGML
+
+=== Directory structure
+
+First, organize your local schema files:
+
+.Recommended CityGML directory structure
+[example]
+====
+[source]
+----
+citygml-project/
+├── schemas/
+│   ├── citygml/
+│   │   └── 2.0/
+│   │       ├── cityGMLBase.xsd
+│   │       ├── building/
+│   │       │   └── building.xsd
+│   │       ├── appearance/
+│   │       │   └── appearance.xsd
+│   │       └── transportation/
+│   │           └── transportation.xsd
+│   └── gml/
+│       └── 3.1.1/
+│           ├── base/
+│           │   └── gml.xsd
+│           └── smil/
+│               └── smil20.xsd
+├── config/
+│   └── citygml-2.0.yml
+└── pkg/
+    └── citygml-2.0.lxr
+----
+====
+
+=== Configuration file
+
+Create a configuration file with comprehensive mappings:
+
+.config/citygml-2.0.yml
+[example]
+====
+[source,yaml]
+----
+# CityGML 2.0 Package Configuration
+
+files:
+  - schemas/citygml/2.0/cityGMLBase.xsd
+  - schemas/citygml/2.0/building/building.xsd
+  - schemas/citygml/2.0/appearance/appearance.xsd
+  - schemas/citygml/2.0/transportation/transportation.xsd
+
+schema_location_mappings:
+  # Map CityGML remote URLs to local files
+  - from: !ruby/regexp /http:\/\/schemas\.opengis\.net\/citygml\/2\.0\/(.+)/
+    to: "schemas/citygml/2.0/\\1"
+
+  # Map GML 3.1.1 remote URLs to local files
+  - from: !ruby/regexp /http:\/\/schemas\.opengis\.net\/gml\/3\.1\.1\/(.+)/
+    to: "schemas/gml/3.1.1/\\1"
+
+  # Map SMIL schemas
+  - from: !ruby/regexp /http:\/\/www\.w3\.org\/2001\/SMIL20\/(.+)/
+    to: "schemas/smil/\\1"
+
+  # Map XLink schemas
+  - from: "http://www.w3.org/1999/xlink"
+    to: "schemas/xlink/xlink.xsd"
+
+namespace_mappings:
+  # CityGML namespaces
+  - prefix: "core"
+    uri: "http://www.opengis.net/citygml/2.0"
+
+  - prefix: "bldg"
+    uri: "http://www.opengis.net/citygml/building/2.0"
+
+  - prefix: "app"
+    uri: "http://www.opengis.net/citygml/appearance/2.0"
+
+  - prefix: "tran"
+    uri: "http://www.opengis.net/citygml/transportation/2.0"
+
+  # GML namespaces
+  - prefix: "gml"
+    uri: "http://www.opengis.net/gml"
+
+  - prefix: "xlink"
+    uri: "http://www.w3.org/1999/xlink"
+----
+====
+
+== Handling CityGML imports
+
+=== Parsing CityGML with schema mappings
+
+Use the configuration to parse CityGML schemas:
+
+.Parsing CityGML schemas
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Read the main CityGML schema
+xsd_content = File.read('schemas/citygml/2.0/building/building.xsd')
+
+# Define schema mappings
+schema_mappings = [
+  # Map CityGML URLs to local files
+  {
+    from: %r{http://schemas\.opengis\.net/citygml/2\.0/(.+)},
+    to: File.expand_path('schemas/citygml/2.0/\1')
+  },
+
+  # Map GML URLs to local files
+  {
+    from: %r{http://schemas\.opengis\.net/gml/3\.1\.1/(.+)},
+    to: File.expand_path('schemas/gml/3.1.1/\1')
+  }
+]
+
+# Parse with mappings
+parsed_schema = Lutaml::Xsd.parse(
+  xsd_content,
+  location: File.dirname(File.expand_path('schemas/citygml/2.0/building/building.xsd')),
+  schema_mappings: schema_mappings
+)
+
+puts "Parsed CityGML Building schema"
+puts "Target namespace: #{parsed_schema.target_namespace}"
+puts "Elements: #{parsed_schema.element.size}"
+puts "Complex types: #{parsed_schema.complex_type.size}"
+----
+
+Output:
+
+----
+Parsed CityGML Building schema
+Target namespace: http://www.opengis.net/citygml/building/2.0
+Elements: 15
+Complex types: 23
+----
+====
+
+=== Using SchemaRepository with CityGML
+
+For better type resolution across modules:
+
+.Creating a CityGML schema repository
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Create repository
+repo = Lutaml::Xsd::SchemaRepository.new(
+  base_dir: File.expand_path('schemas')
+)
+
+# Add namespace mappings
+repo.add_namespace_mapping(prefix: 'core', uri: 'http://www.opengis.net/citygml/2.0')
+repo.add_namespace_mapping(prefix: 'bldg', uri: 'http://www.opengis.net/citygml/building/2.0')
+repo.add_namespace_mapping(prefix: 'gml', uri: 'http://www.opengis.net/gml')
+
+# Parse building module
+building_content = File.read('schemas/citygml/2.0/building/building.xsd')
+
+schema_mappings = [
+  {
+    from: %r{http://schemas\.opengis\.net/citygml/2\.0/(.+)},
+    to: File.expand_path('schemas/citygml/2.0/\1')
+  },
+  {
+    from: %r{http://schemas\.opengis\.net/gml/3\.1\.1/(.+)},
+    to: File.expand_path('schemas/gml/3.1.1/\1')
+  }
+]
+
+result = repo.parse_schema(
+  content: building_content,
+  location: 'schemas/citygml/2.0/building',
+  schema_mappings: schema_mappings
+)
+
+# Resolve types across modules
+building_type = repo.find_type('bldg:BuildingType')
+puts "Found: #{building_type.qname}" if building_type.resolved?
+
+# Get statistics
+stats = repo.statistics
+puts "Total types: #{stats[:total_types]}"
+puts "Total namespaces: #{stats[:total_namespaces]}"
+----
+====
+
+== Building a CityGML package
+
+=== Create production package
+
+Build a complete, self-contained CityGML package:
+
+.Building CityGML 2.0 package
+[example]
+====
+[source,bash]
+----
+lutaml-xsd pkg build config/citygml-2.0.yml \
+  --name "CityGML 2.0 Schemas" \
+  --version "2.0.0" \
+  --description "CityGML 2.0 complete schema set with GML 3.1.1 dependencies" \
+  --xsd-mode include_all \
+  --resolution-mode resolved \
+  --serialization-format marshal \
+  --output pkg/citygml-2.0.lxr \
+  --validate \
+  --verbose
+----
+
+Output:
+
+----
+✓ Configuration loaded
+  Files: 4
+  Schema Location Mappings: 4
+  Namespace Mappings: 6
+
+Parsing and resolving schemas...
+✓ Schemas parsed and resolved
+  - cityGMLBase.xsd
+  - building/building.xsd
+  - appearance/appearance.xsd
+  - transportation/transportation.xsd
+
+Creating package: pkg/citygml-2.0.lxr
+  XSD Mode: include_all
+  Resolution Mode: resolved
+  Serialization Format: marshal
+✓ Package created: pkg/citygml-2.0.lxr
+  Size: 2458932 bytes
+
+Validating package...
+✓ Package structure is valid
+✓ All XSD files are present
+✓ Type index is complete
+✓ Metadata is well-formed
+
+Package validated successfully!
+----
+====
+
+=== Query the package
+
+Test type resolution in the built package:
+
+.Querying CityGML types
+[example]
+====
+[source,bash]
+----
+# Find building types
+lutaml-xsd type find "bldg:BuildingType" --from pkg/citygml-2.0.lxr
+
+# List all building module types
+lutaml-xsd type list \
+  --from pkg/citygml-2.0.lxr \
+  --namespace "http://www.opengis.net/citygml/building/2.0"
+
+# Get package statistics
+lutaml-xsd stats show pkg/citygml-2.0.lxr
+----
+
+Output from `type find`:
+
+----
+Type Resolution: bldg:BuildingType
+
+✓ Type found
+
+Qualified Name: bldg:BuildingType
+Namespace: http://www.opengis.net/citygml/building/2.0
+Local Name: BuildingType
+Schema File: building/building.xsd
+Type Class: Lutaml::Xsd::ComplexType
+
+Complex Content:
+  Extension:
+    Base: core:AbstractSiteType
+    Sequence:
+      - class: gml:CodeType
+      - function: gml:CodeType (0..*)
+      - usage: gml:CodeType (0..*)
+      - yearOfConstruction: xs:gYear
+      - roofType: gml:CodeType
+      ...
+----
+====
+
+== Complete working example
+
+This example shows a complete workflow for working with CityGML 2.0 Building schemas.
+
+=== Project setup
+
+.Complete CityGML project structure
+[example]
+====
+[source]
+----
+citygml-building-project/
+├── schemas/
+│   ├── citygml/
+│   │   └── 2.0/
+│   │       ├── cityGMLBase.xsd
+│   │       └── building/
+│   │           └── building.xsd
+│   └── gml/
+│       └── 3.1.1/
+│           └── base/
+│               └── gml.xsd
+├── config/
+│   └── citygml-building.yml
+├── lib/
+│   └── citygml_parser.rb
+└── pkg/
+    └── citygml-building.lxr
+----
+====
+
+=== Configuration
+
+.config/citygml-building.yml
+[example]
+====
+[source,yaml]
+----
+files:
+  - schemas/citygml/2.0/cityGMLBase.xsd
+  - schemas/citygml/2.0/building/building.xsd
+
+schema_location_mappings:
+  # CityGML base
+  - from: "http://schemas.opengis.net/citygml/2.0/cityGMLBase.xsd"
+    to: "schemas/citygml/2.0/cityGMLBase.xsd"
+
+  # CityGML building
+  - from: !ruby/regexp /http:\/\/schemas\.opengis\.net\/citygml\/building\/2\.0\/(.+)/
+    to: "schemas/citygml/2.0/building/\\1"
+
+  # GML
+  - from: !ruby/regexp /http:\/\/schemas\.opengis\.net\/gml\/3\.1\.1\/(.+)/
+    to: "schemas/gml/3.1.1/\\1"
+
+namespace_mappings:
+  - prefix: "core"
+    uri: "http://www.opengis.net/citygml/2.0"
+
+  - prefix: "bldg"
+    uri: "http://www.opengis.net/citygml/building/2.0"
+
+  - prefix: "gml"
+    uri: "http://www.opengis.net/gml"
+----
+====
+
+=== Parser implementation
+
+.lib/citygml_parser.rb
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+class CityGMLParser
+  def initialize(package_path)
+    @repo = Lutaml::Xsd::SchemaRepository.from_package(package_path)
+  end
+
+  def find_building_type(type_name)
+    @repo.find_type("bldg:#{type_name}")
+  end
+
+  def list_building_types
+    @repo.types_in_namespace('http://www.opengis.net/citygml/building/2.0')
+  end
+
+  def statistics
+    @repo.statistics
+  end
+
+  def validate_building_element(element_name)
+    result = @repo.find_type("bldg:#{element_name}")
+    if result.resolved?
+      {
+        found: true,
+        qualified_name: result.qname,
+        namespace: result.namespace,
+        type_class: result.type.class.name
+      }
+    else
+      { found: false }
+    end
+  end
+end
+
+# Usage
+parser = CityGMLParser.new('pkg/citygml-building.lxr')
+
+# Find building type
+building_type = parser.find_building_type('BuildingType')
+puts "Building type: #{building_type.name}" if building_type
+
+# List all building types
+puts "\nBuilding module types:"
+parser.list_building_types.each do |type|
+  puts "  - #{type.name}"
+end
+
+# Get statistics
+stats = parser.statistics
+puts "\nRepository statistics:"
+puts "  Total types: #{stats[:total_types]}"
+puts "  Total namespaces: #{stats[:total_namespaces]}"
+
+# Validate elements
+['Building', 'BuildingPart', 'Room'].each do |element|
+  result = parser.validate_building_element(element)
+  if result[:found]
+    puts "✓ #{element}: #{result[:qualified_name]}"
+  else
+    puts "✗ #{element}: not found"
+  end
+end
+----
+====
+
+=== Build script
+
+.build.sh
+[example]
+====
+[source,bash]
+----
+#!/bin/bash
+
+echo "Building CityGML Building package..."
+
+# Build the package
+lutaml-xsd pkg build config/citygml-building.yml \
+  --name "CityGML Building Module" \
+  --version "2.0.0" \
+  --description "CityGML 2.0 Building module with dependencies" \
+  --xsd-mode include_all \
+  --resolution-mode resolved \
+  --serialization-format marshal \
+  --output pkg/citygml-building.lxr \
+  --validate
+
+# Generate checksum
+sha256sum pkg/citygml-building.lxr > pkg/citygml-building.lxr.sha256
+
+# Display package info
+echo ""
+echo "Package information:"
+lutaml-xsd package info pkg/citygml-building.lxr
+
+# Test type resolution
+echo ""
+echo "Testing type resolution:"
+lutaml-xsd type find "bldg:BuildingType" --from pkg/citygml-building.lxr
+
+echo ""
+echo "Build complete!"
+----
+====
+
+=== Testing
+
+.test.rb
+[example]
+====
+[source,ruby]
+----
+require_relative 'lib/citygml_parser'
+
+# Test the package
+parser = CityGMLParser.new('pkg/citygml-building.lxr')
+
+# Test 1: Find building types
+puts "Test 1: Finding building types"
+['BuildingType', 'RoofSurfaceType', 'WallSurfaceType'].each do |type_name|
+  type = parser.find_building_type(type_name)
+  if type
+    puts "  ✓ Found #{type_name}"
+  else
+    puts "  ✗ Not found: #{type_name}"
+    exit 1
+  end
+end
+
+# Test 2: Validate statistics
+puts "\nTest 2: Validating statistics"
+stats = parser.statistics
+expected_min_types = 10
+
+if stats[:total_types] >= expected_min_types
+  puts "  ✓ Type count: #{stats[:total_types]} (>= #{expected_min_types})"
+else
+  puts "  ✗ Type count too low: #{stats[:total_types]}"
+  exit 1
+end
+
+# Test 3: Namespace resolution
+puts "\nTest 3: Namespace resolution"
+building_types = parser.list_building_types
+if building_types.any?
+  puts "  ✓ Building namespace resolved: #{building_types.count} types"
+else
+  puts "  ✗ Building namespace not resolved"
+  exit 1
+end
+
+puts "\n✓ All tests passed!"
+----
+====
+
+== Best practices for CityGML
+
+=== Use versioned packages
+
+Create separate packages for different CityGML versions:
+
+.Version-specific packages
+[example]
+====
+[source,bash]
+----
+# CityGML 2.0
+lutaml-xsd pkg build config/citygml-2.0.yml \
+  --output pkg/citygml-2.0.lxr
+
+# CityGML 3.0
+lutaml-xsd pkg build config/citygml-3.0.yml \
+  --output pkg/citygml-3.0.lxr
+----
+====
+
+=== Include all modules
+
+For complete CityGML support, include all modules:
+
+* Core (`cityGMLBase.xsd`)
+* Building
+* Bridge
+* Tunnel
+* Transportation
+* Vegetation
+* WaterBody
+* LandUse
+* CityFurniture
+* Relief
+* Appearance
+* Generics
+
+=== Document module dependencies
+
+Document which modules depend on which:
+
+.CityGML module dependencies
+[source]
+----
+Building → Core → GML 3.1.1
+Appearance → Core → GML 3.1.1
+Transportation → Core → GML 3.1.1
+  ↓
+All modules depend on Core and GML
+----
+
+== See also
+
+* link:CREATING_PACKAGES[Creating packages] - Package creation workflow
+* link:GML_EXAMPLE[GML example] - Working with GML schemas
+* link:ISO_TC211_EXAMPLE[ISO/TC 211 example] - ISO standard schemas
+* link:../core-concepts/SCHEMA_MAPPINGS[Schema mappings] - Advanced mapping techniques

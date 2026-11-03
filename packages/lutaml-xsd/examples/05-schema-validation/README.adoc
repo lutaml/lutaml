@@ -1,0 +1,97 @@
+= Schema Validation Example
+:toc:
+:toclevels: 2
+
+== Purpose
+
+This example demonstrates LutaML-XSD's schema validation capabilities, which help catch schema errors early in development and CI/CD pipelines.
+
+== What's included
+
+This example includes:
+
+* Valid XSD 1.0 and 1.1 schemas for testing
+* Invalid schemas that demonstrate common errors
+* Ruby API validation examples
+* CLI validation examples
+* CI/CD integration examples (GitHub Actions, GitLab CI)
+* Pre-commit hook example
+
+== Schema files
+
+`schemas/valid_schema.xsd`:: A valid XSD 1.0 schema
+`schemas/xsd11_schema.xsd`:: A valid XSD 1.1 schema with assertions
+`schemas/invalid_wrong_namespace.xsd`:: Schema with incorrect namespace
+`schemas/invalid_no_namespace.xsd`:: Schema missing the XSD namespace
+`schemas/invalid_non_schema.xsd`:: XML document that is not a schema
+
+== Usage examples
+
+=== Ruby API
+
+See link:ruby-api/validate.rb[`ruby-api/validate.rb`] for programmatic validation examples:
+
+[source,bash]
+----
+ruby ruby-api/validate.rb
+----
+
+=== Command-line interface
+
+See link:cli/validate.sh[`cli/validate.sh`] for CLI validation examples:
+
+[source,bash]
+----
+bash cli/validate.sh
+----
+
+=== CI/CD integration
+
+==== GitHub Actions
+
+See link:ci-cd/github-actions.yml[`ci-cd/github-actions.yml`] for GitHub Actions workflow configuration.
+
+Copy to `.github/workflows/validate-schemas.yml` in your repository:
+
+[source,bash]
+----
+mkdir -p .github/workflows
+cp ci-cd/github-actions.yml .github/workflows/validate-schemas.yml
+----
+
+==== GitLab CI
+
+See link:ci-cd/gitlab-ci.yml[`ci-cd/gitlab-ci.yml`] for GitLab CI configuration.
+
+Copy to `.gitlab-ci.yml` or include in your existing pipeline:
+
+[source,bash]
+----
+cp ci-cd/gitlab-ci.yml .gitlab-ci.yml
+----
+
+==== Pre-commit hook
+
+See link:pre-commit[`pre-commit`] for a Git pre-commit hook that validates schemas before commits.
+
+Install the hook:
+
+[source,bash]
+----
+cp pre-commit .git/hooks/pre-commit
+chmod +x .git/hooks/pre-commit
+----
+
+== Key features demonstrated
+
+* Automatic XSD version detection
+* XSD 1.0 vs 1.1 validation
+* Error handling and reporting
+* Integration with development workflows
+* CI/CD pipeline integration
+
+== Learn more
+
+* link:../../docs/RUBY_API.adoc#schema-validation[Ruby API Reference - Schema Validation]
+* link:../../docs/CLI.adoc#validate-schema-command[CLI Reference - validate-schema command]
+* link:../../README.adoc[LutaML-XSD README]

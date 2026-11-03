@@ -1,0 +1,9 @@
+---
+files:
+- "/Users/mulgogi/src/lutaml/lutaml-xsd/examples/validation/sample_schemas/person.xsd"
+- "/Users/mulgogi/src/lutaml/lutaml-xsd/examples/validation/sample_schemas/company.xsd"
+namespace_mappings:
+- prefix: p
+  uri: http://example.com/person
+- prefix: c
+  uri: http://example.com/company

@@ -1,0 +1,12 @@
+---
+layout: default
+title: Guides
+nav_order: 30
+has_children: true
+---
+
+== Guides
+
+This section provides practical guides for working with Lutaml::XSD.
+
+Learn how to map schemas, create packages, and work with real-world examples.

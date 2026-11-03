@@ -1,0 +1,201 @@
+# Features Configuration for SPA Documentation Generator
+# This file defines which features are enabled and their specific settings
+
+features:
+  # Search functionality
+  search:
+    enabled: true
+    # Enable fuzzy search algorithm
+    fuzzy: true
+    # Minimum characters before search activates
+    min_characters: 2
+    # Maximum number of search results to display
+    max_results: 50
+    # Debounce delay in milliseconds
+    debounce_delay: 300
+    # Search fields to index
+    searchable_fields:
+      - name
+      - type
+      - documentation
+      - namespace
+    # Highlight search matches
+    highlight_matches: true
+
+  # Filtering capabilities
+  filtering:
+    enabled: true
+    # Available filter categories
+    categories:
+      - elements
+      - complex_types
+      - simple_types
+      - attributes
+      - groups
+    # Enable multi-select filters
+    multi_select: true
+    # Show item counts in filters
+    show_counts: true
+    # Persist filter state in URL
+    persist_in_url: true
+
+  # Navigation features
+  navigation:
+    enabled: true
+    # Enable collapsible sections
+    collapsible_sections: true
+    # Remember collapsed state
+    remember_state: true
+    # Enable breadcrumb navigation
+    breadcrumbs: true
+    # Enable keyboard navigation
+    keyboard_shortcuts: true
+    # Show schema hierarchy
+    show_hierarchy: true
+    # Enable quick navigation jumps
+    quick_jump: true
+
+  # Schema visualization
+  visualization:
+    enabled: true
+    # Type of visualization
+    type: "tree"  # Options: tree, graph, diagram
+    # Enable interactive diagrams
+    interactive: true
+    # Show inheritance relationships
+    show_inheritance: true
+    # Show composition relationships
+    show_composition: true
+    # Maximum depth to display
+    max_depth: 5
+    # Enable zoom and pan
+    zoom_pan: true
+
+  # Code examples
+  code_examples:
+    enabled: true
+    # Languages to show examples in
+    languages:
+      - xml
+      - json
+      - yaml
+    # Enable syntax highlighting
+    syntax_highlighting: true
+    # Show line numbers
+    line_numbers: true
+    # Enable copy to clipboard
+    copy_button: true
+    # Prettify/format code
+    format_code: true
+
+  # Export functionality
+  export:
+    enabled: true
+    # Available export formats
+    formats:
+      - json
+      - yaml
+      - markdown
+      - pdf
+    # Enable bulk export
+    bulk_export: true
+    # Include metadata in exports
+    include_metadata: true
+
+  # Documentation display
+  documentation:
+    enabled: true
+    # Render markdown in documentation
+    markdown_rendering: true
+    # Show annotations
+    show_annotations: true
+    # Show app info tags
+    show_appinfo: true
+    # Expand documentation by default
+    expanded_by_default: false
+    # Maximum documentation preview length
+    preview_length: 200
+
+  # Schema comparison
+  comparison:
+    enabled: false
+    # Enable side-by-side comparison
+    side_by_side: true
+    # Highlight differences
+    highlight_differences: true
+    # Show only differences
+    show_only_diff: false
+
+  # Printing
+  printing:
+    enabled: true
+    # Optimize layout for print
+    print_optimized: true
+    # Include navigation in print
+    include_navigation: false
+    # Page break strategy
+    page_breaks: "auto"  # Options: auto, before_sections, manual
+
+  # Accessibility
+  accessibility:
+    enabled: true
+    # Enable high contrast mode
+    high_contrast_mode: true
+    # Screen reader optimizations
+    screen_reader_support: true
+    # Keyboard navigation
+    keyboard_only_navigation: true
+    # Focus indicators
+    visible_focus: true
+    # ARIA labels
+    aria_labels: true
+
+  # Performance
+  performance:
+    # Enable lazy loading
+    lazy_loading: true
+    # Virtual scrolling for large lists
+    virtual_scrolling: true
+    # Initial load limit
+    initial_load_limit: 100
+    # Enable caching
+    caching: true
+    # Cache duration in minutes
+    cache_duration: 30
+
+  # User preferences
+  user_preferences:
+    enabled: true
+    # Allow theme switching
+    theme_switcher: true
+    # Default theme
+    default_theme: "light"  # Options: light, dark, auto
+    # Allow font size adjustment
+    font_size_control: true
+    # Remember user settings
+    persist_settings: true
+    # Storage method
+    storage: "localStorage"  # Options: localStorage, sessionStorage, cookies
+
+  # Analytics (optional)
+  analytics:
+    enabled: false
+    # Analytics provider
+    provider: null  # Options: google_analytics, plausible, matomo
+    # Tracking ID
+    tracking_id: null
+    # Track page views
+    track_pageviews: true
+    # Track search queries
+    track_searches: true
+
+  # Development features
+  development:
+    # Enable debug mode
+    debug_mode: false
+    # Show performance metrics
+    show_metrics: false
+    # Enable hot reload (for development)
+    hot_reload: false
+    # Verbose logging
+    verbose_logging: false

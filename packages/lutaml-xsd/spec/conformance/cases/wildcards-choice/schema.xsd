@@ -1,0 +1,10 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="urn:wildcards-choice" elementFormDefault="qualified" xmlns:t="urn:wildcards-choice">
+  <xs:element name="doc">
+    <xs:complexType>
+      <xs:choice>
+        <xs:any processContents="lax"/>
+      </xs:choice>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="note"/>
+</xs:schema>

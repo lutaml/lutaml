@@ -1,0 +1,37 @@
+include "relaton-nist.rnc" {}
+include "isodoc.rnc" {
+
+# TitleType = ( "alternative" | "original" | "unofficial" | "subtitle" | "main" )
+
+preface =
+  element preface {
+    abstract?, foreword?, (clause | errata_clause | acknowledgements)*, content*, executivesummary?
+}
+
+}
+
+# end overrides
+
+OlAttributes &=
+    attribute class { "steps" }?
+
+
+errata = element errata { erratarow+ }
+
+erratarow = element row {
+  element date { ISO8601Date },
+  element type { text },
+  element change { TextElement+ },
+  element pages { text }
+}
+
+errata_clause = element clause {
+ attribute id { xsd:ID }?,
+    attribute language { text }?,
+    attribute script { text }?,
+    attribute obligation { "normative" | "informative" }?,
+    section-title?,
+    (BasicBlock*),
+    errata 
+}
+

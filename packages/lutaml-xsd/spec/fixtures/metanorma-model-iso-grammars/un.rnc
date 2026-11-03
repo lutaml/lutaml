@@ -1,0 +1,55 @@
+include "relaton-un.rnc" { }
+include "isodoc.rnc" {
+
+  start = un-standard
+
+  TextElement =
+    text | em | eref | erefstack | strong | stem | sub | sup | tt |
+    strike | smallcap | xref | br | hyperlink | bookmark 
+
+  AdmonitionType =
+        "danger" | "caution" | "warning" | "important" | "safety precautions" 
+
+  AdmonitionBody =
+      tname?,
+      (  paragraph-with-footnote | table | formula | ol | ul | dl | figure | quote | sourcecode | example | review )+,
+      note*
+
+
+  sections =
+    element sections { (clause | floating-title)+  }
+
+                preface =
+                element preface {
+                  abstract?, foreword?, introduction?
+                }
+
+  abstract = element abstract { Basic-Section }
+
+Clause-Section =
+    attribute id { xsd:ID }?,
+    attribute language { text }?,
+    attribute script { text }?,
+    attribute inline-header { xsd:boolean }?,
+    attribute obligation { "normative" | "informative" }?,
+    attribute unnumbered { xsd:boolean }?,
+    section-title?,
+    (
+      ( BasicBlock* ),
+       (clause-subsection | terms | definitions | floating-title )*
+    )
+
+}
+
+AdmonitionAttr &=
+    attribute unnumbered { xsd:boolean }?
+
+Annex-Section &=
+    attribute unnumbered { xsd:boolean }?
+
+un-standard =
+element un-standard {
+    Root-Attributes,
+  bibdata, misccontainer?, boilerplate?, preface, sections+, annex*, indexsect*
+}
+

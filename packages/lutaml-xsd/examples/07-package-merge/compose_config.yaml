@@ -1,0 +1,38 @@
+# Urban Function Package Merge Example
+# This demonstrates creating a self-contained package with i-UR schemas
+# that properly resolves all CityGML, GML, and ISO dependencies
+
+# Output package path (can be overridden with -o flag)
+output_package: iur-schemas.lxr
+
+base_packages:
+  - package: citygml-schemas.lxr
+    priority: 0                    # Higher priority (loaded first)
+    conflict_resolution: keep      # Keep definitions from this package
+
+files:
+  - schemas/urbanObject.xsd
+  - schemas/urbanFunction.xsd
+
+schema_location_mappings:
+  # Map urbanObject import to local file
+  # Map urbanObject import to local file
+  - from: "../../uro/3.2/urbanObject.xsd"
+    to: schemas/urbanObject.xsd
+    pattern: false
+
+  # NOTE: Schema location mappings from base package (citygml-schemas.lxr)
+  # are automatically inherited and used for resolving CityGML/GML imports
+
+namespace_mappings:
+  - prefix: "xs"
+    uri: "http://www.w3.org/2001/XMLSchema"
+  - prefix: "urf"
+    uri: "https://www.geospatial.jp/iur/urf/3.2"
+  - prefix: "uro"
+    uri: "https://www.geospatial.jp/iur/uro/3.2"
+  - prefix: "gml"
+    uri: "http://www.opengis.net/gml/3.2"
+  - prefix: "xlink"
+    uri: "http://www.w3.org/1999/xlink"
+

@@ -1,0 +1,124 @@
+# GitHub Actions workflow for XSD schema validation
+# Copy this file to .github/workflows/validate-schemas.yml in your repository
+
+name: Validate XSD Schemas
+
+on:
+  push:
+    paths:
+      - '**.xsd'
+      - '.github/workflows/validate-schemas.yml'
+  pull_request:
+    paths:
+      - '**.xsd'
+      - '.github/workflows/validate-schemas.yml'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: false
+      
+      - name: Install lutaml-xsd
+        run: |
+          gem install lutaml-xsd
+      
+      - name: Validate all XSD schemas
+        run: |
+          set -e
+          echo "Validating XSD schemas..."
+          
+          # Find all .xsd files
+          xsd_files=$(find . -name "*.xsd" -type f)
+          
+          if [ -z "$xsd_files" ]; then
+            echo "No XSD files found"
+            exit 0
+          fi
+          
+          echo "Found XSD files:"
+          echo "$xsd_files"
+          echo ""
+          
+          failed=0
+          total=0
+          
+          # Validate each schema
+          while IFS= read -r file; do
+            total=$((total + 1))
+            echo "Validating: $file"
+            
+            if lutaml-xsd validate-schema "$file"; then
+              echo "✓ Valid"
+            else
+              echo "✗ Invalid"
+              failed=$((failed + 1))
+            fi
+            echo ""
+          done <<< "$xsd_files"
+          
+          echo "======================================"
+          echo "Validation Summary:"
+          echo "  Total: $total"
+          echo "  Valid: $((total - failed))"
+          echo "  Invalid: $failed"
+          echo "======================================"
+          
+          if [ $failed -gt 0 ]; then
+            exit 1
+          fi
+      
+      - name: Report results
+        if: always()
+        run: |
+          if [ $? -eq 0 ]; then
+            echo "✅ All schemas are valid!"
+          else
+            echo "❌ Some schemas failed validation"
+          fi
+
+  validate-specific-version:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        xsd-version: ['1.0', '1.1']
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+      
+      - name: Install lutaml-xsd
+        run: gem install lutaml-xsd
+      
+      - name: Validate schemas (XSD ${{ matrix.xsd-version }})
+        run: |
+          echo "Validating schemas for XSD ${{ matrix.xsd-version }}"
+          
+          # Find relevant schemas based on version
+          if [ "${{ matrix.xsd-version }}" = "1.0" ]; then
+            # Validate schemas that should be 1.0 compatible
+            find . -name "*.xsd" -type f | while read file; do
+              # Skip files with xsd11 in the name
+              if [[ ! "$file" =~ xsd11 ]]; then
+                lutaml-xsd validate-schema --version 1.0 "$file" || true
+              fi
+            done
+          else
+            # Validate all schemas with 1.1 validator
+            find . -name "*.xsd" -type f | while read file; do
+              lutaml-xsd validate-schema --version 1.1 "$file" || true
+            done
+          fi

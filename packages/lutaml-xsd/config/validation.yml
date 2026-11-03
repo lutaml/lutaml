@@ -1,0 +1,81 @@
+# Lutaml::Xsd Validation Configuration
+# This file controls basic validation behavior
+
+validation:
+  # Strictness level - enforce all XSD constraints
+  strict_mode: true
+
+  # Stop on first error or collect all errors
+  stop_on_first_error: false
+
+  # Maximum number of errors to collect before stopping
+  max_errors: 100
+
+  # Schema resolution settings
+  schema_resolution:
+    # Allow network access for schema retrieval
+    allow_network: true
+
+    # Cache resolved schemas
+    cache_schemas: true
+
+    # Cache directory for schemas
+    cache_dir: tmp/schema_cache
+
+    # Timeout for network requests (seconds)
+    network_timeout: 30
+
+  # Validation features - control which validations to perform
+  features:
+    # Validate element types against schema
+    validate_types: true
+
+    # Validate element attributes
+    validate_attributes: true
+
+    # Validate minOccurs/maxOccurs constraints
+    validate_occurrences: true
+
+    # Validate key/keyref/unique constraints
+    validate_identity_constraints: true
+
+    # Validate facet restrictions
+    validate_facets: true
+
+    # Validate content models (sequence/choice/all)
+    validate_content_models: true
+
+    # Validate namespace declarations
+    validate_namespaces: true
+
+    # Engine-native XSD validation (Moxml::XSD) when the adapter
+    # provides an engine (leptris/nokogiri); findings are additive
+    engine_validation: true
+
+  # Error reporting configuration
+  error_reporting:
+    # Include XPath location in error messages
+    include_xpath: true
+
+    # Include line numbers if available
+    include_line_number: true
+
+    # Include contextual suggestions
+    include_suggestions: true
+
+    # Colorize output
+    colorize: true
+
+    # Verbosity level: minimal, normal, verbose, debug
+    verbosity: normal
+
+  # Performance settings
+  performance:
+    # Enable parallel validation for large documents
+    enable_parallel: false
+
+    # Number of parallel workers
+    worker_count: 4
+
+    # Memory limit per validation job (MB)
+    memory_limit: 512

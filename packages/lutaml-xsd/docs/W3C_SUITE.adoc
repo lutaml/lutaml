@@ -1,0 +1,28 @@
+# W3C XML Schema Test Suite (vendored on demand)
+
+The official suite lives at https://github.com/w3c/xsdtests (W3C XML
+Schema 1.1 test suite, from Michael Kay's working copy of the CVS
+repository; contributed by Microsoft, NIST, IBM, Sun, Oracle, Boeing,
+Saxonica and others).
+
+`rake conformance:w3c:setup` clones it at a pinned commit into
+`vendor/xsdtests/` (gitignored — the suite is ~230MB and is not part of
+this repository). `rake conformance:w3c` then runs the production
+validation pipeline over the suite's 4,696 instance tests and reports
+the pass rate.
+
+## License
+
+The suite is made available under the W3C Document Notice and License
+— see `vendor/xsdtests/00COPYRIGHT` after setup. Nothing from the suite
+is redistributed by this repository; the pinned-clone fetch is the
+redistribution boundary.
+
+## Provenance
+
+- Repository: https://github.com/w3c/xsdtests (master)
+- Pinned commit: recorded in
+  `Lutaml::Xsd::Conformance::W3CSuite::PINNED_SHA`
+- Layout: `<contributor>Data/` holds schemas and instances;
+  `<contributor>Meta/` holds the testSet documents that enumerate the
+  tests with expected validity

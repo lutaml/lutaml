@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root xmlns="http://example.com/notaschema">
+  <annotation>
+    <documentation>
+      Invalid - Not a Schema Document
+      This is a regular XML document, not an XSD schema.
+      The root element should be "schema" in the XML Schema namespace.
+    </documentation>
+  </annotation>
+  
+  <data>
+    <item>Example content</item>
+  </data>
+</root>

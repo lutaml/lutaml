@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<p:person xmlns:p="http://example.com/person" id="P001">
+  <p:name>John Doe</p:name>
+  <p:age>30</p:age>
+  <p:email>john.doe@example.com</p:email>
+  <p:address>
+    <p:street>123 Main Street</p:street>
+    <p:city>Springfield</p:city>
+    <p:postalCode>12345</p:postalCode>
+    <p:country>USA</p:country>
+  </p:address>
+</p:person>

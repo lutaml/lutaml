@@ -1,0 +1,761 @@
+= Package builder
+:toc:
+:toclevels: 3
+
+== General
+
+The package builder provides an interactive command-line workflow for creating
+self-contained schema repository packages. This document explains how to use
+the package builder to create packages from XSD schemas with complex
+dependencies.
+
+== Purpose
+
+Creating schema packages manually requires:
+
+* Discovering all schema dependencies recursively
+* Resolving ambiguous schema locations
+* Mapping relative paths to local files
+* Handling missing schemaLocation attributes
+* Ensuring all dependencies are included
+
+The package builder automates this process through an interactive workflow
+that guides you step-by-step through dependency resolution.
+
+== Quick start
+
+.Creating a package interactively
+[example]
+====
+
+[source,shell]
+----
+lutaml-xsd package init urbanFunction.xsd \
+  --search-paths "spec/fixtures/**" \
+  --output urban-schemas.yml
+
+# Follow interactive prompts to resolve dependencies
+# Configuration saved to urban-schemas.yml
+
+lutaml-xsd pkg build urban-schemas.yml \
+  --output urban-schemas.zip \
+  --name "i-UR Urban Schemas" \
+  --version "3.2"
+
+# Package created: urban-schemas.zip (192KB, 118 schemas)
+----
+
+====
+
+== Interactive workflow
+
+=== General
+
+The package builder workflow consists of initialization, resolution, and
+building phases.
+
+=== Phase 1: Initialize
+
+Start the package builder with entry point schemas:
+
+[source,shell]
+----
+lutaml-xsd package init <entry-points...> [options]
+----
+
+Where,
+
+`entry-points`:: One or more XSD files to package
+`options`:: Optional flags controlling behavior
+
+==== Common options
+
+`--search-paths PATHS`:: Directories to search for schemas (can be repeated)
+`--output FILE`:: Configuration file path (default: `repository.yml`)
+`--local`:: Never fetch from URLs, local files only
+`--no-fetch`:: Disable automatic URL fetching
+`--resume`:: Resume previous session
+
+.Starting package builder
+[example]
+====
+
+[source,shell]
+----
+lutaml-xsd package init urbanFunction.xsd urbanObject.xsd \
+  --search-paths "spec/fixtures/**" \
+  --search-paths "/usr/share/xml/**" \
+  --output urban-schemas.yml
+----
+
+====
+
+=== Phase 2: Resolve dependencies
+
+The builder analyzes each schema and prompts when manual resolution is needed.
+
+==== Auto-resolution
+
+When only one matching file is found, the builder resolves automatically:
+
+.Auto-resolution example
+[example]
+====
+
+[source]
+----
+════════════════════════════════════════════════════════════════════════════════
+Resolving dependency #1
+────────────────────────────────────────────────────────────────────────────────
+Source schema:    urbanFunction.xsd
+Dependency type:  <xs:include> (line 8)
+
+Namespace:        (same as parent schema)
+schemaLocation:   ../../uro/3.2/urbanObject.xsd
+
+Searching in spec/fixtures/**...
+Found 1 match: spec/fixtures/i-ur/urbanObject.xsd
+
+✓ Auto-resolved (unique match)
+  Mapped: ../../uro/3.2/urbanObject.xsd → spec/fixtures/i-ur/urbanObject.xsd
+════════════════════════════════════════════════════════════════════════════════
+----
+
+====
+
+==== Manual disambiguation
+
+When multiple matching files are found, you must choose:
+
+.Disambiguation prompt
+[example]
+====
+
+[source]
+----
+════════════════════════════════════════════════════════════════════════════════
+Resolving dependency #2
+────────────────────────────────────────────────────────────────────────────────
+Source schema:    urbanFunction.xsd
+Dependency type:  <xs:import> (line 15)
+
+Namespace prefix: gml
+Namespace URI:    http://www.opengis.net/gml/3.2
+schemaLocation:   ../../../gml/3.2.1/gml.xsd
+
+Searching in spec/fixtures/**...
+
+⚠️  AMBIGUOUS: Found 2 matches
+
+Please select the correct file:
+
+[1] spec/fixtures/codesynthesis-gml-3.2.1/gml/3.2.1/gml.xsd
+    Modified: 2024-01-15 14:30:25
+    Size: 48.2 KB
+
+[2] spec/fixtures/gml-backup/3.2.1/gml.xsd
+    Modified: 2023-06-10 09:15:42
+    Size: 47.8 KB
+
+[3] Enter custom path
+[s] Skip for now
+
+Select [1-3/s]: 1
+
+✓ Mapping saved:
+  ../../../gml/3.2.1/gml.xsd → spec/fixtures/codesynthesis-gml-3.2.1/gml/3.2.1/gml.xsd
+════════════════════════════════════════════════════════════════════════════════
+----
+
+Select option `[1]` to use the newer, larger version.
+
+====
+
+==== Pattern detection
+
+After resolving one schema, the builder detects similar patterns:
+
+.Pattern-based resolution
+[example]
+====
+
+[source]
+----
+════════════════════════════════════════════════════════════════════════════════
+Resolving dependency #3
+────────────────────────────────────────────────────────────────────────────────
+Source schema:    urbanObject.xsd
+Dependency type:  <xs:import> (line 18)
+
+Namespace prefix: gml
+Namespace URI:    http://www.opengis.net/gml/3.2
+schemaLocation:   ../../../gml/3.2.1/feature.xsd
+
+Pattern detected: Similar to previously resolved gml.xsd
+
+Create pattern mapping for all ../../../gml/3.2.1/*.xsd files? [Y/n]: y
+
+✓ Pattern created:
+  ../../../gml/3.2.1/*.xsd → spec/fixtures/codesynthesis-gml-3.2.1/gml/3.2.1/*.xsd
+
+Applying pattern to remaining imports...
+  ✓ feature.xsd
+  ✓ geometryBasic2d.xsd
+  ✓ dynamicFeature.xsd
+  ... (45 more files auto-resolved)
+════════════════════════════════════════════════════════════════════════════════
+----
+
+Type `y` to apply the pattern to all matching schemas.
+
+====
+
+==== Missing schemaLocation
+
+Some imports omit the schemaLocation attribute:
+
+.Handling missing schemaLocation
+[example]
+====
+
+[source]
+----
+════════════════════════════════════════════════════════════════════════════════
+⚠️  Missing schemaLocation attribute!
+────────────────────────────────────────────────────────────────────────────────
+Source schema:    urbanObject.xsd
+Dependency type:  <xs:import> (line 12)
+
+Namespace prefix: gml
+Namespace URI:    http://www.opengis.net/gml/3.2
+schemaLocation:   ⚠️  NOT SPECIFIED
+
+This import declaration does not have a schemaLocation attribute.
+You must provide the location manually.
+
+════════════════════════════════════════════════════════════════════════════════
+
+Options:
+[1] Provide local file path
+[2] Try namespace URI as URL
+[3] Skip
+
+Select [1-3]: 1
+
+Enter path to local file: spec/fixtures/codesynthesis-gml-3.2.1/gml/3.2.1/gml.xsd
+Verifying file exists... ✓
+
+✓ Mapping saved (namespace-based):
+  (namespace: http://www.opengis.net/gml/3.2) → spec/fixtures/.../gml.xsd
+----
+
+====
+
+==== URL schemas
+
+For HTTP/HTTPS schema locations, the builder can fetch automatically:
+
+.Handling URL schemas (--local mode)
+[example]
+====
+
+[source]
+----
+════════════════════════════════════════════════════════════════════════════════
+Resolving dependency #4
+────────────────────────────────────────────────────────────────────────────────
+Source schema:    urbanFunction.xsd
+Dependency type:  <xs:import> (line 22)
+
+Namespace prefix: xlink
+Namespace URI:    http://www.w3.org/1999/xlink
+schemaLocation:   http://www.w3.org/1999/xlink
+
+⚠️  This is a URL reference but --local mode is enabled
+
+Options:
+[1] Provide local file path
+[2] Skip (mark as external dependency)
+
+Select [1-2]: 1
+
+Enter path to local file: spec/fixtures/w3c/xlink.xsd
+Verifying file exists... ✓
+
+✓ Mapped: http://www.w3.org/1999/xlink → spec/fixtures/w3c/xlink.xsd
+════════════════════════════════════════════════════════════════════════════════
+----
+
+====
+
+.Handling URL schemas (auto-fetch mode)
+[example]
+====
+
+[source]
+----
+════════════════════════════════════════════════════════════════════════════════
+Resolving dependency #4
+────────────────────────────────────────────────────────────────────────────────
+Source schema:    urbanFunction.xsd
+Dependency type:  <xs:import> (line 22)
+
+Namespace prefix: xlink
+Namespace URI:    http://www.w3.org/1999/xlink
+schemaLocation:   http://www.w3.org/1999/xlink
+
+Attempting to download...
+✓ Downloaded to cache: ~/.lutaml-xsd/cache/3f2a8b/xlink.xsd
+
+✓ Mapped: http://www.w3.org/1999/xlink → ~/.lutaml-xsd/cache/3f2a8b/xlink.xsd
+════════════════════════════════════════════════════════════════════════════════
+----
+
+====
+
+.Handling URL fetch failure
+[example]
+====
+
+[source]
+----
+════════════════════════════════════════════════════════════════════════════════
+Resolving dependency #4
+────────────────────────────────────────────────────────────────────────────────
+Source schema:    urbanFunction.xsd
+Dependency type:  <xs:import> (line 22)
+
+Namespace prefix: xlink
+Namespace URI:    http://www.w3.org/1999/xlink
+schemaLocation:   http://www.w3.org/1999/xlink
+
+Attempting to download...
+✗ Failed: Connection timeout after 30s
+
+⚠️  Unable to fetch schema from URL
+
+Options:
+[1] Provide local file path
+[2] Provide alternative URL
+[3] Retry download
+[4] Skip (mark as external dependency)
+
+Select [1-4]: 1
+
+Enter path to local file: spec/fixtures/w3c/xlink.xsd
+Verifying file exists... ✓
+
+✓ Mapped: http://www.w3.org/1999/xlink → spec/fixtures/w3c/xlink.xsd
+════════════════════════════════════════════════════════════════════════════════
+----
+
+====
+
+=== Phase 3: Build package
+
+After all dependencies are resolved, build the package:
+
+[source,shell]
+----
+lutaml-xsd pkg build <config-file> --output <output-file> [options]
+----
+
+Where,
+
+`config-file`:: YAML configuration from init phase
+`output-file`:: Path for output ZIP file
+`options`:: Optional metadata
+
+==== Build options
+
+`--name NAME`:: Package name
+`--version VERSION`:: Package version
+`--description TEXT`:: Package description
+`--strict`:: Fail on any unresolved schema
+
+.Building package
+[example]
+====
+
+[source,shell]
+----
+lutaml-xsd pkg build urban-schemas.yml \
+  --output urban-schemas.zip \
+  --name "i-UR Urban Function Schemas" \
+  --version "3.2" \
+  --description "Urban planning schemas with all dependencies"
+
+Building package...
+  ✓ Resolved 118 schemas
+  ✓ Package created: urban-schemas.zip (192KB)
+  ✓ Validation: PASSED
+----
+
+====
+
+== Configuration file
+
+=== General
+
+The init phase generates a YAML configuration file documenting all resolutions.
+
+=== Configuration structure
+
+.Generated configuration
+[example]
+====
+
+[source,yaml]
+----
+# Auto-generated by lutaml-xsd package init
+# Date: 2025-10-23
+# Entry points: urbanFunction.xsd, urbanObject.xsd
+
+files:
+  - urbanFunction.xsd
+  - urbanObject.xsd
+
+schema_location_mappings:
+  # Auto-resolved mappings
+  - from: "../../uro/3.2/urbanObject.xsd"
+    to: spec/fixtures/i-ur/urbanObject.xsd
+    # Found by: unique match in search paths
+
+  # Pattern mappings
+  - from: "(?:\\.\\./)+gml/3.2.1/(.+\\.xsd)$"
+    to: spec/fixtures/codesynthesis-gml-3.2.1/gml/3.2.1/\1
+    pattern: true
+    # Created from: user pattern confirmation
+
+  - from: "http://www.w3.org/1999/xlink"
+    to: spec/fixtures/w3c/xlink.xsd
+    # Found by: user provided path
+
+namespace_mappings:
+  - prefix: urf
+    uri: "https://www.geospatial.jp/iur/urf/3.2"
+  - prefix: uro
+    uri: "https://www.geospatial.jp/iur/uro/3.2"
+  - prefix: gml
+    uri: "http://www.opengis.net/gml/3.2"
+  # Auto-extracted from schemas
+----
+
+====
+
+=== Editing configuration
+
+The generated configuration can be edited before building:
+
+* Add additional schema location mappings
+* Modify pattern mappings
+* Add namespace mappings
+* Adjust file paths
+
+After editing, rebuild:
+
+[source,shell]
+----
+lutaml-xsd pkg build urban-schemas.yml --output urban-schemas.zip
+----
+
+== Advanced workflows
+
+=== Session persistence
+
+Sessions auto-save after each resolution. If interrupted, resume with:
+
+[source,shell]
+----
+lutaml-xsd package init --resume
+----
+
+The saved session includes:
+
+* All resolved mappings
+* Pending schemas to process
+* Pattern mappings created
+* Current progress
+
+=== Batch disambiguation
+
+For many ambiguities, use scan mode to generate a file for batch resolution:
+
+.Batch disambiguation workflow
+[example]
+====
+
+[source,shell]
+----
+# Step 1: Scan to generate ambiguities file
+lutaml-xsd package scan urbanFunction.xsd \
+  --search-paths "spec/fixtures/**" \
+  --output ambiguities.yml
+
+# Step 2: Edit ambiguities.yml to choose for each
+# (uncomment 'chosen' lines with your selections)
+
+# Step 3: Build using resolutions
+lutaml-xsd package init urbanFunction.xsd \
+  --resolutions ambiguities.yml \
+  --output config.yml
+----
+
+====
+
+.Generated ambiguities file
+[example]
+====
+
+[source,yaml]
+----
+# Ambiguities found during scan
+# Uncomment 'chosen' for each to resolve
+
+ambiguous_schemas:
+  - schema_location: "../../../gml/3.2.1/gml.xsd"
+    found_in: urbanFunction.xsd
+    candidates:
+      - path: spec/fixtures/codesynthesis-gml-3.2.1/gml/3.2.1/gml.xsd
+        modified: 2024-01-15
+        size: 48200
+      - path: spec/fixtures/gml-backup/3.2.1/gml.xsd
+        modified: 2023-06-10
+        size: 47800
+    # Uncomment your choice:
+    # chosen: spec/fixtures/codesynthesis-gml-3.2.1/gml/3.2.1/gml.xsd
+----
+
+====
+
+=== Non-interactive mode
+
+For CI/CD environments, use `--strict` mode:
+
+.Non-interactive package building
+[example]
+====
+
+[source,shell]
+----
+lutaml-xsd pkg build config.yml --output output.zip --strict
+
+# Exits with code 1 if any ambiguity or error
+----
+
+====
+
+== Commands reference
+
+=== package init
+
+Start interactive package builder session.
+
+[source,shell]
+----
+lutaml-xsd package init <entry-points...> [options]
+----
+
+Options:
+
+`--search-paths PATHS`:: Where to search for schemas (repeatable)
+`--output FILE`:: Save configuration to file (default: repository.yml)
+`--local`:: Never fetch from URLs, local files only
+`--no-fetch`:: Disable automatic URL fetching
+`--fetch-timeout SECONDS`:: Timeout for URL downloads (default: 30)
+`--resume`:: Resume previous session
+`--non-interactive`:: Fail on ambiguity instead of prompting
+
+=== package scan
+
+Scan dependencies without building (for batch disambiguation).
+
+[source,shell]
+----
+lutaml-xsd package scan <entry-points...> [options]
+----
+
+Options:
+
+`--search-paths PATHS`:: Where to search for schemas
+`--output FILE`:: Save ambiguities to file (default: ambiguities.yml)
+
+=== package build
+
+Build package from configuration file.
+
+[source,shell]
+----
+lutaml-xsd pkg build <config-file> --output <output-file> [options]
+----
+
+Options:
+
+`--name NAME`:: Package name
+`--version VERSION`:: Package version
+`--description TEXT`:: Package description
+`--strict`:: Fail on any unresolved schema
+
+=== package validate
+
+Validate package structure and completeness.
+
+[source,shell]
+----
+lutaml-xsd package validate <package-file>
+----
+
+Options:
+
+`--verbose`:: Show detailed validation information
+
+=== package resolve
+
+Resolve type in packaged repository.
+
+[source,shell]
+----
+lutaml-xsd package resolve <package-file> <qualified-name>
+----
+
+Options:
+
+`--format FORMAT`:: Output format: text, json, yaml (default: text)
+
+.Resolving type in package
+[example]
+====
+
+[source,shell]
+----
+lutaml-xsd package resolve urban-schemas.zip "gml:CodeType"
+
+Type found: CodeType
+Namespace: http://www.opengis.net/gml/3.2
+Defined in: schemas/gml.xsd
+Category: simpleType
+----
+
+====
+
+== Best practices
+
+=== Organize search paths
+
+List specific paths before generic ones:
+
+[source,shell]
+----
+--search-paths "schemas/current/**" \
+--search-paths "schemas/legacy/**" \
+--search-paths "/usr/share/xml/**"
+----
+
+Earlier paths take precedence for ambiguous matches.
+
+=== Use pattern mappings
+
+When prompted about similar schemas, always create pattern mappings. This
+minimizes manual work for related schemas.
+
+=== Save configuration
+
+Always save the generated configuration file. This enables:
+
+* Reproducible builds
+* Version control of mappings
+* Sharing with team members
+* Easy updates when schemas change
+
+=== Validate packages
+
+After building, always validate:
+
+[source,shell]
+----
+lutaml-xsd package validate output.zip
+----
+
+This ensures the package is self-contained and complete.
+
+=== Cache downloaded schemas
+
+Downloaded schemas are cached in `~/.lutaml-xsd/cache/`. Reuse cached files
+across projects:
+
+[source,shell]
+----
+# Clear cache if needed
+rm -rf ~/.lutaml-xsd/cache/
+
+# Or specify custom cache directory
+lutaml-xsd package init entry.xsd --cache-dir .cache
+----
+
+== Troubleshooting
+
+=== Schema not found in search paths
+
+If a schema isn't found:
+
+1. Verify the file actually exists
+2. Check search path covers the directory
+3. Use absolute paths if needed
+4. Add additional search paths
+
+.Adding search paths interactively
+[example]
+====
+
+[source]
+----
+Options:
+[1] Provide local file path
+[2] Provide URL to download from
+[3] Add additional search path
+[4] Skip
+
+Select [1-4]: 3
+
+Enter search path: /opt/additional/schemas/**
+✓ Added search path: /opt/additional/schemas/**
+
+Searching again...
+Found 1 match: /opt/additional/schemas/gml/feature.xsd
+✓ Resolved
+----
+
+====
+
+=== Choosing between ambiguous files
+
+When multiple files match:
+
+* Prefer newer modification dates
+* Choose larger files (likely more complete)
+* Avoid "backup", "old", or "deprecated" directories
+* Check file content if unsure
+
+=== URL fetch failures
+
+If URL download fails:
+
+* Check internet connection
+* Verify URL is accessible in browser
+* Use `--local` mode with pre-downloaded files
+* Provide alternative URL when prompted
+
+=== Pattern not matching expected files
+
+If a pattern doesn't match as expected:
+
+* Test regex at https://regex101.com/
+* Check for proper escaping (use `\\.` for `.`)
+* Verify file structure matches pattern
+* Use absolute paths if relative paths vary
+
+== See also
+
+* link:schema_repository.adoc[Schema Repository] - Repository concepts
+* link:package_validation.adoc[Package Validation] - Validating packages
+* link:type_resolution.adoc[Type Resolution] - Finding types in packages

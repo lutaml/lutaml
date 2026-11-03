@@ -1,0 +1,639 @@
+---
+layout: default
+title: ISO TC211 example
+nav_order: 4
+parent: Guides
+---
+= ISO/TC 211 example
+:toc:
+:toclevels: 3
+
+== Purpose
+
+This guide demonstrates how to work with ISO/TC 211 geographic information standards schemas using lutaml-xsd. ISO/TC 211 schemas are widely used in geospatial applications and present unique challenges due to their complex versioning and nested import structure.
+
+== General
+
+ISO/TC 211 is the International Organization for Standardization (ISO) technical committee responsible for developing standards in the field of digital geographic information. Their schemas are used extensively in:
+
+* Metadata standards (ISO 19115, ISO 19139)
+* Data quality (ISO 19157)
+* Feature cataloguing (ISO 19110)
+* Spatial referencing (ISO 19111)
+* Geographic information services (ISO 19119)
+
+Key characteristics of ISO/TC 211 schemas:
+
+* **Complex versioning**: Multiple versions with different paths (e.g., `/19115/-1/mdb/1.0`, `/19157/-/mdq/1.2`)
+* **Nested imports**: Schemas import from multiple ISO standards
+* **URL-based locations**: Schemas reference `https://schemas.isotc211.org/`
+* **Abstract schemas**: Many schemas define abstract types extended by others
+
+== Common challenges
+
+=== Challenge 1: Complex version paths
+
+ISO schemas use non-intuitive versioning paths:
+
+.ISO/TC 211 schema paths
+[example]
+====
+[source]
+----
+https://schemas.isotc211.org/19115/-1/mdb/1.0/mdb.xsd
+https://schemas.isotc211.org/19157/-/mdq/1.2.0/mdq.xsd
+https://schemas.isotc211.org/19135/-2/pre/1.2.0/pre.xsd
+----
+
+Where:
+
+* `19115` = ISO standard number
+* `-1` = Part number (or `-` for main standard)
+* `mdb` = Schema namespace abbreviation
+* `1.0` = Version number
+====
+
+**Solution**: Use pattern-based mappings to handle version paths systematically.
+
+=== Challenge 2: Cross-standard dependencies
+
+ISO standards reference each other:
+
+.ISO/TC 211 dependencies
+[source]
+----
+ISO 19115 (Metadata)
+  ↓ imports
+ISO 19157 (Data Quality)
+  ↓ imports
+ISO 19135 (Procedures for registration)
+  ↓ imports
+ISO 19103 (Conceptual schema language)
+----
+
+**Solution**: Map entire ISO schema directory structure.
+
+=== Challenge 3: Abstract schema pattern
+
+Many ISO schemas define abstract types:
+
+.Abstract types in ISO schemas
+[example]
+====
+[source,xml]
+----
+<!-- abstract.xsd -->
+<xs:complexType name="Abstract_DataQuality_Type" abstract="true">
+  <xs:complexContent>
+    <xs:extension base="gco:AbstractObject_Type">
+      <xs:sequence>
+        <xs:element name="scope" type="dqc:DQ_Scope_PropertyType"/>
+      </xs:sequence>
+    </xs:extension>
+  </xs:complexContent>
+</xs:complexType>
+
+<!-- dqc.xsd -->
+<xs:import schemaLocation="abstract.xsd"/>
+----
+====
+
+**Solution**: Ensure abstract schemas are included in mappings.
+
+== Schema location mappings for ISO standards
+
+=== Directory structure
+
+Organize ISO schemas by standard and version:
+
+.ISO/TC 211 directory structure
+[example]
+====
+[source]
+----
+iso-schemas/
+├── 19115/          # Metadata
+│   ├── -1/
+│   │   └── mdb/
+│   │       └── 1.0/
+│   │           └── mdb.xsd
+│   └── -3/
+│       └── mds/
+│           └── 1.0/
+│               └── mds.xsd
+├── 19157/          # Data quality
+│   ├── -/
+│   │   └── mdq/
+│   │       ├── 1.2/
+│   │       │   └── mdq.xsd
+│   │       └── 1.2.0/
+│   │           └── mdq.xsd
+│   └── -1/
+│       └── dqc/
+│           └── 1.0.0/
+│               └── dqc.xsd
+├── 19135/          # Registration procedures
+│   └── -2/
+│       └── pre/
+│           └── 1.2.0/
+│               └── pre.xsd
+└── 19103/          # Conceptual schema language
+    └── -/
+        └── gco/
+            └── 1.0/
+                └── gco.xsd
+----
+====
+
+=== Configuration file
+
+Create mappings for ISO schemas:
+
+.config/iso-tc211.yml
+[example]
+====
+[source,yaml]
+----
+# ISO/TC 211 Schema Package Configuration
+
+files:
+  - schemas/19115/-1/mdb/1.0/mdb.xsd
+  - schemas/19157/-/mdq/1.2.0/mdq.xsd
+  - schemas/19157/-1/dqc/1.0.0/dqc.xsd
+  - schemas/19135/-2/pre/1.2.0/pre.xsd
+
+schema_location_mappings:
+  # Map HTTPS URLs to local directory structure
+  - from: !ruby/regexp /https:\/\/schemas\.isotc211\.org\/(.+)/
+    to: "schemas/\\1"
+
+  # Map relative paths for nested imports
+  - from: !ruby/regexp /(?:\.\.\/)+(\d{5}\/.+\.xsd)$/
+    to: "schemas/\\1"
+
+  # Map abstract schemas
+  - from: "abstract.xsd"
+    to: "schemas/19157/-/dqc/1.2/abstract.xsd"
+
+namespace_mappings:
+  # ISO 19115 - Metadata
+  - prefix: "mdb"
+    uri: "http://standards.iso.org/iso/19115/-1/mdb/1.0"
+
+  - prefix: "mds"
+    uri: "http://standards.iso.org/iso/19115/-3/mds/1.0"
+
+  # ISO 19157 - Data Quality
+  - prefix: "mdq"
+    uri: "http://standards.iso.org/iso/19157/-/mdq/1.0"
+
+  - prefix: "dqc"
+    uri: "http://standards.iso.org/iso/19157/-1/dqc/1.0"
+
+  # ISO 19135 - Registration
+  - prefix: "pre"
+    uri: "http://standards.iso.org/iso/19135/-2/pre/1.0"
+
+  # ISO 19103 - Conceptual schema
+  - prefix: "gco"
+    uri: "http://standards.iso.org/iso/19103/-/gco/1.0"
+----
+====
+
+== Handling nested imports
+
+ISO schemas frequently use nested relative imports:
+
+=== Understanding relative import patterns
+
+.Relative imports in ISO schemas
+[example]
+====
+[source,xml]
+----
+<!-- In: 19157/-/mdq/1.2.0/mdq.xsd -->
+<xs:import
+  namespace="http://standards.iso.org/iso/19157/-1/dqc/1.0"
+  schemaLocation="../../../19157/-1/dqc/1.0.0/dqc.xsd"/>
+
+<xs:import
+  namespace="http://standards.iso.org/iso/19135/-2/pre/1.0"
+  schemaLocation="../../../19135/-2/pre/1.2.0/pre.xsd"/>
+----
+====
+
+=== Mapping nested imports
+
+Use pattern-based mappings to handle various nesting levels:
+
+.Comprehensive ISO mapping patterns
+[example]
+====
+[source,yaml]
+----
+schema_location_mappings:
+  # Pattern 1: HTTPS URLs
+  - from: !ruby/regexp /https:\/\/schemas\.isotc211\.org\/(.+)/
+    to: "schemas/\\1"
+
+  # Pattern 2: Deep relative paths (handles any number of ../)
+  - from: !ruby/regexp /(?:\.\.\/)+(\d{5}\/.+\.xsd)$/
+    to: "schemas/\\1"
+
+  # Pattern 3: Same-directory relative imports
+  - from: !ruby/regexp /^\.\/(.+\.xsd)$/
+    to: "schemas/19157/-/mdq/1.2.0/\\1"
+
+  # Pattern 4: Parent directory imports
+  - from: !ruby/regexp /^\.\.\/(.+\.xsd)$/
+    to: "schemas/19157/-/mdq/\\1"
+
+  # Pattern 5: Abstract schema files
+  - from: "abstract.xsd"
+    to: "schemas/19157/-/dqc/1.2/abstract.xsd"
+----
+====
+
+== Complete working example
+
+This example shows a complete workflow for working with ISO 19157 (Data Quality) schemas.
+
+=== Project structure
+
+.ISO 19157 project structure
+[example]
+====
+[source]
+----
+iso-dq-project/
+├── schemas/
+│   ├── 19157/
+│   │   ├── -/
+│   │   │   ├── dqc/
+│   │   │   │   └── 1.2/
+│   │   │   │       ├── dqc.xsd
+│   │   │   │       └── abstract.xsd
+│   │   │   └── mdq/
+│   │   │       └── 1.2.0/
+│   │   │           └── mdq.xsd
+│   │   └── -1/
+│   │       └── dqc/
+│   │           └── 1.0.0/
+│   │               └── dqc.xsd
+│   ├── 19135/
+│   │   └── -2/
+│   │       └── pre/
+│   │           └── 1.2.0/
+│   │               └── pre.xsd
+│   └── 19103/
+│       └── -/
+│           └── gco/
+│               └── 1.0/
+│                   └── gco.xsd
+├── config/
+│   └── iso-dq.yml
+├── lib/
+│   └── iso_parser.rb
+└── pkg/
+    └── iso-dq.lxr
+----
+====
+
+=== Configuration
+
+.config/iso-dq.yml
+[example]
+====
+[source,yaml]
+----
+# ISO 19157 Data Quality Package Configuration
+
+files:
+  - schemas/19157/-/mdq/1.2.0/mdq.xsd
+  - schemas/19157/-/dqc/1.2/dqc.xsd
+  - schemas/19157/-1/dqc/1.0.0/dqc.xsd
+  - schemas/19135/-2/pre/1.2.0/pre.xsd
+
+schema_location_mappings:
+  # Map HTTPS URLs from schemas.isotc211.org
+  - from: !ruby/regexp /https:\/\/schemas\.isotc211\.org\/(.+)/
+    to: "schemas/\\1"
+
+  # Map relative paths with multiple ../
+  - from: !ruby/regexp /(?:\.\.\/)+(\d{5}\/.+\.xsd)$/
+    to: "schemas/\\1"
+
+  # Map abstract schemas in DQC
+  - from: !ruby/regexp /^abstract\.xsd$/
+    to: "schemas/19157/-/dqc/1.2/abstract.xsd"
+
+namespace_mappings:
+  # Data Quality namespaces
+  - prefix: "mdq"
+    uri: "http://standards.iso.org/iso/19157/-/mdq/1.0"
+
+  - prefix: "dqc"
+    uri: "http://standards.iso.org/iso/19157/-1/dqc/1.0"
+
+  # Registration namespace
+  - prefix: "pre"
+    uri: "http://standards.iso.org/iso/19135/-2/pre/1.0"
+
+  # Common objects namespace
+  - prefix: "gco"
+    uri: "http://standards.iso.org/iso/19103/-/gco/1.0"
+----
+====
+
+=== Building the package
+
+.Building ISO 19157 package
+[example]
+====
+[source,bash]
+----
+lutaml-xsd pkg build config/iso-dq.yml \
+  --name "ISO 19157 Data Quality Schemas" \
+  --version "1.2.0" \
+  --description "ISO 19157 Data Quality standards with dependencies" \
+  --xsd-mode include_all \
+  --resolution-mode resolved \
+  --serialization-format marshal \
+  --output pkg/iso-dq.lxr \
+  --validate
+----
+
+Output:
+
+----
+✓ Configuration loaded
+  Files: 4
+  Schema Location Mappings: 3
+  Namespace Mappings: 4
+
+Parsing and resolving schemas...
+✓ Schemas parsed and resolved
+  - 19157/-/mdq/1.2.0/mdq.xsd
+  - 19157/-/dqc/1.2/dqc.xsd
+  - 19157/-1/dqc/1.0.0/dqc.xsd
+  - 19135/-2/pre/1.2.0/pre.xsd
+
+Creating package: pkg/iso-dq.lxr
+  XSD Mode: include_all
+  Resolution Mode: resolved
+  Serialization Format: marshal
+✓ Package created: pkg/iso-dq.lxr
+  Size: 785432 bytes
+
+Validating package...
+✓ Package is valid
+----
+====
+
+=== Parser implementation
+
+.lib/iso_parser.rb
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+class ISODataQualityParser
+  def initialize(package_path)
+    @repo = Lutaml::Xsd::SchemaRepository.from_package(package_path)
+  end
+
+  def find_quality_element(element_name)
+    @repo.find_type("mdq:#{element_name}")
+  end
+
+  def list_quality_elements
+    @repo.types_in_namespace('http://standards.iso.org/iso/19157/-/mdq/1.0')
+  end
+
+  def find_quality_measure(measure_name)
+    result = @repo.find_type("dqc:#{measure_name}")
+    if result.resolved?
+      {
+        qname: result.qname,
+        namespace: result.namespace,
+        type: result.type
+      }
+    else
+      nil
+    end
+  end
+
+  def statistics
+    @repo.statistics
+  end
+
+  def validate_schema_structure
+    required_namespaces = [
+      'http://standards.iso.org/iso/19157/-/mdq/1.0',
+      'http://standards.iso.org/iso/19157/-1/dqc/1.0',
+      'http://standards.iso.org/iso/19135/-2/pre/1.0'
+    ]
+
+    results = {}
+    required_namespaces.each do |ns|
+      types = @repo.types_in_namespace(ns)
+      results[ns] = {
+        present: types.any?,
+        count: types.count
+      }
+    end
+    results
+  end
+end
+
+# Usage
+parser = ISODataQualityParser.new('pkg/iso-dq.lxr')
+
+# Find data quality elements
+quality_element = parser.find_quality_element('DQ_DataQuality')
+puts "Quality element: #{quality_element.name}" if quality_element
+
+# List all quality elements
+puts "\nData Quality elements:"
+parser.list_quality_elements.each do |element|
+  puts "  - #{element.name}"
+end
+
+# Get statistics
+stats = parser.statistics
+puts "\nRepository statistics:"
+puts "  Total types: #{stats[:total_types]}"
+puts "  Total namespaces: #{stats[:total_namespaces]}"
+
+# Validate structure
+puts "\nValidating namespace structure:"
+validation = parser.validate_schema_structure
+validation.each do |ns, result|
+  status = result[:present] ? "✓" : "✗"
+  puts "#{status} #{ns}: #{result[:count]} types"
+end
+----
+====
+
+=== Testing
+
+.test.rb
+[example]
+====
+[source,ruby]
+----
+require_relative 'lib/iso_parser'
+
+# Initialize parser
+parser = ISODataQualityParser.new('pkg/iso-dq.lxr')
+
+# Test 1: Find key quality elements
+puts "Test 1: Finding quality elements"
+key_elements = [
+  'DQ_DataQuality',
+  'DQ_Element',
+  'DQ_Completeness',
+  'DQ_LogicalConsistency'
+]
+
+key_elements.each do |element_name|
+  element = parser.find_quality_element(element_name)
+  if element
+    puts "  ✓ Found #{element_name}"
+  else
+    puts "  ✗ Not found: #{element_name}"
+    exit 1
+  end
+end
+
+# Test 2: Validate namespace structure
+puts "\nTest 2: Validating namespace structure"
+validation = parser.validate_schema_structure
+validation.each do |ns, result|
+  unless result[:present]
+    puts "  ✗ Missing namespace: #{ns}"
+    exit 1
+  end
+  puts "  ✓ Namespace present: #{result[:count]} types"
+end
+
+# Test 3: Check statistics
+puts "\nTest 3: Checking statistics"
+stats = parser.statistics
+expected_min_namespaces = 3
+
+if stats[:total_namespaces] >= expected_min_namespaces
+  puts "  ✓ Namespace count: #{stats[:total_namespaces]}"
+else
+  puts "  ✗ Namespace count too low: #{stats[:total_namespaces]}"
+  exit 1
+end
+
+puts "\n✓ All tests passed!"
+----
+====
+
+== Best practices for ISO/TC 211
+
+=== Use standard-specific packages
+
+Create separate packages for different ISO standards:
+
+.Standard-specific packages
+[example]
+====
+[source,bash]
+----
+# ISO 19115 (Metadata)
+lutaml-xsd pkg build config/iso-19115.yml \
+  --output pkg/iso-19115.lxr
+
+# ISO 19157 (Data Quality)
+lutaml-xsd pkg build config/iso-19157.yml \
+  --output pkg/iso-19157.lxr
+
+# ISO 19110 (Feature Cataloguing)
+lutaml-xsd pkg build config/iso-19110.yml \
+  --output pkg/iso-19110.lxr
+----
+====
+
+=== Document version dependencies
+
+Track which schema versions depend on which:
+
+.ISO version dependencies
+[source]
+----
+ISO 19157/-/mdq/1.2.0
+  ↓ requires
+ISO 19157/-1/dqc/1.0.0
+  ↓ requires
+ISO 19135/-2/pre/1.2.0
+  ↓ requires
+ISO 19103/-/gco/1.0
+----
+
+=== Handle abstract schemas
+
+Ensure abstract schema files are properly mapped:
+
+.Abstract schema mappings
+[example]
+====
+[source,yaml]
+----
+schema_location_mappings:
+  # Map abstract.xsd from various locations
+  - from: "abstract.xsd"
+    to: "schemas/19157/-/dqc/1.2/abstract.xsd"
+
+  - from: "../abstract.xsd"
+    to: "schemas/19157/-/dqc/1.2/abstract.xsd"
+
+  - from: "../../dqc/1.2/abstract.xsd"
+    to: "schemas/19157/-/dqc/1.2/abstract.xsd"
+----
+====
+
+=== Test cross-standard resolution
+
+Verify that types resolve across standards:
+
+.Cross-standard type resolution
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+repo = Lutaml::Xsd::SchemaRepository.from_package('pkg/iso-complete.lxr')
+
+# Test resolution across standards
+cross_refs = {
+  'mdq:DQ_DataQuality' => 'ISO 19157',
+  'pre:RE_Register' => 'ISO 19135',
+  'gco:AbstractObject' => 'ISO 19103'
+}
+
+puts "Testing cross-standard resolution:"
+cross_refs.each do |type_name, standard|
+  result = repo.find_type(type_name)
+  if result.resolved?
+    puts "  ✓ #{type_name} (#{standard})"
+  else
+    puts "  ✗ Failed: #{type_name} (#{standard})"
+  end
+end
+----
+====
+
+== See also
+
+* link:CREATING_PACKAGES[Creating packages] - Package creation workflow
+* link:GML_EXAMPLE[GML example] - Working with GML schemas
+* link:CITYGML_EXAMPLE[CityGML example] - CityGML schema examples
+* link:../core-concepts/SCHEMA_MAPPINGS[Schema mappings] - Advanced mapping techniques
+* link:../core-concepts/TYPE_RESOLUTION[Type resolution] - Type resolution across namespaces

@@ -1,0 +1,633 @@
+---
+layout: default
+title: Creating packages
+nav_order: 2
+parent: Guides
+---
+= Creating packages
+:toc:
+:toclevels: 3
+
+== Purpose
+
+This guide provides a complete workflow for creating LXR (LutaML XSD Repository) packages. You'll learn how to build self-contained, distributable schema collections from XSD files, configure schema mappings, and validate packages for production use.
+
+== General
+
+LXR packages solve critical challenges when working with XSD schemas:
+
+* **Performance**: Pre-serialized schemas load in milliseconds vs. seconds
+* **Distribution**: Single `.lxr` file contains everything
+* **Type resolution**: Pre-built indexes for instant qualified name lookups
+* **Offline capability**: Self-contained packages require no network access
+
+This guide covers both approaches to creating packages: YAML configuration files for reproducible builds, and interactive CLI for quick package creation.
+
+== Prerequisites and setup
+
+=== Installation
+
+Ensure you have `lutaml-xsd` installed:
+
+.Installing lutaml-xsd
+[example]
+====
+[source,bash]
+----
+gem install lutaml-xsd
+----
+====
+
+=== Organizing your schemas
+
+Before creating a package, organize your schema files:
+
+.Recommended directory structure
+[example]
+====
+[source]
+----
+project/
+├── schemas/
+│   ├── main.xsd           # Entry point schemas
+│   ├── common/
+│   │   └── types.xsd      # Shared types
+│   └── dependencies/
+│       └── external.xsd   # External schemas
+├── config/
+│   └── package.yml        # Package configuration
+└── pkg/
+    └── output.lxr         # Built packages
+----
+====
+
+== Step-by-step package creation
+
+=== Step 1: Create configuration file
+
+Create a YAML configuration file that defines which schemas to include and how to resolve dependencies.
+
+Syntax:
+
+[source,yaml]
+----
+files: <1>
+  - path/to/schema.xsd
+
+schema_location_mappings: <2>
+  - from: "http://remote.example.com/schema.xsd"
+    to: "local/path/schema.xsd"
+
+namespace_mappings: <3>
+  - prefix: "ex"
+    uri: "http://example.com/namespace"
+----
+<1> List of XSD files to include in the package (required)
+<2> Schema location mappings for imports/includes (optional)
+<3> Namespace prefix mappings (optional)
+
+Where,
+
+`files`:: Array of XSD file paths to include in the package (required)
+`schema_location_mappings`:: Array of schema location redirections for resolving imports and includes (optional)
+`namespace_mappings`:: Array of namespace prefix-to-URI mappings for qualified name resolution (optional)
+
+.Basic configuration example
+[example]
+====
+[source,yaml]
+----
+# config/my_schemas.yml
+files:
+  - schemas/main.xsd
+  - schemas/common/types.xsd
+
+schema_location_mappings:
+  - from: "http://www.w3.org/1999/xlink"
+    to: "schemas/dependencies/xlink.xsd"
+
+namespace_mappings:
+  - prefix: "ex"
+    uri: "http://example.com/my-schema"
+  - prefix: "xlink"
+    uri: "http://www.w3.org/1999/xlink"
+----
+====
+
+=== Step 2: Configure schema mappings
+
+Schema location mappings redirect imports and includes from remote URLs or relative paths to local files.
+
+==== Exact string mappings
+
+Map specific schema locations to local files:
+
+.Exact schema location mapping
+[example]
+====
+[source,yaml]
+----
+schema_location_mappings:
+  - from: "../../external/common.xsd"
+    to: "schemas/local/common.xsd"
+
+  - from: "http://schemas.example.com/types.xsd"
+    to: "schemas/dependencies/types.xsd"
+----
+====
+
+==== Pattern-based mappings
+
+Use regex patterns for flexible mappings across multiple files:
+
+.Pattern-based schema location mapping
+[example]
+====
+[source,yaml]
+----
+schema_location_mappings:
+  # Map all GML schemas
+  - from: !ruby/regexp /(?:\.\.\/)+gml\/(.+\.xsd)$/
+    to: "schemas/gml/\\1"
+
+  # Map ISO schemas
+  - from: !ruby/regexp /https:\/\/schemas\.isotc211\.org\/(.+)/
+    to: "schemas/iso/\\1"
+----
+
+This maps:
+
+* `../../gml/3.2.1/gml.xsd` → `schemas/gml/3.2.1/gml.xsd`
+* `https://schemas.isotc211.org/19115/gmd.xsd` → `schemas/iso/19115/gmd.xsd`
+====
+
+=== Step 3: Build the package
+
+Use the [`lutaml-xsd pkg build`](../../reference/CLI#package-build) command with your configuration file:
+
+.Building a package from configuration
+[example]
+====
+[source,bash]
+----
+lutaml-xsd pkg build config/my_schemas.yml \
+  --name "My Schema Collection" \
+  --version "1.0.0" \
+  --description "Complete schema set with dependencies" \
+  --xsd-mode include_all \
+  --resolution-mode resolved \
+  --serialization-format marshal \
+  --output pkg/my_schemas.lxr \
+  --validate
+----
+
+Output:
+
+----
+✓ Configuration loaded
+  Files: 2
+  Schema Location Mappings: 2
+  Namespace Mappings: 2
+
+Parsing and resolving schemas...
+✓ Schemas parsed and resolved
+
+Creating package: pkg/my_schemas.lxr
+  XSD Mode: include_all
+  Resolution Mode: resolved
+  Serialization Format: marshal
+✓ Package created: pkg/my_schemas.lxr
+  Size: 125643 bytes
+
+Validating package...
+✓ Package is valid
+----
+====
+
+=== Step 4: Configure package options
+
+LXR packages support three independent configuration axes:
+
+==== XSD bundling mode
+
+Controls how XSD files are included:
+
+`include_all` (recommended)::
+* Bundles all XSD files into the package
+* Rewrites schema location paths to be package-relative
+* Creates fully self-contained packages
+* No network access required
+
+`allow_external`::
+* Keeps original schema location references
+* Smaller file size
+* Requires network access or local schemas
+* Useful for development environments
+
+==== Resolution mode
+
+Controls whether schemas are pre-serialized:
+
+`resolved` (recommended)::
+* Pre-serializes all parsed schema objects
+* Enables instant loading without XML parsing
+* Best for production use and queries
+* Type index immediately available
+
+`bare`::
+* Only includes XSD files and minimal metadata
+* Schemas parsed on first load
+* Smaller package size
+* Best for schema development
+
+==== Serialization format
+
+Controls how schemas are serialized (only relevant for `resolved` mode):
+
+`marshal` (recommended for Ruby)::
+* Ruby's native serialization format
+* Fastest serialization and deserialization
+* Best for Ruby-only applications
+
+`json`::
+* Cross-platform and cross-language compatible
+* Human-readable text format
+* Good for interoperability
+
+`yaml`::
+* Most human-readable
+* Excellent for debugging
+* Best for development and inspection
+
+`parse`::
+* No serialization, always parse XSD files
+* Smallest package size
+* Best when schemas change frequently
+
+=== Step 5: Validate the package
+
+After building, validate the package structure and completeness:
+
+.Validating a package
+[example]
+====
+[source,bash]
+----
+# Basic validation
+lutaml-xsd package validate pkg/my_schemas.lxr
+
+# Strict validation (fail on warnings)
+lutaml-xsd package validate pkg/my_schemas.lxr --strict
+
+# JSON output for CI/CD
+lutaml-xsd package validate pkg/my_schemas.lxr --format json
+----
+
+Output:
+
+----
+✓ Package structure is valid
+✓ All XSD files are present
+✓ Type index is complete
+✓ Metadata is well-formed
+
+Package: my_schemas.lxr
+  Files: 2
+  Types: 45
+  Namespaces: 3
+  Size: 125643 bytes
+----
+====
+
+== CLI build command reference
+
+The [`lutaml-xsd pkg build`](../../reference/CLI#package-build) command supports these options:
+
+`--output, -o PATH`::
+Output package path (default: `pkg/<name>.lxr`)
+
+`--xsd-mode MODE`::
+XSD bundling mode: `include_all` or `allow_external` (default: `include_all`)
+
+`--resolution-mode MODE`::
+Resolution mode: `resolved` or `bare` (default: `resolved`)
+
+`--serialization-format FORMAT`::
+Serialization format: `marshal`, `json`, `yaml`, or `parse` (default: `marshal`)
+
+`--name NAME`::
+Package name for metadata
+
+`--version VERSION`::
+Package version for metadata
+
+`--description DESC`::
+Package description for metadata
+
+`--validate`::
+Validate package after building
+
+`--verbose`::
+Enable verbose output
+
+== Testing and validating packages
+
+=== Inspecting package contents
+
+View package metadata and statistics:
+
+.Inspecting a package
+[example]
+====
+[source,bash]
+----
+# Display package metadata
+lutaml-xsd package info pkg/my_schemas.lxr
+----
+
+Output:
+
+----
+Package: my_schemas.lxr
+Size: 125643 bytes
+
+Metadata:
+--------------------------------------------------------------------------------
+name: My Schema Collection
+version: 1.0.0
+description: Complete schema set with dependencies
+created_at: 2024-10-25T12:00:00+08:00
+lutaml_xsd_version: 1.0.4
+created_by: lutaml-xsd CLI
+xsd_mode: include_all
+resolution_mode: resolved
+serialization_format: marshal
+files: 2
+namespace_mappings: 2
+schema_location_mappings: 2
+----
+====
+
+=== Querying types
+
+Test type resolution in the package:
+
+.Querying types from a package
+[example]
+====
+[source,bash]
+----
+# Find a specific type
+lutaml-xsd type find "ex:MyType" --from pkg/my_schemas.lxr
+
+# List all types
+lutaml-xsd type list --from pkg/my_schemas.lxr
+
+# List types by category
+lutaml-xsd type list --from pkg/my_schemas.lxr --category complex_type
+----
+====
+
+=== Using the package programmatically
+
+Test the package in Ruby code:
+
+.Loading and testing a package
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Load package
+repo = Lutaml::Xsd::SchemaRepository.from_package('pkg/my_schemas.lxr')
+
+# Test type resolution
+result = repo.find_type('ex:MyType')
+puts "Found: #{result.qname}" if result.resolved?
+
+# Get statistics
+stats = repo.statistics
+puts "Total types: #{stats[:total_types]}"
+puts "Total namespaces: #{stats[:total_namespaces]}"
+----
+====
+
+== Distribution best practices
+
+=== Package versioning
+
+Use semantic versioning for packages:
+
+.Versioning packages
+[example]
+====
+[source,bash]
+----
+lutaml-xsd pkg build config.yml \
+  --name "My Schemas" \
+  --version "2.1.0" \
+  --output my_schemas-2.1.0.lxr
+----
+
+Version numbers:
+
+* MAJOR version for incompatible schema changes
+* MINOR version for backward-compatible additions
+* PATCH version for bug fixes and documentation
+====
+
+=== Package documentation
+
+Include a README with your package:
+
+.Package README example
+[example]
+====
+[source,markdown]
+----
+# My Schema Collection v1.0.0
+
+## Contents
+
+- Main schema: `main.xsd`
+- Common types: `common/types.xsd`
+- Dependencies: GML 3.2.1, XLink
+
+## Installation
+
+```bash
+gem install lutaml-xsd
+```
+
+## Usage
+
+```ruby
+require 'lutaml/xsd'
+repo = Lutaml::Xsd::SchemaRepository.from_package('my_schemas.lxr')
+```
+
+## Requirements
+
+- Ruby 2.7+
+- lutaml-xsd 1.0.4+
+
+## Checksums
+
+- SHA256: `abc123...`
+----
+====
+
+=== Distribution checklist
+
+Before distributing a package:
+
+* [ ] Build with `include_all` mode for self-contained package
+* [ ] Validate with `--strict` flag
+* [ ] Test type resolution
+* [ ] Generate SHA256 checksum
+* [ ] Include README and version information
+* [ ] Document Ruby version requirements for marshal packages
+* [ ] Test package loading on clean system
+
+== Complete end-to-end example
+
+This example demonstrates creating a complete package from start to finish.
+
+=== Project structure
+
+.Complete project layout
+[example]
+====
+[source]
+----
+my_project/
+├── schemas/
+│   ├── product.xsd         # Main schema
+│   ├── common/
+│   │   └── base.xsd       # Common types
+│   └── external/
+│       ├── gml.xsd        # GML dependency
+│       └── xlink.xsd      # XLink dependency
+├── config/
+│   └── package.yml        # Configuration
+├── pkg/                   # Output directory
+└── README.md
+----
+====
+
+=== Configuration file
+
+.config/package.yml
+[example]
+====
+[source,yaml]
+----
+files:
+  - schemas/product.xsd
+  - schemas/common/base.xsd
+
+schema_location_mappings:
+  # Map relative imports to local files
+  - from: "../common/base.xsd"
+    to: "schemas/common/base.xsd"
+
+  # Map external schemas
+  - from: "http://www.opengis.net/gml"
+    to: "schemas/external/gml.xsd"
+
+  - from: "http://www.w3.org/1999/xlink"
+    to: "schemas/external/xlink.xsd"
+
+namespace_mappings:
+  - prefix: "prod"
+    uri: "http://example.com/product"
+
+  - prefix: "base"
+    uri: "http://example.com/base"
+
+  - prefix: "gml"
+    uri: "http://www.opengis.net/gml"
+
+  - prefix: "xlink"
+    uri: "http://www.w3.org/1999/xlink"
+----
+====
+
+=== Build script
+
+.build.sh
+[example]
+====
+[source,bash]
+----
+#!/bin/bash
+
+# Build production package
+lutaml-xsd pkg build config/package.yml \
+  --name "Product Schema Package" \
+  --version "1.0.0" \
+  --description "Product schemas with all dependencies" \
+  --xsd-mode include_all \
+  --resolution-mode resolved \
+  --serialization-format marshal \
+  --output pkg/product-schemas-1.0.0.lxr \
+  --validate \
+  --verbose
+
+# Generate checksum
+sha256sum pkg/product-schemas-1.0.0.lxr > pkg/product-schemas-1.0.0.lxr.sha256
+
+# Display package info
+lutaml-xsd package info pkg/product-schemas-1.0.0.lxr
+
+# Test type resolution
+lutaml-xsd type find "prod:Product" --from pkg/product-schemas-1.0.0.lxr
+
+echo "Package build complete!"
+----
+====
+
+=== Validation and testing
+
+.test_package.rb
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Load the package
+package_path = 'pkg/product-schemas-1.0.0.lxr'
+repo = Lutaml::Xsd::SchemaRepository.from_package(package_path)
+
+# Test type resolution
+test_types = ['prod:Product', 'base:BaseType', 'gml:CodeType']
+
+puts "Testing type resolution..."
+test_types.each do |type_name|
+  result = repo.find_type(type_name)
+  if result.resolved?
+    puts "✓ Found: #{result.qname}"
+  else
+    puts "✗ Not found: #{type_name}"
+    exit 1
+  end
+end
+
+# Verify statistics
+stats = repo.statistics
+puts "\nPackage statistics:"
+puts "  Total types: #{stats[:total_types]}"
+puts "  Total namespaces: #{stats[:total_namespaces]}"
+
+puts "\n✓ All tests passed!"
+----
+====
+
+== See also
+
+* link:../core-concepts/LXR_PACKAGES[LXR packages] - Package concepts and internals
+* link:CITYGML_EXAMPLE[CityGML example] - Working with CityGML schemas
+* link:IUR_EXAMPLE[i-UR example] - Working with urban schemas
+* link:../../reference/CLI[CLI reference] - Complete command reference

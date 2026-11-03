@@ -1,0 +1,664 @@
+---
+layout: default
+title: GML example
+nav_order: 5
+parent: Guides
+---
+= GML example
+:toc:
+:toclevels: 3
+
+== Purpose
+
+This guide demonstrates how to work with GML (Geography Markup Language) schemas using lutaml-xsd. GML is a fundamental OGC standard that serves as the foundation for many geospatial data models including CityGML, i-UR, and various ISO/TC 211 standards.
+
+== General
+
+GML (Geography Markup Language) is an XML grammar defined by the Open Geospatial Consortium (OGC) for expressing geographical features. GML schemas are essential building blocks for:
+
+* CityGML city models
+* i-UR urban planning data
+* ISO 19115 metadata
+* WFS (Web Feature Service) responses
+* Custom geospatial data models
+
+Key characteristics of GML schemas:
+
+* **Core foundation**: Many standards extend GML base types
+* **Multiple versions**: GML 2.1.2, 3.1.1, 3.2.1 with different features
+* **Modular structure**: Core schemas plus optional modules (geometry, topology, coverage)
+* **Rich type system**: Extensive type hierarchy for features, geometry, time, and observations
+
+== Common GML schema patterns
+
+=== Pattern 1: Feature types
+
+GML defines abstract feature types that are extended by domain schemas:
+
+.GML abstract feature hierarchy
+[example]
+====
+[source,xml]
+----
+<!-- gml:AbstractFeatureType is the base -->
+<xs:complexType name="AbstractFeatureType" abstract="true">
+  <xs:complexContent>
+    <xs:extension base="gml:AbstractGMLType">
+      <xs:sequence>
+        <xs:element ref="gml:boundedBy" minOccurs="0"/>
+        <xs:element ref="gml:location" minOccurs="0"/>
+      </xs:sequence>
+    </xs:extension>
+  </xs:complexContent>
+</xs:complexType>
+
+<!-- Domain schemas extend it -->
+<xs:complexType name="BuildingType">
+  <xs:complexContent>
+    <xs:extension base="gml:AbstractFeatureType">
+      <xs:sequence>
+        <xs:element name="function" type="gml:CodeType"/>
+        <xs:element name="geometry" type="gml:GeometryPropertyType"/>
+      </xs:sequence>
+    </xs:extension>
+  </xs:complexContent>
+</xs:complexType>
+----
+====
+
+=== Pattern 2: Geometry types
+
+GML provides comprehensive geometry types:
+
+.GML geometry hierarchy
+[source]
+----
+AbstractGeometry
+├── Point
+├── Curve
+│   └── LineString
+├── Surface
+│   └── Polygon
+├── GeometryCollection
+│   ├── MultiPoint
+│   ├── MultiCurve
+│   ├── MultiSurface
+│   └── MultiGeometry
+└── Solid
+----
+
+=== Pattern 3: Property types
+
+GML uses property type pattern for associations:
+
+.GML property type pattern
+[example]
+====
+[source,xml]
+----
+<!-- The actual type -->
+<xs:complexType name="CodeType">
+  <xs:simpleContent>
+    <xs:extension base="xs:string">
+      <xs:attribute name="codeSpace" type="xs:anyURI"/>
+    </xs:extension>
+  </xs:simpleContent>
+</xs:complexType>
+
+<!-- The property type for references -->
+<xs:complexType name="CodeTypePropertyType">
+  <xs:sequence minOccurs="0">
+    <xs:element ref="gml:CodeType"/>
+  </xs:sequence>
+  <xs:attributeGroup ref="gml:AssociationAttributeGroup"/>
+</xs:complexType>
+----
+====
+
+=== Pattern 4: Temporal types
+
+GML includes temporal schemas for time-aware features:
+
+.GML temporal types
+[example]
+====
+[source,xml]
+----
+<!-- Time instant -->
+<xs:element name="TimeInstant" type="gml:TimeInstantType"
+  substitutionGroup="gml:AbstractTimeGeometricPrimitive"/>
+
+<!-- Time period -->
+<xs:element name="TimePeriod" type="gml:TimePeriodType"
+  substitutionGroup="gml:AbstractTimeGeometricPrimitive"/>
+----
+====
+
+== Setting up GML mappings
+
+=== Directory structure
+
+Organize GML schemas by version:
+
+.GML directory structure
+[example]
+====
+[source]
+----
+gml-project/
+├── schemas/
+│   ├── gml/
+│   │   ├── 3.1.1/
+│   │   │   ├── base/
+│   │   │   │   ├── gml.xsd
+│   │   │   │   ├── feature.xsd
+│   │   │   │   ├── geometryBasic0d1d.xsd
+│   │   │   │   ├── geometryBasic2d.xsd
+│   │   │   │   └── geometryComplexes.xsd
+│   │   │   ├── smil/
+│   │   │   │   └── smil20.xsd
+│   │   │   └── xlink/
+│   │   │       └── xlinks.xsd
+│   │   └── 3.2.1/
+│   │       ├── gml.xsd
+│   │       ├── feature.xsd
+│   │       ├── geometryBasic0d1d.xsd
+│   │       ├── geometryBasic2d.xsd
+│   │       ├── geometryPrimitives.xsd
+│   │       ├── temporal.xsd
+│   │       └── observation.xsd
+│   └── xlink/
+│       └── xlink.xsd
+├── config/
+│   ├── gml-3.1.1.yml
+│   └── gml-3.2.1.yml
+└── pkg/
+    ├── gml-3.1.1.lxr
+    └── gml-3.2.1.lxr
+----
+====
+
+=== Configuration for GML 3.2.1
+
+.config/gml-3.2.1.yml
+[example]
+====
+[source,yaml]
+----
+# GML 3.2.1 Package Configuration
+
+files:
+  - schemas/gml/3.2.1/gml.xsd
+  - schemas/gml/3.2.1/feature.xsd
+  - schemas/gml/3.2.1/geometryBasic0d1d.xsd
+  - schemas/gml/3.2.1/geometryBasic2d.xsd
+  - schemas/gml/3.2.1/geometryPrimitives.xsd
+  - schemas/gml/3.2.1/temporal.xsd
+
+schema_location_mappings:
+  # Map OGC URLs to local files
+  - from: !ruby/regexp /http:\/\/schemas\.opengis\.net\/gml\/3\.2\.1\/(.+)/
+    to: "schemas/gml/3.2.1/\\1"
+
+  # Map relative imports within GML
+  - from: !ruby/regexp /^(.+\.xsd)$/
+    to: "schemas/gml/3.2.1/\\1"
+
+  # Map XLink
+  - from: "http://www.w3.org/1999/xlink"
+    to: "schemas/xlink/xlink.xsd"
+
+namespace_mappings:
+  - prefix: "gml"
+    uri: "http://www.opengis.net/gml/3.2"
+
+  - prefix: "xlink"
+    uri: "http://www.w3.org/1999/xlink"
+----
+====
+
+=== Configuration for GML 3.1.1
+
+.config/gml-3.1.1.yml
+[example]
+====
+[source,yaml]
+----
+# GML 3.1.1 Package Configuration
+
+files:
+  - schemas/gml/3.1.1/base/gml.xsd
+  - schemas/gml/3.1.1/base/feature.xsd
+  - schemas/gml/3.1.1/base/geometryBasic0d1d.xsd
+  - schemas/gml/3.1.1/base/geometryBasic2d.xsd
+
+schema_location_mappings:
+  # Map OGC URLs to local files
+  - from: !ruby/regexp /http:\/\/schemas\.opengis\.net\/gml\/3\.1\.1\/(.+)/
+    to: "schemas/gml/3.1.1/\\1"
+
+  # Map SMIL
+  - from: !ruby/regexp /http:\/\/www\.w3\.org\/2001\/SMIL20\/(.+)/
+    to: "schemas/gml/3.1.1/smil/\\1"
+
+  # Map XLink
+  - from: !ruby/regexp /http:\/\/www\.w3\.org\/1999\/xlink/
+    to: "schemas/gml/3.1.1/xlink/xlinks.xsd"
+
+namespace_mappings:
+  - prefix: "gml"
+    uri: "http://www.opengis.net/gml"
+
+  - prefix: "xlink"
+    uri: "http://www.w3.org/1999/xlink"
+----
+====
+
+== Complete working example
+
+This example demonstrates working with GML 3.2.1 schemas.
+
+=== Building GML package
+
+.Building GML 3.2.1 package
+[example]
+====
+[source,bash]
+----
+lutaml-xsd pkg build config/gml-3.2.1.yml \
+  --name "GML 3.2.1 Schemas" \
+  --version "3.2.1" \
+  --description "OGC Geography Markup Language 3.2.1" \
+  --xsd-mode include_all \
+  --resolution-mode resolved \
+  --serialization-format marshal \
+  --output pkg/gml-3.2.1.lxr \
+  --validate
+----
+
+Output:
+
+----
+✓ Configuration loaded
+  Files: 6
+  Schema Location Mappings: 3
+  Namespace Mappings: 2
+
+Parsing and resolving schemas...
+✓ Schemas parsed and resolved
+  - gml.xsd
+  - feature.xsd
+  - geometryBasic0d1d.xsd
+  - geometryBasic2d.xsd
+  - geometryPrimitives.xsd
+  - temporal.xsd
+
+Creating package: pkg/gml-3.2.1.lxr
+  XSD Mode: include_all
+  Resolution Mode: resolved
+  Serialization Format: marshal
+✓ Package created: pkg/gml-3.2.1.lxr
+  Size: 1534210 bytes
+
+Validating package...
+✓ Package is valid
+----
+====
+
+=== Querying GML types
+
+.Querying GML types from package
+[example]
+====
+[source,bash]
+----
+# Find core types
+lutaml-xsd type find "gml:AbstractFeatureType" --from pkg/gml-3.2.1.lxr
+lutaml-xsd type find "gml:CodeType" --from pkg/gml-3.2.1.lxr
+lutaml-xsd type find "gml:MeasureType" --from pkg/gml-3.2.1.lxr
+
+# List geometry types
+lutaml-xsd type list \
+  --from pkg/gml-3.2.1.lxr \
+  --category complex_type | grep -i geometry
+
+# Get statistics
+lutaml-xsd stats show pkg/gml-3.2.1.lxr
+----
+
+Output:
+
+----
+Repository Statistics:
+  Total schemas parsed: 6
+  Total types indexed: 438
+  Types by category:
+    complex_type: 312
+    simple_type: 89
+    element: 34
+    group: 3
+  Total namespaces: 2
+----
+====
+
+=== Using GML in Ruby
+
+.Working with GML types programmatically
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Load GML package
+gml_repo = Lutaml::Xsd::SchemaRepository.from_package('pkg/gml-3.2.1.lxr')
+
+# Find core GML types
+puts "Core GML Types:"
+['AbstractFeatureType', 'CodeType', 'MeasureType', 'LengthType'].each do |type_name|
+  result = gml_repo.find_type("gml:#{type_name}")
+  if result.resolved?
+    puts "  ✓ #{result.qname}"
+  else
+    puts "  ✗ Not found: #{type_name}"
+  end
+end
+
+# Find geometry types
+puts "\nGeometry Types:"
+geometry_types = [
+  'PointType',
+  'LineStringType',
+  'PolygonType',
+  'MultiPointType',
+  'MultiCurveType',
+  'MultiSurfaceType'
+]
+
+geometry_types.each do |type_name|
+  result = gml_repo.find_type("gml:#{type_name}")
+  puts "  #{result.resolved? ? '✓' : '✗'} #{type_name}"
+end
+
+# Get all types in GML namespace
+all_gml_types = gml_repo.types_in_namespace('http://www.opengis.net/gml/3.2')
+puts "\nTotal GML types: #{all_gml_types.count}"
+
+# Find property types (types ending with PropertyType)
+property_types = all_gml_types.select { |t| t.name.end_with?('PropertyType') }
+puts "Property types: #{property_types.count}"
+----
+
+Output:
+
+----
+Core GML Types:
+  ✓ gml:AbstractFeatureType
+  ✓ gml:CodeType
+  ✓ gml:MeasureType
+  ✓ gml:LengthType
+
+Geometry Types:
+  ✓ PointType
+  ✓ LineStringType
+  ✓ PolygonType
+  ✓ MultiPointType
+  ✓ MultiCurveType
+  ✓ MultiSurfaceType
+
+Total GML types: 438
+Property types: 156
+----
+====
+
+=== Creating GML-based schemas
+
+Use GML as a foundation for custom schemas:
+
+.Custom schema extending GML
+[example]
+====
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:gml="http://www.opengis.net/gml/3.2"
+           xmlns:custom="http://example.com/custom"
+           targetNamespace="http://example.com/custom"
+           elementFormDefault="qualified">
+
+  <!-- Import GML -->
+  <xs:import namespace="http://www.opengis.net/gml/3.2"
+             schemaLocation="http://schemas.opengis.net/gml/3.2.1/gml.xsd"/>
+
+  <!-- Extend GML AbstractFeatureType -->
+  <xs:element name="Building" type="custom:BuildingType"
+              substitutionGroup="gml:AbstractFeature"/>
+
+  <xs:complexType name="BuildingType">
+    <xs:complexContent>
+      <xs:extension base="gml:AbstractFeatureType">
+        <xs:sequence>
+          <xs:element name="function" type="gml:CodeType"/>
+          <xs:element name="height" type="gml:LengthType" minOccurs="0"/>
+          <xs:element name="yearBuilt" type="xs:gYear" minOccurs="0"/>
+          <xs:element name="geometry" type="gml:GeometryPropertyType"/>
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+</xs:schema>
+----
+
+Configuration for custom schema:
+
+[source,yaml]
+----
+# config/custom-with-gml.yml
+files:
+  - schemas/custom/building.xsd
+
+schema_location_mappings:
+  # Map GML import to local copy
+  - from: "http://schemas.opengis.net/gml/3.2.1/gml.xsd"
+    to: "schemas/gml/3.2.1/gml.xsd"
+
+  # Map all GML schemas
+  - from: !ruby/regexp /http:\/\/schemas\.opengis\.net\/gml\/3\.2\.1\/(.+)/
+    to: "schemas/gml/3.2.1/\\1"
+
+namespace_mappings:
+  - prefix: "custom"
+    uri: "http://example.com/custom"
+
+  - prefix: "gml"
+    uri: "http://www.opengis.net/gml/3.2"
+----
+====
+
+=== Parsing with GML dependencies
+
+.Parsing schema with GML dependencies
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Read custom schema
+custom_xsd = File.read('schemas/custom/building.xsd')
+
+# Define mappings
+schema_mappings = [
+  {
+    from: %r{http://schemas\.opengis\.net/gml/3\.2\.1/(.+)},
+    to: File.expand_path('schemas/gml/3.2.1/\1')
+  }
+]
+
+# Parse with GML mappings
+parsed = Lutaml::Xsd.parse(
+  custom_xsd,
+  location: File.dirname(File.expand_path('schemas/custom/building.xsd')),
+  schema_mappings: schema_mappings
+)
+
+puts "Parsed custom schema with GML"
+puts "Target namespace: #{parsed.target_namespace}"
+puts "Elements: #{parsed.element.size}"
+puts "Complex types: #{parsed.complex_type.size}"
+puts "Imports: #{parsed.import.size}"
+
+# Access building type
+building_type = parsed.complex_type.find { |t| t.name == 'BuildingType' }
+if building_type
+  puts "\nBuildingType found:"
+  puts "  Base: #{building_type.complex_content.extension.base}"
+
+  # Access elements
+  building_type.complex_content.extension.sequence.element.each do |elem|
+    puts "  - #{elem.name}: #{elem.type}"
+  end
+end
+----
+
+Output:
+
+----
+Parsed custom schema with GML
+Target namespace: http://example.com/custom
+Elements: 1
+Complex types: 1
+Imports: 1
+
+BuildingType found:
+  Base: gml:AbstractFeatureType
+  - function: gml:CodeType
+  - height: gml:LengthType
+  - yearBuilt: xs:gYear
+  - geometry: gml:GeometryPropertyType
+----
+====
+
+== Best practices for GML
+
+=== Use version-specific packages
+
+Create separate packages for different GML versions:
+
+.GML version packages
+[example]
+====
+[source,bash]
+----
+# GML 3.1.1 (for CityGML 2.0)
+lutaml-xsd pkg build config/gml-3.1.1.yml \
+  --output pkg/gml-3.1.1.lxr
+
+# GML 3.2.1 (for CityGML 3.0, recent standards)
+lutaml-xsd pkg build config/gml-3.2.1.yml \
+  --output pkg/gml-3.2.1.lxr
+----
+====
+
+=== Include required modules
+
+GML is modular. Include the modules you need:
+
+.GML modules
+[source]
+----
+Core modules (always include):
+  - gml.xsd (main schema)
+  - feature.xsd (feature types)
+  - basicTypes.xsd (basic types)
+
+Geometry modules:
+  - geometryBasic0d1d.xsd (Point, LineString)
+  - geometryBasic2d.xsd (Polygon, Surface)
+  - geometryPrimitives.xsd (advanced geometries)
+  - geometryAggregates.xsd (Multi* types)
+
+Optional modules:
+  - temporal.xsd (time support)
+  - observation.xsd (observations)
+  - coverage.xsd (coverage types)
+  - topology.xsd (topology)
+----
+
+=== Document GML dependencies
+
+When creating schemas that use GML, document the version dependency:
+
+.Documenting GML dependencies
+[example]
+====
+[source,markdown]
+----
+# My Custom Schema
+
+## Dependencies
+
+- GML 3.2.1 (required)
+  - Core schemas (gml.xsd, feature.xsd)
+  - Geometry schemas (geometryBasic0d1d.xsd, geometryBasic2d.xsd)
+  - XLink 1.0
+
+## Installation
+
+Use the GML 3.2.1 package:
+```bash
+# Include in your package configuration
+schema_location_mappings:
+  - from: !ruby/regexp /http:\/\/schemas\.opengis\.net\/gml\/3\.2\.1\/(.+)/
+    to: "schemas/gml/3.2.1/\\1"
+```
+----
+====
+
+=== Test GML type resolution
+
+Verify that core GML types resolve correctly:
+
+.Testing GML type resolution
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Test GML package
+gml = Lutaml::Xsd::SchemaRepository.from_package('pkg/gml-3.2.1.lxr')
+
+# Essential types that should always resolve
+essential_types = [
+  'gml:AbstractFeatureType',
+  'gml:AbstractGeometryType',
+  'gml:CodeType',
+  'gml:MeasureType',
+  'gml:PointType',
+  'gml:PolygonType'
+]
+
+puts "Testing GML essential types:"
+essential_types.each do |type_name|
+  result = gml.find_type(type_name)
+  if result.resolved?
+    puts "  ✓ #{type_name}"
+  else
+    puts "  ✗ FAILED: #{type_name}"
+    exit 1
+  end
+end
+
+puts "\n✓ All essential GML types resolved successfully"
+----
+====
+
+== See also
+
+* link:CREATING_PACKAGES[Creating packages] - Package creation workflow
+* link:CITYGML_EXAMPLE[CityGML example] - CityGML uses GML 3.1.1
+* link:ISO_TC211_EXAMPLE[ISO/TC 211 example] - ISO standards use GML
+* link:IUR_EXAMPLE[i-UR example] - i-UR extends GML types
+* link:../core-concepts/TYPE_RESOLUTION[Type resolution] - Resolving GML types

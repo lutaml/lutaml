@@ -1,0 +1,9 @@
+Elements:
+{%- for element in schema.element %}
+  Name: *{{ element.name }}*
+  Type: *{{ element.type }}*
+{% endfor %}
+ComplexTypes:
+{%- for complex_type in schema.complex_type %}
+  Name: *{{ complex_type.name }}*
+{% endfor %}

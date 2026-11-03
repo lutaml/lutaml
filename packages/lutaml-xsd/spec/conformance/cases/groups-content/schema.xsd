@@ -1,0 +1,18 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://example.com/g"
+           elementFormDefault="qualified">
+  <xs:group name="id-group">
+    <xs:sequence>
+      <xs:element name="id" type="xs:string"/>
+      <xs:element name="rev" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:group>
+  <xs:element name="doc">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:group ref="id-group"/>
+        <xs:element name="title" type="xs:string"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

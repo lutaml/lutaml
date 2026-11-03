@@ -1,0 +1,319 @@
+= Metaschema Example (NIST)
+
+== Purpose
+
+This example demonstrates working with self-referential schemas - schemas that define the structure of schemas themselves.
+
+Learn how to:
+
+* Build LXR packages from self-referential schemas
+* Handle schemas that describe schema structure (meta-modeling)
+* Work with recursive type definitions
+* Understand advanced schema patterns
+
+The NIST Metaschema is an XSD schema that defines a modeling language for structured data. It's "meta-level" because it defines the structure used to define other structures.
+
+== What This Example Demonstrates
+
+=== Self-Referential Schemas
+
+Metaschema defines:
+
+* Assembly definitions (contain other assemblies/fields)
+* Field definitions (contain values and flags)
+* Flag definitions (attributes/properties)
+* Constraint definitions (validation rules)
+
+These definitions can reference each other recursively.
+
+=== Meta-Level Modeling
+
+The schema demonstrates:
+
+* Types that define types
+* Schemas that define schema structure
+* Recursive data structures
+* Schema generation patterns
+
+=== Advanced Schema Patterns
+
+Patterns shown include:
+
+* Substitution groups
+* Abstract base types
+* Complex content models
+* Constraint systems
+* Extensibility mechanisms
+
+=== Schema Includes
+
+The metaschema uses `xs:include` to import:
+
+* `metaschema-prose-module.xsd` - Text markup support
+* `metaschema-datatypes.xsd` - Data type definitions
+
+These must be properly mapped for offline processing.
+
+== Directory Structure
+
+[source]
+----
+04-metaschema/
+├── README.adoc           # This file
+├── config.yml            # Package configuration with includes
+├── schemas/              # (empty - schema in spec/fixtures)
+├── ruby-api/             # Ruby API examples
+│   └── example.rb
+└── cli/                  # CLI examples
+    └── run.sh
+----
+
+== Configuration
+
+The [`config.yml`](config.yml) file handles includes:
+
+[source,yaml]
+----
+files:
+  - ../../spec/fixtures/metaschema.xsd
+
+schema_location_mappings:
+  # Map included modules to local files
+  - from: "metaschema-prose-module.xsd"
+    to: ../../spec/fixtures/metaschema-prose-module.xsd
+  - from: "metaschema-datatypes.xsd"
+    to: ../../spec/fixtures/metaschema-datatypes.xsd
+
+namespace_mappings:
+  - prefix: "m"
+    uri: "http://csrc.nist.gov/ns/oscal/metaschema/1.0"
+----
+
+Where:
+
+`schema_location_mappings`:: Maps xs:include schemaLocation to local files
+`namespace_mappings`:: Metaschema namespace prefix mapping
+
+== Running the Examples
+
+=== Ruby API Example
+
+[source,bash]
+----
+ruby examples/04-metaschema/ruby-api/example.rb
+----
+
+Features demonstrated:
+
+. Building packages with schema includes
+. Type hierarchy analysis
+. Self-referential type exploration
+. Constraint type discovery
+
+=== CLI Example
+
+[source,bash]
+----
+bash examples/04-metaschema/cli/run.sh
+----
+
+CLI commands demonstrated:
+
+. Building self-referential schemas
+. Meta-level type searching
+. Package structure visualization
+. Type categorization
+
+== Expected Output
+
+Creates `metaschema.lxr` containing:
+
+* Schemas: 3 (main + 2 includes)
+* Types: 50-80 (definition and constraint types)
+* Namespaces: 2 (metaschema + XML Schema)
+
+Build time may be longer due to complexity.
+
+== Key Concepts
+
+=== Meta-Modeling
+
+Metaschema demonstrates:
+
+* Second-order modeling (models of models)
+* Schema definition languages
+* Model-driven architecture
+* Domain-specific modeling languages (DSML)
+
+=== Self-Reference
+
+Self-referential aspects:
+
+* Types that contain types recursively
+* Definitions that describe definitions
+* Meta-circular evaluation
+* Bootstrapping schemas
+
+=== Schema Extensibility
+
+Extensibility mechanisms shown:
+
+* Abstract base types for extension
+* Constraint frameworks
+* Plugin architectures
+* Future-proof designs
+
+== Understanding Metaschema
+
+=== Core Concepts
+
+Metaschema defines three main constructs:
+
+. **Assembly** - Container with structured content
+. **Field** - Value with optional flags
+. **Flag** - Name-value pair (like XML attribute)
+
+Each can be defined globally or inline.
+
+=== Type Hierarchy
+
+Key type families:
+
+* `GlobalAssemblyDefinitionType`
+* `GlobalFieldDefinitionType`
+* `GlobalFlagDefinitionType`
+* Various constraint types
+
+=== Constraint System
+
+Metaschema includes sophisticated constraints:
+
+* `allowed-values` - Enumeration constraints
+* `matches` - Pattern/datatype constraints
+* `index-has-key` - Key/foreign key constraints
+* `expect` - Custom Metapath expressions
+* `has-cardinality` - Occurrence constraints
+
+== Use Cases
+
+=== OSCAL (Open Security Controls Assessment Language)
+
+NIST uses Metaschema to define OSCAL:
+
+* Security control catalogs
+* System security plans
+* Assessment results
+* Risk management data
+
+=== Model Generation
+
+Metaschema enables:
+
+* XML Schema generation
+* JSON Schema generation
+* Data binding code generation
+* Documentation generation
+
+=== Standards Development
+
+Benefits for standards:
+
+* Single source of truth
+* Multiple format support (XML, JSON, YAML)
+* Consistent validation
+* Automated tooling
+
+== Type Examples
+
+Key metaschema types:
+
+* `METASCHEMA` - Root element
+* `GlobalAssemblyDefinitionType` - Assembly def
+* `GlobalFieldDefinitionType` - Field def
+* `GlobalFlagDefinitionType` - Flag def
+* `AllowedValuesType` - Enumeration constraint
+* `MatchesConstraintType` - Pattern constraint
+* `ExpectConstraintType` - Custom constraint
+
+== Exploring Meta-Types
+
+Search for definition types:
+
+[source,bash]
+----
+# Search for definition types
+lutaml-xsd search Definition metaschema.lxr
+
+# Search for constraint types
+lutaml-xsd search Constraint metaschema.lxr
+
+# List all types
+lutaml-xsd pkg list-types metaschema.lxr
+----
+
+== Advanced Topics
+
+=== Circular Dependencies
+
+Self-referential schemas involve:
+
+* Forward references
+* Recursive type definitions
+* Careful dependency ordering
+
+=== Schema Includes
+
+Understanding xs:include:
+
+* Incorporates other schema content
+* Shares target namespace
+* Requires location mapping
+
+=== Metapath Expressions
+
+Metaschema uses Metapath:
+
+* XPath-like query language
+* Constraint expression
+* Model navigation
+
+== Next Steps
+
+After mastering self-referential schemas:
+
+. Review all examples in sequence
+. Apply patterns to your own schemas
+. Explore OSCAL for real-world usage
+. Study model-driven development
+
+== Related Documentation
+
+* link:../../docs/ADVANCED_SCHEMAS.adoc[Advanced Schema Patterns]
+* link:../../docs/SCHEMA_INCLUDES.adoc[Schema Include Handling]
+* link:../../docs/TYPE_HIERARCHY.adoc[Type Hierarchy Analysis]
+
+== Metaschema Standard Reference
+
+* Organization: NIST (National Institute of Standards and Technology)
+* Project: OSCAL (Open Security Controls Assessment Language)
+* Purpose: Define data modeling language
+* Official URL: https://pages.nist.gov/metaschema/
+* Repository: https://github.com/usnistgov/metaschema
+
+== OSCAL Applications
+
+OSCAL models defined with Metaschema:
+
+* **Catalog** - Security control catalogs
+* **Profile** - Control baselines and overlays
+* **SSP** - System Security Plans
+* **Assessment Plan** - Assessment procedures
+* **Assessment Results** - Assessment findings
+* **POA&M** - Plan of Action and Milestones
+
+== Learning Resources
+
+* Metaschema Documentation: https://pages.nist.gov/metaschema/
+* OSCAL Website: https://pages.nist.gov/OSCAL/
+* Metaschema Tutorial: https://pages.nist.gov/metaschema/tutorials/
+* Schema Design Patterns: https://pages.nist.gov/metaschema/specification/

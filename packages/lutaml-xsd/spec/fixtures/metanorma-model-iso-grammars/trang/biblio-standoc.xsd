@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:include schemaLocation="biblio.xsd"/>
+  <!-- ALERT: we cannot have comments on root element, as they intervene with https://github.com/metanorma/metanorma/issues/437 fix -->
+  <!--
+    Add-ons to biblio.rnc for standoc model: defines the extension point BibDataExtensionType
+    of relaton
+    
+    Specialisations as for biblio.rnc. Extension point can be redefined completely for a flavour of standoc
+    (SDO); but other elements in Bibdata can only be extended (more specialised vocabularies for Bibdata)
+  -->
+  <xs:complexType name="BibData">
+    <xs:annotation>
+      <xs:documentation>The bibliographic description of a standardisation document</xs:documentation>
+    </xs:annotation>
+    <xs:complexContent>
+      <xs:extension base="StandardBibliographicItem">
+        <xs:sequence>
+          <xs:element minOccurs="0" ref="ext">
+            <xs:annotation>
+              <xs:documentation>The extension point of the bibliographic description of a standardisation document</xs:documentation>
+            </xs:annotation>
+          </xs:element>
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  <xs:element name="relation">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="description" type="LocalizedMarkedUpString"/>
+        <xs:element name="bibitem" type="StandardReducedBibliographicItem"/>
+        <xs:choice>
+          <xs:element minOccurs="0" maxOccurs="unbounded" ref="locality"/>
+          <xs:element minOccurs="0" maxOccurs="unbounded" ref="localityStack"/>
+        </xs:choice>
+        <xs:choice>
+          <xs:element minOccurs="0" maxOccurs="unbounded" ref="sourceLocality"/>
+          <xs:element minOccurs="0" maxOccurs="unbounded" ref="sourceLocalityStack"/>
+        </xs:choice>
+      </xs:sequence>
+      <xs:attribute name="type" use="required" type="DocRelationType"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="ext" type="BibDataExtensionType"/>
+  <xs:complexType name="BibDataExtensionType">
+    <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <xs:choice>
+        <xs:element ref="doctype">
+          <xs:annotation>
+            <xs:documentation>Classification of the standardisation document that is treated as a distinct series by the
+standards defining organization, and that is rendered in a distinct manner</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element ref="subdoctype">
+          <xs:annotation>
+            <xs:documentation>Subclass of the standardisation document, that is treated or processed differently
+from other documents in the same doctype</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element ref="flavor">
+          <xs:annotation>
+            <xs:documentation>Flavour of Metanorma used to process this document</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element ref="ics">
+          <xs:annotation>
+            <xs:documentation>Classification of the document contents taken from the International Classification of Standards</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element ref="structuredidentifier">
+          <xs:annotation>
+            <xs:documentation>Representation of the identifier for the standardisation document, giving its individual semantic components</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:choice>
+          <xs:element ref="coverpage-image"/>
+          <xs:element ref="innercoverpage-image"/>
+          <xs:element ref="tocside-image"/>
+          <xs:element ref="backpage-image"/>
+        </xs:choice>
+      </xs:choice>
+      <xs:choice>
+        <xs:element ref="horizontal">
+          <xs:annotation>
+            <xs:documentation>Whether the document is a horizontal standard</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element ref="stagename">
+          <xs:annotation>
+            <xs:documentation>Human-readable name of the stage of publication, corresponding to the numeric stage code given in `/bibdata/status/stage`</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element ref="updates-document-type">
+          <xs:annotation>
+            <xs:documentation>If this is an update to another document (e.g. an amendment), the `doctype` will not indicate what type of
+document is being updated (e.g. that this is an amendment to a technical report, as opposed to an amendment to a technical standard).
+The `updates-document-type` value indicates the document type of the document being updated; this may be needed for proper rendering, or
+to formulate the document identifier properly</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element ref="fast-track">
+          <xs:annotation>
+            <xs:documentation>Whether this is a fast-track standard</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element ref="price-code">
+          <xs:annotation>
+            <xs:documentation>The price code of the standard, as documented in https://www.iec.ch/members_experts/tools/pdf/IEC_DATA_FEEDS.pdf
+Used for legacy ISO documents</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element ref="function">
+          <xs:annotation>
+            <xs:documentation>Function of document</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element ref="accessibility-color-inside">
+          <xs:annotation>
+            <xs:documentation>Indication that document contains colour content</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element ref="cen-processing">
+          <xs:annotation>
+            <xs:documentation>CEN (European Committee for Standardization) processing</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element ref="secretary">
+          <xs:annotation>
+            <xs:documentation>Secretary of the secretariat</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element ref="interest-to-committees">
+          <xs:annotation>
+            <xs:documentation>Draft is of interest to these committees</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+      </xs:choice>
+    </xs:choice>
+    <xs:attribute name="schema-version">
+      <xs:annotation>
+        <xs:documentation>The version of the flavour-specific schema that this extension point conforms to</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:element name="coverpage-image">
+    <xs:annotation>
+      <xs:documentation>Images to be displayed on the coverpage of the document</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:group ref="image-no-id"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="innercoverpage-image">
+    <xs:annotation>
+      <xs:documentation>Images to be displayed on the inner coverpage of the document</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:group ref="image-no-id"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="tocside-image">
+    <xs:annotation>
+      <xs:documentation>Images to be displayed on the Table of Contents page of the document</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:group ref="image-no-id"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="backpage-image">
+    <xs:annotation>
+      <xs:documentation>Images to be displayed on the backpage of the document</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:group ref="image-no-id"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="doctype">
+    <xs:complexType>
+      <xs:simpleContent>
+        <xs:restriction base="xs:anyType">
+          <xs:simpleType>
+            <xs:restriction base="DocumentType"/>
+          </xs:simpleType>
+          <xs:attribute name="abbreviation">
+            <xs:annotation>
+              <xs:documentation>Standard abbreviation for the doctype value used by the standards defining organization</xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:restriction>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="subdoctype" type="DocumentSubtype"/>
+  <xs:element name="flavor" type="xs:string"/>
+  <xs:element name="ics">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="code" type="xs:string">
+          <xs:annotation>
+            <xs:documentation>Classification code taken from the ICS</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element minOccurs="0" ref="text"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="text" type="xs:string">
+    <xs:annotation>
+      <xs:documentation>Text string associated with the classification code</xs:documentation>
+    </xs:annotation>
+  </xs:element>
+  <xs:group name="DocumentImages">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="coverpage-image"/>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="innercoverpage-image"/>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="tocside-image"/>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="backpage-image"/>
+    </xs:sequence>
+  </xs:group>
+  <xs:complexType name="StandardBibliographicItem">
+    <xs:complexContent>
+      <xs:extension base="BibliographicItem">
+        <xs:sequence>
+          <xs:element minOccurs="0" maxOccurs="unbounded" ref="amend">
+            <xs:annotation>
+              <xs:documentation>Description of changes specific to this document</xs:documentation>
+            </xs:annotation>
+          </xs:element>
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  <xs:complexType name="StandardReducedBibliographicItem">
+    <xs:complexContent>
+      <xs:extension base="ReducedBibliographicItem">
+        <xs:sequence>
+          <xs:element minOccurs="0" maxOccurs="unbounded" ref="amend">
+            <xs:annotation>
+              <xs:documentation>Description of changes specific to this document</xs:documentation>
+            </xs:annotation>
+          </xs:element>
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+</xs:schema>

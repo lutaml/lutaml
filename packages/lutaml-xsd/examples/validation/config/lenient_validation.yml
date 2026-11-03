@@ -1,0 +1,26 @@
+---
+# Lenient validation configuration
+# Allows collecting multiple errors before failing
+
+strict_mode: false
+fail_fast: false
+max_errors: 100
+
+# Validation rules to enable
+rules:
+  - element_structure
+  - type_validation
+  - occurrence_validation
+  - attribute_validation
+
+# Error handling
+error_handling:
+  enhance_errors: true
+  provide_suggestions: true
+  show_context: false
+
+# Output formatting
+output:
+  verbose: false
+  show_location: true
+  show_line_numbers: false

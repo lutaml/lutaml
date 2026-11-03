@@ -1,0 +1,360 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LXR Package Configuration",
+  "description": "Configuration file for building LXR (LutaML XML) schema packages",
+  "type": "object",
+  "required": ["files"],
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "description": "Package identity and metadata",
+      "required": ["name", "version"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Unique package identifier"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+",
+          "description": "Semantic version (MAJOR.MINOR.PATCH)"
+        },
+        "title": {
+          "type": "string",
+          "description": "Human-readable display name for SPA header"
+        },
+        "description": {
+          "type": "string",
+          "description": "Extended description of the package"
+        },
+        "license": {
+          "type": "string",
+          "description": "SPDX license identifier (e.g., MIT, Apache-2.0) or proprietary name"
+        },
+        "license_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Optional URL to custom license or proprietary license text"
+        },
+        "authors": {
+          "type": "array",
+          "description": "List of authors",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": { "type": "string" },
+              "email": { "type": "string", "format": "email" }
+            }
+          }
+        },
+        "homepage": {
+          "type": "string",
+          "format": "uri",
+          "description": "Project homepage URL"
+        },
+        "repository": {
+          "type": "string",
+          "format": "uri",
+          "description": "Source code repository URL"
+        },
+        "documentation": {
+          "type": "string",
+          "format": "uri",
+          "description": "Documentation URL"
+        },
+        "tags": {
+          "type": "array",
+          "description": "Tags for discoverability",
+          "items": { "type": "string" }
+        },
+        "links": {
+          "type": "array",
+          "description": "Custom external documentation links with name and URL",
+          "items": {
+            "type": "object",
+            "required": ["name", "url"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Display label for the link"
+              },
+              "url": {
+                "type": "string",
+                "format": "uri",
+                "description": "URL to the linked resource"
+              }
+            }
+          }
+        }
+      }
+    },
+    "build": {
+      "type": "object",
+      "description": "Build options for package generation",
+      "properties": {
+        "xsd_mode": {
+          "type": "string",
+          "enum": ["include_all", "allow_external"],
+          "default": "include_all",
+          "description": "How to handle external XSD references"
+        },
+        "resolution_mode": {
+          "type": "string",
+          "enum": ["bare", "resolved"],
+          "default": "resolved",
+          "description": "Whether to resolve all type references"
+        },
+        "serialization_format": {
+          "type": "string",
+          "enum": ["marshal", "json", "yaml", "parse"],
+          "default": "marshal",
+          "description": "Serialization format for the package"
+        }
+      }
+    },
+    "files": {
+      "type": "array",
+      "description": "Entry point XSD files",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "schema_location_mappings": {
+      "type": "array",
+      "description": "Mappings from external schema locations to local files",
+      "items": {
+        "type": "object",
+        "required": ["from", "to"],
+        "properties": {
+          "from": {
+            "type": "string",
+            "description": "Original schema location (literal string or regex pattern)"
+          },
+          "to": {
+            "type": "string",
+            "description": "Local file path to map to"
+          },
+          "pattern": {
+            "type": "boolean",
+            "default": false,
+            "description": "If true, 'from' is treated as a regex pattern with capture groups"
+          }
+        }
+      }
+    },
+    "namespace_mappings": {
+      "type": "array",
+      "description": "Namespace prefix to URI mappings",
+      "items": {
+        "type": "object",
+        "required": ["prefix", "uri"],
+        "properties": {
+          "prefix": { "type": "string" },
+          "uri": { "type": "string", "format": "uri" }
+        }
+      }
+    },
+    "appearance": {
+      "type": "object",
+      "description": "Appearance customization for the SPA (logos, colors, typography, custom CSS)",
+      "properties": {
+        "logos": {
+          "type": "object",
+          "description": "Logo variants with light/dark mode support",
+          "properties": {
+            "square": {
+              "type": "object",
+              "description": "Square icon logo for sidebar",
+              "properties": {
+                "light": {
+                  "type": "object",
+                  "properties": {
+                    "path": { "type": "string", "description": "Relative path to logo file" },
+                    "url": { "type": "string", "format": "uri", "description": "Absolute URL to logo" }
+                  }
+                },
+                "dark": {
+                  "type": "object",
+                  "properties": {
+                    "path": { "type": "string" },
+                    "url": { "type": "string", "format": "uri" }
+                  }
+                }
+              }
+            },
+            "long": {
+              "type": "object",
+              "description": "Long/horizontal logo for overview page",
+              "properties": {
+                "light": {
+                  "type": "object",
+                  "properties": {
+                    "path": { "type": "string" },
+                    "url": { "type": "string", "format": "uri" }
+                  }
+                },
+                "dark": {
+                  "type": "object",
+                  "properties": {
+                    "path": { "type": "string" },
+                    "url": { "type": "string", "format": "uri" }
+                  }
+                }
+              }
+            },
+            "icon": {
+              "type": "object",
+              "description": "Icon-only logo for mobile/favicons",
+              "properties": {
+                "light": {
+                  "type": "object",
+                  "properties": {
+                    "path": { "type": "string" },
+                    "url": { "type": "string", "format": "uri" }
+                  }
+                },
+                "dark": {
+                  "type": "object",
+                  "properties": {
+                    "path": { "type": "string" },
+                    "url": { "type": "string", "format": "uri" }
+                  }
+                }
+              }
+            },
+            "lutaml_logo": {
+              "type": "object",
+              "description": "LutaML branding logo",
+              "properties": {
+                "light": {
+                  "type": "object",
+                  "properties": {
+                    "path": { "type": "string" },
+                    "url": { "type": "string", "format": "uri" }
+                  }
+                },
+                "dark": {
+                  "type": "object",
+                  "properties": {
+                    "path": { "type": "string" },
+                    "url": { "type": "string", "format": "uri" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "favicon": {
+          "type": "array",
+          "description": "Favicon links for browser compatibility",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "MIME type (e.g., image/png, image/svg+xml, image/x-icon, application/manifest+json)"
+              },
+              "sizes": {
+                "type": "string",
+                "description": "Size for image types (e.g., 96x96, 180x180)"
+              },
+              "path": {
+                "type": "string",
+                "description": "Relative path to favicon file"
+              },
+              "url": {
+                "type": "string",
+                "format": "uri",
+                "description": "Absolute URL to favicon"
+              }
+            }
+          }
+        },
+        "colors": {
+          "type": "object",
+          "description": "Full color palette override",
+          "properties": {
+            "primary": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+            "primary_light": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+            "primary_dark": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+            "secondary": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+            "accent": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+            "background_primary": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+            "background_secondary": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+            "text_primary": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+            "text_secondary": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+            "text_muted": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+            "border_light": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+            "border_medium": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+            "dark": {
+              "type": "object",
+              "description": "Dark mode colors",
+              "properties": {
+                "primary": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+                "primary_light": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+                "background_primary": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+                "background_secondary": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+                "text_primary": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+                "text_secondary": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" }
+              }
+            }
+          }
+        },
+        "typography": {
+          "type": "object",
+          "description": "Typography customization",
+          "properties": {
+            "font_family": { "type": "string" },
+            "mono_font_family": { "type": "string" },
+            "font_size_base": { "type": "string" },
+            "font_weight_bold": { "type": "string" }
+          }
+        },
+        "custom_css": {
+          "type": "string",
+          "description": "Inline custom CSS for advanced styling. Can include @import for fonts."
+        },
+        "stylesheets": {
+          "type": "array",
+          "description": "External stylesheets to load",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": { "type": "string", "description": "Relative path to CSS file" },
+              "url": { "type": "string", "format": "uri", "description": "Absolute URL to CSS file" }
+            }
+          }
+        },
+        "layout": {
+          "type": "object",
+          "description": "Layout dimension overrides",
+          "properties": {
+            "header_height": { "type": "string" },
+            "sidebar_width": { "type": "string" },
+            "content_padding": { "type": "string" }
+          }
+        },
+        "border_radius": {
+          "type": "object",
+          "description": "Border radius overrides",
+          "properties": {
+            "default": { "type": "string" },
+            "lg": { "type": "string" },
+            "xl": { "type": "string" },
+            "full": { "type": "string" }
+          }
+        },
+        "shadows": {
+          "type": "object",
+          "description": "Shadow overrides",
+          "properties": {
+            "sm": { "type": "string" },
+            "default": { "type": "string" },
+            "md": { "type": "string" },
+            "lg": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

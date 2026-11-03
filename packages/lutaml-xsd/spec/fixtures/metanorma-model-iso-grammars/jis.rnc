@@ -1,0 +1,21 @@
+include "relaton-jis.rnc" { }
+include "isostandard.rnc" {
+
+annex =
+  element annex { 
+     attribute commentary { xsd:boolean }?,
+     Annex-Section 
+  }
+
+}
+
+# end overrides
+
+floating-section-title =
+  element section-title {
+    attribute id { xsd:ID },
+    attribute depth { xsd:int },
+    TextElement*
+}
+
+

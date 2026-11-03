@@ -1,0 +1,10 @@
+---
+# Person Schema Package Configuration
+# Used for integration testing
+
+files:
+  - ../sample_schemas/person.xsd
+
+namespace_mappings:
+  - prefix: "p"
+    uri: "http://example.com/person"

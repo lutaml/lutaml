@@ -1,0 +1,232 @@
+---
+layout: default
+title: Schema Mapping Cheatsheet
+parent: Quick Reference
+nav_order: 3
+---
+= Schema Mapping Cheatsheet
+:toc:
+:toclevels: 2
+
+== Common mapping patterns
+
+[cols="2,3,2",options="header"]
+|===
+| Pattern Type | Example | Use Case
+
+| **Simple replacement**
+| `https://example.com/schema.xsd` → `./schema.xsd`
+| Single file mapping
+
+| **Path prefix**
+| `https://example.com/(.*)` → `./schemas/$1`
+| Directory structure
+
+| **Version mapping**
+| `https://ex.com/v\d+/(.*)` → `./schemas/$1`
+| Multiple versions
+
+| **Domain replacement**
+| `https://[^/]+/schemas/(.*)` → `./local/$1`
+| Multi-domain schemas
+|===
+
+== Quick reference patterns
+
+=== HTTP to local file
+[source,yaml]
+----
+schema_location_mappings:
+  - pattern: "https://example.com/schemas/main.xsd"
+    path: "./schemas/main.xsd"
+----
+
+=== Directory mapping
+[source,yaml]
+----
+schema_location_mappings:
+  - pattern: "https://example.com/schemas/(.*)"
+    path: "./local-schemas/$1"
+----
+
+=== Multiple versions
+[source,yaml]
+----
+schema_location_mappings:
+  - pattern: "https://schemas.opengis.net/gml/3.2/(.*)"
+    path: "./gml/3.2/$1"
+  - pattern: "https://schemas.opengis.net/gml/3.3/(.*)"
+    path: "./gml/3.3/$1"
+----
+
+=== Subdomain mapping
+[source,yaml]
+----
+schema_location_mappings:
+  - pattern: "https://([^.]+).example.com/schemas/(.*)"
+    path: "./schemas/$1/$2"
+----
+
+== CityGML patterns
+
+=== CityGML 3.0 core
+[source,yaml]
+----
+schema_location_mappings:
+  - pattern: "http://www.opengis.net/citygml/3.0"
+    path: "./citygml/3.0/core.xsd"
+  - pattern: "http://www.opengis.net/citygml/(.*)/3.0"
+    path: "./citygml/3.0/$1.xsd"
+----
+
+=== CityGML 2.0 modules
+[source,yaml]
+----
+schema_location_mappings:
+  - pattern: "http://www.opengis.net/citygml/(.*)/2.0/(.*\\.xsd)"
+    path: "./citygml/$1/2.0/$2"
+----
+
+== GML patterns
+
+=== GML 3.2
+[source,yaml]
+----
+schema_location_mappings:
+  - pattern: "http://schemas.opengis.net/gml/3.2.1/(.*)"
+    path: "./gml/3.2.1/$1"
+----
+
+=== GML with version fallback
+[source,yaml]
+----
+schema_location_mappings:
+  - pattern: "http://schemas.opengis.net/gml/(3\\.\\d+\\.\\d+)/(.*)"
+    path: "./gml/$1/$2"
+  - pattern: "http://schemas.opengis.net/gml/(.*)"
+    path: "./gml/3.2.1/$1"
+----
+
+== ISO/TC 211 patterns
+
+=== ISO standards
+[source,yaml]
+----
+schema_location_mappings:
+  - pattern: "http://standards.iso.org/iso/(\\d+)/(.*)"
+    path: "./iso/$1/$2"
+----
+
+=== ISO namespaces
+[source,yaml]
+----
+schema_location_mappings:
+  - pattern: "http://standards.iso.org/iso/19115/-3/(\\w+)/(\\d+\\.\\d+)/(.*)"
+    path: "./iso/19115-3/$1/$2/$3"
+----
+
+== Complex patterns
+
+=== Multi-domain consolidation
+[source,yaml]
+----
+schema_location_mappings:
+  - pattern: "https://schemas.opengis.net/(.*)"
+    path: "./ogc-schemas/$1"
+  - pattern: "http://www.w3.org/2001/XMLSchema"
+    path: "./w3c/XMLSchema.xsd"
+  - pattern: "http://www.w3.org/(.*)"
+    path: "./w3c/$1"
+----
+
+=== Version-agnostic mapping
+[source,yaml]
+----
+schema_location_mappings:
+  - pattern: "https://example.com/schemas/v[\\d.]+/(.*)"
+    path: "./schemas/latest/$1"
+----
+
+=== Conditional path mapping
+[source,yaml]
+----
+schema_location_mappings:
+  - pattern: "https://example.com/(dev|test|prod)/schemas/(.*)"
+    path: "./schemas/$1/$2"
+----
+
+== Pattern syntax reference
+
+[cols="1,3,2",options="header"]
+|===
+| Symbol | Meaning | Example
+
+| `(.*)` | Capture any characters | `schemas/(.*)` captures `file.xsd`
+
+| `\d+` | One or more digits | `v\d+` matches `v1`, `v2`, `v10`
+
+| `[^/]+` | Any except slash | `[^/]+` matches `domain.com`
+
+| `$1`, `$2` | Capture groups | `$1/$2` uses captured parts
+
+| `\\.` | Literal dot | `3\\.2` matches `3.2` exactly
+
+| `[\\w]+` | Word characters | Matches `abc`, `a1b2`
+
+| `\|` | Alternation (OR) | `(dev\|test)` matches `dev` or `test`
+|===
+
+== Testing your patterns
+
+=== Test pattern matching
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Test a pattern
+pattern = "https://example.com/schemas/(.*)"
+url = "https://example.com/schemas/main.xsd"
+
+if url =~ /#{pattern}/
+  puts "Match: #{$1}"  # => "main.xsd"
+end
+----
+
+=== Validate mappings
+[source,bash]
+----
+# Build package with verbose output
+lutaml-xsd pkg build --config config.yml --verbose
+
+# Check for mapping errors in output
+# Look for: "Failed to resolve schema location"
+----
+
+== Common issues and solutions
+
+[cols="2,3,2",options="header"]
+|===
+| Issue | Solution | Example
+
+| Pattern too broad
+| Add more specific anchors
+| `^https://example.com/` instead of `https://`
+
+| Missing escape
+| Escape special regex chars
+| `3\\.2` instead of `3.2`
+
+| Wrong capture group
+| Check `$1`, `$2` usage
+| Verify matched parts
+
+| Path not found
+| Verify local file exists
+| Check `./schemas/` directory
+|===
+
+== See also
+
+* link:../SCHEMA_MAPPINGS[Schema mappings guide]
+* link:../advanced/SCHEMA_MAPPING_PATTERNS[Advanced mapping patterns]
+* link:../guides/CITYGML_EXAMPLE[CityGML example]

@@ -1,0 +1,12 @@
+---
+layout: default
+title: Core concepts
+nav_order: 20
+has_children: true
+---
+
+== Core concepts
+
+This section covers the fundamental concepts of Lutaml::XSD.
+
+Understanding these core concepts will help you work effectively with XSD schemas and the lutaml-xsd library.

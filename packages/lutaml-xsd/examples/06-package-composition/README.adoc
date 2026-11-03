@@ -1,0 +1,387 @@
+= Package Composition Examples
+:toc:
+:toc-title: Contents
+
+== Overview
+
+This directory contains examples demonstrating package composition features in lutaml-xsd. Package composition allows you to combine multiple LXR packages into a unified repository with automatic conflict detection and resolution.
+
+== Examples
+
+=== 1. Simple Composition
+
+File: link:simple_composition.yaml[`simple_composition.yaml`]
+
+The most basic example of composing two packages without conflicts.
+
+**What it demonstrates:**
+
+* Basic `base_packages` configuration
+* Using relative package paths
+* Simple namespace mappings
+
+**Usage:**
+
+[source,bash]
+----
+# Load and inspect the composed repository
+lutaml-xsd pkg ls simple_composition.yaml
+
+# Query types
+lutaml-xsd pkg type simple_composition.yaml "Person"
+----
+
+**Ruby API:**
+
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+repo = Lutaml::Xsd::SchemaRepository.from_yaml_file(
+  'examples/06-package-composition/simple_composition.yaml'
+)
+repo.parse.resolve
+
+# Query types from any package
+result = repo.find_type('Person')
+puts "Found: #{result.definition.name}" if result.resolved?
+----
+
+=== 2. Conflict Resolution
+
+File: link:conflict_resolution.yaml[`conflict_resolution.yaml`]
+
+Demonstrates all three conflict resolution strategies: `keep`, `override`, and `error`.
+
+**What it demonstrates:**
+
+* Priority system (lower number = higher priority)
+* `keep` strategy - first definition wins
+* `override` strategy - allows replacement
+* `error` strategy - fails on conflicts
+
+**Key concepts:**
+
+* Priority 0: Highest priority (base/canonical schemas)
+  
+* Priority 10-50: Medium priority (extensions)
+* Priority 100+: Lowest priority (project-specific)
+
+**Usage:**
+
+[source,bash]
+----
+# Load composition with conflict detection
+lutaml-xsd pkg ls conflict_resolution.yaml
+----
+
+**Expected behavior:**
+
+* Priority 0 package wins all conflicts (using `keep`)
+* Priority 10 package can add new types
+* Priority 20 package with `error` strategy will fail if conflicts occur
+
+=== 3. Namespace Remapping
+
+File: link:namespace_remap.yaml[`namespace_remap.yaml`]
+
+Shows how to remap namespace URIs to avoid conflicts.
+
+**What it demonstrates:**
+
+* Namespace URI remapping with `namespace_remapping`
+* Transforming `from_uri` to `to_uri`
+* Multiple remapping rules per package
+
+**Use cases:**
+
+* **Avoiding conflicts**: Two packages use same namespace URI
+* **Version migration**: Map old namespace to new version
+* **Organization standards**: Align external schemas with internal URIs
+* **Testing**: Use local namespaces for development
+
+**Usage:**
+
+[source,bash]
+----
+# Inspect remapped namespaces
+lutaml-xsd pkg ls namespace_remap.yaml
+----
+
+**Ruby API:**
+
+[source,ruby]
+----
+repo = Lutaml::Xsd::SchemaRepository.from_yaml_file(
+  'examples/06-package-composition/namespace_remap.yaml'
+)
+repo.parse.resolve
+
+# Query using remapped namespace
+result = repo.find_type('{http://example.com/custom/unitsml/v1}Unit')
+----
+
+=== 4. Schema Filtering
+
+File: link:schema_filtering.yaml[`schema_filtering.yaml`]
+
+Demonstrates selective schema inclusion using glob patterns.
+
+**What it demonstrates:**
+
+* `exclude_schemas` - Exclude specific schemas
+* `include_only_schemas` - Whitelist approach
+* Glob pattern matching
+* Filter precedence rules
+
+**Glob patterns:**
+
+* `*` - Matches any characters within a path component
+* `**` - Matches across directory boundaries
+* `?` - Matches a single character
+* `[abc]` - Matches any character in the set
+
+**Common patterns:**
+
+[source,yaml]
+----
+# Exclude test files
+exclude_schemas:
+  - "**/test_*.xsd"
+  - "**/*_test.xsd"
+  - "tests/**"
+
+# Include only production schemas
+include_only_schemas:
+  - "production/**"
+  - "release/**"
+  - "**/core/*.xsd"
+----
+
+**Filter precedence:**
+
+1. If `exclude_schemas` matches → exclude
+2. If `include_only_schemas` is set and doesn't match → exclude  
+3. Otherwise → include
+
+**Usage:**
+
+[source,bash]
+----
+# List included schemas (filtered)
+lutaml-xsd pkg ls schema_filtering.yaml
+----
+
+== Common Workflows
+
+=== Creating a Production Composition
+
+[source,yaml]
+----
+base_packages:
+  - package: standards/gml_3.2.1.lxr
+    priority: 0
+    conflict_resolution: keep
+    
+  - package: organization/schemas.lxr
+    priority: 10
+    conflict_resolution: override
+    exclude_schemas:
+      - "**/test_*.xsd"
+      - "**/*_test.xsd"
+----
+
+=== Merging with Version Upgrade
+
+[source,yaml]
+----
+base_packages:
+  - package: schemas_v1.lxr
+    priority: 10
+    namespace_remapping:
+      - from_uri: "http://example.com/v1"
+        to_uri: "http://example.com/legacy/v1"
+    
+  - package: schemas_v2.lxr
+    priority: 0
+    conflict_resolution: override
+----
+
+=== Strict Composition (No Conflicts Allowed)
+
+[source,yaml]
+----
+base_packages:
+  - package: package_a.lxr
+    priority: 0
+    conflict_resolution: error
+    
+  - package: package_b.lxr
+    priority: 10
+    conflict_resolution: error
+----
+
+Any conflicts will cause composition to fail with a detailed error report.
+
+== CLI Commands
+
+=== Inspecting Composed Repositories
+
+[source,bash]
+----
+# List all schemas
+lutaml-xsd pkg ls config.yaml
+
+# View package tree  
+lutaml-xsd pkg tree config.yaml
+
+# Get statistics
+lutaml-xsd pkg stats config.yaml
+
+# Find a type
+lutaml-xsd pkg type config.yaml "TypeName"
+----
+
+=== Validating XML Against Composed Repository
+
+[source,bash]
+----
+lutaml-xsd xml validate instance.xml --schema config.yaml
+----
+
+=== Generating Documentation
+
+[source,bash]
+----
+lutaml-xsd spa config.yaml --output docs.html
+----
+
+== Ruby API Examples
+
+=== Basic Composition
+
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Load composed repository
+repo = Lutaml::Xsd::SchemaRepository.from_yaml_file('config.yaml')
+repo.parse.resolve
+
+# Query types
+result = repo.find_type('gml:CodeType')
+if result.resolved?
+  puts "Found: #{result.definition.name}"
+  puts "Namespace: #{result.namespace}"
+end
+
+# Get statistics
+stats = repo.statistics
+puts "Total types: #{stats[:total_types]}"
+puts "Total namespaces: #{stats[:total_namespaces]}"
+----
+
+=== Programmatic Configuration
+
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Create configuration objects
+config1 = Lutaml::Xsd::BasePackageConfig.new(
+  package: 'package1.lxr',
+  priority: 0,
+  conflict_resolution: 'keep'
+)
+
+config2 = Lutaml::Xsd::BasePackageConfig.new(
+  package: 'package2.lxr',
+  priority: 10,
+  conflict_resolution: 'override',
+  namespace_remapping: [
+    Lutaml::Xsd::NamespaceUriRemapping.new(
+      from_uri: 'http://old.com/ns',
+      to_uri: 'http://new.com/ns'
+    )
+  ],
+  exclude_schemas: ['**/test_*.xsd']
+)
+
+# Create repository with configurations
+repo = Lutaml::Xsd::SchemaRepository.new(
+  base_packages: [config1, config2]
+)
+
+repo.parse.resolve
+----
+
+=== Detecting Conflicts Programmatically
+
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+configs = [
+  Lutaml::Xsd::BasePackageConfig.new(
+    package: 'pkg1.lxr',
+    priority: 0
+  ),
+  Lutaml::Xsd::BasePackageConfig.new(
+    package: 'pkg2.lxr',
+    priority: 10
+  )
+]
+
+# Detect conflicts before loading
+detector = Lutaml::Xsd::PackageConflictDetector.new(configs)
+report = detector.detect_conflicts
+
+if report.has_conflicts?
+  puts "Conflicts detected:"
+  puts "  Namespaces: #{report.namespace_conflicts.size}"
+  puts "  Types: #{report.type_conflicts.size}"
+  puts "  Schemas: #{report.schema_conflicts.size}"
+  
+  puts "\n#{report}"
+else
+  puts "No conflicts detected!"
+end
+----
+
+== Troubleshooting
+
+=== "Conflicts detected with 'error' resolution strategy"
+
+**Cause**: Packages have overlapping definitions and at least one uses `error` strategy.
+
+**Solutions**:
+
+1. Change to `keep` or `override` strategy
+2. Adjust priorities
+3. Use namespace remapping
+4. Filter conflicting schemas
+
+=== "Base package not found"
+
+**Cause**: Package path doesn't exist.
+
+**Check**:
+
+* Package path is relative to config file location
+* File actually exists
+* Use absolute paths if needed
+
+=== "Invalid conflict_resolution"
+
+**Cause**: Invalid strategy value.
+
+**Valid values**: `keep`, `override`, `error`
+
+== See Also
+
+* link:../07-package-merge/README.adoc[Package Merge Example] - Merging base packages with new XSD files
+* link:../../docs/PACKAGE_COMPOSITION.adoc[Package Composition Guide] - Complete documentation
+* link:../../docs/LXR_PACKAGES.adoc[LXR Package Guide] - Package creation and structure
+* link:../../docs/CLI.adoc[CLI Reference] - Command-line tools
+* link:../../docs/core-concepts/NAMESPACES.adoc[Namespace Guide] - Namespace handling
+* link:../../docs/RUBY_API.adoc[Ruby API] - Programmatic usage

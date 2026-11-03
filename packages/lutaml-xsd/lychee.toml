@@ -1,0 +1,41 @@
+# Lychee link checker configuration
+# See https://lychee.cli.rs/configuration/
+
+# Ignore these directories
+exclude = [".git", "node_modules", "vendor", "frontend/node_modules"]
+
+# Ignore these URL patterns (known broken links in docs)
+skip = [
+  "localhost",
+  "http://schemas/",
+  "https://schemas/",
+  "https://www.geospatial.jp/iur/urf/3.2",
+  "https://www.geospatial.jp/iur/uro/3.2",
+  "http://www.opengis.net/citygml/2.0",
+  "http://www.opengis.net/citygml/building/2.0",
+  "http://www.opengis.net/citygml/transportation/2.0",
+  "http://www.opengis.net/citygml/appearance/2.0",
+  "https://www.lutaml.org/lutaml-xsd",
+  "https://schemas.opengis.net/",
+  "https://schemas.isotc211.org/",
+  "http://schemas.isotc211.org/",
+  "https://www.isotc211.org/",
+  "https://www.ogc.org/standards/gml",
+  "https://www.ogc.org/standards/citygml",
+  "http://standards.iso.org/iso/",
+  "https://jekyllrb.com/",
+  "https://docs.asciidoctor.org/",
+  "https://rubygems.org/",
+  "https://docs.lutaml.org/",
+  "http://schemas.internal.com/",
+  "http://partner.external.com/",
+  "http://external.partner.com/",
+  "http://another.new.com/",
+  "https://new.uri.com/",
+  "https://old.uri.com/",
+  "http://new.com/",
+  "http://external.com/",
+]
+
+# User agent
+user-agent = "lychee-link-checker/1.0"

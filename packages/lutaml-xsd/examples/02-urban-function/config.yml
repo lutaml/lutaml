@@ -1,0 +1,208 @@
+# === Package Metadata ===
+metadata:
+  name: "i-UR Urban Function Schemas"
+  version: "3.2.0"
+  title: "i-UR Urban Function"           # Display name (used in SPA header)
+  description: >
+    Japanese international Urban Revitalization (i-UR) standard schemas
+    for urban planning data exchange.
+  license: "PLATEAU license"               # SPDX license identifier
+  license_url: "https://www.mlit.go.jp/plateau/faq/"  # Custom license URL (optional)
+  authors:                                 # Array of authors
+    - name: "Geospatial Japan"
+      email: "info@geospatial.jp"
+  homepage: "https://www.mlit.go.jp/plateau/"
+  repository: "https://github.com/Project-PLATEAU"
+  documentation: "https://www.mlit.go.jp/plateau/"
+  tags:                                   # Nested inside metadata
+    - urban-planning
+    - gml
+    - japan
+    - i-ur
+    - geospatial
+
+  # External documentation links
+  links:
+    - name: "Getting Started"
+      url: "https://lutaml.github.io/lutaml-xsd/getting-started"
+    - name: "API Reference"
+      url: "https://lutaml.github.io/lutaml-xsd/api"
+    - name: "Examples"
+      url: "https://lutaml.github.io/lutaml-xsd/examples"
+    - name: "Homepage"
+      url: "https://www.geospatial.jp/iur/"
+    - name: "Repository"
+      url: "https://github.com/lutaml/lutaml-xsd"
+
+# === Build Options ===
+build:
+  xsd_mode: include_all           # include_all | allow_external
+  resolution_mode: resolved        # bare | resolved
+  serialization_format: marshal    # marshal | json | yaml | parse
+
+# === Schema Entry Points ===
+files:
+  - schemas/urbanFunction.xsd
+  - schemas/urbanObject.xsd
+  - schemas/fgd/FGD_GMLSchema.xsd
+  - schemas/jmp/jmp20.xsd
+
+# === Schema Location Mappings ===
+schema_location_mappings:
+  # Map urbanObject import to local file
+  - from: "../../uro/3.2/urbanObject.xsd"
+    to: schemas/urbanObject.xsd
+    pattern: false
+
+  # Map relative ISO 19139 paths (gmd, gco, gss, gts, gmx, gsr)
+  - from: '(?:\.\./)+((?:gmd|gco|gss|gts|gmx|gsr)/(.+\.xsd))$'
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/\1
+    pattern: true
+
+  # Map bare ISO 19139 schema filenames
+  - from: '^(gmd|gco|gss|gts|gmx|gsr)\.xsd$'
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/\1/\1.xsd
+    pattern: true
+
+  # Map GML bare filenames (no gml/ prefix)
+  - from: '^(basicTypes|coordinateOperations|coordinateReferenceSystems|coordinateSystems|coverage|datums|defaultStyle|deprecatedTypes|dictionary|direction|dynamicFeature|feature|geometryAggregates|geometryBasic0d1d|geometryBasic2d|geometryComplexes|geometryPrimitives|gml|gmlBase|grids|measures|observation|referenceSystems|temporal|temporalReferenceSystems|temporalTopology|topology|units|valueObjects|geometryComplexes)\.xsd$'
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/gml/3.2.1/\1.xsd
+    pattern: true
+
+  # Map GML relative paths with gml/ prefix
+  - from: '(?:\.\./)+(gml/.+\.xsd)$'
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/\1
+    pattern: true
+
+  # Map ISO relative paths
+  - from: '(?:\.\./)+(iso/.+\.xsd)$'
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/\1
+    pattern: true
+
+  # Map xlink relative paths
+  - from: '(?:\.\./)+(xlink/.+\.xsd)$'
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/\1
+    pattern: true
+
+  # Map CityGML 2.0 HTTP URLs to local files
+  - from: '^http://schemas\.opengis\.net/citygml/2\.0/(.+\.xsd)$'
+    to: ../../spec/fixtures/citygml/2.0/\1
+    pattern: true
+
+  # Map CityGML module HTTP URLs to local files
+  - from: '^http://schemas\.opengis\.net/citygml/([^/]+)/2\.0/(.+\.xsd)$'
+    to: ../../spec/fixtures/citygml/\1/2.0/\2
+    pattern: true
+
+  # Map GML 3.1.1 base/gml.xsd specifically (3.1.1 not available, map to 3.2.1 gml.xsd)
+  - from: '^http://schemas\.opengis\.net/gml/3\.1\.1/base/gml\.xsd$'
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/gml/3.2.1/gml.xsd
+    pattern: true
+
+  # Map other GML 3.1.1 paths to 3.2.1 (stripping /base/ if present)
+  - from: '^http://schemas\.opengis\.net/gml/3\.1\.1/(?:base/)?(.+\.xsd)$'
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/gml/3.2.1/\1
+    pattern: true
+
+  # Map xAL HTTP URLs to local files (used by CityGML)
+  - from: '^http://docs\.oasis-open\.org/election/external/xAL\.xsd$'
+    to: ../../spec/fixtures/citygml/xAL/xAL.xsd
+    pattern: true
+
+# === Namespace Mappings ===
+namespace_mappings:
+  - prefix: "xs"
+    uri: "http://www.w3.org/2001/XMLSchema"
+  - prefix: "urf"
+    uri: "https://www.geospatial.jp/iur/urf/3.2"
+  - prefix: "uro"
+    uri: "https://www.geospatial.jp/iur/uro/3.2"
+  - prefix: "fgd"
+    uri: "http://fgd.gsi.go.jp/spec/2008/FGD_GMLSchema"
+  - prefix: "gml"
+    uri: "http://www.opengis.net/gml/3.2"
+  - prefix: "xlink"
+    uri: "http://www.w3.org/1999/xlink"
+  - prefix: "jmp"
+    uri: "http://zgate.gsi.go.jp/ch/jmp/"
+
+# === Appearance (for SPA) ===
+appearance:
+  # --- Logos ---
+  logos:
+    square:
+      light:
+        path: "images/logo-plateau_logo-square.svg"
+      dark:
+        path: "images/logo-plateau_logo-square-dark.svg"
+    long:
+      light:
+        path: "images/logo-plateau_logo-long.svg"
+      dark:
+        path: "images/logo-plateau_logo-long-dark.svg"
+    lutaml_logo:
+      light:
+        url: "https://raw.githubusercontent.com/lutaml/branding/main/svg/lutaml-logo_logo-full-light.svg"
+      dark:
+        url: "https://raw.githubusercontent.com/lutaml/branding/main/svg/lutaml-logo_logo-full-dark.svg"
+
+  # --- Favicon ---
+  favicon:
+    - type: "image/png"
+      sizes: "96x96"
+      path: "images/favicon/favicon-96x96.png"
+    - type: "image/svg+xml"
+      path: "images/favicon/favicon.svg"
+    - type: "image/x-icon"
+      path: "images/favicon/favicon.ico"
+    - type: "image/png"
+      sizes: "180x180"
+      path: "images/favicon/apple-touch-icon.png"
+    - type: "application/manifest+json"
+      path: "images/favicon/site.webmanifest"
+
+  # --- Colors (full palette override) ---
+  colors:
+    primary: "#5b9cd4"
+    primary_light: "#7eb3de"
+    primary_dark: "#3d82bf"
+    accent: "#dbab3e"
+    background_primary: "#ffffff"
+    background_secondary: "#f8fafc"
+
+  # --- Typography (full override) ---
+  typography:
+    font_family: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
+    mono_font_family: "'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Droid Sans Mono', 'Source Code Pro', monospace"
+
+  # --- Custom CSS injection ---
+  # Use this to import custom fonts or add custom styles
+  custom_css: |
+    /* Import custom font for Japanese text */
+    /* PLATEAU uses: @import url('https://fonts.realtype.jp/api/script/v4'); */
+
+    /* Example: Override header title font */
+    /* .header-title { font-family: 'Noto Sans JP', sans-serif; } */
+
+  # --- External stylesheets ---
+  stylesheets: []
+
+  # --- Layout overrides (optional) ---
+  layout:
+    header_height: "64px"
+    sidebar_width: "280px"
+    content_padding: "24px"
+
+  # --- Border radius (optional) ---
+  border_radius:
+    default: "0.25rem"
+    lg: "0.5rem"
+    xl: "0.75rem"
+    full: "9999px"
+
+  # --- Shadows (optional) ---
+  shadows:
+    sm: "0 1px 2px 0 rgba(0, 0, 0, 0.05)"
+    default: "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)"
+    md: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)"
+    lg: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"

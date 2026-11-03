@@ -1,0 +1,702 @@
+---
+layout: default
+title: FAQ
+nav_order: 75
+---
+= Frequently Asked Questions
+:toc:
+:toclevels: 3
+
+== Purpose
+
+Quick answers to common questions about Lutaml::XSD, LXR packages, schema mappings, type resolution, performance, and compatibility.
+
+== General
+
+This FAQ is organized by topic. For detailed troubleshooting, see link:../TROUBLESHOOTING[Troubleshooting]. For in-depth guides, see link:../guides[Guides].
+
+== Questions about LXR packages
+
+=== What is an LXR package?
+
+**Answer:**
+
+An LXR (LutaML XSD Repository) package is a self-contained, distributable file containing XSD schemas, type indexes, and metadata. It's a ZIP file with the `.lxr` extension.
+
+Benefits:
+
+* **Fast loading**: Pre-serialized schemas load in milliseconds
+* **Self-contained**: All dependencies bundled together
+* **Portable**: Single file distribution
+* **Offline capable**: No network access required
+
+See link:../LXR_PACKAGES[LXR packages] for details.
+
+=== What's the difference between `resolved` and `bare` mode?
+
+**Answer:**
+
+* **`resolved` mode**: Schemas are pre-parsed and serialized in the package. Loading is instant but package size is larger.
+* **`bare` mode**: Only XSD files and metadata are included. Schemas are parsed on first use. Smaller packages but slower initial loading.
+
+For production, use `resolved` mode for best performance.
+
+See link:../advanced/PERFORMANCE_TUNING#choosing-optimal-package-configuration[Performance tuning] for details.
+
+=== Which serialization format should I use?
+
+**Answer:**
+
+* **`marshal`** (recommended for Ruby): Fastest serialization/deserialization, Ruby-only
+* **`json`**: Cross-platform, human-readable, good for interoperability
+* **`yaml`**: Most human-readable, best for debugging
+* **`parse`**: No serialization, always parse XSD (smallest size, slowest loading)
+
+For production Ruby applications, use `marshal`. For cross-language compatibility, use `json`.
+
+See link:../advanced/PERFORMANCE_TUNING#serialization-format[Serialization format comparison].
+
+=== How do I choose between `include_all` and `allow_external`?
+
+**Answer:**
+
+* **`include_all`** (recommended): Bundles all XSD files into the package. Self-contained and portable.
+* **`allow_external`**: Keeps external schema references. Requires network/file access to external schemas.
+
+Use `include_all` for production to ensure the package works anywhere without external dependencies.
+
+=== Can I use LXR packages across different Ruby versions?
+
+**Answer:**
+
+It depends on the serialization format:
+
+* **`marshal`**: May not be compatible across different Ruby versions
+* **`json`** and **`yaml`**: Compatible across all Ruby versions
+* **`parse`**: Compatible (no serialization involved)
+
+For maximum portability, use `json` or `yaml` format.
+
+=== How large can an LXR package be?
+
+**Answer:**
+
+There's no hard limit, but practical considerations:
+
+* **< 1 MB**: Excellent - loads very fast
+* **1-10 MB**: Good - acceptable load times
+* **10-50 MB**: Large - consider splitting into multiple packages
+* **> 50 MB**: Very large - definitely split into smaller packages
+
+For large schema sets, partition by namespace or feature. See link:../advanced/PERFORMANCE_TUNING#partitioning-strategies[Partitioning strategies].
+
+=== Can I update schemas in an existing package?
+
+**Answer:**
+
+No, LXR packages are immutable. To update schemas:
+
+1. Modify the source XSD files
+2. Update the YAML configuration if needed
+3. Rebuild the package with a new version number
+
+Best practice: Use semantic versioning for package versions.
+
+== Questions about schema mappings
+
+=== What are schema location mappings?
+
+**Answer:**
+
+Schema location mappings redirect XSD import and include statements from external URLs or relative paths to local files.
+
+Example:
+
+[source,yaml]
+----
+schema_location_mappings:
+  - from: "http://www.w3.org/1999/xlink"
+    to: "schemas/xlink/xlinks.xsd"
+----
+
+This makes `http://www.w3.org/1999/xlink` resolve to a local file.
+
+See link:../advanced/SCHEMA_MAPPING_PATTERNS[Schema mapping patterns] for advanced patterns.
+
+=== When should I use regex patterns vs exact strings?
+
+**Answer:**
+
+* **Exact strings**: For specific, known schema locations
+  - Faster matching
+  - Easier to debug
+  - Use for frequently accessed schemas
+
+* **Regex patterns**: For multiple files or variable paths
+  - More flexible
+  - Handles version numbers
+  - Good for entire schema families
+
+Example:
+
+[source,yaml]
+----
+# Exact (preferred for common cases)
+- from: "http://www.opengis.net/gml"
+  to: "schemas/gml/gml.xsd"
+
+# Regex (for multiple files)
+- from: !ruby/regexp /gml\/([\d.]+)\/(.+\.xsd)$/
+  to: "schemas/gml/\1/\2"
+----
+
+=== Do schema mappings affect performance?
+
+**Answer:**
+
+Slightly, but only during package creation:
+
+* Exact string matching: Very fast (O(1))
+* Regex matching: Slower (O(n) where n = number of patterns)
+
+Performance tips:
+
+* Order mappings by frequency (common ones first)
+* Use exact strings for frequently accessed schemas
+* Keep regex patterns simple
+
+Once the package is created, mappings don't affect runtime performance.
+
+=== Can I have multiple mappings for the same source?
+
+**Answer:**
+
+Yes, the first matching mapping is used. Order matters:
+
+[source,yaml]
+----
+schema_location_mappings:
+  # Specific version first
+  - from: "http://schemas.opengis.net/gml/3.2.1/gml.xsd"
+    to: "schemas/gml/3.2.1/gml.xsd"
+
+  # General pattern second (fallback)
+  - from: !ruby/regexp /gml/
+    to: "schemas/gml/latest"
+----
+
+=== How do I debug schema mapping issues?
+
+**Answer:**
+
+1. Enable verbose output:
++
+[source,bash]
+----
+lutaml-xsd pkg build config.yml --verbose
+----
+
+2. Test regex patterns separately:
++
+[source,ruby]
+----
+pattern = /your_pattern/
+test_input = "test/path.xsd"
+puts test_input.gsub(pattern, 'replacement')
+----
+
+3. Check if target files exist:
++
+[source,bash]
+----
+ls -la schemas/path/to/mapped/file.xsd
+----
+
+See link:../advanced/DEBUGGING#debugging-schema-mappings[Debugging schema mappings].
+
+== Questions about type resolution
+
+=== What's the difference between a prefix and Clark notation?
+
+**Answer:**
+
+* **Prefix notation**: `gml:CodeType`
+  - Requires namespace prefix to be registered
+  - Shorter, more readable
+  - Preferred for interactive use
+
+* **Clark notation**: `{http://www.opengis.net/gml}CodeType`
+  - Direct namespace URI
+  - No registration needed
+  - Better for programmatic use
+
+Both resolve to the same type.
+
+=== How do I find all types in a namespace?
+
+**Answer:**
+
+Use the statistics and filtering:
+
+[source,ruby]
+----
+repo = Lutaml::Xsd::SchemaRepository.from_package('schemas.lxr')
+
+# Get all namespaces
+namespaces = repo.all_namespaces
+# => ["http://www.opengis.net/gml", ...]
+
+# Get types by category
+stats = repo.statistics
+puts stats[:types_by_category]
+# => {:complex_type=>78, :simple_type=>45, :element=>22}
+----
+
+For listing specific namespace types, access is through the internal type index (implementation-dependent).
+
+=== Why does type resolution fail with "namespace prefix not registered"?
+
+**Answer:**
+
+The namespace prefix hasn't been configured. Solutions:
+
+1. Add to YAML configuration:
++
+[source,yaml]
+----
+namespace_mappings:
+  - prefix: "gml"
+    uri: "http://www.opengis.net/gml"
+----
+
+2. Configure programmatically:
++
+[source,ruby]
+----
+repo.configure_namespace(prefix: 'gml', uri: 'http://www.opengis.net/gml')
+----
+
+3. Use Clark notation instead:
++
+[source,ruby]
+----
+repo.find_type('{http://www.opengis.net/gml}CodeType')
+----
+
+=== Can I query types before calling `resolve()`?
+
+**Answer:**
+
+No, you must call `resolve()` to build the type index:
+
+[source,ruby]
+----
+repo = Lutaml::Xsd::SchemaRepository.from_yaml_file('config.yml')
+repo.parse    # Parse schemas
+repo.resolve  # Build type index - REQUIRED!
+
+# Now you can query types
+result = repo.find_type('gml:CodeType')
+----
+
+For `resolved` packages loaded with `from_package()`, the type index is already built.
+
+=== What if two schemas define the same type name?
+
+**Answer:**
+
+The first indexed type wins. Type names must be unique within a namespace.
+
+If you have conflicting type names:
+
+1. They should be in different namespaces (proper XSD design)
+2. Use qualified names to distinguish them
+3. The type index uses namespace + local name as the key
+
+=== How fast is type resolution?
+
+**Answer:**
+
+Type resolution is O(1) - constant time regardless of schema size:
+
+* With type index: ~0.001ms per query (1 microsecond)
+* Without index: O(n) - must scan all schemas
+
+Always call `resolve()` or use `resolved` packages for fast queries.
+
+See link:../advanced/PERFORMANCE_TUNING#type-index-performance[Type index performance].
+
+== Questions about performance
+
+=== What's the fastest package configuration?
+
+**Answer:**
+
+For production (fastest loading and queries):
+
+[source,bash]
+----
+lutaml-xsd pkg build config.yml \
+  --xsd-mode include_all \
+  --resolution-mode resolved \
+  --serialization-format marshal
+----
+
+This configuration:
+
+* Loads in ~50ms (for 100 schemas)
+* Type queries in ~0.001ms
+* Self-contained (no external dependencies)
+
+See link:../advanced/PERFORMANCE_TUNING#choosing-optimal-package-configuration[Optimal configuration].
+
+=== How can I reduce package size?
+
+**Answer:**
+
+1. Use `bare` mode instead of `resolved`:
++
+[source,bash]
+----
+--resolution-mode bare
+----
+
+2. Use `parse` format (no serialization):
++
+[source,bash]
+----
+--serialization-format parse
+----
+
+3. Use `allow_external` mode (not recommended for production):
++
+[source,bash]
+----
+--xsd-mode allow_external
+----
+
+4. Split large schema sets into multiple packages
+
+Trade-off: Smaller packages = slower loading.
+
+=== Why is package creation slow?
+
+**Answer:**
+
+Common causes:
+
+1. **Large schema sets**: Parsing hundreds of XSD files takes time
+   - Solution: Use incremental builds or caching
+
+2. **Complex schema dependencies**: Many imports/includes
+   - Solution: Pre-download all dependencies
+
+3. **Slow serialization format**: YAML is slowest
+   - Solution: Use `marshal` for faster serialization
+
+4. **Network access**: Fetching remote schemas
+   - Solution: Use schema location mappings to local files
+
+=== How much memory does Lutaml::XSD use?
+
+**Answer:**
+
+Memory usage depends on schema size and configuration:
+
+* **Resolved package**: 15-20 MB for 100 schemas (schemas pre-loaded)
+* **Bare package**: 5-10 MB initially (grows as schemas are parsed)
+* **Type index**: ~200 KB per 1000 types
+
+For memory-constrained environments:
+
+* Use `bare` mode
+* Process schemas in batches
+* Clear cache periodically with `Schema.clear_cache`
+
+See link:../advanced/PERFORMANCE_TUNING#memory-vs-speed-trade-offs[Memory considerations].
+
+=== Can I use Lutaml::XSD in production?
+
+**Answer:**
+
+Yes! Lutaml::XSD is designed for production use:
+
+* ✓ Fast loading with `resolved` packages
+* ✓ Efficient type queries with type index
+* ✓ No network dependencies with `include_all` mode
+* ✓ Thread-safe schema cache
+* ✓ Stable API
+
+Best practices for production:
+
+1. Use `resolved` + `marshal` packages
+2. Version your packages
+3. Pin lutaml-xsd gem version
+4. Monitor performance metrics
+5. Test package loading in staging environment
+
+== Questions about compatibility
+
+=== Which Ruby versions are supported?
+
+**Answer:**
+
+Lutaml::XSD requires Ruby 2.7.0 or higher:
+
+* Ruby 2.7.x: Supported
+* Ruby 3.0.x: Supported
+* Ruby 3.1.x: Supported
+* Ruby 3.2.x: Supported
+* Ruby 3.3.x: Supported
+
+Note: `marshal` format packages may not be compatible across different Ruby major versions.
+
+=== Can I use Lutaml::XSD with other XML libraries?
+
+**Answer:**
+
+Yes! Lutaml::XSD is complementary to other XML tools:
+
+* **Moxml**: Unified XML adapter layer
+* **REXML**: Use for lightweight XML processing
+* **Ox**: Use for fast XML parsing
+
+Lutaml::XSD focuses on XSD schema modeling and type resolution.
+
+See link:../advanced/INTEGRATION_PATTERNS#validation-tool-integration[Integration patterns].
+
+=== Does Lutaml::XSD support XSD 1.1?
+
+**Answer:**
+
+Lutaml::XSD primarily supports **XSD 1.0**. XSD 1.1 features may have limited or no support.
+
+Supported XSD 1.0 features:
+
+* Complex types, simple types
+* Elements, attributes
+* Groups, attribute groups
+* Imports, includes
+* Restrictions, extensions
+* Enumerations, patterns
+
+=== Can I generate code from XSD schemas?
+
+**Answer:**
+
+Yes! Use Lutaml::XSD's type resolution to build code generators:
+
+[source,ruby]
+----
+repo = Lutaml::Xsd::SchemaRepository.from_package('schemas.lxr')
+result = repo.find_type('gml:CodeType')
+
+if result.resolved?
+  definition = result.definition
+  # Use definition to generate code
+end
+----
+
+See link:../advanced/INTEGRATION_PATTERNS#code-generation-integration[Code generation examples].
+
+=== Is Lutaml::XSD cross-platform?
+
+**Answer:**
+
+Yes, Lutaml::XSD runs on:
+
+* Linux
+* macOS
+* Windows
+
+Packages created with `json` or `yaml` serialization are cross-platform. Marshal format is Ruby-specific but cross-platform within the same Ruby version.
+
+=== Can I use Lutaml::XSD with Rails?
+
+**Answer:**
+
+Yes! Lutaml::XSD works well with Rails:
+
+[source,ruby]
+----
+# config/initializers/schemas.rb
+SCHEMA_REPO = Lutaml::Xsd::SchemaRepository.from_package(
+  Rails.root.join('db', 'schemas', 'schemas.lxr')
+)
+
+# Use in controllers/models
+class MyController < ApplicationController
+  def show
+    result = SCHEMA_REPO.find_type(params[:type_name])
+    # ...
+  end
+end
+----
+
+Best practice: Load the package once in an initializer, not on every request.
+
+== Questions about workflow
+
+=== How do I version my schema packages?
+
+**Answer:**
+
+Use semantic versioning in package metadata:
+
+[source,bash]
+----
+lutaml-xsd pkg build config.yml \
+  --name "My Schemas" \
+  --version "2.1.0" \
+  --output schemas-2.1.0.lxr
+----
+
+Version scheme:
+
+* **MAJOR**: Incompatible schema changes
+* **MINOR**: Backward-compatible additions
+* **PATCH**: Bug fixes, documentation
+
+See link:../guides/CREATING_PACKAGES#package-versioning[Package versioning].
+
+=== How do I manage multiple schema versions?
+
+**Answer:**
+
+Create separate packages for each version:
+
+[source]
+----
+pkg/
+├── schemas-1.0.0.lxr
+├── schemas-2.0.0.lxr
+└── schemas-2.1.0.lxr
+----
+
+Load the appropriate version in your application:
+
+[source,ruby]
+----
+version = ENV['SCHEMA_VERSION'] || '2.1.0'
+package = "pkg/schemas-#{version}.lxr"
+repo = Lutaml::Xsd::SchemaRepository.from_package(package)
+----
+
+=== Should I commit LXR packages to git?
+
+**Answer:**
+
+It depends on package size:
+
+**Small packages (< 1 MB)**: Yes
+* Convenient for development
+* Ensures consistent schemas
+
+**Large packages (> 1 MB)**: No
+* Use Git LFS or artifact storage
+* Build packages in CI/CD
+* Distribute via package registry
+
+Add to `.gitignore` if not committing:
+
+[source]
+----
+pkg/*.lxr
+----
+
+=== How do I integrate with CI/CD?
+
+**Answer:**
+
+Example GitHub Actions workflow:
+
+[source,yaml]
+----
+name: Build Schemas
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ruby/setup-ruby@v1
+      - run: gem install lutaml-xsd
+      - run: lutaml-xsd pkg build config.yml
+      - uses: actions/upload-artifact@v3
+        with:
+          name: schemas
+          path: pkg/*.lxr
+----
+
+See link:../advanced/INTEGRATION_PATTERNS#cicd-integration[CI/CD integration examples].
+
+=== How do I distribute packages to users?
+
+**Answer:**
+
+Options:
+
+1. **GitHub Releases**: Attach `.lxr` files to releases
+2. **Package registry**: Use RubyGems, npm, etc.
+3. **CDN**: Host on AWS S3, CloudFront, etc.
+4. **Direct download**: Include in application repository
+
+Include:
+
+* Package file (`.lxr`)
+* SHA256 checksum
+* README with usage instructions
+* Version information
+
+== Getting more help
+
+=== Where can I find more examples?
+
+**Answer:**
+
+Check these resources:
+
+* link:../guides[Guides] - Step-by-step tutorials
+* `examples/` directory in the repository
+* link:../guides/CITYGML_EXAMPLE[CityGML example]
+* link:../guides/ISO_TC211_EXAMPLE[ISO TC211 example]
+
+=== How do I report bugs or request features?
+
+**Answer:**
+
+1. Search existing issues: https://github.com/lutaml/lutaml-xsd/issues
+2. Create a new issue with:
+   - lutaml-xsd version
+   - Ruby version
+   - Operating system
+   - Clear description
+   - Minimal reproducible example
+
+=== Where is the API documentation?
+
+**Answer:**
+
+API documentation is available:
+
+* link:../reference/RUBY_API[Ruby API reference]
+* link:../CLI[CLI reference]
+* Inline code documentation
+
+=== How can I contribute?
+
+**Answer:**
+
+See link:CONTRIBUTING[Contributing guide] for:
+
+* Code style guidelines
+* Testing requirements
+* Pull request process
+* Development setup
+
+== See also
+
+* link:../TROUBLESHOOTING[Troubleshooting] - Common problems and solutions
+* link:../guides[Guides] - Step-by-step tutorials
+* link:../advanced/DEBUGGING[Debugging] - Advanced troubleshooting
+* link:../CONTRIBUTING[Contributing] - How to contribute

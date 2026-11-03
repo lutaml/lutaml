@@ -1,0 +1,42 @@
+#!/bin/bash
+# Git pre-commit hook for validating XSD schemas
+# Copy this file to .git/hooks/pre-commit and make it executable
+
+echo "Running XSD schema validation..."
+
+# Check if lutaml-xsd is installed
+if ! command -v lutaml-xsd &> /dev/null; then
+    echo "Error: lutaml-xsd is not installed"
+    echo "Install it with: gem install lutaml-xsd"
+    exit 1
+fi
+
+# Get list of XSD files to be committed
+XSD_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.xsd$')
+
+if [ -z "$XSD_FILES" ]; then
+    echo "No XSD files to validate"
+    exit 0
+fi
+
+# Validate each XSD file
+VALIDATION_FAILED=0
+
+for file in $XSD_FILES; do
+    echo "Validating: $file"
+    
+    if ! lutaml-xsd validate-schema "$file"; then
+        echo "❌ Validation failed for $file"
+        VALIDATION_FAILED=1
+    fi
+done
+
+if [ $VALIDATION_FAILED -eq 1 ]; then
+    echo ""
+    echo "❌ Schema validation failed. Commit aborted."
+    echo "Fix the validation errors or use 'git commit --no-verify' to skip validation."
+    exit 1
+fi
+
+echo "✅ All XSD schemas validated successfully"
+exit 0

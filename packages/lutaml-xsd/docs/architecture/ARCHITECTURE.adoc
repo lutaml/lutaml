@@ -1,0 +1,569 @@
+---
+layout: default
+title: Architecture overview
+nav_order: 1
+parent: Architecture
+---
+= System Architecture
+:toc:
+:toclevels: 3
+
+== Purpose
+
+This document provides a comprehensive overview of the lutaml-xsd system architecture, design principles, and component interactions. It explains how the system is organized to parse, manipulate, and serialize XML Schema Definition (XSD) files efficiently.
+
+== General
+
+Lutaml-xsd follows a model-driven architecture built on object-oriented principles. The system is designed around three core responsibilities:
+
+. **Parse XSD** → Convert XML schema files into Ruby object models
+. **Manipulate XSD** → Work with schema structures programmatically
+. **Serialize XSD** → Convert object models back to XML or other formats
+
+The architecture emphasizes separation of concerns, with distinct components for parsing, resolution, indexing, packaging, and serialization. Each component has a single, well-defined responsibility and communicates through clean interfaces.
+
+== Core responsibilities
+
+=== Parse XSD
+
+The parsing subsystem converts XML schema documents into a rich object model that mirrors the XSD structure:
+
+* **Input**: XML schema files (local or remote)
+* **Processing**: XML parsing with namespace awareness
+* **Output**: Hierarchy of Ruby objects ([`Schema`](../lib/lutaml/xsd/schema.rb:6), [`Element`](../lib/lutaml/xsd/element.rb:5), [`ComplexType`](../lib/lutaml/xsd/complex_type.rb:5), etc.)
+
+Key features:
+
+* Handles `<xs:import>` and `<xs:include>` directives automatically
+* Supports schema location mappings for local/remote redirection
+* Resolves relative paths using base location context
+* Fetches remote schemas via HTTP/HTTPS with caching
+
+=== Manipulate XSD
+
+The object model provides programmatic access to all schema components:
+
+* Navigate element hierarchies
+* Query type definitions and attributes
+* Resolve type references across namespaces
+* Build type indexes for fast lookups
+* Validate schema consistency
+
+The [`SchemaRepository`](../lib/lutaml/xsd/schema_repository.rb:10) provides namespace-aware type resolution across multiple schemas, enabling complex multi-schema applications.
+
+=== Serialize XSD
+
+The serialization subsystem supports multiple output formats:
+
+* **XML**: Round-trip serialization back to XSD format
+* **YAML/JSON**: Human-readable schema representations
+* **Marshal**: Binary serialization for Ruby
+* **Packages**: Self-contained `.lxr` archives with pre-indexed schemas
+
+== Component overview
+
+The system consists of several interconnected components:
+
+[source]
+----
+┌─────────────────────────────────────────────────────────────────┐
+│                        lutaml-xsd System                        │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌─────────────────┐        ┌──────────────────┐               │
+│  │  Entry Points   │        │  Configuration   │               │
+│  ├─────────────────┤        ├──────────────────┤               │
+│  │ • Lutaml::Xsd   │        │ • Namespace      │               │
+│  │   .parse()      │        │   Mappings       │               │
+│  │ • CLI Commands  │        │ • Schema         │               │
+│  │ • SchemaRepo    │        │   Location       │               │
+│  │   .from_package │        │   Mappings       │               │
+│  └────────┬────────┘        │ • Package        │               │
+│           │                 │   Configuration  │               │
+│           ▼                 └──────────────────┘               │
+│  ┌─────────────────────────────────────────────┐               │
+│  │           Parsing Layer                     │               │
+│  ├─────────────────────────────────────────────┤               │
+│  │ • XML Parser (lutaml-model)                 │               │
+│  │ • Schema Object Builder                     │               │
+│  │ • Import/Include Processor                  │               │
+│  │ • URL Fetcher (remote schemas)              │               │
+│  └──────────────────┬──────────────────────────┘               │
+│                     │                                           │
+│                     ▼                                           │
+│  ┌─────────────────────────────────────────────┐               │
+│  │         Object Model Layer                  │               │
+│  ├─────────────────────────────────────────────┤               │
+│  │ Schema ──┬── Element                        │               │
+│  │          ├── ComplexType                    │               │
+│  │          ├── SimpleType                     │               │
+│  │          ├── Attribute                      │               │
+│  │          ├── Group                          │               │
+│  │          └── AttributeGroup                 │               │
+│  └──────────────────┬──────────────────────────┘               │
+│                     │                                           │
+│                     ▼                                           │
+│  ┌─────────────────────────────────────────────┐               │
+│  │       Resolution & Indexing Layer           │               │
+│  ├─────────────────────────────────────────────┤               │
+│  │ • SchemaRepository                          │               │
+│  │   ├── NamespaceRegistry                     │               │
+│  │   ├── TypeIndex                             │               │
+│  │   └── QualifiedNameParser                   │               │
+│  │ • SchemaResolver (serialization)            │               │
+│  └──────────────────┬──────────────────────────┘               │
+│                     │                                           │
+│                     ▼                                           │
+│  ┌─────────────────────────────────────────────┐               │
+│  │          Packaging Layer                    │               │
+│  ├─────────────────────────────────────────────┤               │
+│  │ • SchemaRepositoryPackage (.lxr)            │               │
+│  │ • PackageBuilder (orchestrator)             │               │
+│  │ • XsdBundler (file collection)              │               │
+│  │ • PackageConfiguration (strategy)           │               │
+│  └──────────────────┬──────────────────────────┘               │
+│                     │                                           │
+│                     ▼                                           │
+│  ┌─────────────────────────────────────────────┐               │
+│  │        Serialization Layer                  │               │
+│  ├─────────────────────────────────────────────┤               │
+│  │ • XML (to_xml methods)                      │               │
+│  │ • YAML/JSON (lutaml-model)                  │               │
+│  │ • Marshal (binary)                          │               │
+│  │ • Liquid Methods (templating)               │               │
+│  └─────────────────────────────────────────────┘               │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+----
+
+== Data flow diagrams
+
+=== XSD parsing flow
+
+This diagram shows how XSD files are processed through the parsing pipeline:
+
+[source]
+----
+╔═══════════════════╗           ╔═══════════════════════╗
+║   XSD File(s)     ║           ║  Schema Mappings      ║
+║                   ║           ║  (Local redirects)    ║
+╚═════════┬═════════╝           ╚═══════════┬═══════════╝
+          │                                 │
+          └────────────┬────────────────────┘
+                       │
+                       ▼
+              ┌────────────────┐
+              │  XSD Parser    │
+              │  (XML → Model) │
+              └────────┬───────┘
+                       │
+          ┌────────────┼────────────┐
+          │            │            │
+          ▼            ▼            ▼
+    ┌─────────┐  ┌─────────┐  ┌─────────┐
+    │ Schema  │  │ Element │  │  Type   │
+    │ Object  │  │ Objects │  │ Objects │
+    └────┬────┘  └────┬────┘  └────┬────┘
+         │            │            │
+         └────────────┼────────────┘
+                      │
+                      ▼
+              ┌────────────────┐
+              │  Manipulation  │
+              │  & Traversal   │
+              └────────┬───────┘
+                       │
+          ┌────────────┼────────────┐
+          │            │            │
+          ▼            ▼            ▼
+    ┌─────────┐  ┌─────────┐  ┌─────────┐
+    │   XML   │  │  Liquid │  │  Code   │
+    │ Output  │  │Template │  │  Gen    │
+    └─────────┘  └─────────┘  └─────────┘
+----
+
+=== Schema repository resolution flow
+
+This diagram illustrates how type resolution works across multiple schemas:
+
+[source]
+----
+┌──────────────────────────────────────────────────────────────┐
+│                    SchemaRepository                          │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  1. Parse Schemas                                            │
+│     ┌──────────┐  ┌──────────┐  ┌──────────┐                │
+│     │ Schema A │  │ Schema B │  │ Schema C │                │
+│     │  (GML)   │  │ (CityGML)│  │  (i-UR)  │                │
+│     └────┬─────┘  └────┬─────┘  └────┬─────┘                │
+│          │             │             │                       │
+│          └─────────────┼─────────────┘                       │
+│                        │                                     │
+│  2. Build Indexes      ▼                                     │
+│     ┌──────────────────────────────────────┐                │
+│     │        NamespaceRegistry             │                │
+│     │  • gml  → http://...gml/3.2          │                │
+│     │  • core → http://...citygml/2.0      │                │
+│     │  • uro  → https://...iur/uro/3.2     │                │
+│     └──────────────────┬───────────────────┘                │
+│                        │                                     │
+│     ┌──────────────────▼───────────────────┐                │
+│     │           TypeIndex                  │                │
+│     │  by_namespace:                       │                │
+│     │    {http://...gml/3.2}               │                │
+│     │      → CodeType, MeasureType, ...    │                │
+│     │  by_qualified_name:                  │                │
+│     │    gml:CodeType → TypeDefinition     │                │
+│     │    {http://...gml/3.2}CodeType       │                │
+│     │      → TypeDefinition                │                │
+│     │  by_category:                        │                │
+│     │    complex_type → [...]              │                │
+│     │    simple_type  → [...]              │                │
+│     └──────────────────┬───────────────────┘                │
+│                        │                                     │
+│  3. Type Resolution    │                                     │
+│                        ▼                                     │
+│     User Query: "gml:CodeType"                              │
+│            │                                                 │
+│            ▼                                                 │
+│     ┌──────────────────────────────────┐                    │
+│     │   QualifiedNameParser            │                    │
+│     │   Parse: gml:CodeType            │                    │
+│     │     prefix = "gml"               │                    │
+│     │     local_name = "CodeType"      │                    │
+│     └──────────┬───────────────────────┘                    │
+│                │                                             │
+│                ▼                                             │
+│     ┌──────────────────────────────────┐                    │
+│     │   Lookup in NamespaceRegistry    │                    │
+│     │   gml → http://...gml/3.2        │                    │
+│     └──────────┬───────────────────────┘                    │
+│                │                                             │
+│                ▼                                             │
+│     ┌──────────────────────────────────┐                    │
+│     │   Lookup in TypeIndex            │                    │
+│     │   {http://...gml/3.2}CodeType    │                    │
+│     │   → ComplexType definition       │                    │
+│     └──────────┬───────────────────────┘                    │
+│                │                                             │
+│                ▼                                             │
+│     ┌──────────────────────────────────┐                    │
+│     │   TypeResolutionResult           │                    │
+│     │   found?: true                   │                    │
+│     │   type: ComplexType              │                    │
+│     │   namespace: http://...gml/3.2   │                    │
+│     │   schema_file: basicTypes.xsd    │                    │
+│     └──────────────────────────────────┘                    │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+----
+
+=== LXR package creation and loading flow
+
+This diagram shows how LXR packages are created and loaded:
+
+[source]
+----
+Package Creation Flow:
+═══════════════════════
+
+┌──────────────┐
+│  User Config │
+│  (YAML file) │
+└──────┬───────┘
+       │
+       ▼
+┌─────────────────────┐       ┌──────────────────┐
+│ SchemaRepository    │       │ Package          │
+│ .from_yaml_file()   │──────▶│ Configuration    │
+└──────┬──────────────┘       └──────┬───────────┘
+       │                             │
+       │ 1. Parse schemas            │
+       ▼                             │
+┌─────────────────────┐              │
+│ Parse all XSD files │              │
+│ Follow imports      │              │
+└──────┬──────────────┘              │
+       │                             │
+       │ 2. Resolve & index          │
+       ▼                             │
+┌─────────────────────┐              │
+│ Build TypeIndex     │              │
+│ Register namespaces │              │
+└──────┬──────────────┘              │
+       │                             │
+       │ 3. Create package           │
+       ▼                             ▼
+┌────────────────────────────────────────┐
+│         PackageBuilder                 │
+│  • Collect XSD files (XsdBundler)      │
+│  • Serialize schemas (SchemaResolver)  │
+│  • Build metadata                      │
+└──────┬─────────────────────────────────┘
+       │
+       ▼
+┌────────────────────────────────────────┐
+│    SchemaRepositoryPackage             │
+│    Write ZIP with:                     │
+│      • metadata.yaml                   │
+│      • schemas/*.xsd (bundled)         │
+│      • schemas_data/*.marshal          │
+│      • type_index.marshal              │
+└──────┬─────────────────────────────────┘
+       │
+       ▼
+┌──────────────┐
+│  .lxr file   │
+│  (ZIP)       │
+└──────────────┘
+
+
+Package Loading Flow:
+══════════════════════
+
+┌──────────────┐
+│  .lxr file   │
+│  (ZIP)       │
+└──────┬───────┘
+       │
+       ▼
+┌────────────────────────────────────────┐
+│  SchemaRepositoryPackage               │
+│    .load_repository()                  │
+│  1. Validate package structure         │
+│  2. Extract to temp directory          │
+└──────┬─────────────────────────────────┘
+       │
+       ▼
+┌────────────────────────────────────────┐
+│  Load metadata.yaml                    │
+│    • Files list                        │
+│    • Namespace mappings                │
+│    • Package configuration             │
+└──────┬─────────────────────────────────┘
+       │
+       ▼
+┌────────────────────────────────────────┐
+│  Create SchemaRepository               │
+│    with extracted files                │
+└──────┬─────────────────────────────────┘
+       │
+       ▼
+┌────────────────────────────────────────┐
+│  Load pre-serialized schemas           │
+│    from schemas_data/                  │
+│  OR                                    │
+│  Parse XSD files from schemas/         │
+└──────┬─────────────────────────────────┘
+       │
+       ▼
+┌────────────────────────────────────────┐
+│  Register schemas in global cache      │
+│    Schema.processed_schemas            │
+└──────┬─────────────────────────────────┘
+       │
+       ▼
+┌────────────────────────────────────────┐
+│  Build TypeIndex from schemas          │
+│    • Index all types by namespace      │
+│    • Index by qualified names          │
+│    • Index by category                 │
+└──────┬─────────────────────────────────┘
+       │
+       ▼
+┌──────────────────┐
+│ Ready-to-use     │
+│ SchemaRepository │
+│ (instant queries)│
+└──────────────────┘
+----
+
+== Schema resolution system
+
+The schema resolution system handles finding and loading referenced schemas through imports and includes.
+
+=== Resolution strategy
+
+The system uses a multi-layered resolution strategy:
+
+. **Schema mappings** — Check configured mappings first
+  * Exact string match: `from: "path/to/schema.xsd" → to: "local/schema.xsd"`
+  * Regex pattern match: `from: /pattern/ → to: "replacement"`
+. **URL fetching** — If no mapping matches, try fetching from URL
+  * Supports HTTP/HTTPS protocols
+  * Caching of fetched schemas
+. **Relative path resolution** — Resolve relative to base location
+  * Uses `location` parameter from parse context
+
+=== Global schema cache
+
+All parsed schemas are stored in a global cache ([`Schema.processed_schemas`](../lib/lutaml/xsd/schema.rb:181)) to avoid re-parsing:
+
+* **Key**: Schema location (path or URL)
+* **Value**: Parsed [`Schema`](../lib/lutaml/xsd/schema.rb:6) object
+* **Lifecycle**: Persists for application lifetime
+* **Thread safety**: Single-threaded access assumed
+
+This cache enables:
+
+* Circular import prevention
+* Efficient schema reuse across repositories
+* Fast package loading with pre-serialized schemas
+
+=== Import/include processing
+
+When a schema contains `<xs:import>` or `<xs:include>`:
+
+. Check if already in progress (circular import detection)
+. Add to in-progress tracking
+. Resolve schema location using resolution strategy
+. Check global cache for previously parsed schema
+. If not cached, parse and add to cache
+. Remove from in-progress tracking
+. Link parsed schema to parent
+
+== Integration points
+
+=== lutaml-model integration
+
+Lutaml-xsd is built on the [`lutaml-model`](https://github.com/lutaml/lutaml-model) serialization framework:
+
+* **Base class**: All XSD classes inherit from `Lutaml::Model::Serializable`
+* **XML mapping**: Declarative XML element/attribute mappings
+* **Serialization**: Built-in `to_xml`, `to_yaml`, `to_json` methods
+* **Deserialization**: Built-in `from_xml`, `from_yaml`, `from_json` methods
+
+This provides a consistent, maintainable serialization layer across all schema components.
+
+=== Liquid templating integration
+
+All schema objects provide Liquid template methods via [`to_liquid`](../lib/lutaml/xsd/liquid_methods/) modules:
+
+* **Element methods**: `child_elements`, `referenced_type`, `min_occurrences`, etc.
+* **ComplexType methods**: `attribute_elements`, `child_elements`, `used_by`
+* **Attribute methods**: `referenced_name`, `referenced_type`, `cardinality`
+
+These enable schema documentation generation and introspection.
+
+=== CLI integration
+
+The command-line interface provides three main command categories:
+
+* **Package commands**: `build`, `info`, `validate`
+* **Type commands**: `find`, `list`
+* **Stats commands**: `show`
+
+All commands use Thor for option parsing and support multiple output formats (text, YAML, JSON).
+
+== Design principles
+
+=== Single Responsibility Principle (SRP)
+
+Each component has one clear responsibility:
+
+* [`SchemaRepository`](../lib/lutaml/xsd/schema_repository.rb:10) — Manages collection of schemas and provides type resolution
+* [`TypeIndex`](../lib/lutaml/xsd/schema_repository/type_index.rb:8) — Indexes types for fast lookup
+* [`NamespaceRegistry`](../lib/lutaml/xsd/schema_repository/namespace_registry.rb:7) — Manages namespace prefix-to-URI mappings
+* [`QualifiedNameParser`](../lib/lutaml/xsd/schema_repository/qualified_name_parser.rb:7) — Parses qualified names in multiple formats
+* [`PackageBuilder`](../lib/lutaml/xsd/package_builder.rb:7) — Orchestrates package creation
+* [`SchemaRepositoryPackage`](../lib/lutaml/xsd/schema_repository_package.rb:14) — Handles ZIP package operations
+* [`SchemaResolver`](../lib/lutaml/xsd/schema_resolver.rb:7) — Serializes/deserializes schema objects
+
+=== Mutually Exclusive, Collectively Exhaustive (MECE)
+
+The architecture ensures clear boundaries between components without overlap:
+
+* **Parsing layer** handles XML → objects (no serialization concerns)
+* **Object model** represents schema structure (no parsing logic)
+* **Resolution layer** handles type lookups (no file I/O)
+* **Packaging layer** handles distribution (no parsing logic)
+* **Serialization layer** handles format conversion (no business logic)
+
+=== Separation of Concerns
+
+Clear separation between different aspects:
+
+* **Configuration** — Namespace mappings, schema location mappings, package settings
+* **Parsing** — XML processing, object construction
+* **Business logic** — Type resolution, validation, indexing
+* **Persistence** — File I/O, ZIP operations, serialization
+* **Presentation** — CLI commands, Liquid methods, output formatting
+
+=== Strategy Pattern
+
+The packaging system uses the Strategy pattern for flexibility:
+
+* **XSD bundling mode**: `include_all` vs `allow_external`
+* **Resolution mode**: `resolved` vs `bare`
+* **Serialization format**: `marshal`, `json`, `yaml`, `parse`
+
+These three independent axes allow 24 different package configurations optimized for different use cases.
+
+== What lutaml-xsd does
+
+Lutaml-xsd is designed to:
+
+✓ Parse XSD schemas into Ruby object models +
+✓ Handle complex multi-schema applications (imports/includes) +
+✓ Resolve types across namespace boundaries +
+✓ Build fast lookup indexes for qualified names +
+✓ Serialize schemas to multiple formats (XML, YAML, JSON, Marshal) +
+✓ Create distributable package archives (.lxr files) +
+✓ Provide namespace-aware type resolution +
+✓ Support schema location mapping and redirection +
+✓ Enable schema documentation via Liquid templates +
+✓ Validate schema consistency and dependencies +
+✓ Cache parsed schemas for performance +
+
+== What lutaml-xsd does NOT do
+
+Lutaml-xsd is NOT designed to:
+
+✗ Validate XML instances against schemas (use xmllint or similar) +
+✗ Generate code directly (use as foundation for generators) +
+✗ Transform between schema versions automatically +
+✗ Modify schema semantics during parsing +
+✗ Provide XPath or XQuery capabilities +
+✗ Handle non-XSD schema languages (RelaxNG, Schematron) +
+✗ Perform runtime XML data binding +
+✗ Execute XSLT transformations +
+
+== Performance characteristics
+
+=== Parsing performance
+
+* **Initial parse**: Proportional to schema size and import depth
+* **Cached access**: Near-instant (global schema cache)
+* **URL fetching**: Network latency (mitigated by caching)
+
+=== Query performance
+
+* **Type resolution**: O(1) hash lookup in TypeIndex
+* **Namespace lookup**: O(1) hash lookup in NamespaceRegistry
+* **Schema traversal**: O(n) for element/type collections
+
+=== Package performance
+
+* **Package creation**: One-time cost for parsing + indexing
+* **Package loading**: Fast deserialization (especially Marshal format)
+* **Resolved packages**: Instant type queries (no parsing needed)
+
+.Performance comparison: Traditional vs LXR workflow
+[source]
+----
+Traditional Workflow (parse every time):
+  XSD Files → Parse (6+ seconds) → Query
+
+LXR Workflow (resolved package):
+  .lxr Package → Load (<100ms) → Query (instant)
+
+Performance improvement: 60-100x faster
+----
+
+== See also
+
+* link:PACKAGE_INTERNALS[LXR Package Internals]
+* link:TYPE_INDEX[Type Index Implementation]
+* link:../core-concepts/index[Core Concepts]
+* link:index[Architecture Index]

@@ -1,0 +1,808 @@
+= Advanced schema location mappings
+
+== Purpose
+
+This document provides comprehensive guidance on using schema location
+mappings in Lutaml::Xsd. Schema location mappings allow you to redirect XSD
+imports and includes from remote URLs to local file paths, which is essential
+for offline work, ensuring consistent schema versions, and working with
+complex schema hierarchies like CityGML and ISO/TC 211 standards.
+
+== General
+
+When parsing XSD files that import or include schemas from remote URLs, you
+may want to override those locations to use local copies instead. This is
+especially useful when:
+
+* Remote schemas are unavailable or inaccessible
+* You want to work offline
+* You have local copies of standard schemas (e.g., CityGML, GML, ISO/TC 211)
+* You need to ensure consistent schema versions
+* Working with complex schema hierarchies with multiple cross-references
+
+The `schema_mappings` parameter allows you to provide an array of mappings
+that redirect original schema locations to local file paths or alternative
+URLs.
+
+== Mapping types
+
+=== Exact string matching
+
+The simplest form of mapping uses exact string matching.
+
+Syntax:
+
+[source,ruby]
+----
+schema_mappings = [
+  {
+    from: "exact/path/to/schema.xsd", <1>
+    to: "/local/path/to/schema.xsd" <2>
+  }
+]
+----
+<1> Exact string to match
+<2> Replacement path
+
+.Using exact string matches
+[example]
+====
+[source,ruby]
+----
+schema_mappings = [
+  {
+    from: 'http://schemas.opengis.net/gml/3.1.1/base/gml.xsd',
+    to: '/local/schemas/gml/3.1.1/base/gml.xsd'
+  },
+  {
+    from: '../../external/schema.xsd',
+    to: '/absolute/path/to/schema.xsd'
+  }
+]
+----
+====
+
+=== Regular expression patterns
+
+For more flexible mappings, use regular expressions with capture groups.
+
+Syntax:
+
+[source,ruby]
+----
+schema_mappings = [
+  {
+    from: %r{pattern/with/(.+)/capture}, <1>
+    to: '/local/path/\1/replacement' <2>
+  }
+]
+----
+<1> Regex pattern with capture groups
+<2> Replacement using captured values with `\1`, `\2`, etc.
+
+.Using regex patterns for directory mapping
+[example]
+====
+[source,ruby]
+----
+schema_mappings = [
+  # Map all GML schemas from remote to local
+  {
+    from: %r{http://schemas\.opengis\.net/gml/(.+)},
+    to: '/local/schemas/gml/\1'
+  },
+
+  # Handle any number of ../ in relative paths
+  {
+    from: %r{(?:\.\./)+iso/(.+\.xsd)$},
+    to: '/local/schemas/iso/\1'
+  }
+]
+----
+
+The first mapping transforms:
+`http://schemas.opengis.net/gml/3.2.1/gml.xsd` →
+`/local/schemas/gml/3.2.1/gml.xsd`
+
+The second handles:
+`../../iso/19139/gmd.xsd` → `/local/schemas/iso/19139/gmd.xsd`
+`../../../../iso/19139/gmd.xsd` → `/local/schemas/iso/19139/gmd.xsd`
+====
+
+== Mapping resolution order
+
+The schema mapping resolution follows this order:
+
+. *Check schema mappings* — Iterate through the mappings array in order
+. For each mapping, check if the `from` field matches:
+  * If `from` is a String and matches exactly, use the `to` value
+  * If `from` is a Regexp and matches the location, substitute using the `to`
+    value
+. *If no mapping matches, try URL fetching* — The system will attempt to
+  fetch the schema from its original URL
+. *Fall back to relative path resolution* — Resolve as a relative path from
+  the location parameter
+
+When multiple mappings could match, the first matching mapping in the array
+is used. This allows you to control precedence by ordering your mappings
+appropriately.
+
+IMPORTANT: Overly broad regex patterns can prevent the built-in URL fetching
+from working. Only map schemas that you have locally.
+
+== Best practices
+
+=== Keep mappings minimal
+
+Only map schemas that you actually have available locally. Don't create
+mappings for schemas that should be fetched from URLs.
+
+.Comparing broad vs. specific mappings
+[example]
+====
+[source,ruby]
+----
+# BAD - too broad, blocks URL fetching for ALL .xsd files
+schema_mappings = [
+  {
+    from: %r{^([^/]+\.xsd)$},  # Catches everything!
+    to: '/local/path/\1'
+  }
+]
+
+# GOOD - specific to files you have locally
+schema_mappings = [
+  {
+    from: %r{^(gml|gmlBase|feature)\.xsd$},  # Only specific files
+    to: '/local/path/gml/3.2.1/\1.xsd'
+  }
+]
+----
+====
+
+=== Order matters - specific before general
+
+Place more specific patterns before more general ones to ensure correct
+matching.
+
+.Ordering mappings from specific to general
+[example]
+====
+[source,ruby]
+----
+schema_mappings = [
+  # 1. Most specific: exact file path
+  {
+    from: '../../uro/3.2/urbanObject.xsd',
+    to: '/local/path/urbanObject.xsd'
+  },
+
+  # 2. Medium specificity: specific directory with pattern
+  {
+    from: %r{^\.\./(gmd|gco|gts)/(.+\.xsd)$},
+    to: '/local/iso/19139/20070417/\1/\2'
+  },
+
+  # 3. Most general: any GML schema
+  {
+    from: %r{(?:\.\./)+gml/(.+\.xsd)$},
+    to: '/local/path/gml/\1'
+  }
+]
+----
+====
+
+=== Use capture groups for flexible mappings
+
+Regex capture groups allow you to map entire directory structures
+efficiently.
+
+.Using multiple capture groups
+[example]
+====
+[source,ruby]
+----
+# Map schemas with version and file preservation
+{
+  from: %r{http://schemas\.isotc211\.org/(\d{5})/(\d{4})/(.+)},
+  to: '/local/iso/\1/\2/\3'
+}
+
+# This transforms:
+# http://schemas.isotc211.org/19115/2006/gmd/gmd.xsd
+# → /local/iso/19115/2006/gmd/gmd.xsd
+----
+====
+
+=== Let URL fetching work
+
+The system has built-in support for fetching schemas from HTTP/HTTPS URLs.
+Don't block this with overly broad mappings.
+
+.Allowing URL fetching for unmapped schemas
+[example]
+====
+[source,ruby]
+----
+# This lets remote schemas be fetched when not mapped
+schema_mappings = [
+  # Only map what you have locally
+  {
+    from: %r{^(gml|gmlBase|feature)\.xsd$},
+    to: '/local/path/gml/\1.xsd'
+  }
+
+  # Other schemas will be fetched from their URLs automatically
+]
+----
+====
+
+== Working with CityGML and i-UR schemas
+
+=== Schema hierarchy overview
+
+CityGML and i-UR (International Urban Revitalization) schemas form a complex
+hierarchy with multiple cross-references. Understanding this structure is
+essential for creating effective schema mappings.
+
+.CityGML/i-UR schema dependency hierarchy
+[source]
+----
+┌────────────────────────────────────────────────────────────────┐
+│                      i-UR Schemas                              │
+│                                                                │
+│  urbanFunction.xsd ──┐                                         │
+│  urbanObject.xsd ────┤                                         │
+│                      │                                         │
+└──────────────────────┼─────────────────────────────────────────┘
+                       │
+                       ▼
+┌────────────────────────────────────────────────────────────────┐
+│                   CityGML 2.0 Core                             │
+│                                                                │
+│  cityGMLBase.xsd ────┬──► appearance/2.0/appearance.xsd        │
+│                      ├──► building/2.0/building.xsd            │
+│                      ├──► bridge/2.0/bridge.xsd                │
+│                      ├──► transportation/2.0/transportation.xsd│
+│                      ├──► landuse/2.0/landUse.xsd              │
+│                      ├──── ... (other modules)                 │
+│                      │                                         │
+└──────────────────────┼─────────────────────────────────────────┘
+                       │
+                       ▼
+┌────────────────────────────────────────────────────────────────┐
+│                      GML 3.1.1                                 │
+│                                                                │
+│  gml.xsd ────────────┬──► geometryBasic0d1d.xsd               │
+│  feature.xsd         ├──► geometryBasic2d.xsd                 │
+│  geometryAggregates  ├──► geometryPrimitives.xsd              │
+│  topology.xsd        ├──► temporal.xsd                        │
+│  coverage.xsd        ├──── ... (other components)             │
+│                      │                                         │
+└──────────────────────┼─────────────────────────────────────────┘
+                       │
+                       ▼
+┌────────────────────────────────────────────────────────────────┐
+│                  ISO/TC 211 Metadata                           │
+│                                                                │
+│  ISO 19139:2007 ─────┬──► gmd/ (Metadata)                     │
+│                      ├──► gco/ (Common)                        │
+│                      ├──► gts/ (Temporal)                      │
+│                      ├──► gsr/ (Spatial Referencing)           │
+│                      ├──► gss/ (Spatial Schema)                │
+│                      └──► gmx/ (Extended Metadata)             │
+│                      │                                         │
+└──────────────────────┼─────────────────────────────────────────┘
+                       │
+                       ▼
+┌────────────────────────────────────────────────────────────────┐
+│                      XLink 1.0                                 │
+│                                                                │
+│  xlinks.xsd                                                    │
+└────────────────────────────────────────────────────────────────┘
+----
+
+=== Common schemaLocation patterns
+
+The following table shows typical schemaLocation values found in these
+schemas and their meanings:
+
+[cols="2,3,2",options="header"]
+|===
+|Schema Type
+|Example schemaLocation
+|Description
+
+|i-UR relative
+|`../../uro/3.2/urbanObject.xsd`
+|Relative path to related i-UR schema
+
+|CityGML URL
+|`http://schemas.opengis.net/citygml/2.0/cityGMLBase.xsd`
+|Remote OGC CityGML base schema
+
+|CityGML module URL
+|`http://schemas.opengis.net/citygml/building/2.0/building.xsd`
+|Remote OGC CityGML module
+
+|GML relative (bare)
+|`gml.xsd`
+|Bare filename in same directory
+
+|GML relative (up)
+|`../../gml/3.2.1/gml.xsd`
+|Relative path with parent traversal
+
+|ISO relative
+|`../gmd/gmd.xsd`
+|Relative ISO metadata schema
+
+|ISO URL
+|`https://schemas.isotc211.org/19139/20070417/gmd/gmd.xsd`
+|Remote ISO/TC 211 schema
+
+|XLink relative
+|`../../../xlink/xlinks.xsd`
+|Relative XLink schema
+|===
+
+=== Comprehensive example
+
+This example demonstrates a complete schema mapping configuration for parsing
+i-UR schemas with all their dependencies.
+
+.Complete i-UR schema mapping
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Define base paths for clarity
+FIXTURES = File.expand_path('spec/fixtures', __dir__)
+CITYGML_BASE = File.join(FIXTURES, 'citygml')
+CODESYNTHESIS_BASE = File.join(FIXTURES, 'codesynthesis-gml-3.2.1')
+I_UR_BASE = File.join(FIXTURES, 'i-ur')
+ISOTC211_BASE = File.join(FIXTURES, 'isotc211')
+
+# Comprehensive schema mappings for i-UR and dependencies
+schema_mappings = [
+  # ============================================================
+  # 1. i-UR Specific Schemas
+  # ============================================================
+  {
+    from: '../../uro/3.2/urbanObject.xsd',
+    to: File.join(I_UR_BASE, 'urbanObject.xsd')
+  },
+
+  # ============================================================
+  # 2. CityGML Core and Modules (Remote URLs → Local)
+  # ============================================================
+  {
+    from: %r{http://schemas\.opengis\.net/citygml/2\.0/(.+)},
+    to: File.join(CITYGML_BASE, '2.0/\1')
+  },
+  {
+    from: %r{http://schemas\.opengis\.net/citygml/appearance/2\.0/(.+)},
+    to: File.join(CITYGML_BASE, 'appearance/2.0/\1')
+  },
+  {
+    from: %r{http://schemas\.opengis\.net/citygml/building/2\.0/(.+)},
+    to: File.join(CITYGML_BASE, 'building/2.0/\1')
+  },
+  {
+    from: %r{http://schemas\.opengis\.net/citygml/bridge/2\.0/(.+)},
+    to: File.join(CITYGML_BASE, 'bridge/2.0/\1')
+  },
+  {
+    from: %r{http://schemas\.opengis\.net/citygml/transportation/2\.0/(.+)},
+    to: File.join(CITYGML_BASE, 'transportation/2.0/\1')
+  },
+  {
+    from: %r{http://schemas\.opengis\.net/citygml/landuse/2\.0/(.+)},
+    to: File.join(CITYGML_BASE, 'landuse/2.0/\1')
+  },
+  {
+    from: %r{http://schemas\.opengis\.net/citygml/vegetation/2\.0/(.+)},
+    to: File.join(CITYGML_BASE, 'vegetation/2.0/\1')
+  },
+  {
+    from: %r{http://schemas\.opengis\.net/citygml/waterbody/2\.0/(.+)},
+    to: File.join(CITYGML_BASE, 'waterbody/2.0/\1')
+  },
+
+  # ============================================================
+  # 3. GML 3.x Schemas (Relative Paths with Multiple ../)
+  # ============================================================
+  {
+    from: %r{(?:\.\./)+xlink/(.+\.xsd)$},
+    to: File.join(CODESYNTHESIS_BASE, 'xlink/\1')
+  },
+  {
+    from: %r{(?:\.\./)+gml/(.+\.xsd)$},
+    to: File.join(CODESYNTHESIS_BASE, 'gml/\1')
+  },
+
+  # ============================================================
+  # 4. GML Bare Filenames (gml.xsd, feature.xsd, etc.)
+  # ============================================================
+  {
+    from: %r{^(basicTypes|coordinateOperations|coordinateSystems|coverage|
+              datums|defaultStyle|dictionary|direction|dynamicFeature|
+              feature|geometryAggregates|geometryBasic0d1d|geometryBasic2d|
+              geometryComplexes|geometryPrimitives|gml|gmlBase|grids|
+              measures|observation|referenceSystems|temporal|
+              temporalReferenceSystems|temporalTopology|
+              topology|units|valueObjects)\.xsd$}x,
+    to: File.join(CODESYNTHESIS_BASE, 'gml/3.2.1/\1.xsd')
+  },
+
+  # ============================================================
+  # 5. ISO 19139 Metadata Schemas (Relative Paths)
+  # ============================================================
+  {
+    from: %r{^\.\./gmd/(.+\.xsd)$},
+    to: File.join(CODESYNTHESIS_BASE, 'iso/19139/20070417/gmd/\1')
+  },
+  {
+    from: %r{^\.\./gco/(.+\.xsd)$},
+    to: File.join(CODESYNTHESIS_BASE, 'iso/19139/20070417/gco/\1')
+  },
+  {
+    from: %r{^\.\./gts/(.+\.xsd)$},
+    to: File.join(CODESYNTHESIS_BASE, 'iso/19139/20070417/gts/\1')
+  },
+  {
+    from: %r{^\.\./gsr/(.+\.xsd)$},
+    to: File.join(CODESYNTHESIS_BASE, 'iso/19139/20070417/gsr/\1')
+  },
+  {
+    from: %r{^\.\./gss/(.+\.xsd)$},
+    to: File.join(CODESYNTHESIS_BASE, 'iso/19139/20070417/gss/\1')
+  },
+  {
+    from: %r{^\.\./gmx/(.+\.xsd)$},
+    to: File.join(CODESYNTHESIS_BASE, 'iso/19139/20070417/gmx/\1')
+  },
+
+  # ============================================================
+  # 6. ISO Schemas with Deep Relative Paths
+  # ============================================================
+  {
+    from: %r{(?:\.\./)+iso/(.+\.xsd)$},
+    to: File.join(CODESYNTHESIS_BASE, 'iso/\1')
+  },
+
+  # ============================================================
+  # 7. ISO/TC 211 URL Mappings
+  # ============================================================
+  {
+    from: %r{https://schemas\.isotc211\.org/(.+)},
+    to: File.join(CODESYNTHESIS_BASE, 'iso/\1')
+  },
+
+  # ============================================================
+  # 8. ISO Standards by Number (19115, 19139, etc.)
+  # ============================================================
+  {
+    from: %r{(?:\.\./)+(\d{5}/.+\.xsd)$},
+    to: File.join(ISOTC211_BASE, '\1')
+  }
+]
+
+# Parse the i-UR schema with all mappings
+xsd_file = File.join(I_UR_BASE, 'urbanFunction.xsd')
+xsd_content = File.read(xsd_file)
+
+parsed_schema = Lutaml::Xsd.parse(
+  xsd_content,
+  location: File.dirname(xsd_file),
+  schema_mappings: schema_mappings
+)
+
+# Verify the schema was parsed with all dependencies
+puts "Successfully parsed i-UR schema with dependencies:"
+puts "  Target namespace: #{parsed_schema.target_namespace}"
+puts "  Elements: #{parsed_schema.element.size}"
+puts "  Complex types: #{parsed_schema.complex_type.size}"
+puts "  Imports: #{parsed_schema.import.size}"
+puts "  Includes: #{parsed_schema.include.size}"
+
+# Access specific schema components
+parsed_schema.element.each do |element|
+  puts "  - Element: #{element.name}"
+end
+----
+
+This comprehensive example demonstrates:
+
+* **Organized mapping groups** — Mappings are grouped by schema type for
+  clarity
+* **Specific-to-general ordering** — Most specific mappings come first
+* **Flexible path handling** — Handles both relative and absolute paths
+* **URL redirection** — Maps remote URLs to local files
+* **Pattern consolidation** — Uses regex efficiently for related schemas
+* **Maintainability** — Base path constants make updates easier
+====
+
+=== Debugging schema mappings
+
+When working with complex schema hierarchies, use these techniques to debug
+mapping issues:
+
+.Enable verbose output to see resolution
+[example]
+====
+[source,ruby]
+----
+# Add logging to see which mappings are used
+schema_mappings.each_with_index do |mapping, i|
+  puts "Mapping #{i}: #{mapping[:from]} → #{mapping[:to]}"
+end
+
+# Parse with mappings
+parsed_schema = Lutaml::Xsd.parse(
+  xsd_content,
+  location: location,
+  schema_mappings: schema_mappings
+)
+
+# Check what was actually imported
+puts "\nImported schemas:"
+parsed_schema.import.each do |imp|
+  puts "  - #{imp.schema_location} (namespace: #{imp.namespace})"
+end
+----
+====
+
+.Test individual mappings
+[example]
+====
+[source,ruby]
+----
+# Test if a specific path matches your patterns
+test_path = "../../gml/3.2.1/gml.xsd"
+
+schema_mappings.each do |mapping|
+  from = mapping[:from]
+  to = mapping[:to]
+
+  if from.is_a?(Regexp)
+    if test_path =~ from
+      result = test_path.gsub(from, to)
+      puts "MATCH: #{test_path} → #{result}"
+    end
+  elsif from == test_path
+    puts "EXACT MATCH: #{test_path} → #{to}"
+  end
+end
+----
+====
+
+== Common patterns
+
+=== Mapping HTTP/HTTPS URLs to local files
+
+.Redirecting remote schemas to local cache
+[example]
+====
+[source,ruby]
+----
+schema_mappings = [
+  # OGC schemas
+  {
+    from: %r{https?://schemas\.opengis\.net/(.+)},
+    to: '/local/cache/opengis/\1'
+  },
+
+  # W3C schemas
+  {
+    from: %r{https?://www\.w3\.org/(.+\.xsd)$},
+    to: '/local/cache/w3c/\1'
+  },
+
+  # ISO/TC 211 schemas
+  {
+    from: %r{https?://schemas\.isotc211\.org/(.+)},
+    to: '/local/cache/isotc211/\1'
+  }
+]
+----
+====
+
+=== Handling version-specific schemas
+
+.Mapping different versions to appropriate local paths
+[example]
+====
+[source,ruby]
+----
+schema_mappings = [
+  # GML 3.2.1
+  {
+    from: %r{gml/3\.2\.1/(.+)},
+    to: '/local/schemas/gml-3.2.1/\1'
+  },
+
+  # GML 3.1.1
+  {
+    from: %r{gml/3\.1\.1/(.+)},
+    to: '/local/schemas/gml-3.1.1/\1'
+  },
+
+  # CityGML 2.0
+  {
+    from: %r{citygml/2\.0/(.+)},
+    to: '/local/schemas/citygml-2.0/\1'
+  }
+]
+----
+====
+
+=== Cross-platform path handling
+
+.Using File.join for platform-independent paths
+[example]
+====
+[source,ruby]
+----
+# Define base directory
+base_dir = File.expand_path('schemas', __dir__)
+
+schema_mappings = [
+  {
+    from: %r{gml/(.+)},
+    to: File.join(base_dir, 'gml', '\1')  # Works on Windows and Unix
+  },
+  {
+    from: %r{citygml/(.+)},
+    to: File.join(base_dir, 'citygml', '\1')
+  }
+]
+----
+====
+
+== Troubleshooting
+
+=== Mapping not being applied
+
+*Problem:* Your schema mapping is not being used, and the parser tries to
+fetch from the original URL.
+
+*Solutions:*
+
+1. Check pattern order — Ensure specific patterns come before general ones
+2. Verify regex syntax — Test your regex pattern separately
+3. Check for typos — Ensure exact string matches are accurate
+4. Verify file exists — Confirm the `to` path points to an existing file
+
+.Testing a regex pattern
+[example]
+====
+[source,ruby]
+----
+pattern = %r{http://schemas\.opengis\.net/citygml/(.+)}
+test_url = "http://schemas.opengis.net/citygml/2.0/cityGMLBase.xsd"
+
+if test_url =~ pattern
+  puts "Match! Captured: #{$1}"
+else
+  puts "No match - check your pattern"
+end
+----
+====
+
+=== File not found after mapping
+
+*Problem:* The mapping resolves to a path, but the file doesn't exist there.
+
+*Solutions:*
+
+1. Verify local file structure matches schema references
+2. Check file permissions
+3. Use absolute paths in `to` field
+4. Verify capture group substitution is correct
+
+.Debugging path resolution
+[example]
+====
+[source,ruby]
+----
+mapping = {
+  from: %r{(?:\.\./)+gml/(.+)},
+  to: '/local/schemas/gml/\1'
+}
+
+test_path = "../../gml/3.2.1/gml.xsd"
+resolved = test_path.gsub(mapping[:from], mapping[:to])
+
+puts "Original: #{test_path}"
+puts "Resolved: #{resolved}"
+puts "Exists? #{File.exist?(resolved)}"
+----
+====
+
+=== Circular dependencies
+
+*Problem:* Schemas reference each other in a circular manner.
+
+*Solution:* Lutaml::Xsd handles circular dependencies automatically by
+tracking already-loaded schemas. Ensure all schemas in the cycle have
+appropriate mappings.
+
+== Performance considerations
+
+=== Caching parsed schemas
+
+For applications that parse the same schemas repeatedly, consider caching the
+parsed results.
+
+.Simple schema cache
+[example]
+====
+[source,ruby]
+----
+class SchemaCache
+  def initialize
+    @cache = {}
+  end
+
+  def get(file_path, location:, schema_mappings:)
+    cache_key = [file_path, location, schema_mappings].hash
+
+    @cache[cache_key] ||= begin
+      content = File.read(file_path)
+      Lutaml::Xsd.parse(
+        content,
+        location: location,
+        schema_mappings: schema_mappings
+      )
+    end
+  end
+end
+
+# Usage
+cache = SchemaCache.new
+schema = cache.get(
+  'schema.xsd',
+  location: '/path/to/schemas',
+  schema_mappings: mappings
+)
+----
+====
+
+=== Minimizing mapping complexity
+
+Keep regex patterns as simple as possible for better performance.
+
+.Prefer specific patterns over complex ones
+[example]
+====
+[source,ruby]
+----
+# SLOWER - complex pattern with multiple alternatives
+{
+  from: %r{(?:http://|https://|//)schemas\.(?:opengis|ogc)\.net/(.+)},
+  to: '/local/\1'
+}
+
+# FASTER - separate simple patterns
+[
+  {
+    from: %r{http://schemas\.opengis\.net/(.+)},
+    to: '/local/\1'
+  },
+  {
+    from: %r{https://schemas\.opengis\.net/(.+)},
+    to: '/local/\1'
+  }
+]
+----
+====
+
+== See also
+
+* link:../README.adoc[Main Documentation]
+* link:https://www.ogc.org/standards/citygml[CityGML Standard]
+* link:https://www.isotc211.org/[ISO/TC 211 Geographic Information]
+* link:https://www.ogc.org/standards/gml[GML Standard]

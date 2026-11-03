@@ -1,0 +1,42 @@
+# JSON Schema export
+
+`Lutaml::Xsd::JsonSchemaExporter` writes an XSD schema as a JSON Schema
+2020-12 document.
+
+```ruby
+schema = Lutaml::Xml::Schema::Xsd.parse(File.read("schema.xsd"))
+json = Lutaml::Xsd::JsonSchemaExporter.new(schema).to_json
+File.write("schema.json", json)
+```
+
+## What maps
+
+- top-level `complexType`/`simpleType`/`element` declarations → `$defs`
+- `sequence` / `all` elements → `properties`; `minOccurs > 0` → `required`
+- `maxOccurs > 1` / `unbounded` → `{"type": "array", "items": ...}`
+- `choice` and top-level elements → `oneOf`
+- attributes → `properties`; `use="required"` → `required`; `fixed` → `const`
+- `simpleType` restrictions: `enumeration` → `enum`; `pattern` → `pattern`;
+  length/range facets → `minLength`/`maxLength`/`minimum`/`maximum`/
+  `exclusiveMinimum`/`exclusiveMaximum`
+- built-in types to JSON types/formats (date → `format: date`, dateTime →
+  `date-time`, time → `time`, anyURI → `uri`, integer family → `integer`,
+  decimal/float/double → `number`)
+- `nillable="true"` → the JSON type accepts `null`
+
+## Loss table (deliberate)
+
+| XSD | JSON Schema outcome |
+|---|---|
+| XSD regular expressions | emitted verbatim; XSD regex dialect differs from ECMA-262 — patterns may over/under-match |
+| `key` / `keyref` / `unique` identity constraints | not representable; dropped |
+| substitution groups | members are separate `$defs`; head/member relation is not encoded |
+| complex-type derivation (extension/restriction) | flattened into the derived type; base linkage lost |
+| `anyAttribute` / open content | not represented (`additionalProperties: false` is emitted) |
+| wildcards (`xs:any`) | not represented |
+| default values | not emitted (defaults are instance-processing semantics) |
+| mixed content | modelled as element properties only; interleaved text is not captured |
+| XSD 1.1 assertions / alternatives / openContent | not represented |
+
+The exporter targets documentation, tooling interop, and contract
+publication; it is not a validation-equivalence layer.

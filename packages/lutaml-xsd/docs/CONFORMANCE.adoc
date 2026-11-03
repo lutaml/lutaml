@@ -1,0 +1,51 @@
+# Conformance suite
+
+`spec/conformance/cases/` holds one directory per case class, modelled on
+the W3C XML Schema Test Suite category taxonomy. The canonical 2007 suite
+distribution is no longer served from w3.org (checked 2026-10-20); cases
+here are original, and a vendored upstream subset can be added later with
+a provenance + license README alongside it.
+
+## Case layout
+
+```
+spec/conformance/cases/<case-name>/
+  schema.xsd        # the schema under test
+  valid-*.xml       # instances that MUST validate
+  invalid-*.xml     # instances that MUST NOT validate
+```
+
+## Running
+
+```bash
+bundle exec rake conformance
+```
+
+Prints a per-mode report and writes `tmp/conformance_report.md`.
+
+Two modes are measured independently:
+
+- **engine** — `Moxml::XSD` tier-1 validation through `EngineContext`
+  (leptris when the adapter ships an engine)
+- **pipeline** — the production `Validator` stack (`ValidationJob` with
+  the default rule registry)
+
+## Baseline and gap register
+
+Current measured result (2026-10-23, 20 case classes / 42 checks):
+
+- **pipeline** — 42/42 (100.0%)
+- **engine** — 38/42 (90.5%); the four remaining are documented tier-1
+  laxness (strict wildcard and anyAttribute under-detection, `xsi:nil` on
+  non-nillable elements, wrong-namespace root matching), tracked in
+  lutaml/moxml#452
+
+The full history and gap register live in `TODO.conformance.md`; each
+failing check maps to a tracked gap, and the register is the work queue
+for the conformance pillar.
+
+## Adding a case
+
+Create the directory, add `schema.xsd`, at least one `valid-*.xml` and one
+`invalid-*.xml`, and re-run the rake task. No registration needed — the
+runner discovers directories containing `schema.xsd`.

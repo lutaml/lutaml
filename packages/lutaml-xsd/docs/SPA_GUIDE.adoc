@@ -1,0 +1,608 @@
+= SPA Documentation Generator - User Guide
+:toc: left
+:toclevels: 3
+:sectnums:
+
+== Introduction
+
+=== Purpose
+
+The SPA (Single Page Application) Documentation Generator creates modern, interactive HTML documentation from XSD schema packages. It provides an intuitive user interface for exploring schema structures, types, elements, and their relationships.
+
+=== Key features
+
+* **Modern responsive UI** - Optimized for mobile, tablet, and desktop viewing
+* **Dark mode support** - Automatic system preference detection with manual toggle
+* **Advanced search** - Real-time fuzzy matching across all schema components
+* **Type filtering** - Filter by element, complex type, simple type, attribute group, group
+* **Inline complex types** - Anonymous complex types within elements are displayed with synthetic names
+* **Interactive group tree view** - Expandable tree for groups with nested choices and sequences
+* **Zero dependencies** - Self-contained HTML, CSS, and JavaScript
+* **Offline-capable** - Works without internet connection (inlined mode)
+* **Accessibility** - WCAG 2.1 AA compliant
+* **Two output modes** - Single-file (inlined) or separate assets (cdn)
+
+=== When to use SPA documentation
+
+Use the SPA generator when you need to:
+
+* Share schema documentation with team members or stakeholders
+* Create browsable documentation for schema consumers
+* Provide interactive schema exploration without technical tools
+* Generate offline-capable documentation
+* Create professional schema reference sites
+
+== Getting started
+
+=== Prerequisites
+
+* Ruby 3.0 or higher
+* Lutaml-xsd gem installed
+* An LXR package file or XSD schemas
+
+=== Quick start
+
+[source,bash]
+----
+# From an LXR package (generates single self-contained HTML)
+lutaml-xsd spa schemas.lxr --output docs.html
+
+# With custom title
+lutaml-xsd spa schemas.lxr --output schema-docs.html --title "My Schema Documentation"
+
+# With separate asset files (requires HTTP server)
+lutaml-xsd spa schemas.lxr --output docs.html --mode cdn
+----
+
+Open the generated HTML file in your browser to view the documentation.
+
+== Output modes
+
+=== Inlined mode (default)
+
+Inlined mode generates a standalone HTML file with all assets embedded.
+
+==== Advantages
+
+* **Portable** - Just one file to share via email, file sharing, or version control
+* **Offline** - No external dependencies, works anywhere
+* **Simple deployment** - Copy the file to any location
+* **Easy distribution** - Attach to emails, share in chat, commit to repos
+
+==== Disadvantages
+
+* **Larger file size** - All assets are embedded (typically 50-200KB)
+* **No caching** - Browser can't cache CSS/JS separately
+* **Slower updates** - Must regenerate entire file for any change
+
+==== When to use
+
+Use inlined mode for:
+
+* Email attachments or file sharing
+* Offline documentation needs
+* Simple deployment scenarios
+* Documentation snapshots
+* Version control (single file to track)
+
+==== Example
+
+[source,bash]
+----
+# Generate standalone documentation
+lutaml-xsd spa person_schemas.lxr \
+  --output person-documentation.html \
+  --title "Person Schema Documentation"
+----
+
+Output:
+----
+person-documentation.html  (125 KB)
+----
+
+=== CDN mode
+
+Generates an HTML file with separate JavaScript and CSS files alongside it. The HTML loads Vue.js from a CDN. Requires serving via HTTP (not file://).
+
+==== When to use
+
+Use CDN mode for:
+
+* Web hosting with better caching
+* Larger schema sets
+* Professional deployment behind a web server
+
+==== Example
+
+[source,bash]
+----
+# Generate documentation with separate assets
+lutaml-xsd spa person_schemas.lxr --output docs.html --mode cdn
+----
+
+Output:
+----
+docs/
+├── docs.html       (HTML that loads assets externally)
+├── app.iife.js     (Application JavaScript)
+└── style.css       (Stylesheet)
+----
+
+== Using the documentation
+
+=== Navigation
+
+The documentation interface consists of:
+
+* **Header** - Title and dark mode toggle
+* **Search bar** - Real-time schema search
+* **Filters** - Type category filters
+* **Content area** - Schema details and listings
+* **Sidebar** - Quick navigation (if enabled)
+
+=== Searching schemas
+
+The search bar provides real-time fuzzy matching:
+
+. Type your search query in the search box
+. Results update automatically as you type
+. Matches are highlighted in the results
+. Search across names, types, and documentation
+
+.Search examples
+====
+* Type `"person"` to find PersonType, PersonElement, etc.
+* Type `"addr"` to find AddressType (fuzzy matching)
+* Type `"string"` to find all string-based types
+====
+
+=== Filtering by type
+
+Use the filter buttons to show specific categories:
+
+* **All** - Show all schema components
+* **Elements** - Global elements only
+* **Complex Types** - Complex type definitions
+* **Simple Types** - Simple type definitions
+* **Attribute Groups** - Attribute group definitions
+* **Groups** - Group definitions
+
+=== Dark mode
+
+Toggle dark mode using the moon/sun icon in the header:
+
+* **Auto mode** - Follows system preference (default)
+* **Light mode** - Force light theme
+* **Dark mode** - Force dark theme
+
+Theme preference is saved in browser local storage.
+
+=== Viewing schema details
+
+Click on any schema component to view:
+
+* **Name and type** - Component identifier and kind
+* **Namespace** - Target namespace URI
+* **Documentation** - Extracted annotations
+* **Structure** - Elements, attributes, restrictions
+* **Relationships** - Used by, extends, references
+
+=== Inline complex types
+
+Elements that define an anonymous `<xs:complexType>` inline (without a `name`
+attribute) are automatically surfaced in the documentation with a synthetic
+name derived from the element name (e.g., `Person_type` for an element named
+`Person`). These inline types appear alongside named complex types in the type
+listing and include all their elements, attributes, sequences, and choices.
+
+=== Group tree view
+
+Schema groups (`xs:group`) are rendered as expandable tree items that show
+nested structure:
+
+* **Groups** — Display name or reference, cardinality, and expandable content
+* **Choices** — Shown with `⟨choice⟩` labels and nested options
+* **Sequences** — Shown with their contained elements and sub-groups
+* **Recursive nesting** — Groups can contain choices containing sequences
+  containing groups, all navigable in the tree
+
+The tree supports arbitrary nesting depth and lazy expansion for large schemas.
+
+== Configuration
+
+=== Overview
+
+The SPA generator is configured through YAML files in `config/spa/`:
+
+* `ui_theme.yml` - Colors, typography, layout
+* `features.yml` - Feature toggles
+* `templates.yml` - Template structure
+
+=== Using custom configuration
+
+Specify a custom configuration file:
+
+[source,bash]
+----
+lutaml-xsd spa schemas.lxr \
+  --output docs.html \
+  --config my-spa-config.yml
+----
+
+=== Theme configuration
+
+Customize colors and layout in `ui_theme.yml`:
+
+[source,yaml]
+----
+theme:
+  colors:
+    primary: "#2563eb"
+    secondary: "#64748b"
+    background_primary: "#ffffff"
+    text_primary: "#0f172a"
+
+  typography:
+    font_family: "system-ui, sans-serif"
+    font_size_base: "1rem"
+
+  layout:
+    sidebar_width: "280px"
+    header_height: "64px"
+    max_width_xl: "1280px"
+----
+
+=== Feature configuration
+
+Enable or disable features in `features.yml`:
+
+[source,yaml]
+----
+features:
+  search:
+    enabled: true
+    fuzzy_matching: true
+
+  filtering:
+    enabled: true
+
+  dark_mode:
+    enabled: true
+    default: "auto"
+
+  navigation:
+    enabled: true
+    show_sidebar: true
+----
+
+=== Template configuration
+
+Customize template structure in `templates.yml`:
+
+[source,yaml]
+----
+templates:
+  layout: "default"
+  components:
+    - head
+    - header
+    - navigation
+    - search
+    - content
+    - footer
+    - scripts
+----
+
+See link:SPA_CONFIGURATION.adoc[Configuration Reference] for complete options.
+
+== Customization
+
+=== Custom themes
+
+Create a custom theme file:
+
+[source,yaml]
+----
+# my-theme.yml
+theme:
+  colors:
+    primary: "#10b981"      # Green
+    secondary: "#6b7280"    # Gray
+    background_primary: "#f9fafb"
+    text_primary: "#111827"
+
+  dark_colors:
+    primary: "#34d399"
+    background_primary: "#1f2937"
+    text_primary: "#f3f4f6"
+----
+
+Use your theme:
+
+[source,bash]
+----
+lutaml-xsd spa schemas.lxr \
+  --config my-theme.yml \
+  --output custom-docs.html
+----
+
+=== Custom title
+
+Set a custom documentation title:
+
+[source,bash]
+----
+lutaml-xsd spa schemas.lxr \
+  --title "My Company Schema Reference" \
+  --output docs.html
+----
+
+=== Minimal configuration
+
+For a minimal feature set:
+
+[source,yaml]
+----
+# minimal.yml
+features:
+  search:
+    enabled: true
+  filtering:
+    enabled: false
+  dark_mode:
+    enabled: false
+  navigation:
+    show_sidebar: false
+----
+
+== Deployment
+
+=== Local file system
+
+For inlined mode, just open the HTML file:
+
+[source,bash]
+----
+# On macOS
+open docs.html
+
+# On Linux
+xdg-open docs.html
+
+# On Windows
+start docs.html
+----
+
+=== Static web hosting
+
+Deploy CDN-mode documentation to static hosts:
+
+==== GitHub Pages
+
+[source,bash]
+----
+# Generate documentation
+lutaml-xsd spa schemas.lxr --output docs.html --mode cdn
+
+# Commit and push
+git add docs/
+git commit -m "docs: update schema documentation"
+git push
+
+# Enable GitHub Pages in repository settings
+# Set source to /docs folder on main branch
+----
+
+==== Netlify
+
+[source,bash]
+----
+# Generate documentation
+lutaml-xsd spa schemas.lxr --output docs.html --mode cdn
+
+# Deploy with Netlify CLI
+netlify deploy --prod --dir=docs
+----
+
+==== Other static hosts
+
+The CDN output works with any static file host:
+
+* **Vercel** - Deploy `docs/` directory
+* **AWS S3** - Upload to bucket, enable static hosting
+* **Azure Static Web Apps** - Deploy as static site
+* **Firebase Hosting** - Deploy with Firebase CLI
+
+See link:SPA_DEPLOYMENT.adoc[Deployment Guide] for detailed instructions.
+
+== Troubleshooting
+
+=== Common issues
+
+==== "Package file not found"
+
+*Problem:* Cannot locate the LXR package file.
+
+*Solution:*
+
+[source,bash]
+----
+# Ensure path is correct
+ls -l schemas.lxr
+
+# Use absolute path if needed
+lutaml-xsd spa /absolute/path/to/schemas.lxr --output docs.html
+----
+
+==== "Template not found"
+
+*Problem:* Missing template files.
+
+*Solution:*
+
+[source,bash]
+----
+# Reinstall the gem
+gem uninstall lutaml-xsd
+gem install lutaml-xsd
+
+# Or update to latest version
+gem update lutaml-xsd
+----
+
+==== "Invalid mode"
+
+*Problem:* Incorrect mode specified.
+
+*Solution:*
+
+[source,bash]
+----
+# Use correct mode values
+lutaml-xsd spa schemas.lxr --mode inlined  # Default, single self-contained HTML
+lutaml-xsd spa schemas.lxr --mode cdn      # Separate asset files
+----
+
+==== Dark mode not working
+
+*Problem:* Dark mode toggle doesn't work.
+
+*Solution:*
+
+* Enable JavaScript in your browser
+* For file:// URLs, use `--allow-file-access-from-files` in Chrome
+* Use a local web server: `python -m http.server 8000`
+* Check console for JavaScript errors
+
+==== Search not working
+
+*Problem:* Search returns no results.
+
+*Solution:*
+
+* Ensure JavaScript is enabled
+* Check browser console for errors
+* Verify the data is embedded/loaded correctly
+* Try regenerating documentation
+
+=== Getting help
+
+If you encounter issues:
+
+. Check this guide's troubleshooting section
+. Review link:../TROUBLESHOOTING.adoc[Main Troubleshooting Guide]
+. Search existing https://github.com/lutaml/lutaml-xsd/issues[GitHub issues]
+. Open a new issue with:
+  * Generated documentation (if small enough)
+  * Error messages
+  * Steps to reproduce
+  * Ruby and gem versions
+
+== Best practices
+
+=== Documentation maintenance
+
+* **Regenerate regularly** - Update docs when schemas change
+* **Version control** - Track documentation in git
+* **Automate** - Use CI/CD to regenerate on schema updates
+* **Test locally** - Always verify docs before deploying
+
+=== Performance
+
+* **Use CDN mode for large schemas** - Better caching and loading
+* **Enable CDN** - Serve static assets from CDN
+* **Compress assets** - Enable gzip on web server
+* **Lazy loading** - Load schema details on demand
+
+=== Accessibility
+
+* **Provide alt text** - For any custom images
+* **Test keyboard navigation** - Tab through interface
+* **Check contrast** - Ensure sufficient color contrast
+* **Screen reader** - Test with screen reader software
+
+== FAQ
+
+=== Can I use this without LXR packages?
+
+Not directly. The generator requires an LXR package as input. However, you can
+quickly create an LXR package from XSD files:
+
+[source,bash]
+----
+# Create minimal config
+echo "files:\n  - schema.xsd" > config.yaml
+
+# Build package
+lutaml-xsd pkg build config.yaml -o schemas.lxr
+
+# Generate documentation
+lutaml-xsd spa schemas.lxr --output docs.html
+----
+
+=== How do I update the documentation?
+
+Regenerate it using the same command:
+
+[source,bash]
+----
+# Regenerates with latest schema changes
+lutaml-xsd spa updated-schemas.lxr --output docs.html
+----
+
+=== Can I customize the HTML structure?
+
+The HTML structure is controlled by Liquid templates. To customize:
+
+1. Copy default templates from `lib/lutaml/xsd/spa/templates/`
+2. Modify as needed
+3. Specify custom template directory in configuration
+
+=== Does it work offline?
+
+Inlined mode works offline:
+
+* **Inlined** - Completely self-contained, no external requests
+
+=== What browsers are supported?
+
+The documentation works in all modern browsers:
+
+* Chrome/Edge (latest 2 versions)
+* Firefox (latest 2 versions)
+* Safari (latest 2 versions)
+* Mobile browsers (iOS Safari, Chrome Mobile)
+
+*Note:* Internet Explorer is not supported.
+
+=== How large can my schemas be?
+
+The generator handles schemas of any size, but browser performance varies:
+
+* **Small** (< 50 types) - Excellent performance
+* **Medium** (50-500 types) - Good performance
+* **Large** (500-2000 types) - Acceptable performance
+* **Very large** (> 2000 types) - May be slow, use CDN mode
+
+For very large schemas, consider:
+
+* Using CDN mode
+* Splitting into multiple packages
+* Enabling lazy loading features
+
+=== Can I host this on an internal network?
+
+Yes! The documentation works on any web server or file system:
+
+* Copy files to internal web server
+* Share via network drives
+* Host on internal GitHub/GitLab
+* Serve from internal static site host
+
+== See also
+
+* link:SPA_CONFIGURATION.adoc[Configuration Reference] - Complete configuration options
+* link:SPA_DEPLOYMENT.adoc[Deployment Guide] - Hosting and CI/CD setup
+* link:SPA_ARCHITECTURE.adoc[Architecture Documentation] - Design and internals
+* link:../TROUBLESHOOTING.adoc[Troubleshooting Guide] - General troubleshooting
+* link:../CLI.adoc[CLI Reference] - Command-line interface guide

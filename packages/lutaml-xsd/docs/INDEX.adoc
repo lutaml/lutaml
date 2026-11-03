@@ -1,0 +1,296 @@
+---
+layout: default
+title: Home
+nav_order: 1
+permalink: /
+---
+= Index
+:toc:
+:toclevels: 2
+
+== Documentation overview
+
+This index organizes all lutaml-xsd documentation by complexity, progressing from
+basic usage to advanced technical topics.
+
+== What's new in lutaml-xsd
+
+Latest version: 1.1.3
+
+Recent highlights:
+
+* 🎉 **RELAX NG Support** - Build packages from `.rng` and `.rnc` files with automatic XSD conversion
+* 🌳 **Interactive Group Tree** - Expandable tree view for groups with nested choices and sequences
+* 📝 **Inline Complex Types** - Anonymous complex types within elements displayed with synthetic names
+* 🎉 **LXR Packages** - Self-contained, portable schema repositories
+* ⚡ **Fast Type Index** - Pre-built indexes for instant lookups
+* 🔧 **Three Configuration Axes** - XSD mode, resolution mode, serialization
+* 📦 **CLI Package Builder** - Interactive package creation workflow
+* 🔍 **Advanced Schema Mappings** - Regex patterns for complex dependencies
+
+See link:CHANGELOG.html[Complete Changelog] for all changes.
+
+== Level 1: Getting started
+
+Start here if you're new to lutaml-xsd:
+
+* **https://github.com/lutaml/lutaml-xsd#readme[README]** - Project overview, installation, and quick
+  start examples
+* **link:INSTALLATION[Installation guide]** - Detailed installation instructions
+* **link:QUICK_START[Quick start]** - Your first XSD parsing and package creation
+
+== Level 2: Basic usage
+
+Learn how to use lutaml-xsd through different interfaces:
+
+* **link:RUBY_API[Ruby API]** - Using lutaml-xsd from Ruby code
+* **link:CLI[Command-line interface]** - Terminal commands and options
+* **link:guides/CREATING_PACKAGES[Creating LXR packages]** - Building schema repository packages
+
+== Level 3: Understanding lutaml-xsd
+
+Learn how lutaml-xsd works internally:
+
+* **link:core-concepts/XSD_ELEMENTS[XSD elements]** - Schema components and structure
+* **link:core-concepts/NAMESPACES[Namespaces and prefixes]** - Namespace handling and mapping
+* **link:LXR_PACKAGES[LXR packages]** - Self-contained schema repositories
+* **link:core-concepts/TYPE_RESOLUTION[Type resolution]** - Finding types across schemas
+* **link:SCHEMA_MAPPINGS[Schema location mappings]** - Path resolution system
+
+== Level 4: Customizing behavior
+
+Configure lutaml-xsd for your specific needs:
+
+* **link:PACKAGE_CONFIGURATION[Package configuration]** - XSD mode, resolution, serialization
+* **link:advanced/SCHEMA_MAPPING_PATTERNS[Schema mapping patterns]** - Regular expressions and patterns
+* **link:NAMESPACE_CONFIGURATION[Namespace configuration]** - Prefix-to-URI mappings
+* **link:SERIALIZATION_OPTIONS[Serialization options]** - Marshal, JSON, YAML, parse modes
+
+== Level 5: Advanced topics
+
+For developers and advanced users:
+
+* **link:ARCHITECTURE[Architecture overview]** - System design and components
+* **link:architecture/PACKAGE_INTERNALS[Package internals]** - LXR package structure
+* **link:architecture/TYPE_INDEX[Type index]** - Fast type lookup implementation
+* **link:advanced/PERFORMANCE_TUNING[Performance tuning]** - Optimization strategies
+* **link:advanced/INTEGRATION_PATTERNS[Integration patterns]** - Using with other tools
+* **link:advanced/DEBUGGING[Debugging guide]** - Troubleshooting techniques
+
+== Documentation by topic
+
+=== XSD parsing and manipulation
+
+* link:core-concepts/XSD_ELEMENTS[XSD elements] - Schema components
+* link:RUBY_API#parsing[Ruby API: Parsing]
+* link:CLI#parse[CLI: Parse operations]
+* link:core-concepts/SERIALIZATION[Serialization] - Converting back to XML
+
+=== LXR packages
+
+* link:LXR_PACKAGES[LXR package concepts] - What and why
+* link:guides/CREATING_PACKAGES[Creating packages] - Build workflow
+* link:PACKAGE_CONFIGURATION[Package configuration] - Options and modes
+* link:architecture/PACKAGE_INTERNALS[Package internals] - Internal structure
+* link:CLI#package-commands[CLI: Package commands]
+
+=== Type resolution
+
+* link:core-concepts/TYPE_RESOLUTION[Type resolution] - Finding types
+* link:core-concepts/NAMESPACES[Namespaces] - Namespace handling
+* link:architecture/TYPE_INDEX[Type index] - Index structure
+* link:CLI#type-commands[CLI: Type commands]
+
+=== Schema location mappings
+
+* link:SCHEMA_MAPPINGS[Schema mappings] - Basic concepts
+* link:advanced/SCHEMA_MAPPING_PATTERNS[Mapping patterns] - Regex patterns
+* link:URL_FETCHING[URL fetching] - Remote schema handling
+* link:guides/CITYGML_EXAMPLE[CityGML example] - Real-world usage
+
+=== Testing and integration
+
+* link:TESTING[Testing with lutaml-xsd] - Test strategies
+* link:advanced/INTEGRATION_PATTERNS[Integration patterns] - Tool integration
+* link:advanced/DEBUGGING[Debugging] - Troubleshooting
+
+=== Technical architecture
+
+* link:ARCHITECTURE[Architecture overview] - System design
+* link:architecture/PACKAGE_INTERNALS[Package internals] - Internal structure
+* link:architecture/TYPE_INDEX[Type index] - Indexing system
+* link:advanced/PERFORMANCE_TUNING[Performance tuning] - Optimization
+
+== Quick reference
+
+=== Cheat sheets
+
+* link:quick-reference/package-configuration-cheatsheet[Package Configuration Cheatsheet] - Configuration decision matrices
+* link:quick-reference/cli-commands-cheatsheet[CLI Commands Cheatsheet] - All commands on one page
+* link:quick-reference/schema-mapping-cheatsheet[Schema Mapping Cheatsheet] - Common mapping patterns
+
+=== Common tasks
+
+**Parse an XSD file**::
+* Ruby: link:RUBY_API#parsing[Parsing section]
+* CLI: link:CLI#parse[Parse command]
+
+**Create an LXR package**::
+* Ruby: link:RUBY_API#packages[Package creation]
+* CLI: link:CLI#package-build[Package build command]
+* Guide: link:guides/CREATING_PACKAGES[Creating packages]
+
+**Find a type**::
+* Ruby: link:RUBY_API#type-resolution[Type resolution]
+* CLI: link:CLI#type-find[Type find command]
+
+**Configure schema mappings**::
+* link:SCHEMA_MAPPINGS[Schema mappings] - Basic mappings
+* link:advanced/SCHEMA_MAPPING_PATTERNS[Mapping patterns] - Advanced patterns
+
+**Work with namespaces**::
+* link:core-concepts/NAMESPACES[Namespace handling]
+* link:NAMESPACE_CONFIGURATION[Namespace configuration]
+
+=== By use case
+
+**Code generation**::
+* link:RUBY_API#schema-traversal[Schema traversal]
+* link:LIQUID_METHODS[Liquid template methods]
+* link:advanced/INTEGRATION_PATTERNS#code-generation[Code generation patterns]
+
+**Schema documentation**::
+* link:LIQUID_METHODS[Liquid methods] - Template helpers
+* link:RUBY_API#introspection[Schema introspection]
+
+**Offline development**::
+* link:LXR_PACKAGES[LXR packages] - Self-contained repositories
+* link:SCHEMA_MAPPINGS[Schema mappings] - Local file mapping
+* link:PACKAGE_CONFIGURATION#xsd-mode[XSD bundling modes]
+
+**Standards compliance**::
+* link:guides/CITYGML_EXAMPLE[CityGML schemas]
+* link:guides/ISO_TC211_EXAMPLE[ISO/TC 211 schemas]
+* link:guides/GML_EXAMPLE[GML schemas]
+
+=== By schema type
+
+**CityGML**::
+* link:guides/CITYGML_EXAMPLE[CityGML example] - Complete walkthrough
+* link:SCHEMA_MAPPINGS#citygml[CityGML mappings]
+
+**i-UR (Urban and Rural)**::
+* link:guides/IUR_EXAMPLE[i-UR example] - Urban function schemas
+* link:SCHEMA_MAPPINGS#iur[i-UR mappings]
+
+**ISO/TC 211**::
+* link:guides/ISO_TC211_EXAMPLE[ISO/TC 211 example] - Metadata standards
+* link:SCHEMA_MAPPINGS#isotc211[ISO mappings]
+
+**GML**::
+* link:guides/GML_EXAMPLE[GML example] - Geography Markup Language
+* link:SCHEMA_MAPPINGS#gml[GML mappings]
+
+== Project documentation
+
+=== Deployment and maintenance
+
+* link:DEPLOYMENT_GUIDE[Deployment guide] - Complete deployment procedures
+* link:MAINTENANCE_GUIDE[Maintenance guide] - Documentation maintenance tasks
+
+=== Development
+
+* link:CONTRIBUTING[Contributing guide] - How to contribute
+* link:TESTING[Testing guide] - Testing strategies
+
+== Contributing to documentation
+
+=== Documentation style guidelines
+
+When updating lutaml-xsd documentation, follow these principles:
+
+**Heading style**::
+* Use sentence-case for all headings (e.g., "Schema mappings", not "Schema
+Mappings")
+* Use descriptive, clear headings that indicate content scope
+
+**Structure**::
+* Begin with a Purpose section explaining what the document covers
+* Include a General section for background and key concepts
+* Organize content into logical sections with clear hierarchy
+* Use "See also" section at the end for cross-references
+
+**MECE principle**::
+* **Mutually Exclusive**: Each document covers a distinct topic without
+overlap
+* **Collectively Exhaustive**: All topics covered without gaps
+* Avoid duplicate information across documents
+
+**Examples and code**::
+* Wrap examples with `[example]` and `====` delimiters
+* Use `[source,lang]` with `----` delimiters for code blocks
+* Provide clear example titles describing what is shown
+* Include explanation after code examples
+* Use practical, real-world examples when possible
+
+**Lists**::
+* Separate lists from surrounding content with blank lines before and after
+* Ordered lists: Use `. ` flush with the line beginning
+* Unordered lists: Use `* ` flush with the line beginning
+* Second-level ordered: Use `.. `
+* Second-level unordered: Use `** `
+* Definition lists: Use `term:: description` format
+
+**Line length and formatting**::
+* Wrap lines at 80 characters
+* Exceptions: Cross-references, formulas, and code blocks
+* No "hanging paragraphs" - if needed, create a "General" subsection
+
+**Cross-references**::
+* Link to related documents using `link:DOCUMENT[Link text]`
+* Include "See also" section listing related documentation
+* Reference specific sections using anchors where appropriate
+
+**File organization**::
+* Each file uses `:toc:` and `:toclevels: 3` for navigation
+* Keep files focused on a single topic
+* Aim for 200-500 lines per document (except comprehensive references)
+
+=== Content guidelines
+
+**Clarity**::
+* Write in clear, technical prose
+* Define terms when first introduced
+* Use consistent terminology throughout
+
+**Completeness**::
+* Provide complete syntax definitions
+* Include "Where," legend explaining syntax elements
+* Show both basic and advanced usage
+
+**Accuracy**::
+* Verify all code examples work correctly
+* Ensure cross-references point to existing documents
+* Keep documentation synchronized with code changes
+
+**Accessibility**::
+* Write for users with varying expertise levels
+* Progress from simple to complex topics
+* Link to prerequisite knowledge
+
+== Support and community
+
+* **GitHub Issues**: https://github.com/lutaml/lutaml-xsd/issues
+* **Source Code**: https://github.com/lutaml/lutaml-xsd
+* **RubyGems**: https://rubygems.org/gems/lutaml-xsd
+* **License**: BSD-2-Clause
+
+== Next steps
+
+New to lutaml-xsd? Follow this learning path:
+
+. link:INSTALLATION[Install lutaml-xsd]
+. link:QUICK_START[Complete the quick start guide]
+. link:guides/CREATING_PACKAGES[Create your first LXR package]
+. link:SCHEMA_MAPPINGS[Learn about schema mappings]
+. link:CLI[Explore CLI commands]

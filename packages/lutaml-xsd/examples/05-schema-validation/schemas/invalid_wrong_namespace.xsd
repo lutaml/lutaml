@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.example.com/wrong-namespace"
+           targetNamespace="http://example.com/invalid"
+           elementFormDefault="qualified">
+  
+  <xs:annotation>
+    <xs:documentation>
+      Invalid Schema - Wrong Namespace
+      This schema has the wrong XML Schema namespace.
+      Should be: http://www.w3.org/2001/XMLSchema
+    </xs:documentation>
+  </xs:annotation>
+
+  <xs:element name="test" type="xs:string"/>
+
+</xs:schema>

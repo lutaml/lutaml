@@ -1,0 +1,35 @@
+name: Link Check
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+      - 'README.adoc'
+      - 'lychee.toml'
+  pull_request:
+    paths:
+      - 'docs/**'
+      - 'README.adoc'
+      - 'lychee.toml'
+  schedule:
+    - cron: '0 0 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  linkChecker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Link Checker
+        uses: lycheeverse/lychee-action@v1
+        with:
+          args: --config lychee.toml --verbose --no-progress 'docs/**/*.adoc' 'docs/**/*.md' 'README.adoc'
+          fail: false

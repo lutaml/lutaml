@@ -1,0 +1,622 @@
+---
+layout: default
+title: Contributing guide
+nav_order: 10
+---
+= Contributing to lutaml-xsd
+:toc:
+:toclevels: 3
+
+== Purpose
+
+This guide explains how to contribute to the lutaml-xsd project, including development setup, coding standards, testing requirements, and the pull request process.
+
+== General
+
+We welcome contributions from the community! Whether you're fixing bugs, adding features, improving documentation, or suggesting enhancements, your help is appreciated.
+
+Before contributing, please:
+
+* Read this contribution guide thoroughly
+* Review the Code of Conduct (see below)
+* Check existing issues and pull requests to avoid duplicates
+* Discuss major changes in an issue before starting work
+
+== Development setup
+
+=== Prerequisites
+
+* Ruby 2.7 or higher
+* Bundler 2.0 or higher
+* Git
+
+=== Setting up your development environment
+
+. **Fork the repository**
++
+Fork https://github.com/lutaml/lutaml-xsd to your GitHub account.
+
+. **Clone your fork**
++
+[source,bash]
+----
+git clone https://github.com/YOUR_USERNAME/lutaml-xsd.git
+cd lutaml-xsd
+----
+
+. **Install dependencies**
++
+[source,bash]
+----
+bundle install
+----
+
+. **Verify the setup**
++
+Run the test suite to ensure everything works:
++
+[source,bash]
+----
+bundle exec rake
+----
++
+All tests should pass.
+
+. **Create a feature branch**
++
+[source,bash]
+----
+git checkout -b feature/your-feature-name
+----
+
+== Running tests
+
+The project uses RSpec for testing. Tests must pass before any code can be merged.
+
+=== Running the full test suite
+
+[source,bash]
+----
+# Run all tests
+bundle exec rake
+
+# Or directly with rspec
+bundle exec rspec
+----
+
+=== Running specific tests
+
+[source,bash]
+----
+# Run a specific test file
+bundle exec rspec spec/lutaml/xsd/schema_repository_spec.rb
+
+# Run a specific test by line number
+bundle exec rspec spec/lutaml/xsd/schema_repository_spec.rb:42
+
+# Run tests matching a pattern
+bundle exec rspec spec/lutaml/xsd/*_spec.rb
+----
+
+=== Test coverage
+
+We aim for high test coverage. New features should include comprehensive tests covering:
+
+* Happy path scenarios
+* Edge cases
+* Error conditions
+* Boundary conditions
+
+=== Writing tests
+
+==== Test structure
+
+Tests should be focused and follow the MECE (Mutually Exclusive, Collectively Exhaustive) principle:
+
+[source,ruby]
+----
+require 'spec_helper'
+
+RSpec.describe Lutaml::Xsd::SchemaRepository do
+  describe '#find_type' do
+    context 'when type exists' do
+      it 'returns the type definition' do
+        # Test implementation
+      end
+    end
+
+    context 'when type does not exist' do
+      it 'returns a failure result' do
+        # Test implementation
+      end
+    end
+
+    context 'with invalid qualified name' do
+      it 'returns an error' do
+        # Test implementation
+      end
+    end
+  end
+end
+----
+
+==== Test fixtures
+
+Place test fixtures in `spec/fixtures/`:
+
+[source]
+----
+spec/fixtures/
+├── citygml/
+│   └── building.xsd
+├── gml/
+│   └── gml.xsd
+└── i-ur/
+    ├── urbanFunction.xsd
+    └── urbanObject.xsd
+----
+
+==== Using let and let!
+
+Use `let` for lazy-evaluated variables:
+
+[source,ruby]
+----
+describe Lutaml::Xsd::SchemaRepository do
+  let(:repository) { described_class.new }
+  let(:schema_content) { File.read('spec/fixtures/test_schema.xsd') }
+
+  it 'parses the schema' do
+    result = repository.parse_schema(content: schema_content)
+    expect(result).to be_truthy
+  end
+end
+----
+
+==== Testing serialization
+
+When testing serialization, use fixtures:
+
+[source,ruby]
+----
+let(:fixture_path) { 'spec/fixtures/urbanFunction.xsd' }
+let(:schema) { Lutaml::Xsd.parse(File.read(fixture_path)) }
+
+it 'serializes to XML' do
+  xml = schema.to_xml
+  expect(xml).to include('xs:schema')
+end
+----
+
+== Code style
+
+We use RuboCop to enforce code style consistency.
+
+=== Running RuboCop
+
+[source,bash]
+----
+# Run RuboCop on all files
+bundle exec rubocop
+
+# Auto-fix violations where possible
+bundle exec rubocop -A
+
+# Generate configuration for new violations
+bundle exec rubocop -A --auto-gen-config
+----
+
+=== RuboCop configuration
+
+The project has a `.rubocop.yml` configuration file. Key guidelines:
+
+* **Indentation**: 2 spaces, no tabs
+* **Line length**: Maximum 80 characters
+* **Method length**: Keep methods under 50 lines
+* **Class length**: Keep classes under 700 lines (refactor if larger)
+* **Naming**: Use descriptive names (snake_case for methods, CamelCase for classes)
+
+=== Code organization
+
+==== File structure
+
+Each class should have its own file:
+
+[source]
+----
+lib/lutaml/xsd/
+├── schema.rb              # Schema class
+├── element.rb             # Element class
+├── complex_type.rb        # ComplexType class
+└── schema_repository/     # Nested namespace
+    ├── type_index.rb
+    └── namespace_registry.rb
+----
+
+==== Class design principles
+
+Follow these principles:
+
+* **Single Responsibility Principle (SRP)**: Each class has one clear responsibility
+* **MECE**: Components are mutually exclusive and collectively exhaustive
+* **Separation of Concerns**: Clear boundaries between different aspects
+* **Don't Repeat Yourself (DRY)**: Avoid code duplication
+
+==== Model classes
+
+For serializable models, inherit from `Lutaml::Model::Serializable`:
+
+[source,ruby]
+----
+module Lutaml
+  module Xsd
+    class MyModel < Lutaml::Model::Serializable
+      attribute :name, :string
+      attribute :value, :integer
+
+      xml do
+        root "myModel"
+        namespace "http://example.com/schema", "ex"
+
+        map_element :name, to: :name
+        map_element :value, to: :value
+      end
+    end
+  end
+end
+----
+
+==== Avoid certain patterns
+
+* **No `Struct` or `OpenStruct`**: Use proper model classes instead
+* **No arbitrary Hash objects**: Use model classes for data structures
+* **No hardcoded test-only code**: Test code belongs in specs, not in the library
+* **No magic numbers**: Use named constants
+
+== Commit message format
+
+We use semantic commit messages for clear change history.
+
+=== Format
+
+[source]
+----
+<type>(<scope>): <subject>
+
+[optional body]
+
+[optional footer]
+----
+
+Where:
+
+`<type>`:: Type of change
+  * `feat`: New feature
+  * `fix`: Bug fix
+  * `docs`: Documentation changes
+  * `style`: Code style changes (formatting, etc.)
+  * `refactor`: Code refactoring
+  * `test`: Adding or updating tests
+  * `chore`: Build process or tooling changes
+
+`<scope>`:: Area of codebase affected (optional)
+  * `parser`, `repository`, `cli`, `package`, etc.
+
+`<subject>`:: Brief description in imperative mood
+  * "add feature" not "added feature"
+  * "fix bug" not "fixed bug"
+
+=== Examples
+
+.New feature
+[source]
+----
+feat(repository): add type resolution by Clark notation
+
+Implement lookup using Clark notation format for qualified names.
+This provides a standard way to reference types across namespaces.
+----
+
+.Bug fix
+[source]
+----
+fix(parser): handle missing namespace in import, fixes #123
+
+The parser now correctly handles imports without explicit namespace
+declarations by using the target namespace from the imported schema.
+----
+
+.Documentation
+[source]
+----
+docs(architecture): add LXR package internals documentation
+
+Comprehensive documentation of package structure, indexing, and
+serialization formats.
+----
+
+.Refactoring
+[source]
+----
+refactor(index): extract type index to separate class
+
+Move type indexing logic from SchemaRepository to dedicated
+TypeIndex class for better separation of concerns.
+----
+
+=== Linking to issues
+
+* Reference issues: `#123`
+* Close issues: `fixes #123` or `closes #123`
+* Multiple issues: `fixes #123, fixes #124`
+
+== Pull request process
+
+=== Before submitting
+
+. **Ensure tests pass**
++
+[source,bash]
+----
+bundle exec rake
+----
+
+. **Run RuboCop**
++
+[source,bash]
+----
+bundle exec rubocop -A
+----
+
+. **Update documentation** if needed
+  * API documentation in code comments
+  * User-facing documentation in `docs/`
+  * README.adoc if adding major features
+
+. **Add tests** for new functionality
+  * Unit tests for new classes/methods
+  * Integration tests for workflows
+  * Ensure good test coverage
+
+. **Update CHANGELOG** (if applicable)
+  * Add entry under "Unreleased" section
+  * Follow Keep a Changelog format
+
+=== Creating the pull request
+
+. **Push your branch**
++
+[source,bash]
+----
+git push origin feature/your-feature-name
+----
+
+. **Open a pull request** on GitHub
+  * Use a clear, descriptive title
+  * Reference any related issues
+  * Describe what changed and why
+  * Include any breaking changes
+
+. **Fill out the PR template**
+  * Description of changes
+  * Testing performed
+  * Documentation updates
+  * Breaking changes (if any)
+
+=== PR template
+
+[source,markdown]
+----
+## Description
+
+Brief description of what this PR does.
+
+## Related Issues
+
+Fixes #123
+Related to #456
+
+## Changes
+
+- Added feature X
+- Fixed bug in Y
+- Refactored Z for better performance
+
+## Testing
+
+- [ ] Unit tests pass
+- [ ] Integration tests pass
+- [ ] Manual testing performed
+
+## Documentation
+
+- [ ] Code comments updated
+- [ ] User documentation updated
+- [ ] API documentation updated
+
+## Breaking Changes
+
+None / List any breaking changes here
+
+## Checklist
+
+- [ ] Tests pass (`bundle exec rake`)
+- [ ] RuboCop passes (`bundle exec rubocop`)
+- [ ] Commits use semantic format
+- [ ] Documentation updated
+----
+
+=== Review process
+
+. **Automated checks** must pass
+  * CI tests
+  * RuboCop checks
+  * Documentation builds
+
+. **Code review** by maintainers
+  * At least one approval required
+  * Address review comments
+  * Push updates as new commits
+
+. **Merge** when approved
+  * Maintainer will merge
+  * Branch will be deleted after merge
+
+== Documentation contributions
+
+Documentation is just as important as code!
+
+=== Documentation structure
+
+[source]
+----
+docs/
+├── README.md              # Documentation index
+├── QUICK_START.adoc       # Getting started guide
+├── architecture/          # Architecture documentation
+│   ├── ARCHITECTURE.adoc
+│   ├── PACKAGE_INTERNALS.adoc
+│   └── TYPE_INDEX.adoc
+├── core-concepts/         # Core concepts
+│   └── NAMESPACES.adoc
+└── guides/                # How-to guides
+    └── CITYGML_EXAMPLE.adoc
+----
+
+=== AsciiDoc formatting
+
+All documentation uses AsciiDoc format (`.adoc`):
+
+* **Headings**: Use `=` for levels (`=` top, `==` section, `===` subsection)
+* **Code blocks**: Use `[source,ruby]` or `[source,bash]` with `----`
+* **Links**: Use `link:file[Link Text]` for internal links
+* **Examples**: Wrap in `[example]` and `====`
+* **Line length**: Wrap at 80 characters (except for code and links)
+
+Example:
+
+[source,asciidoc]
+....
+== Section heading
+
+This is a paragraph with a link to link:OTHER_DOC[another document].
+
+.Example title
+[example]
+====
+[source,ruby]
+----
+# Code example
+schema = Lutaml::Xsd.parse(xsd_content)
+----
+
+This example demonstrates parsing.
+====
+....
+
+=== Documentation style
+
+* Use sentence case for headings ("Getting started" not "Getting Started")
+* Be clear and concise
+* Include examples for complex concepts
+* Use consistent terminology
+* Add diagrams for complex flows (using ASCII art)
+
+=== Building documentation locally
+
+The documentation site uses Jekyll:
+
+[source,bash]
+----
+cd docs
+bundle install
+bundle exec jekyll serve
+
+# Open http://localhost:4000
+----
+
+== Release process
+
+Releases are handled by maintainers, but here's the process for reference:
+
+. **Update version** in `lib/lutaml/xsd/version.rb`
+. **Update CHANGELOG.md**
+  * Move "Unreleased" items to new version section
+  * Add release date
+  * Follow Keep a Changelog format
+. **Commit version bump**
++
+[source,bash]
+----
+git commit -am "chore: bump version to 1.2.3"
+----
+
+. **Create tag**
++
+[source,bash]
+----
+git tag -a v1.2.3 -m "Release version 1.2.3"
+git push origin v1.2.3
+----
+
+. **Build and publish gem**
++
+[source,bash]
+----
+gem build lutaml-xsd.gemspec
+gem push lutaml-xsd-1.2.3.gem
+----
+
+. **Create GitHub release**
+  * Use tag `v1.2.3`
+  * Copy CHANGELOG section as release notes
+
+== Getting help
+
+=== Questions
+
+* Open a GitHub Discussion for general questions
+* Open an issue for bug reports or feature requests
+* Check existing documentation and issues first
+
+=== Communication
+
+* Be respectful and professional
+* Provide context and examples
+* Be patient with response times
+* Follow the Code of Conduct
+
+=== Resources
+
+* link:../README.adoc[Main README]
+* link:architecture/ARCHITECTURE[Architecture Documentation]
+* link:../API.md[API Documentation]
+* https://github.com/lutaml/lutaml-xsd/issues[Issue Tracker]
+* https://github.com/lutaml/lutaml-xsd/discussions[Discussions]
+
+== Code of conduct
+
+This project adheres to the Contributor Covenant Code of Conduct. By participating, you are expected to uphold this code. Please report unacceptable behavior to the project maintainers.
+
+Key points:
+
+* Be welcoming and inclusive
+* Be respectful of differing viewpoints
+* Accept constructive criticism gracefully
+* Focus on what is best for the community
+* Show empathy towards other community members
+
+== License
+
+By contributing to lutaml-xsd, you agree that your contributions will be licensed under the project's BSD 2-Clause License.
+
+== Acknowledgments
+
+Thank you for contributing to lutaml-xsd! Every contribution, no matter how small, helps make the project better for everyone.
+
+== See also
+
+* link:../README.adoc[Project README]
+* link:architecture/ARCHITECTURE[System Architecture]
+* link:TESTING[Testing Guide]
+* link:FAQ[Frequently Asked Questions]

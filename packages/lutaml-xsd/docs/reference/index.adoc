@@ -1,0 +1,12 @@
+---
+layout: default
+title: Reference
+nav_order: 40
+has_children: true
+---
+
+== Reference
+
+This section provides detailed reference documentation for Lutaml::XSD.
+
+Find information about the CLI, Ruby API, configuration options, and Liquid methods.

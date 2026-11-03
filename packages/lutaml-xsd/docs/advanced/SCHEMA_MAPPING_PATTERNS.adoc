@@ -1,0 +1,840 @@
+---
+layout: default
+title: Schema mapping patterns
+nav_order: 4
+parent: Advanced
+---
+= Schema mapping patterns
+:toc:
+:toclevels: 3
+
+== Purpose
+
+This guide covers advanced schema location mapping patterns for handling complex XSD import and include scenarios. Learn how to create robust regex patterns, handle multi-level directory structures, implement conditional mappings, and optimize mapping performance.
+
+== General
+
+Schema location mappings redirect XSD import and include statements from external or relative paths to local files. This is essential for:
+
+* **Offline operation**: Use local copies instead of fetching from remote URLs
+* **Version control**: Pin specific schema versions
+* **Directory restructuring**: Map old paths to new locations
+* **Multi-source consolidation**: Unify schemas from different sources
+
+Lutaml::XSD supports two mapping approaches:
+
+* **Exact string matching**: Simple, explicit mappings
+* **Regex patterns**: Flexible, pattern-based mappings for multiple files
+
+== Complex regex patterns
+
+=== Basic regex syntax
+
+.Understanding regex mapping syntax
+[example]
+====
+In YAML configuration, regex patterns use the `!ruby/regexp` tag:
+
+[source,yaml]
+----
+schema_location_mappings:
+  - from: !ruby/regexp /pattern/
+    to: "replacement"
+----
+
+The replacement string can use capture groups with `\1`, `\2`, etc.:
+
+[source,yaml]
+----
+schema_location_mappings:
+  - from: !ruby/regexp /dir\/(.+\.xsd)$/
+    to: "local/\1"
+----
+
+This transforms:
+
+* `dir/file.xsd` → `local/file.xsd`
+* `dir/subdir/file.xsd` → `local/subdir/file.xsd`
+====
+
+=== Matching URL schemas
+
+.Mapping remote URLs to local files
+[example]
+====
+[source,yaml]
+----
+schema_location_mappings:
+  # HTTP URLs
+  - from: !ruby/regexp /^https?:\/\/www\.w3\.org\/(.+)/
+    to: "schemas/w3c/\1"
+
+  # ISO schemas with date versioning
+  - from: !ruby/regexp /^https?:\/\/schemas\.isotc211\.org\/19115\/-3\/(.+)/
+    to: "schemas/iso/19115-3/\1"
+
+  # OGC schemas with version numbers
+  - from: !ruby/regexp /^https?:\/\/schemas\.opengis\.net\/gml\/([\d.]+)\/(.+)/
+    to: "schemas/gml/\1/\2"
+----
+
+Examples:
+
+* `http://www.w3.org/1999/xlink` → `schemas/w3c/1999/xlink`
+* `https://schemas.isotc211.org/19115/-3/mdb/1.0/mdb.xsd` → `schemas/iso/19115-3/mdb/1.0/mdb.xsd`
+* `http://schemas.opengis.net/gml/3.2.1/gml.xsd` → `schemas/gml/3.2.1/gml.xsd`
+====
+
+=== Matching relative paths
+
+.Handling relative path patterns
+[example]
+====
+[source,yaml]
+----
+schema_location_mappings:
+  # Parent directory references (../../)
+  - from: !ruby/regexp /(?:\.\.\/)+(.+\.xsd)$/
+    to: "schemas/\1"
+
+  # Specific parent levels
+  - from: !ruby/regexp /^\.\.\/\.\.\/common\/(.+\.xsd)$/
+    to: "schemas/common/\1"
+
+  # Mixed relative and absolute
+  - from: !ruby/regexp /^\.\.\/external\/(.+)$/
+    to: "vendor/schemas/\1"
+----
+
+Examples:
+
+* `../../gml/gml.xsd` → `schemas/gml/gml.xsd`
+* `../../../common/types.xsd` → `schemas/common/types.xsd`
+* `../../common/base.xsd` → `schemas/common/base.xsd`
+* `../external/xlink.xsd` → `vendor/schemas/xlink.xsd`
+====
+
+=== Version-aware patterns
+
+.Mapping schemas with version numbers
+[example]
+====
+[source,yaml]
+----
+schema_location_mappings:
+  # GML versions (3.2, 3.2.1, etc.)
+  - from: !ruby/regexp /gml\/([\d.]+)\/(.+\.xsd)$/
+    to: "schemas/gml-\1/\2"
+
+  # CityGML versions
+  - from: !ruby/regexp /citygml\/([\d.]+)\/(.+)\/(.+\.xsd)$/
+    to: "schemas/citygml/\1/\2/\3"
+
+  # ISO date-based versions
+  - from: !ruby/regexp /19139\/(\d{8})\/(.+)\/(.+\.xsd)$/
+    to: "schemas/iso/19139/\1/\2/\3"
+----
+
+Examples:
+
+* `gml/3.2.1/gml.xsd` → `schemas/gml-3.2.1/gml.xsd`
+* `citygml/2.0/building/building.xsd` → `schemas/citygml/2.0/building/building.xsd`
+* `19139/20070417/gmd/gmd.xsd` → `schemas/iso/19139/20070417/gmd/gmd.xsd`
+====
+
+=== Case-insensitive patterns
+
+.Handling case variations
+[example]
+====
+[source,yaml]
+----
+schema_location_mappings:
+  # Case-insensitive file extensions
+  - from: !ruby/regexp /(.+)\.(xsd|XSD)$/i
+    to: "schemas/\1.xsd"
+
+  # Case-insensitive directory names
+  - from: !ruby/regexp /gml/i
+    to: "schemas/gml"
+----
+
+Note: Use the `i` flag for case-insensitive matching:
+
+[source,yaml]
+----
+- from: !ruby/regexp /pattern/i
+  to: "replacement"
+----
+====
+
+== Multi-level directory mappings
+
+=== Flattening directory structures
+
+.Converting deep hierarchies to flat structures
+[example]
+====
+[source,yaml]
+----
+schema_location_mappings:
+  # Flatten ISO directory structure
+  - from: !ruby/regexp /19115\/-3\/(.+)\/[\d.]+\/(.+\.xsd)$/
+    to: "schemas/iso/\1/\2"
+
+  # Extract just filename from deep paths
+  - from: !ruby/regexp /^.+\/([^\/]+\.xsd)$/
+    to: "schemas/flat/\1"
+----
+
+Examples:
+
+* `19115/-3/mdb/1.0/mdb.xsd` → `schemas/iso/mdb/mdb.xsd`
+* `path/to/deep/structure/file.xsd` → `schemas/flat/file.xsd`
+
+**Warning**: Flattening can cause filename conflicts if multiple files share the same name.
+====
+
+=== Preserving directory structures
+
+.Maintaining directory hierarchies
+[example]
+====
+[source,yaml]
+----
+schema_location_mappings:
+  # Preserve entire structure under new root
+  - from: !ruby/regexp /^https:\/\/schemas\.isotc211\.org\/(.+)$/
+    to: "schemas/isotc211/\1"
+
+  # Preserve structure but reorganize by standard
+  - from: !ruby/regexp /^(.+)\/(19\d{3})\/(.+)$/
+    to: "schemas/iso/\2/\3"
+----
+
+Examples:
+
+* `https://schemas.isotc211.org/19115/-3/mdb/1.0/mdb.xsd` → `schemas/isotc211/19115/-3/mdb/1.0/mdb.xsd`
+* `path/19115/mdb.xsd` → `schemas/iso/19115/mdb.xsd`
+====
+
+=== Reorganizing by namespace
+
+.Grouping schemas by namespace
+[example]
+====
+[source,yaml]
+----
+schema_location_mappings:
+  # Group GML-related schemas
+  - from: !ruby/regexp /gml|GML/
+    to: "schemas/namespaces/gml"
+
+  # Group by standard organization
+  - from: !ruby/regexp /(ogc|OGC)/
+    to: "schemas/namespaces/ogc"
+
+  - from: !ruby/regexp /(iso|ISO)/
+    to: "schemas/namespaces/iso"
+----
+
+This creates a namespace-centric organization:
+
+[source]
+----
+schemas/
+├── namespaces/
+│   ├── gml/
+│   ├── ogc/
+│   └── iso/
+----
+====
+
+== Conditional mappings
+
+=== Priority-based mappings
+
+Schema location mappings are processed in order. Place more specific patterns before general ones:
+
+.Using mapping order for priorities
+[example]
+====
+[source,yaml]
+----
+schema_location_mappings:
+  # SPECIFIC: Match exact version first
+  - from: "https://www.opengis.net/gml/3.2.1"
+    to: "schemas/gml/3.2.1/gml.xsd"
+
+  # SPECIFIC: Match versioned paths
+  - from: !ruby/regexp /gml\/(3\.2\.1)\/(.+\.xsd)$/
+    to: "schemas/gml/\1/\2"
+
+  # GENERAL: Fallback for any GML reference
+  - from: !ruby/regexp /gml/
+    to: "schemas/gml/latest"
+----
+
+Processing order:
+
+1. Exact string match for specific version
+2. Regex pattern for versioned paths
+3. General regex as fallback
+
+This ensures specific cases are handled before general patterns.
+====
+
+=== Environment-based mappings
+
+.Different mappings for different environments
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+require 'yaml'
+
+class EnvironmentAwareRepository
+  def self.create(env = :production)
+    config = load_config(env)
+    Lutaml::Xsd::SchemaRepository.new(**config)
+  end
+
+  def self.load_config(env)
+    base_config = YAML.load_file('config/schemas.yml')
+    env_mappings = load_environment_mappings(env)
+
+    # Merge environment-specific mappings
+    base_config['schema_location_mappings'] ||= []
+    base_config['schema_location_mappings'].concat(env_mappings)
+
+    symbolize_keys(base_config)
+  end
+
+  def self.load_environment_mappings(env)
+    case env
+    when :development
+      [
+        {
+          'from' => !ruby/regexp(/^https:\/\/.+/),
+          'to' => 'vendor/schemas/cache/\1'
+        }
+      ]
+    when :production
+      [
+        {
+          'from' => !ruby/regexp(/^https:\/\/.+/),
+          'to' => '/var/schemas/\1'
+        }
+      ]
+    else
+      []
+    end
+  end
+
+  def self.symbolize_keys(hash)
+    hash.transform_keys(&:to_sym).transform_values do |v|
+      v.is_a?(Hash) ? symbolize_keys(v) : v
+    end
+  end
+end
+
+# Usage
+dev_repo = EnvironmentAwareRepository.create(:development)
+prod_repo = EnvironmentAwareRepository.create(:production)
+----
+====
+
+=== Feature-based mappings
+
+.Conditional mappings based on features
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+class FeatureBasedMappings
+  FEATURES = {
+    gml: {
+      enabled: true,
+      mappings: [
+        { from: /gml/, to: 'schemas/gml' }
+      ]
+    },
+    citygml: {
+      enabled: true,
+      mappings: [
+        { from: /citygml/, to: 'schemas/citygml' }
+      ]
+    },
+    experimental: {
+      enabled: false,
+      mappings: [
+        { from: /experimental/, to: 'schemas/experimental' }
+      ]
+    }
+  }
+
+  def self.build_mappings
+    enabled_mappings = []
+
+    FEATURES.each do |feature, config|
+      next unless config[:enabled]
+
+      enabled_mappings.concat(config[:mappings])
+    end
+
+    enabled_mappings.map do |mapping|
+      Lutaml::Xsd::SchemaLocationMapping.new(
+        from: mapping[:from],
+        to: mapping[:to]
+      )
+    end
+  end
+
+  def self.create_repository(files:)
+    Lutaml::Xsd::SchemaRepository.new(
+      files: files,
+      schema_location_mappings: build_mappings
+    )
+  end
+end
+
+# Usage
+repo = FeatureBasedMappings.create_repository(
+  files: ['schemas/main.xsd']
+)
+----
+====
+
+== Performance considerations
+
+=== Optimizing pattern complexity
+
+.Simple patterns are faster
+[example]
+====
+[source,yaml]
+----
+# GOOD: Simple, specific pattern
+schema_location_mappings:
+  - from: !ruby/regexp /^https:\/\/schemas\.isotc211\.org\/(.+)$/
+    to: "schemas/iso/\1"
+
+# AVOID: Overly complex pattern
+schema_location_mappings:
+  - from: !ruby/regexp /^(?:https?:\/\/)?(?:www\.)?schemas\.(?:isotc211|opengis)\.(?:org|net)\/(.+)$/
+    to: "schemas/\1"
+
+# BETTER: Multiple simple patterns
+schema_location_mappings:
+  - from: !ruby/regexp /^https:\/\/schemas\.isotc211\.org\/(.+)$/
+    to: "schemas/iso/\1"
+
+  - from: !ruby/regexp /^https:\/\/schemas\.opengis\.net\/(.+)$/
+    to: "schemas/ogc/\1"
+----
+
+**Performance tips**:
+
+* Use anchors (`^` and `$`) to limit matching scope
+* Avoid nested quantifiers like `(.+)+`
+* Prefer character classes `[a-z]` over alternation `(a|b|c)`
+* Use non-capturing groups `(?:...)` when captures aren't needed
+====
+
+=== Mapping order optimization
+
+.Order patterns by frequency and specificity
+[example]
+====
+[source,yaml]
+----
+schema_location_mappings:
+  # 1. Most commonly used schemas first
+  - from: "http://www.opengis.net/gml"
+    to: "schemas/gml/gml.xsd"
+
+  - from: "http://www.w3.org/1999/xlink"
+    to: "schemas/xlink/xlinks.xsd"
+
+  # 2. Specific patterns before general ones
+  - from: !ruby/regexp /gml\/3\.2\.1\/(.+)$/
+    to: "schemas/gml/3.2.1/\1"
+
+  - from: !ruby/regexp /gml\/(.+)$/
+    to: "schemas/gml/\1"
+
+  # 3. Least frequently used patterns last
+  - from: !ruby/regexp /deprecated\/(.+)$/
+    to: "schemas/archive/\1"
+----
+
+This order minimizes regex evaluations for common cases.
+====
+
+=== Caching mapping results
+
+.Implementing mapping cache
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+class CachedMappingRepository < Lutaml::Xsd::SchemaRepository
+  def initialize(**attributes)
+    super
+    @mapping_cache = {}
+  end
+
+  def resolve_schema_location(location, mappings)
+    # Check cache first
+    return @mapping_cache[location] if @mapping_cache.key?(location)
+
+    # Perform resolution
+    result = apply_mappings(location, mappings)
+
+    # Cache result
+    @mapping_cache[location] = result
+
+    result
+  end
+
+  private
+
+  def apply_mappings(location, mappings)
+    mappings.each do |mapping|
+      from = mapping.from
+      to = mapping.to
+
+      if from.is_a?(Regexp)
+        if location =~ from
+          return location.gsub(from, to)
+        end
+      elsif location == from
+        return to
+      end
+    end
+
+    location  # Return original if no mapping found
+  end
+end
+
+# Usage
+repo = CachedMappingRepository.new(
+  files: ['schemas/main.xsd'],
+  schema_location_mappings: [
+    # Your mappings here
+  ]
+)
+
+# First lookup: performs regex matching
+# Subsequent lookups: uses cache
+----
+====
+
+== Pattern testing and validation
+
+=== Testing regex patterns
+
+.Script to test mapping patterns
+[example]
+====
+[source,ruby]
+----
+#!/usr/bin/env ruby
+# test_mappings.rb
+
+require 'yaml'
+
+def test_mapping(from, to, test_cases)
+  puts "\nTesting mapping:"
+  puts "  From: #{from.inspect}"
+  puts "  To:   #{to}"
+  puts "  " + "=" * 60
+
+  test_cases.each do |input, expected|
+    if from.is_a?(Regexp)
+      if input =~ from
+        result = input.gsub(from, to)
+        status = (result == expected) ? "✓" : "✗"
+        puts "  #{status} #{input}"
+        puts "      → #{result}"
+        puts "      Expected: #{expected}" if result != expected
+      else
+        puts "  ✗ #{input} (no match)"
+      end
+    else
+      result = (input == from) ? to : input
+      status = (result == expected) ? "✓" : "✗"
+      puts "  #{status} #{input} → #{result}"
+    end
+  end
+end
+
+# Load mappings from config
+config = YAML.load_file('config/schemas.yml')
+mappings = config['schema_location_mappings'] || []
+
+# Define test cases
+test_cases = {
+  'https://schemas.isotc211.org/19115/gmd.xsd' =>
+    'schemas/iso/19115/gmd.xsd',
+  '../../gml/3.2.1/gml.xsd' =>
+    'schemas/gml/3.2.1/gml.xsd',
+  'http://www.opengis.net/gml' =>
+    'schemas/gml/gml.xsd'
+}
+
+# Test each mapping
+mappings.each_with_index do |mapping, i|
+  from = mapping['from']
+  to = mapping['to']
+
+  # Convert YAML regex to Ruby Regexp
+  if from.is_a?(String) && from.start_with?('/') && from.end_with?('/')
+    from = Regexp.new(from[1..-2])
+  end
+
+  puts "\n" + "=" * 70
+  puts "Mapping #{i + 1}:"
+  test_mapping(from, to, test_cases)
+end
+----
+
+Usage:
+
+[source,bash]
+----
+ruby test_mappings.rb
+----
+====
+
+=== Validating mapping coverage
+
+.Check if all imports are mapped
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+require 'set'
+
+def validate_mapping_coverage(repo)
+  unmapped_locations = Set.new
+
+  # Collect all schema locations from imports/includes
+  repo.instance_variable_get(:@parsed_schemas).each do |file, schema|
+    # Check imports
+    schema.imports&.each do |import|
+      location = import.schema_location
+      next unless location
+
+      # Try to resolve
+      resolved = try_resolve_location(location, repo)
+      unmapped_locations.add(location) unless resolved
+    end
+
+    # Check includes
+    schema.includes&.each do |include|
+      location = include.schema_location
+      next unless location
+
+      resolved = try_resolve_location(location, repo)
+      unmapped_locations.add(location) unless resolved
+    end
+  end
+
+  # Report results
+  if unmapped_locations.empty?
+    puts "✓ All schema locations are mapped"
+  else
+    puts "✗ Unmapped schema locations found:"
+    unmapped_locations.each do |location|
+      puts "  - #{location}"
+    end
+  end
+
+  unmapped_locations
+end
+
+def try_resolve_location(location, repo)
+  mappings = repo.schema_location_mappings || []
+
+  mappings.each do |mapping|
+    from = mapping.from
+    to = mapping.to
+
+    if from.is_a?(Regexp)
+      return true if location =~ from
+    elsif location == from
+      return true
+    end
+  end
+
+  # Check if file exists relative to schema
+  File.exist?(location)
+end
+
+# Usage
+repo = Lutaml::Xsd::SchemaRepository.from_yaml_file('config/schemas.yml')
+repo.parse
+
+unmapped = validate_mapping_coverage(repo)
+
+if unmapped.any?
+  puts "\nSuggested mappings:"
+  unmapped.each do |location|
+    puts "  - from: \"#{location}\""
+    puts "    to: \"schemas/#{File.basename(location)}\""
+  end
+end
+----
+====
+
+=== Automated pattern generation
+
+.Generate mappings from schema files
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+require 'moxml'
+require 'yaml'
+
+def extract_imports_and_includes(xsd_file)
+  ctx = Moxml::Context.new
+  doc = ctx.parse(File.read(xsd_file))
+
+  imports = doc.xpath('//xs:import/@schemaLocation',
+                      'xs' => 'http://www.w3.org/2001/XMLSchema')
+  includes = doc.xpath('//xs:include/@schemaLocation',
+                       'xs' => 'http://www.w3.org/2001/XMLSchema')
+
+  (imports + includes).map { |attr| attr.is_a?(Moxml::Attribute) ? attr.value : attr.text }.uniq
+end
+
+def suggest_mapping(schema_location)
+  # Analyze the schema location and suggest a mapping
+
+  if schema_location =~ /^https?:\/\//
+    # URL - map to local schemas
+    uri = URI.parse(schema_location)
+    local_path = "schemas#{uri.path}"
+
+    {
+      from: schema_location,
+      to: local_path,
+      type: :url
+    }
+  elsif schema_location =~ /^\.\.?\//
+    # Relative path
+    normalized = schema_location.gsub(/^(?:\.\.\/)+/, '')
+
+    {
+      from: "!ruby/regexp /#{Regexp.escape(schema_location)}$/",
+      to: "schemas/#{normalized}",
+      type: :relative
+    }
+  else
+    # Simple filename
+    {
+      from: schema_location,
+      to: "schemas/#{schema_location}",
+      type: :simple
+    }
+  end
+end
+
+def generate_mappings(schema_files)
+  all_locations = Set.new
+
+  schema_files.each do |file|
+    locations = extract_imports_and_includes(file)
+    all_locations.merge(locations)
+  end
+
+  mappings = all_locations.map { |loc| suggest_mapping(loc) }
+
+  # Convert to YAML format
+  yaml_mappings = mappings.map do |m|
+    { 'from' => m[:from], 'to' => m[:to] }
+  end
+
+  puts "# Suggested schema_location_mappings:"
+  puts YAML.dump('schema_location_mappings' => yaml_mappings)
+end
+
+# Usage
+schema_files = Dir.glob('schemas/**/*.xsd')
+generate_mappings(schema_files)
+----
+====
+
+== Complete mapping examples
+
+=== GML and CityGML schemas
+
+.Comprehensive GML/CityGML mapping configuration
+[example]
+====
+[source,yaml]
+----
+schema_location_mappings:
+  # W3C XLink (exact match)
+  - from: "http://www.w3.org/1999/xlink"
+    to: "schemas/xlink/xlinks.xsd"
+
+  # GML 3.2.1 (versioned pattern)
+  - from: !ruby/regexp /https?:\/\/schemas\.opengis\.net\/gml\/3\.2\.1\/(.+\.xsd)$/
+    to: "schemas/gml/3.2.1/\1"
+
+  # GML relative imports
+  - from: !ruby/regexp /(?:\.\.\/)+gml\/(.+\.xsd)$/
+    to: "schemas/gml/\1"
+
+  # CityGML 2.0
+  - from: !ruby/regexp /https?:\/\/schemas\.opengis\.net\/citygml\/2\.0\/(.+)\/(.+\.xsd)$/
+    to: "schemas/citygml/2.0/\1/\2"
+
+  # CityGML relative imports
+  - from: !ruby/regexp /(?:\.\.\/)+citygml\/(.+\.xsd)$/
+    to: "schemas/citygml/\1"
+----
+====
+
+=== ISO TC211 schemas
+
+.ISO 19115/19139 mapping configuration
+[example]
+====
+[source,yaml]
+----
+schema_location_mappings:
+  # ISO 19115-3 (latest)
+  - from: !ruby/regexp /https:\/\/schemas\.isotc211\.org\/19115\/-3\/(.+)\/[\d.]+\/(.+\.xsd)$/
+    to: "schemas/iso/19115-3/\1/\2"
+
+  # ISO 19139 (with date version)
+  - from: !ruby/regexp /https:\/\/schemas\.isotc211\.org\/19139\/(\d{8})\/(.+)\/(.+\.xsd)$/
+    to: "schemas/iso/19139/\1/\2/\3"
+
+  # ISO 19157 (data quality)
+  - from: !ruby/regexp /https:\/\/schemas\.isotc211\.org\/19157\/-?(\d*)\/(.+)\/[\d.]+\/(.+\.xsd)$/
+    to: "schemas/iso/19157\1/\2/\3"
+
+  # Relative ISO imports
+  - from: !ruby/regexp /(?:\.\.\/)+iso\/(.+\.xsd)$/
+    to: "schemas/iso/\1"
+----
+====
+
+== See also
+
+* link:../guides/CREATING_PACKAGES[Creating packages] - Using mappings in packages
+* link:DEBUGGING[Debugging] - Troubleshooting mapping issues
+* link:PERFORMANCE_TUNING[Performance tuning] - Optimizing mapping performance
+* link:../TROUBLESHOOTING[Troubleshooting] - Common mapping problems

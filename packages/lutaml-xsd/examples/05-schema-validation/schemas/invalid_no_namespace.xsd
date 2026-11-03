@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema targetNamespace="http://example.com/invalid"
+        elementFormDefault="qualified">
+  
+  <annotation>
+    <documentation>
+      Invalid Schema - Missing Namespace Declaration
+      This schema is missing the xmlns:xs namespace declaration.
+    </documentation>
+  </annotation>
+
+  <element name="test" type="string"/>
+
+</schema>

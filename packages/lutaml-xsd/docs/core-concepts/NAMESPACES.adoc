@@ -1,0 +1,1014 @@
+---
+layout: default
+title: Namespaces
+parent: Core concepts
+nav_order: 3
+---
+
+== Namespaces
+:toc:
+:toclevels: 3
+
+== Purpose
+
+This document explains namespace handling in Lutaml::XSD, including namespace
+configuration, prefix mappings, and how namespaces enable type resolution
+across multiple XSD schemas.
+
+Understanding namespaces is crucial for working with complex schema sets like
+CityGML, GML, or ISO/TC 211 standards where types are distributed across
+multiple namespaces.
+
+== General
+
+XML namespaces provide a way to avoid element and attribute name conflicts by
+qualifying names with a unique identifier (URI). In XSD schemas, namespaces
+organize types and elements into logical groups and enable unambiguous
+references across schema boundaries.
+
+Lutaml::XSD supports full namespace handling including:
+
+* Namespace URI to prefix mappings
+* Automatic namespace extraction from schemas
+* Namespace-aware type resolution
+* Multi-namespace schema repositories
+* Namespace validation and consistency checking
+
+== What are namespaces?
+
+=== Namespace URIs
+
+A namespace URI is a unique identifier (typically a URL) that distinguishes a
+set of names from other sets. In XML schemas, the namespace URI is specified
+using the `targetNamespace` attribute.
+
+.Namespace declaration in XSD
+[example]
+====
+[source,xml]
+----
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://www.opengis.net/gml/3.2"
+           xmlns:gml="http://www.opengis.net/gml/3.2">
+
+  <xs:complexType name="CodeType">
+    <!-- Type definition -->
+  </xs:complexType>
+
+</xs:schema>
+----
+
+In this example:
+
+* `targetNamespace` defines the namespace for types defined in this schema
+* The `gml` prefix is bound to the GML namespace URI
+* The `CodeType` type belongs to the `http://www.opengis.net/gml/3.2`
+  namespace
+====
+
+=== Namespace prefixes
+
+Prefixes provide short aliases for namespace URIs, making qualified names more
+readable and manageable.
+
+.Common namespace prefixes
+[source]
+----
+Prefix    Namespace URI
+------    -------------------------------------------------------------
+gml       http://www.opengis.net/gml/3.2
+xlink     http://www.w3.org/1999/xlink
+gco       http://www.isotc211.org/2005/gco
+xs        http://www.w3.org/2001/XMLSchema
+xsi       http://www.w3.org/2001/XMLSchema-instance
+----
+
+== Namespace prefixes vs URIs
+
+=== Qualified names
+
+A qualified name combines a namespace prefix with a local name using a colon:
+
+[source]
+----
+Format: prefix:localName
+
+Examples:
+  gml:CodeType
+  xlink:href
+  gco:CharacterString
+----
+
+=== Clark notation
+
+Clark notation uses curly braces to include the full namespace URI:
+
+[source]
+----
+Format: {namespaceURI}localName
+
+Examples:
+  {http://www.opengis.net/gml/3.2}CodeType
+  {http://www.w3.org/1999/xlink}href
+  {http://www.isotc211.org/2005/gco}CharacterString
+----
+
+Clark notation is unambiguous and doesn't require prefix configuration, but is
+more verbose than prefixed names.
+
+=== Namespace prefix resolution flow
+
+The following diagram shows how namespace prefixes are resolved to URIs:
+
+.Prefix to URI resolution workflow
+[source]
+----
+┌─────────────────────────────────────────────────────────────┐
+│         Namespace Prefix Resolution Workflow                │
+└─────────────────────────────────────────────────────────────┘
+
+User Input: "gml:CodeType"
+     │
+     ▼
+┌─────────────────────┐
+│ Parse Qualified     │
+│ Name                │
+│                     │
+│ Split on ':'        │
+│ ─────────────       │
+│ prefix: "gml"       │
+│ local: "CodeType"   │
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────────────────────┐
+│ NamespaceRegistry                   │
+│                                     │
+│ Lookup Table:                       │
+│ ┌─────────┬───────────────────────┐ │
+│ │ Prefix  │ Namespace URI         │ │
+│ ├─────────┼───────────────────────┤ │
+│ │ "gml"   │ "http://.../gml/3.2"  │ │◄─── Find
+│ │ "xlink" │ "http://...xlink"     │ │
+│ │ "gco"   │ "http://.../gco"      │ │
+│ │ "uro"   │ "https://.../uro/3.2" │ │
+│ └─────────┴───────────────────────┘ │
+└──────────┬──────────────────────────┘
+           │
+           ▼
+      ┌─────────┐
+      │ Found?  │
+      └────┬────┴────┐
+           │         │
+      YES ◄┘         └► NO
+       │                │
+       ▼                ▼
+┌─────────────┐   ┌────────────────┐
+│ Return URI  │   │ Return Error:  │
+│             │   │ Unknown prefix │
+│ "http://... │   │ "gml"          │
+│ /gml/3.2"   │   └────────────────┘
+└──────┬──────┘
+       │
+       ▼
+┌──────────────────────────┐
+│ Type Index Lookup        │
+│                          │
+│ Search for:              │
+│ namespace: "http://...   │
+│            /gml/3.2"     │
+│ local_name: "CodeType"   │
+└──────────────────────────┘
+----
+
+.Namespace mapping diagram
+[source]
+----
+╔═══════════════════════════════════════════════════════════╗
+║           Namespace Mapping Architecture                  ║
+╠═══════════════════════════════════════════════════════════╣
+║                                                           ║
+║  Configuration Layer                                      ║
+║  ┌─────────────────────────────────────────────────────┐ ║
+║  │ namespace_mappings:                                 │ ║
+║  │   - prefix: "gml"                                   │ ║
+║  │     uri: "http://www.opengis.net/gml/3.2"           │ ║
+║  │   - prefix: "xlink"                                 │ ║
+║  │     uri: "http://www.w3.org/1999/xlink"             │ ║
+║  └─────────────────┬───────────────────────────────────┘ ║
+║                    │                                      ║
+║                    ▼                                      ║
+║  ┌─────────────────────────────────────────────────────┐ ║
+║  │ NamespaceRegistry                                   │ ║
+║  │                                                     │ ║
+║  │ Internal Storage:                                   │ ║
+║  │ @prefix_to_uri = {                                  │ ║
+║  │   "gml"   => "http://www.opengis.net/gml/3.2"       │ ║
+║  │   "xlink" => "http://www.w3.org/1999/xlink"         │ ║
+║  │ }                                                   │ ║
+║  │                                                     │ ║
+║  │ @uri_to_prefix = {                                  │ ║
+║  │   "http://www.opengis.net/gml/3.2" => "gml"         │ ║
+║  │   "http://www.w3.org/1999/xlink"   => "xlink"       │ ║
+║  │ }                                                   │ ║
+║  └─────────────────┬───────────────────────────────────┘ ║
+║                    │                                      ║
+║                    ▼                                      ║
+║  ┌─────────────────────────────────────────────────────┐ ║
+║  │ Resolution Methods                                  │ ║
+║  │                                                     │ ║
+║  │ resolve_prefix("gml")                               │ ║
+║  │   → "http://www.opengis.net/gml/3.2"                │ ║
+║  │                                                     │ ║
+║  │ resolve_uri("http://www.opengis.net/gml/3.2")       │ ║
+║  │   → "gml"                                           │ ║
+║  │                                                     │ ║
+║  │ has_prefix?("gml")                                  │ ║
+║  │   → true                                            │ ║
+║  └─────────────────────────────────────────────────────┘ ║
+╚═══════════════════════════════════════════════════════════╝
+----
+
+.Comparing namespace formats
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+repo = Lutaml::Xsd::SchemaRepository.new
+
+# Configure prefix mapping
+repo.add_namespace_mapping(
+  prefix: 'gml',
+  uri: 'http://www.opengis.net/gml/3.2'
+)
+
+# Parse schema
+repo.parse_schema(content: xsd_content)
+
+# These resolve to the same type:
+result1 = repo.resolve_type(qualified_name: 'gml:CodeType')
+result2 = repo.resolve_type(
+  qualified_name: '{http://www.opengis.net/gml/3.2}CodeType'
+)
+
+puts "Same type? #{result1.type == result2.type}"  # true
+----
+====
+
+== Configuring namespace mappings
+
+=== Adding namespace mappings
+
+Before using prefixed names for type resolution, configure the prefix-to-URI
+mappings in the repository.
+
+Syntax:
+
+NOTE: This is a syntax template. Replace `{prefix}` and `{uri}` with actual values.
+
+[source,ruby]
+----
+repo.add_namespace_mapping(prefix: {prefix}, uri: {uri}) <1>
+----
+<1> Register a namespace prefix and its URI
+
+Where,
+
+`prefix`:: The namespace prefix (e.g., `"gml"`, `"xlink"`) (required)
+`uri`:: The full namespace URI (required)
+
+.Configuring namespace mappings
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+repo = Lutaml::Xsd::SchemaRepository.new
+
+# Add individual mappings
+repo.add_namespace_mapping(
+  prefix: 'gml',
+  uri: 'http://www.opengis.net/gml/3.2'
+)
+
+repo.add_namespace_mapping(
+  prefix: 'xlink',
+  uri: 'http://www.w3.org/1999/xlink'
+)
+
+# Configure multiple mappings in a loop
+namespace_config = [
+  { prefix: 'gco', uri: 'http://www.isotc211.org/2005/gco' },
+  { prefix: 'gmd', uri: 'http://www.isotc211.org/2005/gmd' },
+  { prefix: 'gmi', uri: 'https://www.isotc211.org/2005/gmi' }
+]
+
+namespace_config.each do |mapping|
+  repo.add_namespace_mapping(
+    prefix: mapping[:prefix],
+    uri: mapping[:uri]
+  )
+end
+----
+====
+
+=== Retrieving namespace mappings
+
+Access configured namespace mappings to verify configuration or debug issues.
+
+.Viewing configured mappings
+[example]
+====
+[source,ruby]
+----
+# Get all namespace mappings
+mappings = repo.namespace_mappings
+
+mappings.each do |mapping|
+  puts "#{mapping[:prefix]} => #{mapping[:uri]}"
+end
+
+# Check if specific prefix is configured
+gml_mapping = mappings.find { |m| m[:prefix] == 'gml' }
+
+if gml_mapping
+  puts "GML prefix maps to: #{gml_mapping[:uri]}"
+end
+----
+====
+
+=== Namespace mapping validation
+
+Ensure namespace mappings are correct before attempting type resolution.
+
+.Validating namespace configuration
+[example]
+====
+[source,ruby]
+----
+def validate_namespace_config(repo, required_prefixes)
+  mappings = repo.namespace_mappings
+  configured = mappings.map { |m| m[:prefix] }
+
+  missing = required_prefixes - configured
+
+  if missing.empty?
+    puts "✓ All required namespaces configured"
+    true
+  else
+    puts "✗ Missing namespace configurations:"
+    missing.each do |prefix|
+      puts "  - #{prefix}"
+    end
+    false
+  end
+end
+
+# Usage
+required = ['gml', 'xlink', 'gco']
+validate_namespace_config(repo, required)
+----
+====
+
+== Auto-extraction from schemas
+
+When parsing schemas, Lutaml::XSD automatically extracts namespace information
+from the schema files themselves.
+
+=== Target namespace extraction
+
+The parser extracts the `targetNamespace` from each schema and indexes types
+accordingly.
+
+.Automatic namespace detection
+[example]
+====
+[source,ruby]
+----
+xsd_content = <<~XSD
+  <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+             targetNamespace="http://example.com/myschema"
+             xmlns:myns="http://example.com/myschema">
+
+    <xs:complexType name="PersonType">
+      <!-- ... -->
+    </xs:complexType>
+
+  </xs:schema>
+XSD
+
+schema = Lutaml::Xsd.parse(xsd_content)
+
+# Target namespace is automatically captured
+puts "Target namespace: #{schema.target_namespace}"
+# Output: http://example.com/myschema
+
+# Types are indexed under this namespace
+repo = Lutaml::Xsd::SchemaRepository.new
+repo.parse_schema(content: xsd_content)
+
+# Can resolve using Clark notation (no prefix needed)
+result = repo.resolve_type(
+  qualified_name: '{http://example.com/myschema}PersonType'
+)
+puts "Found: #{result.found?}"  # true
+----
+====
+
+=== Import namespace handling
+
+When schemas import other namespaces, those relationships are captured and
+indexed.
+
+.Import namespace tracking
+[example]
+====
+[source,xml]
+----
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://example.com/app"
+           xmlns:gml="http://www.opengis.net/gml/3.2">
+
+  <!-- Import GML namespace -->
+  <xs:import namespace="http://www.opengis.net/gml/3.2"
+             schemaLocation="http://schemas.opengis.net/gml/3.2.1/gml.xsd"/>
+
+  <!-- Use GML types -->
+  <xs:complexType name="MyFeature">
+    <xs:sequence>
+      <xs:element name="identifier" type="gml:CodeType"/>
+    </xs:sequence>
+  </xs:complexType>
+
+</xs:schema>
+----
+
+The repository tracks that:
+
+* `http://example.com/app` defines `MyFeature`
+* `MyFeature` references `CodeType` from `http://www.opengis.net/gml/3.2`
+* Both namespaces are available for type resolution
+====
+
+=== Querying schema namespaces
+
+After parsing schemas, query which namespaces are available.
+
+.Listing available namespaces
+[example]
+====
+[source,ruby]
+----
+# Get all namespaces in repository
+namespaces = repo.namespaces
+
+puts "Available namespaces:"
+namespaces.each do |uri|
+  # Get types in this namespace
+  types = repo.types_in_namespace(uri)
+  puts "  #{uri} (#{types.size} types)"
+end
+
+# Check if specific namespace exists
+if repo.namespace?('http://www.opengis.net/gml/3.2')
+  puts "\n✓ GML namespace is available"
+
+  # List types in GML namespace
+  gml_types = repo.types_in_namespace('http://www.opengis.net/gml/3.2')
+  puts "GML types:"
+  gml_types.first(5).each do |type|
+    puts "  - #{type.name}"
+  end
+end
+----
+====
+
+== Using namespaces in type resolution
+
+=== Resolving with prefixed names
+
+Prefixed names require namespace mappings to be configured first.
+
+.Type resolution with prefixes
+[example]
+====
+[source,ruby]
+----
+repo = Lutaml::Xsd::SchemaRepository.new
+
+# Configure namespace mappings
+repo.add_namespace_mapping(
+  prefix: 'gml',
+  uri: 'http://www.opengis.net/gml/3.2'
+)
+
+repo.add_namespace_mapping(
+  prefix: 'uro',
+  uri: 'https://www.geospatial.jp/iur/uro/3.2'
+)
+
+# Parse schemas
+repo.parse_schema(content: gml_schema_content)
+repo.parse_schema(content: uro_schema_content)
+
+# Resolve types using prefixes
+gml_result = repo.resolve_type(qualified_name: 'gml:CodeType')
+uro_result = repo.resolve_type(qualified_name: 'uro:BuildingType')
+
+if gml_result.found? && uro_result.found?
+  puts "✓ Both types resolved successfully"
+  puts "  GML type from: #{gml_result.namespace}"
+  puts "  URO type from: #{uro_result.namespace}"
+end
+----
+====
+
+=== Resolving with Clark notation
+
+Clark notation works without namespace configuration.
+
+.Type resolution with Clark notation
+[example]
+====
+[source,ruby]
+----
+# No namespace mapping needed
+result = repo.resolve_type(
+  qualified_name: '{http://www.opengis.net/gml/3.2}CodeType'
+)
+
+if result.found?
+  puts "Resolved: #{result.type.name}"
+  puts "From: #{result.namespace}"
+end
+
+# Useful when prefix is ambiguous
+result = repo.resolve_type(
+  qualified_name: '{https://www.geospatial.jp/iur/uro/3.2}BuildingType'
+)
+----
+====
+
+=== Namespace-scoped searches
+
+Search for types within a specific namespace.
+
+.Namespace-scoped type lookup
+[example]
+====
+[source,ruby]
+----
+# Find type in specific namespace
+type = repo.find_type(
+  name: 'CodeType',
+  namespace: 'http://www.opengis.net/gml/3.2'
+)
+
+if type
+  puts "Found in GML namespace: #{type.name}"
+end
+
+# Compare: search all namespaces (may find wrong type)
+type_any = repo.find_type(name: 'CodeType')
+
+# For unambiguous lookup, specify namespace
+type_gml = repo.find_type(
+  name: 'CodeType',
+  namespace: 'http://www.opengis.net/gml/3.2'
+)
+
+type_custom = repo.find_type(
+  name: 'CodeType',
+  namespace: 'http://example.com/custom'
+)
+----
+====
+
+== Best practices
+
+=== Use consistent prefix conventions
+
+Follow standard prefix conventions for common namespaces.
+
+.Standard namespace prefixes
+[source,ruby]
+----
+# Standard prefixes for common namespaces
+STANDARD_NAMESPACES = {
+  'xs'    => 'http://www.w3.org/2001/XMLSchema',
+  'xsi'   => 'http://www.w3.org/2001/XMLSchema-instance',
+  'gml'   => 'http://www.opengis.net/gml/3.2',
+  'xlink' => 'http://www.w3.org/1999/xlink',
+  'gco'   => 'http://www.isotc211.org/2005/gco',
+  'gmd'   => 'http://www.isotc211.org/2005/gmd',
+  'gmi'   => 'https://www.isotc211.org/2005/gmi',
+  'gts'   => 'http://www.isotc211.org/2005/gts',
+  'gsr'   => 'http://www.isotc211.org/2005/gsr'
+}
+
+# Configure using standard prefixes
+STANDARD_NAMESPACES.each do |prefix, uri|
+  repo.add_namespace_mapping(prefix: prefix, uri: uri)
+end
+----
+
+=== Document custom namespaces
+
+When using custom namespaces, document the prefix-to-URI mappings.
+
+.Documenting namespace configuration
+[example]
+====
+[source,ruby]
+----
+# config/namespaces.yml
+namespace_mappings:
+  - prefix: "app"
+    uri: "http://example.com/application"
+    description: "Main application namespace"
+
+  - prefix: "ext"
+    uri: "http://example.com/extensions"
+    description: "Application extensions"
+
+  - prefix: "gml"
+    uri: "http://www.opengis.net/gml/3.2"
+    description: "Geography Markup Language 3.2"
+
+# Load from configuration
+require 'yaml'
+
+config = YAML.load_file('config/namespaces.yml')
+config['namespace_mappings'].each do |mapping|
+  repo.add_namespace_mapping(
+    prefix: mapping['prefix'],
+    uri: mapping['uri']
+  )
+  puts "Configured: #{mapping['prefix']} (#{mapping['description']})"
+end
+----
+====
+
+=== Validate namespace references
+
+Ensure all referenced namespaces are available before resolving types.
+
+.Namespace reference validation
+[example]
+====
+[source,ruby]
+----
+def validate_type_references(schema, repo)
+  errors = []
+
+  # Check elements
+  schema.element.each do |elem|
+    next unless elem.type
+
+    # Extract namespace from qualified type reference
+    if elem.type.include?(':')
+      prefix, _local = elem.type.split(':', 2)
+
+      # Check if prefix is mapped
+      mapping = repo.namespace_mappings.find { |m| m[:prefix] == prefix }
+      unless mapping
+        errors << "Element #{elem.name} references unmapped prefix: #{prefix}"
+      end
+    end
+  end
+
+  if errors.empty?
+    puts "✓ All namespace references valid"
+  else
+    puts "✗ Namespace reference errors:"
+    errors.each { |e| puts "  - #{e}" }
+  end
+
+  errors.empty?
+end
+----
+====
+
+=== Use Clark notation for portability
+
+When sharing code or configurations, use Clark notation to avoid prefix
+dependency.
+
+.Portable type references
+[example]
+====
+[source,ruby]
+----
+# Less portable - requires prefix configuration
+result = repo.resolve_type(qualified_name: 'gml:CodeType')
+
+# More portable - self-contained
+result = repo.resolve_type(
+  qualified_name: '{http://www.opengis.net/gml/3.2}CodeType'
+)
+
+# Configuration file using Clark notation
+type_mappings:
+  - from: "{http://www.opengis.net/gml/3.2}CodeType"
+    to: "app:StringCodeType"
+  - from: "{http://www.isotc211.org/2005/gco}CharacterString"
+    to: "xs:string"
+----
+====
+
+== Namespace URI remapping
+
+When composing multiple packages, namespace URI remapping allows you to transform namespace URIs to avoid conflicts or align with conventions. This is particularly useful when integrating external packages into your schema repository.
+
+=== Basic remapping
+
+Namespace remapping transforms all references from one URI to another during package composition.
+
+.Simple namespace remapping
+[example]
+====
+[source,yaml]
+----
+base_packages:
+  - package: external_package.lxr
+    namespace_remapping:
+      - from_uri: http://external.org/v1
+        to_uri: http://internal.example.com/external/v1
+----
+
+All references to `http://external.org/v1` in the external package become `http://internal.example.com/external/v1` in the composed repository.
+====
+
+=== Common use cases
+
+==== Avoiding conflicts
+
+When two packages define the same namespace URI with different content, remapping resolves the conflict.
+
+.Conflict resolution with remapping
+[example]
+====
+[source,yaml]
+----
+base_packages:
+  - package: vendor_a.lxr
+    priority: 0
+    namespace_remapping:
+      - from_uri: http://common.org/types
+        to_uri: http://internal.example.com/vendor_a/types
+
+  - package: vendor_b.lxr
+    priority: 1
+    namespace_remapping:
+      - from_uri: http://common.org/types
+        to_uri: http://internal.example.com/vendor_b/types
+----
+
+This allows both packages to coexist without namespace conflicts.
+====
+
+==== Version migration
+
+Map old version namespaces to new version for backward compatibility or migration.
+
+.Version namespace mapping
+[example]
+====
+[source,yaml]
+----
+base_packages:
+  - package: legacy_schemas.lxr
+    namespace_remapping:
+      - from_uri: http://example.com/schema/v1
+        to_uri: http://example.com/schema/v2
+----
+
+This redirects references from version 1 to version 2 namespaces.
+====
+
+==== Organization standards
+
+Align external schemas with internal namespace conventions.
+
+.Standardizing external namespaces
+[example]
+====
+[source,yaml]
+----
+base_packages:
+  - package: gml_3.2.1.lxr
+    namespace_remapping:
+      - from_uri: http://www.opengis.net/gml/3.2
+        to_uri: http://schemas.internal.com/gml/3.2
+----
+
+This brings external GML schemas under internal namespace control.
+====
+
+==== Testing and development
+
+Use local namespaces for development without affecting production schemas.
+
+.Development namespace mapping
+[example]
+====
+[source,yaml]
+----
+base_packages:
+  - package: production_schemas.lxr
+    namespace_remapping:
+      - from_uri: http://production.example.com/schemas
+        to_uri: http://localhost:8080/dev/schemas
+----
+
+This allows testing with local namespace URIs.
+====
+
+=== Multiple remappings
+
+A single package can have multiple namespace transformations applied simultaneously.
+
+.Multiple namespace remappings
+[example]
+====
+[source,yaml]
+----
+base_packages:
+  - package: multi_namespace.lxr
+    namespace_remapping:
+      - from_uri: http://old.com/ns1
+        to_uri: http://new.com/ns1
+      - from_uri: http://old.com/ns2
+        to_uri: http://new.com/ns2
+      - from_uri: http://old.com/ns3
+        to_uri: http://new.com/ns3
+----
+
+Each namespace is independently transformed.
+====
+
+=== Remapping behavior
+
+==== Type references
+
+All type references are automatically updated to use the new namespace URI:
+
+[source]
+----
+Original schema (in external_package.lxr):
+  <xs:element name="item" type="ext:ItemType"/>
+  where ext = http://external.org/v1
+
+After remapping to http://internal.example.com/external/v1:
+  Type reference resolves to:
+  {http://internal.example.com/external/v1}ItemType
+----
+
+==== Namespace registry
+
+The namespace registry is updated to reflect remapped URIs:
+
+[source,ruby]
+----
+# Before remapping
+registry.resolve_prefix("ext")
+# => "http://external.org/v1"
+
+# After remapping
+registry.resolve_prefix("ext")
+# => "http://internal.example.com/external/v1"
+----
+
+==== Import statements
+
+Import statements in schemas retain their original form, but type resolution uses remapped URIs internally.
+
+=== Validation and errors
+
+Namespace remapping is validated during composition:
+
+* **Missing source URI**: Error if `from_uri` doesn't exist in package
+* **Circular remapping**: Error if A→B and B→A
+* **Duplicate target**: Warning if multiple `from_uri` map to same `to_uri`
+
+.Example validation error
+[example]
+====
+[source]
+----
+Error: Namespace remapping failed
+  Package: external.lxr
+  From URI: http://nonexistent.org/ns
+  Problem: Source namespace not found in package
+  
+  Available namespaces:
+    - http://external.org/v1
+    - http://external.org/v2
+----
+====
+
+=== Best practices for remapping
+
+1. **Document remappings**: Maintain clear documentation of why each remapping exists
+2. **Use consistent patterns**: Follow predictable patterns for remapped URIs
+3. **Avoid circular mappings**: Ensure remappings don't create cycles
+4. **Test thoroughly**: Validate type resolution after remapping
+5. **Version control**: Track remapping configurations in version control
+
+See link:../PACKAGE_COMPOSITION.adoc#namespace-uri-remapping[Package Composition Guide] for detailed documentation and additional examples.
+
+== Complete namespace workflow
+
+.Comprehensive namespace configuration example
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+require 'yaml'
+
+# 1. Create repository
+repo = Lutaml::Xsd::SchemaRepository.new
+
+# 2. Configure standard namespaces
+standard_ns = {
+  'gml'   => 'http://www.opengis.net/gml/3.2',
+  'xlink' => 'http://www.w3.org/1999/xlink',
+  'gco'   => 'http://www.isotc211.org/2005/gco',
+  'gmd'   => 'http://www.isotc211.org/2005/gmd'
+}
+
+puts "Configuring standard namespaces:"
+standard_ns.each do |prefix, uri|
+  repo.add_namespace_mapping(prefix: prefix, uri: uri)
+  puts "  #{prefix} => #{uri}"
+end
+
+# 3. Configure application-specific namespaces
+app_ns = [
+  { prefix: 'uro', uri: 'https://www.geospatial.jp/iur/uro/3.2' },
+  { prefix: 'urf', uri: 'https://www.geospatial.jp/iur/urf/3.2' }
+]
+
+puts "\nConfiguring application namespaces:"
+app_ns.each do |mapping|
+  repo.add_namespace_mapping(
+    prefix: mapping[:prefix],
+    uri: mapping[:uri]
+  )
+  puts "  #{mapping[:prefix]} => #{mapping[:uri]}"
+end
+
+# 4. Parse schemas (automatically extracts namespaces)
+xsd_content = File.read('schema.xsd')
+repo.parse_schema(content: xsd_content)
+
+# 5. Verify available namespaces
+puts "\nAvailable namespaces after parsing:"
+repo.namespaces.each do |uri|
+  types_count = repo.types_in_namespace(uri).size
+  prefix = repo.namespace_mappings.find { |m| m[:uri] == uri }&.[](:prefix) || '(unmapped)'
+  puts "  [#{prefix}] #{uri} - #{types_count} types"
+end
+
+# 6. Resolve types using different formats
+puts "\nType resolution tests:"
+
+# Using prefix
+result = repo.resolve_type(qualified_name: 'gml:CodeType')
+puts "  gml:CodeType: #{result.found? ? '✓' : '✗'}"
+
+# Using Clark notation
+result = repo.resolve_type(
+  qualified_name: '{http://www.opengis.net/gml/3.2}MeasureType'
+)
+puts "  {gml}MeasureType: #{result.found? ? '✓' : '✗'}"
+
+# Unprefixed (searches all)
+result = repo.resolve_type(qualified_name: 'BuildingType')
+puts "  BuildingType: #{result.found? ? '✓' : '✗'}"
+
+# 7. Export configuration for reuse
+config = {
+  'namespace_mappings' => repo.namespace_mappings,
+  'available_namespaces' => repo.namespaces
+}
+
+File.write('namespace_config.yml', config.to_yaml)
+puts "\n✓ Configuration exported to namespace_config.yml"
+----
+====
+
+== See also
+
+* link:TYPE_RESOLUTION.html[Type resolution] - Using namespaces for type
+  lookups
+* link:../guides/SCHEMA_REPOSITORY.html[SchemaRepository guide] - Complete
+  repository usage
+* link:../guides/LXR_PACKAGES.html[LXR packages] - Pre-configured namespace
+  mappings
+* link:../reference/NAMESPACE_CONFIGURATION.html[Namespace configuration
+  reference] - Advanced configuration options

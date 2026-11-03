@@ -1,0 +1,228 @@
+---
+layout: default
+title: CLI Commands Cheatsheet
+parent: Quick Reference
+nav_order: 2
+---
+= CLI Commands Cheatsheet
+:toc:
+:toclevels: 2
+
+== Command overview
+
+[cols="2,3,2",options="header"]
+|===
+| Command | Purpose | Common Options
+
+| `lutaml-xsd pkg build`
+| Create LXR package
+| `--config`, `--output`, `--verbose`
+
+| `lutaml-xsd package stats`
+| Show package statistics
+| `--package`
+
+| `lutaml-xsd type find`
+| Find type definition
+| `--package`, `--name`, `--namespace`
+
+| `lutaml-xsd type info`
+| Show type details
+| `--package`, `--name`
+|===
+
+== Package commands
+
+=== Build package
+[source,bash]
+----
+# Interactive builder
+lutaml-xsd pkg build
+
+# With configuration file
+lutaml-xsd pkg build --config config.yml --output my-package.lxr
+
+# With verbose output
+lutaml-xsd pkg build --config config.yml --verbose
+----
+
+=== Package statistics
+[source,bash]
+----
+# Show package info
+lutaml-xsd package stats --package my-package.lxr
+
+# Example output:
+# Package: my-package.lxr
+# Schemas: 42
+# Types: 156
+# Elements: 89
+----
+
+== Type commands
+
+=== Find type
+[source,bash]
+----
+# Find by name
+lutaml-xsd type find --package pkg.lxr --name "AddressType"
+
+# Find in namespace
+lutaml-xsd type find --package pkg.lxr \
+  --namespace "http://example.com/ns" \
+  --name "AddressType"
+
+# Search pattern
+lutaml-xsd type find --package pkg.lxr --name "*Address*"
+----
+
+=== Type information
+[source,bash]
+----
+# Show type details
+lutaml-xsd type info --package pkg.lxr --name "AddressType"
+
+# Example output:
+# Type: AddressType
+# Namespace: http://example.com/ns
+# Schema: schemas/address.xsd
+# Base type: xs:complexType
+# Elements: street, city, postcode
+----
+
+== Common workflows
+
+=== Create and test package
+[source,bash]
+----
+# 1. Build package
+lutaml-xsd pkg build --config config.yml --output my.lxr
+
+# 2. Verify contents
+lutaml-xsd package stats --package my.lxr
+
+# 3. Test type lookup
+lutaml-xsd type find --package my.lxr --name "MyType"
+----
+
+=== Debug package issues
+[source,bash]
+----
+# Build with verbose output
+lutaml-xsd pkg build --config config.yml --verbose
+
+# Check package stats
+lutaml-xsd package stats --package my.lxr
+
+# Verify type resolution
+lutaml-xsd type find --package my.lxr --name "*"
+----
+
+== Configuration file quick reference
+
+[source,yaml]
+----
+# Minimal configuration
+root_schema: "./schema/main.xsd"
+output_path: "./my-package.lxr"
+xsd_mode: "bundled"
+resolution_mode: "local"
+serialization: "marshal"
+
+# With mappings
+root_schema: "./schema/main.xsd"
+output_path: "./my-package.lxr"
+xsd_mode: "bundled"
+resolution_mode: "local"
+serialization: "marshal"
+schema_location_mappings:
+  - pattern: "https://example.com/(.*)"
+    path: "./schemas/$1"
+namespace_mappings:
+  ex: "http://example.com/ns"
+build_type_index: true
+----
+
+== Option reference
+
+=== Global options
+[cols="1,3",options="header"]
+|===
+| Option | Description
+
+| `--help`, `-h`
+| Show help message
+
+| `--version`, `-v`
+| Show version
+
+| `--verbose`
+| Enable verbose output
+|===
+
+=== Package build options
+[cols="1,3",options="header"]
+|===
+| Option | Description
+
+| `--config FILE`
+| Configuration file path
+
+| `--output FILE`
+| Output package path
+
+| `--verbose`
+| Show detailed progress
+|===
+
+=== Type find options
+[cols="1,3",options="header"]
+|===
+| Option | Description
+
+| `--package FILE`
+| LXR package path
+
+| `--name NAME`
+| Type name (supports wildcards)
+
+| `--namespace URI`
+| Namespace URI filter
+|===
+
+== Quick examples by use case
+
+=== CityGML package
+[source,bash]
+----
+lutaml-xsd pkg build \
+  --config citygml-config.yml \
+  --output citygml-3.0.lxr \
+  --verbose
+----
+
+=== ISO/TC 211 package
+[source,bash]
+----
+lutaml-xsd pkg build \
+  --config iso-tc211-config.yml \
+  --output iso-tc211.lxr
+----
+
+=== Find all types in package
+[source,bash]
+----
+lutaml-xsd type find --package my.lxr --name "*"
+----
+
+=== Search for specific pattern
+[source,bash]
+----
+lutaml-xsd type find --package my.lxr --name "*Address*"
+----
+
+== See also
+
+* link:../CLI[Full CLI documentation]
+* link:../guides/CREATING_PACKAGES[Creating packages guide]
+* link:../PACKAGE_CONFIGURATION[Package configuration]

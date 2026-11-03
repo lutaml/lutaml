@@ -1,0 +1,146 @@
+= Simple Schemas Example
+
+== Purpose
+
+This example demonstrates the basics of working with lutaml-xsd using simple, standalone schemas without complex dependencies.
+
+Learn how to:
+
+* Build LXR packages from basic XSD schemas
+* Search for types within a package
+* Resolve type references by qualified name
+* Inspect package contents and statistics
+
+The schemas used (person.xsd and company.xsd) are intentionally simple to focus on core concepts without the complexity of imports, includes, or namespace conflicts.
+
+== What This Example Demonstrates
+
+=== Package Building
+
+Building an LXR package from two simple schemas:
+
+* `person.xsd` - Defines PersonType with basic fields
+* `company.xsd` - Defines CompanyType with basic fields
+
+Both schemas use separate namespaces to demonstrate namespace handling.
+
+=== Type Searching
+
+Searching for types using pattern matching:
+
+* Exact matches (e.g., "Person")
+* Partial matches (e.g., "Type")
+* Prefix matches (e.g., "Email")
+
+Results include relevance scores and match types.
+
+=== Type Resolution
+
+Resolving types by their qualified names:
+
+* Using namespace prefixes (e.g., `p:PersonType`)
+* Accessing type definitions
+* Viewing type structure (elements, attributes)
+
+=== Package Inspection
+
+Examining package contents:
+
+* Total number of schemas
+* Total number of types
+* Namespace mappings
+* Type categories
+
+== Directory Structure
+
+[source]
+----
+01-simple/
+├── README.adoc           # This file
+├── config.yml            # Package configuration
+├── schemas/              # XSD schema files
+│   ├── person.xsd
+│   └── company.xsd
+├── ruby-api/             # Ruby API examples
+│   └── example.rb
+└── cli/                  # CLI examples
+    └── run.sh
+----
+
+== Configuration
+
+The [`config.yml`](config.yml) file contains:
+
+[source,yaml]
+----
+files:
+  - schemas/person.xsd
+  - schemas/company.xsd
+
+namespace_mappings:
+  - prefix: "p"
+    uri: "http://example.com/person"
+  - prefix: "c"
+    uri: "http://example.com/company"
+----
+
+Where:
+
+`files`:: List of XSD schema files to include in the package
+`namespace_mappings`:: Namespace prefix to URI mappings for qualified name resolution
+
+== Running the Examples
+
+=== Ruby API Example
+
+[source,bash]
+----
+ruby examples/01-simple/ruby-api/example.rb
+----
+
+This will:
+
+. Build an LXR package from the configuration
+. Load the package and display statistics
+. Search for types using various terms
+. Resolve specific type references
+. List all namespaces and their types
+
+=== CLI Example
+
+[source,bash]
+----
+bash examples/01-simple/cli/run.sh
+----
+
+This demonstrates the same operations using CLI commands:
+
+. `lutaml-xsd pkg build` - Build package
+. `lutaml-xsd pkg stats` - Show statistics
+. `lutaml-xsd search` - Search for types
+. `lutaml-xsd type` - Resolve type references
+. `lutaml-xsd namespace list` - List namespaces
+
+== Expected Output
+
+Both examples will create `simple.lxr` containing the serialized schema repository.
+
+Key statistics:
+
+* Schemas: 2
+* Types: ~8-10 (depending on schema complexity)
+* Namespaces: 2
+
+== Next Steps
+
+After mastering simple schemas:
+
+. Try link:../02-urban-function/README.adoc[02-urban-function] for complex schemas with imports
+. Try link:../03-unitsml/README.adoc[03-unitsml] for scientific domain schemas
+. Try link:../04-metaschema/README.adoc[04-metaschema] for self-referential schemas
+
+== Related Documentation
+
+* link:../../docs/RUBY_API.adoc[Ruby API Reference]
+* link:../../docs/quick-reference/cli-commands-cheatsheet.adoc[CLI Commands]
+* link:../../docs/SERIALIZATION.adoc[Serialization Guide]
