@@ -120,7 +120,7 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 4578/4696 (97.49%) |
+| pipeline | 4585/4696 (97.64%) |
 
 (2026-11-02, bundled-stack measurement with the escape,
 hint-following, pattern-alternative, identity-crash, engine-set,
@@ -143,7 +143,8 @@ lockfile refresh) → 4411 (93.9%) → 4430 (94.3%) → 4435 (94.4%) →
 (96.3%) → 4534 (96.6%) → 4540 (96.7%) → 4542 (96.7%) → 4546 (96.8%)
 → 4557 (97.0%) → 4565 (97.2%) → 4569 (97.3%) → 4562 (drift raw) →
 4563 (97.17%, ref-namespace round) → 4573 (97.38%, group-content
-round) → 4578 (97.49%, attribute-prohibition round), +617 net over the 1.2.43 baseline. The escapes round (PR #197 — \d→\p{Nd},
+round) → 4578 (97.49%, attribute-prohibition round) → 4585 (97.64%,
+multi-document round), +624 net over the 1.2.43 baseline. The escapes round (PR #197 — \d→\p{Nd},
 \w/\W/\s to their XSD value spaces) collapses Regex 120→69;
 same-step pattern facets now behave as alternatives and
 whitespace-only text reaches the facets intact (PR #200), Regex
@@ -470,6 +471,29 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   use-site fixed overlays the global declaration in the value check
   (attLa005). Attribute remainder (4): attJ018 + attO009/011
   (engine-silent — queue), attO006 (leptris-rs#25 attribute leg).
+- MULTI-DOCUMENT ROUND (2026-11-03): +7 (Schema 12→9 — the schT3/T9/
+  T10 redefine trio; ComplexType 4→1, Particles 12→10, Additional
+  10→9, IC 7→6 — same-namespace collision pairs; suite 4578→4585 =
+  97.64%, zero regressions, rspec green). TWO defects: (a) the
+  conformance repository keyed documents by TARGET NAMESPACE, so two
+  schemaDocuments sharing a namespace silently overwrote each other
+  and only one survived (schT3's redefine pair, both ns-a); a
+  same-namespace collision now suffixes the key instead of dropping
+  the document — every other case keeps the production one-doc-per-
+  namespace semantics (a naive path-key for everything cost 25
+  regressions via the unique-name fallback and first-match type
+  lookup, caught and reverted in-round). (b) resolve_named_type now
+  falls back to the parsed xs:redefine target documents: types living
+  only in the target (schT3 b-ct/b-st) resolve for plain references;
+  names a redefine BODY redefines stay OFF that path (the body is the
+  effective type and is not resolvable here — idF/idG/idH keep the
+  lenient path). KNOWN GAPS left open: schA1/schQ1/schD10/schF2
+  (hint-composition with same-local-name ct-A across namespaces —
+  per-namespace type binding), full type-redefine body semantics
+  (the body as effective type with the self-base hook — a
+  lutaml-model Redefine model shape study). Remaining Schema 9:
+  schA1/Q1/D10/F2 (ours), schD7/G8 (lutaml-model#1087),
+  schF1/G2/G7/P2 (moxml#510 composed bindings).
 - REGEX SEMANTICS ROUND (2026-10-31, PR #208): \w/\W now carry their
   Appendix F complements (\w = [^\p{P}\p{Z}\p{C}], class interiors
   via the exact positive partition L/M/N/S), \I/\C complements added
