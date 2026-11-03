@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Corpus parity (issue #578 STEP 1 gate): every .exp fixture must parse
 # identically through the DSL and the edition-2 artifact.
-# PARITY_LIB: a parsanol checkout whose lib/ carries the compiler fix —
-#   PARITY_LIB=~/src/lutaml/parsanol-capfix/lib ./parity.sh
+# PARITY_LIB: a parsanol checkout whose lib/ carries unreleased fixes —
+#   PARITY_LIB=~/src/lutaml/parsanol-noedition1/lib ./parity.sh
+# (applies to the CLI artifact lane too, not just the in-process one)
 set -uo pipefail
 cd "$(dirname "$0")"
 EXE=/Users/mulgogi/.local/share/mise/installs/ruby/3.4.8/lib/ruby/gems/3.4.0/gems/parsanol-1.3.121-arm64-darwin/exe/parsanol
@@ -43,7 +44,7 @@ for f in $(find /Users/mulgogi/src/lutaml/expressir/spec -name "*.exp" | sort); 
   fi
   src="$(cat "$f")"
   # artifact accept?
-  if ruby "$EXE" parg parse /tmp/serialized.json --entry syntax "$src" \
+  if ruby ${LIB:+-I "$LIB"} "$EXE" parg parse /tmp/serialized.json --entry syntax "$src" \
       > /tmp/par-artifact.log 2>&1; then art=ok; else art=fail; fi
   # DSL accept?
   if bundle exec ruby -e '

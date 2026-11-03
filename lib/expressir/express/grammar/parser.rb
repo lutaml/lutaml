@@ -144,11 +144,20 @@ module Expressir
           end
         end
 
+        # The grammar-component sources the artifact's embedded source
+        # `use`s (the split grammar ships beside the artifact; the
+        # pure-Ruby replay path re-parses the embedded source and
+        # resolves imports from here).
+        PARG_COMPONENTS_DIR = File.join(__dir__, "parg")
+
         def self.parse_artifact(source)
           raise LoadError, "Edition-2 artifact not available" unless artifact_available?
 
           @parser_mutex.synchronize do
-            @artifact ||= Parsanol::PARG::Artifact.from_json(File.read(ARTIFACT_PATH))
+            @artifact ||= Parsanol::PARG::Artifact.from_json(
+              File.read(ARTIFACT_PATH),
+              imports_dir: PARG_COMPONENTS_DIR,
+            )
           end
           # mode: :native rides the rs VM when the parsanol native ext
           # is present and falls back to the ruby atom evaluation

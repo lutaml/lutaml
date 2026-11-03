@@ -37,7 +37,7 @@ REJECTED = Hash.new(0)
 # the RemarkScanner), and parsanol 1.3.123's TriviaCapture#record
 # crashes on this grammar (`lstrip` for nil) — plain Trivia keeps the
 # artifact lane on the backtracking, capture-free wrapper instead.
-SKIP_DECL = "skip = trivia"
+SKIP_DECL = "skip = express_remarks.trivia"
 
 class AtomRenderer
   def initialize(rejected, alt_rules)
@@ -206,25 +206,147 @@ end
 alt_rules = rules.select { |_, body| body.is_a?(Parsanol::Atoms::Alternative) }.keys
 warn "rules: #{rules.size}/#{RULE_NAMES.uniq.size}"
 
-# -- emit --
-out = []
-out << "grammar ExpressSyntax version \"0.1.0\" edition 2 {"
-out << "  # The DSL's trivia channel (match[\" \\r\\n\\t\\f\"].repeat(1)) is"
-out << "  # emitted below from the live rule; remarks stay product data."
+# -- component split (issue: maintainable multi-file grammar) --
+# The leaf vocabularies live in their own files, composed by the main
+# grammar with top-level `use` declarations. Cross-component rule
+# references render namespaced (`express_keywords.tABS`); captures
+# keep their own names (the import prefix never touches `as`).
+COMPONENTS = {
+  "express_keywords" => ->(name) { name.start_with?("t") && name.match?(/\At[A-Z]/) },
+  "express_operators" => ->(name) {
+    %w[addLikeOp andOp binaryTypeOp? bitwiseOp? compoundOp? divOp? exponentOp?
+       infixOp? logicalOp? modOp? multiplicationLikeOp orOp plusLikeOp
+       relOp unaryOp xorOp? op_colon op_colon_equal op_comma op_dot op_equal
+       op_ge op_gt op_le op_lt op_minus op_not_equal op_plus op_star op_slash
+       op_delim op_delim2 op_leftparen op_rightparen op_decl
+       op_asterisk op_colon_equals_colon op_colon_less_greater_colon
+       op_double_pipe op_equals op_greater_equal op_greater_than
+       op_less_equal op_less_greater op_less_than].include?(name)
+  },
+  "express_remarks" => ->(name) {
+    %w[embeddedRemark tailRemark space spaces trivia].include?(name)
+  },
+  # Pure lexical literals: identifiers, numbers, strings. The TYPE
+  # grammar rules (simpleTypes family) stay in the main file — they are
+  # syntax, not vocabulary, and would drag expression rules into this
+  # component.
+  "express_literals" => ->(name) {
+    %w[simpleId unguardedId digits simpleStringLiteral
+       anyKeyword digit].include?(name)
+  },
+}.freeze
 
-renderer = AtomRenderer.new(REJECTED, alt_rules)
-rules.sort_by { |name, _| name }.each do |name, body|
-  decl = ATOMIC_RULES.include?(name) ? "atomic #{name} =" : "#{name} ="
-  out << "  #{decl} #{renderer.render(body)}"
+def component_of(name, components, _rules)
+  components.each do |component, matches|
+    return component if matches.call(name)
+  end
+  nil
 end
 
-out << "  #{SKIP_DECL}"
+def collect_rule_refs(atom, out) # rubocop:disable Metrics/MethodLength -- a uniform tree walker
+  case atom
+  when Parsanol::Atoms::Entity then out << atom.rule_name.to_s
+  when Parsanol::Atoms::Named, Parsanol::Atoms::Repetition
+    collect_rule_refs(atom.parslet, out)
+  when Parsanol::Atoms::Sequence then atom.parslets.each { |c| collect_rule_refs(c, out) }
+  when Parsanol::Atoms::Alternative then atom.alternatives.each { |c| collect_rule_refs(c, out) }
+  when Parsanol::Atoms::Lookahead then collect_rule_refs(atom.bound_parslet, out)
+  end
+end
 
-out << "  entry syntax: syntax"
-out << "}"
+# Assign every rule to its component (nil = the main grammar).
+rule_component = {}
+rules.each_key do |name|
+  rule_component[name] = component_of(name, COMPONENTS, rules)
+end
 
-File.write(out_path, "#{out.join("\n")}\n")
-warn "wrote #{out_path} (#{out.size} lines)"
+# Qualification happens in the Entity case: the component-aware
+# renderer prefixes cross-component references.
+qualified_renderer = Class.new(AtomRenderer) do
+  attr_accessor :current_component, :rule_component
+
+  def render(atom)
+    if atom.is_a?(Parsanol::Atoms::Entity)
+      name = atom.rule_name.to_s
+      target = @rule_component[name]
+      if target && target != @current_component
+        return "#{target}.#{name}"
+      end
+
+      return name
+    end
+    super
+  end
+end
+
+emit_component = lambda do |component, names|
+  r = qualified_renderer.new(REJECTED, alt_rules)
+  r.current_component = component
+  r.rule_component = rule_component
+  body = []
+  names.sort.each do |name|
+    atom = rules[name]
+    decl = ATOMIC_RULES.include?(name) ? "atomic #{name} =" : "#{name} ="
+    body << "  #{decl} #{r.render(atom)}"
+  end
+  body
+end
+
+main_names = rules.keys.select { |name| rule_component[name].nil? }
+main_refs = {}
+main_names.each do |name|
+  refs = []
+  collect_rule_refs(rules[name], refs)
+  main_refs[name] = refs
+end
+
+require "fileutils"
+out_dir = File.dirname(out_path)
+FileUtils.mkdir_p(out_dir)
+
+# The leaf components: plain grammar blocks (the import prefixes their
+# rules on merge).
+COMPONENTS.each_key do |component|
+  names = rules.keys.select { |name| rule_component[name] == component }
+  next if names.empty?
+
+  component_out = []
+  component_out << "grammar Express#{component.split('_')[1].capitalize} version \"0.1.0\" edition 2 {"
+  component_out.concat(emit_component.call(component, names))
+  component_out << "}"
+  path = File.join(out_dir, "#{component}.parg")
+  File.write(path, "#{component_out.join("\n")}\n")
+  warn "wrote #{path} (#{component_out.size} rules)"
+end
+
+# The main grammar: top-level `use` the components (the parsers take
+# use declarations before the grammar header), then the structural
+# rules with qualified cross-component references.
+main_out = []
+main_out << "# The structural grammar proper. The leaf vocabularies compose"
+main_out << "# via top-level use declarations:"
+COMPONENTS.each_key { |component| main_out << "use #{component}" }
+main_out << ""
+main_out << "grammar ExpressSyntax version \"0.1.0\" edition 2 {"
+main_out << "  # The DSL's trivia channel (match[\" \\r\\n\\t\\f\"].repeat(1)) is"
+main_out << "  # emitted below from the live rule; remarks stay product data."
+
+r = qualified_renderer.new(REJECTED, alt_rules)
+r.current_component = nil
+r.rule_component = rule_component
+main_names.sort.each do |name|
+  atom = rules[name]
+  decl = ATOMIC_RULES.include?(name) ? "atomic #{name} =" : "#{name} ="
+  main_out << "  #{decl} #{r.render(atom)}"
+end
+
+main_out << "  #{SKIP_DECL}"
+
+main_out << "  entry syntax: syntax"
+main_out << "}"
+
+File.write(out_path, "#{main_out.join("\n")}\n")
+warn "wrote #{out_path} (#{main_out.size} rules)"
 unless REJECTED.empty?
   warn "REJECTED (#{REJECTED.values.sum}):"
   REJECTED.first(10).each { |k, n| warn "  #{n}x #{k}" }
