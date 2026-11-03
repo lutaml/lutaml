@@ -120,7 +120,7 @@ pinned commit) is measured via `rake conformance:w3c`:
 
 | mode | pass-rate |
 |---|---|
-| pipeline | 4573/4696 (97.38%) |
+| pipeline | 4578/4696 (97.49%) |
 
 (2026-11-02, bundled-stack measurement with the escape,
 hint-following, pattern-alternative, identity-crash, engine-set,
@@ -142,7 +142,8 @@ lockfile refresh) → 4411 (93.9%) → 4430 (94.3%) → 4435 (94.4%) →
 4436 (94.5%) → 4439 (94.5%) → 4454 (94.9%) → 4495 (95.7%) → 4524
 (96.3%) → 4534 (96.6%) → 4540 (96.7%) → 4542 (96.7%) → 4546 (96.8%)
 → 4557 (97.0%) → 4565 (97.2%) → 4569 (97.3%) → 4562 (drift raw) →
-4563 (97.17%, ref-namespace round) → 4573 (97.38%, group-content round), +612 net over the 1.2.43 baseline. The escapes round (PR #197 — \d→\p{Nd},
+4563 (97.17%, ref-namespace round) → 4573 (97.38%, group-content
+round) → 4578 (97.49%, attribute-prohibition round), +617 net over the 1.2.43 baseline. The escapes round (PR #197 — \d→\p{Nd},
 \w/\W/\s to their XSD value spaces) collapses Regex 120→69;
 same-step pattern facets now behave as alternatives and
 whitespace-only text reaches the facets intact (PR #200), Regex
@@ -454,6 +455,21 @@ tuple keys, node-set field violations and absent-field rows handled, cross-eleme
   import; our index keeps them no-namespace so the four e2 refs
   mis-resolve). Zero regressions; the drift entries above remain
   (fixed-empty 9, reU6).
+- ATTRIBUTE-PROHIBITION ROUND (2026-11-03): +5 Attribute (9→4,
+  attF001/J002/J003/Z007i under-detections + attLa005 fixed-facet;
+  suite 4573→4578 = 97.49%, ZERO regressions, rspec green).
+  use=prohibited was never enforced — instances could carry a
+  prohibited attribute unchecked. The declaration binds now, with
+  THREE suite-arbitrated exemptions for incoherent shapes: a
+  wildcard admitting the attribute shadows it (attZ002); fixed +
+  prohibited is an illegal combo treated as inert (attP031); a
+  prohibited member inside an attributeGroup DEFINITION is illegal
+  placement the suite ignores (attZ015). A derived type's OWN
+  declaration overrides the base chain's prohibited (attZ007v) while
+  a restriction body's own prohibited stands (attZ007i). A ref's
+  use-site fixed overlays the global declaration in the value check
+  (attLa005). Attribute remainder (4): attJ018 + attO009/011
+  (engine-silent — queue), attO006 (leptris-rs#25 attribute leg).
 - REGEX SEMANTICS ROUND (2026-10-31, PR #208): \w/\W now carry their
   Appendix F complements (\w = [^\p{P}\p{Z}\p{C}], class interiors
   via the exact positive partition L/M/N/S), \I/\C complements added
