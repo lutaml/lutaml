@@ -1,0 +1,307 @@
+---
+title: Manifest Workflows
+nav_order: 5
+has_children: true
+---
+
+= Schema Manifest Workflows
+
+== Purpose
+
+This guide provides complete workflows for working with EXPRESS schema manifests, from creation through validation to package building. Manifests are essential for managing complex schema collections and ensuring reproducible builds.
+
+== What You'll Learn
+
+* How to create manifests from root schemas
+* When to use manifests vs auto-resolution
+* How to resolve missing schema paths
+* Validating manifests for completeness and integrity
+* Building LER packages from manifests
+
+== Prerequisites
+
+* Expressir installed (see link:../../getting-started.html[Getting Started])
+* Basic understanding of EXPRESS schemas
+* Familiarity with link:../../schema-manifests.html[Schema Manifests]
+
+== Complete Workflow
+
+The typical manifest workflow consists of these steps:
+
+[source]
+----
+┌─────────────────────┐
+│  1. Create Manifest │  ← From root schema(s)
+│   from Root Schema  │
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│  2. Review Manifest │  ← Check for unresolved schemas
+│   and Edit Paths    │
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│  3. Resolve Missing │  ← Auto-resolve or manual edit
+│   Schema Paths      │
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│  4. Validate        │  ← Check integrity
+│   Manifest          │
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│  5. Build LER       │  ← Create package
+│   Package           │
+└─────────────────────┘
+----
+
+== Quick Start Example
+
+Here's a complete example workflow:
+
+[source,bash]
+----
+# Step 1: Create manifest from root schema
+expressir manifest create schemas/activity/mim.exp \
+  -o activity_manifest.yaml \
+  --base-dirs ~/iso-10303/schemas \
+  --verbose
+
+# Step 2: Review unresolved schemas in the output
+# Edit activity_manifest.yaml to add missing paths
+
+# Step 3: Try auto-resolution for remaining schemas
+expressir manifest resolve activity_manifest.yaml \
+  -o resolved_manifest.yaml \
+  --verbose
+
+# Step 4: Validate the manifest
+expressir manifest validate resolved_manifest.yaml \
+  --check-references \
+  --verbose
+
+# Step 5: Build the package
+expressir package build \
+  --manifest resolved_manifest.yaml \
+  activity.ler \
+  --validate
+----
+
+== When to Use Manifests
+
+**Use manifests when:**
+
+* Working with 10+ interdependent schemas
+* Schemas are in non-standard locations
+* You need reproducible builds
+* Managing circular dependencies
+* Building production packages
+* Documenting schema relationships
+
+**Use auto-resolution when:**
+
+* Quick prototyping or development
+* Schemas follow standard naming conventions
+* All schemas are in standard locations
+* Simple dependency structures
+
+== Guide Contents
+
+=== link:creating-manifests.html[Creating Manifests]
+
+Learn how to generate manifests from root schemas, understanding resolved vs unresolved schemas, and editing manifests to add missing paths.
+
+**Topics covered:**
+
+* Using `expressir manifest create`
+* Understanding manifest structure
+* Interpreting creation output
+* Adding base directories
+* Handling circular dependencies
+
+=== link:resolving-manifests.html[Resolving Manifests]
+
+Discover how to automatically resolve missing schema paths and when to use the resolve command.
+
+**Topics covered:**
+
+* Using `expressir manifest resolve`
+* Auto-resolution patterns
+* When to use resolve vs manual editing
+* Troubleshooting resolution failures
+
+=== link:validating-manifests.html[Validating Manifests]
+
+Master manifest validation at different levels and learn to interpret validation errors.
+
+**Topics covered:**
+
+* Basic validation (file existence)
+* Referential integrity checking
+* Using `--check-references` flag
+* Interpreting validation errors
+* Fixing validation issues
+
+=== Best Practices
+
+**Always validate before building:**
+```bash
+expressir manifest validate manifest.yaml --check-references
+```
+
+**Use verbose mode during development:**
+```bash
+expressir manifest create schema.exp -o manifest.yaml --verbose
+```
+
+**Version control your manifests:**
+```bash
+git add manifest.yaml
+git commit -m "Add schema manifest for activity module"
+```
+
+**Document unresolved schemas:**
+Add comments in the YAML to explain why certain schemas are unresolved:
+```yaml
+schemas:
+  Activity_method_mim:  # TODO: Waiting for upstream release
+```
+
+**Keep base directories minimal:**
+Only include necessary search directories to avoid false matches.
+
+== Common Patterns
+
+=== Pattern 1: Standard Module Build
+
+For a typical STEP module with standard structure:
+
+[source,bash]
+----
+expressir manifest create schemas/modules/activity/mim.exp \
+  -o activity.yaml \
+  --base-dirs schemas/resources,schemas/modules
+
+expressir manifest validate activity.yaml --check-references
+expressir package build --manifest activity.yaml activity.ler
+----
+
+=== Pattern 2: Mixed Resource and Module Schemas
+
+When combining different schema types:
+
+[source,bash]
+----
+expressir manifest create \
+  schemas/resources/geometry.exp \
+  schemas/modules/mechanical/arm.exp \
+  -o combined.yaml \
+  --base-dirs schemas/resources,schemas/modules,schemas/integrated
+
+expressir manifest validate combined.yaml --check-references --verbose
+expressir package build --manifest combined.yaml combined.ler
+----
+
+=== Pattern 3: Incremental Resolution
+
+For schemas with many missing dependencies:
+
+[source,bash]
+----
+# Initial creation
+expressir manifest create root.exp -o manifest.yaml \
+  --base-dirs schemas/
+
+# First resolution attempt
+expressir manifest resolve manifest.yaml -o resolved1.yaml
+
+# Manual editing of resolved1.yaml
+# Add paths for schemas that couldn't be auto-resolved
+
+# Second resolution with additional base dirs
+expressir manifest resolve resolved1.yaml -o resolved2.yaml \
+  --base-dirs schemas/,additional/schemas/
+
+# Validate
+expressir manifest validate resolved2.yaml --check-references
+
+# Build
+expressir package build --manifest resolved2.yaml output.ler
+----
+
+== Troubleshooting
+
+=== Problem: Many Unresolved Schemas
+
+**Symptom:** Manifest creation shows many schemas without paths
+
+**Solutions:**
+
+1. Add more base directories:
+   ```bash
+   expressir manifest create root.exp -o manifest.yaml \
+     --base-dirs dir1,dir2,dir3
+   ```
+
+2. Use the resolve command:
+   ```bash
+   expressir manifest resolve manifest.yaml -o resolved.yaml \
+     --base-dirs additional/dirs
+   ```
+
+3. Manually edit the manifest to add known paths
+
+=== Problem: Circular Dependency Warnings
+
+**Symptom:** Warnings about circular references during creation
+
+**Solution:** This is normal for schema-level circular dependencies in EXPRESS. The warning is informational only. Both schemas will be included correctly.
+
+=== Problem: Validation Fails with Missing References
+
+**Symptom:** `--check-references` reports unresolved USE FROM or REFERENCE FROM
+
+**Solutions:**
+
+1. Check if schema files actually exist at specified paths
+2. Verify schema names match actual SCHEMA declarations in files
+3. Add missing schemas to manifest with correct paths
+4. Use `--verbose` to see which schemas are being checked
+
+=== Problem: Package Build Fails After Successful Validation
+
+**Symptom:** Manifest validates but package build fails
+
+**Solutions:**
+
+1. Ensure all schema files are readable
+2. Check for syntax errors in EXPRESS files
+3. Verify file encodings (should be UTF-8)
+4. Use `--verbose` flag on build command
+
+== Next Steps
+
+Now that you understand the manifest workflow:
+
+**Deep dive into creation**::
+Read link:creating-manifests.html[Creating Manifests] for detailed guidance
+
+**Learn resolution techniques**::
+Explore link:resolving-manifests.html[Resolving Manifests]
+
+**Master validation**::
+Study link:validating-manifests.html[Validating Manifests]
+
+**Build production packages**::
+See link:../../ler-packages.html[LER Packages] for packaging details
+
+== Bibliography
+
+* link:../../schema-manifests.html[Schema Manifests] - Core concepts and API
+* link:../../ler-packages.html[LER Packages] - Package building
+* link:../ler/creating-packages.html[Creating LER Packages] - Detailed packaging guide

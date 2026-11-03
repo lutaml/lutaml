@@ -1,0 +1,40 @@
+---
+title: Evaluator
+parent: Reference
+grand_parent: Guides
+nav_order: 6
+---
+
+= Evaluator
+
+== Purpose
+
+`Expressir::Eval` executes EXPRESS: expressions over a value model,
+functions (parameters, locals, control flow), and WHERE rules over a
+Part 21 population.
+
+== Expressions
+
+`Expressir::Eval::Expression` implements ISO 10303-11 clause 12:
+arithmetic with result typing, logical tables (12.4), relational
+orderings (12.2.1), IN (12.2.3), LIKE patterns (12.2.5, table 11),
+intervals, aggregate operations (tables 16-18 including element
+singletons), QUERY, and indeterminate propagation. The value model
+lives in `Values`: logical constants, enumeration and binary values,
+aggregates and Part 21 instances.
+
+== Execution
+
+`Expressir::Eval::Interpreter` runs functions and procedures:
+assignment (including indexed), IF/CASE, WHILE/UNTIL/increment REPEAT
+with SKIP and ESCAPE, RETURN (falling off the end is an error), and the
+builtin set A (`ABS` … `VALUE`, `TYPEOF`, `USEDIN`). Populations are
+read through `Expressir::Eval::Environment`, which maps Part 21 slots
+in clause 12 order.
+
+== Rules
+
+`Expressir::Eval::Rules.check(population, schema)` evaluates each
+instance's entity WHERE rules with `SELF` and both bare and
+`SELF\attribute` bindings. A rule is violated only when it evaluates
+to false; indeterminate is not a violation (clause 9.4).

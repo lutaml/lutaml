@@ -1,0 +1,37 @@
+<schema.changes>
+<!-- Express Engine -->
+<!--   5.2.7 (GIT eeng-5.2.7) -->
+<!--   Steel Bank CL 2.5.8 (Unknown Bits) -->
+<!-- Reference_Schema: GEOMETRY_SCHEMA -->
+<!-- Path:   geometry_schema_v11.exp -->
+<!-- Trial_schema: GEOMETRY_SCHEMA -->
+<!-- Path:   geometry_schema_v13.exp -->
+
+
+<schema.modifications>
+<modified.object type="ENTITY" name="b_spline_curve_with_knots">
+<description>
+WHERE 'WR1' expression changed
+</description>
+</modified.object>
+
+<modified.object type="ENTITY" name="rational_b_spline_surface">
+<description>
+<ul>
+<li>DERIVE 'weights' type changed</li>
+<li>DERIVE 'weights' expression changed</li>
+</ul>
+</description>
+</modified.object>
+
+<modified.object type="ENTITY" name="rational_b_spline_volume">
+<description>
+<ul>
+<li>DERIVE 'weights' type changed</li>
+<li>DERIVE 'weights' expression changed</li>
+</ul>
+</description>
+</modified.object>
+
+</schema.modifications>
+</schema.changes>

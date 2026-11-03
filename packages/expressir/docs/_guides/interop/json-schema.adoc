@@ -1,0 +1,88 @@
+---
+title: JSON Schema Export
+parent: Interop Exports
+grand_parent: Guides
+nav_order: 1
+---
+
+= JSON Schema Export
+
+== Purpose
+
+`Expressir::Interop::JsonSchema` renders one EXPRESS schema as a JSON
+Schema 2020-12 document. The mapping is a project contribution; this
+guide records every decision so consumers can depend on it.
+
+== Mapping decisions
+
+Entities::
+Each entity becomes a definition under `$defs`. An entity with
+supertypes is an `allOf` of one `$ref` per `SUBTYPE OF` parent plus an
+object schema holding its own explicit attributes. The subtype closure
+is therefore expressed compositionally rather than duplicated.
+Attributes appear in declaration order (inherited attributes come
+through the parent branch of `allOf`). An entity without supertypes is
+the object schema itself with a `title`.
+
+Explicit attributes::
+Only explicit attributes are exported. Derived and inverse attributes
+are not part of the Part 21 exchange structure and are omitted.
+
+OPTIONAL attributes::
+An optional attribute is left out of `required` and its type becomes
+`anyOf: [type, {type: null}]` — absent and explicit `$` both validate.
+
+Types::
+`INTEGER` → `integer`; `REAL`/`NUMBER` → `number`; `STRING` → `string`;
+`BOOLEAN` → `boolean`; `LOGICAL` → `enum: [true, false, null]`
+(`UNKNOWN` maps to null); `BINARY` → a string matching `[01]*`.
+
+Enumerations::
+An `ENUMERATION` becomes `{type: string, enum: [...]}`. `BASED_ON`
+chains are folded into the full domain, matching Annex G semantics.
+
+SELECT::
+A named select becomes `{anyOf: [$ref, ...]}` over its items;
+`BASED_ON` chains are folded into the full item list. Items referencing
+declarations are `$ref`s.
+
+Aggregates::
+`LIST`, `ARRAY`, `SET` and `BAG` become JSON arrays. `minItems` and
+`maxItems` come from the declared bounds (an unbounded upper bound is
+omitted). `SET`, and `LIST ... OF UNIQUE`, set `uniqueItems: true`.
+
+Names::
+EXPRESS identifiers are used verbatim. EXPRESS is case-insensitive but
+preserves case; JSON property names are case-sensitive, so consumers
+must use the declared spelling.
+
+Root document::
+The root carries `$schema`, `$id`, `title`, every declaration in
+`$defs`, and an `anyOf` over the entity definitions (one JSON document
+describes one entity instance). A schema with no entities has no root
+`anyOf`. Because an instance of a subtype also satisfies each ancestor
+definition, a consumer that knows the EXPRESS entity of an instance
+should validate against that entity's definition under `$defs` rather
+than the root `anyOf`.
+
+Not exported::
+`WHERE` and `UNIQUE` rules, `GENERIC`/`GENERIC_ENTITY`, constants and
+subtype constraint expressions. They have no direct JSON Schema
+counterpart and are left to the consumer's semantic layer.
+
+== Programmatic use
+
+[source,ruby]
+----
+schema = Expressir::Express::Parser.from_file("example.exp").schemas.first
+document = Expressir::Interop::JsonSchema.new(schema).to_json
+File.write("example.schema.json", document)
+----
+
+== Part 21 population check
+
+Part 21 instances serialize to JSON objects keyed by attribute name in
+the Part 21 slot order (supertype attributes first), with `$` and `*`
+omitted or null, enum values as strings, and references expanded
+in-line (a cycle guard falls back to `{"$ref": "#id"}`). The acceptance
+spec validates the Annex H population against the exported schema.

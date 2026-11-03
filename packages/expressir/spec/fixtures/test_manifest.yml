@@ -1,0 +1,6 @@
+---
+schemas:
+  test_schema_1:
+    path: ../syntax/remark.exp
+  test_schema_2:
+    path: ../syntax/single.exp

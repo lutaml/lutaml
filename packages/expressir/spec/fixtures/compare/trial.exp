@@ -1,0 +1,10 @@
+SCHEMA cmp;
+  TYPE status = ENUMERATION OF (GOOD, BAD, UGLY);
+  END_TYPE;
+  ENTITY e;
+    x : INTEGER;
+  END_ENTITY;
+  ENTITY g;
+    w : LOGICAL;
+  END_ENTITY;
+END_SCHEMA;

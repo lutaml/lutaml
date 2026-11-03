@@ -1,0 +1,421 @@
+---
+title: Parsing Files
+parent: Ruby API
+grand_parent: Guides
+nav_order: 1
+---
+
+= Parsing Files
+
+== Purpose
+
+This guide covers using the Expressir Parser API to read and parse EXPRESS
+schema files into Ruby model objects. The Parser handles all aspects of
+EXPRESS language parsing and provides options for reference resolution and
+source preservation.
+
+== References
+
+* link:../express-language.html[EXPRESS Language] - Understanding EXPRESS syntax
+* link:working-with-repository.html[Working with Repository] - Using parsed results
+* link:../../tutorials/parsing-your-first-schema.html[Tutorial: Parsing Your First Schema]
+
+== Concepts
+
+parser:: The component that reads EXPRESS files and converts them to Ruby models
+repository:: The container object that holds all parsed schemas
+reference_resolution:: The process of linking references between schemas
+skip_references:: Option to disable reference resolution for faster parsing
+include_source:: Option to preserve original source code in the model
+
+== The Parser API
+
+=== Main methods
+
+The `Expressir::Express::Parser` class provides three main parsing methods:
+
+`from_file(file, options)`:: Parse a single EXPRESS file
+`from_files(files, options, &block)`:: Parse multiple EXPRESS files
+`from_exp(content, options)`:: Parse EXPRESS content from a string
+
+All methods return a `Expressir::Model::Repository` object containing the
+parsed schemas.
+
+== Parsing a single file
+
+=== Basic usage
+
+[source,ruby]
+----
+require "expressir"
+
+# Parse a single schema file
+repository = Expressir::Express::Parser.from_file("schema.exp")
+
+# Access the parsed schemas
+repository.schemas.each do |schema|
+  puts "Schema: #{schema.id}"
+  puts "Version: #{schema.version&.value}"
+end
+----
+
+=== With options
+
+The parser accepts several options to control parsing behavior:
+
+[source,ruby]
+----
+repository = Expressir::Express::Parser.from_file(
+  "schema.exp",
+  skip_references: false,   # Resolve references between schemas
+  include_source: true,     # Preserve original source in model
+  root_path: "/base/path"   # Base path for relative file paths
+)
+----
+
+==== Option: skip_references
+
+When `skip_references` is `false` (default), the parser resolves all
+references between schemas, entities, and types. This connects
+`USE FROM` and `REFERENCE FROM` statements to their targets.
+
+Set to `true` for faster parsing when you don't need resolved references:
+
+[source,ruby]
+----
+# Faster parsing without reference resolution
+repository = Expressir::Express::Parser.from_file(
+  "schema.exp",
+  skip_references: true
+)
+----
+
+==== Option: include_source
+
+When `include_source` is `true`, the parser preserves the original source
+code text in model element objects. This is useful for:
+
+* Generating documentation with original formatting
+* Preserving comments and remarks
+* Source code analysis
+
+[source,ruby]
+----
+repository = Expressir::Express::Parser.from_file(
+  "schema.exp",
+  include_source: true
+)
+
+# Access original source
+schema = repository.schemas.first
+puts schema.source if schema.respond_to?(:source)
+----
+
+==== Option: root_path
+
+The `root_path` option sets a base directory for resolving relative file
+paths in the model:
+
+[source,ruby]
+----
+repository = Expressir::Express::Parser.from_file(
+  "/full/path/to/schema.exp",
+  root_path: "/full/path/to"
+)
+
+# Schema file will be stored as relative path: "schema.exp"
+puts repository.schemas.first.file  # => "schema.exp"
+----
+
+== Parsing multiple files
+
+=== Basic usage
+
+Use `from_files` to parse multiple EXPRESS files in one operation:
+
+[source,ruby]
+----
+files = [
+  "schema1.exp",
+  "schema2.exp",
+  "schema3.exp"
+]
+
+repository = Expressir::Express::Parser.from_files(files)
+
+# All schemas are in one repository
+puts "Loaded #{repository.schemas.size} schemas"
+----
+
+=== With progress tracking
+
+Provide a block to track parsing progress and handle errors:
+
+[source,ruby]
+----
+files = Dir.glob("schemas/**/*.exp")
+
+repository = Expressir::Express::Parser.from_files(files) do |filename, schemas, error|
+  if error
+    warn "Failed to parse #{filename}"
+    warn "  Error: #{error.message}"
+    # Continue with remaining files
+  else
+    puts "✓ Loaded #{schemas.size} schemas from #{filename}"
+  end
+end
+
+puts "Total schemas loaded: #{repository.schemas.size}"
+----
+
+The block receives three parameters:
+
+`filename`:: The file being processed
+`schemas`:: Array of schemas parsed from the file (nil if error)
+`error`:: Exception that occurred (nil if successful)
+
+=== Error handling behavior
+
+When parsing multiple files:
+
+* Individual file failures don't stop the entire operation
+* `SchemaParseFailure` exceptions are caught and passed to the block
+* Other exceptions are re-raised
+* Successfully parsed schemas are included in the final repository
+
+[source,ruby]
+----
+successful = []
+failed = []
+
+repository = Expressir::Express::Parser.from_files(files) do |file, schemas, error|
+  if error && error.is_a?(Expressir::Express::Error::SchemaParseFailure)
+    failed << { file: file, error: error.message }
+  elsif schemas
+    successful << file
+  end
+end
+
+puts "Successfully parsed: #{successful.size}"
+puts "Failed to parse: #{failed.size}"
+----
+
+== Parsing from strings
+
+Parse EXPRESS content directly from a string:
+
+[source,ruby]
+----
+express_code = <<~EXPRESS
+  SCHEMA example_schema;
+    ENTITY example_entity;
+      name : STRING;
+    END_ENTITY;
+  END_SCHEMA;
+EXPRESS
+
+repository = Expressir::Express::Parser.from_exp(express_code)
+
+schema = repository.schemas.first
+puts "Schema: #{schema.id}"  # => "example_schema"
+----
+
+This is useful for:
+
+* Testing and development
+* Generating schemas programmatically
+* Processing schemas from non-file sources
+
+== Error handling
+
+=== SchemaParseFailure exception
+
+When parsing fails, the parser raises
+`Expressir::Express::Error::SchemaParseFailure`:
+
+[source,ruby]
+----
+begin
+  repository = Expressir::Express::Parser.from_file("bad_schema.exp")
+rescue Expressir::Express::Error::SchemaParseFailure => e
+  puts "Parse failed: #{e.filename}"
+  puts "Root cause: #{e.parse_failure_cause.message}"
+
+  # Display parse tree for debugging
+  puts "\nParse error details:"
+  puts e.parse_failure_cause.ascii_tree
+end
+----
+
+The exception provides:
+
+`filename`:: The file that failed to parse
+`parse_failure_cause`:: The underlying Parsanol parse error
+`message`:: Human-readable error description
+
+=== Other common errors
+
+[source,ruby]
+----
+begin
+  repository = Expressir::Express::Parser.from_file("schema.exp")
+rescue Expressir::Express::Error::SchemaParseFailure => e
+  # Handle parse errors
+  puts "Invalid EXPRESS syntax: #{e.message}"
+rescue Errno::ENOENT => e
+  # Handle missing files
+  puts "File not found: #{e.message}"
+rescue Errno::EACCES => e
+  # Handle permission errors
+  puts "Permission denied: #{e.message}"
+rescue => e
+  # Handle unexpected errors
+  puts "Unexpected error: #{e.class.name} - #{e.message}"
+end
+----
+
+== Performance considerations
+
+=== Skip references for speed
+
+Reference resolution can be time-consuming for large schema sets. Skip it
+when not needed:
+
+[source,ruby]
+----
+# Fast parsing without references
+repository = Expressir::Express::Parser.from_file(
+  "large_schema.exp",
+  skip_references: true
+)
+
+# Resolve references later if needed
+repository.resolve_all_references
+----
+
+=== Process files in parallel
+
+For very large schema sets, consider parallel processing:
+
+[source,ruby]
+----
+require "parallel"
+
+files = Dir.glob("schemas/**/*.exp")
+
+# Parse files in parallel
+repositories = Parallel.map(files, in_threads: 4) do |file|
+  Expressir::Express::Parser.from_file(file, skip_references: true)
+end
+
+# Combine into single repository
+combined = Expressir::Model::Repository.new
+repositories.each do |repo|
+  combined.schemas.concat(repo.schemas)
+end
+
+# Resolve references once at the end
+combined.resolve_all_references
+----
+
+=== Use caching for repeated operations
+
+Enable caching for schemas that are parsed repeatedly:
+
+[source,ruby]
+----
+# Set cache directory
+Expressir::Express::Cache.cache_path = ".cache"
+
+# First parse writes to cache
+repository = Expressir::Express::Parser.from_file("schema.exp")
+
+# Subsequent parses use cache (much faster)
+repository = Expressir::Express::Parser.from_file("schema.exp")
+----
+
+== Working with parsed results
+
+=== Accessing schemas
+
+[source,ruby]
+----
+repository = Expressir::Express::Parser.from_file("schema.exp")
+
+# Iterate through all schemas
+repository.schemas.each do |schema|
+  puts "Schema: #{schema.id}"
+  puts "File: #{schema.file}"
+  puts "Version: #{schema.version&.value}"
+end
+
+# Find a specific schema
+schema = repository.schemas.find { |s| s.id == "action_schema" }
+----
+
+=== Accessing entities and types
+
+[source,ruby]
+----
+schema = repository.schemas.first
+
+# Access entities
+schema.entities&.each do |entity|
+  puts "Entity: #{entity.id}"
+
+  # Access attributes
+  entity.attributes&.each do |attr|
+    puts "  Attribute: #{attr.id}"
+  end
+end
+
+# Access types
+schema.types&.each do |type|
+  puts "Type: #{type.id}"
+end
+----
+
+=== Checking parse results
+
+[source,ruby]
+----
+repository = Expressir::Express::Parser.from_file("schema.exp")
+
+puts "Schemas parsed: #{repository.schemas.size}"
+puts "Total entities: #{repository.schemas.sum { |s| s.entities&.size || 0 }}"
+puts "Total types: #{repository.schemas.sum { |s| s.types&.size || 0 }}"
+
+# Validate completeness
+repository.schemas.each do |schema|
+  if schema.entities&.empty? && schema.types&.empty?
+    warn "Warning: Schema #{schema.id} appears to be empty"
+  end
+end
+----
+
+== Next steps
+
+After parsing files, you'll want to:
+
+* link:working-with-repository.html[Work with Repository] - Query and manipulate schemas
+* link:search-engine.html[Use Search Engine] - Find specific elements
+* link:formatting-schemas.html[Format Schemas] - Convert back to EXPRESS
+
+== Summary
+
+The Parser API provides flexible options for reading EXPRESS schemas:
+
+* `from_file` for single files
+* `from_files` for multiple files with progress tracking
+* `from_exp` for string content
+* Options control reference resolution and source preservation
+* Robust error handling with detailed parse failure information
+* Performance optimizations available for large schemas
+
+Key takeaways:
+
+* Always handle `SchemaParseFailure` exceptions
+* Use `skip_references: true` for faster parsing when references aren't needed
+* Track progress with blocks when parsing multiple files
+* Consider caching for frequently-parsed schemas
+* The parsed `Repository` contains all schemas and provides querying capabilities

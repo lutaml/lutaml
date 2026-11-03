@@ -1,0 +1,76 @@
+SCHEMA function_body_remarks_schema;
+
+  FUNCTION check_steps(input : INTEGER) : LOGICAL;
+    LOCAL
+      total : INTEGER := 0;
+    END_LOCAL;
+    -- STEP-1
+    -- accumulate the input value
+    total := total + input;
+    IF (total > 0) THEN
+      -- STEP-2
+      -- guard against overflow
+      IF (total > 100) THEN
+        RETURN (FALSE);
+      END_IF;
+      REPEAT i := 1 TO total;
+        -- STEP-3
+        -- decrement until exhausted
+        total := total - 1;
+      END_REPEAT;
+    ELSE
+      -- STEP-4
+      -- negative totals are rejected
+      RETURN (FALSE);
+    END_IF;
+    RETURN (TRUE);
+  END_FUNCTION;
+
+  -- BETWEEN-FUNCTIONS schema level comment
+
+  FUNCTION edge_cases(input : INTEGER) : LOGICAL;
+    LOCAL
+      total : INTEGER := 0;
+    END_LOCAL;
+    REPEAT i := 1 TO input;
+      total := total + i;
+      -- TERMINAL-REPEAT trailing comment
+    END_REPEAT;
+    IF (total > 0) THEN
+      total := total - 1;
+      -- BEFORE-ELSE trailing comment
+    ELSE
+      total := 0;
+    END_IF;
+    RETURN (TRUE);
+  END_FUNCTION;
+
+  FUNCTION after_repeat(input : INTEGER) : LOGICAL;
+    LOCAL
+      total : INTEGER := 0;
+    END_LOCAL;
+    IF (input > 0) THEN
+      REPEAT i := 1 TO input;
+        total := total + i;
+      END_REPEAT;
+      -- AFTER-REPEAT leading comment
+      IF (total > 100) THEN
+        RETURN (FALSE);
+      END_IF;
+    END_IF;
+    RETURN (TRUE);
+  END_FUNCTION;
+
+  FUNCTION inline_else(input : INTEGER) : LOGICAL;
+    LOCAL
+      total : INTEGER := 0;
+    END_LOCAL;
+    IF (input > 0) THEN
+      total := 1; ELSE
+      -- AFTER-INLINE-ELSE leading comment
+      total := 2;
+    END_IF;
+    RETURN (TRUE);
+  END_FUNCTION;
+
+END_SCHEMA;

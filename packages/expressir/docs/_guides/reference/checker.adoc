@@ -1,0 +1,36 @@
+---
+title: Checker
+parent: Reference
+grand_parent: Guides
+nav_order: 3
+---
+
+= Checker
+
+== Purpose
+
+`Expressir::Express::Checker` performs static, edition-aware semantic
+checks over a parsed repository. Notes carry a stable id, a severity,
+the schema, a message citing the ISO 10303-11 clause where the check
+comes from, and the offending model node.
+
+== Note ids
+
+The catalog is generated from the checker source and published as the
+"Checker note-id catalog" guide. New conformance-derived
+checks use `:check_expr_*`, `:check_statement_*`, `:check_rule_*` and
+`:check_dialect_*` ids; the message carries the clause.
+
+== Dialects
+
+`Checker.new(repository, dialect: :"10303-11:1994")` reports
+2004-only constructs as errors when targeting the 1994 edition;
+`dialect: :"10303-11:2004"` reports the Annex K deprecated inline
+subtype-constraint syntax as warnings. Without a dialect the report is
+unchanged. See the Dialect awareness task notes (TODO.sota/06).
+
+== Severities and validity
+
+`Checker#valid?` is true when no error-severity note was raised.
+Indeterminate expression results are not violations; only a proven
+false WHERE rule is.

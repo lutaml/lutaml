@@ -1,0 +1,39 @@
+---
+all_members_of_es: 1
+Should be unreachable.: 1
+atan2: 1
+check_sparse_index_domain;: 1
+check_sparse_index_to_loc: 1
+compatible_intervals: 1
+compatible_spaces: 1
+Should be unreachable: 1
+convert_to_maths_value: 1
+definite_integral_expr_check: 1
+derive_elementary_function_domain: 1
+derive_elementary_function_range: 1
+Include distance in max collection: 1
+Identify base direction with respect to which all relevant directions lie: 1
+Construct imag_constraint: 1
+Construct cartesian region: 1
+enclose_pregion_in_cregion: 1
+Using base direction midway in prgn, compute all directions using: 2
+values which ensure a3 < a2 and a0 < a1 algebraically.: 2
+Construct polar region: 1
+mem_of_vs: 1
+equal_maths_values: 1
+es_subspace_of_es: 1
+extract_factors: 1
+function_is_2d_table: 1
+derived: 3
+2nd derived: 4
+cum := cum AND member_of (fedex (v, i), sspc);: 1
+cum := cum AND member_of (fedex (v, i), factors[i]);: 1
+cum := cum AND member_of (fedex (v, i), factor_space (sspc, i));: 1
+'ef_if_i : combined with ef_if': 1
+'ef_if_c : combined with ef_if': 1
+'ef_if_b : combined with ef_if': 1
+This can have multiple outputs, but the expression only: 1
+"(mem + vlist) effectively converts list to set": 1
+simplify_function_application: 1
+restore_binary: 1
+simplify_maths_space: 1

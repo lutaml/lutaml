@@ -1,0 +1,16 @@
+---
+title: Compatibility
+has_children: true
+nav_order: 9
+---
+
+= Compatibility
+
+Expressir interoperates with established EXPRESS toolchains: it reads
+and writes the interchange formats they produce, and its commands map
+onto familiar invocations. This section documents the compatibility
+surface and its registered divergences.
+
+* *Interchange formats* — the schema.changes comparison report,
+  corpus tolerances, and the divergence register
+* *Workspace readiness* — `expressir doctor`

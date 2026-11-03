@@ -1,0 +1,33 @@
+(*
+Simple example schema for LER demonstration
+*)
+
+SCHEMA simple_example;
+
+  TYPE product_status = ENUMERATION OF
+    (draft,
+     approved,
+     released,
+     obsolete);
+  END_TYPE;
+
+  TYPE identifier = STRING;
+  END_TYPE;
+
+  ENTITY product;
+    id : identifier;
+    name : STRING;
+    status : product_status;
+    created_date : STRING; -- Simplified for example
+  END_ENTITY;
+
+  ENTITY product_version;
+    id : identifier;
+    version_number : STRING;
+    of_product : product;
+  END_ENTITY;
+
+  TYPE product_select = SELECT (product, product_version);
+  END_TYPE;
+
+END_SCHEMA; -- simple_example

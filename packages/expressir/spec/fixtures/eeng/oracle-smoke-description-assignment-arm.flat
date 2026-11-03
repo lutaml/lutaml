@@ -1,0 +1,59 @@
+-- -*- Mode: Express -*-
+
+-- Written by Express Engine
+--    5.0.20-Beta1 (GIT 754efdd)
+--    Steel Bank CL 2.6.8 (Unknown Bits)
+
+-- Express Engine Command Line:
+--   /Users/mulgogi/src/external/exp-engine-engine/eengine-5.0.20-Beta1-mac00sbcl --flat
+--     -mode arm_shortform
+--     -schema /Users/mulgogi/src/mn/iso-10303/schemas/modules/description_assignment/arm.exp
+--     -stepmod /Users/mulgogi/src/mn/iso-10303/
+--     -out-dir /tmp/eeng-smoke/
+-- File: /Users/mulgogi/src/mn/iso-10303/schemas/modules/description_assignment/arm.exp
+-- 1 Schema: DESCRIPTION_ASSIGNMENT_ARM
+
+(*  Entities:                   3 *)
+(*  Functions:                  0 *)
+(*  Procedures:                 0 *)
+(*  Rules:                      0 *)
+(*  Subtype_Constraints:        0 *)
+(*  Types:                      1 *)
+
+SCHEMA Description_assignment_arm '{ iso standard 10303 part(1473) version(4) schema(1) description-assignment-arm(1) }';
+
+-- Constants: Start
+
+-- Constants: End
+
+-- Declarations: Start
+
+TYPE description_item = EXTENSIBLE GENERIC_ENTITY SELECT (
+  );
+END_TYPE; -- description_item
+
+-- -typeof option set to 'no'
+ENTITY Description_text;
+   description : STRING;
+END_ENTITY; -- Description_text
+
+-- -typeof option set to 'no'
+ENTITY Description_text_assignment;
+   description : Description_text;
+   items : SET [1 : ?] OF description_item;
+END_ENTITY; -- Description_text_assignment
+
+-- -typeof option set to 'no'
+ENTITY Description_text_assignment_relationship;
+   description : OPTIONAL STRING;
+   id : OPTIONAL STRING;
+   related : Description_text_assignment;
+   relating : Description_text_assignment;
+   relation_type : STRING;
+ WHERE
+   WR1 : relating :<>: related;
+END_ENTITY; -- Description_text_assignment_relationship
+
+-- Declarations: End
+
+END_SCHEMA; -- description_assignment_arm

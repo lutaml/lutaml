@@ -1,0 +1,99 @@
+name: Deploy Documentation
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'docs/**'
+      - '.github/workflows/docs.yml'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'docs/**'
+  workflow_dispatch:
+
+# Allow only one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: false
+          working-directory: docs
+
+      - name: Cache gems
+        uses: actions/cache@v4
+        with:
+          path: docs/vendor/bundle
+          key: ${{ runner.os }}-gems-${{ hashFiles('docs/Gemfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-gems-
+
+      - name: Install dependencies
+        working-directory: docs
+        run: |
+          bundle config path vendor/bundle
+          bundle install --jobs 4 --retry 3
+
+      - name: Build Jekyll site
+        working-directory: docs
+        run: bundle exec jekyll build --trace
+        env:
+          JEKYLL_ENV: production
+
+      - name: Test built site
+        working-directory: docs
+        run: |
+          if [ ! -f "_site/index.html" ]; then
+            echo "Error: index.html not found in _site/"
+            exit 1
+          fi
+          echo "Site built successfully"
+          echo "Site contains $(find _site -type f | wc -l) files"
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/_site
+
+  deploy:
+    # Only deploy on push to main/master, not on PRs
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+
+    needs: build
+
+    permissions:
+      pages: write
+      id-token: write
+      contents: write
+    
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Comment on commit
+        if: success()
+        uses: peter-evans/commit-comment@v3
+        with:
+          body: |
+            :white_check_mark: Documentation deployed successfully!
+            
+            View at: ${{ steps.deployment.outputs.page_url }}

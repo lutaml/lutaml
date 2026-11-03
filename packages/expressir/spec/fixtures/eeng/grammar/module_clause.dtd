@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+     $Id: module_clause.dtd,v 1.1 2001/10/05 08:08:23 robbod Exp $
+                                                                   -->
+
+<!-- 
+     Used purely to enable different stylesheets to be applied
+     to the same XML file
+     -->     
+<!ELEMENT  module_clause EMPTY>
+<!ATTLIST  module_clause
+             directory  NMTOKEN #REQUIRED>

@@ -1,0 +1,30 @@
+SCHEMA test_schema;
+  -- This schema demonstrates Unicode in remarks only
+  -- Japanese: 日本語、中文、한글
+
+  (*
+    Multi-line remark with Unicode:
+    - Greek letters: α β γ δ ε
+    - Math symbols: π × ÷ ≤ ≥
+    - Japanese: 神戸
+  *)
+
+  ENTITY person;
+    name : STRING;      -- Name in Japanese: 名前
+    age : INTEGER;      (* Age attribute with 中文 comment *)
+  END_ENTITY;
+
+  TYPE status = ENUMERATION OF
+    (active,
+     inactive,
+     pending);
+  END_TYPE;  -- Status with Korean: 상태
+
+END_SCHEMA; -- test_schema
+
+(*"test_schema.person"
+  This is a person entity with remarks containing Unicode characters:
+  - Japanese: 名前
+  - Korean: 상태
+  - Chinese: 名称
+*)

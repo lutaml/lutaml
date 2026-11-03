@@ -1,0 +1,82 @@
+#!/usr/bin/env ruby
+
+require "yaml"
+require "tempfile"
+require_relative "../lib/expressir/express/parser"
+require_relative "../lib/expressir/express/formatter"
+require_relative "../lib/expressir/express/schema_head_formatter"
+require_relative "../lib/expressir/express/hyperlink_formatter"
+require_relative "../lib/expressir/express/cache"
+
+exp_files = [
+  # basic test
+  # '../iso-10303-stepmod/data/resources/action_schema/action_schema_annotated.exp',
+  # '../iso-10303-stepmod/data/resources/basic_attribute_schema/basic_attribute_schema_annotated.exp',
+  # '../iso-10303-stepmod/data/resources/support_resource_schema/support_resource_schema_annotated.exp',
+  # cyclic reference test
+  # '../iso-10303-stepmod/data/modules/analysis/mim_annotated.exp',
+  # '../iso-10303-stepmod/data/modules/analysis_product_relationships/mim_annotated.exp',
+  # cyclic reference test 2
+  # '../iso-10303-stepmod/data/resources/product_property_definition_schema/product_property_definition_schema_annotated.exp',
+  # '../iso-10303-stepmod/data/resources/product_property_representation_schema/product_property_representation_schema_annotated.exp',
+  # renamed reference test (36s)
+  # '../iso-10303-stepmod/ballots/ballots/ap210_wg12/express/resources/mathematical_functions_schema.exp',
+  # '../iso-10303-stepmod/data/resources/iso13584_expressions_schema/iso13584_expressions_schema.exp',
+  # annotated-express test (12s)
+  # see https://github.com/metanorma/annotated-express/blob/master/data/documents/resources/fundamentals_of_product_description_and_support/sections/04-schemas.adoc
+  "../iso-10303-stepmod/data/resources/action_schema/action_schema_annotated.exp",
+  "../iso-10303-stepmod/data/resources/application_context_schema/application_context_schema_annotated.exp",
+  "../iso-10303-stepmod/data/resources/approval_schema/approval_schema_annotated.exp",
+  "../iso-10303-stepmod/data/resources/basic_attribute_schema/basic_attribute_schema_annotated.exp",
+  "../iso-10303-stepmod/data/resources/certification_schema/certification_schema_annotated.exp",
+  "../iso-10303-stepmod/data/resources/contract_schema/contract_schema_annotated.exp",
+  "../iso-10303-stepmod/data/resources/date_time_schema/date_time_schema_annotated.exp",
+  "../iso-10303-stepmod/data/resources/document_schema/document_schema.exp",
+  "../iso-10303-stepmod/data/resources/effectivity_schema/effectivity_schema_annotated.exp",
+  "../iso-10303-stepmod/data/resources/experience_schema/experience_schema_annotated.exp",
+  "../iso-10303-stepmod/data/resources/external_reference_schema/external_reference_schema_annotated.exp",
+  "../iso-10303-stepmod/data/resources/group_schema/group_schema_annotated.exp",
+  "../iso-10303-stepmod/data/resources/language_schema/language_schema_annotated.exp",
+  "../iso-10303-stepmod/data/resources/location_schema/location_schema_annotated.exp",
+  "../iso-10303-stepmod/data/resources/management_resources_schema/management_resources_schema_annotated.exp",
+  "../iso-10303-stepmod/data/resources/measure_schema/measure_schema_annotated.exp",
+  "../iso-10303-stepmod/data/resources/person_organization_schema/person_organization_schema_annotated.exp",
+  "../iso-10303-stepmod/data/resources/process_property_schema/process_property_schema_annotated.exp",
+  "../iso-10303-stepmod/data/resources/product_definition_schema/product_definition_schema_annotated.exp",
+  "../iso-10303-stepmod/data/resources/product_property_definition_schema/product_property_definition_schema_annotated.exp",
+  "../iso-10303-stepmod/data/resources/product_property_representation_schema/product_property_representation_schema_annotated.exp",
+  "../iso-10303-stepmod/data/resources/qualifications_schema/qualifications_schema_annotated.exp",
+  "../iso-10303-stepmod/data/resources/security_classification_schema/security_classification_schema_annotated.exp",
+  "../iso-10303-stepmod/data/resources/support_resource_schema/support_resource_schema_annotated.exp",
+  # full test (6m18s + 8s = 6m26s)
+  # *`bundle exec ../stepmod-utils/exe/stepmod-find-express-files ../iso-10303-stepmod`.strip
+  #   .split("\n").map{|file| File.exists?(file.sub(/\.exp$/, '_annotated.exp')) ? file.sub(/\.exp$/, '_annotated.exp') : file}
+]
+
+start = Time.now
+repository = Expressir::Express::Parser.from_files(exp_files)
+puts "Parser.from_files time:  #{(Time.now - start).round(2)}s"
+
+temp_file = Tempfile.new
+begin
+  start = Time.now
+  Expressir::Express::Cache.to_file(temp_file, repository)
+  puts "Cache.to_file time:      #{(Time.now - start).round(2)}s"
+
+  start = Time.now
+  repository = Expressir::Express::Cache.from_file(temp_file)
+  puts "Cache.from_file time:    #{(Time.now - start).round(2)}s"
+ensure
+  temp_file.close
+  temp_file.unlink
+end
+
+start = Time.now
+formatter = Class.new(Expressir::Express::Formatter) do
+  include Expressir::Express::SchemaHeadFormatter
+  include Expressir::Express::HyperlinkFormatter
+end
+repository.to_hash(formatter: formatter)
+puts "Repository.to_hash time: #{(Time.now - start).round(2)}s"
+
+# puts YAML.dump(result)

@@ -1,0 +1,645 @@
+---
+title: Validate ASCII Content
+parent: CLI Guides
+grand_parent: Guides
+nav_order: 4
+---
+
+== Validate ASCII Content
+
+=== Purpose
+
+The [`validate ascii`](../../../lib/expressir/commands/validate_ascii.rb:1) command validates that EXPRESS schema files contain only ASCII characters outside of remarks. This ensures compatibility with systems that don't support Unicode, while allowing Unicode in documentation comments.
+
+**Key Feature**: Tagged remarks (both embedded `(* ... *)` and tail `-- ...` comments) are excluded from validation, allowing documentation to contain Unicode characters without triggering validation errors.
+
+=== References
+
+* link:validate-schemas.html[Validate Schemas]
+* link:../../pages/express-language.html[EXPRESS Language Documentation]
+* link:../../tutorials/parsing-your-first-schema.html[Tutorial: Parsing Your First Schema]
+
+=== Concepts
+
+ASCII validation:: Checking that EXPRESS code (excluding remarks) contains only 7-bit ASCII characters (0x00-0x7F)
+Tagged remarks:: Documentation comments that may contain Unicode without affecting validation
+Replacement suggestions:: Proposed ASCII or AsciiMath alternatives for non-ASCII characters
+ISO 10303-11 encoding:: Standard encoding format for representing Unicode characters in EXPRESS
+Schema manifest:: YAML file containing schema definitions that can be validated
+
+=== Basic Usage
+
+==== Validate Single File
+
+[source,bash]
+----
+expressir validate ascii schema.exp
+----
+
+Output when no violations found:
+[source]
+----
+Scanned 1 EXPRESS file(s)
+Found 0 non-ASCII sequence(s) in 0 file(s)
+----
+
+Output when violations found:
+[source]
+----
+schemas/schema.exp:
+  Line 5, Column 15:
+    value: π × radius;
+           ^ Non-ASCII sequence
+      "π" - Hex: 0x3c0, UTF-8 bytes: 0xcf 0x80
+      Replacement: AsciiMath: pi
+      "×" - Hex: 0xd7, UTF-8 bytes: 0xc3 0x97
+      Replacement: AsciiMath: xx
+
+  Found 1 non-ASCII sequence(s) in schema.exp
+
+Summary:
+  Scanned 1 EXPRESS file(s)
+  Found 1 non-ASCII sequence(s) in 1 file(s)
+----
+
+==== Validate Directory
+
+[source,bash]
+----
+# Non-recursive (top-level only)
+expressir validate ascii schemas/
+
+# Recursive (all subdirectories)
+expressir validate ascii schemas/ --recursive
+----
+
+==== Validate from Schema Manifest
+
+[source,bash]
+----
+# Validate all schemas defined in a manifest
+expressir validate ascii manifest.yaml
+
+# With verbose output
+expressir validate ascii manifest.yaml --verbose
+
+# Output results in YAML format
+expressir validate ascii manifest.yaml -y
+----
+
+=== Command Options
+
+==== Available Options
+
+[options="header"]
+|===
+| Option | Short | Description | Default
+
+| `--recursive`
+| `-r`
+| Validate EXPRESS files under the specified path recursively
+| false
+
+| `--yaml`
+| `-y`
+| Output results in YAML format
+| false
+
+| `--check-remarks`
+|
+| Include remarks in ASCII validation (by default, remarks are excluded)
+| false
+
+| `--verbose`
+|
+| Show verbose output
+| false
+
+| `--help`
+| `-h`
+| Display help message
+| -
+|===
+
+==== Check Remarks Option
+
+By default, the validator excludes remarks from validation. Use `--check-remarks` to include them:
+
+[source,bash]
+----
+# Default: exclude remarks from validation
+expressir validate ascii schema.exp
+
+# Include remarks in validation
+expressir validate ascii schema.exp --check-remarks
+----
+
+When `--check-remarks` is enabled, Unicode characters in remarks will be flagged as violations.
+This is useful when you need strict ASCII-only content including documentation.
+
+==== Recursive Option
+
+[source,bash]
+----
+expressir validate ascii schemas/ --recursive
+----
+
+Scans all `.exp` files in the directory tree:
+[source]
+----
+schemas/
+├── base.exp          ✓ Scanned
+├── types/
+│   ├── common.exp    ✓ Scanned
+│   └── custom.exp    ✓ Scanned
+└── entities/
+    └── core.exp      ✓ Scanned
+----
+
+==== YAML Output
+
+[source,bash]
+----
+expressir validate ascii schema.exp --yaml
+----
+
+Generates machine-readable output:
+[source,yaml]
+----
+---
+summary:
+  total_files: 1
+  files_with_violations: 1
+  total_violations: 1
+  total_unique_characters: 2
+  total_occurrences: 2
+violations:
+  "/path/to/schema.exp":
+    file: schema.exp
+    count: 1
+    non_ascii_characters:
+    - character: "π"
+      hex: "0x3c0"
+      utf8: "0xcf 0x80"
+      is_math: true
+      replacement_type: asciimath
+      replacement: pi
+      occurrence_count: 1
+      occurrences:
+      - line_number: 5
+        column: 15
+        line: "    value: π × radius;"
+----
+
+=== Remark Exclusion
+
+==== Why Exclude Remarks
+
+EXPRESS remarks serve as documentation and may legitimately contain:
+
+* Unicode characters for proper names
+* Mathematical symbols in formulas
+* Non-English text in descriptions
+* Special characters in examples
+
+The validation excludes these because:
+
+1. Remarks are not exported to EEP format
+2. EXPRESS Engine doesn't process remark content
+3. Documentation should be human-readable
+
+==== Tail Remarks
+
+Tail remarks start with `--` and continue to end of line:
+
+[source,express]
+----
+ENTITY person;
+  name : STRING;  -- Name in Japanese: 名前
+  age : INTEGER;  -- This is allowed ✓
+END_ENTITY;
+----
+
+The Unicode characters in remarks are **not flagged** as violations.
+
+==== Embedded Remarks
+
+Embedded remarks use `(* ... *)` delimiters:
+
+[source,express]
+----
+ENTITY (
+  This entity represents a person.
+  Japanese: 人
+  Chinese: 人
+  Korean: 사람
+*) person;
+  name : STRING;
+END_ENTITY;
+----
+
+All Unicode in the embedded remark is **excluded from validation**.
+
+==== Code vs. Remarks
+
+.Example showing the distinction
+[example]
+====
+[source,express]
+----
+SCHEMA test_schema;
+
+  (* This remark contains: 中文字 日本語 한글 *)  <1>
+  ENTITY measurement;
+    value : REAL;  -- Unit: μm (micrometers)  <2>
+    symbol : STRING := 'μ';  <3>
+  END_ENTITY;
+
+END_SCHEMA;
+----
+<1> Unicode in embedded remark: **Not flagged**
+<2> Unicode in tail remark: **Not flagged**
+<3> Unicode in code: **Flagged as violation**
+====
+
+=== Validation Output
+
+==== Text Format
+
+The default output shows:
+
+* File location
+* Line and column numbers
+* Problematic text with visual indicator
+* Character details (hex, UTF-8 bytes)
+* Replacement suggestions
+* Summary statistics
+
+.Example output
+[example]
+====
+[source]
+----
+schemas/geometry.exp:
+  Line 12, Column 8:
+    area := π × r × r;
+            ^ Non-ASCII sequence
+      "π" - Hex: 0x3c0, UTF-8 bytes: 0xcf 0x80
+      Replacement: AsciiMath: pi
+      "×" - Hex: 0xd7, UTF-8 bytes: 0xc3 0x97
+      Replacement: AsciiMath: xx
+
+  Found 1 non-ASCII sequence(s) in geometry.exp
+
+┌────────────────────── Non-ASCII Characters Summary ──────────────────────┐
+│ File               │ Symbol      │ Replacement      │ Occurrences          │
+├────────────────────┼─────────────┼──────────────────┼──────────────────────┤
+│ geometry.exp       │ "π" (0x3c0) │ AsciiMath: pi    │ 1                    │
+│ geometry.exp       │ "×" (0xd7)  │ AsciiMath: xx    │ 1                    │
+│ TOTAL              │ 2 unique    │                  │ 2                    │
+└────────────────────┴─────────────┴──────────────────┴──────────────────────┘
+----
+====
+
+==== Replacement Suggestions
+
+The validator provides two types of replacement suggestions:
+
+**AsciiMath Replacements**::
+For mathematical symbols
++
+[options="header"]
+|===
+| Unicode | Hex | AsciiMath
+
+| π
+| 0x3c0
+| `pi`
+
+| ×
+| 0xd7
+| `xx`
+
+| ÷
+| 0xf7
+| `div`
+
+| ≤
+| 0x2264
+| `le`
+
+| ≥
+| 0x2265
+| `ge`
+
+| α
+| 0x3b1
+| `alpha`
+
+| β
+| 0x3b2
+| `beta`
+
+| θ
+| 0x3b8
+| `theta`
+|===
+
+**ISO 10303-11 Encoding**::
+For other characters
++
+[source]
+----
+"神" → "0000795E"
+"戸" → "00006238"
+"中" → "00004E2D"
+"文" → "00006587"
+----
+
+=== Use Cases
+
+==== Pre-Export Validation
+
+Before exporting to EEP format:
+
+[source,bash]
+----
+#!/bin/bash
+# Validate before EEP export
+
+if expressir validate ascii schemas/*.exp; then
+  echo "✓ ASCII-only - safe for EEP export"
+  ./export-to-eep.sh
+else
+  echo "✗ Non-ASCII found - review violations before export"
+  exit 1
+fi
+----
+
+==== CI/CD Integration
+
+GitHub Actions workflow:
+
+[source,yaml]
+----
+name: Validate ASCII
+
+on: [push, pull_request]
+
+jobs:
+  ascii-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.0'
+
+      - name: Install Expressir
+        run: gem install expressir
+
+      - name: Check ASCII compliance
+        run: |
+          if expressir validate ascii schemas/ --recursive; then
+            echo "✓ All schemas are ASCII-compliant"
+          else
+            echo "✗ Non-ASCII characters found in code"
+            echo "Note: Unicode in remarks is OK"
+            exit 1
+          fi
+----
+
+==== Batch Processing with Report
+
+[source,bash]
+----
+#!/bin/bash
+# Generate ASCII validation report
+
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+REPORT="ascii_validation_${TIMESTAMP}.yaml"
+
+echo "Running ASCII validation..."
+expressir validate ascii schemas/ --recursive --yaml > "$REPORT"
+
+if [ $? -eq 0 ]; then
+  echo "✓ All schemas are ASCII-compliant"
+  echo "Report saved to: $REPORT"
+else
+  echo "✗ Violations found - see report: $REPORT"
+
+  # Parse YAML and show summary
+  echo ""
+  echo "Summary:"
+  grep -A 4 "summary:" "$REPORT"
+fi
+----
+
+==== Pre-commit Hook
+
+[source,bash]
+----
+#!/bin/bash
+# .git/hooks/pre-commit
+
+# Get staged .exp files
+STAGED_EXP=$(git diff --cached --name-only --diff-filter=ACM | grep '\.exp$')
+
+if [ -z "$STAGED_EXP" ]; then
+  exit 0
+fi
+
+echo "Checking ASCII compliance of staged schemas..."
+
+for file in $STAGED_EXP; do
+  if ! expressir validate ascii "$file"; then
+    echo ""
+    echo "❌ $file contains non-ASCII characters in code"
+    echo "   (Unicode in remarks is OK)"
+    echo ""
+    echo "Please either:"
+    echo "  1. Remove non-ASCII from code sections"
+    echo "  2. Move Unicode text to remarks"
+    echo "  3. Use ISO 10303-11 encoding"
+    exit 1
+  fi
+done
+
+echo "✓ All staged schemas are ASCII-compliant"
+----
+
+=== Common Scenarios
+
+==== Greek Letters in Formulas
+
+.Problem
+[example]
+====
+[source,express]
+----
+FUNCTION area (radius : REAL) : REAL;
+  RETURN π × radius × radius;  (* ✗ Non-ASCII *)
+END_FUNCTION;
+----
+====
+
+.Solution 1: Use ASCII names
+[example]
+====
+[source,express]
+----
+FUNCTION area (radius : REAL) : REAL;
+  LOCAL
+    pi : REAL := 3.14159265359;
+  END_LOCAL;
+  RETURN pi * radius * radius;  (* ✓ ASCII *)
+END_FUNCTION;
+----
+====
+
+.Solution 2: Move to remark
+[example]
+----
+FUNCTION area (radius : REAL) : REAL;
+  -- Formula: π × r²
+  RETURN 3.14159265359 * radius * radius;
+END_FUNCTION;
+----
+====
+
+==== International Names
+
+.Problem
+[example]
+====
+[source,express]
+----
+ENTITY 製品;  (* ✗ Non-ASCII in entity name *)
+  名前 : STRING;  (* ✗ Non-ASCII in attribute name *)
+END_ENTITY;
+----
+====
+
+.Solution: Use English names with Unicode in remarks
+[example]
+----
+ENTITY product;  (* Japanese: 製品 *)
+  name : STRING;  -- Japanese: 名前
+END_ENTITY;
+----
+====
+
+==== Mathematical Operators
+
+.Problem
+[example]
+====
+[source,express]
+----
+result := a × b ÷ c;  (* ✗ Non-ASCII operators *)
+----
+====
+
+.Solution: Use ASCII operators
+[example]
+----
+result := a * b / c;  (* ✓ ASCII operators *)
+----
+====
+
+=== Best Practices
+
+**Use Remarks for Unicode**::
+Place all Unicode text in remarks where it won't affect processing
++
+[source,express]
+----
+-- Description in Chinese: 這是一個測試實體
+ENTITY test_entity;
+  (* Korean description: 이것은 테스트 엔티티입니다 *)
+  value : REAL;
+END_ENTITY;
+----
+
+**Validate Before Export**::
+Always check ASCII compliance before exporting to formats that don't support Unicode
+
+**Document Replacements**::
+When replacing Unicode with ASCII, document the original in remarks
++
+[source,express]
+----
+-- Original formula used μ (mu) for micro units
+microns : REAL;  -- micrometers
+----
+
+**Use Constants for Special Values**::
+Define constants for repeated special values
++
+[source,express]
+----
+CONSTANT
+  pi : REAL := 3.14159265359;
+  planck_h : REAL := 6.62607015E-34;  -- Planck constant
+END_CONSTANT;
+----
+
+**Automate Validation**::
+Add to CI/CD pipelines for continuous compliance checking
+
+=== Troubleshooting
+
+==== False Positives in Remarks
+
+**Problem**: Characters in remarks are being flagged
+
+**Cause**: Incorrect remark syntax
+
+**Solution**: Verify remark delimiters:
+[source,express]
+----
+(* Correct embedded remark *)
+-- Correct tail remark
+
+(* Incorrect - missing closing *)
+-- This extends to end of line automatically ✓
+----
+
+==== Nested Remarks
+
+**Problem**: Validation doesn't handle nested remarks correctly
+
+**Solution**: The validator handles nested embedded remarks:
+[source,express]
+----
+(* Outer (* Inner 中文 *) remark *)  (* ✓ Both excluded *)
+----
+
+==== Binary File Issues
+
+**Problem**: Validation fails on binary files
+
+**Cause**: File is not a text file
+
+**Solution**: Ensure files are text-encoded EXPRESS files:
+[source,bash]
+----
+file schema.exp  # Should show "text" or "UTF-8"
+----
+
+=== Summary
+
+The validate ascii command:
+
+* ✅ Validates ASCII-only content in EXPRESS code
+* ✅ Excludes tagged remarks from validation
+* ✅ Supports both embedded and tail remarks
+* ✅ Accepts Schema Manifest input
+* ✅ Provides replacement suggestions
+* ✅ Offers YAML output for automation
+* ✅ Handles recursive directory scanning
+* ✅ Shows detailed violation information
+
+Use this command to ensure EXPRESS schemas are compatible with ASCII-only systems while maintaining readable Unicode documentation.

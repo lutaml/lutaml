@@ -1,0 +1,41 @@
+name: rust-ext
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+jobs:
+  build-ext:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+          bundler-cache: true
+      - name: Build the expressir-core extension
+        working-directory: ext/expressir_core
+        run: |
+          gem install rb_sys
+          ruby extconf.rb
+          RB_SYS_CARGO_PROFILE=release make
+      - name: Smoke test the bridge
+        run: |
+          bundle exec ruby -e '
+            require "expressir"
+            require "expressir/express/core"
+            raise "native unavailable" unless Expressir::Express::Core::NATIVE_AVAILABLE
+            src = File.read("spec/syntax/multiple.exp")
+            m = Expressir::Express::Core.parse_to_model_hash(src, "multiple.exp")
+            raise "bad model" unless m["schemas"].first["id"] == "multiple_schema"
+            puts "bridge OK"
+          '
+      # The default `rake` CI job covers the pure-Ruby parse path (no
+      # extension built there); this job pins the core parse path: with the
+      # extension present the parser defaults to it, so the whole suite runs
+      # against the Rust wire hydration.
+      - name: Run the suite on the core parse path
+        run: |
+          bundle exec rspec spec/expressir spec/syntax --tag ~production_scale

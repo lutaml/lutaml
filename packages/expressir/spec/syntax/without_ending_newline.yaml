@@ -1,0 +1,58 @@
+---
+_class: Expressir::Model::ExpFile
+path: spec/syntax/without_ending_newline.exp
+schemas:
+- _class: Expressir::Model::Declarations::Schema
+  id: Analysis_representation_arm
+  remarks:
+  - Analysis_representation_arm
+  untagged_remarks:
+  - text: Analysis_representation_arm
+    format: tail
+  file: spec/syntax/without_ending_newline.exp
+  header: |-
+    $Id: arm.exp,v 1.10 2009/06/19 09:58:44 philsp Exp $
+       ISO TC184/SC4/WG12 N5836 - ISO/TS 10303-1785 Analysis representation - EXPRESS ARM
+       Supersedes ISO TC184/SC4/WG12 N4550
+  interfaces:
+  - _class: Expressir::Model::Declarations::Interface
+    kind: USE
+    schema:
+      _class: Expressir::Model::References::SimpleReference
+      id: Foundation_representation_arm
+    untagged_remarks:
+    - text: ISO/TS 10303-1006
+      format: tail
+      placement: inline
+  entities:
+  - _class: Expressir::Model::Declarations::Entity
+    id: Analysis_model
+    subtype_of:
+    - _class: Expressir::Model::References::SimpleReference
+      id: Representation
+    attributes:
+    - _class: Expressir::Model::Declarations::Attribute
+      id: context_of_items
+      kind: EXPLICIT
+      supertype_attribute:
+        _class: Expressir::Model::References::AttributeReference
+        ref:
+          _class: Expressir::Model::References::GroupReference
+          ref:
+            _class: Expressir::Model::References::SimpleReference
+            id: SELF
+          entity:
+            _class: Expressir::Model::References::SimpleReference
+            id: Representation
+        attribute:
+          _class: Expressir::Model::References::SimpleReference
+          id: context_of_items
+      type:
+        _class: Expressir::Model::References::SimpleReference
+        id: Analysis_representation_context
+        base_path: spec/syntax/without_ending_newline.exp.Analysis_representation_arm.Analysis_representation_context
+  - _class: Expressir::Model::Declarations::Entity
+    id: Analysis_representation_context
+    subtype_of:
+    - _class: Expressir::Model::References::SimpleReference
+      id: Representation_context

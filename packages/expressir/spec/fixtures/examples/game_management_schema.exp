@@ -1,0 +1,58 @@
+(*
+Fictional game management schema for testing
+Demonstrates key EXPRESS language features with completely fictitious content
+*)
+
+SCHEMA game_management_schema;
+
+USE FROM player_schema
+  (player,
+   player_action,
+   player_relationship);
+
+USE FROM game_mechanics
+  (game_mechanic);
+
+USE FROM item_properties
+  (item_description,
+   get_description_text,
+   get_name_text,
+   item_name);
+
+USE FROM resource_management
+  (resource_property);
+
+TYPE inventory_items = EXTENSIBLE GENERIC_ENTITY SELECT
+  (player,
+   player_action,
+   resource_property);
+END_TYPE;
+
+TYPE action_items = EXTENSIBLE GENERIC_ENTITY SELECT BASED_ON inventory_items WITH
+  (game_mechanic);
+END_TYPE;
+
+ENTITY item_assignment;
+  assigned_item : player;
+  items : SET [1:?] OF inventory_items;
+END_ENTITY;
+
+ENTITY special_item_assignment
+  SUBTYPE OF (item_assignment);
+  SELF\item_assignment.items : SET [1:?] OF action_items;
+END_ENTITY;
+
+ENTITY item_property;
+  name : STRING;
+  description : OPTIONAL STRING;
+  definition : player;
+END_ENTITY;
+
+ENTITY item_resource_relationship;
+  name : STRING;
+  description : OPTIONAL STRING;
+  relating_item : player;
+  related_resource : resource_property;
+END_ENTITY;
+
+END_SCHEMA;

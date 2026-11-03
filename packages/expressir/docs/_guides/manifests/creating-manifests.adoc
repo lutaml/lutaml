@@ -1,0 +1,483 @@
+---
+title: Creating Manifests
+parent: Manifest Workflows
+grand_parent: Guides
+nav_order: 1
+---
+
+= Creating Schema Manifests
+
+== Purpose
+
+This guide shows you how to create schema manifests from root schemas, interpret the output, and handle unresolved schemas.
+
+== What You'll Learn
+
+* Using the `manifest create` command
+* Understanding resolved vs unresolved schemas
+* Configuring base directories
+* Interpreting creation output
+* Editing manifests to add missing paths
+
+== Prerequisites
+
+* Expressir installed
+* EXPRESS schema files to package
+* Understanding of link:../../pages/schema-manifests.html[Schema Manifests]
+
+== The `manifest create` Command
+
+=== Basic Syntax
+
+[source,bash]
+----
+expressir manifest create ROOT_SCHEMA [MORE_SCHEMAS...] -o OUTPUT.yaml [OPTIONS]
+----
+
+=== Required Parameters
+
+`ROOT_SCHEMA`::
+One or more EXPRESS schema files to use as starting points
++
+The command will parse these files and recursively resolve all their dependencies via `USE FROM` and `REFERENCE FROM` declarations.
+
+`-o, --output OUTPUT.yaml`::
+Path where the manifest file will be written
++
+By convention, use `.yaml` or `.yml` extension.
+
+=== Optional Parameters
+
+`--base-dirs DIRS`::
+Comma-separated list of directories to search for schema files
++
+[source,bash]
+----
+--base-dirs /path/to/schemas,/another/path,/third/path
+----
++
+The resolver searches for schemas using these patterns:
++
+* `<SCHEMA_ID>.exp` - Direct schema name match
+* `<lowercase_module>/{mim,arm}.exp` - STEP module pattern
++
+For example, `Activity_method_mim` will match:
++
+* `Activity_method_mim.exp`
+* `activity_method/mim.exp`
+
+`--verbose`::
+Show detailed progress and warnings during resolution
++
+Highly recommended for understanding what's happening.
+
+== Understanding Manifest Creation Output
+
+When you run the create command, you'll see output like this:
+
+[source,bash]
+----
+$ expressir manifest create schemas/activity/mim.exp \
+    -o activity_manifest.yaml \
+    --base-dirs ~/iso-10303/schemas \
+    --verbose
+
+Creating manifest from 1 root schema(s)...
+  Base directories:
+    - /Users/user/iso-10303/schemas
+Resolving dependencies...
+  USE FROM action_schema (in Activity_mim): ✓ action_schema.exp
+  REFERENCE FROM basic_attribute_schema (in action_schema): ✓ basic_attribute_schema.exp
+  USE FROM Activity_method_mim (in Activity_mim): ✗ not found
+  ...
+✓ Manifest created: activity_manifest.yaml
+  Resolved schemas: 41
+
+⚠ Unresolved schemas (1):
+  - Activity_method_mim
+
+Please edit activity_manifest.yaml and set 'path:' for unresolved schemas
+Then validate with: expressir manifest validate activity_manifest.yaml
+----
+
+=== Output Components
+
+**Resolution Progress** (`✓` and `✗`)::
+Shows each dependency being resolved
++
+* `✓` = Schema file found and added to manifest
+* `✗` = Schema file not found in base directories
+
+**Statistics**::
+* Total root schemas provided
+* Number of resolved schemas (with paths)
+* Number of unresolved schemas (without paths)
+
+**Next Steps**::
+The output tells you what to do next - edit the manifest and validate it.
+
+== Understanding Resolved vs Unresolved Schemas
+
+=== Resolved Schemas
+
+A schema is "resolved" when the system finds its `.exp` file:
+
+[source,yaml]
+----
+schemas:
+  action_schema:
+    path: /Users/user/iso-10303/schemas/resources/action_schema/action_schema.exp
+    dependencies:
+      - schema_name: basic_attribute_schema
+        kind: REFERENCE
+----
+
+**Key points:**
+
+* Has a `path:` field with full file path
+* Can be used directly in package builds
+* Dependencies are documented but optional
+
+=== Unresolved Schemas
+
+A schema is "unresolved" when the file cannot be found:
+
+[source,yaml]
+----
+schemas:
+  Activity_method_mim:
+    dependencies:
+      - schema_name: action_schema
+        kind: USE
+----
+
+**Key points:**
+
+* Missing `path:` field
+* Will cause warnings during validation
+* Must be manually resolved or removed
+
+== Step-by-Step: Creating Your First Manifest
+
+=== Step 1: Identify Your Root Schema
+
+Find the main schema file you want to package:
+
+[source,bash]
+----
+ls schemas/modules/activity/
+# Output: mim.exp  arm.exp
+----
+
+We'll use `mim.exp` as our root.
+
+=== Step 2: Identify Base Directories
+
+List directories where referenced schemas might be located:
+
+[source]
+----
+schemas/
+├── resources/          ← Resource schemas here
+│   ├── action_schema/
+│   └── approval_schema/
+└── modules/            ← Application modules here
+    ├── activity/
+    └── activity_method/
+----
+
+We need both `schemas/resources` and `schemas/modules`.
+
+=== Step 3: Run the Create Command
+
+[source,bash]
+----
+expressir manifest create schemas/modules/activity/mim.exp \
+  -o activity_manifest.yaml \
+  --base-dirs schemas/resources,schemas/modules \
+  --verbose
+----
+
+=== Step 4: Review the Output
+
+Check for unresolved schemas:
+
+[source]
+----
+✓ Manifest created: activity_manifest.yaml
+  Resolved schemas: 41
+
+⚠ Unresolved schemas (2):
+  - Activity_method_mim
+  - geometric_model_schema
+----
+
+=== Step 5: Examine the Manifest File
+
+Open `activity_manifest.yaml`:
+
+[source,yaml]
+----
+name: ''
+version: 1.0.0
+created_at: '2025-12-06T12:00:00Z'
+root_schemas:
+  - /full/path/to/schemas/modules/activity/mim.exp
+base_dirs:
+  - /full/path/to/schemas/resources
+  - /full/path/to/schemas/modules
+schemas:
+  Activity_mim:
+    path: /full/path/to/schemas/modules/activity/mim.exp
+    dependencies:
+      - schema_name: action_schema
+        kind: USE
+  action_schema:
+    path: /full/path/to/schemas/resources/action_schema/action_schema.exp
+    dependencies: []
+  Activity_method_mim:  # ← Unresolved!
+    dependencies:
+      - schema_name: action_schema
+        kind: USE
+----
+
+== Editing Manifests to Add Missing Paths
+
+=== Adding Paths Manually
+
+For each unresolved schema, add the `path:` field:
+
+[source,yaml]
+----
+schemas:
+  Activity_method_mim:
+    path: /full/path/to/schemas/modules/activity_method/mim.exp  # ← Added
+    dependencies:
+      - schema_name: action_schema
+        kind: USE
+----
+
+=== Finding the Right Path
+
+**Option 1: Use `find` command**
+
+[source,bash]
+----
+find schemas/ -name "mim.exp" | grep -i activity_method
+# Output: schemas/modules/activity_method/mim.exp
+----
+
+**Option 2: Use schema name pattern**
+
+For `Activity_method_mim`:
+* Remove `_mim` suffix → `Activity_method`
+* Convert to lowercase → `activity_method`
+* Add `/mim.exp` → `activity_method/mim.exp`
+
+**Option 3: Search by SCHEMA declaration**
+
+[source,bash]
+----
+grep -r "SCHEMA Activity_method_mim" schemas/
+# Shows which file contains this schema
+----
+
+=== Best Practices for Manual Editing
+
+**Use absolute paths** (recommended)::
+Ensures manifest works from any directory
++
+[source,yaml]
+----
+path: /Users/user/iso-10303/schemas/modules/activity_method/mim.exp
+----
+
+**Or use relative paths** (from manifest location)::
+More portable across systems
++
+[source,yaml]
+----
+path: ../../schemas/modules/activity_method/mim.exp
+----
+
+**Document why schemas are unresolved**::
+Add YAML comments to explain
++
+[source,yaml]
+----
+  future_schema:
+    # TODO: Schema not yet released, will be available in v2.0
+    dependencies: []
+----
+
+== Handling Special Cases
+
+=== Circular Dependencies
+
+EXPRESS allows schema-level circular references. The manifest creation handles these correctly:
+
+[source]
+----
+Looking for: measure_schema.exp
+  ├─ Finds: representation_schema.exp (depends on measure_schema)
+  │   └─ Circular reference detected: measure_schema (skipping, valid)
+  └─ Both schemas included in manifest
+----
+
+With `--verbose`, you'll see:
+
+[source]
+----
+Circular reference detected: measure_schema (valid schema-level circular dependency, skipping)
+----
+
+**This is not an error** - both schemas will be included with their paths.
+
+=== Multiple Root Schemas
+
+You can specify multiple root schemas:
+
+[source,bash]
+----
+expressir manifest create \
+  schemas/modules/activity/mim.exp \
+  schemas/modules/activity/arm.exp \
+  schemas/resources/geometry.exp \
+  -o combined_manifest.yaml \
+  --base-dirs schemas/resources,schemas/modules
+----
+
+All dependencies from all roots will be merged into one manifest.
+
+=== Schemas in Non-Standard Locations
+
+If schemas don't follow naming conventions, you may need to:
+
+1. Create the manifest with what can be auto-resolved
+2. Manually add the non-standard schemas
+3. Use the resolve command with additional base directories
+
+== Complete Example
+
+Here's a complete workflow with real output:
+
+[source,bash]
+----
+# Create manifest
+$ expressir manifest create schemas/modules/activity/mim.exp \
+    -o activity_manifest.yaml \
+    --base-dirs ~/iso-10303/schemas/resources,~/iso-10303/schemas/modules \
+    --verbose
+
+Creating manifest from 1 root schema(s)...
+  Base directories:
+    - /Users/user/iso-10303/schemas/resources
+    - /Users/user/iso-10303/schemas/modules
+Resolving dependencies...
+  USE FROM action_schema (in Activity_mim): ✓ action_schema.exp
+  REFERENCE FROM basic_attribute_schema (in action_schema): ✓ basic_attribute_schema.exp
+  REFERENCE FROM support_resource_schema (in basic_attribute_schema): ✓ support_resource_schema.exp
+  USE FROM Activity_method_mim (in Activity_mim): ✗ not found
+  USE FROM basic_attribute_schema (in Activity_mim): ✓ basic_attribute_schema.exp
+  Circular reference detected: measure_schema (valid schema-level circular dependency, skipping)
+✓ Manifest created: activity_manifest.yaml
+  Resolved schemas: 41
+
+⚠ Unresolved schemas (1):
+  - Activity_method_mim
+
+Please edit activity_manifest.yaml and set 'path:' for unresolved schemas
+Then validate with: expressir manifest validate activity_manifest.yaml
+
+# Find the missing schema
+$ find ~/iso-10303/schemas -name "mim.exp" | grep -i activity_method
+/Users/user/iso-10303/schemas/modules/activity_method/mim.exp
+
+# Edit the manifest (add path for Activity_method_mim)
+$ vim activity_manifest.yaml
+
+# Validate the edited manifest
+$ expressir manifest validate activity_manifest.yaml --verbose
+Validating manifest: activity_manifest.yaml...
+✓ Manifest is valid
+  Total schemas: 42
+  Resolved schemas: 42
+----
+
+== Troubleshooting
+
+=== No Schemas Resolved
+
+**Problem:** All schemas show as unresolved
+
+**Causes:**
+
+* Incorrect base directories
+* Non-standard file naming
+* Wrong file extensions
+
+**Solutions:**
+
+1. Verify base directories exist:
+   ```bash
+   ls -d ~/iso-10303/schemas/resources
+   ```
+
+2. Check file naming:
+   ```bash
+   ls ~/iso-10303/schemas/resources/
+   ```
+
+3. Ensure files have `.exp` extension
+
+=== Too Many Circular Dependency Warnings
+
+**Problem:** Many circular dependency warnings in output
+
+**This is normal** for complex EXPRESS schemas. The warnings are informational and don't prevent manifest creation.
+
+**If concerned**, verify with `--verbose` that schemas are being included correctly.
+
+=== Schema Exists But Not Found
+
+**Problem:** Schema file exists but marked as unresolved
+
+**Causes:**
+
+* File name doesn't match schema name
+* Missing from base directories
+* Case sensitivity issues
+
+**Solutions:**
+
+1. Check schema name in file:
+   ```bash
+   grep "^SCHEMA " problem_schema.exp
+   ```
+
+2. Verify file is in base directory:
+   ```bash
+   find ~/iso-10303/schemas -name "problem_schema.exp"
+   ```
+
+3. Add specific directory to base-dirs
+
+== Next Steps
+
+Now that you can create manifests:
+
+**Resolve missing schemas**::
+Use link:resolving-manifests.html[Resolving Manifests] to auto-resolve remaining schemas
+
+**Validate your manifest**::
+See link:validating-manifests.html[Validating Manifests] to check for errors
+
+**Build a package**::
+Move to link:../../pages/ler-packages.html#building-from-manifests[Building from Manifests]
+
+== Bibliography
+
+* link:../../pages/schema-manifests.html#creating-a-manifest-from-a-root-schema[Manifest Creation Reference]
+* link:resolving-manifests.html[Resolving Manifests]
+* link:validating-manifests.html[Validating Manifests]
+* link:index.html[Manifest Workflows Overview]

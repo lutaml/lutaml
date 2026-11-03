@@ -1,0 +1,322 @@
+(*
+ACME 5000 No. 11569
+
+EXPRESS Source:
+ACME 5000-41 ed8 Blockchain identity management - Blockchain identity attribute schema
+
+The following permission notice and disclaimer shall be included in all copies of this EXPRESS schema ("the Schema"),
+and derivations of the Schema:
+
+Copyright Ribose 2025  All rights reserved
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+In addition, any modified copy of the Schema shall include the following notice:
+
+THIS SCHEMA HAS BEEN MODIFIED FROM THE SCHEMA DEFINED IN
+ACME 5000-41 ed8 Blockchain identity management - Blockchain identity attribute schema
+AND SHOULD NOT BE INTERPRETED AS COMPLYING WITH THAT STANDARD
+*)
+
+SCHEMA blockchain_identity_attribute_schema '{acme standard 5000 part(41) version(1) object(1) blockchain-identity-attribute-schema(23)}';
+
+REFERENCE FROM basic_attribute_schema;
+
+REFERENCE FROM product_property_representation_schema
+               (shape_representation);
+
+REFERENCE FROM geometry_schema
+                (cartesian_point);
+
+REFERENCE FROM representation_schema
+               (using_representations);
+
+REFERENCE FROM support_resource_schema
+               (bag_to_set);
+
+  TYPE blockchain_id = STRING (64) FIXED;
+  END_TYPE;
+
+  TYPE blockchain_id_list_item = LIST [1:?] OF UNIQUE LIST [1:?] OF UNIQUE blockchain_identity_attribute_select;
+  END_TYPE;
+
+  TYPE blockchain_id_set_item = SET [1:?] OF blockchain_identity_attribute_select;
+  END_TYPE;
+
+  TYPE blockchain_id_set_or_list_attribute_select = SELECT
+    (blockchain_id_list_item,
+     blockchain_id_set_item);
+  END_TYPE;
+
+  TYPE blockchain_identity_attribute_select = EXTENSIBLE GENERIC_ENTITY SELECT
+    (id_attribute_select);
+  END_TYPE;
+
+  TYPE blockchain_relationship_role = ENUMERATION OF
+    (supersedes,
+     merge,
+     split,
+     derive_from,
+     same_as,
+     similar_to,
+     validates,
+     authenticates,
+     authorizes,
+     revokes);
+  END_TYPE;
+
+  ENTITY blockchain_identity_attribute
+    ABSTRACT
+    SUPERTYPE OF (ONEOF(sha256_blockchain_identity_attribute, ecdsa_blockchain_identity_attribute) ANDOR blockchain_identity_attribute_with_approximate_location);
+      identifier      : blockchain_id;
+      identified_item : blockchain_id_set_or_list_attribute_select;
+    UNIQUE
+      UR1 : identifier;
+  END_ENTITY;
+
+  ENTITY sha256_blockchain_identity_attribute
+    SUBTYPE OF(blockchain_identity_attribute);
+      hash_algorithm : STRING;
+    WHERE
+     WR1 : hash_algorithm = 'SHA256';
+  END_ENTITY;
+
+  ENTITY ecdsa_blockchain_identity_attribute
+    SUBTYPE OF(blockchain_identity_attribute);
+      signature_algorithm : STRING;
+      public_key : STRING;
+    WHERE
+     WR1 : signature_algorithm = 'ECDSA';
+     WR2 : public_key <> '';
+  END_ENTITY;
+
+  ENTITY hash_based_blockchain_identity_attribute
+    SUBTYPE OF(sha256_blockchain_identity_attribute);
+      hash_function : STRING;
+    WHERE
+      WR1 : hash_function <> '';
+  END_ENTITY;
+
+  ENTITY blockchain_identity_attribute_with_approximate_location
+    SUBTYPE OF(blockchain_identity_attribute);
+      location_representation : shape_representation;
+      approximate_location    : cartesian_point;
+    WHERE
+      WR1 : location_representation IN using_representations(approximate_location);
+  END_ENTITY;
+
+  ENTITY blockchain_context;
+      identifier         : blockchain_id;
+      frame_of_reference : STRING;
+      target             : SET [1:?] OF blockchain_id;
+      network_type       : STRING;
+      consensus_mechanism : STRING;
+    UNIQUE
+      UR1 : identifier;
+      UR2 : frame_of_reference, target;
+    WHERE
+      WR1 : frame_of_reference <> '';
+      WR2 : network_type IN ['mainnet', 'testnet', 'private', 'consortium'];
+      WR3 : consensus_mechanism IN ['proof_of_work', 'proof_of_stake', 'delegated_proof_of_stake', 'proof_of_authority'];
+  END_ENTITY;
+
+  ENTITY blockchain_provenance;
+      identifier : blockchain_id;
+      content    : LIST [1:?] OF UNIQUE blockchain_relationship;
+      block_height : INTEGER;
+      transaction_hash : STRING;
+    UNIQUE
+      UR1 : identifier;
+    WHERE
+      WR1 : block_height >= 0;
+      WR2 : transaction_hash <> '';
+  END_ENTITY;
+
+  ENTITY blockchain_relationship;
+      identifier : blockchain_id;
+      blockchain_id_1     : blockchain_id;
+      blockchain_id_2     : blockchain_id;
+      role       : blockchain_relationship_role;
+      timestamp  : STRING;
+      digital_signature : OPTIONAL STRING;
+    UNIQUE
+      UR1 : identifier;
+    WHERE
+     WR1: blockchain_id_1 <> blockchain_id_2;
+     WR2: blockchain_id_1 <> identifier;
+     WR3: blockchain_id_2 <> identifier;
+     WR4: acyclic_blockchain_relationship(SELF, [blockchain_id_2], 'BLOCKCHAIN_IDENTITY_ATTRIBUTE_SCHEMA.BLOCKCHAIN_RELATIONSHIP');
+     WR5: timestamp <> '';
+  END_ENTITY;
+
+  ENTITY smart_contract_identity;
+      contract_address : blockchain_id;
+      contract_abi : STRING;
+      deployment_block : INTEGER;
+      creator_address : blockchain_id;
+    UNIQUE
+      UR1 : contract_address;
+    WHERE
+      WR1 : contract_abi <> '';
+      WR2 : deployment_block >= 0;
+  END_ENTITY;
+
+  ENTITY decentralized_identity;
+      did_identifier : STRING;
+      did_document : STRING;
+      verification_methods : LIST [1:?] OF STRING;
+      authentication_methods : LIST [1:?] OF STRING;
+    UNIQUE
+      UR1 : did_identifier;
+    WHERE
+      WR1 : did_identifier <> '';
+      WR2 : did_document <> '';
+      WR3 : SIZEOF(verification_methods) >= 1;
+  END_ENTITY;
+
+  ENTITY zero_knowledge_proof;
+      proof_identifier : blockchain_id;
+      proof_type : STRING;
+      proof_data : STRING;
+      verification_key : STRING;
+    UNIQUE
+      UR1 : proof_identifier;
+    WHERE
+      WR1 : proof_type IN ['zk-SNARK', 'zk-STARK', 'Bulletproof', 'PLONK'];
+      WR2 : proof_data <> '';
+      WR3 : verification_key <> '';
+  END_ENTITY;
+
+ FUNCTION acyclic_blockchain_relationship (relation : blockchain_relationship; relatives : SET [1:?] OF blockchain_id; specific_relation : STRING):BOOLEAN;
+    LOCAL
+      x : SET OF blockchain_relationship;
+    END_LOCAL;
+
+    IF relation.blockchain_id_1 IN relatives THEN
+      RETURN (FALSE);
+    END_IF;
+    x := QUERY(am <* bag_to_set(USEDIN(relation.blockchain_id_1, 'BLOCKCHAIN_IDENTITY_ATTRIBUTE_SCHEMA.' + 'BLOCKCHAIN_RELATIONSHIP.' + 'BLOCKCHAIN_ID_2')) | specific_relation IN TYPEOF(am));
+    REPEAT i := 1 TO HIINDEX(x);
+      IF NOT acyclic_blockchain_relationship(x[i], relatives + relation.blockchain_id_1, specific_relation) THEN
+        RETURN (FALSE);
+      END_IF;
+    END_REPEAT;
+    RETURN (TRUE);
+  END_FUNCTION;
+
+END_SCHEMA;
+
+(*"blockchain_identity_attribute_schema.__published_in"
+ACME 5000-41:2025 ED8
+*)
+
+(*"blockchain_identity_attribute_schema.__identifier"
+ACME/TC 184/SC 4/WG 12 N11569
+*)
+
+(*"blockchain_identity_attribute_schema.__status"
+IS
+*)
+
+(*"blockchain_identity_attribute_schema.__title"
+blockchain_identity_management
+*)
+
+(*"blockchain_identity_attribute_schema"
+The subject of the *blockchain_identity_attribute_schema* is a description of blockchain-based identity management systems that provide decentralized, cryptographically secure identifiers for digital assets and entities in distributed ledger environments.
+*)
+
+(*"blockchain_identity_attribute_schema.__fund_cons"
+
+A blockchain identity is a cryptographically secure means that enables distributed systems to distinguish and authenticate digital entities across decentralized networks. The term "blockchain identity" encompasses various forms of decentralized identifiers including wallet addresses, smart contract addresses, and decentralized identity (DID) documents.
+
+The format used to define blockchain identities is specified in this document and is compliant with blockchain standards including EIP-155 for Ethereum networks and W3C DID specifications. This document provides capabilities for exchanging blockchain identity declarations, smart contract interfaces, and zero-knowledge proof systems for privacy-preserving identity verification.
+
+Key features of blockchain identity management include:
+- Cryptographic authentication through digital signatures
+- Immutable identity records on distributed ledgers
+- Privacy-preserving verification through zero-knowledge proofs
+- Interoperability across different blockchain networks
+- Self-sovereign identity control without central authorities
+
+*)
+
+(*"blockchain_identity_attribute_schema.blockchain_id"
+A **blockchain_id** (blockchain identifier) is a persistent cryptographic identifier that is a string of 64 characters representing a hash or address on a blockchain network, enabling secure identification and authentication of digital entities in decentralized systems.
+*)
+
+(*"blockchain_identity_attribute_schema.blockchain_id_list_item"
+A **blockchain_id_list_item** is the specification of an array of blockchain_identity_attribute_select entity instances that provides a capability to compose a hierarchical structure of blockchain identities. The first element in the array is conceptually the root identity in a trust chain.
+*)
+
+(*"blockchain_identity_attribute_schema.blockchain_id_set_item"
+A **blockchain_id_set_item** is the specification of a set of blockchain_identity_attribute_select entity instances that provides a grouping mechanism for related blockchain identities without hierarchical constraints.
+*)
+
+(*"blockchain_identity_attribute_schema.blockchain_relationship_role"
+A **blockchain_relationship_role** is an enumeration of permitted roles in blockchain identity relationships.
+
+Permitted roles include supersedes, merge, split, derive_from, same_as, similar_to, validates, authenticates, authorizes, and revokes.
+*)
+
+(*"blockchain_identity_attribute_schema.blockchain_relationship_role.validates"
+indicates that one blockchain identity validates the authenticity or correctness of another blockchain identity through cryptographic verification.
+*)
+
+(*"blockchain_identity_attribute_schema.blockchain_relationship_role.authenticates"
+indicates that one blockchain identity provides authentication services for another identity through digital signature verification.
+*)
+
+(*"blockchain_identity_attribute_schema.blockchain_relationship_role.authorizes"
+indicates that one blockchain identity grants authorization or permissions to another identity for specific operations or access rights.
+*)
+
+(*"blockchain_identity_attribute_schema.blockchain_relationship_role.revokes"
+indicates that one blockchain identity revokes previously granted permissions, certificates, or authentication status from another identity.
+*)
+
+(*"blockchain_identity_attribute_schema.blockchain_identity_attribute"
+A **blockchain_identity_attribute** associates a blockchain_id with a collection of blockchain data items. This provides the foundation for decentralized identity management where identities are cryptographically secured and verifiable on blockchain networks.
+*)
+
+(*"blockchain_identity_attribute_schema.sha256_blockchain_identity_attribute"
+A **sha256_blockchain_identity_attribute** is a type of blockchain_identity_attribute that uses SHA-256 cryptographic hashing for identity generation and verification, commonly used in Bitcoin and Bitcoin-derived networks.
+*)
+
+(*"blockchain_identity_attribute_schema.ecdsa_blockchain_identity_attribute"
+A **ecdsa_blockchain_identity_attribute** is a type of blockchain_identity_attribute that uses Elliptic Curve Digital Signature Algorithm (ECDSA) for cryptographic operations, commonly used in Ethereum and other smart contract platforms.
+*)
+
+(*"blockchain_identity_attribute_schema.blockchain_context"
+A **blockchain_context** associates contextual information with blockchain identities including network type and consensus mechanism. This enables proper interpretation of identities across different blockchain networks and environments.
+*)
+
+(*"blockchain_identity_attribute_schema.blockchain_context.network_type"
+specifies the type of blockchain network: mainnet (production), testnet (testing), private (enterprise), or consortium (semi-decentralized).
+*)
+
+(*"blockchain_identity_attribute_schema.blockchain_context.consensus_mechanism"
+specifies the consensus algorithm used by the blockchain network: proof_of_work, proof_of_stake, delegated_proof_of_stake, or proof_of_authority.
+*)
+
+(*"blockchain_identity_attribute_schema.smart_contract_identity"
+A **smart_contract_identity** represents the identity of a smart contract deployed on a blockchain network, including its address, application binary interface (ABI), and deployment information.
+*)
+
+(*"blockchain_identity_attribute_schema.decentralized_identity"
+A **decentralized_identity** represents a W3C-compliant Decentralized Identifier (DID) that enables self-sovereign identity management without relying on centralized authorities.
+*)
+
+(*"blockchain_identity_attribute_schema.zero_knowledge_proof"
+A **zero_knowledge_proof** provides privacy-preserving identity verification capabilities, allowing entities to prove knowledge of information without revealing the information itself.
+*)
+
+(*"blockchain_identity_attribute_schema.zero_knowledge_proof.proof_type"
+specifies the type of zero-knowledge proof system: zk-SNARK (Zero-Knowledge Succinct Non-Interactive Argument of Knowledge), zk-STARK (Zero-Knowledge Scalable Transparent Argument of Knowledge), Bulletproof, or PLONK.
+*)

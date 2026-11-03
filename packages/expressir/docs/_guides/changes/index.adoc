@@ -1,0 +1,396 @@
+---
+title: Changes
+nav_order: 4
+has_children: true
+---
+
+= Changes
+
+== Purpose
+
+EXPRESS Changes files track schema modifications across versions using a
+standardized YAML format. They provide a structured way to document additions,
+modifications, and deletions in EXPRESS schemas, making version management and
+change tracking systematic and machine-readable.
+
+== What are EXPRESS Changes files?
+
+EXPRESS Changes files (`.changes.yaml`) document how EXPRESS schemas evolve
+over time. Each file tracks changes for a single schema across multiple
+versions, organized into categories:
+
+* **Additions**: New elements added to the schema
+* **Modifications**: Existing elements that were modified
+* **Deletions**: Elements removed from the schema
+* **Mappings**: Mapping-related changes (for ARM/MIM modules)
+
+== Benefits of Changes files
+
+=== Version tracking
+
+Structured history:: Maintain a complete, machine-readable history of schema
+changes across all versions.
+
+Version comparison:: Easily compare what changed between any two versions.
+
+Documentation integration:: Generate release notes and change summaries
+automatically from structured data.
+
+=== Collaboration
+
+Team coordination:: Team members can see what changed and why across all
+versions.
+
+Review process:: Changes can be reviewed before being incorporated into
+documentation.
+
+Audit trail:: Complete record of when changes were made and what was affected.
+
+=== Automation
+
+Import from tools:: Automatically import changes from Express Engine comparison
+reports.
+
+Validation:: Validate changes files to ensure completeness and correctness.
+
+Documentation generation:: Use changes data to generate release notes,
+changelogs, and migration guides.
+
+== File format
+
+Changes files use YAML format with a simple, hierarchical structure:
+
+[source,yaml]
+----
+schema: action_schema
+versions:
+- version: 2
+  description: Added new functionality
+  additions:
+  - type: ENTITY
+    name: new_entity
+  modifications:
+  - type: FUNCTION
+    name: updated_function
+  deletions:
+  - type: CONSTANT
+    name: removed_constant
+- version: 3
+  description: Further improvements
+  additions:
+  - type: TYPE
+    name: new_type
+----
+
+== When to use Changes files
+
+=== Active schema development
+
+Use Changes files when:
+
+* Developing schemas with multiple versions
+* Tracking changes for standards documentation
+* Coordinating changes across teams
+* Generating automated documentation
+* Maintaining compatibility information
+
+=== Migration scenarios
+
+Changes files help with:
+
+* Understanding what changed between versions
+* Planning migration strategies
+* Identifying breaking changes
+* Documenting upgrade paths
+
+== Workflows
+
+=== Manual workflow
+
+[source]
+----
+1. Modify EXPRESS schema
+2. Document changes in .changes.yaml
+3. Validate changes file
+4. Commit both schema and changes
+5. Generate documentation from changes
+----
+
+=== Express Engine workflow
+
+[source]
+----
+1. Compare schema versions in Express Engine
+2. Export comparison report as XML
+3. Import XML to .changes.yaml
+4. Review and edit descriptions if needed
+5. Validate changes file
+6. Generate documentation
+----
+
+=== Continuous integration workflow
+
+[source]
+----
+1. Schema changes committed
+2. CI runs Express Engine comparison
+3. CI imports changes automatically
+4. CI validates changes file
+5. CI generates change documentation
+6. CI builds updated documentation site
+----
+
+== CLI vs API usage
+
+=== Command-line interface
+
+Best for:
+
+* Validating changes files
+* Importing from Express Engine XML
+* One-off operations
+* CI/CD automation
+* Quick validation checks
+
+.Example commands
+[example]
+====
+[source,bash]
+----
+# Validate changes file
+expressir changes validate schema.changes.yaml
+
+# Import from Express Engine
+expressir changes import-eengine comparison.xml schema_name "2" \
+  -o schema.changes.yaml
+
+# Validate and normalize
+expressir changes validate schema.changes.yaml --normalize --in-place
+----
+====
+
+=== Ruby API
+
+Best for:
+
+* Creating changes programmatically
+* Integrating with tools
+* Custom processing workflows
+* Building automation
+* Generating reports
+
+.Example code
+[example]
+====
+[source,ruby]
+----
+# Load changes file
+require "expressir/changes"
+changes = Expressir::Changes::SchemaChange.from_file(
+  "schema.changes.yaml"
+)
+
+# Add new version
+changes.add_or_update_version("4", "New features", {
+  additions: [
+    Expressir::Changes::ItemChange.new(
+      type: "ENTITY",
+      name: "new_entity"
+    )
+  ]
+})
+
+# Save changes
+changes.to_file("schema.changes.yaml")
+----
+====
+
+== Express Engine integration
+
+=== What is Express Engine?
+
+Express Engine (eengine) is a commercial tool for working with EXPRESS schemas.
+It can compare two schema versions and generate a detailed XML comparison
+report.
+
+Expressir can import these comparison reports to create or update Changes
+files automatically.
+
+=== Three comparison modes
+
+Schema mode:: Compares complete schema structures
++
+[source,xml]
+----
+<schema.changes schema_name="action_schema">
+  <schema.additions>...</schema.additions>
+  <schema.modifications>...</schema.modifications>
+  <schema.deletions>...</schema.deletions>
+</schema.changes>
+----
+
+ARM mode:: Compares Application Reference Model schemas
++
+[source,xml]
+----
+<arm.changes schema_name="action_arm">
+  <arm.additions>...</arm.additions>
+  <arm.modifications>...</arm.modifications>
+  <arm.deletions>...</arm.deletions>
+</arm.changes>
+----
+
+MIM mode:: Compares Module Implementation Model schemas
++
+[source,xml]
+----
+<mim.changes schema_name="action_mim">
+  <mim.additions>...</mim.additions>
+  <mim.modifications>...</mim.modifications>
+  <mim.deletions>...</mim.deletions>
+</mim.changes>
+----
+
+All three modes are automatically detected and handled by Expressir's import
+command.
+
+== Change types
+
+Express Changes files track different types of EXPRESS constructs:
+
+Schema-level entities::
+* `ENTITY` - Entity definitions
+* `TYPE` - Type definitions
+* `FUNCTION` - Function definitions
+* `PROCEDURE` - Procedure definitions
+* `RULE` - Rule definitions
+* `CONSTANT` - Constant definitions
+* `SUBTYPE_CONSTRAINT` - Subtype constraints
+
+Interface changes::
+* `USE_FROM` - Interface imports with `interfaced_items`
+* `REFERENCE_FROM` - Interface references with `interfaced_items`
+
+The `interfaced_items` field specifies which items are being imported or
+referenced from another schema.
+
+== Guide contents
+
+This section provides comprehensive documentation for working with EXPRESS
+Changes files:
+
+link:changes-format.html[Changes Format]:: Complete YAML format specification
+with field descriptions and examples
+
+link:validating-changes.html[Validating Changes]:: How to validate and
+normalize changes files
+
+link:importing-eengine.html[Importing from Express Engine]:: Converting Express
+Engine XML reports to Changes format
+
+link:programmatic-usage.html[Programmatic Usage]:: Using the Ruby API to create
+and manage changes
+
+== Quick examples
+
+=== Creating a simple changes file
+
+[source,yaml]
+----
+schema: my_schema
+versions:
+- version: 2
+  description: Added support for new features
+  additions:
+  - type: ENTITY
+    name: new_feature_entity
+    description:
+    - Provides support for advanced features
+  modifications:
+  - type: FUNCTION
+    name: existing_function
+    description:
+    - Updated parameters
+    - Improved performance
+----
+
+=== Interface changes
+
+[source,yaml]
+----
+schema: my_schema
+versions:
+- version: 2
+  description: Added external references
+  additions:
+  - type: USE_FROM
+    name: geometry_schema
+    interfaced_items: point
+  - type: REFERENCE_FROM
+    name: measure_schema
+    interfaced_items: length_measure
+----
+
+=== Multiple versions
+
+[source,yaml]
+----
+schema: my_schema
+versions:
+- version: 2
+  description: Initial enhancements
+  additions:
+  - type: ENTITY
+    name: entity_v2
+- version: 3
+  description: Further improvements
+  modifications:
+  - type: ENTITY
+    name: entity_v2
+    description:
+    - Added new attributes
+- version: 4
+  description: Removed deprecated items
+  deletions:
+  - type: FUNCTION
+    name: old_function
+----
+
+== Next steps
+
+Start with these guides based on your needs:
+
+For understanding format:: Read link:changes-format.html[Changes Format] for
+complete YAML structure specification
+
+For validation:: See link:validating-changes.html[Validating Changes] to learn
+validation and normalization
+
+For Express Engine users:: Check
+link:importing-eengine.html[Importing from Express Engine] for XML import
+workflows
+
+For developers:: Explore link:programmatic-usage.html[Programmatic Usage] for
+Ruby API documentation
+
+== Summary
+
+EXPRESS Changes files provide structured, machine-readable change tracking:
+
+* YAML format for easy editing and version control
+* Organized by version with categorized changes
+* Support for all EXPRESS construct types
+* Import capability from Express Engine XML
+* Validation and normalization tools
+* Both CLI and API access
+* Integration with documentation workflows
+
+Key takeaways:
+
+* Use Changes files for systematic version tracking
+* Validate files before committing
+* Import from Express Engine for automation
+* Include descriptive information for each change
+* Track interface changes with `interfaced_items`
+* Build change history incrementally across versions
+* Integrate with CI/CD for automation

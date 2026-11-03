@@ -1,0 +1,18 @@
+<mim.changes>
+<!-- Express Engine -->
+<!--   5.2.7 (GIT eeng-5.2.7-1-g1faeefe) -->
+<!-- Reference_Schema: EXAMPLE_MIM -->
+<!-- Path:   /path/to/example_mim_2.exp -->
+<!-- Trial_schema: EXAMPLE_MIM -->
+<!-- Path:   /path/to/example_mim_1.exp -->
+
+<mim.additions>
+<modified.object type="USE_FROM" name="common_schema" interfaced.items="identifier" />
+
+</mim.additions>
+
+<mim.deletions>
+<modified.object type="TYPE" name="deprecated_type" />
+
+</mim.deletions>
+</mim.changes>

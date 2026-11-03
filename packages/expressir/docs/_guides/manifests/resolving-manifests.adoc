@@ -1,0 +1,557 @@
+---
+title: Resolving Manifests
+parent: Manifest Workflows
+grand_parent: Guides
+nav_order: 2
+---
+
+= Resolving Schema Manifests
+
+== Purpose
+
+This guide explains how to use the `manifest resolve` command to automatically find and add file paths for unresolved schemas in an existing manifest.
+
+== What You'll Learn
+
+* Using the `manifest resolve` command
+* Understanding auto-resolution patterns
+* When to use resolve vs manual editing
+* Troubleshooting resolution failures
+* Iterative resolution strategies
+
+== Prerequisites
+
+* Expressir installed
+* An existing manifest file (created with `manifest create`)
+* Understanding of link:creating-manifests.html[Creating Manifests]
+
+== The `manifest resolve` Command
+
+=== What Does It Do?
+
+The `resolve` command takes an existing manifest file and attempts to find file paths for any schemas that are missing the `path:` field. It:
+
+1. Reads the input manifest
+2. Identifies schemas without paths
+3. Searches in base directories using naming patterns
+4. Writes a new manifest with resolved paths
+5. Reports which schemas were resolved and which remain unresolved
+
+**Important:** The original manifest file is never modified - a new file is created.
+
+=== Basic Syntax
+
+[source,bash]
+----
+expressir manifest resolve INPUT_MANIFEST.yaml -o OUTPUT_MANIFEST.yaml [OPTIONS]
+----
+
+=== Required Parameters
+
+`INPUT_MANIFEST.yaml`::
+The manifest file to resolve (typically created with `manifest create`)
+
+`-o, --output OUTPUT_MANIFEST.yaml`::
+Path where the resolved manifest will be written
++
+The input file is left unchanged.
+
+=== Optional Parameters
+
+`--base-dirs DIRS`::
+Comma-separated list of additional directories to search
++
+If not provided, uses the base directories already in the manifest.
++
+[source,bash]
+----
+--base-dirs /additional/path,/another/path
+----
+
+`--verbose`::
+Show detailed resolution progress
++
+Highly recommended to understand what's happening.
+
+== Auto-Resolution Patterns
+
+The resolver searches for schemas using these patterns:
+
+=== Pattern 1: Direct Schema Name
+
+Searches for: `<SCHEMA_ID>.exp`
+
+[example]
+.Example: Direct schema name
+====
+For schema `action_schema`, searches for:
+----
+action_schema.exp
+----
+
+In base directories:
+----
+/path/to/schemas/resources/action_schema.exp
+/path/to/schemas/action_schema.exp
+----
+====
+
+=== Pattern 2: STEP Module Pattern
+
+For schemas ending in `_mim` or `_arm`:
+
+1. Remove suffix → `Activity_method_mim` → `Activity_method`
+2. Convert to lowercase → `activity_method`
+3. Search for `<lowercase>/{mim,arm}.exp`
+
+[example]
+.Example: Module pattern
+====
+For schema `Activity_method_mim`, searches for:
+----
+activity_method/mim.exp
+----
+
+For schema `Geometric_model_arm`, searches for:
+----
+geometric_model/arm.exp
+----
+====
+
+=== Search Priority
+
+When multiple matches exist:
+
+1. Exact name match in first base directory
+2. Exact name match in subsequent base directories
+3. Module pattern match in first base directory
+4. Module pattern match in subsequent base directories
+
+The **first match** is used.
+
+== Step-by-Step: Resolving a Manifest
+
+=== Step 1: Start with an Unresolved Manifest
+
+After running `manifest create`, you have a manifest with unresolved schemas:
+
+[source,yaml]
+----
+schemas:
+  Activity_method_mim:  # No path
+    dependencies:
+      - schema_name: action_schema
+        kind: USE
+  geometric_model_schema:  # No path
+    dependencies: []
+----
+
+=== Step 2: Run the Resolve Command
+
+[source,bash]
+----
+expressir manifest resolve activity_manifest.yaml \
+  -o resolved_manifest.yaml \
+  --verbose
+----
+
+=== Step 3: Review the Output
+
+[source]
+----
+Resolving schema paths in: activity_manifest.yaml...
+  Using base directories:
+    - /Users/user/iso-10303/schemas/resources
+    - /Users/user/iso-10303/schemas/modules
+Attempting to resolve paths...
+  Activity_method_mim: ✓ found at activity_method/mim.exp
+  geometric_model_schema: ✗ not found
+✓ Manifest resolved: resolved_manifest.yaml
+  Total schemas: 42
+  Resolved schemas: 41
+
+⚠ Unresolved schemas (1):
+  - geometric_model_schema
+
+These schemas could not be found in the search directories.
+You may need to:
+  1. Add more base directories with --base-dirs
+  2. Manually edit resolved_manifest.yaml and set their paths
+----
+
+=== Step 4: Check the Resolved Manifest
+
+[source,yaml]
+----
+schemas:
+  Activity_method_mim:
+    path: /Users/user/iso-10303/schemas/modules/activity_method/mim.exp  # ← Added!
+    dependencies:
+      - schema_name: action_schema
+        kind: USE
+  geometric_model_schema:  # Still unresolved
+    dependencies: []
+----
+
+== When to Use Resolve vs Manual Editing
+
+=== Use `manifest resolve` When:
+
+**Many unresolved schemas** (10+)::
+Auto-resolution is faster than manual editing
+
+**Standard naming conventions**::
+Schemas follow the patterns described above
+
+**Progressive resolution**::
+You're adding base directories incrementally
+
+**Verifying coverage**::
+Checking if schemas exist in new locations
+
+=== Use Manual Editing When:
+
+**Non-standard locations**::
+Schemas don't follow naming patterns
+
+**Few unresolved schemas** (<5)::
+Manual editing is quicker
+
+**Known paths**::
+You already know where the schemas are
+
+**Custom organization**::
+Project uses unique directory structure
+
+=== Combine Both Approaches
+
+Often the best strategy is:
+
+1. Auto-resolve as many as possible
+2. Manually edit the remaining few
+3. Validate the result
+
+== Iterative Resolution Strategy
+
+For complex projects with schemas in many locations:
+
+=== Round 1: Use Existing Base Directories
+
+[source,bash]
+----
+expressir manifest resolve original.yaml -o round1.yaml --verbose
+----
+
+Check how many were resolved.
+
+=== Round 2: Add More Base Directories
+
+[source,bash]
+----
+expressir manifest resolve round1.yaml -o round2.yaml \
+  --base-dirs /additional/schemas,/more/schemas \
+  --verbose
+----
+
+=== Round 3: Manual Editing
+
+For remaining unresolved schemas, manually add paths:
+
+[source,bash]
+----
+vim round2.yaml
+# Add path: for each remaining schema
+----
+
+=== Round 4: Final Validation
+
+[source,bash]
+----
+expressir manifest validate round2.yaml --check-references --verbose
+----
+
+== Complete Example
+
+Here's a complete resolution workflow:
+
+[source,bash]
+----
+# Start with manifest created from root schema
+$ expressir manifest create schemas/modules/activity/mim.exp \
+    -o activity.yaml \
+    --base-dirs schemas/resources \
+    --verbose
+
+✓ Manifest created: activity.yaml
+  Resolved schemas: 35
+⚠ Unresolved schemas (6):
+  - Activity_method_mim
+  - geometric_model_schema
+  - module_with_schema
+  - ...
+
+# First resolution attempt with modules directory
+$ expressir manifest resolve activity.yaml \
+    -o resolved1.yaml \
+    --base-dirs schemas/modules \
+    --verbose
+
+Resolving schema paths in: activity.yaml...
+  Using base directories:
+    - /path/to/schemas/resources  (from manifest)
+    - /path/to/schemas/modules    (from --base-dirs)
+Attempting to resolve paths...
+  Activity_method_mim: ✓ found at activity_method/mim.exp
+  geometric_model_schema: ✗ not found
+  module_with_schema: ✓ found at module_with_schema.exp
+✓ Manifest resolved: resolved1.yaml
+  Total schemas: 41
+  Resolved schemas: 37
+
+⚠ Unresolved schemas (4):
+  - geometric_model_schema
+  - ...
+
+# Second resolution with additional directory
+$ expressir manifest resolve resolved1.yaml \
+    -o resolved2.yaml \
+    --base-dirs schemas/integrated \
+    --verbose
+
+Resolving schema paths in: resolved1.yaml...
+  Using base directories:
+    - /path/to/schemas/resources
+    - /path/to/schemas/modules
+    - /path/to/schemas/integrated  (from --base-dirs)
+Attempting to resolve paths...
+  geometric_model_schema: ✓ found at geometric_model_schema.exp
+✓ Manifest resolved: resolved2.yaml
+  Total schemas: 41
+  Resolved schemas: 38
+
+⚠ Unresolved schemas (3):
+  - custom_schema_1
+  - custom_schema_2
+  - custom_schema_3
+
+# Manually edit for remaining schemas
+$ vim resolved2.yaml
+# Add paths for the 3 custom schemas
+
+# Final validation
+$ expressir manifest validate resolved2.yaml --check-references --verbose
+
+✓ Manifest is valid
+  Total schemas: 41
+  Resolved schemas: 41
+----
+
+== Working with Base Directories
+
+=== Understanding Base Directories in Manifests
+
+Manifests store the base directories that were used during creation:
+
+[source,yaml]
+----
+base_dirs:
+  - /Users/user/iso-10303/schemas/resources
+  - /Users/user/iso-10303/schemas/modules
+----
+
+=== Adding New Base Directories
+
+When you run `manifest resolve` with `--base-dirs`:
+
+[source,bash]
+----
+expressir manifest resolve manifest.yaml -o resolved.yaml \
+  --base-dirs /new/path
+----
+
+The new directories are **added** to existing ones, not replaced:
+
+[source,yaml]
+----
+base_dirs:
+  - /Users/user/iso-10303/schemas/resources  # Original
+  - /Users/user/iso-10303/schemas/modules    # Original  
+  - /new/path                                 # Added
+----
+
+=== Removing Base Directories
+
+To remove base directories, manually edit the manifest:
+
+[source,yaml]
+----
+base_dirs:
+  - /Users/user/iso-10303/schemas/resources
+  # Removed: - /Users/user/iso-10303/schemas/modules
+----
+
+== Troubleshooting
+
+=== No New Schemas Resolved
+
+**Problem:** Resolve command finds no new schemas
+
+**Causes:**
+
+* Schemas don't follow naming patterns
+* Wrong base directories provided
+* Schemas in subdirectories not at pattern depth
+
+**Solutions:**
+
+1. **Check file names match patterns:**
+   ```bash
+   find /path/to/schemas -name "*.exp" | head -20
+   ```
+
+2. **Verify schema names in files:**
+   ```bash
+   grep "^SCHEMA " unresolved_schema.exp
+   ```
+
+3. **Try different base directory levels:**
+   ```bash
+   # If schemas are in /path/to/iso-10303/schemas/resources/
+   # Try: /path/to/iso-10303/schemas
+   # Not: /path/to/iso-10303
+   ```
+
+=== Wrong Schema Resolved
+
+**Problem:** Resolver finds the wrong schema file
+
+**Cause:** Multiple files match the pattern
+
+**Solution:** Reorder base directories - earlier directories have priority:
+
+[source,bash]
+----
+# Wrong order (finds old version first)
+--base-dirs old/schemas,new/schemas
+
+# Correct order (finds new version first)
+--base-dirs new/schemas,old/schemas
+----
+
+Or manually edit to specify exact path.
+
+=== Resolved Path is Incorrect
+
+**Problem:** Path was added but points to wrong file
+
+**Solutions:**
+
+1. Manually correct in the manifest
+2. Adjust base directory order
+3. Remove incorrect base directory
+
+=== Case Sensitivity Issues
+
+**Problem:** Schema exists but not found on case-sensitive filesystem
+
+**Cause:** Schema name case doesn't match filename case
+
+**Example:**
+```
+Manifest has: action_schema
+File is named: Action_Schema.exp (wrong case)
+```
+
+**Solution:** Rename file to match schema name exactly, or manually edit manifest.
+
+== Best Practices
+
+=== Always Use --verbose
+
+See what's happening during resolution:
+
+[source,bash]
+----
+expressir manifest resolve manifest.yaml -o resolved.yaml --verbose
+----
+
+=== Keep Intermediate Files
+
+Don't overwrite during iterative resolution:
+
+[source,bash]
+----
+# Good: Preserves history
+manifest resolve orig.yaml -o resolved1.yaml
+manifest resolve resolved1.yaml -o resolved2.yaml
+manifest resolve resolved2.yaml -o final.yaml
+
+# Bad: Loses intermediate state
+manifest resolve manifest.yaml -o manifest.yaml  # Overwrites!
+----
+
+=== Validate After Each Resolution
+
+Check if newly resolved schemas are valid:
+
+[source,bash]
+----
+manifest resolve manifest.yaml -o resolved.yaml
+manifest validate resolved.yaml --check-references
+----
+
+=== Document Base Directory Choices
+
+Add comments in the manifest:
+
+[source,yaml]
+----
+base_dirs:
+  - /path/to/schemas/resources  # Standard resource schemas
+  - /path/to/schemas/modules    # Application modules
+  - /vendor/schemas              # Third-party schemas
+----
+
+== Advanced: Custom Resolution Scripts
+
+For very complex resolution needs, create a custom script:
+
+[source,ruby]
+----
+require 'expressir'
+
+# Load manifest
+manifest = Expressir::SchemaManifest.from_file('manifest.yaml')
+
+# Custom resolution logic
+manifest.schemas.each do |schema|
+  next if schema.path  # Skip already resolved
+  
+  # Your custom logic here
+  custom_path = find_schema_custom_logic(schema.id)
+  schema.path = custom_path if custom_path
+end
+
+# Save result
+manifest.to_file('custom_resolved.yaml')
+----
+
+== Next Steps
+
+Now that you can resolve manifests:
+
+**Validate your manifest**::
+See link:validating-manifests.html[Validating Manifests] to ensure everything is correct
+
+**Build a package**::
+Move to link:../../pages/ler-packages.html#building-from-manifests[Building from Manifests]
+
+**Understand the workflow**::
+Review link:index.html[Manifest Workflows] for the complete picture
+
+== Bibliography
+
+* link:../../pages/schema-manifests.html#resolving-schemas-from-a-manifest[Manifest Resolution Reference]
+* link:creating-manifests.html[Creating Manifests]
+* link:validating-manifests.html[Validating Manifests]
+* link:index.html[Manifest Workflows Overview]

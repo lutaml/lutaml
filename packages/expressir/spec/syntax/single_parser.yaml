@@ -1,0 +1,19 @@
+---
+_class: Expressir::Model::ExpFile
+path: spec/syntax/single.exp
+schemas:
+- _class: Expressir::Model::Declarations::Schema
+  id: single_schema
+  file: spec/syntax/single.exp
+  version:
+    _class: Expressir::Model::Declarations::SchemaVersion
+    value: version
+  entities:
+  - _class: Expressir::Model::Declarations::Entity
+    id: empty_entity
+  - _class: Expressir::Model::Declarations::Entity
+    id: subtype_empty_entity
+    subtype_of:
+    - _class: Expressir::Model::References::SimpleReference
+      id: empty_entity
+      base_path: spec/syntax/single.exp.single_schema.empty_entity

@@ -1,0 +1,921 @@
+---
+title: Coverage Analysis
+parent: CLI Guides
+grand_parent: Guides
+nav_order: 5
+---
+
+== Coverage Analysis
+
+=== Purpose
+
+The [`coverage`](../../../lib/expressir/commands/coverage.rb:1) command analyzes EXPRESS schemas to measure documentation coverage. It identifies which entities have remarks (documentation) and generates coverage reports in multiple formats, helping maintain high-quality documentation standards.
+
+=== References
+
+* link:../../tutorials/documentation-coverage.html[Tutorial: Documentation Coverage]
+* link:../../pages/express-language.html[EXPRESS Language Documentation]
+* link:validate-schemas.html[Validate Schemas]
+
+=== Concepts
+
+Documentation coverage:: Percentage of schema elements that have documentation remarks
+Remark:: EXPRESS comment that documents an entity, attribute, or other schema element
+Coverage report:: Detailed analysis showing documented vs undocumented elements
+Entity types:: Categories of EXPRESS elements (ENTITY, TYPE, FUNCTION, etc.)
+Exclusion patterns:: Filtering specific entity types from coverage calculations
+Ignore files:: List of files to exclude from overall coverage statistics
+
+=== Basic Usage
+
+==== Analyze Single File
+
+[source,bash]
+----
+expressir coverage schema.exp
+----
+
+Output:
+[source]
+----
+Processing file: schema.exp
+
+EXPRESS Documentation Coverage
+==============================
+[Entity coverage table showing files and undocumented entities]
+[Overall statistics with coverage percentage]
+----
+
+==== Analyze Directory
+
+[source,bash]
+----
+# Analyze all .exp files in directory
+expressir coverage schemas/
+----
+
+Output shows progress bar and results:
+[source]
+----
+Processing directory: schemas/
+Found 15 EXPRESS files to process
+Processing files: [====] 100% [15/15]
+[Coverage tables and statistics]
+----
+
+==== Analyze Schema Manifest
+
+[source,bash]
+----
+# Analyze schemas from YAML manifest
+expressir coverage schemas.yml
+----
+
+=== Command Options
+
+==== Available Options
+
+[options="header"]
+|===
+| Option | Description | Default
+
+| `--format FORMAT`
+| Output format: text, json, or yaml
+| text
+
+| `--output PATH`
+| Save output to file (json/yaml only)
+| stdout
+
+| `--exclude TYPES`
+| Comma-separated entity types to exclude
+| none
+
+| `--ignore-files PATH`
+| YAML file with file patterns to ignore
+| none
+
+| `--help`, `-h`
+| Display help message
+| -
+|===
+
+==== Format Option
+
+[source,bash]
+----
+# Human-readable text output (default)
+expressir coverage schemas/ --format text
+
+# JSON output for programmatic processing
+expressir coverage schemas/ --format json
+
+# YAML output
+expressir coverage schemas/ --format yaml
+----
+
+==== Output Option
+
+[source,bash]
+----
+# Save JSON results to file
+expressir coverage schemas/ --format json --output coverage_report.json
+
+# Save YAML results to file
+expressir coverage schemas/ --format yaml --output coverage_report.yaml
+----
+
+==== Exclude Option
+
+[source,bash]
+----
+# Exclude TYPE entities
+expressir coverage schemas/ --exclude=TYPE
+
+# Exclude multiple entity types
+expressir coverage schemas/ --exclude=TYPE,CONSTANT,FUNCTION
+
+# Exclude specific TYPE subtypes
+expressir coverage schemas/ --exclude=TYPE:SELECT,TYPE:ENUMERATION
+
+# Exclude inner functions
+expressir coverage schemas/ --exclude=FUNCTION:INNER
+----
+
+==== Ignore Files Option
+
+[source,bash]
+----
+# Use ignore file list
+expressir coverage schemas/ --ignore-files coverage_ignore.yml
+----
+
+=== Output Formats
+
+==== Text Format
+
+Default human-readable format with tables:
+
+[source,bash]
+----
+expressir coverage schema.exp
+----
+
+Output:
+[source]
+----
+EXPRESS Documentation Coverage
+==============================
+
+┌─────────────────────────────────────────────────────────────────┐
+│                   Entity coverage in file                       │
+├──────────────────┬─────────────────────────┬────────────────────┤
+│ Filename         │ Undocumented Entities   │ Coverage %         │
+├──────────────────┼─────────────────────────┼────────────────────┤
+│ schema.exp       │ ENTITY entity1,         │ 75.0%              │
+│                  │ TYPE type1              │                    │
+└──────────────────┴─────────────────────────┴────────────────────┘
+
+┌──────────────────────────────────────────────────────┐
+│              Entity overall coverage                 │
+├─────────────────────────┬────────────────────────────┤
+│ Metric                  │ Value                      │
+├─────────────────────────┼────────────────────────────┤
+│ Coverage Percentage     │ 75.0%                      │
+│ Total Entities          │ 100                        │
+│ Documented Entities     │ 75                         │
+│ Undocumented Entities   │ 25                         │
+└─────────────────────────┴────────────────────────────┘
+----
+
+==== JSON Format
+
+Machine-readable structured output:
+
+[source,bash]
+----
+expressir coverage schemas/ --format json --output report.json
+----
+
+Output structure:
+[source,json]
+----
+{
+  "overall": {
+    "coverage_percentage": 75.0,
+    "total_entities": 100,
+    "documented_entities": 75,
+    "undocumented_entities": 25
+  },
+  "files"  [
+    {
+      "file": "schemas/action_schema.exp",
+      "file_basename": "action_schema.exp",
+      "directory": "schemas",
+      "ignored": false,
+      "coverage": 80.0,
+      "total": 50,
+      "documented": 40,
+      "undocumented": [
+        {
+          "type": "ENTITY",
+          "name": "undocumented_entity"
+        },
+        {
+          "type": "TYPE",
+          "name": "undocumented_type"
+        }
+      ]
+    }
+  ],
+  "directories": [
+    {
+      "directory": "schemas",
+      "total": 100,
+      "documented": 75,
+      "undocumented": 25,
+      "coverage": 75.0,
+      "files": 2
+    }
+  ]
+}
+----
+
+==== YAML Format
+
+YAML structured output:
+
+[source,bash]
+----
+expressir coverage schemas/ --format yaml --output report.yaml
+----
+
+Output:
+[source,yaml]
+----
+overall:
+  coverage_percentage: 75.0
+  total_entities: 100
+  documented_entities: 75
+  undocumented_entities: 25
+files:
+- file: schemas/action_schema.exp
+  directory: schemas
+  coverage: 80.0
+  total: 50
+  documented: 40
+  undocumented:
+  - type: ENTITY
+    name: undocumented_entity
+directories:
+- directory: schemas
+  total: 100
+  documented: 75
+  coverage: 75.0
+----
+
+=== Entity Types
+
+==== Supported Entity Types
+
+Coverage analysis checks all EXPRESS element types:
+
+**Schema-level entities:**
+
+`ENTITY`:: Entity definitions
+`TYPE`:: Type definitions (supports subtype exclusion)
+`CONSTANT`:: Constant definitions
+`FUNCTION`:: Function definitions (supports INNER exclusion)
+`PROCEDURE`:: Procedure definitions
+`RULE`:: Rule definitions
+`SUBTYPE_CONSTRAINT`:: Subtype constraint definitions
+`INTERFACE`:: Interface definitions
+
+**Nested entities:**
+
+`ATTRIBUTE`:: Entity attributes
+`DERIVED_ATTRIBUTE`:: Derived attributes
+`INVERSE_ATTRIBUTE`:: Inverse attributes
+`UNIQUE_RULE`:: Unique rules
+`WHERE_RULE`:: Where rules
+`PARAMETER`:: Function/procedure parameters
+`VARIABLE`:: Local variables
+`ENUMERATION_ITEM`:: Enumeration values
+`INTERFACE_ITEM`:: Interface items
+`INTERFACED_ITEM`:: Interfaced items
+`SCHEMA_VERSION`:: Schema version
+`SCHEMA_VERSION_ITEM`:: Version items
+
+==== TYPE Subtypes
+
+For TYPE elements, you can exclude specific subtypes:
+
+[source,bash]
+----
+# Exclude SELECT types
+expressir coverage schemas/ --exclude=TYPE:SELECT
+
+# Exclude ENUMERATION types
+expressir coverage schemas/ --exclude=TYPE:ENUMERATION
+
+# Exclude multiple subtypes
+expressir coverage schemas/ --exclude=TYPE:SELECT,TYPE:ENUMERATION
+----
+
+Valid TYPE subtypes:
+
+* `AGGREGATE` - Aggregate types
+* `ARRAY` - Array types
+* `BAG` - Bag types
+* `BINARY` - Binary types
+* `BOOLEAN` - Boolean types
+* `ENUMERATION` - Enumeration types
+* `GENERIC` - Generic types
+* `GENERIC_ENTITY` - Generic entity types
+* `INTEGER` - Integer types
+* `LIST` - List types
+* `LOGICAL` - Logical types
+* `NUMBER` - Number types
+* `REAL` - Real types
+* `SELECT` - Select types
+* `SET` - Set types
+* `STRING` - String types
+
+==== FUNCTION Subtypes
+
+For FUNCTION elements, you can exclude inner functions:
+
+[source,bash]
+----
+# Exclude inner functions (nested within other constructs)
+expressir coverage schemas/ --exclude=FUNCTION:INNER
+----
+
+This excludes functions nested within:
+* Other functions
+* Rules
+* Procedures
+
+=== Exclusion Patterns
+
+==== Exclude Single Type
+
+[source,bash]
+----
+# Exclude all TYPE entities
+expressir coverage schemas/ --exclude=TYPE
+----
+
+==== Exclude Multiple Types
+
+[source,bash]
+----
+# Exclude multiple types
+expressir coverage schemas/ --exclude=TYPE,CONSTANT,PARAMETER
+----
+
+==== Exclude with Subtypes
+
+[source,bash]
+----
+# TYPE subtypes commonly excluded (ISO 10303 practice)
+expressir coverage schemas/ --exclude=TYPE:SELECT,TYPE:ENUMERATION
+
+# Exclude inner functions
+expressir coverage schemas/ --exclude=FUNCTION:INNER
+
+# Combine different exclusions
+expressir coverage schemas/ --exclude=TYPE:SELECT,FUNCTION:INNER,PARAMETER
+----
+
+==== Common Exclusion Patterns
+
+ISO 10303 Standards:
+[source,bash]
+----
+# ISO 10303 excludes SELECT and ENUMERATION
+expressir coverage schemas/ --exclude=TYPE:SELECT,TYPE:ENUMERATION
+----
+
+Internal Development:
+[source,bash]
+----
+# Focus on public API
+expressir coverage schemas/ --exclude=PARAMETER,VARIABLE,FUNCTION:INNER
+----
+
+=== Ignore Files
+
+==== Create Ignore File
+
+Create `coverage_ignore.yml`:
+
+[source,yaml]
+----
+# Exact file paths
+- examples/test_schema.exp
+- temp/temporary_schema.exp
+
+# Glob patterns
+- examples/*_test_*.exp
+- legacy/old_*.exp
+- temp/*.exp
+
+# Recursive patterns
+- schemas/**/test_*.exp
+----
+
+==== Use Ignore File
+
+[source,bash]
+----
+expressir coverage schemas/ --ignore-files coverage_ignore.yml
+----
+
+==== Ignore File Behavior
+
+**Ignored files are:**
+* Still processed and analyzed
+* Marked with `ignored: true` flag in output
+* Excluded from overall coverage percentage
+* Listed in separate `ignored_files` section
+
+**Example output with ignored files:**
+
+[source,json]
+----
+{
+  "overall": {
+    "coverage_percentage": 80.0,
+    "total_entities": 100,
+    "documented_entities": 80,
+    "undocumented_entities": 20,
+    "ignored_files_count": 2,
+    "ignored_entities_count": 15
+  },
+  "ignored_files": [
+    {
+      "file": "examples/test_schema.exp",
+      "matched_pattern": "examples/*_test_*.exp",
+      "coverage": 20.0,
+      "total": 10
+    }
+  ]
+}
+----
+
+=== Use Cases
+
+==== Quality Assurance
+
+Check documentation before release:
+
+[source,bash]
+----
+#!/bin/bash
+# check-docs.sh
+
+echo "Checking documentation coverage..."
+
+# Run coverage analysis
+expressir coverage schemas/ --format json --output coverage.json
+
+# Extract coverage percentage
+COVERAGE=$(jq '.overall.coverage_percentage' coverage.json)
+
+echo "Current coverage: ${COVERAGE}%"
+
+# Require minimum 80% coverage
+if (( $(echo "$COVERAGE < 80" | bc -l) )); then
+  echo "❌ Coverage below 80%"
+  exit 1
+fi
+
+echo "✓ Coverage meets requirements"
+----
+
+==== Pre-commit Hook
+
+Ensure documentation before committing:
+
+[source,bash]
+----
+#!/bin/bash
+# .git/hooks/pre-commit
+
+# Get staged .exp files
+STAGED=$(git diff --cached --name-only --diff-filter=ACM | grep '\.exp$')
+
+if [ -z "$STAGED" ]; then
+  exit 0
+fi
+
+echo "Checking documentation coverage..."
+
+# Check coverage on staged files
+for file in $STAGED; do
+  RESULT=$(expressir coverage "$file" --format json)
+  COVERAGE=$(echo "$RESULT" | jq '.overall.coverage_percentage')
+  
+  if (( $(echo "$COVERAGE < 75" | bc -l) )); then
+    echo "❌ $file has ${COVERAGE}% coverage (minimum 75%)"
+    exit 1
+  fi
+done
+
+echo "✓ All files meet documentation requirements"
+----
+
+==== CI/CD Integration
+
+GitHub Actions workflow:
+
+[source,yaml]
+----
+name: Documentation Coverage
+
+on: [push, pull_request]
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Expressir
+        run: gem install expressir
+
+      - name: Check Coverage
+        run: |
+          expressir coverage schemas/ \
+            --exclude=TYPE:SELECT,TYPE:ENUMERATION \
+            --format json \
+            --output coverage.json
+
+      - name: Verify Coverage
+        run: |
+          COVERAGE=$(jq '.overall.coverage_percentage' coverage.json)
+          REQUIRED=80
+          
+          echo "Coverage: ${COVERAGE}%"
+          
+          if (( $(echo "$COVERAGE < $REQUIRED" | bc -l) )); then
+            echo "Coverage below ${REQUIRED}%"
+            exit 1
+          fi
+
+      - name: Upload Report
+        uses: actions/upload-artifact@v2
+        with:
+          name: coverage-report
+          path: coverage.json
+----
+
+==== Generate Coverage Badge
+
+[source,bash]
+----
+#!/bin/bash
+# generate-badge.sh
+
+# Get coverage
+COVERAGE=$(expressir coverage schemas/ --format json | \
+  jq '.overall.coverage_percentage')
+
+# Round to integer
+COVERAGE_INT=${COVERAGE%.*}
+
+# Determine color
+if [ "$COVERAGE_INT" -ge 90 ]; then
+  COLOR="brightgreen"
+elif [ "$COVERAGE_INT" -ge 75 ]; then
+  COLOR="green"
+elif [ "$COVERAGE_INT" -ge 60 ]; then
+  COLOR="yellow"
+else
+  COLOR="red"
+fi
+
+# Generate badge URL
+BADGE_URL="https://img.shields.io/badge/docs-${COVERAGE_INT}%25-${COLOR}"
+
+echo "Badge: $BADGE_URL"
+echo "![Documentation](${BADGE_URL})" > coverage_badge.md
+----
+
+==== Track Coverage Over Time
+
+[source,bash]
+----
+#!/bin/bash
+# track-coverage.sh
+
+DATE=$(date +%Y%m%d)
+REPORT_DIR="coverage_history"
+mkdir -p "$REPORT_DIR"
+
+# Generate coverage report with timestamp
+expressir coverage schemas/ \
+  --exclude=TYPE:SELECT,TYPE:ENUMERATION \
+  --format json \
+  --output "${REPORT_DIR}/${DATE}_coverage.json"
+
+# Extract key metrics
+COVERAGE=$(jq '.overall.coverage_percentage' \
+  "${REPORT_DIR}/${DATE}_coverage.json")
+
+# Append to history CSV
+echo "${DATE},${COVERAGE}" >> coverage_history.csv
+
+echo "Coverage recorded: ${COVERAGE}%"
+----
+
+==== Find Undocumented Elements
+
+[source,bash]
+----
+#!/bin/bash
+# find-undocumented.sh
+
+echo "Finding undocumented entities..."
+
+# Get coverage report
+expressir coverage schemas/ --format json > coverage.json
+
+# Extract undocumented entities
+jq -r '.files[] | 
+  .undocumented[] | 
+  "\(.type) \(.name) in \(.file)"' coverage.json | \
+  sort
+
+echo ""
+echo "Total undocumented:"
+jq '.overall.undocumented_entities' coverage.json
+----
+
+==== Documentation Report
+
+[source,bash]
+----
+#!/bin/bash
+# generate-doc-report.sh
+
+echo "# Documentation Coverage Report" > report.md
+echo "" >> report.md
+echo "Generated: $(date)" >> report.md
+echo "" >> report.md
+
+# Get coverage data
+expressir coverage schemas/ --format json > coverage.json
+
+# Overall statistics
+echo "## Overall Statistics" >> report.md
+echo "" >> report.md
+jq -r '.overall | 
+  "- Coverage: \(.coverage_percentage)%\n" +
+  "- Total Entities: \(.total_entities)\n" +
+  "- Documented: \(.documented_entities)\n" +
+  "- Undocumented: \(.undocumented_entities)"' \
+  coverage.json >> report.md
+
+echo "" >> report.md
+echo "## Files Needing Attention" >> report.md
+echo "" >> report.md
+
+# Files below 80% coverage
+jq -r '.files[] | 
+  select(.coverage < 80) | 
+  "- \(.file): \(.coverage)%"' \
+  coverage.json >> report.md
+
+echo "Report generated: report.md"
+----
+
+=== Advanced Usage
+
+==== Combine with Other Checks
+
+[source,bash]
+----
+#!/bin/bash
+# comprehensive-check.sh
+
+echo "=== Validating Schemas ==="
+expressir validate schemas/*.exp || exit 1
+
+echo ""
+echo "=== Checking Documentation ==="
+expressir coverage schemas/ \
+  --exclude=TYPE:SELECT,TYPE:ENUMERATION \
+  --format json > coverage.json
+
+COVERAGE=$(jq '.overall.coverage_percentage' coverage.json)
+
+if (( $(echo "$COVERAGE < 80" | bc -l) )); then
+  echo "❌ Documentation coverage: ${COVERAGE}%"
+  exit 1
+fi
+
+echo "✓ Documentation coverage: ${COVERAGE}%"
+
+echo ""
+echo "=== All Checks Passed ==="
+----
+
+==== Multi-Project Coverage
+
+[source,bash]
+----
+#!/bin/bash
+# multi-project-coverage.sh
+
+PROJECTS=("project1" "project2" "project3")
+
+echo "Multi-Project Coverage Report" > report.txt
+echo "=============================" >> report.txt
+
+for project in "${PROJECTS[@]}"; do
+  echo "" >> report.txt
+  echo "Project: $project" >> report.txt
+  echo "---------" >> report.txt
+  
+  expressir coverage "$project/schemas" --format json > temp.json
+  
+  COVERAGE=$(jq '.overall.coverage_percentage' temp.json)
+  TOTAL=$(jq '.overall.total_entities' temp.json)
+  
+  echo "Coverage: ${COVERAGE}%" >> report.txt
+  echo "Entities: ${TOTAL}" >> report.txt
+  
+  rm temp.json
+done
+
+cat report.txt
+----
+
+==== Selective Analysis
+
+[source,bash]
+----
+#!/bin/bash
+# Check only public API files
+
+PUBLIC_SCHEMAS=(
+  "schemas/public/action_schema.exp"
+  "schemas/public/product_schema.exp"
+  "schemas/public/geometry_schema.exp"
+)
+
+echo "Checking public API documentation..."
+
+for schema in "${PUBLIC_SCHEMAS[@]}"; do
+  echo "Analyzing: $schema"
+  expressir coverage "$schema" --exclude=PARAMETER
+done
+----
+
+=== Best Practices
+
+**Set Coverage Targets**::
+Define minimum coverage requirements
++
+[source,bash]
+----
+# Enforce 80% coverage
+COVERAGE=$(expressir coverage schemas/ --format json | \
+  jq '.overall.coverage_percentage')
+[ $(echo "$COVERAGE >= 80" | bc) -eq 1 ] || exit 1
+----
+
+**Exclude Appropriately**::
+Follow industry standards for exclusions
++
+[source,bash]
+----
+# ISO 10303 standard exclusions
+expressir coverage schemas/ --exclude=TYPE:SELECT,TYPE:ENUMERATION
+----
+
+**Track Over Time**::
+Monitor coverage trends
++
+[source,bash]
+----
+# Daily coverage tracking
+expressir coverage schemas/ --format json > \
+  "coverage_$(date +%Y%m%d).json"
+----
+
+**Document Exclusions**::
+Keep a record of why types are excluded
++
+[source,bash]
+----
+# README.md
+## Documentation Coverage
+We exclude TYPE:SELECT and TYPE:ENUMERATION per ISO 10303 guidelines.
+Current target: 80% coverage
+----
+
+**Use Ignore Files Wisely**::
+Only ignore test files and examples
++
+[source,yaml]
+----
+# coverage_ignore.yml
+- examples/**/*.exp
+- test/**/*.exp
+- temp/**/*.exp
+----
+
+**Integrate with CI/CD**::
+Automate coverage checks in pipelines
+
+**Generate Reports Regularly**::
+Create human-readable documentation status reports
+
+=== Troubleshooting
+
+==== Coverage Not Calculating
+
+**Problem**: Coverage shows 0% or incorrect value
+
+**Solutions**:
+* Check that files contain valid EXPRESS
+* Ensure remarks are properly formatted
+* Verify entity names match exactly
+* Run validation first
+
+==== Slow Analysis
+
+**Problem**: Coverage analysis takes too long
+
+**Solutions**:
+[source,bash]
+----
+# Process files individually
+for file in schemas/*.exp; do
+  expressir coverage "$file"
+done
+
+# Use manifest for better progress tracking
+expressir coverage schemas.yml
+----
+
+==== Invalid Entity Type Error
+
+**Problem**: "Invalid entity type" error
+
+**Solution**:
+[source,bash]
+----
+# Check valid types
+expressir coverage --help
+
+# Use correct type name (all caps)
+expressir coverage schemas/ --exclude=ENTITY,TYPE
+----
+
+==== Ignored Files Not Working
+
+**Problem**: Files still included in coverage
+
+**Debugging**:
+[source,bash]
+----
+# Check if patterns match
+expressir coverage schemas/ \
+  --ignore-files coverage_ignore.yml \
+  --format json | \
+  jq '.ignored_files'
+----
+
+=== Next Steps
+
+**Related Commands**::
+* link:validate-schemas.html[Validate Schemas] - Ensure schema correctness
+* link:format-schemas.html[Format Schemas] - Improve readability
+
+**Advanced Topics**::
+* link:../ruby-api/[Ruby API Guides] - Programmatic coverage analysis
+* link:../../tutorials/documentation-coverage.html[Tutorial: Documentation Coverage]
+
+**Automation**::
+* link:../deployment/ci-cd-setup.html[CI/CD Setup] - Automated workflows
+* Coverage enforcement policies
+* Documentation badge generation
+
+=== Summary
+
+The coverage command:
+
+* ✅ Analyzes EXPRESS schema documentation
+* ✅ Reports documented vs undocumented entities
+* ✅ Supports multiple output formats (text, JSON, YAML)
+* ✅ Allows entity type exclusions
+* ✅ Handles file ignore patterns
+* ✅ Integrates with CI/CD pipelines
+* ✅ Tracks coverage over time
+* ✅ Helps maintain documentation quality
+
+Use coverage analysis regularly to ensure comprehensive documentation and maintain high-quality EXPRESS schemas.

@@ -1,0 +1,25 @@
+SCHEMA test_schema;
+
+  ENTITY 製品;
+    名前 : STRING;
+    価格 : REAL;
+  END_ENTITY;
+
+  ENTITY measurement;
+    value : REAL;
+    symbol : STRING := 'μ';
+  END_ENTITY;
+
+  TYPE 状態 = ENUMERATION OF
+    (active,
+     inactive);
+  END_TYPE;
+
+  FUNCTION calculate_area (radius : REAL) : REAL;
+    LOCAL
+      π : REAL := 3.14159;
+    END_LOCAL;
+    RETURN (π * radius * radius);
+  END_FUNCTION;
+
+END_SCHEMA;

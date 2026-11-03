@@ -1,0 +1,338 @@
+---
+_class: Expressir::Model::ExpFile
+path: spec/syntax/test-generic.exp
+schemas:
+- _class: Expressir::Model::Declarations::Schema
+  id: annotated_3d_model_data_quality_criteria_schema
+  remarks:
+  - "$Id: test.exp,v 1.3 2020/07/30 05:18:54 ftanaka Exp $\r\nISO 10303 TC184/SC4/WG12
+    N10658\r\n\r\nEXPRESS Source:\r\nISO 10303-59 ed3 Quality of product shape data
+    - Annotated 3d model data quality criteria schema\r\n\r\nThe following permission
+    notice and disclaimer shall be included in all copies of this EXPRESS schema (\"the
+    Schema\"),\r\nand derivations of the Schema:"
+  file: spec/syntax/test-generic.exp
+  version:
+    _class: Expressir::Model::Declarations::SchemaVersion
+    value: "{iso standard 10303 part(59) version(3) object(1) annotated_3d_model_data_quality_criteria_schema(6)}"
+    items:
+    - _class: Expressir::Model::Declarations::SchemaVersionItem
+      name: iso
+    - _class: Expressir::Model::Declarations::SchemaVersionItem
+      name: standard
+    - _class: Expressir::Model::Declarations::SchemaVersionItem
+      value: '10303'
+    - _class: Expressir::Model::Declarations::SchemaVersionItem
+      name: part
+      value: '59'
+    - _class: Expressir::Model::Declarations::SchemaVersionItem
+      name: version
+      value: '3'
+    - _class: Expressir::Model::Declarations::SchemaVersionItem
+      name: object
+      value: '1'
+    - _class: Expressir::Model::Declarations::SchemaVersionItem
+      name: annotated_3d_model_data_quality_criteria_schema
+      value: '6'
+  interfaces:
+  - _class: Expressir::Model::Declarations::Interface
+    kind: REFERENCE
+    schema:
+      _class: Expressir::Model::References::SimpleReference
+      id: measure_schema
+    items:
+    - _class: Expressir::Model::Declarations::InterfaceItem
+      ref:
+        _class: Expressir::Model::References::SimpleReference
+        id: measure_value
+  - _class: Expressir::Model::Declarations::Interface
+    kind: REFERENCE
+    schema:
+      _class: Expressir::Model::References::SimpleReference
+      id: product_data_quality_criteria_schema
+    items:
+    - _class: Expressir::Model::Declarations::InterfaceItem
+      ref:
+        _class: Expressir::Model::References::SimpleReference
+        id: data_quality_criteria_representation
+    - _class: Expressir::Model::Declarations::InterfaceItem
+      ref:
+        _class: Expressir::Model::References::SimpleReference
+        id: data_quality_criterion
+    - _class: Expressir::Model::Declarations::InterfaceItem
+      ref:
+        _class: Expressir::Model::References::SimpleReference
+        id: data_quality_measurement_requirement
+    - _class: Expressir::Model::Declarations::InterfaceItem
+      ref:
+        _class: Expressir::Model::References::SimpleReference
+        id: detailed_report_request_with_number_of_data
+    - _class: Expressir::Model::Declarations::InterfaceItem
+      ref:
+        _class: Expressir::Model::References::SimpleReference
+        id: summary_report_request
+  - _class: Expressir::Model::Declarations::Interface
+    kind: REFERENCE
+    schema:
+      _class: Expressir::Model::References::SimpleReference
+      id: representation_schema
+    items:
+    - _class: Expressir::Model::Declarations::InterfaceItem
+      ref:
+        _class: Expressir::Model::References::SimpleReference
+        id: representation
+    - _class: Expressir::Model::Declarations::InterfaceItem
+      ref:
+        _class: Expressir::Model::References::SimpleReference
+        id: representation_item
+  - _class: Expressir::Model::Declarations::Interface
+    kind: REFERENCE
+    schema:
+      _class: Expressir::Model::References::SimpleReference
+      id: shape_data_quality_criteria_schema
+    items:
+    - _class: Expressir::Model::Declarations::InterfaceItem
+      ref:
+        _class: Expressir::Model::References::SimpleReference
+        id: shape_data_quality_assessment_specification_select
+    - _class: Expressir::Model::Declarations::InterfaceItem
+      ref:
+        _class: Expressir::Model::References::SimpleReference
+        id: shape_measurement_accuracy
+  - _class: Expressir::Model::Declarations::Interface
+    kind: REFERENCE
+    schema:
+      _class: Expressir::Model::References::SimpleReference
+      id: support_resource_schema
+    items:
+    - _class: Expressir::Model::Declarations::InterfaceItem
+      ref:
+        _class: Expressir::Model::References::SimpleReference
+        id: identifier
+    - _class: Expressir::Model::Declarations::InterfaceItem
+      ref:
+        _class: Expressir::Model::References::SimpleReference
+        id: label
+    - _class: Expressir::Model::Declarations::InterfaceItem
+      ref:
+        _class: Expressir::Model::References::SimpleReference
+        id: text
+  types:
+  - _class: Expressir::Model::Declarations::Type
+    id: a3m_accuracy_associated_target_select
+    underlying_type:
+      _class: Expressir::Model::DataTypes::Select
+      extensible: true
+  - _class: Expressir::Model::Declarations::Type
+    id: a3m_data_quality_accuracy_type_name
+    underlying_type:
+      _class: Expressir::Model::DataTypes::Enumeration
+      extensible: true
+  - _class: Expressir::Model::Declarations::Type
+    id: a3m_data_quality_inspected_element_type_name
+    underlying_type:
+      _class: Expressir::Model::DataTypes::Enumeration
+      extensible: true
+  - _class: Expressir::Model::Declarations::Type
+    id: a3m_data_quality_measured_data_type_name
+    underlying_type:
+      _class: Expressir::Model::DataTypes::Enumeration
+      extensible: true
+  - _class: Expressir::Model::Declarations::Type
+    id: a3m_data_quality_type_name_for_location_of_extreme_value
+    underlying_type:
+      _class: Expressir::Model::DataTypes::Enumeration
+      extensible: true
+  - _class: Expressir::Model::Declarations::Type
+    id: summary_stats_value_type
+    underlying_type:
+      _class: Expressir::Model::DataTypes::Enumeration
+      items:
+      - _class: Expressir::Model::DataTypes::EnumerationItem
+        id: average_value
+      - _class: Expressir::Model::DataTypes::EnumerationItem
+        id: max_value
+      - _class: Expressir::Model::DataTypes::EnumerationItem
+        id: min_value
+  entities:
+  - _class: Expressir::Model::Declarations::Entity
+    id: a3m_data_quality_criteria_representation
+    subtype_of:
+    - _class: Expressir::Model::References::SimpleReference
+      id: data_quality_criteria_representation
+    where_rules:
+    - _class: Expressir::Model::Declarations::WhereRule
+      id: WR1
+      expression:
+        _class: Expressir::Model::Expressions::FunctionCall
+        function:
+          _class: Expressir::Model::References::SimpleReference
+          id: SIZEOF
+        parameters:
+        - _class: Expressir::Model::Expressions::QueryExpression
+          id: q
+          aggregate_source:
+            _class: Expressir::Model::References::SimpleReference
+            id: SELF
+          expression:
+            _class: Expressir::Model::Expressions::BinaryExpression
+            operator: IN
+            operand1:
+              _class: Expressir::Model::Expressions::BinaryExpression
+              operator: ADDITION
+              operand1:
+                _class: Expressir::Model::Literals::String
+                value: ANNOTATED_3D_MODEL_DATA_QUALITY_CRITERIA_SCHEMA.
+              operand2:
+                _class: Expressir::Model::Literals::String
+                value: A3M_DATA_QUALITY_CRITERION
+            operand2:
+              _class: Expressir::Model::Expressions::FunctionCall
+              function:
+                _class: Expressir::Model::References::SimpleReference
+                id: TYPEOF
+              parameters:
+              - _class: Expressir::Model::References::SimpleReference
+                id: q
+  - _class: Expressir::Model::Declarations::Entity
+    id: a3m_data_quality_criterion
+    abstract: true
+    attributes:
+    - _class: Expressir::Model::Declarations::Attribute
+      id: assessment_specification
+      kind: EXPLICIT
+      type:
+        _class: Expressir::Model::References::SimpleReference
+        id: shape_data_quality_assessment_specification_select
+    - _class: Expressir::Model::Declarations::Attribute
+      id: measured_data_type
+      kind: EXPLICIT
+      type:
+        _class: Expressir::Model::References::SimpleReference
+        id: a3m_data_quality_measured_data_type_name
+        base_path: spec/syntax/test-generic.exp.annotated_3d_model_data_quality_criteria_schema.a3m_data_quality_measured_data_type_name
+    - _class: Expressir::Model::Declarations::Attribute
+      id: inspected_elements_types
+      kind: EXPLICIT
+      type:
+        _class: Expressir::Model::DataTypes::List
+        bound1:
+          _class: Expressir::Model::Literals::Integer
+          value: '1'
+        bound2:
+          _class: Expressir::Model::References::SimpleReference
+          id: "?"
+        base_type:
+          _class: Expressir::Model::References::SimpleReference
+          id: a3m_data_quality_inspected_element_type_name
+          base_path: spec/syntax/test-generic.exp.annotated_3d_model_data_quality_criteria_schema.a3m_data_quality_inspected_element_type_name
+    - _class: Expressir::Model::Declarations::Attribute
+      id: accuracy_types
+      kind: EXPLICIT
+      type:
+        _class: Expressir::Model::DataTypes::List
+        bound1:
+          _class: Expressir::Model::Literals::Integer
+          value: '0'
+        bound2:
+          _class: Expressir::Model::References::SimpleReference
+          id: "?"
+        base_type:
+          _class: Expressir::Model::References::SimpleReference
+          id: a3m_data_quality_accuracy_type_name
+          base_path: spec/syntax/test-generic.exp.annotated_3d_model_data_quality_criteria_schema.a3m_data_quality_accuracy_type_name
+    - _class: Expressir::Model::Declarations::Attribute
+      id: location_of_extreme_value_types
+      kind: EXPLICIT
+      type:
+        _class: Expressir::Model::DataTypes::List
+        bound1:
+          _class: Expressir::Model::Literals::Integer
+          value: '0'
+        bound2:
+          _class: Expressir::Model::References::SimpleReference
+          id: "?"
+        base_type:
+          _class: Expressir::Model::References::SimpleReference
+          id: a3m_data_quality_type_name_for_location_of_extreme_value
+          base_path: spec/syntax/test-generic.exp.annotated_3d_model_data_quality_criteria_schema.a3m_data_quality_type_name_for_location_of_extreme_value
+  - _class: Expressir::Model::Declarations::Entity
+    id: a3m_data_quality_criterion_specific_applied_value
+    abstract: true
+    subtype_of:
+    - _class: Expressir::Model::References::SimpleReference
+      id: representation_item
+    attributes:
+    - _class: Expressir::Model::Declarations::Attribute
+      id: criterion_to_assign_the_value
+      kind: EXPLICIT
+      type:
+        _class: Expressir::Model::References::SimpleReference
+        id: a3m_data_quality_criterion
+        base_path: spec/syntax/test-generic.exp.annotated_3d_model_data_quality_criteria_schema.a3m_data_quality_criterion
+    - _class: Expressir::Model::Declarations::Attribute
+      id: applied_value
+      kind: EXPLICIT
+      type:
+        _class: Expressir::Model::References::SimpleReference
+        id: measure_value
+  - _class: Expressir::Model::Declarations::Entity
+    id: a3m_data_quality_target_accuracy_association
+    attributes:
+    - _class: Expressir::Model::Declarations::Attribute
+      id: id
+      kind: EXPLICIT
+      type:
+        _class: Expressir::Model::References::SimpleReference
+        id: identifier
+    - _class: Expressir::Model::Declarations::Attribute
+      id: name
+      kind: EXPLICIT
+      type:
+        _class: Expressir::Model::References::SimpleReference
+        id: label
+    - _class: Expressir::Model::Declarations::Attribute
+      id: description
+      kind: EXPLICIT
+      optional: true
+      type:
+        _class: Expressir::Model::References::SimpleReference
+        id: text
+    - _class: Expressir::Model::Declarations::Attribute
+      id: accuracy_specification
+      kind: EXPLICIT
+      type:
+        _class: Expressir::Model::References::SimpleReference
+        id: shape_measurement_accuracy
+    - _class: Expressir::Model::Declarations::Attribute
+      id: target_to_associate
+      kind: EXPLICIT
+      type:
+        _class: Expressir::Model::References::SimpleReference
+        id: a3m_accuracy_associated_target_select
+        base_path: spec/syntax/test-generic.exp.annotated_3d_model_data_quality_criteria_schema.a3m_accuracy_associated_target_select
+  - _class: Expressir::Model::Declarations::Entity
+    id: a3m_detailed_report_request
+    subtype_of:
+    - _class: Expressir::Model::References::SimpleReference
+      id: detailed_report_request_with_number_of_data
+    attributes:
+    - _class: Expressir::Model::Declarations::Attribute
+      id: value_type_requested
+      kind: EXPLICIT
+      type:
+        _class: Expressir::Model::References::SimpleReference
+        id: summary_stats_value_type
+        base_path: spec/syntax/test-generic.exp.annotated_3d_model_data_quality_criteria_schema.summary_stats_value_type
+  - _class: Expressir::Model::Declarations::Entity
+    id: a3m_summary_report_request_with_representative_value
+    subtype_of:
+    - _class: Expressir::Model::References::SimpleReference
+      id: summary_report_request
+    attributes:
+    - _class: Expressir::Model::Declarations::Attribute
+      id: value_type_requested
+      kind: EXPLICIT
+      type:
+        _class: Expressir::Model::References::SimpleReference
+        id: summary_stats_value_type
+        base_path: spec/syntax/test-generic.exp.annotated_3d_model_data_quality_criteria_schema.summary_stats_value_type

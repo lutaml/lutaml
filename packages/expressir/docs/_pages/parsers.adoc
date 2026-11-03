@@ -1,0 +1,709 @@
+---
+title: Parsers
+nav_order: 6
+---
+
+== Expressir Parsers
+
+=== Purpose
+
+This page explains how Expressir parses EXPRESS schemas from various formats into its Ruby data model. Understanding the parsing architecture is essential for troubleshooting parsing issues, optimizing performance, and working with different EXPRESS formats.
+
+=== References
+
+* link:express-language.html[EXPRESS Language] - Understanding the source language
+* link:data-model.html[Data Model] - Understanding the target model
+* link:../guides/cli/format-schemas.html[Guide: Format Schemas] - Using the parser via CLI
+* link:../guides/ruby-api/parsing-files.html[Guide: Parsing Files] - Using the parser API
+
+=== Concepts
+
+Parser:: Component that reads text in EXPRESS syntax and produces an Abstract Syntax Tree (AST)
+AST:: Abstract Syntax Tree - intermediate tree representation of parsed code
+Transform:: Conversion of AST into Expressir's Ruby data model
+Reference Resolution:: Process of linking references (by name) to their target definitions
+Visitor:: Design pattern for traversing and transforming the AST
+Cache:: Stored parsed schemas for faster subsequent loads
+
+=== Parser Architecture
+
+Expressir uses a multi-stage parsing pipeline:
+
+[source]
+----
+┌─────────────────┐
+│  EXPRESS Text   │
+│   (.exp file)   │
+└────────┬────────┘
+         │
+         ▼
+   ┌──────────┐
+   │  Parsanol │ (PEG parser)
+   │  Grammar  │
+   └────┬─────┘
+        │
+        ▼
+┌────────────────┐
+│   AST (Tree)   │ (intermediate)
+└────────┬───────┘
+         │
+         ▼
+   ┌──────────┐
+   │ Visitor  │ (transform)
+   └────┬─────┘
+        │
+        ▼
+┌────────────────┐
+│  Data Model    │ (Ruby objects)
+│  Repository    │
+└────────┬───────┘
+         │
+         ▼
+┌────────────────────┐
+│ Reference         │
+│ Resolution        │
+└────────┬───────────┘
+         │
+         ▼
+┌────────────────────┐
+│ Finalized Model    │
+│ (ready to use)     │
+└────────────────────┘
+----
+
+==== Backend: Parsanol
+
+Expressir uses the **Parsanol** parser backend:
+
+**Parsanol (High-Performance Rust)**::
+* High-performance Rust backend
+* 18-44x faster parsing
+* 99.5% fewer allocations
+* Supports source position tracking (Slice)
+* Available automatically when Parsanol gem is installed
+
+Expressir automatically uses Parsanol when available:
+
+[source,ruby]
+----
+# Automatically uses native Rust parser (Parsanol)
+repo = Expressir::Express::Parser.from_file("geometry.exp")
+
+# Check if native parser is available
+if defined?(Parsanol::Native) && Parsanol::Native.available?
+  # Using Rust parser - 20-30x faster
+end
+----
+
+See the link:https://github.com/parsanol/parsanol-ruby[Parsanol documentation] for performance details.
+
+==== Stage 1: Lexical Analysis and Parsing
+
+Expressir uses **Parsanol**, a high-performance Parsing Expression Grammar (PEG) parser:
+
+[source,ruby]
+----
+# Grammar rules defined in Parser class
+rule(:entityDecl) do
+  (entityHead >> entityBody >> tEND_ENTITY >> op_delim).as(:entityDecl)
+end
+
+rule(:entityHead) do
+  (tENTITY >> entityId >> subsuper >> op_delim).as(:entityHead)
+end
+----
+
+**Parsanol advantages**:
+
+* **Pure Ruby**: No external dependencies
+* **Composable rules**: Complex grammars from simple parts
+* **Error reporting**: Clear parse failure messages
+* **Type-safe**: Strongly typed AST nodes
+
+==== Stage 2: AST Generation
+
+Parsing produces a hierarchical tree structure:
+
+[source,ruby]
+----
+# Example AST for: ENTITY person; name : STRING; END_ENTITY;
+{
+  entityDecl: {
+    entityHead: {
+      entityId: { str: "person" },
+      ...
+    },
+    entityBody: {
+      explicitAttr: [
+        {
+          attributeDecl: { str: "name" },
+          parameterType: { str: "STRING" }
+        }
+      ]
+    }
+  }
+}
+----
+
+==== Stage 3: AST Transformation
+
+The Visitor pattern transforms AST to data model:
+
+[source,ruby]
+----
+class Visitor
+  def visit_entityDecl(node)
+    entity = Model::Declarations::Entity.new
+    entity.id = node[:entityHead][:entityId]
+    entity.attributes = visit_attributes(node[:entityBody])
+    entity
+  end
+end
+----
+
+**Transformation responsibilities**:
+
+* Create appropriate model objects
+* Set attributes and relationships
+* Attach parent links
+* Preserve source text (if requested)
+* Extract documentation (remarks)
+
+==== Stage 4: Reference Resolution
+
+Final stage links references to definitions:
+
+[source,ruby]
+----
+# Before resolution
+attribute.type  # => SimpleReference(id: "length_measure")
+
+# After resolution
+attribute.type.ref  # => Type(id: "length_measure")
+----
+
+=== Supported Formats
+
+Expressir supports multiple EXPRESS formats:
+
+==== EXPRESS Language (ISO 10303-11)
+
+Standard textual EXPRESS format:
+
+[source,express]
+----
+SCHEMA geometry_schema;
+  ENTITY point;
+    x : REAL;
+    y : REAL;
+    z : REAL;
+  END_ENTITY;
+END_SCHEMA;
+----
+
+**File extension**: `.exp`
+
+**Characteristics**:
+
+* Text-based, human-readable
+* Supports full EXPRESS language
+* Most common format
+
+**Usage**:
+
+[source,ruby]
+----
+repo = Expressir::Express::Parser.from_file("geometry.exp")
+----
+
+==== STEPmod EXPRESS XML
+
+XML representation used in STEPmod repository:
+
+[source,xml]
+----
+<express>
+  <schema name="geometry_schema">
+    <entity name="point">
+      <explicit name="x" type="REAL"/>
+      <explicit name="y" type="REAL"/>
+      <explicit name="z" type="REAL"/>
+    </entity>
+  </schema>
+</express>
+----
+
+**File extension**: `.xml`
+
+**Characteristics**:
+
+* XML format
+* Modular schema organization
+* Used in ISO STEP modular repository
+
+**Note**: Future support planned
+
+==== EXPRESS XML (ISO 10303-28)
+
+Standardized XML representation:
+
+**File extension**: `.xml`
+
+**Characteristics**:
+
+* Follows ISO 10303-28 specification
+* Designed for data exchange
+* Precise mapping to EXPRESS constructs
+
+**Note**: Future support planned
+
+=== Parsing Process
+
+==== Single File Parsing
+
+Parse one EXPRESS file:
+
+[source,ruby]
+----
+# Basic parsing
+repository = Expressir::Express::Parser.from_file("schema.exp")
+
+# With options
+repository = Expressir::Express::Parser.from_file(
+  "schema.exp",
+  skip_references: false,   # Resolve references (default: false)
+  include_source: true,     # Attach source text (default: nil)
+  root_path: "/base/path"   # Base for relative paths (default: nil)
+)
+----
+
+**Process**:
+
+1. Read file content
+2. Parse to AST
+3. Transform to model
+4. Resolve references (unless skipped)
+5. Return Repository
+
+==== Multiple File Parsing
+
+Parse several files into one repository:
+
+[source,ruby]
+----
+files = ["schema1.exp", "schema2.exp", "schema3.exp"]
+
+# With progress tracking
+repository = Expressir::Express::Parser.from_files(files) do |filename, schemas, error|
+  if error
+    puts "Error parsing #{filename}: #{error.message}"
+  else
+    puts "Loaded #{schemas.length} schemas from #{filename}"
+  end
+end
+----
+
+**Process**:
+
+1. Parse each file individually
+2. Collect all schemas
+3. Create unified Repository
+4. Resolve cross-file references
+5. Return complete Repository
+
+==== String Parsing
+
+Parse EXPRESS from string:
+
+[source,ruby]
+----
+express_code = <<~EXPRESS
+  SCHEMA example;
+    ENTITY person;
+      name : STRING;
+    END_ENTITY;
+  END_SCHEMA;
+EXPRESS
+
+repository = Expressir::Express::Parser.from_exp(express_code)
+----
+
+**Use cases**:
+
+* Testing
+* Dynamic schema generation
+* Template processing
+* Schema fragments
+
+=== Reference Resolution
+
+==== What is Reference Resolution?
+
+EXPRESS uses names to reference other elements:
+
+[source,express]
+----
+TYPE length_measure = REAL;
+END_TYPE;
+
+ENTITY line;
+  length : length_measure;  -- Reference to type above
+END_ENTITY;
+----
+
+After parsing, `length_measure` is just a string. Reference resolution finds the actual `Type` object.
+
+==== Resolution Process
+
+[source,ruby]
+----
+# Automatic resolution (default)
+repo = Expressir::Express::Parser.from_file("schema.exp")
+# References already resolved
+
+# Manual resolution
+repo = Expressir::Express::Parser.from_file("schema.exp", skip_references: true)
+# References not yet resolved
+repo.resolve_all_references
+# Now resolved
+----
+
+==== Interface Resolution
+
+USE FROM and REFERENCE FROM create cross-schema references:
+
+[source,express]
+----
+SCHEMA application_schema;
+  USE FROM geometry_schema;  -- Import all
+  REFERENCE FROM support_schema (date);  -- Import specific
+
+  ENTITY geometric_model;
+    base : point;  -- From geometry_schema
+    created : date;  -- From support_schema
+  END_ENTITY;
+END_SCHEMA;
+----
+
+Resolution finds `point` in `geometry_schema` and `date` in `support_schema`.
+
+==== Resolution Scope
+
+Resolution searches in order:
+
+1. **Current entity/function** (local scope)
+2. **Current schema** (schema-level declarations)
+3. **Interfaced schemas** (USE FROM / REFERENCE FROM)
+4. **Parent scopes** (for nested contexts)
+
+==== Unresolved References
+
+If a reference cannot be resolved:
+
+[source,ruby]
+----
+attribute.type.ref  # => nil (not found)
+----
+
+This typically indicates:
+
+* Typo in reference name
+* Missing interface declaration
+* Missing schema in repository
+* Incorrect schema order
+
+=== Error Handling
+
+==== Parse Failures
+
+When parsing fails, Expressir raises detailed errors:
+
+[source,ruby]
+----
+begin
+  repo = Expressir::Express::Parser.from_file("invalid.exp")
+rescue Expressir::Express::Error::SchemaParseFailure => e
+  puts "Failed to parse: #{e.filename}"
+  puts e.message
+  puts e.parse_failure_cause.ascii_tree  # Detailed error location
+end
+----
+
+**Error information includes**:
+
+* File name
+* Line and column numbers
+* Expected tokens
+* Actual tokens found
+* Parse tree context
+
+==== Common Parse Errors
+
+**Missing semicolon**:
+
+[source]
+----
+Expected ';' at line 10, column 5
+----
+
+**Invalid keyword**:
+
+[source]
+----
+Unexpected keyword 'FOO' at line 15, column 3
+----
+
+**Mismatched END statement**:
+
+[source]
+----
+Expected 'END_ENTITY' but found 'END_TYPE' at line 20
+----
+
+**Invalid identifier**:
+
+[source]
+----
+Expected identifier at line 8, column 12
+----
+
+==== Recovery Strategies
+
+**Skip broken file**:
+
+[source,ruby]
+----
+files.each do |file|
+  begin
+    repo = Expressir::Express::Parser.from_file(file)
+    process(repo)
+  rescue Expressir::Express::Error::SchemaParseFailure => e
+    warn "Skipping #{file}: #{e.message}"
+    next
+  end
+end
+----
+
+**Continue parsing remaining files**:
+
+[source,ruby]
+----
+Expressir::Express::Parser.from_files(files) do |filename, schemas, error|
+  if error
+    warn "Failed: #{filename}"
+  else
+    # Process successful schemas
+  end
+end
+----
+
+=== Performance Considerations
+
+==== Benchmarking
+
+Measure parsing performance:
+
+[source,ruby]
+----
+require 'benchmark'
+
+time = Benchmark.realtime do
+  repo = Expressir::Express::Parser.from_file("large_schema.exp")
+end
+
+puts "Parsed in #{time.round(2)} seconds"
+----
+
+==== Optimization Techniques
+
+**Skip reference resolution for analysis**:
+
+[source,ruby]
+----
+# Faster if you don't need resolved references
+repo = Expressir::Express::Parser.from_file("schema.exp", skip_references: true)
+----
+
+**Omit source text**:
+
+[source,ruby]
+----
+# Reduces memory usage
+repo = Expressir::Express::Parser.from_file("schema.exp", include_source: false)
+----
+
+**Parse in parallel** (for multiple files):
+
+[source,ruby]
+----
+require 'parallel'
+
+repos = Parallel.map(files) do |file|
+  Expressir::Express::Parser.from_file(file, skip_references: true)
+end
+
+# Combine and resolve references once
+combined = combine_repositories(repos)
+combined.resolve_all_references
+----
+
+==== Caching
+
+Use caching for repeated parses:
+
+[source,ruby]
+----
+# Expressir has built-in cache support
+Expressir::Express::Cache.enable
+
+# First parse: slow
+repo1 = Expressir::Express::Parser.from_file("schema.exp")
+
+# Second parse: fast (from cache)
+repo2 = Expressir::Express::Parser.from_file("schema.exp")
+----
+
+See link:../guides/cli/benchmark-performance.html[Benchmark Performance] guide for details.
+
+=== Advanced Topics
+
+==== Custom Visitors
+
+Extend parsing with custom transformations:
+
+[source,ruby]
+----
+class MyVisitor < Expressir::Express::Visitor
+  def visit_entity(node)
+    entity = super
+    # Custom processing
+    entity.custom_flag = true
+    entity
+  end
+end
+----
+
+==== Incremental Parsing
+
+Parse schemas on demand:
+
+[source,ruby]
+----
+# Parse schema headers only
+repos = files.map do |file|
+  Expressir::Express::Parser.from_file(file, skip_references: true)
+end
+
+# Parse individual schemas fully as needed
+selected_repo = repos.find { |r| r.schemas.first.id == "target_schema" }
+selected_repo.resolve_all_references
+----
+
+==== Grammar Extension
+
+Expressir's grammar can be extended for custom syntax:
+
+[source,ruby]
+----
+class CustomParser < Expressir::Express::Parser::Parser
+  rule(:custom_construct) do
+    # Custom grammar rules
+  end
+end
+----
+
+=== Parsing Best Practices
+
+**Always handle errors**::
+Use begin/rescue blocks to handle parse failures gracefully
+
+**Validate before parsing**::
+Check file existence and readability first
+
+**Use progress callbacks**::
+For multiple files, track progress with callbacks
+
+**Skip references when possible**::
+If you don't need resolved references, skip for speed
+
+**Cache for production**::
+Enable caching for applications that parse repeatedly
+
+**Profile large schemas**::
+Use benchmarking to identify bottlenecks
+
+**Process incrementally**::
+For very large sets, parse and process one at a time
+
+=== Troubleshooting
+
+==== Parser Hangs
+
+**Symptom**: Parser doesn't complete
+
+**Causes**:
+
+* Malformed file with infinite recursion
+* Very large schema
+* Memory exhaustion
+
+**Solutions**:
+
+* Validate file structure first
+* Parse smaller chunks
+* Increase memory limits
+
+==== Reference Resolution Fails
+
+**Symptom**: Many unresolved references
+
+**Causes**:
+
+* Missing interface declarations
+* Incorrect schema order
+* Typos in names
+
+**Solutions**:
+
+* Check USE FROM / REFERENCE FROM
+* Parse schemas in dependency order
+* Validate names match
+
+==== Memory Issues
+
+**Symptom**: Out of memory errors
+
+**Causes**:
+
+* Very large schemas
+* Including source text
+* Parsing many files at once
+
+**Solutions**:
+
+* Parse incrementally
+* Skip source text inclusion
+* Use streaming approaches
+
+=== Next Steps
+
+Now that you understand parsing:
+
+**Try parsing**::
+link:../tutorials/parsing-your-first-schema.html[Parse your first schema]
+
+**Learn the CLI**::
+link:../guides/cli/format-schemas.html[Format schemas with CLI]
+
+**Master the API**::
+link:../guides/ruby-api/parsing-files.html[Parse files programmatically]
+
+**Optimize performance**::
+link:../guides/cli/benchmark-performance.html[Benchmark and optimize]
+
+=== Bibliography
+
+* https://github.com/parsanon/parsanon-ruby[Parsanol] - High-performance PEG parser for Ruby
+* https://en.wikipedia.org/wiki/Parsing_expression_grammar[PEG on Wikipedia] - Understanding PEG parsers
+* link:express-language.html[EXPRESS Language] - Understanding what is being parsed
+* link:data-model.html[Data Model] - Understanding the parsing result

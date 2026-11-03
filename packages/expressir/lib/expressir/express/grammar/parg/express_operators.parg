@@ -1,0 +1,25 @@
+grammar ExpressOperators version "0.1.0" edition 2 {
+  addLikeOp = (op_plus / op_minus / express_keywords.tOR / express_keywords.tXOR) as addLikeOp
+  multiplicationLikeOp = (op_asterisk / op_slash / express_keywords.tDIV / express_keywords.tMOD / express_keywords.tAND / op_double_pipe) as multiplicationLikeOp
+  op_asterisk = (express_remarks.spaces ("*") as str) as op_asterisk
+  op_colon = (express_remarks.spaces (":") as str) as op_colon
+  op_colon_equals_colon = (express_remarks.spaces (":" "=" ":") as str) as op_colon_equals_colon
+  op_colon_less_greater_colon = (express_remarks.spaces (":" "<" ">" ":") as str) as op_colon_less_greater_colon
+  op_comma = (express_remarks.spaces (",") as str) as op_comma
+  op_decl = (express_remarks.spaces (":" "=") as str) as op_decl
+  op_delim = (express_remarks.spaces (";") as str) as op_delim
+  op_double_pipe = (express_remarks.spaces ("|" "|") as str) as op_double_pipe
+  op_equals = (express_remarks.spaces ("=") as str) as op_equals
+  op_greater_equal = (express_remarks.spaces (">" "=") as str) as op_greater_equal
+  op_greater_than = (express_remarks.spaces (">") as str) as op_greater_than
+  op_leftparen = (express_remarks.spaces ("(") as str) as op_leftparen
+  op_less_equal = (express_remarks.spaces ("<" "=") as str) as op_less_equal
+  op_less_greater = (express_remarks.spaces ("<" ">") as str) as op_less_greater
+  op_less_than = (express_remarks.spaces ("<") as str) as op_less_than
+  op_minus = (express_remarks.spaces ("-") as str) as op_minus
+  op_plus = (express_remarks.spaces ("+") as str) as op_plus
+  op_rightparen = (express_remarks.spaces (")") as str) as op_rightparen
+  op_slash = (express_remarks.spaces (%x2F) as str) as op_slash
+  relOp = (op_less_equal / op_greater_equal / op_less_greater / op_less_than / op_greater_than / op_equals / op_colon_less_greater_colon / op_colon_equals_colon) as relOp
+  unaryOp = (op_plus / op_minus / express_keywords.tNOT) as unaryOp
+}

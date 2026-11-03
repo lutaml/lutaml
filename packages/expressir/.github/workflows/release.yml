@@ -1,0 +1,37 @@
+name: release
+
+permissions:
+  contents: write
+  packages: write
+  pull-requests: write
+  id-token: write
+
+on:
+  workflow_dispatch:
+    inputs:
+      next_version:
+        description: |
+          Next release version. Possible values: x.y.z, major, minor, patch (or pre|rc|etc).
+          Also, you can pass 'skip' to skip 'git tag' and do 'gem push' for the current version
+        required: true
+        default: 'skip'
+  repository_dispatch:
+    types: [ do-release ]
+
+jobs:
+  release:
+    uses: metanorma/ci/.github/workflows/rubygems-release.yml@main
+    permissions:
+      id-token: write
+      contents: write
+      packages: write
+      pull-requests: write
+    with:
+      next_version: ${{ github.event.inputs.next_version }}
+      release_command: rake release
+      bundler_cache: false
+      post_install: bundle install
+    secrets:
+      rubygems-api-key: ${{ secrets.LUTAML_CI_RUBYGEMS_API_KEY }}
+      pat_token: ${{ secrets.LUTAML_CI_PAT_TOKEN }}
+

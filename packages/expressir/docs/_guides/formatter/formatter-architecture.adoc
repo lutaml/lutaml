@@ -1,0 +1,401 @@
+== Formatter architecture
+
+=== General
+
+The Expressir formatter uses a modular architecture that separates formatting
+concerns into focused, composable modules. This design improves maintainability,
+testability, and extensibility while preserving full backward compatibility with
+existing code.
+
+The formatter architecture follows object-oriented design principles with clear
+separation of concerns. Each module handles a specific aspect of EXPRESS
+formatting, and they work together through Ruby's module inclusion mechanism.
+
+The concept of Profiles is used to define different formatting styles or
+conventions. The base `Formatter` class provides standard formatting, while
+specialized formatters like `PrettyFormatter` extend it with additional features
+and ELF compliance.
+
+=== Feature
+
+==== Remark preservation
+
+Expressir fully preserves EXPRESS remarks (comments) during parsing and formatting, maintaining them in their original positions:
+
+==== Preamble remarks
+
+Remarks between a scope declaration and its first child are preserved as preamble remarks:
+
+[source,express]
+----
+SCHEMA example;
+  -- This is a preamble remark
+  -- It appears after SCHEMA but before declarations
+
+  ENTITY person;
+    -- Entity preamble remark
+    name : STRING;
+  END_ENTITY;
+
+END_SCHEMA;
+----
+
+==== Inline tail remarks
+
+Remarks on the same line as attribute or enumeration item declarations:
+
+[source,express]
+----
+ENTITY person;
+  name : STRING; -- Inline remark for name attribute
+  age : INTEGER; -- Inline remark for age attribute
+END_ENTITY;
+
+TYPE status = ENUMERATION OF
+  (active,   -- Active status
+   inactive, -- Inactive status
+   pending); -- Pending status
+END_TYPE;
+----
+
+==== END_* scope remarks
+
+Remarks on END_TYPE, END_ENTITY, END_SCHEMA, etc. lines:
+
+[source,express]
+----
+TYPE status = ENUMERATION OF
+  (active,
+   inactive);
+END_TYPE; -- Status enumeration type
+
+ENTITY person;
+  name : STRING;
+END_ENTITY; -- Person entity
+
+END_SCHEMA; -- schema_name
+----
+
+==== Unicode support
+
+All remark types support full Unicode content:
+
+[source,express]
+----
+SCHEMA test;
+  -- 日本語、中文、한글 in remarks
+
+  ENTITY person;
+    name : STRING; -- Name in Japanese: 名前
+  END_ENTITY;
+
+END_SCHEMA; -- test
+----
+
+For implementation details, see link:docs/ARCHITECTURE.md#remark-attachment-system[Remark Attachment System].
+
+
+=== Module organization
+
+The formatter consists of a main `Formatter` class that includes specialized
+formatting modules, each responsible for a distinct category of EXPRESS language
+constructs.
+
+==== Formatter modules
+
+RemarkFormatter:: Handles formatting of remarks (comments) in all forms
++
+[example]
+====
+* Embedded remarks: `(* comment *)`
+* Tail remarks: `-- comment`
+* Tagged remarks with identifiers
+* Preamble remarks before first declarations
+* END_* scope remarks on closing statements
+====
+
+RemarkItemFormatter:: Formats individual remark items and remark metadata
++
+[example]
+====
+Handles the internal structure of remark items, including tags, format specification, and text content.
+====
+
+LiteralsFormatter:: Formats literal values (strings, numbers, booleans, binary)
++
+[example]
+====
+[source,express]
+----
+'string literal'
+123
+3.14
+TRUE
+%10101011
+----
+====
+
+ReferencesFormatter:: Formats references to entities, attributes, and other elements
++
+[example]
+====
+[source,express]
+----
+entity_ref
+entity_ref.attribute_ref
+entity_ref[index]
+----
+====
+
+SupertypeExpressionsFormatter:: Formats supertype constraint expressions
++
+[example]
+====
+[source,express]
+----
+SUPERTYPE OF (ONEOF(subtype1, subtype2))
+ABSTRACT SUPERTYPE OF (subtype1 AND subtype2)
+----
+====
+
+StatementsFormatter:: Formats procedural statements (assignment, if, case, repeat, etc.)
++
+[example]
+====
+[source,express]
+----
+IF condition THEN
+  statement;
+END_IF;
+----
+====
+
+ExpressionsFormatter:: Formats expressions (binary, unary, function calls, queries)
++
+[example]
+====
+[source,express]
+----
+a + b * c
+QUERY(x <* entity | condition)
+entity_constructor(arg1, arg2)
+----
+====
+
+DataTypesFormatter:: Formats data type declarations (INTEGER, STRING, ENUMERATION, SELECT, etc.)
++
+[example]
+====
+[source,express]
+----
+STRING(255)
+ENUMERATION OF (red, green, blue)
+SELECT (type1, type2, type3)
+----
+====
+
+DeclarationsFormatter:: Formats declarations (ENTITY, TYPE, FUNCTION, SCHEMA, etc.)
++
+[example]
+====
+[source,express]
+----
+ENTITY person;
+  name : STRING;
+END_ENTITY;
+----
+====
+
+=== RemarkInfo model
+
+==== General
+
+Remarks were previously represented as plain strings, which lost important formatting information. The [`RemarkInfo`](lib/expressir/model/remark_info.rb:6) class properly models remarks with their complete metadata.
+
+==== Attributes
+
+The `RemarkInfo` class has three attributes:
+
+`text`:: The remark content (String)
+
+`format`:: The remark format: 'tail' or 'embedded' (String)
+
+`tag`:: Optional tag for associating the remark with specific items (String or nil)
+
+==== Methods
+
+`tail?`:: Returns true if the remark uses tail format (`-- comment`)
+
+`embedded?`:: Returns true if the remark uses embedded format (`(* comment *)`)
+
+`tagged?`:: Returns true if the remark has an associated tag
+
+`to_s`:: Returns the remark text for backward compatibility
+
+==== Benefits over plain strings
+
+Type safety:: Explicit format information prevents format confusion
+
+Preservation:: Original format is maintained through parse/format cycles
+
+Extensibility:: Easy to add metadata (tags, positions, etc.) without breaking existing code
+
+Clarity:: Code explicitly shows whether a remark is tail or embedded
+
+
+=== Using the base formatter
+
+The base [`Formatter`](lib/expressir/express/formatter.rb:13) class provides
+standard EXPRESS formatting with fixed 2-space indentation.
+
+.Format a repository
+[example]
+====
+[source,ruby]
+----
+# Parse an EXPRESS schema
+repository = Expressir::Express::Parser.from_file("schema.exp")
+
+# Format to string
+formatted = Expressir::Express::Formatter.format(repository)
+puts formatted
+
+# Or create instance for custom options
+formatter = Expressir::Express::Formatter.new(no_remarks: true)
+formatted = formatter.format(repository)
+----
+====
+
+.Format without remarks
+[example]
+====
+[source,ruby]
+----
+# Useful for generating clean schemas without documentation
+formatter = Expressir::Express::Formatter.new(no_remarks: true)
+clean_schema = formatter.format(repository)
+----
+====
+
+=== Using ELF PrettyFormatter
+
+The [`PrettyFormatter`](lib/expressir/express/pretty_formatter.rb:7) extends the
+base `Formatter` with ELF (EXPRESS Language Foundation) compliance and
+additional features.
+
+See the <<_pretty_print_with_elf_compliance,Pretty print with ELF compliance>>
+section for detailed usage examples and configuration options.
+
+
+=== Extending the formatter
+
+==== Creating a custom formatter
+
+You can create custom formatters by extending `Formatter` or any class that
+inherits from it.
+
+.Custom formatter with specific behavior
+[example]
+====
+[source,ruby]
+----
+class MyCustomFormatter < Expressir::Express::Formatter
+  # Override specific formatting methods
+  def format_declarations_entity(node)
+    # Custom entity formatting logic
+    super(node)  # Or completely custom implementation
+  end
+
+  # Override indentation
+  def indent(str)
+    return if str.nil?
+
+    # Use 3 spaces instead of 2
+    indent_str = "   "
+    str.split("\n").map { |x| "#{indent_str}#{x}" }.join("\n")
+  end
+end
+
+# Use the custom formatter
+formatter = MyCustomFormatter.new
+formatted = formatter.format(repository)
+----
+====
+
+==== Adding new formatter modules
+
+To add a new formatting module:
+
+. Create module in `lib/expressir/express/formatters/`
+. Define private formatting methods
+. Include module in `Formatter` class
+. Add tests in `spec/expressir/express/formatters/`
+
+.Example: Creating a new formatter module
+[example]
+====
+[source,ruby]
+----
+# lib/expressir/express/formatters/my_formatter.rb
+module Expressir
+  module Express
+    module MyFormatter
+      private
+
+      def format_my_construct(node)
+        # Formatting logic here
+      end
+    end
+  end
+end
+
+# In lib/expressir/express/formatter.rb
+require_relative "formatters/my_formatter"
+
+class Formatter
+  include MyFormatter
+  # ... other includes ...
+end
+----
+====
+
+=== Design decisions
+
+==== Why modules instead of inheritance
+
+The formatter uses module composition instead of class inheritance because:
+
+Separation of concerns:: Each module handles one category of formatting
++
+Each formatter module is focused on a single responsibility (remarks, literals,
+expressions, etc.), making the code easier to understand and maintain.
+
+Composability:: Modules can be mixed and matched as needed
++
+Different formatters can include only the modules they need, or override
+specific modules without affecting others.
+
+Testability:: Each module can be tested independently
++
+Unit tests can focus on individual modules without needing to set up the entire
+formatter.
+
+Maintainability:: Changes to one area don't affect others
++
+Bug fixes or enhancements to one formatter module don't risk breaking other
+formatting logic.
+
+==== Why RemarkInfo instead of strings
+
+The `RemarkInfo` model was introduced to:
+
+Preserve format information:: Tail vs embedded format is crucial for round-trip
+formatting
+
+Support tags:: Tags associate remarks with specific schema elements
+
+Enable future extensions:: Easy to add line numbers, positions, or other
+metadata
+
+Improve type safety:: Explicit object type prevents formatting errors
+

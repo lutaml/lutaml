@@ -1,0 +1,837 @@
+---
+title: LER Packages
+nav_order: 7
+---
+
+== LutaML EXPRESS Repository (LER) Packages
+
+=== Purpose
+
+This page introduces LutaML EXPRESS Repository (LER) packages, a high-performance format for distributing pre-parsed and indexed EXPRESS schemas. LER packages solve critical challenges in managing complex, multi-schema EXPRESS applications by bundling everything into a single, optimized file.
+
+=== References
+
+* link:parsers.html[Parsers] - How schemas are parsed for LER
+* link:data-model.html[Data Model] - What LER packages contain
+* link:../guides/ler/[LER Guides] - Detailed usage guides
+* link:../tutorials/creating-ler-package.html[Tutorial: Creating LER Packages]
+
+=== Concepts
+
+LER:: LutaML EXPRESS Repository - a distributable, pre-indexed EXPRESS schema repository format
+Package:: Single `.ler` file containing schemas, dependencies, and indexes
+Pre-built Index:: Entity and type lookup tables created during packaging for instant queries
+Dependency Resolution:: Automatic discovery and inclusion of all referenced schemas via USE FROM and REFERENCE FROM
+Serialization:: Converting parsed schemas to optimized binary or text formats
+
+=== What are LER Packages?
+
+LER is a `.ler` file format that bundles EXPRESS schemas and their dependencies into a single, self-contained package with pre-built indexes for fast access.
+
+==== Key Components
+
+**Schemas**::
+All EXPRESS schemas, either as original files or pre-serialized Ruby objects
+
+**Indexes**::
+Pre-built entity, type, and reference indexes for instant lookups
+
+**Metadata**::
+Package name, version, configuration, and statistics
+
+**Manifest**::
+Schema list with paths and identifiers
+
+==== The LER Concept
+
+Traditional workflow:
+
+[source]
+----
+┌─────────────┐     ┌──────────┐     ┌────────────┐
+│   41 .exp   │────>│  Parse   │────>│ Repository │
+│    files    │     │ 10-15s   │     │            │
+└─────────────┘     └──────────┘     └────────────┘
+                    Every time!
+----
+
+LER workflow:
+
+[source]
+----
+┌─────────────┐     ┌──────────┐     ┌────────────┐
+│  activity   │────>│   Load   │────>│ Repository │
+│   .ler      │     │  <500ms  │     │ + Indexes  │
+└─────────────┘     └──────────┘     └────────────┘
+                    Once packaged, instant loading!
+----
+
+=== Benefits and Use Cases
+
+==== Single-File Distribution
+
+**Problem**: Distributing 40+ EXPRESS files with complex dependencies
+
+**Solution**: One `.ler` file contains everything
+
+[source,bash]
+----
+# Instead of distributing:
+schemas/
+├── action_schema.exp
+├── approval_schema.exp
+├── ... (40+ more files)
+
+# Distribute one file:
+application.ler  # Everything included!
+----
+
+==== Instant Loading
+
+**Problem**: Parsing 40+ schemas takes 10-15 seconds every time
+
+**Solution**: Pre-serialize and cache the parsed result
+
+**Performance**:
+
+* Traditional parsing: 10-15 seconds
+* LER loading: <500ms (20x+ faster)
+* Entity/type lookups: <1ms
+
+==== Pre-built Indexes
+
+**Problem**: Finding entities/types requires traversing all schemas
+
+**Solution**: Build indexes during packaging
+
+[source,ruby]
+----
+# Without index: O(n) search through all schemas
+schemas.each do |schema|
+  schema.entities.find { |e| e.id == "action" }
+end
+
+# With LER index: O(1) hash lookup
+entity = repo.find_entity(qualified_name: "action_schema.action")  # Instant!
+----
+
+==== Automatic Dependency Resolution
+
+**Problem**: Manually tracking USE FROM and REFERENCE FROM dependencies
+
+**Solution**: LER builder recursively discovers all dependencies
+
+[source,bash]
+----
+# Build from single root schema
+expressir package build activity/mim.exp activity.ler
+
+# Automatically includes:
+#   activity/mim.exp (root)
+#   ├─ action_schema
+#   ├─ management_resources_schema
+#   │   ├─ application_context_schema
+#   │   └─ date_time_schema
+#   └─ ... (40+ total schemas discovered!)
+----
+
+==== Self-Contained Packages
+
+**Problem**: Production deployment requires all schema files
+
+**Solution**: Everything embedded in the package
+
+* No external file dependencies
+* Works offline
+* Version-locked schemas
+* Reproducible builds
+
+=== When to Use LER Packages
+
+**Production deployment**::
+Eliminate parsing overhead in production applications
+
+**Schema distribution**::
+Publish schemas as single downloadable files
+
+**Large schema sets**::
+Especially beneficial with 10+ interdependent schemas
+
+**Repeated access**::
+Applications that load schemas frequently
+
+**API services**::
+Web services that query schemas for documentation or validation
+
+**Development tools**::
+IDE plugins, validators, documentation generators
+
+=== When NOT to Use LER Packages
+
+**Single schema files**::
+Minimal benefit for standalone schemas
+
+**Actively changing schemas**::
+Constantly rebuilding packages during development
+
+**Schema exploration**::
+When you need to read original EXPRESS text
+
+**Debugging**::
+Original .exp files are clearer for troubleshooting
+
+=== Package Structure
+
+LER packages are ZIP archives containing structured data:
+
+[source]
+----
+activity.ler (ZIP archive)
+├── metadata.yaml              # Package metadata
+├── repository.marshal         # Serialized schemas (if resolved)
+├── express_files/             # Original EXPRESS files (if included)
+│   ├── Activity_mim.exp
+│   ├── action_schema.exp
+│   └── ... (more files)
+├── entity_index.marshal       # Pre-built entity index
+├── type_index.marshal         # Pre-built type index
+├── reference_index.marshal    # Pre-built reference index
+└── manifest.yaml              # Schema manifest
+----
+
+==== Metadata
+
+Package information and configuration:
+
+[source,yaml]
+----
+name: "ISO 10303 Activity Module"
+version: "1.0.0"
+description: "Activity module with dependencies"
+created_at: "2025-10-29T03:36:00Z"
+express_mode: "include_all"
+resolution_mode: "resolved"
+serialization_format: "marshal"
+----
+
+==== Repository
+
+Pre-serialized schema data (if resolution_mode is "resolved"):
+
+* All parsed schemas as Ruby objects
+* Fully resolved references
+* Ready to deserialize instantly
+
+==== Indexes
+
+Pre-built lookup tables:
+
+* **Entity index**: Qualified name → Entity object
+* **Type index**: Qualified name → Type object
+* **Reference index**: Source → Target mappings
+
+==== Express Files
+
+Original EXPRESS files (if express_mode is "include_all"):
+
+* Preserves original text
+* Enables regeneration
+* Useful for documentation
+
+=== Configuration Options
+
+LER packages are highly configurable through three independent axes:
+
+==== Express Mode
+
+**include_all** (default)::
+Bundle all EXPRESS files into package
++
+* Self-contained
+* Larger package size
+* Can regenerate schemas
+
+**allow_external**::
+Reference external EXPRESS files
++
+* Smaller package
+* Requires file access
+* Not portable
+
+==== Resolution Mode
+
+**resolved** (default)::
+Pre-serialize parsed schemas
++
+* Instant loading
+* Larger package
+* No parsing needed
+
+**bare**::
+Store only EXPRESS files, parse on load
++
+* Smaller package
+* Slower loading
+* Always fresh parse
+
+==== Serialization Format
+
+**marshal** (default, recommended)::
+Ruby's native binary format
++
+* Fastest loading
+* Smallest size
+* Ruby-only
+
+**yaml**::
+Human-readable text format
++
+* Cross-platform
+* Debuggable
+* Larger size
+
+**json**::
+Standard JSON format
++
+* Cross-platform
+* Language-agnostic
+* Moderate size
+
+=== Performance Comparison
+
+Real-world performance with ISO 10303 Activity module (41 schemas, 925 entities):
+
+[options="header"]
+|===
+| Operation | Traditional | LER | Improvement
+| Initial load | 10-15 seconds | <500ms | 20-30x faster
+| Entity lookup | ~50ms | <1ms | 50x faster
+| Type lookup | ~50ms | <1ms | 50x faster
+| Statistics | ~100ms | <10ms | 10x faster
+|===
+
+==== Memory Usage
+
+**Traditional approach**:
+
+* Parse all files: ~100MB peak memory
+* Build indexes: +20MB
+* Total: ~120MB
+
+**LER approach**:
+
+* Load pre-serialized: ~80MB (marshal format)
+* Indexes included: +0MB (already built)
+* Total: 80MB
+
+=== Creating Packages
+
+==== Simple Package Creation
+
+[source,bash]
+----
+# Build from single schema with automatic dependency resolution
+expressir package build myschema.exp output.ler \
+  --name "My Schema Package" \
+  --version "1.0.0" \
+  --validate
+----
+
+This command:
+
+1. Parses `myschema.exp`
+2. Discovers all dependencies via USE FROM/REFERENCE FROM
+3. Recursively resolves and parses dependencies
+4. Builds indexes
+5. Creates `output.ler` package
+
+==== Manifest-Based Package Building
+
+For complex schemas with unresolved dependencies or when you need reproducible builds, use schema manifests.
+
+See the link:schema-manifests.html[Schema Manifests] documentation for complete details on the manifest file format and workflow.
+
+===== What are Manifests?
+
+Manifests are YAML files that explicitly list all schemas to include in a package. They provide:
+
+* **Fine-grained control** over schema resolution
+* **Reproducible builds** with version-locked schema paths
+* **Pre-validation** of missing dependencies
+* **Documentation** of schema relationships
+* **Circular dependency handling** with explicit schema lists
+
+For detailed information about creating, validating, and using manifests, see link:schema-manifests.html[Schema Manifests].
+
+===== When to Use Manifests
+
+**Complex dependency hierarchies**::
+Schemas in non-standard locations or with circular references
+
+**Missing schemas**::
+When auto-resolution can't find all dependencies
+
+**Reproducible builds**::
+Lock exact schema versions and paths
+
+**Documentation**::
+Explicitly document which schemas are included
+
+**Debugging**::
+See exactly what will be packaged before building
+
+===== Manifest Structure
+
+Manifests are YAML files with this structure:
+
+[source,yaml]
+----
+name: Package Name
+version: 1.0.0
+created_at: '2025-12-04T05:40:40Z'
+root_schemas:
+  - /full/path/to/root.exp
+base_dirs:
+  - /search/directory
+schemas:
+  - name: resolved_schema
+    path: /full/path/to/schema.exp
+    dependencies:
+      - schema_name: other_schema
+        kind: USE
+  - name: unresolved_schema  # No path specified
+----
+
+**Key points**:
+
+* Unresolved schemas appear without a `path` field
+* User manually adds `path:` to resolve them
+* Dependencies are documented but not required for building
+
+===== Creating Manifests
+
+Use the `expressir manifest create` command to generate a manifest from root schemas.
+
+See link:schema-manifests.html#creating-a-manifest-from-a-root-schema[Creating a manifest from a root schema] for complete details.
+
+[source,bash]
+----
+expressir manifest create ROOT_SCHEMA -o OUTPUT.yaml [OPTIONS]
+----
+
+.Example: Creating a manifest
+[example]
+====
+[source,bash]
+----
+expressir manifest create schemas/activity/mim.exp \
+  -o activity_manifest.yaml \
+  --base-dirs ~/iso-10303/schemas \
+  --name "Activity Module" \
+  --verbose
+----
+
+Output shows resolved and unresolved schemas:
+----
+Creating manifest from 1 root schema(s)...
+  Base directories:
+    - /Users/user/iso-10303/schemas
+Resolving dependencies...
+  WARNING: Could not find schema 'Activity_method_mim' referenced from mim
+  Circular reference detected: measure_schema (valid schema-level circular dependency, skipping)
+✓ Manifest created: activity_manifest.yaml
+  Resolved schemas: 41
+
+⚠ Unresolved schemas (3):
+  - Activity_method_mim
+  - the
+  - main
+
+Please edit activity_manifest.yaml and set 'path:' for unresolved schemas
+Then validate with: expressir manifest validate activity_manifest.yaml
+----
+====
+
+===== Editing Manifests
+
+Add `path:` for unresolved schemas:
+
+[source,yaml]
+----
+schemas:
+  action_schema:
+    path: /path/to/action_schema.exp
+  Activity_method_mim:  # <1>
+    path: /path/to/activity_method/mim.exp  # <2>
+  the:  # <3>
+  main:  # <3>
+----
+<1> Schema was unresolved (had no path)
+<2> User added path to resolve it
+<3> Still unresolved (will trigger warnings)
+
+===== Validating Manifests
+
+Validate manifests before building packages to catch errors early.
+
+See link:schema-manifests.html#validating-a-manifest[Validating a manifest] for complete validation options and examples.
+
+[source,bash]
+----
+expressir manifest validate MANIFEST.yaml [OPTIONS]
+----
+
+.Example: Basic validation
+[example]
+====
+[source,bash]
+----
+expressir manifest validate activity_manifest.yaml --verbose
+----
+
+Output:
+----
+Validating manifest: activity_manifest.yaml...
+✓ Manifest is valid
+  Total schemas: 42
+  Resolved schemas: 41
+  Unresolved schemas: 1
+
+Warnings (1):
+  - Schema 'the' has no path specified - please provide path
+----
+====
+
+.Example: Validation with referential integrity
+[example]
+====
+[source,bash]
+----
+expressir manifest validate activity_manifest.yaml --check-references --verbose
+----
+
+Output with all references resolved:
+----
+Validating manifest: activity_manifest.yaml...
+Checking referential integrity...
+✓ Manifest is valid
+  Total schemas: 42
+  Resolved schemas: 41
+
+All references resolved successfully!
+----
+
+Output with unresolved references:
+----
+Validating manifest: activity_manifest.yaml...
+Checking referential integrity...
+✗ Manifest validation failed
+
+Errors (2):
+  - Cannot resolve USE FROM geometric_model_schema in action_schema
+  - Cannot resolve REFERENCE FROM measure_schema in activity_schema
+----
+====
+
+===== Building from Manifests
+
+[source,bash]
+----
+expressir package build --manifest MANIFEST.yaml OUTPUT.ler [OPTIONS]
+----
+
+.Example: Building from a manifest
+[example]
+====
+[source,bash]
+----
+expressir package build \
+  --manifest activity_manifest.yaml \
+  activity.ler \
+  --name "Activity Module" \
+  --validate
+----
+
+Output:
+----
+Building LER package from manifest activity_manifest.yaml...
+Warnings:
+  - Schema 'the' has no path specified - please provide path
+  - Schema 'main' has no path specified - please provide path
+  Using 42 schema(s) from manifest
+Building repository...
+Creating package...
+✓ Package created: activity.ler
+  Schemas: 42
+----
+====
+
+===== Complete Manifest Workflow
+
+.Step-by-step manifest workflow
+[example]
+====
+[source,bash]
+----
+# Step 1: Create initial manifest
+expressir manifest create schemas/activity/mim.exp \
+  -o activity_manifest.yaml \
+  --base-dirs ~/iso-10303/schemas \
+  --name "Activity Module" \
+  --verbose
+
+# Step 2: Edit manifest to add missing schema paths
+# (Use your text editor to add path: for unresolved schemas)
+
+# Step 3: Validate the edited manifest
+expressir manifest validate activity_manifest.yaml --verbose
+
+# Step 4: Build package from manifest
+expressir package build \
+  --manifest activity_manifest.yaml \
+  activity.ler \
+  --validate
+----
+====
+
+===== Manifest vs Auto-Resolution
+
+.Comparison of approaches
+[cols="1,2,2"]
+|===
+| Feature | Manifest | Auto-Resolution
+
+| **Control**
+| Full manual control over schemas
+| Automatic dependency discovery
+
+| **Reproducibility**
+| Guaranteed identical builds
+| May vary with file system changes
+
+| **Setup**
+| Requires manifest creation step
+| Works immediately
+
+| **Missing schemas**
+| Pre-check with validation
+| Fails during build
+
+| **Circular deps**
+| Explicitly listed and resolved
+| Handled automatically
+
+| **Debugging**
+| Easy to see what's included
+| Requires --verbose flag
+
+| **Use case**
+| Complex projects, production
+| Simple projects, development
+|===
+
+**Recommendation**: Use manifests for production builds and complex schemas. Use auto-resolution for development and simple projects.
+
+===== Handling Circular Dependencies
+
+EXPRESS allows schema-level circular dependencies (e.g., `measure_schema` and `representation_schema` referencing each other). The manifest system handles these correctly:
+
+[source]
+----
+Looking for: measure_schema.exp
+  ├─ Finds: representation_schema.exp (depends on measure_schema)
+  │   └─ Circular reference detected: measure_schema (skipping, valid)
+  └─ Both schemas included in manifest
+----
+
+The `--verbose` flag shows these circular references:
+----
+Circular reference detected: measure_schema (valid schema-level circular dependency, skipping)
+----
+
+This is **not an error** - it's normal EXPRESS behavior and both schemas will be included.
+
+=== Using a Package
+
+==== Via CLI
+
+[source,bash]
+----
+# Get package information
+expressir package info output.ler
+
+# List all entities
+expressir package list output.ler
+
+# Search for specific entity
+expressir package search output.ler "action"
+
+# Validate package
+expressir package validate output.ler
+----
+
+==== Via Ruby API
+
+[source,ruby]
+----
+# Load package
+repo = Expressir::Model::Repository.from_package('output.ler')
+
+# Instant access to schemas
+puts "Loaded #{repo.schemas.size} schemas"
+
+# Fast entity lookup
+entity = repo.find_entity(qualified_name: "schema.entity")
+
+# Get statistics
+stats = repo.statistics
+puts "Total entities: #{stats[:total_entities]}"
+----
+
+=== Best Practices
+
+**Version your packages**::
+Include meaningful version numbers in metadata
+
+**Validate before packaging**::
+Use `--validate` flag to catch errors early
+
+**Choose appropriate format**::
+Use `marshal` for production, `yaml` for debugging
+
+**Include metadata**::
+Add name, version, and description for tracking
+
+**Document dependencies**::
+Note which schemas are intentionally external
+
+**Test packages**::
+Verify packages load correctly in target environment
+
+=== Common Use Cases
+
+==== Application Distribution
+
+Package schemas with your application:
+
+[source,ruby]
+----
+# In your application
+SCHEMA_PACKAGE = File.expand_path('../data/schemas.ler', __dir__)
+@repo = Expressir::Model::Repository.from_package(SCHEMA_PACKAGE)
+----
+
+==== Schema Registry
+
+Build a registry of standard schemas:
+
+[source]
+----
+registry/
+├── iso-10303-41.ler
+├── iso-10303-42.ler
+├── iso-10303-203.ler
+└── iso-10303-214.ler
+----
+
+==== Documentation Generation
+
+Pre-package schemas for documentation tools:
+
+[source,bash]
+----
+# Build documentation package
+expressir package build standard.exp docs.ler
+
+# Use in documentation generator
+ruby generate_docs.rb --package docs.ler --output docs/
+----
+
+==== API Services
+
+Serve schema information via API:
+
+[source,ruby]
+----
+# Load once at startup
+SCHEMAS = Expressir::Model::Repository.from_package('api.ler')
+
+# Fast queries in requests
+get '/entities/:name' do
+  entity = SCHEMAS.find_entity(qualified_name: params[:name])
+  entity.to_json
+end
+----
+
+=== Troubleshooting
+
+==== Package Won't Load
+
+**Symptom**: Error loading `.ler` file
+
+**Causes**:
+
+* Corrupted ZIP file
+* Incompatible Expressir version
+* Missing dependencies
+
+**Solutions**:
+
+* Validate package: `expressir package validate file.ler`
+* Rebuild package with current Expressir version
+* Check file integrity
+
+==== Slow Loading
+
+**Symptom**: Package loads slower than expected
+
+**Causes**:
+
+* Using `bare` resolution mode
+* Using `yaml` or `json` format
+* Very large package (100+ schemas)
+
+**Solutions**:
+
+* Use `resolved` mode and `marshal` format
+* Split into multiple packages
+* Ensure solid-state storage
+
+==== Missing Schemas
+
+**Symptom**: Can't find expected schemas in package
+
+**Causes**:
+
+* Schema not referenced in dependency chain
+* Incorrect base path during build
+* Schema file not found during build
+
+**Solutions**:
+
+* Check build output for warnings
+* Verify schema paths
+* Use `--verbose` flag
+
+=== Next Steps
+
+Now that you understand LER packages:
+
+**Create your first package**::
+link:../tutorials/creating-ler-package.html[Follow the tutorial]
+
+**Learn all CLI commands**::
+link:../guides/ler/[Explore LER guides]
+
+**Use in applications**::
+link:../guides/ruby-api/[Read Ruby API documentation]
+
+**Optimize performance**::
+link:../guides/cli/benchmark-performance.html[Benchmark your packages]
+
+=== Bibliography
+
+* link:../guides/ler/[LER Guides] - Comprehensive usage guides
+* link:../references/ler-format.html[LER Format Specification] - Technical details
+* link:parsers.html[Parsers] - Understanding what gets packaged
+* link:data-model.html[Data Model] - Understanding package contents

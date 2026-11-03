@@ -1,0 +1,25 @@
+---
+title: Interop Exports
+nav_order: 12
+has_children: true
+---
+
+= Interop Exports
+
+== Purpose
+
+Expressir can render an EXPRESS schema into JSON Schema and OWL/RDF.
+No ISO mapping exists for either rendering: these are contributions of
+the Expressir project, and the decisions behind them are documented in
+the child guides so consumers can rely on stable semantics.
+
+== Commands
+
+[source,shell]
+----
+expressir export-json-schema path/to/schema.exp -o schema.json
+expressir export-owl path/to/schema.exp -o schema.ttl
+----
+
+The Ruby API is available as `Expressir::Interop::JsonSchema` and
+`Expressir::Interop::Owl`.

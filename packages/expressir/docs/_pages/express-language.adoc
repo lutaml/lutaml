@@ -1,0 +1,506 @@
+---
+title: EXPRESS Language
+nav_order: 4
+---
+
+== EXPRESS Data Modeling Language
+
+=== Purpose
+
+This page explains the EXPRESS data modeling language that Expressir parses and processes. Understanding EXPRESS is essential for working effectively with Expressir, as it provides the foundation for interpreting schemas, entities, and data models.
+
+=== References
+
+* link:introduction.html[Introduction] - Expressir overview
+* link:data-model.html[Data Model] - How Expressir represents EXPRESS in Ruby
+* link:parsers.html[Parsers] - How EXPRESS is parsed
+* https://www.iso.org/standard/38047.html[ISO 10303-11:2004] - EXPRESS language standard
+
+=== Concepts
+
+EXPRESS:: A formal data specification language defined by ISO 10303-11, designed for unambiguous product data definition
+Schema:: A named collection of EXPRESS declarations that forms a complete data model
+Entity:: A data structure definition similar to a class, defining attributes and constraints
+Type:: A data type definition that can be primitive, constructed (SELECT, ENUMERATION), or aggregate (ARRAY, LIST, SET, BAG)
+Attribute:: A property of an entity with a name and type
+Constraint:: Rules (WHERE clauses, UNIQUE rules) that restrict valid data values
+Interface:: Mechanism for using or referencing definitions from other schemas (USE FROM, REFERENCE FROM)
+
+=== What is EXPRESS?
+
+EXPRESS is a data modeling language standardized as ISO 10303-11, "Industrial automation systems and integration — Product data representation and exchange — Part 11: Description methods: The EXPRESS language reference manual."
+
+It was developed as part of the STEP (STandard for the Exchange of Product model data) initiative to provide:
+
+**Formal specification language**::
+Precise, unambiguous definitions of product data structures
+
+**Machine-readable format**::
+Schemas can be processed by software tools for validation and implementation
+
+**Rich type system**::
+Supports complex data modeling including inheritance, constraints, and algorithms
+
+**Language independence**::
+Can be implemented in any programming language
+
+EXPRESS is widely used in:
+
+* ISO 10303 (STEP) application protocols for product data exchange
+* ISO 13584 (PLIB) parts library standards
+* ISO 15926 (Process plants) data integration standards
+* IFC (Industry Foundation Classes) for building information modeling
+
+=== Key Concepts
+
+==== Schemas
+
+A schema is the top-level organizational unit in EXPRESS:
+
+[source,express]
+----
+SCHEMA geometry_schema;
+  -- Entities, types, and functions go here
+END_SCHEMA;
+----
+
+Schemas can interface with other schemas:
+
+[source,express]
+----
+SCHEMA application_schema;
+  USE FROM geometry_schema;  -- Import all public declarations
+  REFERENCE FROM support_schema (date);  -- Import specific items
+END_SCHEMA;
+----
+
+==== Entities
+
+Entities define data structures similar to classes in object-oriented programming:
+
+[source,express]
+----
+ENTITY person;
+  name : STRING;
+  birth_date : date;
+  age : INTEGER;
+END_ENTITY;
+----
+
+Entities support inheritance:
+
+[source,express]
+----
+ENTITY employee
+  SUBTYPE OF (person);
+  employee_id : STRING;
+  department : STRING;
+END_ENTITY;
+----
+
+==== Types
+
+EXPRESS supports several type categories:
+
+**Simple types** (primitives):
+
+[source,express]
+----
+TYPE positive_length = REAL;
+WHERE
+  WR1: SELF > 0.0;
+END_TYPE;
+----
+
+**Enumeration types**:
+
+[source,express]
+----
+TYPE color = ENUMERATION OF
+  (red, green, blue, yellow);
+END_TYPE;
+----
+
+**Select types** (unions):
+
+[source,express]
+----
+TYPE length_or_measure = SELECT
+  (length_measure,
+   positive_length);
+END_TYPE;
+----
+
+**Aggregate types**:
+
+[source,express]
+----
+TYPE point_list = LIST [3:3] OF REAL;  -- Exactly 3 reals
+TYPE name_set = SET [1:?] OF STRING;   -- One or more unique strings
+TYPE coordinates = ARRAY [1:3] OF REAL; -- Indexed array
+TYPE items = BAG [0:?] OF product;     -- Unordered, duplicates allowed
+----
+
+==== Attributes
+
+Entities have three types of attributes:
+
+**Explicit attributes** (directly stored):
+
+[source,express]
+----
+ENTITY circle;
+  radius : positive_length;
+  center : point;
+END_ENTITY;
+----
+
+**Derived attributes** (computed):
+
+[source,express]
+----
+ENTITY circle;
+  radius : positive_length;
+  DERIVE
+    area : REAL := 3.14159 * radius * radius;
+    diameter : REAL := 2.0 * radius;
+END_ENTITY;
+----
+
+**Inverse attributes** (relationships):
+
+[source,express]
+----
+ENTITY person;
+  name : STRING;
+END_ENTITY;
+
+ENTITY organization;
+  org_name : STRING;
+  INVERSE
+    employees : SET [0:?] OF person FOR works_for;
+END_ENTITY;
+
+ENTITY person;
+  name : STRING;
+  works_for : OPTIONAL organization;
+END_ENTITY;
+----
+
+==== Constraints
+
+EXPRESS provides several constraint mechanisms:
+
+**WHERE rules** (entity-level constraints):
+
+[source,express]
+----
+ENTITY rectangle;
+  width : positive_length;
+  height : positive_length;
+WHERE
+  WR1: width > 0.0;
+  WR2: height > 0.0;
+  WR3: width >= height;  -- Must be landscape
+END_ENTITY;
+----
+
+**UNIQUE rules** (uniqueness constraints):
+
+[source,express]
+----
+ENTITY person;
+  name : STRING;
+  employee_id : STRING;
+UNIQUE
+  UR1: employee_id;  -- Employee ID must be unique across all persons
+END_ENTITY;
+----
+
+**Global rules** (cross-entity constraints):
+
+[source,express]
+----
+RULE unique_organization_names FOR (organization);
+WHERE
+  WR1: SIZEOF(QUERY(o1 <* organization |
+         SIZEOF(QUERY(o2 <* organization |
+           o1 :<>: o2 AND o1.org_name = o2.org_name
+         )) > 0
+       )) = 0;
+END_RULE;
+----
+
+==== Functions and Procedures
+
+EXPRESS supports algorithmic definitions:
+
+**Functions** (return a value):
+
+[source,express]
+----
+FUNCTION max_value(x, y : REAL) : REAL;
+  IF x > y THEN
+    RETURN(x);
+  ELSE
+    RETURN(y);
+  END_IF;
+END_FUNCTION;
+----
+
+**Procedures** (perform actions):
+
+[source,express]
+----
+PROCEDURE log_message(msg : STRING);
+  LOCAL
+    timestamp : STRING;
+  END_LOCAL;
+
+  timestamp := get_timestamp();
+  write_log(timestamp + ': ' + msg);
+END_PROCEDURE;
+----
+
+=== EXPRESS Syntax Basics
+
+==== Declaration Order
+
+EXPRESS declarations follow this order within a schema:
+
+1. Interfaces (USE FROM, REFERENCE FROM)
+2. Constants
+3. Types
+4. Entities
+5. Subtype constraints
+6. Functions
+7. Procedures
+8. Rules
+
+==== Comments
+
+EXPRESS supports two comment styles:
+
+[source,express]
+----
+-- Single line comment
+
+(* Multi-line
+   comment *)
+
+(* Can also be used
+-- with single-line comments inside *)
+----
+
+==== Naming Conventions
+
+* Schema names: lowercase with underscores (`geometry_schema`)
+* Entity names: lowercase with underscores (`geometric_representation_item`)
+* Attribute names: lowercase with underscores (`item_count`)
+* Type names: lowercase with underscores (`length_measure`)
+* Function names: lowercase with underscores (`get_name`)
+* Constants: uppercase with underscores (`PI`)
+
+==== Case Sensitivity
+
+EXPRESS is case-insensitive, but by convention:
+
+* Keywords: UPPERCASE (`ENTITY`, `END_ENTITY`)
+* Identifiers: lowercase_with_underscores
+
+=== EXPRESS vs Other Languages
+
+==== EXPRESS vs JSON Schema
+
+**EXPRESS advantages**:
+
+* Formal semantics with mathematical precision
+* Entity inheritance and polymorphism
+* Complex constraints (WHERE rules)
+* Algorithmic content (functions, procedures)
+* Inverse relationships
+
+**JSON Schema advantages**:
+
+* Simpler syntax
+* Direct JavaScript integration
+* Wider web ecosystem support
+* Easier for simple data validation
+
+==== EXPRESS vs UML
+
+**EXPRESS advantages**:
+
+* Text-based, version control friendly
+* Formal, executable semantics
+* Integrated constraint language
+* Designed for data exchange specifications
+
+**UML advantages**:
+
+* Visual representation
+* Multiple diagram types (class, sequence, state)
+* Broader software modeling scope
+* More intuitive for object-oriented developers
+
+==== EXPRESS vs XML Schema (XSD)
+
+**EXPRESS advantages**:
+
+* Richer type system (SELECT, inheritance)
+* Entity relationship modeling
+* Constraint language (WHERE rules)
+* Functions and procedures
+* Format-independent
+
+**XSD advantages**:
+
+* Native XML integration
+* Wide tool support
+* Namespace management
+* Direct XML validation
+
+==== EXPRESS vs Relational Schema (SQL DDL)
+
+**EXPRESS advantages**:
+
+* Object-oriented (inheritance, polymorphism)
+* Derived attributes
+* Complex aggregate types
+* Formal constraints
+* Platform-independent
+
+**SQL DDL advantages**:
+
+* Direct database implementation
+* Query language (SQL) integration
+* Mature ecosystem
+* Performance optimizations
+
+=== Common EXPRESS Patterns
+
+==== Optional Attributes
+
+Use `OPTIONAL` for attributes that may be absent:
+
+[source,express]
+----
+ENTITY person;
+  name : STRING;
+  middle_name : OPTIONAL STRING;
+  birth_date : date;
+END_ENTITY;
+----
+
+==== Extensible SELECT
+
+Allow types to be extended by other schemas:
+
+[source,express]
+----
+TYPE measure_value = EXTENSIBLE SELECT
+  (length_measure,
+   area_measure,
+   volume_measure);
+END_TYPE;
+----
+
+==== Supertype Constraints
+
+Control instantiation of subtypes:
+
+[source,express]
+----
+ENTITY shape
+  ABSTRACT SUPERTYPE OF (ONEOF(circle, rectangle));
+  -- Must be either circle or rectangle, not shape itself
+END_ENTITY;
+
+ENTITY circle
+  SUBTYPE OF (shape);
+  radius : REAL;
+END_ENTITY;
+
+ENTITY rectangle
+  SUBTYPE OF (shape);
+  width : REAL;
+  height : REAL;
+END_ENTITY;
+----
+
+==== Self-Reference
+
+Entities can reference themselves:
+
+[source,express]
+----
+ENTITY tree_node;
+  value : STRING;
+  parent : OPTIONAL tree_node;
+  children : SET [0:?] OF tree_node;
+END_ENTITY;
+----
+
+==== Multiple Inheritance
+
+EXPRESS supports multiple inheritance:
+
+[source,express]
+----
+ENTITY employee
+  SUBTYPE OF (person);
+  employee_id : STRING;
+END_ENTITY;
+
+ENTITY manager
+  SUBTYPE OF (employee, leader);
+  department : organization;
+END_ENTITY;
+----
+
+=== Working with EXPRESS in Expressir
+
+When you parse EXPRESS with Expressir:
+
+**The parser reads**::
+Text files in EXPRESS syntax (.exp files)
+
+**And produces**::
+A Ruby object model representing the schema structure
+
+**You can then**::
+* Navigate entities and attributes
+* Analyze relationships
+* Generate documentation
+* Transform to other formats
+* Validate schema structure
+
+See link:data-model.html[Data Model] for details on Expressir's Ruby representation.
+
+=== Learning More
+
+To work effectively with EXPRESS schemas in Expressir:
+
+**Next steps**::
+* Try link:../tutorials/parsing-your-first-schema.html[parsing a schema]
+* Explore link:data-model.html[Expressir's data model]
+* Study link:parsers.html[how parsing works]
+
+**EXPRESS resources**::
+* Read the ISO 10303-11 standard
+* Study existing STEP schemas
+* Review EXPRESS-G diagrams for visual understanding
+
+**Practical experience**::
+* Parse ISO 10303 schemas with Expressir
+* Analyze entity relationships
+* Write validation rules
+* Generate documentation
+
+=== Bibliography
+
+* https://www.iso.org/standard/38047.html[ISO 10303-11:2004] - EXPRESS language reference manual (official standard)
+* https://www.expresslang.org/[EXPRESS Language Foundation (ELF)] - Community resources and specifications
+* https://en.wikipedia.org/wiki/EXPRESS_(data_modeling_language)[EXPRESS on Wikipedia] - Overview and history
+* https://www.steptools.com/stds/step/IS_final_p11e3.html[EXPRESS Language Reference] - Comprehensive language guide
+* https://www.nist.gov/publications/introduction-express-language[NIST Introduction to EXPRESS] - Tutorial and examples

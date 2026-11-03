@@ -1,0 +1,36 @@
+---
+title: SHTOLO and Annex G
+parent: Reference
+grand_parent: Guides
+nav_order: 5
+---
+
+= SHTOLO and Annex G
+
+== Purpose
+
+`Expressir::Express::Shtolo` converts a multi-schema shortform EXPRESS
+model into an ISO 10303-11:1994 longform. It implements the two stages
+of Annex G: multi-schema to an intermediate single artifact schema
+(stage 1), then artifact to 1994-only constructs (stage 2).
+
+== Rule coverage
+
+Every Annex G rule has a live worked example in
+`spec/expressir/express/shtolo_annex_g_rule_audit_spec.rb`. The
+extracted rule list, the fixture that exercises each rule and the
+eengine coverage verdict are in
+`spec/fixtures/shtolo/annex-g-rules.md`.
+
+Key rules: name munging (G.NM.1), USE wins over REFERENCE (G.1.2),
+original-name copying for aliases (G.1.3), dependently-instantiable
+rules (G.1.6), implicit interface closure (G.1.7), pruning (G.1.9),
+extensible enumeration/select folding (G.2.3/G.2.4) and subtype
+constraint removal (G.2.5). Where eeng and the annex disagree, the
+annex wins; eeng output is a comparison input, not the contract.
+
+== Structural safety
+
+`Expressir::Express::SchemaCompare`/`SchemaPatch` provide the
+declaration-level diff used to verify that a generated longform has
+exactly the expected structural deltas.

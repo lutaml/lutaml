@@ -1,0 +1,30 @@
+---
+title: Part 21
+parent: Reference
+grand_parent: Guides
+nav_order: 4
+---
+
+= Part 21
+
+== Purpose
+
+`Expressir::P21` reads ISO 10303-21 exchange structures: header
+entities, simple and complex instances, nested lists, references,
+typed parameters, enumerations and binaries.
+
+== Validation
+
+`Expressir::P21::Validator.validate(population, schema, short_names:)`
+maps Part 21 records to EXPRESS attributes in clause 12 order —
+supertype attributes first, derived slots valued `*`, inverse
+attributes unmapped — and reports arity, unknown-entity,
+unknown-reference, enum-value and derived-slot notes. Short names from
+clause 12.3 are passed as a `{"CPT" => "cartesian_point"}` map.
+
+== Conformance corpus
+
+The annex examples from the ISO 10303-21 detachment live under
+`spec/fixtures/p21/conformance/`; the gate spec parses each positive
+fixture with zero notes and asserts the intended loud failure for
+ladder-excluded forms.

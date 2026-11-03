@@ -1,0 +1,48 @@
+name: "validate_schemas"
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.job }}-${{ github.head_ref || github.ref_name }}'
+  cancel-in-progress: true
+
+jobs:
+  schemas:
+    name: Validate schemas
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        test-group:
+          [
+            'iso-10303/schemas-srl.yml',
+            'iso-10303/schemas_module.yml',
+            'iso-10303/schemas_bom.yml',
+          ]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          repository: 'metanorma/iso-10303'
+          path: iso-10303
+          token: ${{ secrets.LUTAML_CI_PAT_TOKEN }}
+
+      - name: Install Ruby
+        uses: ruby/setup-ruby@master
+        with:
+          ruby-version: 3.2
+          bundler-cache: true
+          cache-version: 0 # Increment this number if you need to re-download cached gems
+
+      - name: Validate schemas ${{ matrix.test-group }}
+        run: |
+          yq '.schemas[].path | sub("schemas", "iso-10303/schemas")' ${{ matrix.test-group }} | xargs bundle exec ./exe/expressir validate load
+

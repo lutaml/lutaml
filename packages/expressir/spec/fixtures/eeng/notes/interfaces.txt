@@ -1,0 +1,25 @@
+-*- Mode: Text; Base: 10 -*-
+
+From ISO 10303-11:2004(E)
+
+========== Chapter 11 Interface spectification ==========
+
+Interfaces come in three types, USE FROM, REFERENCE FROM and implicitly.
+
+USE FROM applies only to ENTITY and TYPE and can be
+"chained". I.e. when S2 is USE FROM'd in S1, then any declarations
+USE'd into S2 are also visible in S1. REFERECE FROM cannot be
+"chained" since you cannot reference an object that was referenced
+into a schema.
+
+If a USE FROM has not resources the all TYPE's and ENTITY's are
+considered to be interfaced.  That also means that any TYPE's and
+ENTITY's which were USE FROM'd into the schema are also visible.
+
+
+===== USE FROM =====
+
+Only interfaces ENTITY and TYPE.
+
+When a schema is USE FROM'd, TYPE and ENTITY declarations from its USE
+FROM's are also included.

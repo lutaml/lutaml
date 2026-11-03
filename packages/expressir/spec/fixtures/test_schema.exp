@@ -1,0 +1,28 @@
+SCHEMA test_schema;
+
+  ENTITY test_entity;
+    id : STRING;
+    name : STRING;
+    status : test_status;
+  END_ENTITY;
+  
+  TYPE test_status = ENUMERATION OF (
+    active,
+    inactive,
+    pending
+  );
+  END_TYPE;
+  
+  FUNCTION test_function(input : STRING) : STRING;
+    RETURN (input);
+  END_FUNCTION;
+  
+  PROCEDURE test_procedure(input : STRING);
+  END_PROCEDURE;
+  
+  RULE test_rule FOR (test_entity);
+  WHERE
+    WR1: TRUE;
+  END_RULE;
+
+END_SCHEMA;

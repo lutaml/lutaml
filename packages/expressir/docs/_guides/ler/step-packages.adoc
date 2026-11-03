@@ -1,0 +1,385 @@
+---
+title: STEP Standard Packages
+parent: LER Packages
+grand_parent: Guides
+nav_order: 7
+---
+
+= STEP Standard Packages (SRL, SML, SMRL)
+
+== Purpose
+
+This guide explains how to create and use LER packages from STEP standard
+schema collections: the STEPmod Resource Library (SRL), STEPmod Module Library
+(SML), and the combined STEP Resource and Module Library (SMRL).
+
+== References
+
+* link:creating-packages.html[Creating Packages]
+* link:loading-packages.html[Loading Packages]
+* link:querying-packages.html[Querying Packages]
+
+== Concepts
+
+SRL (STEPmod Resource Library):: The collection of 133 resource schemas that
+define core EXPRESS types, entities, and functions used across STEP application
+protocols. Located in `schemas/resources/` of the STEPmod distribution.
+
+SML (STEP Module Library):: The collection of application modules (643 modules,
+1205 ARM and MIM schemas) that define modular data models. Located in
+`schemas/modules/` of the STEPmod distribution.
+
+SMRL (STEP Resource and Module Library):: The combined set of all SRL resource
+schemas and SML module schemas (1341 total).
+
+STEPmod:: The ISO 10303 standards maintenance and development toolkit that
+contains the source EXPRESS schemas for STEP.
+
+== Prerequisites
+
+You need a local copy of the STEPmod distribution (ISO 10303 repository). The
+schema directory structure looks like:
+
+[source]
+----
+iso-10303/
+├── schemas/
+│   ├── resources/              # SRL: 133 resource schemas
+│   │   ├── action_schema/
+│   │   │   └── action_schema.exp
+│   │   ├── geometry_schema/
+│   │   │   └── geometry_schema.exp
+│   │   └── ...
+│   └── modules/                # SML: 643 modules, 1205 schemas
+│       ├── colour/
+│       │   ├── arm.exp
+│       │   └── mim.exp
+│       ├── geometry/
+│       │   ├── arm.exp
+│       │   └── mim.exp
+│       └── ...
+└── ...
+----
+
+== Creating an SRL package
+
+The SRL contains resource schemas that provide common definitions reused across
+STEP application protocols.
+
+=== Using the Ruby API
+
+[source,ruby]
+----
+require "expressir"
+
+base_dir = "/path/to/iso-10303"
+resource_files = Dir.glob("#{base_dir}/schemas/resources/**/*.exp").sort
+
+puts "Building SRL from #{resource_files.length} resource schemas..."
+
+# Parse all resource schemas
+repo = Expressir::Express::Parser.from_files(resource_files)
+
+puts "Parsed #{repo.schemas.length} schemas"
+
+# Export as LER package
+repo.export_to_package(
+  "srl.ler",
+  name: "SRL",
+  description: "STEPmod Resource Library - ISO 10303 resource schemas",
+  serialization_format: "marshal"
+)
+
+puts "Created srl.ler"
+----
+
+=== Performance characteristics
+
+[example]
+====
+* 133 resource schemas
+* Parse time: ~10 seconds
+* Package size: ~5 MB
+====
+
+== Creating an SML package
+
+The SML contains application modules, each with ARM (Application Reference
+Model) and MIM (Mapped Information Model) schemas.
+
+=== Using the Ruby API
+
+[source,ruby]
+----
+require "expressir"
+
+base_dir = "/path/to/iso-10303"
+module_files = Dir.glob("#{base_dir}/schemas/modules/**/{arm,mim}.exp").sort
+
+puts "Building SML from #{module_files.length} module schemas..."
+
+# Parse all module schemas
+repo = Expressir::Express::Parser.from_files(module_files)
+
+puts "Parsed #{repo.schemas.length} schemas"
+
+# Export as LER package
+repo.export_to_package(
+  "sml.ler",
+  name: "SML",
+  description: "STEP Module Library - ISO 10303 application modules",
+  serialization_format: "marshal"
+)
+
+puts "Created sml.ler"
+----
+
+=== Performance characteristics
+
+[example]
+====
+* 1205 module schemas (643 modules)
+* Parse time: ~3 minutes
+* Package size: ~14 MB
+====
+
+== Creating an SMRL package
+
+The SMRL combines all resource and module schemas into a single package.
+
+=== Using the Ruby API
+
+[source,ruby]
+----
+require "expressir"
+
+base_dir = "/path/to/iso-10303"
+resource_files = Dir.glob("#{base_dir}/schemas/resources/**/*.exp").sort
+module_files = Dir.glob("#{base_dir}/schemas/modules/**/{arm,mim}.exp").sort
+all_files = resource_files + module_files
+
+puts "Building SMRL from #{all_files.length} schemas..."
+
+# Parse all schemas
+repo = Expressir::Express::Parser.from_files(all_files)
+
+puts "Parsed #{repo.schemas.length} schemas"
+
+# Export as LER package
+repo.export_to_package(
+  "smrl.ler",
+  name: "SMRL",
+  description: "STEP Resource and Module Library - Complete ISO 10303 schemas",
+  serialization_format: "marshal"
+)
+
+puts "Created smrl.ler"
+----
+
+=== Performance characteristics
+
+[example]
+====
+* 1341 schemas (133 resources + 1205 modules)
+* Parse time: ~8 minutes
+* Package size: ~24 MB
+====
+
+== Loading and searching packages
+
+All three package types use the same loading and querying API.
+
+=== Loading a package
+
+[source,ruby]
+----
+require "expressir"
+
+# Load any .ler package
+repo = Expressir::Model::Repository.from_package("smrl.ler")
+puts "Loaded #{repo.schemas.length} schemas"
+----
+
+Load times are fast regardless of package size:
+
+[example]
+====
+* SRL (133 schemas): ~1 second
+* SML (1205 schemas): ~3 seconds
+* SMRL (1340 schemas): ~5 seconds
+====
+
+=== Finding entities by qualified name
+
+Use `find_entity` for instant lookups when you know the schema and entity name:
+
+[source,ruby]
+----
+entity = repo.find_entity(qualified_name: "geometry_schema.axis2_placement_3d")
+if entity
+  puts "Found: #{entity.id}"
+  puts "Schema: #{entity.parent.id}"
+end
+----
+
+=== Listing all entities
+
+[source,ruby]
+----
+entities = repo.list_entities
+puts "Total: #{entities.length} entities"
+
+entities.first(5).each do |e|
+  puts "  #{e.parent.id}.#{e.id}"
+end
+----
+
+=== Listing entities from a specific schema
+
+[source,ruby]
+----
+entities = repo.list_entities(schema: "mathematical_functions_schema")
+puts "Entities in mathematical_functions_schema: #{entities.length}"
+----
+
+=== Listing all types
+
+[source,ruby]
+----
+types = repo.list_types
+puts "Total: #{types.length} types"
+----
+
+=== Finding a specific schema
+
+[source,ruby]
+----
+schema = repo.schemas.find { |s| s.id == "mathematical_functions_schema" }
+if schema
+  puts "Entities: #{schema.entities&.length || 0}"
+  puts "Types: #{schema.types&.length || 0}"
+  puts "Functions: #{schema.functions&.length || 0}"
+end
+----
+
+=== Using SearchEngine for pattern matching
+
+[source,ruby]
+----
+require "expressir"
+
+repo = Expressir::Model::Repository.from_package("smrl.ler")
+engine = Expressir::Model::SearchEngine.new(repo)
+
+# Find all entities containing "product"
+results = engine.search(pattern: "product", type: "entity")
+results.each do |r|
+  puts "#{r[:schema]}.#{r[:id]}"
+end
+
+# Find all SELECT types
+select_types = engine.list(type: "type", category: "select")
+puts "SELECT types: #{select_types.length}"
+
+# Wildcard search for geometry-related entities
+results = engine.search(pattern: "geometry*")
+----
+
+== Complete build script
+
+Here is a complete script for building all three STEP packages:
+
+[source,ruby]
+----
+#!/usr/bin/env ruby
+# build_step_packages.rb
+
+require "expressir"
+require "optparse"
+
+options = {
+  stepmod_dir: nil,
+  output_dir: ".",
+  packages: ["srl", "sml", "smrl"]
+}
+
+OptionParser.new do |opts|
+  opts.banner = "Usage: build_step_packages.rb [options]"
+
+  opts.on("--stepmod DIR", "Path to iso-10303 directory") do |v|
+    options[:stepmod_dir] = v
+  end
+
+  opts.on("--output DIR", "Output directory (default: .)") do |v|
+    options[:output_dir] = v
+  end
+
+  opts.on("--packages LIST", "Comma-separated list: srl,sml,smrl") do |v|
+    options[:packages] = v.split(",")
+  end
+end.parse!
+
+abort("--stepmod is required") unless options[:stepmod_dir]
+
+base_dir = options[:stepmod_dir]
+
+if options[:packages].include?("srl")
+  puts "=== Building SRL ==="
+  files = Dir.glob("#{base_dir}/schemas/resources/**/*.exp").sort
+  repo = Expressir::Express::Parser.from_files(files)
+  output = File.join(options[:output_dir], "srl.ler")
+  repo.export_to_package(output,
+    name: "SRL",
+    description: "STEPmod Resource Library",
+    serialization_format: "marshal")
+  puts "Created #{output} (#{repo.schemas.length} schemas)"
+end
+
+if options[:packages].include?("sml")
+  puts "\n=== Building SML ==="
+  files = Dir.glob("#{base_dir}/schemas/modules/**/{arm,mim}.exp").sort
+  repo = Expressir::Express::Parser.from_files(files)
+  output = File.join(options[:output_dir], "sml.ler")
+  repo.export_to_package(output,
+    name: "SML",
+    description: "STEP Module Library",
+    serialization_format: "marshal")
+  puts "Created #{output} (#{repo.schemas.length} schemas)"
+end
+
+if options[:packages].include?("smrl")
+  puts "\n=== Building SMRL ==="
+  resource_files = Dir.glob("#{base_dir}/schemas/resources/**/*.exp").sort
+  module_files = Dir.glob("#{base_dir}/schemas/modules/**/{arm,mim}.exp").sort
+  repo = Expressir::Express::Parser.from_files(resource_files + module_files)
+  output = File.join(options[:output_dir], "smrl.ler")
+  repo.export_to_package(output,
+    name: "SMRL",
+    description: "STEP Resource and Module Library",
+    serialization_format: "marshal")
+  puts "Created #{output} (#{repo.schemas.length} schemas)"
+end
+
+puts "\nDone!"
+----
+
+Usage:
+
+[source,bash]
+----
+ruby build_step_packages.rb \
+  --stepmod /path/to/iso-10303 \
+  --output ./packages \
+  --packages srl,sml,smrl
+----
+
+== Summary
+
+* Use `Dir.glob` to collect all EXPRESS files for SRL, SML, or SMRL
+* `Expressir::Express::Parser.from_files` parses all files into a single
+  repository
+* `repo.export_to_package` creates a `.ler` package with pre-built indexes
+* `Repository.from_package` loads packages in seconds
+* `find_entity(qualified_name:)` provides instant lookups
+* `list_entities` and `list_types` enumerate all items
+* `SearchEngine` supports pattern matching and filtering

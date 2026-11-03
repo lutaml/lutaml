@@ -1,0 +1,522 @@
+---
+title: Parsing Your First Schema
+nav_order: 2
+---
+
+== Parsing Your First Schema
+
+=== Prerequisites
+
+Before starting this tutorial, ensure you have:
+
+* Ruby 2.7 or later installed
+* Expressir gem installed (see link:../pages/getting-started.html[Getting Started])
+* Basic understanding of EXPRESS (see link:../pages/express-language.html[EXPRESS Language])
+* A text editor for creating files
+
+=== Learning Objectives
+
+By the end of this tutorial, you will be able to:
+
+* Create a simple EXPRESS schema file
+* Parse the schema using the Expressir CLI
+* Parse the schema using the Ruby API
+* Navigate the parsed data model
+* Handle parsing errors gracefully
+* Understand the structure of a parsed repository
+
+=== What You'll Build
+
+You'll create a simple EXPRESS schema representing a person and organization, then parse it with Expressir to explore the resulting Ruby data model.
+
+=== Step 1: Create a Sample Schema
+
+Create a file named `person_schema.exp` with the following content:
+
+[source,express]
+----
+SCHEMA person_schema;
+
+  ENTITY person;
+    name : STRING;
+    age : INTEGER;
+    email : OPTIONAL STRING;
+  END_ENTITY;
+
+  ENTITY organization;
+    org_name : STRING;
+    employees : SET [0:?] OF person;
+    founded : INTEGER;
+  END_ENTITY;
+
+  TYPE person_list = LIST [1:?] OF person;
+  END_TYPE;
+
+END_SCHEMA;
+----
+
+This schema defines:
+
+* **person entity**: With name, age, and optional email
+* **organization entity**: With name, employees (set of persons), and founding year
+* **person_list type**: A list of at least one person
+
+=== Step 2: Parse with CLI
+
+The simplest way to parse is using the command line.
+
+==== Format the Schema
+
+First, verify the schema is valid by formatting it:
+
+[source,bash]
+----
+expressir format person_schema.exp
+----
+
+**Expected output**: The schema printed to stdout with consistent formatting.
+
+If there are syntax errors, Expressir will report them with line numbers.
+
+==== Validate the Schema
+
+Check if the schema meets validation criteria:
+
+[source,bash]
+----
+expressir validate person_schema.exp
+----
+
+**Expected o
+
+utput**:
+[source]
+----
+Validation passed for all EXPRESS schemas.
+----
+
+==== What Happened?
+
+The CLI:
+
+1. Read the file `person_schema.exp`
+2. Parsed the EXPRESS text into an Abstract Syntax Tree (AST)
+3. Transformed the AST into Expressir's Ruby data model
+4. Resolved all references within the schema
+5. Formatted or validated the result
+
+=== Step 3: Parse with Ruby API
+
+Now let's parse programmatically using Ruby.
+
+==== Basic Parsing
+
+Create a file named `parse_person.rb`:
+
+[source,ruby]
+----
+require 'expressir'
+
+# Parse the schema file
+repository = Expressir::Express::Parser.from_file('person_schema.exp')
+
+# Access the repository
+puts "Parsed successfully!"
+puts "Number of schemas: #{repository.schemas.size}"
+
+# Get the first (and only) schema
+schema = repository.schemas.first
+puts "Schema name: #{schema.id}"
+puts "Schema file: #{schema.file}"
+----
+
+Run it:
+
+[source,bash]
+----
+ruby parse_person.rb
+----
+
+**Expected output**:
+[source]
+----
+Parsed successfully!
+Number of schemas: 1
+Schema name: person_schema
+Schema file: person_schema.exp
+----
+
+==== Understanding the Result
+
+The [`from_file`](../../lib/expressir/express/parser.rb:605) method returns a [`Repository`](../../lib/expressir/model/repository.rb:10) object containing:
+
+* **schemas**: Array of [`Schema`](../../lib/expressir/model/declarations/schema.rb:6) objects
+* **Indexes**: Built automatically for fast lookups
+
+Each [`Schema`](../../lib/expressir/model/declarations/schema.rb:6) contains:
+
+* **id**: Schema name
+* **file**: Source file path
+* **entities**: Array of entity definitions
+* **types**: Array of type definitions
+* **functions**, **procedures**, **rules**: Other declarations
+
+=== Step 4: Explore the Parsed Model
+
+Now let's explore what was parsed.
+
+==== List Entities
+
+Add to `parse_person.rb`:
+
+[source,ruby]
+----
+# List all entities
+puts "\nEntities:"
+schema.entities.each do |entity|
+  puts "  - #{entity.id}"
+
+  # List entity attributes
+  entity.attributes.each do |attr|
+    optional = attr.optional ? " (optional)" : ""
+    puts "    * #{attr.id}: #{attr.type}#{optional}"
+  end
+end
+----
+
+**Output**:
+[source]
+----
+Entities:
+  - person
+    * name: STRING
+    * age: INTEGER
+    * email: STRING (optional)
+  - organization
+    * org_name: STRING
+    * employees: SET [0:?] OF person
+    * founded: INTEGER
+----
+
+==== List Types
+
+Add to `parse_person.rb`:
+
+[source,ruby]
+----
+# List all types
+puts "\nTypes:"
+schema.types.each do |type|
+  puts "  - #{type.id}: #{type.underlying_type}"
+end
+----
+
+**Output**:
+[source]
+----
+Types:
+  - person_list: LIST [1:?] OF person
+----
+
+==== Access Specific Elements
+
+Add to `parse_person.rb`:
+
+[source,ruby]
+----
+# Find a specific entity
+person_entity = schema.entities.find { |e| e.id == "person" }
+if person_entity
+  puts "\nFound person entity with #{person_entity.attributes.size} attributes"
+
+  # Access individual attributes
+  name_attr = person_entity.attributes.find { |a| a.id == "name" }
+  puts "Name attribute type: #{name_attr.type}"
+end
+----
+
+**Output**:
+[source]
+----
+Found person entity with 3 attributes
+Name attribute type: STRING
+----
+
+=== Step 5: Handle Parsing Errors
+
+Errors happen. Let's learn to handle them gracefully.
+
+==== Create an Invalid Schema
+
+Create `invalid_schema.exp`:
+
+[source,express]
+----
+SCHEMA invalid_schema;
+
+  ENTITY person
+    name : STRING;  -- Missing semicolon after person
+  END_ENTITY;
+
+END_SCHEMA;
+----
+
+==== Catch and Handle Errors
+
+Create `handle_errors.rb`:
+
+[source,ruby]
+----
+require 'expressir'
+
+begin
+  repository = Expressir::Express::Parser.from_file('invalid_schema.exp')
+  puts "Parsing succeeded!"
+rescue Expressir::Express::Error::SchemaParseFailure => e
+  puts "❌ Parsing failed!"
+  puts "\nFile: #{e.filename}"
+  puts "\nError message:"
+  puts e.message
+  puts "\nDetailed parse tree:"
+  puts e.parse_failure_cause.ascii_tree
+end
+----
+
+Run it:
+
+[source,bash]
+----
+ruby handle_errors.rb
+----
+
+**Expected output**:
+[source]
+----
+❌ Parsing failed!
+
+File: invalid_schema.exp
+
+Error message:
+Failed to parse invalid_schema.exp
+
+Detailed parse tree:
+[Shows detailed error location with line/column]
+----
+
+==== Common Parsing Errors
+
+[options="header"]
+|===
+| Error | Cause | Solution
+| "Expected ';'" | Missing semicolon | Add semicolon after declaration
+| "Expected identifier" | Invalid name | Use valid identifier (letters, numbers, underscore)
+| "Unexpected keyword" | Misused keyword | Check EXPRESS syntax reference
+| "Expected 'END_ENTITY'" | Mismatched END | Ensure END matches opening keyword
+|===
+
+=== Step 6: Working with Parsed Data
+
+Let's do something useful with the parsed schema.
+
+==== Generate a Summary Report
+
+Create `schema_summary.rb`:
+
+[source,ruby]
+----
+require 'expressir'
+
+# Parse the schema
+repo = Expressir::Express::Parser.from_file('person_schema.exp')
+schema = repo.schemas.first
+
+# Generate summary
+puts "=" * 60
+puts "Schema Summary: #{schema.id}"
+puts "=" * 60
+
+# Count elements
+puts "\nStatistics:"
+puts "  Entities: #{schema.entities.size}"
+puts "  Types: #{schema.types.size}"
+puts "  Total attributes: #{schema.entities.sum { |e| e.attributes.size }}"
+
+# Detailed entity report
+puts "\nEntities:"
+schema.entities.each do |entity|
+  attr_count = entity.attributes.size
+  optional_count = entity.attributes.count(&:optional)
+
+  puts "\n  #{entity.id}:"
+  puts "    Total attributes: #{attr_count}"
+  puts "    Optional attributes: #{optional_count}"
+  puts "    Required attributes: #{attr_count - optional_count}"
+end
+
+# Type report
+puts "\nType Definitions:"
+schema.types.each do |type|
+  puts "  #{type.id} -> #{type.underlying_type}"
+end
+
+puts "\n" + "=" * 60
+----
+
+Run it:
+
+[source,bash]
+----
+ruby schema_summary.rb
+----
+
+**Expected output**:
+[source]
+----
+============================================================
+Schema Summary: person_schema
+============================================================
+
+Statistics:
+  Entities: 2
+  Types: 1
+  Total attributes: 6
+
+Entities:
+
+  person:
+    Total attributes: 3
+    Optional attributes: 1
+    Required attributes: 2
+
+  organization:
+    Total attributes: 3
+    Optional attributes: 0
+    Required attributes: 3
+
+Type Definitions:
+  person_list -> LIST [1:?] OF person
+
+============================================================
+----
+
+=== Step 7: Practice Exercises
+
+Now it's your turn! Try these exercises to reinforce your learning.
+
+==== Exercise 1: Add More Entities
+
+Modify `person_schema.exp` to add:
+
+* A `project` entity with name and deadline attributes
+* A `team` entity that references persons and projects
+
+Parse it and verify:
+* The new entities appear in the entity list
+* The attributes are correctly parsed
+* References between entities work
+
+==== Exercise 2: Parse Multiple Files
+
+Create two schema files:
+
+* `base_schema.exp` - With basic entities
+* `extended_schema.exp` - That uses entities from base_schema (via USE FROM)
+
+Parse both files together:
+
+[source,ruby]
+----
+files = ['base_schema.exp', 'extended_schema.exp']
+repo = Expressir::Express::Parser.from_files(files)
+puts "Parsed #{repo.schemas.size} schemas"
+----
+
+==== Exercise 3: Type Exploration
+
+Create a schema with various type definitions:
+
+* ENUMERATION type (e.g., status: active, inactive, pending)
+* SELECT type (union of multiple types)
+* Aggregate type (ARRAY, LIST, SET, BAG)
+
+Parse and identify the type of each TYPE definition.
+
+==== Exercise 4: Error Recovery
+
+Create intentionally broken schemas with different errors:
+
+* Missing END_ENTITY
+* Invalid attribute type
+* Circular reference
+
+Practice catching and logging each error type appropriately.
+
+=== Common Pitfalls
+
+==== Forgetting Reference Resolution
+
+[source,ruby]
+----
+# ❌ References not resolved
+repo = Expressir::Express::Parser.from_file('schema.exp', skip_references: true)
+entity.attributes.first.type.ref  # => nil (not resolved!)
+
+# ✅ References resolved (default)
+repo = Expressir::Express::Parser.from_file('schema.exp')
+entity.attributes.first.type.ref  # => Points to actual type
+----
+
+==== Not Handling Parse Errors
+
+[source,ruby]
+----
+# ❌ Unhandled errors crash program
+repo = Expressir::Express::Parser.from_file('might-be-invalid.exp')
+
+# ✅ Graceful error handling
+begin
+  repo = Expressir::Express::Parser.from_file('might-be-invalid.exp')
+rescue Expressir::Express::Error::SchemaParseFailure => e
+  warn "Skipping invalid schema: #{e.filename}"
+end
+----
+
+==== Assuming Single Schema
+
+[source,ruby]
+----
+# ❌ Assuming first schema
+schema = repo.schemas.first  # Might be wrong file!
+
+# ✅ Finding correct schema
+schema = repo.schemas.find { |s| s.id == "person_schema" }
+----
+
+=== Next Steps
+
+Congratulations! You've learned to parse EXPRESS schemas with Expressir.
+
+**Continue learning**:
+
+* link:working-with-multiple-schemas.html[Working with Multiple Schemas] - Handle dependencies and interfaces
+* link:querying-schemas.html[Querying Schemas] - Find and filter entities/types
+* link:creating-ler-package.html[Creating LER Packages] - Package for performance
+
+**Read more**:
+
+* link:../pages/parsers.html[Parsers] - Deep dive into parsing architecture
+* link:../pages/data-model.html[Data Model] - Understanding the Ruby model
+* link:../guides/ruby-api/[Ruby API Guides] - Advanced programmatic usage
+
+=== Summary
+
+In this tutorial, you learned to:
+
+* ✅ Create valid EXPRESS schema files
+* ✅ Parse schemas using CLI and Ruby API
+* ✅ Navigate the parsed data model
+* ✅ Access entities, types, and attributes
+* ✅ Handle parsing errors gracefully
+* ✅ Generate reports from parsed schemas
+
+You're now ready to work with more complex schemas and explore advanced Expressir features!

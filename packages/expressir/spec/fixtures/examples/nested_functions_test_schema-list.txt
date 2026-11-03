@@ -1,0 +1,29 @@
+*** Written by Express Engine
+***    5.2.7 (GIT eeng-5.2.7)
+***    Steel Bank CL 2.5.8 (Unknown Bits)
+*** Express Engine Command Line:
+***   eengine --list
+***     -SCHEMA spec/fixtures/examples/nested_functions_test_schema.exp
+*** File: spec/fixtures/examples/nested_functions_test_schema.exp
+*** 1 Schema:
+   nested_functions_test_schema
+
+
+SCHEMA nested_functions_test_schema;
+
+(* TYPE                   0 *)
+(* ENTITY                 1 *)
+(* FUNCTION               2 *)
+(* PROCEDURE              1 *)
+(* RULE                   1 *)
+(* SUBTYPE_CONSTRAINT     0 *)
+
+  ENTITY NESTED_FUNCTIONS_TEST_SCHEMA.empty_entity;
+  FUNCTION NESTED_FUNCTIONS_TEST_SCHEMA.another_top_level_function;
+  FUNCTION NESTED_FUNCTIONS_TEST_SCHEMA.top_level_function;
+    FUNCTION NESTED_FUNCTIONS_TEST_SCHEMA.inner_function_in_function;
+      FUNCTION NESTED_FUNCTIONS_TEST_SCHEMA.deeply_nested_function;
+  RULE NESTED_FUNCTIONS_TEST_SCHEMA.top_level_rule;
+  PROCEDURE NESTED_FUNCTIONS_TEST_SCHEMA.top_level_procedure;
+    FUNCTION NESTED_FUNCTIONS_TEST_SCHEMA.inner_function_in_procedure;
+      FUNCTION NESTED_FUNCTIONS_TEST_SCHEMA.nested_in_procedure_function;

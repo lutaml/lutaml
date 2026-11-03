@@ -1,0 +1,11 @@
+#!/usr/bin/env ruby
+# encoding: UTF-8
+
+# Ruby block-buffers stdout when it is not a terminal, so progress from a long
+# run reaches a CI log only when the buffer fills or the process exits. A job
+# that is working then looks hung. Set here rather than in the library, which
+# runs inside other people's processes and does not own their streams.
+$stdout.sync = true
+
+require_relative "../lib/expressir"
+Expressir::Cli.start(ARGV)

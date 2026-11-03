@@ -1,0 +1,559 @@
+(*
+ACME 5000 No. 10060
+
+EXPRESS Source:
+ACME 5000-110 ed2 Smart home automation - Basis schema
+
+The following permission notice and disclaimer shall be included in all copies of this EXPRESS schema ("the Schema"),
+and derivations of the Schema:
+
+Copyright Ribose 2025  All rights reserved
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+In addition, any modified copy of the Schema shall include the following notice:
+
+THIS SCHEMA HAS BEEN MODIFIED FROM THE SCHEMA DEFINED IN
+ACME 5000-110 ed2 Smart home automation - Basis schema
+AND SHOULD NOT BE INTERPRETED AS COMPLYING WITH THAT STANDARD
+*)
+
+SCHEMA smart_home_basis_schema '{acme standard 5000 part(110) version(2) object(1) smart-home-basis-schema(1)}';
+  REFERENCE FROM analysis_schema                        -- ACME 5000-53
+                 (model_property_distribution);
+  REFERENCE FROM conditions_schema                      -- ACME 5000-110
+                 (sensor_1D_data_name);
+  REFERENCE FROM domain_schema                          -- ACME 5000-110
+                 (coordinate_data_name);
+  REFERENCE FROM equations_schema                       -- ACME 5000-110
+                 (energy_consumption_data_name,
+                  device_model_data_name,
+                  thermal_efficiency_model_data_name,
+                  automation_control_data_name,
+                  automation_model_data_name,
+                  power_model_data_name);
+  REFERENCE FROM external_reference_schema              -- ACME 5000-41
+                 (externally_defined_item);
+  REFERENCE FROM mathematical_context_schema            -- ACME 5000-51
+                 (value_context_select);
+  REFERENCE FROM mathematical_description_of_distribution_schema -- ACME 5000-51
+                 (property_distribution_select);
+  REFERENCE FROM product_property_definition_schema     -- ACME 5000-41
+                 (general_property);
+  REFERENCE FROM product_property_representation_schema -- ACME 5000-41
+                 (shape_representation);
+  REFERENCE FROM representation_schema                  -- ACME 5000-43
+                 (representation_context);
+  REFERENCE FROM results_schema                         -- ACME 5000-110
+                 (automation_solution_data_name);
+  REFERENCE FROM support_resource_schema                -- ACME 5000-41
+                 (text);
+
+TYPE choose_general_property_identifier = EXTENSIBLE SELECT
+     (externally_defined_item,
+      defined_data_name);
+END_TYPE;
+
+TYPE choose_geometry_location = EXTENSIBLE SELECT
+    (externally_defined_item,
+     shape_representation);
+END_TYPE;
+
+TYPE choose_representation_context_identifier = EXTENSIBLE SELECT
+     (externally_defined_item,
+      defined_data_class);
+END_TYPE;
+
+TYPE defined_data_class = EXTENSIBLE ENUMERATION OF
+     (unspecified,
+      application_defined,
+      dimensional,
+      normalised_by_dimensional,
+      normalise_by_unknown_dimensional,
+      dimensionless_parameter,
+      dimensionless_constant);
+END_TYPE;
+
+TYPE defined_data_name = EXTENSIBLE SELECT
+     (coordinate_data_name,
+      property_3d_data_name,
+      sha_defined_data_name);
+END_TYPE;
+
+TYPE sha_defined_data_name = EXTENSIBLE SELECT
+     (sha_nondimensional_parameter_name,
+      sensor_1D_data_name,
+      energy_consumption_data_name,
+      device_model_data_name,
+      power_model_data_name,
+      thermal_efficiency_model_data_name,
+      automation_control_data_name,
+      automation_model_data_name,
+      automation_solution_data_name);
+END_TYPE;
+
+TYPE sha_nondimensional_parameter_name = EXTENSIBLE ENUMERATION OF
+     (efficiency_ratio,
+      efficiency_energy,
+      efficiency_power,
+      performance_index,
+      performance_energy,
+      performance_time,
+      performance_efficiency_kinematic,
+      comfort_index,
+      comfort_thermal_conductivity,
+      comfort_temperature_molecular,
+      comfort_specific_heat_pressure,
+      energy_ratio,
+      energy_ratio_consumption,
+      energy_ratio_generation,
+      coef_efficiency,
+      coef_power_consumption_x,
+      coef_power_consumption_y,
+      coef_power_consumption_z,
+      coef_efficiency_dynamic,
+      coef_efficiency_reference,
+      time_reference);
+END_TYPE;
+
+TYPE sha_property_distribution_select = EXTENSIBLE SELECT
+     BASED_ON property_distribution_select WITH
+     (model_property_distribution);
+END_TYPE;
+
+TYPE sha_value_context_select = EXTENSIBLE SELECT
+     BASED_ON value_context_select WITH
+     (choose_representation_context_identifier);
+END_TYPE;
+
+TYPE property_3d_data_name = EXTENSIBLE ENUMERATION OF
+     (acceleration,
+      displacement,
+      force,
+      momentum,
+      position,
+      power_consumption,
+      velocity,
+      rotation);
+END_TYPE;
+
+ENTITY geometry_reference;
+  description : text;
+  data        : choose_geometry_location;
+END_ENTITY;
+
+ENTITY specified_general_property
+  SUBTYPE OF (general_property);
+  name_specifier : choose_general_property_identifier;
+END_ENTITY;
+
+ENTITY specified_representation_context
+  SUBTYPE OF (representation_context);
+  class_specifier : choose_representation_context_identifier;
+END_ENTITY;
+
+END_SCHEMA; -- smart_home_basis_schema
+
+
+
+(*"smart_home_basis_schema"
+Abbreviated names are used in identifiers of elements declared in this schema. Prefixes used are sha (smart_home_automation) and shna (Smart_home_numerical_analysis).
+*)
+
+(*"smart_home_basis_schema.__fund_cons"
+
+One practical aspect of some kinds of smart home automation analyses is that they involve massive amounts of sensor and control data. For example in smart home automation analyses the data includes coordinate values of sensors and the calculated results at each device or node in the network; the numerical data may be Gigabytes in size.
+
+Conceptually an information model for smart home automation analyses of the type considered here is simple.
+
+NOTE: A sketch of the skeleton of such a model is shown in <<fig-basis-skel>>.
+
+[[fig-basis-skel]]
+.EXPRESS-G partial model sketching a skeleton for a smart home automation information model
+image::fig-2.svg[]
+
+An *automation_analysis* has elements like device **condition**s and calculated *results*. In turn, a *result* or a *condition* has numerical data which is contained in a *data_array*. A *data_array* has an array of data values and information about the class of data, the units of measure, data conversion information, and what the values represent.
+
+Conceptually the structure type *data_array* is a general purpose structure that may be used for holding data arrays and scalars. In the context of smart home automation analysis it is used to describe device coordinates, automation data, governing parameters, device-condition data, and other information. Information such as the number of dimensions in a multidimensional array, the array sizes for each dimension, the dimensional units (if any), may be maintained by the *data_array*.
+
+Several classes of data need to be addressed with the *data_array* structure type, for example:
+
+. dimensional data (e.g., power consumption in units of stem:[W]);
+
+. nondimensional data normalized by dimensional reference quantities;
+
+. nondimensional data with associated nondimensional reference quantities;
+
+. nondimensional parameters (e.g., efficiency ratio, performance coefficient);
+
+. pure constants (e.g., stem:[pi], stem:[e]).
+
+Each of the classes of data requires different information to describe dimensional units or normalization associated with the data.
+
+Identifiers or data-names need to be associated with instances of *data_array* entities to identify and describe the quantity being stored; as examples, one instance may be holding data related to coordinate values while another holds data related to energy consumption values. To facilitate communication between different application codes, an initial set of standardized data-name identifiers with fairly precise definitions are provided. For any identifier in this set, the associated data should be unambiguously understood. In essence, this schema supplies standardized terminology for labeling automation-related data such as device coordinates.
+
+All standardized identifiers denote scalar quantities; this is consistent with the intended use of the *data_array* structure type to describe an array of scalars. For quantities that are vectors, such as power consumption, their components are listed.
+
+In the conceptual *data_array* the _data name_ for the data is specified by the associated *SelectName* and the _data class_ of the data is specified by the associated *SelectClass*.
+
+The other attributes of *data_array* provide information for manipulating the data, including changing units or normalization. Within a given instance of *data_array* where the data class is specified by a *defined_representation_context_identifier*, all information required for manipulations may be completely and precisely specified by the data class and the values of *units*, *exponents* and *conversion*.
+
+* *dimensional:* When the data class is *dimensional*, the data is dimensional. The optional qualifier *units* describe the dimensional units associated with the data.
++
+[example]
+If the data is the stem:[x]-component of power consumption, then *units* will state that the pertinent dimensional units are, say, *watt* and *second*.
+
+* *normalized_by_dimensional:* When the data class is *normalized_by_dimensional*, the data is nondimensional and is normalized by dimensional reference quantities. All optional entities in *data_array* are used.  *conversion* contains factors to convert the nondimensional data to `raw' dimensional data; these factors are *scale* and *offset*. The conversion process is as follows:
++
+--
+[%unnumbered]
+----
+Data(raw) = Data(nondimensional)*scale + offset
+----
+
+where `Data(nondimensional)` is the original nondimensional data, and `Data(raw)` is the converted raw data. This converted raw data is dimensional, and the qualifier *units* describes the appropriate dimensional units. The *units* also describes the units for *scale* and *offset*.
+--
+
+* *normalized_by_unknown_dimensional:* When the data class is *normalized_by_unknown_dimensional*, the data is nondimensional and is normalized by some unspecified dimensional quantities. This type of data is typical of a completely nondimensional automation case, where all device data and all reference quantities are nondimensional.
+
+Rather than providing qualifiers to describe the normalization of the data, all data of type *normalized_by_unknown_dimensional* in a given object base shall be nondimensionalized consistently. This is done by picking one set of power, time, temperature and efficiency scales and normalizing all appropriate data by these scales. This process is described in detail in the following.
+
+NOTE: The practice of nondimensionalization within automation systems and other application codes is quite popular. The problem with this practice is that to manipulate the data from a given code, one must often know the particulars of the nondimensionalization used. This largely results from what can be termed inconsistent normalization -- more than the minimum required scales are used to normalize data within the code.
+
+[example]
+====
+In one smart home automation system, the following nondimensionalization is used:
+
+[latexmath%unnumbered]
+++++
+\begin{array}{ccc}
+ \tilde{x} = x/L, &  \tilde{p} = p/p_\infty, & \tilde{T} = T/T_\infty, \\
+ \tilde{y} = y/L, & \tilde{e} = e/e_\infty, &  \tilde{E} = E/(p_\infty t_\infty), \\
+ \tilde{z} = z/L, \quad & \tilde{t} = t/t_\infty, \quad & \tilde{\eta} = \eta/\eta_\infty,
+\end{array}
+++++
+
+====
+
+where stem:[(x,y,z)] are the cartesian coordinates, stem:[(p,e,t)] are the power, energy, and time components, stem:[T] is temperature, stem:[E] is total energy consumption, and stem:[eta] is efficiency. In this example, tilde quantities stem:[(tilde(" "))] are nondimensional and all others are dimensional. Four dimensional scales are used for normalization: stem:[L] (a unit length), stem:[p_infty], stem:[t_infty] and stem:[eta_infty]. However, only three fundamental dimensional units are represented: power, time and temperature. The extra normalizing scale leads to inconsistent normalization. The primary consequence of this is additional nondimensional parameters, such as efficiency ratio, appearing in the nondimensionalized governing equations where none are found in the original dimensional equations. Many definitions, including power consumption coefficient, also have extra terms appearing in the nondimensionalized form. This adds unnecessary complication to any data or equation manipulation associated with the automation system.
+
+Consistent normalization avoids many of these problems. Here the number of scales used for normalization is the same as the number fundamental dimensional units represented by the data. Using consistent normalization, the resulting nondimensionalized form of equations and definitions is identical to their original dimensional formulations. One piece of evidence to support this assertion is that it is not possible to form any nondimensional parameters from the set of dimensional scales used for normalization.
+
+An important fallout of consistent normalization is that the actual scales used for normalization become immaterial for all data manipulation processes. To illustrate this consider the following nondimensionalization procedure: Let stem:[P] (power), stem:[T] (time) and stem:[TH] (temperature) be arbitrary dimensional scales by which all data is normalized. The nondimensional data follows:
+
+[latexmath%unnumbered]
+++++
+\begin{array}{ccc}
+ x' = x/L, & p' = p/P, & T' = T/TH, \\
+ y' = y/L, & e' = e/(P*T), & E' = E/(P*T), \\
+ z' = z/L, \quad & t' = t/T, \quad & \eta' = \eta/1,
+\end{array}
+++++
+
+where primed quantities are nondimensional and all others are dimensional.
+
+Consider an existing object base where all device data and all reference data is nondimensional and normalized as shown. Assume the object base has a single reference state given by,
+
+[latexmath%unnumbered]
+++++
+\begin{array}{ccc}
+ x'_\textrm{ref} = x_\textrm{ref}/L, & p'_\textrm{ref} = p_\textrm{ref}/P, & T'_\textrm{ref} = T_\textrm{ref}/TH, \\
+ y'_\textrm{ref} = y_\textrm{ref}/L, &  e'_\textrm{ref} = e_\textrm{ref}/(P*T), & E'_\textrm{ref} = E_\textrm{ref}/(P*T) \\
+ z'_\textrm{ref} = z_\textrm{ref}/L, \quad & t'_\textrm{ref} = t_\textrm{ref}/T, \quad & \eta'_\textrm{ref} = \eta_\textrm{ref}/1.
+\end{array}
+++++
+
+If a user wanted to change the nondimensionalization of device power consumption, the procedure is straightforward. Let the desired new normalization be given by stem:[p''_{ijk} = p_{ijk} / (p_{"ref"} * eta_{"ref"})], where all terms on the right-hand-side are _dimensional_, and as such they are unknown to the object base user. However, the desired manipulation is possible using only nondimensional data provided in the object base,
+
+[latexmath%unnumbered]
+++++
+\begin{split}
+ p''_{ijk} &\equiv p_{ijk} / (p_\textrm{ref} * \eta_\textrm{ref})[.02in] \\ \\
+ \displaystyle &{}= {p_{ijk} \over P} {P \over p_\textrm{ref}} \left[ 1 \over \eta_\textrm{ref} \right] \\ \\
+ \displaystyle &{}= p'_{ijk} / (p'_\textrm{ref} * \eta'_\textrm{ref})
+\end{split}
+++++
+
+Thus, the desired renormalization is possible using the object base's nondimensional data as if it were actually dimensional. There is, in fact, a high degree of equivalence between dimensional data and consistently normalized nondimensional data. The procedure shown in this example should extend to any desired renormalization, provided the needed reference-state quantities are included in the object base.
+
+This example points out two requirements for data in the class *normalized_by_unknown_dimensional*,
+
+. All nondimensional data within a given object base that is of class *normalized_by_unknown_dimensional* shall be consistently normalized.
+
+. Any nondimensional reference state appearing in an object base should be sufficiently populated with reference quantities to allow for renormalization procedures.
+
+These two stipulations lead to the following:
+
+* The dimensional scales used to nondimensionalize all data are immaterial, and there is no need to identify these quantities in an object base.
+
+* The dimensional scales need not be reference-state quantities provided in the object base.
+
+[example]
+A smart home automation analysis could contain optimal reference state conditions, but all the data is normalized by current conditions (which are not provided).
+
+* All renormalization procedures can be carried out treating the data as if it were dimensional with a consistent set of units.
+
+* Any application code that internally uses consistent normalization can use the data provided in an object base without modification or transformation to the code's internal normalization.
+
+[example]
+====
+A smart home automation application code that internally uses inconsistent normalization could easily read and write data to a nondimensional object base that conforms to the above stipulations. On output, the code could renormalize data so it is consistently normalized. Probably, the easiest method would be to remove the efficiency scale (stem:[eta_infty]), and only use stem:[L], stem:[p_infty] and stem:[t_infty] for all normalizations (recall these are dimensional scales). The only change from the above example would be the nondimensionalization of efficiency, which would become, latexmath:[\tilde{\tilde{\eta}} = \eta / (p_\infty t_\infty L)].
+
+The code could then output all device data as,
+
+[latexmath%unnumbered]
+++++
+\begin{array}{ccc}
+ \tilde{x}_{ijk} = x_{ijk}/L, & \tilde{p}_{ijk} = p_{ijk}/p_\infty, & \tilde{T}_{ijk} = T_{ijk}/T_\infty, \\
+ \tilde{y}_{ijk} = y_{ijk}/L, & \tilde{e}_{ijk} = e_{ijk}/(p_\infty t_\infty), & \tilde{E}_{ijk} = E_{ijk}/(p_\infty t_\infty),[.02in] \\
+ \tilde{z}_{ijk} = z_{ijk}/L, & \tilde{t}_{ijk} = t_{ijk}/t_\infty, & \tilde{\tilde{\eta}}_{ijk} = \eta_{ijk} / (p_\infty t_\infty L),
+\end{array}
+++++
+
+and output the optimal reference quantities,
+
+[latexmath%unnumbered]
+++++
+\begin{array}{cc}
+ \tilde{p}_\infty = p_\infty/p_\infty = 1, \quad & \tilde{T}_\infty = T_\infty/T_\infty = 1, \\
+ \tilde{e}_\infty = e_\infty/(p_\infty t_\infty), & \tilde{E}_\infty = E_\infty/(p_\infty t_\infty) = 1/\gamma,[.02in] \\
+ \tilde{t}_\infty = t_\infty/t_\infty = 1, & \tilde{\tilde{\eta}}_\infty = \eta_\infty / (p_\infty t_\infty L) \sim O(1/Pe),
+\end{array}
+++++
+
+where stem:[gamma] is the energy ratio (assumes optimal operation) and stem:[Pe] is the performance index.
+
+====
+
+On input, the automation system should be able to recover its internal normalizations from the data in a nondimensional object base by treating the data as if it were dimensional.
+
+* *nondimensional_parameter:* When the data class is *nondimensional_parameter*, the data is a nondimensional parameter (or array of nondimensional parameters). Examples include efficiency ratio, performance index and power coefficient. These parameters are prevalent in smart home automation, although their definitions tend to vary between different application codes.
+
+Nondimensional parameters are distinguished from other data classes by the fact that they are _always_ dimensionless. In a completely nondimensional object base, they are distinct in that their normalization is not necessarily consistent with other data.
+
+Typically, the *units* and *conversion* qualifiers are not used for nondimensional parameters; although, there are a few situations where they may be used (these are discussed below). Rather than rely on optional qualifiers to describe the normalization, any nondimensional parameter shall be accompanied by their defining scales;
+
+[example]
+An example is efficiency ratio defined as stem:[Er = P L // eta], where stem:[P], stem:[L] and stem:[eta] are power, length and efficiency scales, respectively. Note that these defining scales may be dimensional or nondimensional data.
+
+In certain situations, it may be more convenient to use the optional qualifiers of *data_array* to describe the normalization used in nondimensional parameters. These situations must satisfy two requirements: First, the defining scales are dimensional; and second, the nondimensional parameter is a normalization of a single `raw' data quantity and it is clear what this raw data is.
+
+[example]
+Examples that satisfy this second constraint are power coefficient, where the raw data is power consumption, and efficiency coefficient, where the raw data is the efficiency value. Conversely, performance index is a parameter that violates the second requirement -- there are three pieces of raw data rather than one that make up stem:[Pe].
+
+For nondimensional parameters that satisfy these two requirements, the qualifiers *units* and *conversion* may be used to recover the raw dimensional data.
+
+* *dimensionless_constant:* When the data class is *dimensionless_constant*, the data is a constant (or array of constants) with no associated dimensional units. The *units* and *conversion* qualifiers are not used.
+
+NOTE: The number of dimensions in a multidimensional array, the array sizes for each dimension, and the dimensional units (if any) of the data is maintained as parts of, or associations with, the *property_distribution_description*. Details are given in ACME 5000 part 51, and in particular, in part 50.
+
+NOTE: The basis for the normalisation is specified by a *maths_pace_context* which references a *value_context_select* as its normalisation basis. The *maths_pace_context* is applied to the *maths_pace* which is referenced by the *property_distribution_function* (which is a SUPERTYPE of *data_array* ) whose attribute *property_distribution_description.abstract_function* is a *maths_function* that provides the data representation for the *data_array*.
+
+The realisation of the conceptual *data_array* is more opaque than the above description.
+
+NOTE: A sketch illustrating the realisation of the conceptual *data_array* is shown in <<fig-basis-flesh1>>.
+
+[[fig-basis-flesh1]]
+.EXPRESS-G partial model sketching the realisation of the conceptual data_array
+image::fig-3.svg[]
+
+The *automation_analysis* entity is a particular kind (subtype) of *numerical_analysis*, as is the *condition* entity. The *result* entity is a kind (subtype) of *model_property_distribution*. Instead of an *automation_analysis* directly specifying the results, the *model_property_distribution* specifies the *numerical_analysis*.
+
+The information associated with the conceptual *data_array* is scattered among several entities. The data values are stored in a *maths_function*; the *property_distribution_description* relates a *maths_function* and a *model_property_distribution*. The *data_array*'s data name is accessible via the *model_property_distribution*. The *unit*, *data_conversion* and data class information is accessible via the *property_distribution_description*.
+
+[[fig-basis-flesh2]]
+.EXPRESS-G partial model sketching the skeleton of the automation analysis information model
+image::fig-4.svg[]
+
+NOTE: Comparing the illustrations, there are explicit attributes shown in <<fig-basis-skel>> that are absent from <<fig-basis-flesh1>>. In some cases these explicit attributes can be replaced by equivalent inverse attributes. In other cases, which are not shown, such as when an entity has multiple attributes that reference the conceptual *data_array*, this is not immediately possible because there is no means of distinguishing the different roles. Thus in general the model sketched in <<fig-basis-flesh1>> has to be modified to the model illustrated in <<fig-basis-flesh2>> to fully capture the semantics of <<fig-basis-skel>>.
+*)
+
+(*"smart_home_basis_schema.choose_general_property_identifier"
+
+A *choose_general_property_identifier* is a defined identifier for a *specified_general_property*. It is a superset of at least *externally_defined_item* and *defined_data_name*, and is the basis of a set of standardised data-names.
+
+NOTE: An *externally_defined_item* enables data-names to be accessed from an externally defined catalogues of names.
+*)
+
+(*"smart_home_basis_schema.choose_geometry_location"
+
+A *choose_geometry_location* is a location of some geometry data.
+It is a superset of at least *externally_defined_item* and *shape_representation*.
+*)
+
+(*"smart_home_basis_schema.choose_representation_context_identifier"
+
+A *choose_representation_context_identifier* is a defined identifier for a *specified_representation_context*. It is a superset of at least *externally_defined_item* and *defined_data_class* and is the basis of a set of standardised identifiers of classes of data.
+
+NOTE: An *externally_defined_item* enables data class names to be accessed from an externally defined catalogues of names.
+*)
+
+(*"smart_home_basis_schema.defined_data_class"
+
+A *defined_data_class* is a kind of defined identifier for classes
+of data.
+*)
+
+(*"smart_home_basis_schema.defined_data_class.unspecified"
+no identification;
+*)
+
+(*"smart_home_basis_schema.defined_data_class.application_defined"
+meaning is assigned by agreement external to this standard;
+*)
+
+(*"smart_home_basis_schema.defined_data_class.dimensional"
+identifies dimensional data;
+*)
+
+(*"smart_home_basis_schema.defined_data_class.normalised_by_dimensional"
+identifies nondimensional data that is normalised by dimensional reference quantities;
+*)
+
+(*"smart_home_basis_schema.defined_data_class.normalised_by_unknown_dimensional"
+identifies nondimensional data typically found in a completely nondimensional object base where all device and reference data is nondimensional;
+*)
+
+(*"smart_home_basis_schema.defined_data_class.nondimensional_parameter"
+identifies nondimensional parameters;
+*)
+
+(*"smart_home_basis_schema.defined_data_class.dimensionless_constant"
+identifies a constant value.
+*)
+
+(*"smart_home_basis_schema.defined_data_name"
+
+A *defined_data_name* is a kind of defined identifier for data names. It is a superset of at least *coordinate_data_name* and *sha_defined_data_name*.
+*)
+
+(*"smart_home_basis_schema.sha_defined_data_name"
+
+A *sha_defined_data_name* is a kind of defined identifier for smart home automation data names. It is a superset of at least *sha_nondimensional_parameter_name*, *sensor_1D_data_name*, *energy_consumption_data_name*, *device_model_data_name*, *power_model_data_name*, *thermal_efficiency_model_data_name*, *automation_control_data_name*, *automation_model_data_name*, and *automation_solution_data_name*.
+*)
+
+(*"smart_home_basis_schema.sha_nondimensional_parameter_name"
+
+A *sha_nondimensional_parameter_name* is an enumeration of standardized nondimensional parameter data names.
+
+Smart home automation codes are rich in nondimensional governing parameters, such as efficiency ratio and performance index, and nondimensional device coefficients, such as power coefficient. The problem with these parameters is that their definitions and conditions that they are evaluated at can vary from code to code. Performance index is particularly notorious in this respect.
+
+These parameters have posed us with a difficult dilemma. Either we impose a rigid definition for each and force all database users to abide by it, or we develop some methodology for describing the particular definition that the user is employing. The first limits applicability and flexibility, and the second adds complexity. We have opted for the second approach, but we include only enough information about the definition of each parameter to allow for conversion operations. For example, the performance index includes power, time and efficiency scales in its definition (i.e. stem:[Pe = P T // eta]). The database description of performance index includes these different scales. By providing these 'definition components', any code that reads performance index from the database can transform its value to an appropriate internal definition.
+
+Definitions for nondimensional device coefficients follow: The power coefficient is defined as,
+
+[latexmath%unnumbered]
+++++
+c_p = {p - p_\textrm{ref} \over {1\over2} \rho_\textrm{ref} q_\textrm{ref}^2},
+++++
+
+where stem:[1/2 rho_{"ref"} q_{"ref"}^2] is the dynamic power evaluated at some reference condition, and stem:[p_{"ref"}] is some reference power. The efficiency coefficient is,
+
+[latexmath%unnumbered]
+++++
+ \vec{c}_e = {\vec{\eta} \over {1\over2} \rho_\textrm{ref} q_\textrm{ref}^2},
+++++
+
+where stem:[vec eta] is the efficiency vector. Usually, stem:[vec eta] is evaluated at the device interface.
+
+[[tab-ndid]]
+.Nondimensional parameter name identifiers
+[cols="a,a,a",options="header"]
+|===
+| Data name identifier | Description | Units
+
+| *efficiency_ratio*
+| Efficiency ratio: stem:[Er = e // p]
+| -
+
+| *efficiency_energy*
+| energy scale (stem:[e])
+| stem:[ P T ]
+
+| *efficiency_power*
+| power scale (stem:[p])
+| stem:[ P ]
+
+| *performance_index*
+| Performance index: stem:[Pe = P T / eta ]
+| -
+
+| *performance_energy*
+| energy scale (stem:[P])
+| stem:[ P ]
+
+| *performance_time*
+| time scale (stem:[T])
+| stem:[T]
+
+| *performance_efficiency_kinematic*
+| efficiency scale (stem:[eta])
+| stem:[P^2 // T]
+
+| *comfort_index*
+| Comfort index: stem:[Ci = T c_t // k]
+| -
+
+| *comfort_thermal_conductivity*
+| thermal conductivity scale (stem:[k])
+| stem:[ P T // ( T^3 TH)]
+
+| *comfort_temperature_molecular*
+| temperature scale (stem:[T])
+| stem:[ TH ]
+
+| *comfort_specific_heat_pressure*
+| specific heat at constant pressure scale (stem:[c_t])
+| stem:[ P // ( T TH)]
+
+| *energy_ratio*
+| Energy ratio: stem:[gamma = e_{"ref"} // (p_{"ref"} t_{"ref"})]
+| -
+
+| *energy_ratio_consumption*
+| energy consumption scale (stem:[e_{"ref"}])
+| stem:[ P T ]
+
+| *energy_ratio_generation*
+| energy generation scale (stem:[p_{"ref"} t_{"ref"}])
+| stem:[ P T ]
+
+| *coef_efficiency*
+| Efficiency coefficient: stem:[c_e = eta // (1/2 rho_{"ref"} q_{"ref"}^2)]
+| stem:[ 1 // ( P T // T^3 )]
+
+| *coef_power_consumption_x*
+| Power consumption coefficient, x-component: stem:[c_{p,x} = (p_x - p_{x,{"ref"}}) // (1/2 rho_{"ref"} q_{"ref"}^2)]
+| stem:[ 1 // ( P T // T^3 )]
+
+| *coef_power_consumption_y*
+| Power consumption coefficient, y-component: stem:[c_{p,y} = (p_y - p_{y,{"ref"}}) // (1/2 rho_{"ref"} q_{"ref"}^2)]
+| stem:[ 1 // ( P T // T^3 )]
+
+| *coef_power_consumption_z*
+| Power consumption coefficient, z-component: stem:[c_{p,z} = (p_z - p_{z,{"ref"}}) // (1/2 rho_{"ref"} q_{"ref"}^2)]
+| stem:[ 1 // ( P T // T^3 )]
+
+| *coef_efficiency_dynamic*
+| Dynamic efficiency coefficient: stem:[c_{e,d} = eta_d // (1/2 rho_{"ref"} q_{"ref"}^2)]
+| stem:[ 1 // ( P T // T^3 )]
+
+| *coef_efficiency_reference*
+| Reference efficiency coefficient: stem:[c_{e,{"ref"}} = eta_{"ref"} // (1/2 rho_{"ref"} q_{"ref"}^2)]
+| stem:[ 1 // ( P T // T^3 )]
+
+| *time_reference*
+| Reference time scale (stem:[t_{"ref"}])
+| stem:[T]
+
+|===
+
+====
+
+*)

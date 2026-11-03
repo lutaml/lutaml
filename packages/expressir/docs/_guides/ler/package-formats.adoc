@@ -1,0 +1,748 @@
+---
+title: Package Formats
+parent: LER Packages
+grand_parent: Guides
+nav_order: 5
+---
+
+= Package Formats
+
+== Purpose
+
+This guide explains the different serialization formats available for LER
+packages and helps you choose the right format for your use case. Understanding
+format trade-offs is essential for optimizing performance and compatibility.
+
+== References
+
+* link:index.html[LER Packages Overview]
+* link:creating-packages.html[Creating Packages]
+* link:loading-packages.html[Loading Packages]
+* link:validating-packages.html[Validating Packages]
+
+== Concepts
+
+Serialization format:: The method used to convert repository objects into
+stored data: `marshal` (binary), `yaml` (text), or `json` (text).
+
+Marshal format:: Ruby's native binary serialization format providing maximum
+speed and minimum size.
+
+YAML format:: Human-readable text format using YAML syntax for debugging and
+portability.
+
+JSON format:: Human-readable text format using JSON syntax for maximum tool
+compatibility.
+
+== Available formats
+
+LER packages support three serialization formats configured via the
+[`serialization_format`](../../lib/expressir/package/builder.rb:65) option:
+
+=== Marshal (default)
+
+Binary serialization using Ruby's native [`Marshal`](https://ruby-doc.org/core/Marshal.html)
+format.
+
+.Characteristics
+[example]
+====
+* **Speed**: Fastest loading (5-10x faster than YAML)
+* **Size**: Most compact (40-60% of YAML size)
+* **Portability**: Ruby-only (not language-independent)
+* **Readability**: Binary (not human-readable)
+* **Compatibility**: Ruby version dependent
+====
+
+.Best for
+[example]
+====
+* Production deployments
+* Performance-critical applications
+* Ruby-only environments
+* Large schema collections
+* Frequent loading scenarios
+====
+
+=== YAML
+
+Text serialization using YAML (YAML Ain't Markup Language) format.
+
+.Characteristics
+[example]
+====
+* **Speed**: Slower than Marshal (~4x slower)
+* **Size**: Larger than Marshal (~2.5x larger)
+* **Portability**: Language-independent text format
+* **Readability**: Human-readable and editable
+* **Compatibility**: Wide tool support
+====
+
+.Best for
+[example]
+====
+* Development and debugging
+* Manual inspection required
+* Cross-language compatibility needed
+* Version control friendly format
+* Incremental changes tracking
+====
+
+=== JSON
+
+Text serialization using JSON (JavaScript Object Notation) format.
+
+.Characteristics
+[example]
+====
+* **Speed**: Similar to YAML (~3x slower than Marshal)
+* **Size**: Similar to YAML (~2.3x larger than Marshal)
+* **Portability**: Universal language support
+* **Readability**: Human-readable, parseable by many tools
+* **Compatibility**: Maximum tool ecosystem
+====
+
+.Best for
+[example]
+====
+* Web application integration
+* JavaScript/Node.js environments
+* REST API responses
+* Maximum compatibility
+* Tool interoperability
+====
+
+== Format comparison
+
+=== Performance comparison
+
+Based on a 100-schema repository benchmark:
+
+[options="header"]
+|===
+| Format | Build Time | Load Time | File Size | Relative Speed
+
+| Marshal
+| 12.3s
+| 1.8s
+| 8.2 MB
+| 1.0x (baseline)
+
+| JSON
+| 15.7s
+| 5.9s
+| 19.1 MB
+| 0.30x (3.3x slower)
+
+| YAML
+| 16.2s
+| 7.4s
+| 20.5 MB
+| 0.24x (4.1x slower)
+|===
+
+.Key findings
+[example]
+====
+* Marshal loads 3-4x faster than text formats
+* Marshal produces 55-60% smaller files
+* YAML and JSON have similar performance
+* Build time differences are less significant
+====
+
+=== Size comparison
+
+Typical size ratios for the same repository:
+
+[source]
+----
+Marshal (baseline):     8.2 MB  (100%)
+JSON:                  19.1 MB  (233%)
+YAML:                  20.5 MB  (250%)
+----
+
+After ZIP compression (LER packages are ZIP archives):
+
+[source]
+----
+Marshal compressed:     1.2 MB  (100%)
+JSON compressed:        2.8 MB  (233%)
+YAML compressed:        3.1 MB  (258%)
+----
+
+.Compression analysis
+[example]
+====
+* All formats benefit from ZIP compression
+* Marshal maintains size advantage even compressed
+* Text formats compress well but start larger
+* Compression reduces absolute differences
+====
+
+=== Compatibility comparison
+
+[options="header"]
+|===
+| Feature | Marshal | YAML | JSON
+
+| Ruby support
+| ✓ Native
+| ✓ Via gem
+| ✓ Via gem
+
+| Python support
+| ✗
+| ✓
+| ✓
+
+| JavaScript support
+| ✗
+| ✓
+| ✓ Native
+
+| Human readable
+| ✗
+| ✓
+| ✓
+
+| Diff friendly
+| ✗
+| ✓
+| ✓
+
+| Binary safe
+| ✓
+| ✓
+| ✗
+
+| Version control
+| Poor
+| Good
+| Good
+
+| Tool ecosystem
+| Limited
+| Wide
+| Widest
+|===
+
+== Choosing the right format
+
+=== Decision tree
+
+[source]
+----
+Need maximum performance?
+├─ YES → Use Marshal
+└─ NO
+   └─ Need human readability?
+      ├─ YES → Need JavaScript compatibility?
+      │  ├─ YES → Use JSON
+      │  └─ NO → Use YAML
+      └─ NO → Use Marshal
+----
+
+=== By use case
+
+==== Production deployment
+
+.Recommended: Marshal
+[example]
+====
+[source,bash]
+----
+expressir package build schemas/ production.ler \
+  --serialization-format marshal
+----
+
+**Rationale**: Performance is critical, human readability not needed.
+====
+
+==== Development and debugging
+
+.Recommended: YAML
+[example]
+====
+[source,bash]
+----
+expressir package build schemas/ debug.ler \
+  --serialization-format yaml
+----
+
+**Rationale**: Can inspect and debug serialized content easily.
+====
+
+==== Web application integration
+
+.Recommended: JSON
+[example]
+====
+[source,bash]
+----
+expressir package build schemas/ webapp.ler \
+  --serialization-format json
+----
+
+**Rationale**: JavaScript tools can parse JSON directly.
+====
+
+==== Cross-language projects
+
+.Recommended: JSON or YAML
+[example]
+====
+[source,bash]
+----
+# JSON for maximum compatibility
+expressir package build schemas/ multi-lang.ler \
+  --serialization-format json
+
+# YAML for better readability
+expressir package build schemas/ multi-lang.ler \
+  --serialization-format yaml
+----
+
+**Rationale**: Need non-Ruby language support.
+====
+
+==== Version control tracking
+
+.Recommended: YAML
+[example]
+====
+[source,bash]
+----
+expressir package build schemas/ tracked.ler \
+  --serialization-format yaml
+----
+
+**Rationale**: YAML diffs are more readable than JSON.
+====
+
+==== Large schema collections
+
+.Recommended: Marshal
+[example]
+====
+[source,bash]
+----
+expressir package build large-schemas/ large.ler \
+  --serialization-format marshal
+----
+
+**Rationale**: Size and speed matter for large repositories.
+====
+
+== Working with different formats
+
+=== Creating packages in each format
+
+==== Marshal format
+
+[source,ruby]
+----
+repo.export_to_package(
+  "output.ler",
+  serialization_format: "marshal"
+)
+----
+
+==== YAML format
+
+[source,ruby]
+----
+repo.export_to_package(
+  "output.ler",
+  serialization_format: "yaml"
+)
+----
+
+==== JSON format
+
+[source,ruby]
+----
+repo.export_to_package(
+  "output.ler",
+  serialization_format: "json"
+)
+----
+
+=== Loading packages
+
+Loading is automatic - format is detected from metadata:
+
+[source,ruby]
+----
+# Works for any format
+repo = Expressir::Model::Repository.from_package("any-format.ler")
+----
+
+The [`Package::Reader`](../../lib/expressir/package/reader.rb:63) automatically:
+
+1. Reads metadata to determine format
+2. Selects appropriate deserializer
+3. Loads repository correctly
+
+=== Inspecting package format
+
+Check format before loading:
+
+[source,bash]
+----
+expressir package info schemas.ler
+----
+
+Output includes:
+
+[source]
+----
+Configuration
+--------------------------------------------------
+Serialization format: marshal
+----
+
+Or programmatically:
+
+[source,ruby]
+----
+require "zip"
+require "yaml"
+
+Zip::File.open("schemas.ler") do |zip|
+  metadata_entry = zip.find_entry("metadata.yaml")
+  metadata = YAML.safe_load(metadata_entry.get_input_stream.read)
+  puts "Format: #{metadata['serialization_format']}"
+end
+----
+
+== Migration between formats
+
+=== Converting existing packages
+
+Convert a package to different format:
+
+[source,ruby]
+----
+# Load package (any format)
+repo = Expressir::Model::Repository.from_package("old-format.ler")
+
+# Export in new format
+repo.export_to_package(
+  "new-format.ler",
+  serialization_format: "marshal"  # or "yaml" or "json"
+)
+----
+
+Complete conversion script:
+
+[source,ruby]
+----
+#!/usr/bin/env ruby
+require "expressir"
+
+def convert_package(input, output, format)
+  puts "Converting #{input} to #{format}..."
+
+  # Load existing package
+  repo = Expressir::Model::Repository.from_package(input)
+
+  # Get original metadata
+  metadata = load_metadata(input)
+
+  # Export in new format
+  repo.export_to_package(
+    output,
+    name: metadata["name"],
+    version: metadata["version"],
+    description: metadata["description"],
+    serialization_format: format
+  )
+
+  # Compare sizes
+  old_size = File.size(input)
+  new_size = File.size(output)
+  reduction = ((old_size - new_size) / old_size.to_f * 100).round(1)
+
+  puts "✓ Converted successfully"
+  puts "  Old size: #{old_size} bytes"
+  puts "  New size: #{new_size} bytes"
+  puts "  Change: #{reduction}%"
+end
+
+def load_metadata(package_path)
+  require "zip"
+  require "yaml"
+
+  Zip::File.open(package_path) do |zip|
+    entry = zip.find_entry("metadata.yaml")
+    YAML.safe_load(entry.get_input_stream.read)
+  end
+end
+
+# Usage
+convert_package("input.ler", "output.ler", "marshal")
+----
+
+=== Bulk conversion
+
+Convert multiple packages:
+
+[source,ruby]
+----
+def bulk_convert(input_dir, output_dir, format)
+  Dir.glob("#{input_dir}/**/*.ler").each do |input|
+    relative_path = input.sub(input_dir, "")
+    output = File.join(output_dir, relative_path)
+
+    FileUtils.mkdir_p(File.dirname(output))
+
+    puts "Converting #{relative_path}..."
+    convert_package(input, output, format)
+  end
+end
+
+# Convert all packages to Marshal
+bulk_convert("packages/yaml/", "packages/marshal/", "marshal")
+----
+
+== Format-specific optimizations
+
+=== Marshal optimization
+
+Marshal format is already optimized, but consider:
+
+[source,ruby]
+----
+# Ensure indexes are built before export
+repo.build_indexes
+
+# This pre-builds indexes in the package
+repo.export_to_package(
+  "optimized.ler",
+  serialization_format: "marshal"
+)
+----
+
+=== YAML optimization
+
+Reduce YAML size with minimal formatting:
+
+[source,ruby]
+----
+# Note: Expressir doesn't expose YAML options directly
+# The dumper uses default settings
+
+# For manual YAML generation:
+require "yaml"
+
+yaml_options = {
+  line_width: -1,  # No line wrapping
+  indentation: 2
+}
+----
+
+=== JSON optimization
+
+JSON is naturally compact, but consider:
+
+* Disable pretty printing for production
+* Use compression aggressively
+* Remove optional fields when possible
+
+== Compatibility considerations
+
+=== Ruby version compatibility
+
+Marshal format is Ruby version dependent:
+
+[source]
+----
+Ruby 2.7 Marshal → May not load in Ruby 3.2
+Ruby 3.0 Marshal → Loads in Ruby 3.0+
+Ruby 3.2 Marshal → Loads in Ruby 3.2+
+----
+
+.Best practice
+[example]
+====
+For cross-version compatibility:
+* Use YAML or JSON for long-term storage
+* Use Marshal for same-version deployment
+* Document Ruby version used to create Marshal packages
+====
+
+=== Expressir version compatibility
+
+All formats are tied to Expressir version:
+
+[source,ruby]
+----
+# Metadata includes version
+{
+  "expressir_version": "0.7.0",
+  "serialization_format": "marshal"
+}
+----
+
+.Compatibility matrix
+[example]
+====
+[options="header"]
+|===
+| Package Version | Expressir 0.6.x | Expressir 0.7.x | Expressir 0.8.x
+
+| 0.6.x
+| ✓
+| ✓ (with warnings)
+| ?
+
+| 0.7.x
+| ✗
+| ✓
+| ✓ (likely)
+
+| 0.8.x
+| ✗
+| ✗
+| ✓
+|===
+====
+
+=== Forward compatibility
+
+Plan for future versions:
+
+[source,ruby]
+----
+# Include version in package name
+filename = "schemas-v#{Expressir::VERSION}.ler"
+
+# Or in metadata description
+repo.export_to_package(
+  "schemas.ler",
+  description: "Built with Expressir #{Expressir::VERSION}"
+)
+----
+
+== Best practices
+
+=== Format selection checklist
+
+When choosing a format, consider:
+
+- [ ] Is performance critical? → Marshal
+- [ ] Need human readability? → YAML/JSON
+- [ ] Need cross-language support? → JSON/YAML
+- [ ] Is file size a concern? → Marshal
+- [ ] Version control tracking? → YAML
+- [ ] Web application integration? → JSON
+- [ ] Long-term archival? → YAML/JSON
+- [ ] Same Ruby version guaranteed? → Marshal
+
+=== Multi-format strategy
+
+Provide multiple formats for different needs:
+
+[source,ruby]
+----
+# Build production format
+repo.export_to_package(
+  "production/schemas.ler",
+  serialization_format: "marshal"
+)
+
+# Build debug format
+repo.export_to_package(
+  "debug/schemas-debug.ler",
+  serialization_format: "yaml"
+)
+
+# Build API format
+repo.export_to_package(
+  "api/schemas-api.ler",
+  serialization_format: "json"
+)
+----
+
+=== Documentation
+
+Document format choices:
+
+[source,ruby]
+----
+repo.export_to_package(
+  "schemas.ler",
+  name: "Schema Package",
+  version: "1.0.0",
+  description: <<~DESC
+    Format: Marshal (binary)
+    Ruby version: #{RUBY_VERSION}
+    Expressir version: #{Expressir::VERSION}
+    Built: #{Time.now.iso8601}
+    Target: Production deployment
+  DESC,
+  serialization_format: "marshal"
+)
+----
+
+== Next steps
+
+* link:creating-packages.html[Creating Packages] - Build packages with chosen
+format
+* link:loading-packages.html[Loading Packages] - Load packages of any format
+* link:index.html[LER Packages Overview] - Complete package documentation
+
+== Summary
+
+Key takeaways for package formats:
+
+* Three formats available: Marshal, YAML, JSON
+* Marshal is fastest and smallest (production)
+* YAML is most readable (development)
+* JSON has widest compatibility (integration)
+* Format choice depends on use case
+* Conversion between formats is straightforward
+* Consider Ruby version compatibility with Marshal
+* Use multiple formats for different purposes
+
+Format selection summary:
+
+[options="header"]
+|===
+| Use Case | Recommended Format | Reason
+
+| Production
+| Marshal
+| Performance and size
+
+| Development
+| YAML
+| Readability and debugging
+
+| Web apps
+| JSON
+| JavaScript compatibility
+
+| Archive
+| YAML/JSON
+| Long-term compatibility
+
+| Cross-language
+| JSON
+| Universal support
+
+| Large repos
+| Marshal
+| Size and speed
+|===
+
+Best practices:
+
+* Default to Marshal for production
+* Use YAML for development
+* Document format choice and version
+* Test packages after format changes
+* Consider providing multiple formats
+* Plan for version migration
+* Monitor performance impacts
+* Keep format consistent within deployment

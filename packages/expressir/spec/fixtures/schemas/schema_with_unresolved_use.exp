@@ -1,0 +1,7 @@
+SCHEMA schema_with_unresolved_use;
+  USE FROM nonexistent_schema (some_entity);
+  
+  ENTITY my_entity;
+    name : STRING;
+  END_ENTITY;
+END_SCHEMA;

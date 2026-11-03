@@ -1,0 +1,664 @@
+---
+title: Creating Packages
+parent: LER Packages
+grand_parent: Guides
+nav_order: 1
+---
+
+= Creating Packages
+
+== Purpose
+
+This guide explains how to create LER (Lutaml EXPRESS Repository) packages from
+EXPRESS schemas using both the Ruby API and CLI commands. LER packages provide
+a fast, compact way to distribute and deploy EXPRESS schemas.
+
+== References
+
+* link:index.html[LER Packages Overview]
+* link:loading-packages.html[Loading Packages]
+* link:package-formats.html[Package Formats]
+* link:../ruby-api/working-with-repository.html[Working with Repository]
+
+== Concepts
+
+LER package:: A ZIP archive containing serialized EXPRESS schemas, pre-built
+indexes, and metadata for fast loading and querying.
+
+Package builder:: The [`Expressir::Package::Builder`](../../lib/expressir/package/builder.rb) class
+responsible for creating LER packages from repository instances.
+
+Resolution mode:: Controls whether schemas are serialized with resolved
+references (`resolved`) or kept separate (`bare`).
+
+Express mode:: Controls whether original EXPRESS files are included in the
+package (`include_all`) or external files are allowed (`allow_external`).
+
+Serialization format:: The format used to store schemas: `marshal` (binary),
+`yaml` (human-readable), or `json` (portable).
+
+== Building packages from Ruby API
+
+=== Basic package creation
+
+Create a LER package from a repository using the
+[`export_to_package`](../../lib/expressir/model/repository.rb:270) method:
+
+[source,ruby]
+----
+require "expressir"
+
+# Parse schemas
+repo = Expressir::Model::Repository.from_files([
+  "schemas/action_schema.exp",
+  "schemas/approval_schema.exp"
+])
+
+# Export to LER package
+repo.export_to_package("output.ler")
+----
+
+This creates a package with default options:
+
+* `name`: "Unnamed Package"
+* `version`: "1.0.0"
+* `express_mode`: "include_all"
+* `resolution_mode`: "resolved"
+* `serialization_format`: "marshal"
+
+=== Package with custom options
+
+Specify package metadata and configuration:
+
+[source,ruby]
+----
+repo.export_to_package(
+  "production.ler",
+  name: "Production Schemas",
+  version: "2.1.0",
+  description: "Schema set for production deployment",
+  express_mode: "include_all",
+  resolution_mode: "resolved",
+  serialization_format: "marshal"
+)
+----
+
+=== Using Package::Builder directly
+
+For more control, use the [`Package::Builder`](../../lib/expressir/package/builder.rb:11) class directly:
+
+[source,ruby]
+----
+require "expressir/package/builder"
+
+# Create builder
+builder = Expressir::Package::Builder.new
+
+# Build package with options
+builder.build(
+  repo,
+  "custom.ler",
+  name: "Custom Package",
+  version: "1.0.0",
+  description: "Custom configuration",
+  express_mode: "include_all",
+  resolution_mode: "resolved",
+  serialization_format: "yaml"
+)
+----
+
+== Building packages from CLI
+
+=== Basic CLI command
+
+The [`expressir package build`](../../lib/expressir/commands/package.rb:31) command creates
+packages from command line:
+
+[source,bash]
+----
+# Build from a single schema file
+expressir package build schemas/action_schema.exp output.ler
+
+# With package metadata
+expressir package build schemas/action_schema.exp output.ler \
+  --name "Action Schema Package" \
+  --version "1.0.0" \
+  --description "Action schema and dependencies"
+----
+
+=== Automatic dependency resolution
+
+The build command automatically resolves and includes all dependencies:
+
+[source,bash]
+----
+# Build from root schema - dependencies auto-resolved
+expressir package build schemas/activity/mim.exp activity.ler \
+  --name "Activity Module" \
+  --version "4.3" \
+  --description "ISO 10303-41 Activity Module"
+----
+
+Dependencies are found by following `USE FROM` and `REFERENCE FROM` statements.
+
+=== CLI build options
+
+==== Package identification
+
+[source,bash]
+----
+expressir package build input.exp output.ler \
+  --name "Package Name" \
+  --version "2.0.0" \
+  --description "Detailed description"
+----
+
+==== Express bundling mode
+
+[source,bash]
+----
+# Include original EXPRESS files (default)
+expressir package build input.exp output.ler \
+  --express-mode include_all
+
+# Allow external EXPRESS files
+expressir package build input.exp output.ler \
+  --express-mode allow_external
+----
+
+==== Resolution mode
+
+[source,bash]
+----
+# Pre-resolve all references (default, recommended)
+expressir package build input.exp output.ler \
+  --resolution-mode resolved
+
+# Keep schemas separate (rarely used)
+expressir package build input.exp output.ler \
+  --resolution-mode bare
+----
+
+==== Serialization format
+
+[source,bash]
+----
+# Binary format for speed (default)
+expressir package build input.exp output.ler \
+  --serialization-format marshal
+
+# Human-readable YAML
+expressir package build input.exp output.ler \
+  --serialization-format yaml
+
+# JSON for portability
+expressir package build input.exp output.ler \
+  --serialization-format json
+----
+
+==== Validation
+
+[source,bash]
+----
+# Validate before packaging (default)
+expressir package build input.exp output.ler --validate
+
+# Skip validation (faster but risky)
+expressir package build input.exp output.ler --no-validate
+----
+
+==== Verbose output
+
+[source,bash]
+----
+# Show detailed build progress
+expressir package build input.exp output.ler --verbose
+----
+
+== Package configuration options
+
+=== Express mode options
+
+`include_all` (default):: Includes original EXPRESS files in the package.
+Recommended for most use cases.
++
+.Benefits
+[example]
+====
+* Self-contained package
+* Original source available for reference
+* Debugging capability
+* Documentation included
+====
+
+`allow_external`:: Allows schemas to reference external EXPRESS files not
+included in the package.
++
+.Use when
+[example]
+====
+* Sharing only derived/generated schemas
+* External dependencies managed separately
+* Reducing package size for large schema sets
+====
+
+=== Resolution mode options
+
+`resolved` (default):: All schema references are resolved and stored in the
+package.
++
+.Benefits
+[example]
+====
+* Fastest loading time
+* No runtime resolution needed
+* All dependencies included
+* Self-contained
+====
+
+`bare`:: Schemas stored without reference resolution.
++
+.Benefits
+[example]
+====
+* Smaller package size
+* Flexibility in resolution
+* Useful for schema development
+====
+
+=== Serialization format options
+
+`marshal` (default):: Ruby's native binary serialization.
++
+.Characteristics
+[example]
+====
+* Fastest loading (5-10x faster than YAML)
+* Most compact (40-60% of YAML size)
+* Ruby-specific (not portable)
+* Not human-readable
+====
+
+`yaml`:: Human-readable YAML format.
++
+.Characteristics
+[example]
+====
+* Slower loading than Marshal
+* Larger file size
+* Text-based and portable
+* Debuggable and inspectable
+====
+
+`json`:: JSON format for maximum portability.
++
+.Characteristics
+[example]
+====
+* Similar performance to YAML
+* Wide tool support
+* Language-independent
+* Debuggable and inspectable
+====
+
+== Dependency resolution
+
+=== Automatic resolution
+
+The CLI build command uses
+[`DependencyResolver`](../../lib/expressir/model/dependency_resolver.rb) to
+find all required schemas:
+
+[source,ruby]
+----
+require "expressir/model/dependency_resolver"
+
+# Resolve dependencies
+resolver = Expressir::Model::DependencyResolver.new
+schema_files = resolver.resolve_dependencies("schemas/activity/mim.exp")
+
+puts "Found #{schema_files.size} schema files"
+schema_files.each { |f| puts "  - #{f}" }
+----
+
+=== Resolution behavior
+
+The resolver:
+
+1. Parses the root schema
+2. Extracts `USE FROM` and `REFERENCE FROM` statements
+3. Locates referenced schema files
+4. Recursively processes dependencies
+5. Returns complete file list
+
+=== Base directories
+
+Specify base directories for schema resolution:
+
+[source,bash]
+----
+# Single base directory
+expressir package build mim.exp output.ler \
+  --base-dirs "/path/to/schemas"
+
+# Multiple base directories
+expressir package build mim.exp output.ler \
+  --base-dirs "/path/to/schemas,/another/path"
+----
+
+== Optimization strategies
+
+=== Choose the right serialization format
+
+For production deployments:
+
+[source,bash]
+----
+# Fastest loading with Marshal
+expressir package build input.exp production.ler \
+  --serialization-format marshal
+----
+
+For development and debugging:
+
+[source,bash]
+----
+# Human-readable with YAML
+expressir package build input.exp debug.ler \
+  --serialization-format yaml
+----
+
+=== Include pre-built indexes
+
+Indexes are automatically built and included:
+
+* Entity index: Fast entity lookups by qualified name
+* Type index: Fast type lookups with category filtering
+* Reference index: Tracks inter-schema dependencies
+
+No additional configuration needed - indexes are always included.
+
+=== Minimize package size
+
+If size is critical:
+
+[source,bash]
+----
+# Use Marshal format and exclude EXPRESS files
+expressir package build input.exp minimal.ler \
+  --serialization-format marshal \
+  --express-mode allow_external
+----
+
+.Size comparison example
+[example]
+====
+[source]
+----
+Package configuration          | Size
+------------------------------|------
+marshal + include_all         | 1.2 MB (baseline)
+marshal + allow_external      | 0.8 MB (33% smaller)
+yaml + include_all            | 2.1 MB (75% larger)
+json + include_all            | 2.3 MB (92% larger)
+----
+====
+
+== Automation in CI/CD
+
+=== GitHub Actions example
+
+[source,yaml]
+----
+name: Build LER Package
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.0
+
+      - name: Install Expressir
+        run: gem install expressir
+
+      - name: Build LER package
+        run: |
+          expressir package build \
+            schemas/main.exp \
+            output/schemas.ler \
+            --name "Schema Package" \
+            --version "${{ github.sha }}" \
+            --validate \
+            --verbose
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ler-package
+          path: output/schemas.ler
+----
+
+=== Rake task example
+
+Create a Rake task for building packages:
+
+[source,ruby]
+----
+# Rakefile
+require "expressir"
+
+desc "Build LER package for production"
+task :build_package do
+  puts "Building LER package..."
+
+  repo = Expressir::Model::Repository.from_files(
+    Dir.glob("schemas/**/*.exp")
+  )
+
+  repo.export_to_package(
+    "dist/production.ler",
+    name: "Production Schemas",
+    version: ENV["VERSION"] || "dev",
+    description: "Production schema package",
+    express_mode: "include_all",
+    serialization_format: "marshal"
+  )
+
+  puts "Package created: dist/production.ler"
+  puts "Size: #{File.size("dist/production.ler")} bytes"
+end
+----
+
+Run with:
+
+[source,bash]
+----
+VERSION=1.2.0 rake build_package
+----
+
+=== Build script example
+
+Create a reusable build script:
+
+[source,ruby]
+----
+#!/usr/bin/env ruby
+# build_package.rb
+
+require "expressir"
+require "optparse"
+
+options = {
+  name: "Schema Package",
+  version: "1.0.0",
+  format: "marshal"
+}
+
+OptionParser.new do |opts|
+  opts.banner = "Usage: build_package.rb INPUT OUTPUT [options]"
+
+  opts.on("--name NAME", "Package name") do |v|
+    options[:name] = v
+  end
+
+  opts.on("--version VERSION", "Package version") do |v|
+    options[:version] = v
+  end
+
+  opts.on("--format FORMAT", "Serialization format") do |v|
+    options[:format] = v
+  end
+end.parse!
+
+input = ARGV[0] || abort("INPUT file required")
+output = ARGV[1] || abort("OUTPUT file required")
+
+puts "Building package: #{output}"
+repo = Expressir::Express::Parser.from_file(input)
+
+repo.export_to_package(
+  output,
+  name: options[:name],
+  version: options[:version],
+  serialization_format: options[:format]
+)
+
+puts "✓ Package created successfully"
+----
+
+== Troubleshooting build errors
+
+=== Common errors and solutions
+
+==== Schema parse failure
+
+.Error
+[example]
+====
+[source]
+----
+Error building package: Failed to parse schema: unexpected token
+----
+====
+
+.Solution
+[example]
+====
+1. Validate EXPRESS syntax manually
+2. Check for missing semicolons or keywords
+3. Use `expressir validate` command first
+====
+
+==== Missing dependencies
+
+.Error
+[example]
+====
+[source]
+----
+Error: Referenced schema not found: geometric_model_schema
+----
+====
+
+.Solution
+[example]
+====
+1. Check `--base-dirs` parameter
+2. Ensure all referenced schemas are accessible
+3. Verify schema file names match schema IDs
+====
+
+==== Invalid metadata
+
+.Error
+[example]
+====
+[source]
+----
+Invalid metadata: serialization_format must be 'marshal', 'json', or 'yaml'
+----
+====
+
+.Solution
+[example]
+====
+Check that all options have valid values:
+* `express_mode`: "include_all" or "allow_external"
+* `resolution_mode`: "resolved" or "bare"
+* `serialization_format`: "marshal", "json", or "yaml"
+====
+
+==== Out of memory
+
+.Error
+[example]
+====
+[source]
+----
+Error: Cannot allocate memory
+----
+====
+
+.Solution
+[example]
+====
+1. Use `marshal` format (most compact)
+2. Build smaller packages
+3. Increase available memory
+4. Use `--no-validate` to skip validation step
+====
+
+=== Debugging build process
+
+Enable verbose output to see detailed progress:
+
+[source,bash]
+----
+expressir package build input.exp output.ler --verbose
+----
+
+Output shows:
+
+* Dependency resolution progress
+* Number of schemas found
+* Validation results
+* Package creation status
+
+== Next steps
+
+* link:loading-packages.html[Loading Packages] - Learn how to load and use LER
+packages
+* link:querying-packages.html[Querying Packages] - Search package contents
+* link:validating-packages.html[Validating Packages] - Verify package integrity
+* link:package-formats.html[Package Formats] - Compare serialization formats
+
+== Summary
+
+Key takeaways for creating LER packages:
+
+* Use `repo.export_to_package()` for Ruby API
+* Use `expressir package build` for CLI
+* Dependencies are automatically resolved
+* Choose `marshal` format for production (fastest)
+* Choose `yaml` or `json` for debugging (readable)
+* Include validation in CI/CD pipelines
+* Use `include_all` mode for self-contained packages
+* Pre-built indexes are automatically included
+
+Best practices:
+
+* Validate schemas before packaging
+* Use semantic versioning
+* Document package contents in description
+* Automate builds in CI/CD
+* Test packages after creation
+* Keep original EXPRESS files in version control

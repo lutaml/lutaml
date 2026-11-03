@@ -1,0 +1,1038 @@
+---
+title: Programmatic Usage
+parent: Changes
+grand_parent: Guides
+nav_order: 4
+---
+
+= Programmatic Usage
+
+== Purpose
+
+The Expressir Changes API provides Ruby classes for programmatically creating,
+reading, updating, and managing EXPRESS Changes files. This guide covers the
+complete Ruby API for working with changes.
+
+== References
+
+* link:index.html[Changes Overview] - Introduction to Changes files
+* link:changes-format.html[Changes Format] - YAML format specification
+* link:validating-changes.html[Validating Changes] - Validation guide
+* link:importing-eengine.html[Importing from Express Engine] - Import guide
+
+== Concepts
+
+SchemaChange:: Top-level class representing a complete Changes file for a
+schema
+
+VersionChange:: Class representing changes for a specific version
+
+ItemChange:: Class representing a single change to an EXPRESS construct
+
+MappingChange:: Class representing a mapping-related change
+
+round-trip serialization:: Loading from YAML and saving back to YAML with
+consistent formatting
+
+== Core classes
+
+The Changes API consists of four main model classes:
+
+[`Expressir::Changes::SchemaChange`](../../references/data-model/changes.html#schema-change)::
+Top-level container for all changes to a schema
+
+[`Expressir::Changes::VersionChange`](../../references/data-model/changes.html#version-change)::
+Changes for a specific version
+
+[`Expressir::Changes::ItemChange`](../../references/data-model/changes.html#item-change)::
+Individual change to an EXPRESS construct
+
+[`Expressir::Changes::MappingChange`](../../references/data-model/changes.html#mapping-change)::
+Mapping-related change for ARM/MIM schemas
+
+== Reading Changes files
+
+=== Loading from file
+
+Load an existing Changes file:
+
+[source,ruby]
+----
+require "expressir/changes"
+
+# Load from file
+changes = Expressir::Changes::SchemaChange.from_file(
+  "schema.changes.yaml"
+)
+
+# Access top-level properties
+puts "Schema: #{changes.schema}"
+puts "Versions: #{changes.versions&.size || 0}"
+----
+
+=== Accessing versions
+
+Iterate through versions:
+
+[source,ruby]
+----
+changes = Expressir::Changes::SchemaChange.from_file(
+  "schema.changes.yaml"
+)
+
+# Iterate through all versions
+changes.versions&.each do |version|
+  puts "Version #{version.version}"
+  puts "  Description: #{version.description}"
+  puts "  Additions: #{version.additions&.size || 0}"
+  puts "  Modifications: #{version.modifications&.size || 0}"
+  puts "  Deletions: #{version.deletions&.size || 0}"
+end
+----
+
+=== Finding specific versions
+
+Find a version by number:
+
+[source,ruby]
+----
+changes = Expressir::Changes::SchemaChange.from_file(
+  "schema.changes.yaml"
+)
+
+# Find version 3
+version_3 = changes.versions&.find { |v| v.version == 3 }
+
+if version_3
+  puts "Found version 3"
+  puts "Additions: #{version_3.additions&.size || 0}"
+else
+  puts "Version 3 not found"
+end
+----
+
+=== Accessing change items
+
+Access individual changes:
+
+[source,ruby]
+----
+changes = Expressir::Changes::SchemaChange.from_file(
+  "schema.changes.yaml"
+)
+
+version = changes.versions&.first
+
+# Access additions
+version.additions&.each do |item|
+  puts "Added #{item.type}: #{item.name}"
+  if item.description
+    puts "  Description:"
+    item.description.each { |desc| puts "    - #{desc}" }
+  end
+  if item.interfaced_items
+    puts "  Interfaced items: #{item.interfaced_items}"
+  end
+end
+
+# Access modifications
+version.modifications&.each do |item|
+  puts "Modified #{item.type}: #{item.name}"
+end
+
+# Access deletions
+version.deletions&.each do |item|
+  puts "Deleted #{item.type}: #{item.name}"
+end
+----
+
+=== Handling empty files
+
+Handle empty or minimal Changes files:
+
+[source,ruby]
+----
+changes = Expressir::Changes::SchemaChange.from_file(
+  "empty.changes.yaml"
+)
+
+# Check for versions
+if changes.versions.nil? || changes.versions.empty?
+  puts "No versions found"
+else
+  puts "Found #{changes.versions.size} versions"
+end
+----
+
+== Creating Changes files
+
+=== Creating from scratch
+
+Create a new SchemaChange:
+
+[source,ruby]
+----
+require "expressir/changes"
+
+# Create empty schema change
+changes = Expressir::Changes::SchemaChange.new(
+  schema: "my_schema"
+)
+
+puts "Created changes for: #{changes.schema}"
+----
+
+=== Adding versions
+
+Add a version with changes:
+
+[source,ruby]
+----
+changes = Expressir::Changes::SchemaChange.new(
+  schema: "my_schema"
+)
+
+# Create change items
+new_entity = Expressir::Changes::ItemChange.new(
+  type: "ENTITY",
+  name: "new_product",
+  description: ["Represents product information"]
+)
+
+modified_function = Expressir::Changes::ItemChange.new(
+  type: "FUNCTION",
+  name: "validate_data",
+  description: [
+    "Updated parameters",
+    "Improved validation logic"
+  ]
+)
+
+# Add version with changes
+changes.add_or_update_version(
+  "2",                           # Version number
+  "Added product entity",        # Description
+  {
+    additions: [new_entity],
+    modifications: [modified_function],
+    deletions: []
+  }
+)
+
+puts "Added version 2"
+----
+
+=== Creating interface changes
+
+Create USE_FROM and REFERENCE_FROM changes:
+
+[source,ruby]
+----
+# Create interface imports
+use_from = Expressir::Changes::ItemChange.new(
+  type: "USE_FROM",
+  name: "geometry_schema",
+  interfaced_items: "point"
+)
+
+reference_from = Expressir::Changes::ItemChange.new(
+  type: "REFERENCE_FROM",
+  name: "measure_schema",
+  interfaced_items: "length_measure"
+)
+
+# Add to version
+changes.add_or_update_version(
+  "2",
+  "Added external references",
+  {
+    additions: [use_from, reference_from]
+  }
+)
+----
+
+=== Creating mapping changes
+
+Create mapping changes for ARM/MIM:
+
+[source,ruby]
+----
+# Create mapping changes
+mapping1 = Expressir::Changes::MappingChange.new(
+  name: "Product_entity",
+  description: "ENTITY mapping updated for new MIM structure"
+)
+
+mapping2 = Expressir::Changes::MappingChange.new(
+  name: "Identifier_type",
+  description: "TYPE mapping simplified"
+)
+
+# Add version with mappings
+changes.add_or_update_version(
+  "2",
+  "Updated ARM mappings",
+  {
+    mappings: [mapping1, mapping2]
+  }
+)
+----
+
+=== Complete example
+
+Create a complete Changes file from scratch:
+
+[source,ruby]
+----
+require "expressir/changes"
+
+# Create schema change
+changes = Expressir::Changes::SchemaChange.new(
+  schema: "action_schema"
+)
+
+# Create version 2 changes
+entity_addition = Expressir::Changes::ItemChange.new(
+  type: "ENTITY",
+  name: "action_status",
+  description: ["Tracks status of actions"]
+)
+
+function_mod = Expressir::Changes::ItemChange.new(
+  type: "FUNCTION",
+  name: "validate_action",
+  description: [
+    "Added status parameter",
+    "Improved validation"
+  ]
+)
+
+constant_deletion = Expressir::Changes::ItemChange.new(
+  type: "CONSTANT",
+  name: "old_status",
+  description: ["Replaced by action_status entity"]
+)
+
+# Add version 2
+changes.add_or_update_version(
+  "2",
+  "Status tracking improvements",
+  {
+    additions: [entity_addition],
+    modifications: [function_mod],
+    deletions: [constant_deletion]
+  }
+)
+
+# Add version 3
+interface_addition = Expressir::Changes::ItemChange.new(
+  type: "USE_FROM",
+  name: "support_resource_schema",
+  interfaced_items: "bag_to_set"
+)
+
+changes.add_or_update_version(
+  "3",
+  "Added external references",
+  {
+    additions: [interface_addition]
+  }
+)
+
+puts "Created changes with #{changes.versions.size} versions"
+----
+
+== Updating Changes files
+
+=== Loading and modifying
+
+Load an existing file and add changes:
+
+[source,ruby]
+----
+# Load existing file
+changes = Expressir::Changes::SchemaChange.from_file(
+  "schema.changes.yaml"
+)
+
+puts "Current versions: #{changes.versions.size}"
+
+# Add new version
+new_item = Expressir::Changes::ItemChange.new(
+  type: "TYPE",
+  name: "status_enum",
+  description: ["New status enumeration"]
+)
+
+changes.add_or_update_version(
+  "4",
+  "Added status enumeration",
+  {
+    additions: [new_item]
+  }
+)
+
+puts "After update: #{changes.versions.size} versions"
+----
+
+=== Replacing existing versions
+
+Replace an existing version:
+
+[source,ruby]
+----
+changes = Expressir::Changes::SchemaChange.from_file(
+  "schema.changes.yaml"
+)
+
+# Create new changes for version 2
+revised_item = Expressir::Changes::ItemChange.new(
+  type: "ENTITY",
+  name: "revised_entity",
+  description: ["Corrected entity definition"]
+)
+
+# This replaces existing version 2
+changes.add_or_update_version(
+  "2",
+  "Revised version 2 changes",
+  {
+    additions: [revised_item]
+  }
+)
+
+puts "Version 2 replaced"
+----
+
+=== Modifying existing items
+
+Modify the changes directly:
+
+[source,ruby]
+----
+changes = Expressir::Changes::SchemaChange.from_file(
+  "schema.changes.yaml"
+)
+
+# Find and modify a version
+version_2 = changes.versions&.find { |v| v.version == 2 }
+
+if version_2
+  # Add to existing additions
+  version_2.additions ||= []
+  version_2.additions << Expressir::Changes::ItemChange.new(
+    type: "FUNCTION",
+    name: "new_function"
+  )
+
+  # Update description
+  version_2.description = "Enhanced version 2 with new function"
+
+  puts "Modified version 2"
+end
+----
+
+=== Removing versions
+
+Remove a version from the file:
+
+[source,ruby]
+----
+changes = Expressir::Changes::SchemaChange.from_file(
+  "schema.changes.yaml"
+)
+
+# Remove version 3
+changes.versions&.reject! { |v| v.version == 3 }
+
+puts "Removed version 3"
+----
+
+== Saving Changes files
+
+=== Saving to file
+
+Save a SchemaChange to a file:
+
+[source,ruby]
+----
+changes = Expressir::Changes::SchemaChange.new(
+  schema: "my_schema"
+)
+
+# ... add versions ...
+
+# Save to file
+changes.to_file("my_schema.changes.yaml")
+
+puts "Saved to my_schema.changes.yaml"
+----
+
+The `to_file` method:
+
+* Automatically adds YAML schema hint comment
+* Formats with consistent indentation
+* Creates parent directories if needed
+* Overwrites existing file
+
+=== Converting to YAML string
+
+Get YAML as a string without saving:
+
+[source,ruby]
+----
+changes = Expressir::Changes::SchemaChange.new(
+  schema: "my_schema"
+)
+
+# Convert to YAML string
+yaml_content = changes.to_yaml
+
+puts yaml_content
+----
+
+=== Saving to stdout
+
+Output to stdout for piping or display:
+
+[source,ruby]
+----
+changes = Expressir::Changes::SchemaChange.from_file(
+  "schema.changes.yaml"
+)
+
+# Output to stdout
+puts changes.to_yaml
+----
+
+== Version management strategies
+
+=== Sequential versioning
+
+Maintain sequential version numbers:
+
+[source,ruby]
+----
+changes = Expressir::Changes::SchemaChange.from_file(
+  "schema.changes.yaml"
+)
+
+# Find highest version number
+max_version = changes.versions&.map(&:version)&.max&.to_i || 1
+
+# Add next version
+next_version = max_version + 1
+changes.add_or_update_version(
+  next_version,
+  "New features",
+  {
+    additions: [...]
+  }
+)
+
+puts "Added version #{next_version}"
+----
+
+=== Semantic versioning
+
+Use semantic version strings:
+
+[source,ruby]
+----
+changes = Expressir::Changes::SchemaChange.new(
+  schema: "my_schema"
+)
+
+# Add semantic versions
+changes.add_or_update_version(
+  "1.0.0",
+  "Initial release",
+  { additions: [...] }
+)
+
+changes.add_or_update_version(
+  "1.1.0",
+  "Minor update",
+  { modifications: [...] }
+)
+
+changes.add_or_update_version(
+  "2.0.0",
+  "Major update",
+  { additions: [...], deletions: [...] }
+)
+----
+
+=== Version with metadata
+
+Include detailed metadata in descriptions:
+
+[source,ruby]
+----
+changes.add_or_update_version(
+  "2",
+  "Version 2.0 - Released 2024-01-15\n" \
+  "Added support for new features.\n" \
+  "Breaking changes: Removed deprecated constants.",
+  {
+    additions: [...],
+    deletions: [...]
+  }
+)
+----
+
+=== Branch-based versioning
+
+Track changes for different branches:
+
+[source,ruby]
+----
+# Development version
+changes.add_or_update_version(
+  "2-dev",
+  "Development changes",
+  { additions: [...] }
+)
+
+# Release candidate
+changes.add_or_update_version(
+  "2-rc1",
+  "Release candidate 1",
+  { modifications: [...] }
+)
+
+# Final release
+changes.add_or_update_version(
+  "2",
+  "Final release",
+  { ... }
+)
+----
+
+== Integration patterns
+
+=== Automated change tracking
+
+Track changes automatically when schemas are modified:
+
+[source,ruby]
+----
+require "expressir"
+require "expressir/changes"
+
+class SchemaChangeTracker
+  def initialize(schema_name, changes_file)
+    @schema_name = schema_name
+    @changes_file = changes_file
+    @changes = load_or_create_changes
+  end
+
+  def track_addition(type, name, description)
+    item = Expressir::Changes::ItemChange.new(
+      type: type,
+      name: name,
+      description: description ? [description] : nil
+    )
+
+    @pending_additions << item
+  end
+
+  def track_modification(type, name, description)
+    item = Expressir::Changes::ItemChange.new(
+      type: type,
+      name: name,
+      description: description ? [description] : nil
+    )
+
+    @pending_modifications << item
+  end
+
+  def save_version(version, description)
+    @changes.add_or_update_version(
+      version,
+      description,
+      {
+        additions: @pending_additions,
+        modifications: @pending_modifications,
+        deletions: @pending_deletions
+      }
+    )
+
+    @changes.to_file(@changes_file)
+    clear_pending_changes
+  end
+
+  private
+
+  def load_or_create_changes
+    if File.exist?(@changes_file)
+      Expressir::Changes::SchemaChange.from_file(@changes_file)
+    else
+      Expressir::Changes::SchemaChange.new(schema: @schema_name)
+    end
+  end
+
+  def clear_pending_changes
+    @pending_additions = []
+    @pending_modifications = []
+    @pending_deletions = []
+  end
+end
+
+# Usage
+tracker = SchemaChangeTracker.new(
+  "action_schema",
+  "action_schema.changes.yaml"
+)
+
+tracker.track_addition("ENTITY", "new_entity", "New entity added")
+tracker.track_modification("FUNCTION", "validate", "Updated logic")
+tracker.save_version("2", "Version 2 changes")
+----
+
+=== Report generation
+
+Generate human-readable reports from changes:
+
+[source,ruby]
+----
+require "expressir/changes"
+
+class ChangeReportGenerator
+  def initialize(changes_file)
+    @changes = Expressir::Changes::SchemaChange.from_file(changes_file)
+  end
+
+  def generate_report
+    report = []
+    report << "# Change Report for #{@changes.schema}"
+    report << ""
+
+    @changes.versions&.each do |version|
+      report << generate_version_section(version)
+    end
+
+    report.join("\n")
+  end
+
+  private
+
+  def generate_version_section(version)
+    lines = []
+    lines << "## Version #{version.version}"
+    lines << ""
+
+    if version.description
+      lines << version.description
+      lines << ""
+    end
+
+    if version.additions&.any?
+      lines << "### Additions"
+      version.additions.each do |item|
+        lines << "- #{item.type}: #{item.name}"
+        item.description&.each { |d| lines << "  - #{d}" }
+      end
+      lines << ""
+    end
+
+    if version.modifications&.any?
+      lines << "### Modifications"
+      version.modifications.each do |item|
+        lines << "- #{item.type}: #{item.name}"
+        item.description&.each { |d| lines << "  - #{d}" }
+      end
+      lines << ""
+    end
+
+    if version.deletions&.any?
+      lines << "### Deletions"
+      version.deletions.each do |item|
+        lines << "- #{item.type}: #{item.name}"
+      end
+      lines << ""
+    end
+
+    lines.join("\n")
+  end
+end
+
+# Usage
+generator = ChangeReportGenerator.new("schema.changes.yaml")
+report = generator.generate_report
+File.write("CHANGELOG.md", report)
+----
+
+=== Comparing versions
+
+Compare changes between versions:
+
+[source,ruby]
+----
+require "expressir/changes"
+
+def compare_versions(changes, version1, version2)
+  v1 = changes.versions&.find { |v| v.version == version1 }
+  v2 = changes.versions&.find { |v| v.version == version2 }
+
+  return nil unless v1 && v2
+
+  {
+    version1: version1,
+    version2: version2,
+    added_in_v2: (v2.additions&.size || 0) - (v1.additions&.size || 0),
+    modified_in_v2: (v2.modifications&.size || 0) -
+                    (v1.modifications&.size || 0),
+    deleted_in_v2: (v2.deletions&.size || 0) - (v1.deletions&.size || 0)
+  }
+end
+
+# Usage
+changes = Expressir::Changes::SchemaChange.from_file(
+  "schema.changes.yaml"
+)
+comparison = compare_versions(changes, 2, 3)
+puts "Changes from v2 to v3: #{comparison}"
+----
+
+=== Batch processing
+
+Process multiple Changes files:
+
+[source,ruby]
+----
+require "expressir/changes"
+
+def process_all_changes(directory)
+  Dir.glob("#{directory}/**/*.changes.yaml").each do |file|
+    begin
+      changes = Expressir::Changes::SchemaChange.from_file(file)
+
+      puts "File: #{file}"
+      puts "  Schema: #{changes.schema}"
+      puts "  Versions: #{changes.versions&.size || 0}"
+
+      # Process each version
+      changes.versions&.each do |version|
+        total_changes = (version.additions&.size || 0) +
+                       (version.modifications&.size || 0) +
+                       (version.deletions&.size || 0)
+        puts "    v#{version.version}: #{total_changes} changes"
+      end
+
+    rescue StandardError => e
+      puts "Error processing #{file}: #{e.message}"
+    end
+  end
+end
+
+# Usage
+process_all_changes("schemas/")
+----
+
+== Error handling
+
+=== File loading errors
+
+Handle file loading errors:
+
+[source,ruby]
+----
+require "expressir/changes"
+
+begin
+  changes = Expressir::Changes::SchemaChange.from_file(
+    "schema.changes.yaml"
+  )
+rescue Errno::ENOENT
+  puts "File not found"
+  # Create new file
+  changes = Expressir::Changes::SchemaChange.new(
+    schema: "default_schema"
+  )
+rescue Psych::SyntaxError => e
+  puts "Invalid YAML syntax: #{e.message}"
+  exit 1
+rescue StandardError => e
+  puts "Error loading file: #{e.message}"
+  exit 1
+end
+----
+
+=== Validation errors
+
+Validate data before using:
+
+[source,ruby]
+----
+def validate_change_item(item)
+  errors = []
+
+  errors << "Missing type" if item.type.nil? || item.type.empty?
+  errors << "Missing name" if item.name.nil? || item.name.empty?
+
+  valid_types = %w[
+    ENTITY TYPE FUNCTION PROCEDURE RULE CONSTANT
+    SUBTYPE_CONSTRAINT USE_FROM REFERENCE_FROM
+  ]
+
+  unless valid_types.include?(item.type)
+    errors << "Invalid type: #{item.type}"
+  end
+
+  errors
+end
+
+# Usage
+item = Expressir::Changes::ItemChange.new(type: "ENTITY", name: "test")
+errors = validate_change_item(item)
+
+if errors.any?
+  puts "Validation errors:"
+  errors.each { |err| puts "  - #{err}" }
+else
+  puts "Item is valid"
+end
+----
+
+=== Safe file writing
+
+Write files safely with error handling:
+
+[source,ruby]
+----
+def save_changes_safely(changes, path)
+  # Create backup if file exists
+  if File.exist?(path)
+    backup_path = "#{path}.backup"
+    FileUtils.cp(path, backup_path)
+    puts "Created backup: #{backup_path}"
+  end
+
+  begin
+    changes.to_file(path)
+    puts "Saved to: #{path}"
+
+    # Remove backup on success
+    File.delete("#{path}.backup") if File.exist?("#{path}.backup")
+
+  rescue StandardError => e
+    puts "Error saving file: #{e.message}"
+
+    # Restore backup if it exists
+    if File.exist?("#{path}.backup")
+      FileUtils.mv("#{path}.backup", path)
+      puts "Restored from backup"
+    end
+
+    raise
+  end
+end
+
+# Usage
+changes = Expressir::Changes::SchemaChange.new(schema: "test")
+save_changes_safely(changes, "test.changes.yaml")
+----
+
+== Best practices
+
+=== Use descriptive variable names
+
+[source,ruby]
+----
+# Good
+entity_addition = Expressir::Changes::ItemChange.new(...)
+function_modification = Expressir::Changes::ItemChange.new(...)
+
+# Avoid
+item1 = Expressir::Changes::ItemChange.new(...)
+x = Expressir::Changes::ItemChange.new(...)
+----
+
+=== Initialize collections
+
+Always initialize arrays before use:
+
+[source,ruby]
+----
+changes = Expressir::Changes::SchemaChange.new(schema: "test")
+changes.versions ||= []  # Initialize if nil
+----
+
+=== Check for nil
+
+Check for nil before accessing collections:
+
+[source,ruby]
+----
+# Safe
+if changes.versions&.any?
+  changes.versions.each { |v| ... }
+end
+
+# Unsafe (may raise error)
+changes.versions.each { |v| ... }
+----
+
+=== Use consistent version format
+
+Choose a version format and stick with it:
+
+[source,ruby]
+----
+# Integer versions
+changes.add_or_update_version(2, ...)
+changes.add_or_update_version(3, ...)
+
+# Or semantic versions
+changes.add_or_update_version("1.0.0", ...)
+changes.add_or_update_version("1.1.0", ...)
+
+# Don't mix formats
+----
+
+=== Save after modifications
+
+Always save after making changes:
+
+[source,ruby]
+----
+changes = Expressir::Changes::SchemaChange.from_file("file.yaml")
+changes.add_or_update_version(...)
+changes.to_file("file.yaml")  # Don't forget to save!
+----
+
+== Next steps
+
+After mastering programmatic usage:
+
+* link:changes-format.html[Changes Format] - Review format specification
+* link:validating-changes.html[Validating Changes] - Validate your changes
+* link:importing-eengine.html[Importing from Express Engine] - Import
+  automation
+
+== Summary
+
+The Changes API provides comprehensive programmatic control:
+
+* Four main classes: SchemaChange, VersionChange, ItemChange, MappingChange
+* Load from files with `from_file` method
+* Create changes programmatically with `new` and `add_or_update_version`
+* Save with `to_file` method
+* Version management strategies for different workflows
+* Integration patterns for automation
+* Proper error handling for robust applications
+* Best practices for maintainable code
+
+Key takeaways:
+
+* Use `SchemaChange.from_file` to load existing files
+* Use `add_or_update_version` for smart version handling
+* Always save with `to_file` after modifications
+* Check for nil before accessing collections
+* Handle errors appropriately
+* Use descriptive variable names
+* Initialize collections before use
+* Choose consistent version format
+* Validate data before using
+* Create backups before overwriting files

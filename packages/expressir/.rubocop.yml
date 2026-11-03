@@ -1,0 +1,18 @@
+inherit_from:
+  - https://raw.githubusercontent.com/riboseinc/oss-guides/main/ci/rubocop.yml
+  - .rubocop_todo.yml
+
+plugins:
+- rubocop-performance
+- rubocop-rake
+- rubocop-rspec
+
+AllCops:
+  TargetRubyVersion: 3.2
+  NewCops: enable
+  Exclude:
+    - 'vendor/**/*'
+    - 'metanorma-mirror-*/**/*'
+
+Lint/UnusedMethodArgument:
+  AllowUnusedKeywordArguments: true

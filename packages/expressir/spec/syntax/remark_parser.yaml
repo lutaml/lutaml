@@ -1,0 +1,485 @@
+---
+_class: Expressir::Model::ExpFile
+path: spec/syntax/remark.exp
+schemas:
+- _class: Expressir::Model::Declarations::Schema
+  id: remark_schema
+  remarks:
+  - |-
+    Any character within the EXPRESS character set may occur between the start and end of
+    an embedded remark including the newline character; therefore, embedded remarks can span
+    several physical lines.
+  - The tail remark is written at the end of a physical line.
+  - 'UTF8 test: Příliš žluťoučký kůň úpěl ďábelské ódy.'
+  - universal scope - schema before
+  - universal scope - schema
+  remark_items:
+  - _class: Expressir::Model::Declarations::RemarkItem
+    id: remark_item
+    remarks:
+    - schema scope - schema remark item
+    - universal scope - schema remark item
+  file: spec/syntax/remark.exp
+  constants:
+  - _class: Expressir::Model::Declarations::Constant
+    id: remark_constant
+    remarks:
+    - schema scope - constant
+    - universal scope - constant
+    type:
+      _class: Expressir::Model::DataTypes::String
+    expression:
+      _class: Expressir::Model::Literals::String
+      value: xxx
+  types:
+  - _class: Expressir::Model::Declarations::Type
+    id: remark_type
+    remarks:
+    - schema scope - type
+    - universal scope - type
+    underlying_type:
+      _class: Expressir::Model::DataTypes::Enumeration
+      items:
+      - _class: Expressir::Model::DataTypes::EnumerationItem
+        id: remark_enumeration_item
+        remarks:
+        - schema scope - enumeration item
+        - schema scope - enumeration item, on the same level as the type
+        - universal scope - enumeration item
+        - universal scope - enumeration item, on the same level as the type
+    where_rules:
+    - _class: Expressir::Model::Declarations::WhereRule
+      id: WR1
+      remarks:
+      - type scope - type where
+      - type scope - type where, with prefix
+      - schema scope - type where
+      - schema scope - type where, with prefix
+      - universal scope - type where
+      - universal scope - type where, with prefix
+      expression:
+        _class: Expressir::Model::Literals::Logical
+        value: 'TRUE'
+    informal_propositions:
+    - _class: Expressir::Model::Declarations::InformalPropositionRule
+      id: IP1
+      remarks:
+      - type scope - type informal proposition, with prefix
+      - schema scope - type informal proposition
+      - schema scope - type informal proposition, with prefix
+      - universal scope - type informal proposition
+      - universal scope - type informal proposition, with prefix
+      remark_items:
+      - _class: Expressir::Model::Declarations::RemarkItem
+        id: IP1
+        remarks:
+        - type scope - type informal proposition
+  entities:
+  - _class: Expressir::Model::Declarations::Entity
+    id: remark_entity
+    remarks:
+    - schema scope - entity
+    - universal scope - entity
+    attributes:
+    - _class: Expressir::Model::Declarations::Attribute
+      id: remark_attribute
+      remarks:
+      - entity scope - entity attribute
+      - schema scope - entity attribute
+      - universal scope - entity attribute
+      kind: EXPLICIT
+      type:
+        _class: Expressir::Model::DataTypes::String
+    - _class: Expressir::Model::Declarations::DerivedAttribute
+      id: remark_derived_attribute
+      remarks:
+      - entity scope - entity derived attribute
+      - schema scope - entity derived attribute
+      - universal scope - entity derived attribute
+      kind: DERIVED
+      type:
+        _class: Expressir::Model::DataTypes::String
+      expression:
+        _class: Expressir::Model::Literals::String
+        value: xxx
+    - _class: Expressir::Model::Declarations::InverseAttribute
+      id: remark_inverse_attribute
+      remarks:
+      - entity scope - entity inverse attribute
+      - schema scope - entity inverse attribute
+      - universal scope - entity inverse attribute
+      kind: INVERSE
+      type:
+        _class: Expressir::Model::References::SimpleReference
+        id: remark_entity
+        base_path: spec/syntax/remark.exp.remark_schema.remark_entity
+      expression:
+        _class: Expressir::Model::References::SimpleReference
+        id: remark_attribute
+        base_path: spec/syntax/remark.exp.remark_schema.remark_entity.remark_attribute
+    unique_rules:
+    - _class: Expressir::Model::Declarations::UniqueRule
+      id: UR1
+      remarks:
+      - entity scope - entity unique
+      - schema scope - entity unique
+      - universal scope - entity unique
+      attributes:
+      - _class: Expressir::Model::References::SimpleReference
+        id: remark_attribute
+        base_path: spec/syntax/remark.exp.remark_schema.remark_entity.remark_attribute
+    where_rules:
+    - _class: Expressir::Model::Declarations::WhereRule
+      id: WR1
+      remarks:
+      - entity scope - entity where
+      - entity scope - entity where, with prefix
+      - schema scope - entity where
+      - schema scope - entity where, with prefix
+      - universal scope - entity where
+      - universal scope - entity where, with prefix
+      remark_items:
+      - _class: Expressir::Model::Declarations::RemarkItem
+        id: unusual_placement
+        remarks:
+        - placed inside WHERE clauses (or other enumerable context)
+      expression:
+        _class: Expressir::Model::Literals::Logical
+        value: 'TRUE'
+    informal_propositions:
+    - _class: Expressir::Model::Declarations::InformalPropositionRule
+      id: IP1
+      remarks:
+      - entity scope - entity informal proposition, with prefix
+      - schema scope - entity informal proposition
+      - schema scope - entity informal proposition, with prefix
+      - universal scope - entity informal proposition
+      - universal scope - entity informal proposition, with prefix
+      remark_items:
+      - _class: Expressir::Model::Declarations::RemarkItem
+        id: IP1
+        remarks:
+        - entity scope - entity informal proposition
+  subtype_constraints:
+  - _class: Expressir::Model::Declarations::SubtypeConstraint
+    id: remark_subtype_constraint
+    remarks:
+    - schema scope - subtype constraint
+    - universal scope - subtype constraint
+    applies_to:
+      _class: Expressir::Model::References::SimpleReference
+      id: remark_entity
+      base_path: spec/syntax/remark.exp.remark_schema.remark_entity
+    abstract: false
+  functions:
+  - _class: Expressir::Model::Declarations::Function
+    id: remark_function
+    remarks:
+    - schema scope - function
+    - universal scope - function
+    parameters:
+    - _class: Expressir::Model::Declarations::Parameter
+      id: remark_parameter
+      remarks:
+      - function scope - function parameter
+      - schema scope - function parameter
+      - universal scope - function parameter
+      type:
+        _class: Expressir::Model::DataTypes::String
+    return_type:
+      _class: Expressir::Model::DataTypes::Boolean
+    types:
+    - _class: Expressir::Model::Declarations::Type
+      id: remark_type
+      remarks:
+      - function scope - function type
+      - schema scope - function type
+      - universal scope - function type
+      underlying_type:
+        _class: Expressir::Model::DataTypes::Enumeration
+        items:
+        - _class: Expressir::Model::DataTypes::EnumerationItem
+          id: remark_enumeration_item
+          remarks:
+          - function scope - function enumeration item
+          - function scope - function enumeration item, on the same level as the type
+          - schema scope - function enumeration item
+          - schema scope - function enumeration item, on the same level as the type
+          - universal scope - function enumeration item
+          - universal scope - function enumeration item, on the same level as the
+            type
+    constants:
+    - _class: Expressir::Model::Declarations::Constant
+      id: remark_constant
+      remarks:
+      - function scope - function constant
+      - schema scope - function constant
+      - universal scope - function constant
+      type:
+        _class: Expressir::Model::DataTypes::String
+      expression:
+        _class: Expressir::Model::Literals::String
+        value: xxx
+    variables:
+    - _class: Expressir::Model::Declarations::Variable
+      id: remark_variable
+      remarks:
+      - function scope - function variable
+      - schema scope - function variable
+      - universal scope - function variable
+      type:
+        _class: Expressir::Model::DataTypes::String
+    statements:
+    - _class: Expressir::Model::Statements::Alias
+      id: remark_alias
+      remarks:
+      - function alias scope - function alias
+      expression:
+        _class: Expressir::Model::References::SimpleReference
+        id: remark_variable
+        base_path: spec/syntax/remark.exp.remark_schema.remark_function.remark_variable
+      statements:
+      - _class: Expressir::Model::Statements::Null
+    - _class: Expressir::Model::Statements::Repeat
+      id: remark_repeat
+      remarks:
+      - function repeat scope - function repeat
+      bound1:
+        _class: Expressir::Model::Literals::Integer
+        value: '1'
+      bound2:
+        _class: Expressir::Model::Literals::Integer
+        value: '9'
+      statements:
+      - _class: Expressir::Model::Statements::Null
+    - _class: Expressir::Model::Statements::Assignment
+      ref:
+        _class: Expressir::Model::References::SimpleReference
+        id: remark_variable
+        base_path: spec/syntax/remark.exp.remark_schema.remark_function.remark_variable
+      expression:
+        _class: Expressir::Model::Expressions::QueryExpression
+        id: remark_query
+        remarks:
+        - function query scope - function query
+        aggregate_source:
+          _class: Expressir::Model::References::SimpleReference
+          id: remark_variable
+          base_path: spec/syntax/remark.exp.remark_schema.remark_function.remark_variable
+        expression:
+          _class: Expressir::Model::Literals::Logical
+          value: 'TRUE'
+  rules:
+  - _class: Expressir::Model::Declarations::Rule
+    id: remark_rule
+    remarks:
+    - schema scope - rule
+    - universal scope - rule
+    applies_to:
+    - _class: Expressir::Model::References::SimpleReference
+      id: remark_entity
+      base_path: spec/syntax/remark.exp.remark_schema.remark_entity
+    types:
+    - _class: Expressir::Model::Declarations::Type
+      id: remark_type
+      remarks:
+      - rule scope - rule type
+      - schema scope - rule type
+      - universal scope - rule type
+      underlying_type:
+        _class: Expressir::Model::DataTypes::Enumeration
+        items:
+        - _class: Expressir::Model::DataTypes::EnumerationItem
+          id: remark_enumeration_item
+          remarks:
+          - rule scope - rule enumeration item
+          - rule scope - rule enumeration item, on the same level as the type
+          - schema scope - rule enumeration item
+          - schema scope - rule enumeration item, on the same level as the type
+          - universal scope - rule enumeration item
+          - universal scope - rule enumeration item, on the same level as the type
+    constants:
+    - _class: Expressir::Model::Declarations::Constant
+      id: remark_constant
+      remarks:
+      - rule scope - rule constant
+      - schema scope - rule constant
+      - universal scope - rule constant
+      type:
+        _class: Expressir::Model::DataTypes::String
+      expression:
+        _class: Expressir::Model::Literals::String
+        value: xxx
+    variables:
+    - _class: Expressir::Model::Declarations::Variable
+      id: remark_variable
+      remarks:
+      - rule scope - rule variable
+      - schema scope - rule variable
+      - universal scope - rule variable
+      type:
+        _class: Expressir::Model::DataTypes::String
+    statements:
+    - _class: Expressir::Model::Statements::Alias
+      id: remark_alias
+      remarks:
+      - rule alias scope - rule alias
+      expression:
+        _class: Expressir::Model::References::SimpleReference
+        id: remark_variable
+        base_path: spec/syntax/remark.exp.remark_schema.remark_rule.remark_variable
+      statements:
+      - _class: Expressir::Model::Statements::Null
+    - _class: Expressir::Model::Statements::Repeat
+      id: remark_repeat
+      remarks:
+      - rule repeat scope - rule repeat
+      bound1:
+        _class: Expressir::Model::Literals::Integer
+        value: '1'
+      bound2:
+        _class: Expressir::Model::Literals::Integer
+        value: '9'
+      statements:
+      - _class: Expressir::Model::Statements::Null
+    - _class: Expressir::Model::Statements::Assignment
+      ref:
+        _class: Expressir::Model::References::SimpleReference
+        id: remark_variable
+        base_path: spec/syntax/remark.exp.remark_schema.remark_rule.remark_variable
+      expression:
+        _class: Expressir::Model::Expressions::QueryExpression
+        id: remark_query
+        remarks:
+        - rule query scope - rule query
+        aggregate_source:
+          _class: Expressir::Model::References::SimpleReference
+          id: remark_variable
+          base_path: spec/syntax/remark.exp.remark_schema.remark_rule.remark_variable
+        expression:
+          _class: Expressir::Model::Literals::Logical
+          value: 'TRUE'
+    where_rules:
+    - _class: Expressir::Model::Declarations::WhereRule
+      id: WR1
+      remarks:
+      - rule scope - rule where
+      - rule scope - rule where, with prefix
+      - schema scope - rule where
+      - schema scope - rule where, with prefix
+      - universal scope - rule where
+      - universal scope - rule where, with prefix
+      expression:
+        _class: Expressir::Model::Literals::Logical
+        value: 'TRUE'
+    informal_propositions:
+    - _class: Expressir::Model::Declarations::InformalPropositionRule
+      id: IP1
+      remarks:
+      - rule scope - rule informal proposition, with prefix
+      - schema scope - rule informal proposition
+      - schema scope - rule informal proposition, with prefix
+      - universal scope - rule informal proposition
+      - universal scope - rule informal proposition, with prefix
+      remark_items:
+      - _class: Expressir::Model::Declarations::RemarkItem
+        id: IP1
+        remarks:
+        - rule scope - rule informal proposition
+  procedures:
+  - _class: Expressir::Model::Declarations::Procedure
+    id: remark_procedure
+    remarks:
+    - schema scope - procedure
+    - universal scope - procedure
+    parameters:
+    - _class: Expressir::Model::Declarations::Parameter
+      id: remark_parameter
+      remarks:
+      - procedure scope - procedure parameter
+      - schema scope - procedure parameter
+      - universal scope - procedure parameter
+      type:
+        _class: Expressir::Model::DataTypes::String
+    types:
+    - _class: Expressir::Model::Declarations::Type
+      id: remark_type
+      remarks:
+      - procedure scope - procedure type
+      - schema scope - procedure type
+      - universal scope - procedure type
+      underlying_type:
+        _class: Expressir::Model::DataTypes::Enumeration
+        items:
+        - _class: Expressir::Model::DataTypes::EnumerationItem
+          id: remark_enumeration_item
+          remarks:
+          - procedure scope - procedure enumeration item
+          - procedure scope - procedure enumeration item, on the same level as the
+            type
+          - schema scope - procedure enumeration item
+          - schema scope - procedure enumeration item, on the same level as the type
+          - universal scope - procedure enumeration item
+          - universal scope - procedure enumeration item, on the same level as the
+            type
+    constants:
+    - _class: Expressir::Model::Declarations::Constant
+      id: remark_constant
+      remarks:
+      - procedure scope - procedure constant
+      - schema scope - procedure constant
+      - universal scope - procedure constant
+      type:
+        _class: Expressir::Model::DataTypes::String
+      expression:
+        _class: Expressir::Model::Literals::String
+        value: xxx
+    variables:
+    - _class: Expressir::Model::Declarations::Variable
+      id: remark_variable
+      remarks:
+      - procedure scope - procedure variable
+      - schema scope - procedure variable
+      - universal scope - procedure variable
+      type:
+        _class: Expressir::Model::DataTypes::String
+    statements:
+    - _class: Expressir::Model::Statements::Alias
+      id: remark_alias
+      remarks:
+      - procedure alias scope - procedure alias
+      expression:
+        _class: Expressir::Model::References::SimpleReference
+        id: remark_variable
+        base_path: spec/syntax/remark.exp.remark_schema.remark_procedure.remark_variable
+      statements:
+      - _class: Expressir::Model::Statements::Null
+    - _class: Expressir::Model::Statements::Repeat
+      id: remark_repeat
+      remarks:
+      - procedure repeat scope - procedure repeat
+      bound1:
+        _class: Expressir::Model::Literals::Integer
+        value: '1'
+      bound2:
+        _class: Expressir::Model::Literals::Integer
+        value: '9'
+      statements:
+      - _class: Expressir::Model::Statements::Null
+    - _class: Expressir::Model::Statements::Assignment
+      ref:
+        _class: Expressir::Model::References::SimpleReference
+        id: remark_variable
+        base_path: spec/syntax/remark.exp.remark_schema.remark_procedure.remark_variable
+      expression:
+        _class: Expressir::Model::Expressions::QueryExpression
+        id: remark_query
+        remarks:
+        - procedure query scope - procedure query
+        aggregate_source:
+          _class: Expressir::Model::References::SimpleReference
+          id: remark_variable
+          base_path: spec/syntax/remark.exp.remark_schema.remark_procedure.remark_variable
+        expression:
+          _class: Expressir::Model::Literals::Logical
+          value: 'TRUE'

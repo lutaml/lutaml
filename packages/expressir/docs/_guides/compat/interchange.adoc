@@ -1,0 +1,79 @@
+---
+title: Interchange formats and divergences
+nav_order: 1
+parent: Compatibility
+---
+
+= Interchange formats and divergences
+
+Expressir reads and writes the interchange formats the EXPRESS
+ecosystem already uses, and runs against real-world corpora that
+predate strict readings of the standard. Where expressir's behaviour
+diverges from a strict standard reading — by tolerance or by
+enhancement — the divergence is registered here with an ID, and a
+spec pins it.
+
+== Comparison reports (schema.changes)
+
+`expressir compare BASE REVISED` emits the `schema.changes` XML
+report (additions, deletions, modifications per declaration), and
+`expressir changes` imports the same format. The round trip is
+pinned in `spec/expressir/commands/compare_spec.rb`.
+
+== Registered divergences
+
+| ID | Facet | Divergence
+|===
+| D-01
+| entity header
+| Real-world corpora omit the entity header delimiter
+  (`ENTITY qus -- remark` with no `;` — STEPmod resources,
+  quantities_and_units_schema.exp:170). ISO 10303-11 requires it;
+  expressir makes the delimiter optional. Pinned in
+  `spec/expressir/express/parser_537_parser_gaps_corpus_gate_spec.rb`.
+
+| D-02
+| remark-only files
+| Files with no SCHEMA wrapper (conversion artifacts) raise the clean
+  `SchemaNotFoundError` ("no schema found") on both parse paths
+  instead of a grammar dump. Pinned in
+  `spec/expressir/express/parser_537_parser_gaps_corpus_gate_spec.rb`.
+
+| D-03
+| schema.changes emission
+| The report is emitted through Moxml: lutaml-model's leptris-backed
+  serializer mis-parses the interchange's dotted element names as
+  namespace prefixes (lutaml-model#997 family). The model layer stays
+  lutaml-model; `from_xml` is unaffected. Pinned in
+  `spec/expressir/commands/compare_spec.rb`.
+
+| D-04
+| P28 binding configuration
+| The clause 8 configuration document is parsed in full, but the
+  derived XML schema applies only the naming-convention, target
+  namespace and explicit renames; the remaining directives (exp-type,
+  exp-attribute, content, flatten, sparse, tagless, keep, use-id,
+  invert, tag-source/tag-values, notation, map, inheritance) are
+  preserved without effect (ISO 10303-28 clause 8). Pinned in
+  `spec/expressir/p28/configuration_spec.rb`.
+
+| D-05
+| schema.changes classification
+| The comparison report's `modified.object` elements carry a
+  `classif` attribute — breaking vs additive per the subtype graph
+  and the ISO 10303-11 Annex K deprecation policy — beyond the
+  interchange minimum. Readers that ignore unknown attributes are
+  unaffected (the importer round trip is pinned in
+  `spec/expressir/commands/compare_spec.rb`; the classification in
+  `spec/expressir/express/change_classification_spec.rb`).
+
+| D-06
+| Eval built-in coverage
+| Of the ISO 10303-11 clause 15 standard functions, `FORMAT` and
+  `VALUE_UA` are not evaluated, and `ROLESOF` returns the empty set
+  (the evaluated population carries no role metadata); aggregate
+  bounds functions answer for evaluated aggregates only. The
+  generated matrix is
+  xref:eval-builtin-matrix[the eval built-in function matrix], pinned
+  in `spec/expressir/eval/builtin_matrix_spec.rb`.
+|===

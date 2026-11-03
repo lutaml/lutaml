@@ -1,0 +1,29 @@
+SCHEMA geometry_schema 'version';
+
+ENTITY person;
+  name : STRING;
+  address : address;
+END_ENTITY;
+
+ENTITY address;
+  street : STRING;
+  city : city;
+END_ENTITY;
+
+ENTITY city;
+  name : STRING;
+  country : country;
+END_ENTITY;
+
+ENTITY country;
+  name : STRING;
+  population : INTEGER;
+END_ENTITY;
+
+ENTITY person_with_country_population
+  SUBTYPE OF (person);
+  DERIVE
+    country_population : INTEGER := SELF\person.address.city.country.population;
+END_ENTITY;
+
+END_SCHEMA;

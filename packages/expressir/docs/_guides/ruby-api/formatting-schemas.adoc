@@ -1,0 +1,605 @@
+---
+title: Formatting Schemas
+parent: Ruby API
+grand_parent: Guides
+nav_order: 4
+---
+
+= Formatting Schemas
+
+== Purpose
+
+The Formatter API converts EXPRESS model objects back into formatted EXPRESS
+language text. This is essential for generating human-readable schema files,
+creating documentation, and implementing schema transformation tools.
+
+== References
+
+* link:parsing-files.html[Parsing Files] - Creating model objects
+* link:working-with-repository.html[Working with Repository] - Managing schemas
+* link:../cli/format-schemas.html[CLI: Format Schemas]
+
+== Concepts
+
+formatter:: Component that converts model objects to EXPRESS text
+hyperlink_formatter:: Specialized formatter that generates HTML links
+pretty_printing:: Formatting with consistent indentation and spacing
+no_remarks:: Option to exclude documentation comments from output
+source_preservation:: Maintaining original formatting and comments
+
+== Basic usage
+
+=== Format a complete schema
+
+[source,ruby]
+----
+require "expressir"
+
+# Parse schema
+repository = Expressir::Express::Parser.from_file("schema.exp")
+schema = repository.schemas.first
+
+# Create formatter
+formatter = Expressir::Express::Formatter.new
+
+# Format to EXPRESS text
+output = formatter.format(schema)
+
+# Save to file
+File.write("formatted_schema.exp", output)
+----
+
+=== Format individual elements
+
+The formatter can format any model element:
+
+[source,ruby]
+----
+formatter = Expressir::Express::Formatter.new
+
+# Format an entity
+entity = schema.entities.first
+entity_text = formatter.format(entity)
+
+# Format a type
+type = schema.types.first
+type_text = formatter.format(type)
+
+# Format a function
+function = schema.functions.first
+function_text = formatter.format(function)
+----
+
+== Formatter options
+
+=== Excluding remarks
+
+Remove all documentation comments from output:
+
+[source,ruby]
+----
+# Include remarks (default)
+formatter = Expressir::Express::Formatter.new(no_remarks: false)
+output_with_remarks = formatter.format(schema)
+
+# Exclude remarks
+formatter = Expressir::Express::Formatter.new(no_remarks: true)
+output_without_remarks = formatter.format(schema)
+----
+
+This is useful for:
+
+* Creating clean reference implementations
+* Reducing file size
+* Generating machine-readable output
+* Removing potentially sensitive comments
+
+=== Accessing formatter settings
+
+[source,ruby]
+----
+formatter = Expressir::Express::Formatter.new(no_remarks: true)
+
+# Check current settings
+puts "Remarks excluded: #{formatter.no_remarks}"
+
+# Change settings
+formatter.no_remarks = false
+----
+
+== Static formatting
+
+Use the static `format` method for one-off formatting:
+
+[source,ruby]
+----
+# Format without creating instance
+output = Expressir::Express::Formatter.format(schema)
+
+# Equivalent to:
+formatter = Expressir::Express::Formatter.new
+output = formatter.format(schema)
+----
+
+This is convenient for simple formatting operations.
+
+== Formatting complete repositories
+
+=== Format all schemas
+
+[source,ruby]
+----
+repository = Expressir::Express::Parser.from_file("multi_schema.exp")
+formatter = Expressir::Express::Formatter.new
+
+# Format entire repository
+output = formatter.format(repository)
+
+# Output contains all schemas separated by blank lines
+File.write("all_schemas.exp", output)
+----
+
+=== Format schemas individually
+
+[source,ruby]
+----
+repository.schemas.each do |schema|
+  output = formatter.format(schema)
+  filename = "#{schema.id}.exp"
+  File.write(filename, output)
+  puts "Wrote #{filename}"
+end
+----
+
+== Formatting specific constructs
+
+=== Schema heads
+
+Format just the schema header:
+
+[source,ruby]
+----
+# Schema head includes SCHEMA declaration and interfaces
+schema = repository.schemas.first
+
+# Note: schema_head_formatter is internal
+# Use regular formatter on the full schema instead
+formatter = Expressir::Express::Formatter.new
+output = formatter.format(schema)
+----
+
+=== Entity definitions
+
+[source,ruby]
+----
+entity = schema.entities.first
+formatter = Expressir::Express::Formatter.new
+
+output = formatter.format(entity)
+# Produces:
+# ENTITY entity_name;
+#   attribute1 : STRING;
+#   attribute2 : INTEGER;
+# END_ENTITY;
+----
+
+=== Type definitions
+
+[source,ruby]
+----
+type = schema.types.first
+formatter = Expressir::Express::Formatter.new
+
+output = formatter.format(type)
+# Produces:
+# TYPE type_name = SELECT
+#   (option1,
+#    option2,
+#    option3);
+# END_TYPE;
+----
+
+=== Functions and procedures
+
+[source,ruby]
+----
+function = schema.functions.first
+formatter = Expressir::Express::Formatter.new
+
+output = formatter.format(function)
+# Produces complete function definition with:
+# - Parameter declarations
+# - Local variables
+# - Statements
+# - Return type
+----
+
+== HyperLinkFormatter
+
+The HyperLinkFormatter generates HTML output with hyperlinks for cross-references:
+
+[source,ruby]
+----
+require "expressir/express/hyperlink_formatter"
+
+# Create hyperlink formatter
+formatter = Expressir::Express::HyperLinkFormatter.new
+
+# Format schema with hyperlinks
+html_output = formatter.format(schema)
+
+# Output contains <a> tags for references
+File.write("schema.html", html_output)
+----
+
+This is useful for:
+
+* Generating browsable schema documentation
+* Creating online schema viewers
+* Building schema navigation tools
+
+=== Hyperlink format
+
+The HyperLinkFormatter wraps references in HTML links:
+
+[source,html]
+----
+<!-- Entity reference becomes a link -->
+<a href="#entity_name">entity_name</a>
+
+<!-- Type reference becomes a link -->
+<a href="#type_name">type_name</a>
+
+<!-- Schema reference becomes a link -->
+<a href="schema_name.html">schema_name</a>
+----
+
+== Formatting options and output
+
+=== Consistent indentation
+
+The formatter applies consistent indentation:
+
+[source,ruby]
+----
+formatter = Expressir::Express::Formatter.new
+output = formatter.format(entity)
+
+# Produces properly indented output:
+# ENTITY example;
+#   attribute1 : STRING;
+#   DERIVE
+#     derived_attr : INTEGER := 42;
+#   WHERE
+#     WR1: attribute1 <> '';
+# END_ENTITY;
+----
+
+Indentation rules:
+
+* 2 spaces per level (configurable via INDENT_WIDTH constant)
+* Attributes indented under ENTITY
+* WHERE rules indented under WHERE keyword
+* Nested constructs properly indented
+
+=== Operator precedence
+
+The formatter handles operator precedence correctly:
+
+[source,ruby]
+----
+# Adds parentheses where needed
+expression = parse_expression("a + b * c")
+formatted = formatter.format(expression)
+# Produces: a + (b * c)
+
+# Removes unnecessary parentheses
+expression = parse_expression("(a + b) + c")
+formatted = formatter.format(expression)
+# Produces: a + b + c
+----
+
+=== Line wrapping
+
+Long lines are wrapped appropriately:
+
+[source,ruby]
+----
+# Long parameter lists are wrapped
+output = formatter.format(function)
+# Produces:
+# FUNCTION long_function(param1 : STRING;
+#                        param2 : INTEGER;
+#                        param3 : BOOLEAN) : REAL;
+----
+
+== Integrating with workflows
+
+=== Schema validation and formatting
+
+[source,ruby]
+----
+# Parse, validate, and format
+repository = Expressir::Express::Parser.from_file("schema.exp")
+
+# Validate
+result = repository.validate
+if result[:valid?]
+  puts "Schema is valid"
+
+  # Format and save
+  formatter = Expressir::Express::Formatter.new(no_remarks: true)
+  output = formatter.format(repository)
+  File.write("validated_schema.exp", output)
+else
+  puts "Validation errors:"
+  result[:errors].each { |e| puts "  #{e}" }
+end
+----
+
+=== Schema transformation
+
+[source,ruby]
+----
+# Parse original schema
+repository = Expressir::Express::Parser.from_file("original.exp")
+
+# Modify schema (example: add version)
+schema = repository.schemas.first
+schema.version = Expressir::Model::Declarations::SchemaVersion.new(
+  value: "2.0"
+)
+
+# Format and save modified schema
+formatter = Expressir::Express::Formatter.new
+output = formatter.format(repository)
+File.write("modified.exp", output)
+----
+
+=== Documentation generation
+
+[source,ruby]
+----
+repository = Expressir::Express::Parser.from_file("schema.exp")
+
+# Generate clean reference
+clean_formatter = Expressir::Express::Formatter.new(no_remarks: true)
+reference = clean_formatter.format(repository)
+File.write("reference.exp", reference)
+
+# Generate documentation version with remarks
+doc_formatter = Expressir::Express::Formatter.new(no_remarks: false)
+documented = doc_formatter.format(repository)
+File.write("documented.exp", documented)
+----
+
+=== Batch processing
+
+[source,ruby]
+----
+files = Dir.glob("schemas/**/*.exp")
+formatter = Expressir::Express::Formatter.new(no_remarks: true)
+
+files.each do |file|
+  begin
+    repository = Expressir::Express::Parser.from_file(file)
+    output = formatter.format(repository)
+
+    # Save to output directory
+    output_file = file.sub("schemas/", "formatted/")
+    FileUtils.mkdir_p(File.dirname(output_file))
+    File.write(output_file, output)
+
+    puts "✓ Formatted #{file}"
+  rescue => e
+    puts "✗ Error formatting #{file}: #{e.message}"
+  end
+end
+----
+
+== Performance considerations
+
+=== Reuse formatter instances
+
+[source,ruby]
+----
+# Create once
+formatter = Expressir::Express::Formatter.new
+
+# Reuse for multiple schemas
+repository.schemas.each do |schema|
+  output = formatter.format(schema)
+  File.write("#{schema.id}.exp", output)
+end
+----
+
+=== Format selectively
+
+For large repositories, format only what you need:
+
+[source,ruby]
+----
+# Format specific schemas
+selected_schemas = repository.schemas.select do |s|
+  s.id.start_with?("action_")
+end
+
+formatter = Expressir::Express::Formatter.new
+selected_schemas.each do |schema|
+  output = formatter.format(schema)
+  File.write("#{schema.id}.exp", output)
+end
+----
+
+=== Memory management
+
+For very large schemas, process in chunks:
+
+[source,ruby]
+----
+formatter = Expressir::Express::Formatter.new
+
+File.open("output.exp", "w") do |f|
+  repository.schemas.each do |schema|
+    output = formatter.format(schema)
+    f.write(output)
+    f.write("\n\n")
+
+    # Output is written and can be garbage collected
+  end
+end
+----
+
+== Output handling
+
+=== Direct file writing
+
+[source,ruby]
+----
+formatter = Expressir::Express::Formatter.new
+output = formatter.format(repository)
+File.write("output.exp", output)
+----
+
+=== Streaming output
+
+[source,ruby]
+----
+formatter = Expressir::Express::Formatter.new
+
+File.open("output.exp", "w") do |file|
+  repository.schemas.each do |schema|
+    file.puts formatter.format(schema)
+    file.puts  # Blank line between schemas
+  end
+end
+----
+
+=== String handling
+
+[source,ruby]
+----
+formatter = Expressir::Express::Formatter.new
+output = formatter.format(schema)
+
+# Process as string
+lines = output.lines
+line_count = lines.size
+entity_count = lines.count { |l| l.include?("ENTITY") }
+
+puts "Output: #{line_count} lines, #{entity_count} entities"
+----
+
+== Comparing with original
+
+=== Round-trip verification
+
+[source,ruby]
+----
+original_file = "schema.exp"
+
+# Parse original
+repository = Expressir::Express::Parser.from_file(original_file)
+
+# Format back to EXPRESS
+formatter = Expressir::Express::Formatter.new
+formatted = formatter.format(repository)
+
+# Parse formatted version
+repo2 = Expressir::Express::Parser.from_exp(formatted)
+
+# Compare
+if repository.schemas.size == repo2.schemas.size
+  puts "Round-trip successful"
+else
+  puts "Round-trip failed: schema count mismatch"
+end
+----
+
+=== Structural comparison
+
+[source,ruby]
+----
+# Parse both versions
+orig_repo = Expressir::Express::Parser.from_file("original.exp")
+fmt_repo = Expressir::Express::Parser.from_exp(formatted_output)
+
+# Compare structure
+orig_schema = orig_repo.schemas.first
+fmt_schema = fmt_repo.schemas.first
+
+puts "Entities: #{orig_schema.entities.size} vs #{fmt_schema.entities.size}"
+puts "Types: #{orig_schema.types.size} vs #{fmt_schema.types.size}"
+puts "Functions: #{orig_schema.functions.size} vs #{fmt_schema.functions.size}"
+----
+
+== Common patterns
+
+=== Clean and format
+
+[source,ruby]
+----
+# Remove remarks and reformat
+repository = Expressir::Express::Parser.from_file("messy.exp")
+formatter = Expressir::Express::Formatter.new(no_remarks: true)
+clean_output = formatter.format(repository)
+File.write("clean.exp", clean_output)
+----
+
+=== Extract specific elements
+
+[source,ruby]
+----
+# Format only entities
+repository = Expressir::Express::Parser.from_file("schema.exp")
+formatter = Expressir::Express::Formatter.new
+
+schema = repository.schemas.first
+schema.entities.each do |entity|
+  puts formatter.format(entity)
+  puts  # Blank line separator
+end
+----
+
+=== Generate partial schema
+
+[source,ruby]
+----
+# Create new schema with subset of elements
+original = repository.schemas.first
+subset = Expressir::Model::Declarations::Schema.new(
+  id: "#{original.id}_subset"
+)
+
+# Copy selected entities
+subset.entities = original.entities.first(10)
+
+# Format subset
+formatter = Expressir::Express::Formatter.new
+output = formatter.format(subset)
+----
+
+== Next steps
+
+* link:../cli/format-schemas.html[CLI Format Command] - Command-line formatting
+* link:parsing-files.html[Parsing Files] - Creating model objects to format
+
+== Summary
+
+The Formatter API provides comprehensive schema output capabilities:
+
+* Format complete repositories or individual elements
+* Control remarks inclusion with `no_remarks` option
+* Consistent indentation and pretty-printing
+* HyperLinkFormatter for HTML output with cross-references
+* Integration with parsing, validation, and transformation workflows
+* Performance optimizations for large schemas
+
+Key takeaways:
+
+* Create formatter instances with appropriate options
+* Reuse formatter instances for multiple operations
+* Use `no_remarks: true` for clean reference output
+* HyperLinkFormatter generates HTML with hyperlinks
+* Round-trip parsing verifies formatting correctness
+* Formatter handles operator precedence and line wrapping automatically

@@ -1,0 +1,912 @@
+---
+title: Filters and Tags
+parent: Liquid
+grand_parent: Guides
+nav_order: 3
+---
+
+= Liquid filters and tags
+
+== Purpose
+
+This guide covers Liquid's built-in filters and tags for transforming
+and manipulating data in templates. Learn how to format strings, work
+with arrays, apply mathematical operations, and use advanced tags for
+template control.
+
+== References
+
+* link:basic-templates.html[Basic Templates] - Template fundamentals
+* link:drops-reference.html[Drops Reference] - Available data
+* https://shopify.github.io/liquid/filters/[Liquid Filters Reference] -
+  Complete filter list
+* https://shopify.github.io/liquid/tags/[Liquid Tags Reference] -
+  Complete tag list
+
+== Concepts
+
+Filter:: A function that transforms a value, applied with the pipe `|`
+operator.
+
+Tag:: A control structure or command using `{%%}` delimiters.
+
+Chaining:: Applying multiple filters sequentially to transform data.
+
+Input:: The value passed to a filter (left side of `|`).
+
+Parameter:: Additional arguments passed to filters.
+
+== Filter basics
+
+=== Filter syntax
+
+Filters transform values using the pipe operator:
+
+[source,liquid]
+----
+{{ value | filter }}
+{{ value | filter: parameter }}
+{{ value | filter: param1, param2 }}
+----
+
+=== Filter chaining
+
+Apply multiple filters in sequence:
+
+[source,liquid]
+----
+{{ entity.id | upcase | replace: "_", " " }}
+{{ description | truncate: 100 | strip }}
+{{ schema.entities | map: "id" | join: ", " | upcase }}
+----
+
+Each filter receives the output of the previous filter.
+
+== String filters
+
+=== capitalize
+
+Capitalize first letter of string:
+
+[source,liquid]
+----
+{{ "express schema" | capitalize }}
+{% comment %}Output: Express schema{% endcomment %}
+
+{{ entity.id | capitalize }}
+{% comment %}"person" becomes "Person"{% endcomment %}
+----
+
+=== upcase
+
+Convert to uppercase:
+
+[source,liquid]
+----
+{{ entity.id | upcase }}
+{% comment %}"person" becomes "PERSON"{% endcomment %}
+
+{{ schema.id | upcase }}
+{% comment %}"action_schema" becomes "ACTION_SCHEMA"{% endcomment %}
+----
+
+=== downcase
+
+Convert to lowercase:
+
+[source,liquid]
+----
+{{ "ACTION_SCHEMA" | downcase }}
+{% comment %}Output: action_schema{% endcomment %}
+----
+
+=== strip
+
+Remove leading and trailing whitespace:
+
+[source,liquid]
+----
+{{ "  extra spaces  " | strip }}
+{% comment %}Output: "extra spaces"{% endcomment %}
+
+{% capture text %}
+  {{ entity.remarks | join: " " }}
+{% endcapture %}
+{{ text | strip }}
+----
+
+=== lstrip / rstrip
+
+Remove whitespace from left or right only:
+
+[source,liquid]
+----
+{{ "  left spaces" | lstrip }}
+{% comment %}Output: "left spaces"{% endcomment %}
+
+{{ "right spaces  " | rstrip }}
+{% comment %}Output: "right spaces"{% endcomment %}
+----
+
+=== truncate
+
+Shorten string to specified length:
+
+[source,liquid]
+----
+{{ description | truncate: 50 }}
+{% comment %}Truncates to 50 chars, adds "..."{% endcomment %}
+
+{{ description | truncate: 50, "…" }}
+{% comment %}Custom ending character{% endcomment %}
+
+{{ entity.remarks | join: " " | truncate: 100 }}
+----
+
+=== truncatewords
+
+Truncate by word count:
+
+[source,liquid]
+----
+{{ description | truncatewords: 10 }}
+{% comment %}First 10 words only{% endcomment %}
+
+{{ entity.remarks | join: " " | truncatewords: 20, "..." }}
+----
+
+=== replace / replace_first
+
+Replace text in string:
+
+[source,liquid]
+----
+{{ entity.id | replace: "_", " " }}
+{% comment %}"person_name" becomes "person name"{% endcomment %}
+
+{{ entity.id | replace: "_", "-" }}
+{% comment %}"person_name" becomes "person-name"{% endcomment %}
+
+{% comment %}Replace only first occurrence{% endcomment %}
+{{ text | replace_first: "old", "new" }}
+----
+
+=== remove / remove_first
+
+Remove text from string:
+
+[source,liquid]
+----
+{{ entity.id | remove: "_schema" }}
+{% comment %}"action_schema" becomes "action"{% endcomment %}
+
+{{ text | remove_first: "prefix_" }}
+----
+
+=== split
+
+Split string into array:
+
+[source,liquid]
+----
+{% assign parts = entity.id | split: "_" %}
+{% for part in parts %}
+- {{ part }}
+{% endfor %}
+
+{% comment %}Split and join differently{% endcomment %}
+{{ entity.id | split: "_" | join: " " }}
+----
+
+=== slice
+
+Extract substring:
+
+[source,liquid]
+----
+{{ entity.id | slice: 0, 4 }}
+{% comment %}First 4 characters{% endcomment %}
+
+{{ entity.id | slice: 0 }}
+{% comment %}First character only{% endcomment %}
+
+{{ entity.id | slice: -5, 5 }}
+{% comment %}Last 5 characters{% endcomment %}
+----
+
+=== append / prepend
+
+Add text to end or beginning:
+
+[source,liquid]
+----
+{{ entity.id | append: "_entity" }}
+{% comment %}"person" becomes "person_entity"{% endcomment %}
+
+{{ entity.id | prepend: "type_" }}
+{% comment %}"person" becomes "type_person"{% endcomment %}
+----
+
+=== newline_to_br
+
+Convert newlines to HTML breaks:
+
+[source,liquid]
+----
+{{ entity.remarks | join: "\n" | newline_to_br }}
+----
+
+=== strip_html
+
+Remove HTML tags:
+
+[source,liquid]
+----
+{{ "<p>Text with <strong>tags</strong></p>" | strip_html }}
+{% comment %}Output: Text with tags{% endcomment %}
+----
+
+=== strip_newlines
+
+Remove newline characters:
+
+[source,liquid]
+----
+{{ multiline_text | strip_newlines }}
+----
+
+=== url_encode / url_decode
+
+Encode/decode URLs:
+
+[source,liquid]
+----
+{{ "schema name with spaces" | url_encode }}
+{% comment %}Output: schema+name+with+spaces{% endcomment %}
+
+{{ entity.id | url_encode }}
+----
+
+== Array filters
+
+=== size
+
+Get array length:
+
+[source,liquid]
+----
+{{ schema.entities.size }}
+{{ entity.attributes.size }}
+
+{% if schema.entities.size > 10 %}
+  Large schema with many entities.
+{% endif %}
+----
+
+=== first / last
+
+Get first or last element:
+
+[source,liquid]
+----
+{{ schema.entities.first.id }}
+{{ schema.entities.last.id }}
+
+{% assign first_entity = schema.entities.first %}
+{{ first_entity.id }}
+----
+
+=== join
+
+Combine array elements into string:
+
+[source,liquid]
+----
+{{ schema.entities | map: "id" | join: ", " }}
+{% comment %}Output: person, company, product{% endcomment %}
+
+{{ entity.remarks | join: " " }}
+{% comment %}Combine remarks into single string{% endcomment %}
+
+{{ entity.attributes | map: "id" | join: "\n" }}
+{% comment %}One per line{% endcomment %}
+----
+
+=== map
+
+Extract attribute from each element:
+
+[source,liquid]
+----
+{{ schema.entities | map: "id" }}
+{% comment %}Array of entity IDs{% endcomment %}
+
+{{ schema.entities | map: "id" | join: ", " }}
+{% comment %}String of IDs: "person, company"{% endcomment %}
+
+{% assign entity_names = schema.entities | map: "id" %}
+{% for name in entity_names %}
+- {{ name }}
+{% endfor %}
+----
+
+=== sort / sort_natural
+
+Sort array alphabetically:
+
+[source,liquid]
+----
+{% assign sorted = schema.entities | sort: "id" %}
+{% for entity in sorted %}
+- {{ entity.id }}
+{% endfor %}
+
+{% comment %}Natural sort (handles numbers){% endcomment %}
+{% assign sorted = items | sort_natural: "name" %}
+----
+
+=== reverse
+
+Reverse array order:
+
+[source,liquid]
+----
+{% assign reversed = schema.entities | reverse %}
+{% for entity in reversed %}
+- {{ entity.id }}
+{% endfor %}
+----
+
+=== uniq
+
+Remove duplicate values:
+
+[source,liquid]
+----
+{% assign unique_types = all_types | uniq %}
+----
+
+=== where
+
+Filter array by attribute value:
+
+[source,liquid]
+----
+{% comment %}Filter to abstract entities only{% endcomment %}
+{% assign abstract = schema.entities | where: "abstract", true %}
+
+{% for entity in abstract %}
+- {{ entity.id }} (abstract)
+{% endfor %}
+
+{% comment %}This may not work as expected with complex objects{% endcomment %}
+{% comment %}Better to use if conditions in loops{% endcomment %}
+----
+
+=== concat
+
+Combine two arrays:
+
+[source,liquid]
+----
+{% assign all_items = schema.entities | concat: schema.types %}
+
+{% for item in all_items %}
+- {{ item.id }}
+{% endfor %}
+----
+
+=== compact
+
+Remove nil values:
+
+[source,liquid]
+----
+{% assign cleaned = array_with_nils | compact %}
+----
+
+== Math filters
+
+=== plus / minus
+
+Addition and subtraction:
+
+[source,liquid]
+----
+{% assign total = schema.entities.size | plus: schema.types.size %}
+Total items: {{ total }}
+
+{% assign remaining = max | minus: current %}
+{{ remaining }} items left
+----
+
+=== times / divided_by
+
+Multiplication and division:
+
+[source,liquid]
+----
+{% assign doubled = count | times: 2 %}
+{% assign half = count | divided_by: 2 %}
+
+{% comment %}Calculate percentage{% endcomment %}
+{% assign percent = documented | times: 100 | divided_by: total %}
+Coverage: {{ percent }}%
+----
+
+=== modulo
+
+Get remainder:
+
+[source,liquid]
+----
+{% assign remainder = number | modulo: 3 %}
+
+{% comment %}Use for alternating rows{% endcomment %}
+{% if forloop.index | modulo: 2 == 0 %}
+  Even row
+{% else %}
+  Odd row
+{% endif %}
+----
+
+=== round / floor / ceil
+
+Round numbers:
+
+[source,liquid]
+----
+{{ 4.6 | round }}
+{% comment %}Output: 5{% endcomment %}
+
+{{ 4.6 | floor }}
+{% comment %}Output: 4{% endcomment %}
+
+{{ 4.2 | ceil }}
+{% comment %}Output: 5{% endcomment %}
+
+{{ 4.5678 | round: 2 }}
+{% comment %}Output: 4.57 (2 decimal places){% endcomment %}
+----
+
+=== abs
+
+Absolute value:
+
+[source,liquid]
+----
+{{ -5 | abs }}
+{% comment %}Output: 5{% endcomment %}
+----
+
+=== at_least / at_most
+
+Constrain number to minimum or maximum:
+
+[source,liquid]
+----
+{{ value | at_least: 0 }}
+{% comment %}Ensure non-negative{% endcomment %}
+
+{{ value | at_most: 100 }}
+{% comment %}Cap at 100{% endcomment %}
+----
+
+== Date filters
+
+While Expressir doesn't typically have date fields, these are available
+if needed:
+
+=== date
+
+Format date:
+
+[source,liquid]
+----
+{{ "now" | date: "%Y-%m-%d" }}
+{% comment %}Output: 2024-01-15{% endcomment %}
+
+{{ "now" | date: "%B %d, %Y" }}
+{% comment %}Output: January 15, 2024{% endcomment %}
+----
+
+Common format specifiers:
+
+* `%Y` - Year (4 digits)
+* `%m` - Month (01-12)
+* `%d` - Day (01-31)
+* `%B` - Month name
+* `%H` - Hour (00-23)
+* `%M` - Minute (00-59)
+* `%S` - Second (00-59)
+
+== Default filter
+
+Provide fallback for nil/empty values:
+
+[source,liquid]
+----
+{{ entity.remarks | default: "No description available" }}
+
+{{ schema.version.value | default: "Unknown version" }}
+
+{% comment %}Works with any value{% endcomment %}
+{{ variable | default: "default value" }}
+----
+
+== Escape filters
+
+=== escape / escape_once
+
+HTML escape:
+
+[source,liquid]
+----
+{{ "<script>alert('xss')</script>" | escape }}
+{% comment %}Output: &lt;script&gt;alert('xss')&lt;/script&gt;{% endcomment %}
+
+{% comment %}escape_once won't double-escape{% endcomment %}
+{{ "&lt;tag&gt;" | escape_once }}
+{% comment %}Output: &lt;tag&gt; (not re-escaped){% endcomment %}
+----
+
+== Advanced tags
+
+=== assign
+
+Create variables:
+
+[source,liquid]
+----
+{% assign entity_count = schema.entities.size %}
+{% assign has_types = schema.types.size > 0 %}
+{% assign first = schema.entities.first %}
+
+Total: {{ entity_count }}
+----
+
+=== capture
+
+Capture template output:
+
+[source,liquid]
+----
+{% capture entity_list %}
+{% for entity in schema.entities %}
+  {{ entity.id }}{% unless forloop.last %}, {% endunless %}
+{% endfor %}
+{% endcapture %}
+
+Entities: {{ entity_list }}
+----
+
+Useful for:
+
+* Building complex strings
+* Reusing generated content
+* Conditional output assembly
+
+[source,liquid]
+----
+{% capture stats %}
+Entities: {{ schema.entities.size }}
+Types: {{ schema.types.size }}
+Functions: {{ schema.functions.size }}
+{% endcapture %}
+
+{{ stats }}
+
+{% comment %}Reuse later{% endcomment %}
+{{ stats }}
+----
+
+=== increment / decrement
+
+Create auto-incrementing counters:
+
+[source,liquid]
+----
+{% increment counter %}
+{% comment %}Output: 0{% endcomment %}
+
+{% increment counter %}
+{% comment %}Output: 1{% endcomment %}
+
+{% increment counter %}
+{% comment %}Output: 2{% endcomment %}
+
+{% decrement counter2 %}
+{% comment %}Output: -1{% endcomment %}
+
+{% decrement counter2 %}
+{% comment %}Output: -2{% endcomment %}
+----
+
+Note: Each counter name is independent.
+
+=== cycle
+
+Cycle through values:
+
+[source,liquid]
+----
+{% for entity in schema.entities %}
+  <tr class="{% cycle 'row-odd', 'row-even' %}">
+    <td>{{ entity.id }}</td>
+  </tr>
+{% endfor %}
+
+{% comment %}Named cycles{% endcomment %}
+{% cycle 'group1': 'one', 'two', 'three' %}
+----
+
+=== tablerow
+
+Create HTML table rows:
+
+[source,liquid]
+----
+<table>
+{% tablerow entity in schema.entities cols:3 %}
+  {{ entity.id }}
+{% endtablerow %}
+</table>
+----
+
+Generates table with specified column count.
+
+=== raw
+
+Output Liquid code without processing:
+
+[source,liquid]
+----
+{% raw %}
+  {{ entity.id }}
+  {% for item in items %}
+{% endraw %}
+{% comment %}Displays literally: {{ entity.id }}{% endcomment %}
+----
+
+Useful for showing example code in documentation.
+
+=== liquid
+
+Process Liquid code from variable:
+
+[source,liquid]
+----
+{% liquid
+  assign total = 0
+  for entity in schema.entities
+    assign total = total | plus: entity.attributes.size
+  endfor
+  echo "Total attributes: "
+  echo total
+%}
+----
+
+Allows multiple statements without individual tag pairs.
+
+== Combining filters and data
+
+=== Entity list formatted
+
+[source,liquid]
+----
+{{ schema.entities | map: "id" | sort | join: ", " | upcase }}
+{% comment %}Output: COMPANY, PERSON, PRODUCT{% endcomment %}
+----
+
+=== Entity count with formatting
+
+[source,liquid]
+----
+{% assign count = schema.entities.size %}
+{% assign plural = count | times: 0 | plus: count %}
+
+{{ count }} entit
+{%- if count == 1 -%}
+  y
+{%- else -%}
+  ies
+{%- endif %}
+----
+
+=== Build hierarchical display
+
+[source,liquid]
+----
+{% for entity in schema.entities | sort: "id" %}
+{{ forloop.index }}. {{ entity.id | upcase | replace: "_", " " }}
+   {% if entity.attributes.size > 0 %}
+   ({{ entity.attributes.size }} attribute
+   {%- if entity.attributes.size != 1 -%}s{%- endif -%})
+   {% endif %}
+{% endfor %}
+----
+
+=== Documentation coverage calculation
+
+[source,liquid]
+----
+{% assign total_entities = schema.entities.size %}
+{% assign documented = 0 %}
+
+{% for entity in schema.entities %}
+  {% if entity.remarks.size > 0 %}
+    {% assign documented = documented | plus: 1 %}
+  {% endif %}
+{% endfor %}
+
+{% if total_entities > 0 %}
+  {% assign coverage = documented | times: 100 | divided_by: total_entities %}
+  Documentation coverage: {{ coverage }}%
+{% endif %}
+----
+
+=== Smart truncation with links
+
+[source,liquid]
+----
+{% for entity in schema.entities %}
+## {{ entity.id }}
+
+{% if entity.remarks.size > 0 %}
+  {% assign description = entity.remarks | join: " " %}
+  {% if description.size > 200 %}
+    {{ description | truncate: 200 }}
+
+    [Read more](#{{ entity.id }}-full)
+  {% else %}
+    {{ description }}
+  {% endif %}
+{% endif %}
+{% endfor %}
+----
+
+== Performance considerations
+
+**Cache computed values**::
+[source,liquid]
+----
+{% comment %}❌ Inefficient - computes multiple times{% endcomment %}
+{% if schema.entities.size > 0 %}
+  Total: {{ schema.entities.size }}
+  Average: {{ total | divided_by: schema.entities.size }}
+{% endif %}
+
+{% comment %}✅ Efficient - compute once{% endcomment %}
+{% assign count = schema.entities.size %}
+{% if count > 0 %}
+  Total: {{ count }}
+  Average: {{ total | divided_by: count }}
+{% endif %}
+----
+
+**Avoid complex chaining in loops**::
+[source,liquid]
+----
+{% comment %}❌ Computes for each entity{% endcomment %}
+{% for entity in schema.entities %}
+  {% assign sorted_attrs = entity.attributes | sort: "id" | map: "id" | join: ", " %}
+{% endfor %}
+
+{% comment %}✅ Compute outside loop if possible{% endcomment %}
+{% assign sorted_entities = schema.entities | sort: "id" %}
+{% for entity in sorted_entities %}
+  ...
+{% endfor %}
+----
+
+**Use simple filters when possible**::
+[source,liquid]
+----
+{% comment %}Simple and fast{% endcomment %}
+{{ entity.id | upcase }}
+{{ items.size }}
+
+{% comment %}More complex, slower{% endcomment %}
+{{ text | split: " " | map: "upcase" | join: " " }}
+----
+
+== Common patterns
+
+=== Build comma-separated list
+
+[source,liquid]
+----
+{% for entity in schema.entities %}
+{{ entity.id }}{% unless forloop.last %}, {% endunless %}
+{% endfor %}
+
+{% comment %}Or using filters{% endcomment %}
+{{ schema.entities | map: "id" | join: ", " }}
+----
+
+=== Create anchor links
+
+[source,liquid]
+----
+{% for entity in schema.entities %}
+- [{{ entity.id }}](#{{ entity.id | downcase | replace: "_", "-" }})
+{% endfor %}
+----
+
+=== Format numbers with commas
+
+[source,liquid]
+----
+{% comment %}Liquid doesn't have built-in number formatting{% endcomment %}
+{% comment %}Use string manipulation for simple cases{% endcomment %}
+{{ count }} entities
+----
+
+=== Generate unique IDs
+
+[source,liquid]
+----
+{% for entity in schema.entities %}
+<div id="{{ schema.id }}-{{ entity.id }}-{{ forloop.index }}">
+  {{ entity.id }}
+</div>
+{% endfor %}
+----
+
+== Best practices
+
+**Always provide defaults**::
+[source,liquid]
+----
+{{ entity.remarks | default: "No description" }}
+{{ schema.version.value | default: "Unknown" }}
+----
+
+**Validate before filtering**::
+[source,liquid]
+----
+{% if entity.attributes and entity.attributes.size > 0 %}
+  {{ entity.attributes | map: "id" | join: ", " }}
+{% endif %}
+----
+
+**Use meaningful variable names**::
+[source,liquid]
+----
+{% assign entity_count = schema.entities.size %}
+{% assign documented_count = documented_entities.size %}
+{% assign coverage_percent = documented_count | times: 100 | divided_by: entity_count %}
+----
+
+**Comment complex filter chains**::
+[source,liquid]
+----
+{% comment %}Extract entity IDs, sort alphabetically, combine with commas{% endcomment %}
+{{ schema.entities | map: "id" | sort | join: ", " }}
+----
+
+== Next steps
+
+Apply these filters and tags:
+
+* link:documentation-generation.html[Documentation Generation] -
+  Complete workflows
+* link:../../_tutorials/liquid-templates.html[Liquid Templates Tutorial]
+  - Practice examples
+* https://shopify.github.io/liquid/[Liquid Documentation] - More
+  filters and tags
+
+== Summary
+
+Liquid filters and tags provide:
+
+* ✅ String manipulation: case, replace, truncate, strip
+* ✅ Array operations: map, join, sort, filter
+* ✅ Math operations: plus, minus, times, divided_by
+* ✅ Control: assign, capture, increment
+* ✅ Defaults for missing values
+* ✅ Filter chaining for complex transformations
+* ✅ Performance-conscious usage
+
+Master filters and tags to create sophisticated EXPRESS schema
+documentation templates.

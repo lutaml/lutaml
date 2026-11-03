@@ -1,0 +1,751 @@
+---
+title: Querying Schemas
+nav_order: 5
+---
+
+== Querying Schemas
+
+=== Prerequisites
+
+Before starting this tutorial, ensure you have:
+
+* Completed link:creating-ler-package.html[Creating LER Packages]
+* Understanding of EXPRESS entities and types
+* A LER package or parsed repository to query
+* Basic Ruby knowledge for API usage
+
+=== Learning Objectives
+
+By the end of this tutorial, you will be able to:
+
+* Use the SearchEngine API to find entities and types
+* Apply pattern matching with wildcards and regex
+* Filter results by schema, type, and category
+* Build complex queries with multiple criteria
+* Extract and analyze schema statistics
+* Find relationships between elements
+
+=== What You'll Build
+
+You'll create various query utilities to explore and analyze EXPRESS schemas, from simple searches to complex relationship analysis.
+
+=== Step 1: Understanding the SearchEngine
+
+==== What is SearchEngine?
+
+The [`SearchEngine`](../../lib/expressir/model/search_engine.rb:1) provides a powerful API for querying repositories:
+
+* **Fast lookups**: Pre-built indexes for instant results
+* **Pattern matching**: Wildcards, regex, exact matches
+* **Type filtering**: Search by element type
+* **Schema scoping**: Limit to specific schemas
+* **Category filtering**: Filter types by category
+
+==== Element Types
+
+SearchEngine can find these element types:
+
+* `entity` - Entity declarations
+* `type` - Type declarations
+* `function` - Function declarations
+* `procedure` - Procedure declarations
+* `rule` - Rule declarations
+* `constant` - Constant declarations
+* `attribute` - Entity attributes
+* `derived_attribute` - Derived attributes
+* `inverse_attribute` - Inverse attributes
+* `parameter` - Function/procedure parameters
+* `variable` - Local variables
+* `where_rule` - WHERE rules
+* `unique_rule` - UNIQUE rules
+
+=== Step 2: Basic Queries
+
+==== Setup
+
+Create a sample LER package first, or use an existing one.
+
+Create `basic_queries.rb`:
+
+[source,ruby]
+----
+require 'expressir'
+
+# Load package or parse schemas
+repo = Expressir::Model::Repository.from_package('catalog.ler')
+
+# Create search engine
+search = Expressir::Model::SearchEngine.new(repo)
+
+puts "Repository loaded:"
+puts "  Schemas: #{repo.schemas.size}"
+puts "  Ready to query!"
+----
+
+==== List All Entities
+
+[source,ruby]
+----
+# List all entities
+entities = search.list(type: 'entity')
+
+puts "\nAll entities (#{entities.size}):"
+entities.each do |entity|
+  puts "  #{entity[:schema]}.#{entity[:id]}"
+end
+----
+
+**Output**:
+[source]
+----
+All entities (4):
+  base_schema.person
+  base_schema.organization
+  product_schema.product
+  product_schema.product_category
+----
+
+==== List All Types
+
+[source,ruby]
+----
+# List all types
+types = search.list(type: 'type')
+
+puts "\nAll types (#{types.size}):"
+types.each do |type_info|
+  category = type_info[:category] || 'simple'
+  puts "  #{type_info[:schema]}.#{type_info[:id]} [#{category}]"
+end
+----
+
+**Output**:
+[source]
+----
+All types (2):
+  base_schema.identifier [simple]
+  base_schema.label [simple]
+----
+
+==== Count Elements
+
+[source,ruby]
+----
+# Count different element types
+element_types = ['entity', 'type', 'function', 'constant']
+
+puts "\nElement counts:"
+element_types.each do |elem_type|
+  count = search.count(type: elem_type)
+  puts "  #{elem_type}: #{count}"
+end
+----
+
+=== Step 3: Pattern Matching
+
+==== Simple Name Search
+
+[source,ruby]
+----
+# Search by name (case-insensitive by default)
+results = search.search(pattern: 'product')
+
+puts "\nMatching 'product':"
+results.each do |result|
+  puts "  #{result[:type]}: #{result[:path]}"
+end
+----
+
+**Output**:
+[source]
+----
+Matching 'product':
+  entity: product_schema.product
+  entity: product_schema.product_category
+----
+
+==== Wildcard Patterns
+
+[source,ruby]
+----
+# Prefix matching
+results = search.search(pattern: 'product*', type: 'entity')
+puts "\nEntities starting with 'product':"
+results.each { |r| puts "  #{r[:path]}" }
+
+# Suffix matching
+results = search.search(pattern: '*_category', type: 'entity')
+puts "\nEntities ending with '_category':"
+results.each { |r| puts "  #{r[:path]}" }
+
+# Contains
+results = search.search(pattern: '*org*', type: 'entity')
+puts "\nEntities containing 'org':"
+results.each { |r| puts "  #{r[:path]}" }
+----
+
+==== Qualified Name Search
+
+[source,ruby]
+----
+# Search in specific schema
+results = search.search(pattern: 'product_schema.product')
+puts "\nIn product_schema:"
+results.each { |r| puts "  #{r[:id]}" }
+
+# Wildcard schema
+results = search.search(pattern: '*.product', type: 'entity')
+puts "\nEntity named 'product' in any schema:"
+results.each { |r| puts "  #{r[:schema]}.#{r[:id]}" }
+
+# Schema wildcard
+results = search.search(pattern: 'product_schema.*', type: 'entity')
+puts "\nAll entities in product_schema:"
+results.each { |r| puts "  #{r[:id]}" }
+----
+
+==== Regex Patterns
+
+[source,ruby]
+----
+# Regex search
+results = search.search(
+  pattern: '^product_[a-z]+$',
+  type: 'entity',
+  regex: true
+)
+
+puts "\nRegex match '^product_[a-z]+$':"
+results.each { |r| puts "  #{r[:id]}" }
+
+# Complex regex
+results = search.search(
+  pattern: '(person|organization)',
+  regex: true
+)
+
+puts "\nMatching 'person' or 'organization':"
+results.each { |r| puts "  #{r[:type]}: #{r[:id]}" }
+----
+
+=== Step 4: Filtering Results
+
+==== Filter by Type
+
+[source,ruby]
+----
+# Only entities
+entities = search.search(pattern: '*', type: 'entity')
+puts "Entities: #{entities.size}"
+
+# Only types
+types = search.search(pattern: '*', type: 'type')
+puts "Types: #{types.size}"
+
+# Multiple queries
+['entity', 'type', 'function'].each do |elem_type|
+  count = search.count(type: elem_type)
+  puts "#{elem_type}: #{count}"
+end
+----
+
+==== Filter by Schema
+
+[source,ruby]
+----
+# Entities in specific schema
+results = search.list(type: 'entity', schema: 'base_schema')
+
+puts "\nEntities in base_schema:"
+results.each do |entity|
+  puts "  #{entity[:id]}"
+end
+
+# Search within schema
+results = search.search(
+  pattern: 'p*',
+  type: 'entity',
+  schema: 'base_schema'
+)
+
+puts "\nbase_schema entities starting with 'p':"
+results.each { |r| puts "  #{r[:id]}" }
+----
+
+==== Filter by Category
+
+[source,ruby]
+----
+# Find SELECT types
+select_types = search.list(type: 'type', category: 'select')
+puts "\nSELECT types: #{select_types.size}"
+
+# Find ENUMERATION types
+enum_types = search.list(type: 'type', category: 'enumeration')
+puts "ENUMERATION types: #{enum_types.size}"
+
+# Categories available
+categories = ['select', 'enumeration', 'aggregate', 'simple']
+categories.each do |cat|
+  count = search.count(type: 'type', category: cat)
+  puts "  #{cat}: #{count}" if count > 0
+end
+----
+
+=== Step 5: Advanced Queries
+
+==== Find Attributes
+
+[source,ruby]
+----
+# All attributes
+attributes = search.list(type: 'attribute')
+puts "\nTotal attributes: #{attributes.size}"
+
+# Attributes in specific entity
+results = search.search(
+  pattern: 'product_schema.product.*',
+  type: 'attribute'
+)
+
+puts "\nAttributes of 'product' entity:"
+results.each do |attr|
+  puts "  #{attr[:id]}"
+end
+
+# Attributes named 'name'
+results = search.search(
+  pattern: '*.*name',
+  type: 'attribute'
+)
+
+puts "\nAttributes named 'name':"
+results.each { |r| puts "  #{r[:path]}" }
+----
+
+==== Find Functions and Parameters
+
+[source,ruby]
+----
+# All functions
+functions = search.list(type: 'function')
+puts "\nFunctions: #{functions.size}"
+functions.each { |f| puts "  #{f[:schema]}.#{f[:id]}" }
+
+# Function parameters
+if functions.any?
+  func = functions.first[:object]
+  puts "\nParameters of #{functions.first[:id]}:"
+
+  params = search.search(
+    pattern: "#{functions.first[:schema]}.#{functions.first[:id]}.*",
+    type: 'parameter'
+  )
+  params.each { |p| puts "  #{p[:id]}" }
+end
+----
+
+==== Complex Combined Queries
+
+Create `complex_queries.rb`:
+
+[source,ruby]
+----
+require 'expressir'
+
+repo = Expressir::Model::Repository.from_package('catalog.ler')
+search = Expressir::Model::SearchEngine.new(repo)
+
+# Query 1: Find all assignment-related entities
+puts "Assignment entities:"
+results = search.search(
+  pattern: '*assignment*',
+  type: 'entity'
+)
+results.each { |r| puts "  #{r[:path]}" }
+
+# Query 2: SELECT types starting with 'action'
+puts "\nSELECT types starting with 'action':"
+results = search.search(
+  pattern: 'action*',
+  type: 'type',
+  category: 'select'
+)
+results.each { |r| puts "  #{r[:path]}" }
+
+# Query 3: Entities in specific schema matching pattern
+puts "\nMatching pattern in schema:"
+results = search.search(
+  pattern: '*product*',
+  type: 'entity',
+  schema: 'product_schema'
+)
+results.each { |r| puts "  #{r[:id]}" }
+
+# Query 4: Case-sensitive exact match
+results = search.search(
+  pattern: 'Product',
+  type: 'entity',
+  case_sensitive: true,
+  exact: true
+)
+puts "\nCase-sensitive 'Product': #{results.size} results"
+----
+
+=== Step 6: Extracting Full Objects
+
+==== Get Entity Details
+
+[source,ruby]
+----
+# Search and get full entity object
+results = search.search(pattern: 'product', type: 'entity', exact: true)
+
+if results.any?
+  entity = results.first[:object]
+
+  puts "\nEntity: #{entity.id}"
+  puts "Attributes:"
+  entity.attributes.each do |attr|
+    optional = attr.optional ? " (optional)" : ""
+    puts "  #{attr.id}: #{attr.type}#{optional}"
+  end
+
+  if entity.subtype_of && !entity.subtype_of.empty?
+    puts "Supertypes:"
+    entity.subtype_of.each { |st| puts "  - #{st}" }
+  end
+end
+----
+
+==== Analyze Type Details
+
+[source,ruby]
+----
+# Get type details
+results = search.search(pattern: 'identifier', type: 'type', exact: true)
+
+if results.any?
+  type_decl = results.first[:object]
+
+  puts "\nType: #{type_decl.id}"
+  puts "Underlying: #{type_decl.underlying_type.class.name}"
+
+  if type_decl.where_rules && !type_decl.where_rules.empty?
+    puts "WHERE rules:"
+    type_decl.where_rules.each do |rule|
+      puts "  #{rule.id}: #{rule.expression}"
+    end
+  end
+end
+----
+
+=== Step 7: Relationship Analysis
+
+==== Find Entity Dependencies
+
+Create `find_dependencies.rb`:
+
+[source,ruby]
+----
+require 'expressir'
+
+repo = Expressir::Model::Repository.from_package('catalog.ler')
+search = Expressir::Model::SearchEngine.new(repo)
+
+def find_entity_dependencies(search, entity_name)
+  results = search.search(pattern: entity_name, type: 'entity', exact: true)
+  return if results.empty?
+
+  entity = results.first[:object]
+  dependencies = []
+
+  entity.attributes.each do |attr|
+    if attr.type.respond_to?(:ref) && attr.type.ref
+      ref = attr.type.ref
+      if ref.is_a?(Expressir::Model::Declarations::Entity)
+        dependencies << ref.id
+      elsif ref.is_a?(Expressir::Model::Declarations::Type)
+        dependencies << ref.id
+      end
+    end
+  end
+
+  dependencies.uniq
+end
+
+# Find dependencies for 'product' entity
+deps = find_entity_dependencies(search, 'product')
+puts "Dependencies of 'product':"
+deps.each { |d| puts "  - #{d}" }
+----
+
+==== Find All Uses of a Type
+
+[source,ruby]
+----
+def find_type_usage(repo, type_name)
+  usages = []
+
+  repo.schemas.each do |schema|
+    schema.entities.each do |entity|
+      entity.attributes.each do |attr|
+        if attr.type.respond_to?(:id) && attr.type.id == type_name
+          usages << {
+            schema: schema.id,
+            entity: entity.id,
+            attribute: attr.id
+          }
+        end
+      end
+    end
+  end
+
+  usages
+end
+
+# Find where 'identifier' type is used
+usages = find_type_usage(repo, 'identifier')
+puts "\nUsages of 'identifier' type:"
+usages.each do |usage|
+  puts "  #{usage[:schema]}.#{usage[:entity]}.#{usage[:attribute]}"
+end
+----
+
+=== Step 8: Statistics and Aggregations
+
+==== Element Distribution
+
+Create `statistics.rb`:
+
+[source,ruby]
+----
+require 'expressir'
+
+repo = Expressir::Model::Repository.from_package('catalog.ler')
+search = Expressir::Model::SearchEngine.new(repo)
+
+puts "Repository Statistics"
+puts "=" * 60
+
+# Element counts
+element_types = [
+  'entity', 'type', 'function', 'procedure',
+  'rule', 'constant', 'attribute'
+]
+
+puts "\nElement counts:"
+element_types.each do |elem_type|
+  count = search.count(type: elem_type)
+  puts "  #{elem_type.ljust(20)}: #{count}" if count > 0
+end
+
+# Per-schema breakdown
+puts "\nEntities per schema:"
+repo.schemas.each do |schema|
+  count = search.count(type: 'entity', schema: schema.id)
+  puts "  #{schema.id.ljust(25)}: #{count}"
+end
+
+# Type categories
+puts "\nTypes by category:"
+categories = ['select', 'enumeration', 'aggregate', 'simple']
+categories.each do |cat|
+  count = search.count(type: 'type', category: cat)
+  puts "  #{cat.ljust(20)}: #{count}" if count > 0
+end
+----
+
+==== Top Entities by Attribute Count
+
+[source,ruby]
+----
+# Find entities with most attributes
+entities = search.list(type: 'entity')
+
+entity_attrs = entities.map do |e|
+  obj = e[:object]
+  {
+    path: e[:path],
+    count: obj.attributes.size
+  }
+end
+
+puts "\nTop entities by attribute count:"
+entity_attrs.sort_by { |e| -e[:count] }
+           .take(10)
+           .each do |e|
+  puts "  #{e[:path]}: #{e[:count]} attributes"
+end
+----
+
+=== Step 9: Building Query Utilities
+
+==== Create a Query Helper
+
+Create `query_helper.rb`:
+
+[source,ruby]
+----
+require 'expressir'
+
+class SchemaQuery
+  def initialize(package_or_repo)
+    if package_or_repo.is_a?(String)
+      @repo = Expressir::Model::Repository.from_package(package_or_repo)
+    else
+      @repo = package_or_repo
+    end
+    @search = Expressir::Model::SearchEngine.new(@repo)
+  end
+
+  def find_entity(name, schema: nil)
+    opts = { pattern: name, type: 'entity', exact: true }
+    opts[:schema] = schema if schema
+    results = @search.search(opts)
+    results.first[:object] if results.any?
+  end
+
+  def find_entities_using_type(type_name)
+    results = []
+    @repo.schemas.each do |schema|
+      schema.entities.each do |entity|
+        entity.attributes.each do |attr|
+          if attr.type.respond_to?(:id) && attr.type.id == type_name
+            results << entity
+          end
+        end
+      end
+    end
+    results.uniq
+  end
+
+  def list_schemas
+    @repo.schemas.map(&:id)
+  end
+
+  def schema_stats(schema_id)
+    {
+      entities: @search.count(type: 'entity', schema: schema_id),
+      types: @search.count(type: 'type', schema: schema_id),
+      functions: @search.count(type: 'function', schema: schema_id)
+    }
+  end
+end
+
+# Usage
+query = SchemaQuery.new('catalog.ler')
+
+puts "Schemas: #{query.list_schemas.join(', ')}"
+
+entity = query.find_entity('product')
+puts "\nFound entity: #{entity.id}" if entity
+
+query.list_schemas.each do |schema|
+  stats = query.schema_stats(schema)
+  puts "\n#{schema}:"
+  puts "  Entities: #{stats[:entities]}"
+  puts "  Types: #{stats[:types]}"
+  puts "  Functions: #{stats[:functions]}"
+end
+----
+
+=== Step 10: Practice Exercises
+
+==== Exercise 1: Find Orphan Entities
+
+Write a query to find entities that are not referenced by any other entity.
+
+Hint: Check all entity attributes to see which entity types are referenced.
+
+==== Exercise 2: Circular References
+
+Detect if any entities have circular references (entity A references entity B, which references entity A).
+
+==== Exercise 3: Schema Dependency Graph
+
+Create a visualization showing which schemas depend on which other schemas through interfaces.
+
+==== Exercise 4: Entity Complexity Score
+
+Calculate a complexity score for each entity based on:
+* Number of attributes (1 point each)
+* Number of supertypes (2 points each)
+* Number of WHERE rules (3 points each)
+
+Find the 5 most complex entities.
+
+=== Common Patterns
+
+==== Safe Object Access
+
+[source,ruby]
+----
+# Always check if results exist
+results = search.search(pattern: 'foo', type: 'entity')
+
+if results.any?
+  entity = results.first[:object]
+  # Use entity safely
+else
+  puts "Entity not found"
+end
+----
+
+==== Handling Multiple Results
+
+[source,ruby]
+----
+results = search.search(pattern: 'product*', type: 'entity')
+
+case results.size
+when 0
+  puts "No matches found"
+when 1
+  puts "Found: #{results.first[:path]}"
+else
+  puts "Multiple matches (#{results.size}):"
+  results.each { |r| puts "  - #{r[:path]}" }
+end
+----
+
+==== Case-Insensitive by Default
+
+[source,ruby]
+----
+# Case-insensitive (default)
+results = search.search(pattern: 'PRODUCT')  # Finds 'product'
+
+# Case-sensitive
+results = search.search(pattern: 'PRODUCT', case_sensitive: true)  # No match
+----
+
+=== Next Steps
+
+Congratulations! You now know how to query EXPRESS schemas effectively.
+
+**Continue learning**:
+
+* link:liquid-templates.html[Liquid Templates] - Generate documentation from queries
+* link:documentation-coverage.html[Documentation Coverage] - Analyze documentation
+* link:../guides/ruby-api/[Ruby API Guides] - Advanced programmatic usage
+
+**Read more**:
+
+* link:../pages/data-model.html[Data Model] - Understanding the structure
+* link:../references/[API References] - Complete API documentation
+
+=== Summary
+
+In this tutorial, you learned to:
+
+* ✅ Use SearchEngine for fast queries
+* ✅ Apply pattern matching with wildcards and regex
+* ✅ Filter by type, schema, and category
+* ✅ Build complex combined queries
+* ✅ Extract and analyze full objects
+* ✅ Find relationships and dependencies
+* ✅ Generate statistics and aggregations
+* ✅ Create reusable query utilities
+
+You can now effectively explore and analyze any EXPRESS schema!

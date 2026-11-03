@@ -1,0 +1,13 @@
+ISO-10303-21;
+HEADER;
+FILE_DESCRIPTION((''),'2;1');
+FILE_NAME('','','','','','','');
+FILE_SCHEMA(('EVAL_POP'));
+ENDSEC;
+DATA;
+#1=NODE('a');
+#2=NODE('b');
+#10=EDGE(#1,#2);
+#20=GRAPH((#10));
+ENDSEC;
+END-ISO-10303-21;

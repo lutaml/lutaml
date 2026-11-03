@@ -1,0 +1,22 @@
+<arm.changes>
+<!-- Express Engine -->
+<!--   5.2.7 (GIT eeng-5.2.7-1-g1faeefe) -->
+<!-- Reference_Schema: EXAMPLE_ARM -->
+<!-- Path:   /path/to/example_arm_2.exp -->
+<!-- Trial_schema: EXAMPLE_ARM -->
+<!-- Path:   /path/to/example_arm_1.exp -->
+
+<arm.additions>
+<modified.object type="ENTITY" name="Example_Entity" />
+
+</arm.additions>
+
+<arm.modifications>
+<modified.object type="ENTITY" name="Modified_Entity">
+<description>
+ENTITY Modified_Entity: Supertype expression changed
+</description>
+</modified.object>
+
+</arm.modifications>
+</arm.changes>

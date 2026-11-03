@@ -1,0 +1,33 @@
+name: "verify_remarks"
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.ref }}'
+  cancel-in-progress: true
+
+jobs:
+  remarks:
+    name: Verify remark conservation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Ruby
+        uses: ruby/setup-ruby@master
+        with:
+          ruby-version: "3.2"
+          bundler-cache: true
+          cache-version: 0 # Increment this number if you need to re-download cached gems
+
+      - name: Verify remark conservation
+        run: bundle exec rake verify:remarks

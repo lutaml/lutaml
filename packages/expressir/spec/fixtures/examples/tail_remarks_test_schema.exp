@@ -1,0 +1,54 @@
+-- Untagged tail remark at very beginning of file
+(* Untagged embedded remark at beginning *)
+
+SCHEMA tail_remarks_test_schema; -- Untagged tail remark after schema declaration
+--"tail_remarks_test_schema" Tagged tail remark for schema
+
+-- Untagged tail remark before constants
+CONSTANT
+  test_constant : STRING := 'value'; -- Untagged tail remark after constant
+END_CONSTANT;
+-- Untagged tail remark after constants block
+
+-- Untagged tail remark before type definition
+TYPE test_enumeration = ENUMERATION OF
+  (item1, -- Untagged tail remark after enum item
+   item2,
+   item3);
+END_TYPE;
+--"test_enumeration" Tagged tail remark for type
+
+-- Multiple consecutive untagged tail remarks
+-- showing that they should all be preserved
+-- in the correct order and position
+
+ENTITY test_entity; -- Untagged tail remark after entity declaration
+  -- Untagged tail remark before attribute (beginning of line)
+  attr1 : STRING; -- Untagged tail remark after attribute
+  --"test_entity.attr2" Tagged tail remark for next attribute
+  attr2 : INTEGER;
+(* Untagged embedded remark within entity *)
+DERIVE
+  -- Untagged tail remark in derive section
+  derived_attr : STRING := 'test'; -- Untagged tail remark after derived attribute
+END_ENTITY;
+--"test_entity" Tagged tail remark for entity
+
+-- Untagged tail remark before function
+FUNCTION test_function(param : STRING) : BOOLEAN; -- Untagged tail remark after function declaration
+  -- Untagged tail remark within function
+  RETURN (TRUE); -- Untagged tail remark after return statement
+END_FUNCTION;
+-- Untagged tail remark after function
+
+-- Testing coexistence of all four remark types
+TYPE mixed_remarks_type = STRING; -- Untagged tail remark
+--"mixed_remarks_type" Tagged tail remark
+(* Untagged embedded remark *)
+(*"mixed_remarks_type" Tagged embedded remark *)
+END_TYPE;
+
+-- Untagged tail remark before schema end
+END_SCHEMA; -- Untagged tail remark after schema end
+--"tail_remarks_test_schema" Tagged tail remark for schema at end
+-- Final untagged tail remark at end of file

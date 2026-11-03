@@ -1,0 +1,453 @@
+(*
+   N11523 - ACME/TS 5000-1028 warehouse_inventory_tracking - EXPRESS ARM*)
+
+SCHEMA Warehouse_inventory_tracking_arm '{ acme standard 5000 part(1028) version(1) schema(1) warehouse-inventory-tracking-arm(1) }';
+
+USE FROM Elemental_geometric_shape_arm;
+REFERENCE FROM Foundation_representation_arm
+                 (using_representations);
+
+  TYPE tracking_id = STRING (36) FIXED;
+  END_TYPE;
+
+  TYPE tracking_attribute_select = EXTENSIBLE GENERIC_ENTITY SELECT;
+  END_TYPE;
+
+  TYPE tracking_list_item = LIST [1:?] OF UNIQUE LIST [1:?] OF UNIQUE tracking_attribute_select;
+  END_TYPE;
+
+  TYPE tracking_set_item = SET [1:?] OF tracking_attribute_select;
+  END_TYPE;
+
+  TYPE tracking_set_or_list_attribute_select = SELECT
+    (tracking_list_item,
+     tracking_set_item);
+  END_TYPE;
+
+  TYPE tracking_relationship_role = ENUMERATION OF
+    (supersedes,
+     merge,
+     split,
+     derive_from,
+     same_as,
+     similar_to);
+  END_TYPE;
+
+ENTITY Tracking_attribute
+  ABSTRACT SUPERTYPE OF
+     (ONEOF(V5_tracking_attribute, V4_tracking_attribute) ANDOR
+        Tracking_attribute_with_approximate_location);
+      identifier      : tracking_id;
+      identified_item : tracking_set_or_list_attribute_select;
+    UNIQUE
+      UR1 : identifier;
+END_ENTITY;
+
+ENTITY V5_tracking_attribute
+  SUBTYPE OF(Tracking_attribute);
+END_ENTITY;
+
+ENTITY Hash_based_v5_tracking_attribute
+  SUBTYPE OF(V5_tracking_attribute);
+      hash_function : STRING;
+    WHERE
+      WR1 : hash_function <> '';
+END_ENTITY;
+
+ENTITY V4_tracking_attribute
+    SUBTYPE OF(Tracking_attribute);
+END_ENTITY;
+
+ENTITY Tracking_attribute_with_approximate_location
+  SUBTYPE OF(Tracking_attribute);
+      location_representation : Geometric_model;
+      approximate_location    : Cartesian_point;
+    WHERE
+      WR1 : location_representation IN using_representations(approximate_location);
+END_ENTITY;
+
+ENTITY Tracking_context;
+      identifier         : tracking_id;
+      frame_of_reference : STRING;
+      target             : SET [1:?] OF tracking_id;
+    UNIQUE
+      UR1 : identifier;
+      UR2 : frame_of_reference, target;
+    WHERE
+      WR1 : frame_of_reference <> '';
+END_ENTITY;
+
+ENTITY Tracking_provenance;
+      content    : LIST [1:?] OF UNIQUE Tracking_relationship;
+      identifier : tracking_id;
+    UNIQUE
+      UR1 : identifier;
+END_ENTITY;
+
+ENTITY Tracking_relationship;
+      identifier : tracking_id;
+      tracking_2     : tracking_id;
+      tracking_1     : tracking_id;
+      role       : tracking_relationship_role;
+    UNIQUE
+      UR1 : identifier;
+    WHERE
+     WR1: tracking_1 <> tracking_2;
+     WR2: tracking_1 <> identifier;
+     WR3: tracking_2 <> identifier;
+--IP1:
+END_ENTITY;
+
+
+END_SCHEMA;
+
+
+(*"Warehouse_inventory_tracking_arm.__published_in"
+ACME 5000-1028:2025 ED1
+*)
+
+(*"Warehouse_inventory_tracking_arm.__identifier"
+ACME/TC 184/SC 4/WG 12 N11523
+*)
+
+(*"Warehouse_inventory_tracking_arm.__status"
+TS
+*)
+
+(*"Warehouse_inventory_tracking_arm.__title"
+warehouse_inventory_tracking
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.Tracking_attribute"
+A **Tracking_attribute** associates a tracking ID with an ordered collection of warehouse inventory items. The **Tracking_attribute** shall be compliant to ACME/IEC 9834-8.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.tracking_id"
+A **tracking_id** (warehouse tracking identifier) is a persistent identifier that is a string of 36 characters linked to a warehouse system object or aggregated warehouse system objects, that compose a single inventory concept that allows tracking of information related to product inventory requirements.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.tracking_relationship_role"
+A **tracking_relationship_role** is an enumeration of permitted roles of the
+// tracking_relationship
+<<express:Warehouse_inventory_tracking_arm.Tracking_relationship,Tracking_relationship>>.
+
+Permitted roles are derive_from, merge, same_as, similar_to, split, and supersedes.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.tracking_list_item"
+A **tracking_list_item** is the specification of a sequence of <<express:Warehouse_inventory_tracking_arm.tracking_attribute_select,tracking_attribute_select>> entities in a simple list that provides a historical record of those relationships.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.tracking_set_item"
+A **tracking_set_item** is the specification of a set of <<express:Warehouse_inventory_tracking_arm.tracking_attribute_select,tracking_attribute_select>> entities that provides a historical record of those relationships.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.tracking_list_attribute_select"
+A **tracking_list_attribute_select** is the specification of a sequence of <<express:Warehouse_inventory_tracking_arm.tracking_attribute_select,tracking_attribute_select>> entities in a simple list that provides a historical record of those relationships.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.tracking_set_attribute_select"
+A **tracking_set_attribute_select** is the specification of a set of <<express:Warehouse_inventory_tracking_arm.tracking_attribute_select,tracking_attribute_select>> entities that provides a historical record of those relationships.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.tracking_relationship_role.supersedes"
+indicates that an inventory item assigned to a
+// tracking_id
+<<express:Warehouse_inventory_tracking_arm.tracking_id,tracking_id>> replaces another inventory item assigned to a second
+// tracking_id
+<<express:Warehouse_inventory_tracking_arm.tracking_id,tracking_id>>.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.tracking_relationship_role.merge"
+indicates that two inventory items assigned to a
+// tracking_id
+<<express:Warehouse_inventory_tracking_arm.tracking_id,tracking_id>> are merged into one inventory item assigned to a third
+// tracking_id
+<<express:Warehouse_inventory_tracking_arm.tracking_id,tracking_id>>.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.tracking_relationship_role.derive_from"
+indicates that an element of inventory data identified by a
+// tracking_id
+<<express:Warehouse_inventory_tracking_arm.tracking_id,tracking_id>> was derived from another element of inventory data, each of which is identified by a
+// tracking_id
+<<express:Warehouse_inventory_tracking_arm.tracking_id,tracking_id>>.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.tracking_relationship_role.split"
+indicates that an element of inventory data identified by a
+// tracking_id
+<<express:Warehouse_inventory_tracking_arm.tracking_id,tracking_id>> was split into two elements of inventory data, each of which is identified by a
+// tracking_id
+<<express:Warehouse_inventory_tracking_arm.tracking_id,tracking_id>>.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.tracking_relationship_role.same_as"
+indicates that an element of inventory data identified by a
+// tracking_id
+<<express:Warehouse_inventory_tracking_arm.tracking_id,tracking_id>> is the same as another element of inventory data, each of which is identified by a
+// tracking_id
+<<express:Warehouse_inventory_tracking_arm.tracking_id,tracking_id>>.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.tracking_relationship_role.similar_to"
+indicates that an element of inventory data identified by a
+// tracking_id
+<<express:Warehouse_inventory_tracking_arm.tracking_id,tracking_id>> is similar to another element of inventory data, each of which is identified by a
+// tracking_id
+<<express:Warehouse_inventory_tracking_arm.tracking_id,tracking_id>>.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.Tracking_attribute"
+A **tracking_attribute** associates a
+// tracking_id
+<<express:Warehouse_inventory_tracking_arm.tracking_id,tracking_id>> with an ordered collection of inventory data items of type <<express:Warehouse_inventory_tracking_arm.tracking_attribute_select,tracking_attribute_select>>.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.Tracking_attribute.identifier"
+the
+// tracking_id
+<<express:Warehouse_inventory_tracking_arm.tracking_id,tracking_id>> that is in the role of identifier.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.Tracking_attribute.identified_item"
+the elements of inventory data that are aggregated by the **tracking_attribute**.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.Tracking_attribute.ur:UR1"
+specifies that no more than one **tracking_attribute** shall be associated with a specific value of
+// tracking_id
+<<express:Warehouse_inventory_tracking_arm.tracking_id,tracking_id>>.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.V5_tracking_attribute"
+A **V5_tracking_attribute** is a type of
+// tracking_attribute
+<<express:Warehouse_inventory_tracking_arm.Tracking_attribute,Tracking_attribute>> that conforms to version 5 of the relevant standard. Neither the namespace nor the name shall be provided in the data exchange set.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.Hash_based_v5_tracking_attribute"
+A **Hash_based_v5_tracking_attribute** is a type of
+// v5_tracking_attribute
+<<express:Warehouse_inventory_tracking_arm.V5_tracking_attribute,V5_tracking_attribute>> that provides a
+// tracking_id
+<<express:Warehouse_inventory_tracking_arm.tracking_id,tracking_id>> that is a hash of the data items specified in the
+// identified_item
+<<express:Warehouse_inventory_tracking_arm.Tracking_attribute.identified_item,identified_item>> list attribute inherited from the
+// tracking_attribute
+<<express:Warehouse_inventory_tracking_arm.Tracking_attribute,Tracking_attribute>> supertype.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.Hash_based_v5_tracking_attribute.hash_function"
+a string that represents the name of the **hash_function**.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.Hash_based_v5_tracking_attribute.wr:WR1"
+The **hash_function** shall not be an empty string.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.V4_tracking_attribute"
+A **V4_tracking_attribute** is a type of
+// tracking_attribute
+<<express:Warehouse_inventory_tracking_arm.Tracking_attribute,Tracking_attribute>> that complies with the requirements for
+// tracking_id
+<<express:Warehouse_inventory_tracking_arm.tracking_id,tracking_id>> instances that are re-generated independently of data content at each system state save.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.Tracking_attribute_with_approximate_location"
+A **Tracking_attribute_with_approximate_location** is a type of
+// tracking_attribute
+<<express:warehouse_tracking_schema.tracking_attribute,tracking_attribute>> that provides an approximate location in cartesian space of an item or items that has a
+// tracking_id
+<<express:warehouse_tracking_schema.tracking_id,tracking_id>> assigned.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.Tracking_attribute_with_approximate_location.location_representation"
+a **location_representation** is a
+// shape_representation
+<<express:product_property_representation_schema.shape_representation,shape_representation>> provides a representation that includes the approximate location for the data items specified in the
+// identified_item
+<<express:warehouse_tracking_schema.tracking_attribute.identified_item,identified_item>> attribute inherited from the
+// tracking_attribute
+<<express:warehouse_tracking_schema.tracking_attribute,tracking_attribute>> supertype.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.Tracking_attribute_with_approximate_location.approximate_location"
+a cartesian point that locates the item of interest.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.Tracking_attribute_with_approximate_location.wr:WR1"
+The
+// location_representation
+<<express:Warehouse_inventory_tracking_arm.Tracking_attribute_with_approximate_location.location_representation,location_representation>> shall reference the
+// approximate_location
+<<express:Warehouse_inventory_tracking_arm.Tracking_attribute_with_approximate_location.approximate_location,approximate_location>> directly or indirectly.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.Tracking_relationship"
+A **Tracking_relationship** provides the capability to build a graph of
+// tracking_id
+<<express:warehouse_tracking_schema.tracking_id,tracking_id>> instances where the **Tracking_relationship** is conceptually an edge and
+// tracking_id
+<<express:warehouse_tracking_schema.tracking_id,tracking_id>> entities are conceptually vertices. The values are derive_from, merge, similar_to, same_as, split, and supersedes. A
+// tracking_id
+<<express:warehouse_tracking_schema.tracking_id,tracking_id>> is provided as an identifier so that the **Tracking_relationship** records may be referenced in a graph of
+// tracking_id
+<<express:warehouse_tracking_schema.tracking_id,tracking_id>> instances.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.Tracking_relationship.identifier"
+a
+// tracking_id
+<<express:warehouse_tracking_schema.tracking_id,tracking_id>> in the role of identifier.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.Tracking_relationship.tracking_2"
+a
+// tracking_id
+<<express:warehouse_tracking_schema.tracking_id,tracking_id>> in the role of the second
+// tracking_id
+<<express:warehouse_tracking_schema.tracking_id,tracking_id>>.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.Tracking_relationship.tracking_1"
+a
+// tracking_id
+<<express:warehouse_tracking_schema.tracking_id,tracking_id>> in the role of the first
+// tracking_id
+<<express:warehouse_tracking_schema.tracking_id,tracking_id>>.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.Tracking_relationship.role"
+a **tracking_relationship_role** enumerates the permitted roles associated with a **tracking_relationship**. The allowed roles are supersedes, merge, split, derive_from, same_as, and parent_child.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.Tracking_relationship.ur:UR1"
+No more than one **tracking_relationship** shall be assigned to a particular
+// tracking_id
+<<express:warehouse_tracking_schema.tracking_id,tracking_id>>.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.Tracking_relationship.wr:WR1"
+**tracking_1** and **tracking_2** shall not be equal.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.Tracking_relationship.wr:WR2"
+**tracking_1** and identifier shall not be equal.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.Tracking_relationship.wr:WR3"
+**tracking_2** and identifier shall not be equal.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.Tracking_relationship.wr:IP1"
+A **tracking_relationship** shall be acyclic.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.Tracking_provenance"
+A **Tracking_provenance** is the specification of a sequence of
+// tracking_relationships
+<<express:Warehouse_inventory_tracking_arm.Tracking_relationship,Tracking_relationship>> entities in a simple list that provides a historical record of those relationships.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.Tracking_provenance.identifier"
+a
+// tracking_id
+<<express:Warehouse_inventory_tracking_arm.tracking_id,tracking_id>> that is in the role of **identifier** for the **tracking_provenance**.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.Tracking_provenance.content"
+a list of
+// tracking_relationship
+<<express:warehouse_tracking_schema.tracking_relationship,tracking_relationship>> entities that provide the content for the **tracking_provenance**.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.Tracking_provenance.ur:UR1"
+No more than one **tracking_provenance** shall be assigned to a particular
+// tracking_id
+<<express:warehouse_tracking_schema.tracking_id,tracking_id>>.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.Tracking_context"
+A **Tracking_context** associates a frame of reference to a collection of <<express:Warehouse_inventory_tracking_arm.tracking_id,tracking_id>>.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.Tracking_context.identifier"
+a
+// tracking_id
+<<express:Warehouse_inventory_tracking_arm.tracking_id,tracking_id>> that is in the role of **identifier** for the **Tracking_context**.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.Tracking_context.frame_of_reference"
+a **frame_of_reference** specifies the context for the associated <<express:Warehouse_inventory_tracking_arm.tracking_id,tracking_id>> instances.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.Tracking_context.target"
+specifies the <<express:Warehouse_inventory_tracking_arm.tracking_id,tracking_id>> instances assigned to this **Tracking_context**.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.Tracking_context.ur:UR1"
+No more than one **Tracking_context** shall be assigned to a particular
+// tracking_id
+<<express:Warehouse_inventory_tracking_arm.tracking_id,tracking_id>>.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.Tracking_context.ur:UR2"
+No more than one **Tracking_context** shall be assigned to a particular combination of **frame_of_reference**, **target**.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.Tracking_context.wr:WR1"
+The value of the **frame_of_reference** shall not be equal to null.
+*)
+
+
+(*"Warehouse_inventory_tracking_arm.__schema_file"
+data/modules/warehouse_inventory_tracking/module.xml
+*)

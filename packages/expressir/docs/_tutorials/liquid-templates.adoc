@@ -1,0 +1,806 @@
+---
+title: Liquid Templates
+nav_order: 6
+---
+
+== Liquid Templates for Documentation
+
+=== Prerequisites
+
+Before starting this tutorial, ensure you have:
+
+* Completed link:querying-schemas.html[Querying Schemas]
+* Basic understanding of template languages
+* Familiarity with Expressir data model
+* Ruby and Expressir installed
+
+=== Learning Objectives
+
+By the end of this tutorial, you will be able to:
+
+* Convert Expressir models to Liquid drops
+* Create basic Liquid templates
+* Access schema elements in templates
+* Use filters to format output
+* Generate entity and type documentation
+* Create complete schema documentation
+* Build custom documentation generators
+
+=== What You'll Build
+
+You'll create various documentation templates that generate HTML and Markdown documentation from EXPRESS schemas automatically.
+
+=== Step 1: Understanding Liquid Integration
+
+==== What is Liquid?
+
+Liquid is a template language created by Shopify that allows you to:
+
+* Generate dynamic content from data
+* Use control structures (if/for/etc.)
+* Apply filters to transform data
+* Create reusable templates
+
+==== Expressir Liquid Drops
+
+Expressir converts its Ruby data model to "Liquid drops" - objects that work in templates:
+
+[source]
+----
+Expressir Model → Liquid Drop → Template → Output
+----
+
+Every model class has a corresponding drop class:
+* `Repository` → `RepositoryDrop`
+* `Schema` → `SchemaDrop`
+* `Entity` → `EntityDrop`
+* `Type` → `TypeDrop`
+* etc.
+
+=== Step 2: Your First Template
+
+==== Setup
+
+Create `template_demo.rb`:
+
+[source,ruby]
+----
+require 'expressir'
+require 'liquid'
+
+# Parse schema
+repo = Expressir::Express::Parser.from_file('example.exp')
+
+# Convert to Liquid drop
+repo_drop = repo.to_liquid
+
+# Create Liquid template
+template_text = <<~LIQUID
+  Schemas: {{ schemas.size }}
+
+  {% for schema in schemas %}
+  - {{ schema.id }}
+  {% endfor %}
+LIQUID
+
+template = Liquid::Template.parse(template_text)
+
+# Render
+output = template.render('schemas' => repo_drop.schemas)
+puts output
+----
+
+==== Create Sample Schema
+
+Create `example.exp`:
+
+[source,express]
+----
+SCHEMA example_schema;
+
+  ENTITY person;
+    name : STRING;
+    age : INTEGER;
+  END_ENTITY;
+
+  ENTITY organization;
+    org_name : STRING;
+    employees : SET [0:?] OF person;
+  END_ENTITY;
+
+END_SCHEMA;
+----
+
+==== Run the Template
+
+[source,bash]
+----
+ruby template_demo.rb
+----
+
+**Output**:
+[source]
+----
+Schemas: 1
+
+- example_schema
+----
+
+=== Step 3: Accessing Schema Elements
+
+==== List Entities
+
+Create `list_entities.liquid`:
+
+[source,liquid]
+----
+# {{ schema.id }}
+
+## Entities
+
+{% for entity in schema.entities %}
+### {{ entity.id }}
+
+Attributes:
+{% for attr in entity.attributes %}
+- **{{ attr.id }}**: {{ attr.type }}{% if attr.optional %} (optional){% endif %}
+{% endfor %}
+{% endfor %}
+----
+
+==== Render Entity List
+
+Create `render_entities.rb`:
+
+[source,ruby]
+----
+require 'expressir'
+require 'liquid'
+
+repo = Expressir::Express::Parser.from_file('example.exp')
+schema_drop = repo.schemas.first.to_liquid
+
+template = Liquid::Template.parse(File.read('list_entities.liquid'))
+output = template.render('schema' => schema_drop)
+
+puts output
+----
+
+**Output**:
+[source,markdown]
+----
+# example_schema
+
+## Entities
+
+### person
+
+Attributes:
+- **name**: STRING
+- **age**: INTEGER
+
+### organization
+
+Attributes:
+- **org_name**: STRING
+- **employees**: SET [0:?] OF person
+----
+
+=== Step 4: Working with Drop Attributes
+
+==== Understanding Drop Attributes
+
+Every drop has specific attributes. For `SchemaDrop`:
+
+[source,liquid]
+----
+{{ schema.id }}              <!-- Schema name -->
+{{ schema.file }}            <!-- Source file -->
+{{ schema.version.value }}   <!-- Version string -->
+{{ schema.entities }}        <!-- Array of entities -->
+{{ schema.types }}           <!-- Array of types -->
+{{ schema.functions }}       <!-- Array of functions -->
+{{ schema.interfaces }}      <!-- Array of interfaces -->
+----
+
+==== Entity Drop Attributes
+
+For `EntityDrop`:
+
+[source,liquid]
+----
+{{ entity.id }}              <!-- Entity name -->
+{{ entity.abstract }}        <!-- Is abstract? -->
+{{ entity.attributes }}      <!-- Attributes array -->
+{{ entity.where_rules }}     <!-- WHERE rules -->
+{{ entity.unique_rules }}    <!-- UNIQUE rules -->
+{{ entity.subtype_of }}      <!-- Supertypes -->
+{{ entity.remarks }}         <!-- Documentation -->
+----
+
+==== Attribute Drop
+
+For `AttributeDrop`:
+
+[source,liquid]
+----
+{{ attr.id }}                <!-- Attribute name -->
+{{ attr.type }}              <!-- Attribute type -->
+{{ attr.optional }}          <!-- Is optional? -->
+{{ attr.kind }}              <!-- Kind: explicit/derived/inverse -->
+{{ attr.remarks }}           <!-- Documentation -->
+----
+
+=== Step 5: Control Structures
+
+==== Conditionals
+
+[source,liquid]
+----
+{% for entity in schema.entities %}
+## {{ entity.id }}
+
+{% if entity.abstract %}
+**Abstract entity** - Cannot be instantiated directly.
+{% endif %}
+
+{% if entity.attributes.size > 0 %}
+### Attributes
+{% for attr in entity.attributes %}
+- {{ attr.id }}: {{ attr.type }}
+{% endfor %}
+{% else %}
+No attributes defined.
+{% endif %}
+
+{% if entity.where_rules.size > 0 %}
+### Constraints
+{% for rule in entity.where_rules %}
+- **{{ rule.id }}**: {{ rule.expression }}
+{% endfor %}
+{% endif %}
+{% endfor %}
+----
+
+==== Loops with Filters
+
+[source,liquid]
+----
+{% comment %}Sort entities alphabetically{% endcomment %}
+{% assign sorted_entities = schema.entities | sort: 'id' %}
+
+{% for entity in sorted_entities %}
+- {{ entity.id }}
+{% endfor %}
+
+{% comment %}Filter optional attributes{% endcomment %}
+{% for entity in schema.entities %}
+Optional attributes in {{ entity.id }}:
+{% for attr in entity.attributes %}
+  {% if attr.optional %}
+  - {{ attr.id }}
+  {% endif %}
+{% endfor %}
+{% endfor %}
+----
+
+=== Step 6: Using Liquid Filters
+
+==== Built-in Filters
+
+[source,liquid]
+----
+{% comment %}String filters{% endcomment %}
+{{ entity.id | upcase }}
+{{ entity.id | capitalize }}
+{{ entity.id | replace: '_', ' ' }}
+
+{% comment %}Array filters{% endcomment %}
+{{ schema.entities | size }}
+{{ schema.entities | map: 'id' | join: ', ' }}
+{{ entity.attributes | first }}
+{{ entity.attributes | last }}
+
+{% comment %}Conditional filters{% endcomment %}
+{{ attr.optional | default: false }}
+----
+
+==== Custom Filters
+
+Create `render_with_filters.rb`:
+
+[source,ruby]
+----
+require 'expressir'
+require 'liquid'
+
+# Define custom filter
+module CustomFilters
+  def type_category(type_obj)
+    case type_obj._class
+    when /Entity/
+      'entity'
+    when /Aggregate/
+      'aggregate'
+    when /Select/
+      'select'
+    else
+      'simple'
+    end
+  end
+
+  def format_path(obj)
+    if obj.respond_to?(:parent) && obj.parent
+      "#{obj.parent.id}.#{obj.id}"
+    else
+      obj.id
+    end
+  end
+end
+
+Liquid::Template.register_filter(CustomFilters)
+
+# Use in template
+template_text = <<~LIQUID
+  {% for entity in entities %}
+  {{ entity | format_path }}: {{ entity.attributes.size }} attributes
+  {% endfor %}
+LIQUID
+
+repo = Expressir::Express::Parser.from_file('example.exp')
+schema_drop = repo.schemas.first.to_liquid
+
+template = Liquid::Template.parse(template_text)
+output = template.render('entities' => schema_drop.entities)
+puts output
+----
+
+=== Step 7: Complete Documentation Templates
+
+==== Entity Documentation
+
+Create `entity_doc.liquid`:
+
+[source,liquid]
+----
+---
+title: {{ entity.id }}
+---
+
+# {{ entity.id }}
+
+{% if entity.remarks.size > 0 %}
+## Description
+
+{% for remark in entity.remarks %}
+{{ remark }}
+{% endfor %}
+{% endif %}
+
+## Definition
+
+```express
+ENTITY {{ entity.id }}{% if entity.abstract %} ABSTRACT{% endif %};
+{% for attr in entity.attributes %}
+  {{ attr.id }} : {% if attr.optional %}OPTIONAL {% endif %}{{ attr.type }};
+{% endfor %}
+{% if entity.where_rules.size > 0 %}
+WHERE
+{% for rule in entity.where_rules %}
+  {{ rule.id }}: {{ rule.expression }};
+{% endfor %}
+{% endif %}
+END_ENTITY;
+```
+
+## Attributes
+
+| Name | Type | Optional | Description |
+|------|------|----------|-------------|
+{% for attr in entity.attributes %}
+| {{ attr.id }} | {{ attr.type }} | {{ attr.optional }} | {% if attr.remarks.size > 0 %}{{ attr.remarks | join: ' ' }}{% else %}-{% endif %} |
+{% endfor %}
+
+{% if entity.subtype_of.size > 0 %}
+## Supertypes
+
+{% for super in entity.subtype_of %}
+- {{ super }}
+{% endfor %}
+{% endif %}
+
+{% if entity.where_rules.size > 0 %}
+## Constraints
+
+{% for rule in entity.where_rules %}
+### {{ rule.id }}
+
+{{ rule.expression }}
+
+{% if rule.remarks.size > 0 %}
+{{ rule.remarks | join: "\n" }}
+{% endif %}
+{% endfor %}
+{% endif %}
+----
+
+==== Schema Overview
+
+Create `schema_overview.liquid`:
+
+[source,liquid]
+----
+# {{ schema.id }}
+
+{% if schema.version %}
+**Version**: {{ schema.version.value }}
+{% endif %}
+
+{% if schema.remarks.size > 0 %}
+## Description
+
+{% for remark in schema.remarks %}
+{{ remark }}
+{% endfor %}
+{% endif %}
+
+## Contents
+
+- **Entities**: {{ schema.entities.size }}
+- **Types**: {{ schema.types.size }}
+- **Functions**: {{ schema.functions.size }}
+- **Rules**: {{ schema.rules.size }}
+
+## Entities
+
+{% for entity in schema.entities %}
+### [{{ entity.id }}](#{{ entity.id | downcase }})
+
+{% if entity.remarks.size > 0 %}
+{{ entity.remarks | first }}
+{% else %}
+Entity with {{ entity.attributes.size }} attributes.
+{% endif %}
+{% endfor %}
+
+## Types
+
+{% for type in schema.types %}
+### {{ type.id }}
+
+Type: {{ type.underlying_type._class }}
+
+{% if type.remarks.size > 0 %}
+{{ type.remarks | join: ' ' }}
+{% endif %}
+{% endfor %}
+
+{% if schema.interfaces.size > 0 %}
+## Dependencies
+
+{% for interface in schema.interfaces %}
+- **{{ interface.kind | upcase }}** from {{ interface.schema.id }}
+  {% if interface.items.size > 0 %}
+  {% for item in interface.items %}
+  - {{ item.id }}
+  {% endfor %}
+  {% endif %}
+{% endfor %}
+{% endif %}
+----
+
+=== Step 8: Multiple Schema Documentation
+
+==== Repository Documentation Generator
+
+Create `doc_generator.rb`:
+
+[source,ruby]
+----
+require 'expressir'
+require 'liquid'
+require 'fileutils'
+
+class DocumentationGenerator
+  def initialize(repo_or_package)
+    if repo_or_package.is_a?(String)
+      @repo = Expressir::Model::Repository.from_package(repo_or_package)
+    else
+      @repo = repo_or_package
+    end
+    @repo_drop = @repo.to_liquid
+  end
+
+  def generate_all(output_dir)
+    FileUtils.mkdir_p(output_dir)
+
+    # Generate index
+    generate_index(output_dir)
+
+    # Generate per-schema docs
+    @repo_drop.schemas.each do |schema|
+      generate_schema_doc(schema, output_dir)
+
+      # Generate per-entity docs
+      schema.entities.each do |entity|
+        generate_entity_doc(schema, entity, output_dir)
+      end
+    end
+
+    puts "Documentation generated in #{output_dir}/"
+  end
+
+  private
+
+  def generate_index(output_dir)
+    template = Liquid::Template.parse(index_template)
+    output = template.render('schemas' => @repo_drop.schemas)
+
+    File.write("#{output_dir}/index.md", output)
+    puts "  ✓ index.md"
+  end
+
+  def generate_schema_doc(schema, output_dir)
+    template = Liquid::Template.parse(schema_template)
+    output = template.render('schema' => schema)
+
+    File.write("#{output_dir}/#{schema.id}.md", output)
+    puts "  ✓ #{schema.id}.md"
+  end
+
+  def generate_entity_doc(schema, entity, output_dir)
+    entity_dir = "#{output_dir}/entities"
+    FileUtils.mkdir_p(entity_dir)
+
+    template = Liquid::Template.parse(entity_template)
+    output = template.render('entity' => entity, 'schema' => schema)
+
+    File.write("#{entity_dir}/#{entity.id}.md", output)
+    puts "  ✓ entities/#{entity.id}.md"
+  end
+
+  def index_template
+    File.read('templates/index.liquid')
+  end
+
+  def schema_template
+    File.read('templates/schema.liquid')
+  end
+
+  def entity_template
+    File.read('templates/entity.liquid')
+  end
+end
+
+# Usage
+repo = Expressir::Express::Parser.from_file('example.exp')
+generator = DocumentationGenerator.new(repo)
+generator.generate_all('docs_output')
+----
+
+==== Create Template Files
+
+Create `templates/index.liquid`:
+
+[source,liquid]
+----
+# EXPRESS Schema Documentation
+
+## Schemas
+
+{% for schema in schemas %}
+- [{{ schema.id }}]({{ schema.id }}.md) - {{ schema.entities.size }} entities, {{ schema.types.size }} types
+{% endfor %}
+
+## Quick Statistics
+
+- Total Schemas: {{ schemas.size }}
+- Total Entities: {% assign total = 0 %}{% for s in schemas %}{% assign total = total | plus: s.entities.size %}{% endfor %}{{ total }}
+- Total Types: {% assign total = 0 %}{% for s in schemas %}{% assign total = total | plus: s.types.size %}{% endfor %}{{ total }}
+----
+
+=== Step 9: Advanced Templates
+
+==== Inheritance Hierarchy
+
+Create `hierarchy.liquid`:
+
+[source,liquid]
+----
+# Entity Inheritance Hierarchy
+
+{% for entity in schema.entities %}
+{% if entity.subtype_of.size == 0 %}
+## {{ entity.id }} (Root)
+
+{% assign children = schema.entities | where: 'subtype_of', entity.id %}
+{% if children.size > 0 %}
+### Subtypes:
+{% for child in children %}
+- {{ child.id }}
+{% endfor %}
+{% endif %}
+{% endif %}
+{% endfor %}
+
+## All Entities
+
+{% for entity in schema.entities %}
+- **{{ entity.id }}**
+  {% if entity.subtype_of.size > 0 %}
+  - Extends: {{ entity.subtype_of | join: ', ' }}
+  {% endif %}
+{% endfor %}
+----
+
+==== Cross-Reference Table
+
+Create `cross_reference.liquid`:
+
+[source,liquid]
+----
+# Cross-Reference Table
+
+## Entities by Schema
+
+| Schema | Entity | Attributes |
+|--------|--------|------------|
+{% for schema in schemas %}
+{% for entity in schema.entities %}
+| {{ schema.id }} | {{ entity.id }} | {{ entity.attributes.size }} |
+{% endfor %}
+{% endfor %}
+
+## Type Usage
+
+{% for schema in schemas %}
+### {{ schema.id }}
+
+| Type | Used By |
+|------|---------|
+{% for type in schema.types %}
+| {{ type.id }} | {% comment %}Find usage{% endcomment %}- |
+{% endfor %}
+{% endfor %}
+----
+
+=== Step 10: Practice Exercises
+
+==== Exercise 1: HTML Documentation
+
+Create an HTML template that generates a single-page documentation with:
+* Table of contents
+* Entity cards with styling
+* Syntax highlighting for EXPRESS code
+* Responsive layout
+
+==== Exercise 2: JSON Schema
+
+Create a template that generates JSON Schema from EXPRESS entities:
+
+[source,liquid]
+----
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    {% for attr in entity.attributes %}
+    "{{ attr.id }}": {
+      "type": "string"
+    }{% unless forloop.last %},{% endunless %}
+    {% endfor %}
+  }
+}
+----
+
+==== Exercise 3: Dependency Graph
+
+Generate a DOT file for GraphViz showing schema dependencies:
+
+[source,liquid]
+----
+digraph schemas {
+  {% for schema in schemas %}
+  "{{ schema.id }}";
+  {% for interface in schema.interfaces %}
+  "{{ schema.id }}" -> "{{ interface.schema.id }}";
+  {% endfor %}
+  {% endfor %}
+}
+----
+
+=== Best Practices
+
+**Template Organization**::
+* Keep templates in a dedicated directory
+* Use includes for reusable parts
+* Name templates descriptively
+
+**Error Handling**::
+* Check for nil/empty before iterating
+* Provide defaults for optional values
+* Test templates with various schemas
+
+**Performance**::
+* Cache compiled templates
+* Use filters efficiently
+* Avoid complex logic in templates
+
+**Maintainability**::
+* Comment complex template logic
+* Use consistent formatting
+* Version control your templates
+
+=== Common Pitfalls
+
+==== Nil Checks
+
+[source,liquid]
+----
+{% comment %}❌ Wrong - may crash{% endcomment %}
+{% for item in items %}
+  {{ item.value }}
+{% endfor %}
+
+{% comment %}✅ Correct - check first{% endcomment %}
+{% if items and items.size > 0 %}
+{% for item in items %}
+  {{ item.value }}
+{% endfor %}
+{% endif %}
+----
+
+==== Accessing Parent Objects
+
+[source,liquid]
+----
+{% comment %}❌ Wrong - parent may not exist{% endcomment %}
+{{ entity.parent.id }}
+
+{% comment %}✅ Correct - check parent{% endcomment %}
+{% if entity.parent %}
+Schema: {{ entity.parent.id }}
+{% endif %}
+----
+
+==== Type Checking
+
+[source,liquid]
+----
+{% comment %}Use _class to check type{% endcomment %}
+{% if object._class contains 'Entity' %}
+This is an entity
+{% elsif object._class contains 'Type' %}
+This is a type
+{% endif %}
+----
+
+=== Next Steps
+
+Congratulations! You can now generate documentation with Liquid templates.
+
+**Continue learning**:
+
+* link:documentation-coverage.html[Documentation Coverage] - Analyze documentation quality
+* link:../guides/liquid/[Liquid Guides] - Advanced template techniques
+* link:../references/liquid-drops/[Liquid Drops Reference] - Complete API
+
+**Read more**:
+
+* link:../pages/data-model.html[Data Model] - Understanding the structure
+* https://shopify.github.io/liquid/[Liquid Documentation] - Learn more about Liquid
+
+=== Summary
+
+In this tutorial, you learned to:
+
+* ✅ Convert Expressir models to Liquid drops
+* ✅ Create basic and advanced templates
+* ✅ Access schema elements in templates
+* ✅ Use built-in and custom filters
+* ✅ Generate entity documentation
+* ✅ Create complete documentation generators
+* ✅ Work with multiple schemas
+* ✅ Handle edge cases safely
+
+You're now ready to automate EXPRESS schema documentation generation!

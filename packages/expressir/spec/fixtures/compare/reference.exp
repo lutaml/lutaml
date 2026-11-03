@@ -1,0 +1,11 @@
+SCHEMA cmp;
+  TYPE status = ENUMERATION OF (GOOD, BAD);
+  END_TYPE;
+  ENTITY e;
+    x : INTEGER;
+    y : INTEGER;
+  END_ENTITY;
+  ENTITY f;
+    z : BOOLEAN;
+  END_ENTITY;
+END_SCHEMA;

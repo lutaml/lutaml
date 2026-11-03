@@ -1,0 +1,778 @@
+---
+title: Changes Format Specification
+parent: Changes
+grand_parent: Guides
+nav_order: 1
+---
+
+= Changes Format Specification
+
+== Purpose
+
+This document provides the complete YAML format specification for EXPRESS
+Changes files. Understanding this format is essential for creating, editing,
+and validating changes files.
+
+== References
+
+* link:index.html[Changes Overview] - Introduction to Changes files
+* link:validating-changes.html[Validating Changes] - Validation guide
+* link:programmatic-usage.html[Programmatic Usage] - Ruby API reference
+
+== File structure
+
+A Changes file follows this hierarchical structure:
+
+[source]
+----
+schema: {schema_name}
+versions:
+  - version: {version_number}
+    description: {version_description}
+    additions: [{item_changes}]
+    modifications: [{item_changes}]
+    deletions: [{item_changes}]
+    mappings: [{mapping_changes}]
+    changes: [{mapping_changes}]
+----
+
+== Schema-level fields
+
+=== schema
+
+Type:: String (required)
+Purpose:: Name of the EXPRESS schema being tracked
+Format:: Must match the schema name in the EXPRESS files
+
+.Example
+[example]
+====
+[source,yaml]
+----
+schema: action_schema
+----
+====
+
+=== versions
+
+Type:: Array of version objects (optional)
+Purpose:: List of version changes, ordered chronologically
+Format:: Each element is a version change object
+
+.Example with multiple versions
+[example]
+====
+[source,yaml]
+----
+schema: action_schema
+versions:
+- version: 2
+  description: Initial changes
+  additions: [...]
+- version: 3
+  description: Further updates
+  modifications: [...]
+----
+====
+
+== Version structure
+
+Each version in the `versions` array has the following fields:
+
+=== version
+
+Type:: Integer or string (required)
+Purpose:: Version identifier for this set of changes
+Format:: Typically an integer (2, 3, 4) or string ("2", "1.1", "v2")
+
+.Version numbering examples
+[example]
+====
+[source,yaml]
+----
+# Integer versions
+- version: 2
+- version: 3
+- version: 4
+
+# String versions
+- version: "2.1"
+- version: "v3"
+- version: "1.0.0"
+----
+====
+
+=== description
+
+Type:: String (optional)
+Purpose:: Description of what changed in this version
+Format:: Free-form text, can be multi-line
+
+.Description examples
+[example]
+====
+[source,yaml]
+----
+# Simple description
+- version: 2
+  description: Added new entity types
+
+# Multi-line description
+- version: 3
+  description: |-
+    Added support for external references.
+    Modified existing entities for compatibility.
+    Removed deprecated functions.
+----
+====
+
+=== additions
+
+Type:: Array of item change objects (optional)
+Purpose:: New elements added in this version
+Format:: Each element describes one added item
+
+.Additions example
+[example]
+====
+[source,yaml]
+----
+- version: 2
+  additions:
+  - type: ENTITY
+    name: new_product_entity
+    description:
+    - Represents product information
+  - type: FUNCTION
+    name: validate_product
+    description:
+    - Validates product data
+----
+====
+
+=== modifications
+
+Type:: Array of item change objects (optional)
+Purpose:: Existing elements modified in this version
+Format:: Each element describes one modified item
+
+.Modifications example
+[example]
+====
+[source,yaml]
+----
+- version: 2
+  modifications:
+  - type: ENTITY
+    name: existing_entity
+    description:
+    - Added new attributes
+    - Changed subtypes
+  - type: FUNCTION
+    name: existing_function
+    description:
+    - Updated parameters
+    - Improved algorithm
+----
+====
+
+=== deletions
+
+Type:: Array of item change objects (optional)
+Purpose:: Elements removed in this version
+Format:: Each element describes one deleted item
+
+.Deletions example
+[example]
+====
+[source,yaml]
+----
+- version: 2
+  deletions:
+  - type: CONSTANT
+    name: deprecated_constant
+    description:
+    - Removed as no longer needed
+  - type: FUNCTION
+    name: old_function
+    description:
+    - Replaced by new_function
+----
+====
+
+=== mappings
+
+Type:: Array of mapping change objects (optional)
+Purpose:: Mapping-related changes for ARM/MIM schemas
+Format:: Each element describes one mapping change
+
+.Mappings example
+[example]
+====
+[source,yaml]
+----
+- version: 2
+  mappings:
+  - name: Entity_name
+    description: ENTITY mapping updated for new structure
+  - name: Type_name
+    description: TYPE mapping simplified
+----
+====
+
+=== changes
+
+Type:: Array of mapping change objects (optional)
+Purpose:: Alternative field name for mapping changes
+Format:: Same as `mappings`, used in some contexts
+
+NOTE: The `changes` field is an alias for `mappings` and serves the same
+purpose. Use either `mappings` or `changes`, but not both.
+
+== Item change structure
+
+Item changes (in `additions`, `modifications`, `deletions`) have these fields:
+
+=== type
+
+Type:: String (required)
+Purpose:: Type of EXPRESS construct being changed
+Format:: One of the valid EXPRESS types
+
+Valid types::
+* `ENTITY` - Entity definitions
+* `TYPE` - Type definitions
+* `FUNCTION` - Function definitions
+* `PROCEDURE` - Procedure definitions
+* `RULE` - Rule definitions
+* `CONSTANT` - Constant definitions
+* `SUBTYPE_CONSTRAINT` - Subtype constraints
+* `USE_FROM` - Interface imports
+* `REFERENCE_FROM` - Interface references
+
+.Type examples
+[example]
+====
+[source,yaml]
+----
+additions:
+  - type: ENTITY
+    name: product
+  - type: FUNCTION
+    name: validate
+  - type: USE_FROM
+    name: geometry_schema
+    interfaced_items: point
+----
+====
+
+=== name
+
+Type:: String (required)
+Purpose:: Name of the EXPRESS construct
+Format:: Must match the actual name in the schema
+
+For interface types (`USE_FROM`, `REFERENCE_FROM`), this is the name of the
+schema being referenced, not the items being imported.
+
+.Name examples
+[example]
+====
+[source,yaml]
+----
+# Regular entities
+- type: ENTITY
+  name: action_directive
+
+# Interface imports
+- type: USE_FROM
+  name: support_resource_schema  # Schema name, not item name
+  interfaced_items: bag_to_set   # Item being imported
+----
+====
+
+=== description
+
+Type:: String or array of strings (optional)
+Purpose:: Description of the change
+Format:: Single string or array of bullet points
+
+.Description formats
+[example]
+====
+[source,yaml]
+----
+# Single-line description
+- type: ENTITY
+  name: product
+  description: Added to support product management
+
+# Multi-line description (array)
+- type: FUNCTION
+  name: validate_data
+  description:
+  - Updated parameters to support new types
+  - Improved validation logic
+  - Added error handling
+
+# Multi-line description (literal)
+- type: ENTITY
+  name: component
+  description: |-
+    This entity was significantly modified.
+    It now supports hierarchical structures.
+----
+====
+
+=== interfaced_items
+
+Type:: String (optional)
+Purpose:: Specifies items imported/referenced for interface changes
+Format:: Comma-separated list or single item name
+Use:: Only for `USE_FROM` and `REFERENCE_FROM` types
+
+.Interface changes with interfaced_items
+[example]
+====
+[source,yaml]
+----
+additions:
+  # Single item
+  - type: USE_FROM
+    name: geometric_model_schema
+    interfaced_items: convex_hexahedron
+
+  # Another single item from same schema
+  - type: USE_FROM
+    name: geometric_model_schema
+    interfaced_items: cyclide_segment_solid
+
+  # Reference from another schema
+  - type: REFERENCE_FROM
+    name: measure_schema
+    interfaced_items: length_measure
+----
+====
+
+== Mapping change structure
+
+Mapping changes (in `mappings` or `changes`) have these fields:
+
+=== name
+
+Type:: String (required)
+Purpose:: Name of the mapping being changed
+Format:: Typically the entity or type name
+
+.Mapping name example
+[example]
+====
+[source,yaml]
+----
+mappings:
+  - name: Product_entity
+    description: Updated ARM-to-MIM mapping
+----
+====
+
+=== description
+
+Type:: String (required)
+Purpose:: Description of the mapping change
+Format:: Free-form text describing the mapping update
+
+.Mapping description example
+[example]
+====
+[source,yaml]
+----
+mappings:
+  - name: Address
+    description: ENTITY mapping updated to support international formats
+  - name: Identifier
+    description: TYPE mapping simplified for better performance
+----
+====
+
+== Complete examples
+
+=== Minimal valid file
+
+[source,yaml]
+----
+schema: my_schema
+----
+
+=== Single version with all change types
+
+[source,yaml]
+----
+schema: action_schema
+versions:
+- version: 2
+  description: Comprehensive update with multiple changes
+  additions:
+  - type: ENTITY
+    name: new_action_entity
+    description:
+    - Represents a new type of action
+  - type: FUNCTION
+    name: validate_action
+    description:
+    - Validates action data
+  modifications:
+  - type: ENTITY
+    name: action_directive
+    description:
+    - Added new attributes
+    - Modified subtypes
+  - type: FUNCTION
+    name: bag_to_set
+    description:
+    - Updated parameters
+  deletions:
+  - type: CONSTANT
+    name: old_constant
+    description:
+    - No longer used
+----
+
+=== Multiple versions building history
+
+[source,yaml]
+----
+schema: support_resource_schema
+versions:
+- version: 2
+  description: Initial enhancements
+  additions:
+  - type: FUNCTION
+    name: type_check_function
+  modifications:
+  - type: ENTITY
+    name: action
+    description:
+    - Updated attributes
+- version: 3
+  description: Added external references
+  additions:
+  - type: USE_FROM
+    name: measure_schema
+    interfaced_items: length_measure
+- version: 4
+  description: Further improvements
+  modifications:
+  - type: FUNCTION
+    name: type_check_function
+    description:
+    - Enhanced validation logic
+  deletions:
+  - type: CONSTANT
+    name: deprecated_value
+----
+
+=== ARM/MIM schema with mappings
+
+[source,yaml]
+----
+schema: action_arm
+versions:
+- version: 2
+  description: Updated ARM mappings
+  additions:
+  - type: ENTITY
+    name: new_arm_entity
+  mappings:
+  - name: Action
+    description: ENTITY mapping updated for new MIM structure
+  - name: Action_directive
+    description: ENTITY mapping simplified
+- version: 3
+  description: Added new mappings
+  mappings:
+  - name: Resource
+    description: New ENTITY mapping added
+----
+
+=== Interface changes example
+
+[source,yaml]
+----
+schema: aic_csg
+versions:
+- version: 2
+  description: Added external schema references
+  additions:
+  - type: USE_FROM
+    name: geometric_model_schema
+    interfaced_items: convex_hexahedron
+  - type: USE_FROM
+    name: geometric_model_schema
+    interfaced_items: cyclide_segment_solid
+  - type: REFERENCE_FROM
+    name: measure_schema
+    interfaced_items: length_measure
+  - type: REFERENCE_FROM
+    name: topology_schema
+    interfaced_items: vertex
+----
+
+== Field requirements summary
+
+[options="header"]
+|===
+| Field | Level | Type | Required | Description
+
+| `schema`
+| Top
+| String
+| Yes
+| Schema name
+
+| `versions`
+| Top
+| Array
+| No
+| List of versions
+
+| `version`
+| Version
+| Integer/String
+| Yes
+| Version identifier
+
+| `description`
+| Version
+| String
+| No
+| Version description
+
+| `additions`
+| Version
+| Array
+| No
+| Added items
+
+| `modifications`
+| Version
+| Array
+| No
+| Modified items
+
+| `deletions`
+| Version
+| Array
+| No
+| Deleted items
+
+| `mappings`
+| Version
+| Array
+| No
+| Mapping changes
+
+| `changes`
+| Version
+| Array
+| No
+| Alternative to mappings
+
+| `type`
+| Item
+| String
+| Yes
+| EXPRESS construct type
+
+| `name`
+| Item
+| String
+| Yes
+| Construct name
+
+| `description`
+| Item
+| String/Array
+| No
+| Change description
+
+| `interfaced_items`
+| Item
+| String
+| No*
+| For USE_FROM/REFERENCE_FROM
+
+| `name`
+| Mapping
+| String
+| Yes
+| Mapping name
+
+| `description`
+| Mapping
+| String
+| Yes
+| Mapping description
+|===
+
+*Required for `USE_FROM` and `REFERENCE_FROM` types
+
+== Best practices
+
+=== Version organization
+
+Chronological order:: List versions in chronological order (oldest to newest)
++
+[source,yaml]
+----
+versions:
+- version: 2  # First
+- version: 3  # Second
+- version: 4  # Third
+----
+
+Consistent numbering:: Use consistent version numbering scheme throughout
++
+[source,yaml]
+----
+# Good: consistent integers
+versions:
+- version: 2
+- version: 3
+- version: 4
+
+# Also good: consistent semantic versions
+versions:
+- version: "1.0.0"
+- version: "1.1.0"
+- version: "2.0.0"
+----
+
+=== Description guidelines
+
+Be specific:: Describe what changed, not just that something changed
++
+[source,yaml]
+----
+# Vague (avoid)
+description: Modified entity
+
+# Specific (better)
+description:
+- Added new required attribute 'status'
+- Changed 'date' attribute to optional
+- Added subtype relationship to 'base_entity'
+----
+
+Use arrays for multiple points:: Use array format for multiple distinct changes
++
+[source,yaml]
+----
+description:
+- Added new attributes
+- Modified subtype constraints
+- Updated WHERE rules
+----
+
+=== Interface changes
+
+Separate entries per item:: Create separate entries for each imported item
++
+[source,yaml]
+----
+# Good: clear and explicit
+additions:
+- type: USE_FROM
+  name: geometry_schema
+  interfaced_items: point
+- type: USE_FROM
+  name: geometry_schema
+  interfaced_items: vector
+
+# Avoid: combining items (not standard)
+additions:
+- type: USE_FROM
+  name: geometry_schema
+  interfaced_items: point, vector
+----
+
+=== Change categorization
+
+Choose correct category:: Use the right change type for each modification
++
+* **Additions**: Only for completely new items
+* **Modifications**: For changes to existing items
+* **Deletions**: For removed items
+
+Modifications vs additions:: If an entity was modified, use modifications even
+if attributes were added
++
+[source,yaml]
+----
+# Entity exists but has new attributes
+modifications:
+- type: ENTITY
+  name: existing_entity
+  description:
+  - Added new attributes
+
+# Not additions, because entity already existed
+----
+
+== YAML schema support
+
+Changes files include a schema hint for editor support:
+
+[source,yaml]
+----
+# yaml-language-server: $schema=https://www.expresslang.org/schemas/changes/v1/schema_changes.yaml
+schema: action_schema
+versions: [...]
+----
+
+This is automatically added when files are created via
+[`SchemaChange#to_file`](../../references/data-model/changes.html#to_file).
+
+== File naming conventions
+
+Standard naming:: Use `.changes.yaml` extension
++
+[source]
+----
+schema_name.changes.yaml
+----
+
+Examples::
+* `action_schema.changes.yaml`
+* `geometry_schema.changes.yaml`
+* `product_schema.changes.yaml`
+
+== Next steps
+
+Now that you understand the format:
+
+* link:validating-changes.html[Validate Changes] - Validate your changes files
+* link:importing-eengine.html[Import from Express Engine] - Import from XML
+* link:programmatic-usage.html[Programmatic Usage] - Create changes via API
+
+== Summary
+
+The EXPRESS Changes YAML format provides structured change tracking:
+
+* Simple hierarchical structure with schema and versions
+* Four change categories: additions, modifications, deletions, mappings
+* Support for all EXPRESS construct types
+* Special handling for interface changes via `interfaced_items`
+* Optional descriptions at version and item levels
+* YAML format for easy editing and version control
+* Clear field requirements and validation rules
+
+Key takeaways:
+
+* `schema` and version-level `version` are required fields
+* Item changes require `type` and `name` fields
+* Use `interfaced_items` for `USE_FROM` and `REFERENCE_FROM`
+* Descriptions can be strings or arrays
+* Organize versions chronologically
+* Be specific in descriptions
+* Validate files before committing
+* Follow standard naming conventions

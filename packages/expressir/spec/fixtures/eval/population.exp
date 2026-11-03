@@ -1,0 +1,36 @@
+SCHEMA eval_pop;
+  ENTITY node;
+    label : STRING;
+  WHERE
+    named : label <> '';
+  END_ENTITY;
+
+  ENTITY edge;
+    from_node : node;
+    to_node : node;
+  WHERE
+    different : from_node.label <> to_node.label;
+  END_ENTITY;
+
+  ENTITY graph;
+    edges : LIST OF edge;
+  WHERE
+    nonempty : SIZEOF(edges) > 0;
+  END_ENTITY;
+
+  FUNCTION label_of(n : node) : STRING;
+    RETURN (n.label);
+  END_FUNCTION;
+
+  FUNCTION target_of(g : graph) : STRING;
+    RETURN (g.edges[1].to_node.label);
+  END_FUNCTION;
+
+  FUNCTION node_types(n : node) : SET OF STRING;
+    RETURN (TYPEOF(n));
+  END_FUNCTION;
+
+  FUNCTION referrers(n : node) : BAG OF GENERIC;
+    RETURN (USEDIN(n, ''));
+  END_FUNCTION;
+END_SCHEMA;

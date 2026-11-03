@@ -1,0 +1,9 @@
+
+                         Notes for Schema Check
+
+ x  Check string constants to make sure that ones that have two dots in them name
+    accessible SCHEMA, ENTITY, and attribute.
+    o  Form a longform: SCHEMA must be the same as the longform schema
+ o  Check redeclared attributes to make sure the types are compatible.
+ x  Make sure that all entities referenced in the SUBTYPE/SUPERTYPE exist.
+

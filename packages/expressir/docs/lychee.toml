@@ -1,0 +1,90 @@
+# Lychee link checker configuration for Expressir documentation
+# https://github.com/lycheeverse/lychee
+
+# Maximum number of concurrent network requests
+max_concurrency = 8
+
+# Maximum number of redirects to follow
+max_redirects = 5
+
+# Request timeout in seconds
+timeout = 30
+
+# Maximum number of retries per request
+max_retries = 2
+
+# Wait time between retries in seconds
+retry_wait_time = 2
+
+# User agent string
+user_agent = "Mozilla/5.0 (compatible; Lychee/1.0; +https://github.com/lutaml/expressir)"
+
+# Only check links with these schemes
+scheme = ["https", "http"]
+
+# Accepted HTTP status codes
+accept = [
+  "100..=103",
+  "200..=299",
+  "429",
+]
+
+# Exclude these URLs from checking
+exclude = [
+  # Local development URLs
+  "http://localhost*",
+  "http://127\\.0\\.0\\.1*",
+  "http://0\\.0\\.0\\.0*",
+
+  # Placeholder URLs
+  "http://example\\.com*",
+  "https://example\\.com*",
+  "http://example\\.org*",
+  "https://example\\.org*",
+
+  # Private/internal networks
+  "http://192\\.168\\..*",
+  "http://10\\..*",
+  "http://172\\.(1[6-9]|2[0-9]|3[01])\\..*",
+
+  # Avoid checking certain external sites that may rate-limit
+  "https://www\\.linkedin\\.com/.*",
+  "https://twitter\\.com/.*",
+  "https://x\\.com/.*",
+
+  # Self-referential documentation links (site under development)
+  "https://www\\.lutaml\\.org/expressir/.*",
+
+  # External sites with broken or moved URLs
+  "https://www\\.nist\\.gov/.*",
+  "https://www\\.steptools\\.com/.*",
+
+  # iso.org returns 403 to bots — the ISO store page is reachable in a browser
+  "https://www\\.iso\\.org/.*",
+
+  # GitHub URLs that require authentication
+  "https://github\\.com/.*/(issues|pull)/[0-9]+/files.*",
+
+  # GitHub Discussions (may not be enabled for all repos)
+  "https://github\\.com/.*/discussions.*",
+
+  # GitHub blob URLs (may vary by repository structure)
+  "https://github\\.com/.*/blob/main/.*",
+
+  # Fragments only (internal page anchors without base URL)
+  "^#.*",
+]
+
+# Exclude specific paths from being checked
+exclude_path = [
+  "vendor",
+  "node_modules",
+  ".bundle",
+  ".cache",
+  "_site",
+  "fixtures",
+  "test",
+  "spec",
+  ".jekyll-cache",
+  "old-docs",
+]

@@ -1,0 +1,750 @@
+---
+title: Validating Packages
+parent: LER Packages
+grand_parent: Guides
+nav_order: 4
+---
+
+= Validating Packages
+
+== Purpose
+
+This guide explains how to validate LER package integrity and repository
+consistency using both the CLI and Ruby API. Validation ensures packages are
+complete, correct, and ready for production use.
+
+== References
+
+* link:index.html[LER Packages Overview]
+* link:creating-packages.html[Creating Packages]
+* link:loading-packages.html[Loading Packages]
+* link:../ruby-api/working-with-repository.html[Working with Repository]
+
+== Concepts
+
+Package validation:: Checking package structure, metadata integrity, and
+repository consistency.
+
+Repository validator:: The [`RepositoryValidator`](../../lib/expressir/model/repository_validator.rb:11)
+class that performs consistency checks.
+
+Schema references:: Validation that all `USE FROM` and `REFERENCE FROM`
+statements point to existing schemas.
+
+Interface validation:: Checking that all interface items exist in referenced
+schemas.
+
+Completeness checks:: Optional validation for schema completeness (entities,
+types, functions).
+
+== Validation types
+
+=== Basic validation
+
+Always performed:
+
+Schema reference validation:: Verifies all referenced schemas exist
+Interface item validation:: Checks interface items exist in target schemas
+Circular dependency detection:: Identifies circular references (valid but noteworthy)
+
+=== Optional validation
+
+Enabled with flags:
+
+Strict mode:: Checks for unused schemas
+Interface validation:: Detailed interface consistency checks
+Completeness checks:: Validates schema completeness
+Duplicate checks:: Finds duplicate interface aliases
+Self-reference checks:: Detects self-referencing interfaces
+
+== CLI validation
+
+=== Basic validation command
+
+Use [`expressir package validate`](../../lib/expressir/commands/package.rb:150)
+to validate packages:
+
+[source,bash]
+----
+# Basic validation
+expressir package validate schemas.ler
+
+# With verbose output
+expressir package validate schemas.ler --verbose
+----
+
+.Success output
+[example]
+====
+[source]
+----
+✓ Package is valid
+----
+====
+
+.Error output
+[example]
+====
+[source]
+----
+✗ Validation failed
+
+Errors (2):
+  1. [missing_schema_reference] Interface references non-existent schema
+     Schema: action_schema
+     Referenced: missing_schema
+  2. [missing_interface_item] Interface item not found
+     Schema: action_schema
+     Referenced: approval_schema
+     Item: missing_entity
+----
+====
+
+=== Validation options
+
+==== Strict mode
+
+Enable strict validation for unused schema warnings:
+
+[source,bash]
+----
+expressir package validate schemas.ler --strict
+----
+
+Strict mode checks:
+
+* Unused schemas (not referenced by others)
+* Isolated schema groups
+* Orphaned schemas
+
+==== Interface validation
+
+Enable detailed interface checking:
+
+[source,bash]
+----
+expressir package validate schemas.ler --check-interfaces
+----
+
+Interface checks include:
+
+* Interface item existence
+* Interface consistency
+* Cross-schema references
+* Type compatibility
+
+==== Completeness validation
+
+Check for schema completeness:
+
+[source,bash]
+----
+expressir package validate schemas.ler --check-completeness
+----
+
+Completeness checks:
+
+* Schemas with no entities
+* Schemas with entities but no types
+* Empty schemas
+* Minimal schemas
+
+==== Duplicate checking
+
+Find duplicate interface aliases:
+
+[source,bash]
+----
+expressir package validate schemas.ler --check-duplicates
+----
+
+==== Self-reference checking
+
+Detect self-referencing interfaces:
+
+[source,bash]
+----
+expressir package validate schemas.ler --check-self-references
+----
+
+==== Detailed reports
+
+Get detailed validation reports:
+
+[source,bash]
+----
+expressir package validate schemas.ler \
+  --check-interfaces \
+  --detailed
+----
+
+Detailed reports include:
+
+* Fix suggestions for each error
+* Context information
+* Related items
+* Severity levels
+
+==== Combined validation
+
+Use multiple options together:
+
+[source,bash]
+----
+expressir package validate schemas.ler \
+  --strict \
+  --check-interfaces \
+  --check-completeness \
+  --check-duplicates \
+  --check-self-references \
+  --detailed
+----
+
+=== Output formats
+
+Choose output format:
+
+[source,bash]
+----
+# Text format (default)
+expressir package validate schemas.ler
+
+# JSON format
+expressir package validate schemas.ler --format json
+
+# YAML format
+expressir package validate schemas.ler --format yaml
+----
+
+.JSON output example
+[example]
+====
+[source,json]
+----
+{
+  "valid?": false,
+  "errors": [
+    {
+      "type": "missing_schema_reference",
+      "schema": "action_schema",
+      "referenced_schema": "missing_schema",
+      "message": "Schema 'action_schema' references non-existent schema 'missing_schema'"
+    }
+  ],
+  "warnings": [
+    {
+      "type": "unused_schema",
+      "schema": "utility_schema",
+      "message": "Schema 'utility_schema' is not referenced by any other schema"
+    }
+  ]
+}
+----
+====
+
+== Ruby API validation
+
+=== Basic validation
+
+Validate using the repository:
+
+[source,ruby]
+----
+require "expressir"
+
+# Load package
+repo = Expressir::Model::Repository.from_package("schemas.ler")
+
+# Validate
+validation = repo.validate
+
+if validation[:valid?]
+  puts "✓ Package is valid"
+else
+  puts "✗ Validation failed"
+  puts "Errors: #{validation[:errors].size}"
+  puts "Warnings: #{validation[:warnings].size}"
+end
+----
+
+=== Validation with options
+
+Enable additional checks:
+
+[source,ruby]
+----
+validation = repo.validate(
+  strict: true,                    # Enable strict mode
+  check_interfaces: true,          # Detailed interface validation
+  check_completeness: true,        # Check schema completeness
+  check_duplicates: true,          # Check for duplicate aliases
+  check_self_references: true,     # Check self-references
+  detailed: true                   # Generate detailed reports
+)
+----
+
+=== Handling validation results
+
+Process validation results:
+
+[source,ruby]
+----
+validation = repo.validate(strict: true, check_interfaces: true)
+
+# Check if valid
+if validation[:valid?]
+  puts "✓ Validation passed"
+else
+  puts "✗ Validation failed with #{validation[:errors].size} errors"
+
+  # Display errors
+  validation[:errors].each_with_index do |error, i|
+    puts "\nError #{i + 1}: [#{error[:type]}]"
+    puts "  Message: #{error[:message]}"
+    puts "  Schema: #{error[:schema]}" if error[:schema]
+    puts "  Referenced: #{error[:referenced_schema]}" if error[:referenced_schema]
+    puts "  Item: #{error[:item]}" if error[:item]
+    puts "  Fix: #{error[:fix_suggestion]}" if error[:fix_suggestion]
+  end
+end
+
+# Display warnings
+if validation[:warnings]&.any?
+  puts "\nWarnings (#{validation[:warnings].size}):"
+
+  validation[:warnings].each_with_index do |warning, i|
+    puts "\nWarning #{i + 1}: [#{warning[:type]}]"
+    puts "  Message: #{warning[:message]}"
+    puts "  Schema: #{warning[:schema]}" if warning[:schema]
+  end
+end
+
+# Display detailed report if available
+if validation[:interface_report]
+  puts "\n" + validation[:interface_report]
+end
+----
+
+=== Validation in build pipeline
+
+Validate before creating package:
+
+[source,ruby]
+----
+# Parse schemas
+files = Dir.glob("schemas/**/*.exp")
+repo = Expressir::Express::Parser.from_files(files)
+
+# Validate before packaging
+validation = repo.validate(
+  strict: true,
+  check_interfaces: true,
+  check_completeness: true
+)
+
+unless validation[:valid?]
+  puts "Validation failed - cannot create package"
+  validation[:errors].each do |error|
+    puts "  - #{error[:message]}"
+  end
+  exit 1
+end
+
+# Create package
+repo.export_to_package(
+  "output.ler",
+  name: "Validated Package",
+  version: "1.0.0"
+)
+
+puts "✓ Package created and validated"
+----
+
+== Common validation errors
+
+=== Missing schema reference
+
+.Error
+[example]
+====
+[source]
+----
+Type: missing_schema_reference
+Schema: action_schema
+Referenced: geometric_model_schema
+Message: Schema 'action_schema' references non-existent schema 'geometric_model_schema'
+----
+====
+
+.Causes
+[example]
+====
+* Referenced schema not included in package
+* Typo in schema name
+* Schema file not found during build
+* Missing dependency
+====
+
+.Solutions
+[example]
+====
+1. Add missing schema to package build
+2. Check spelling of schema references
+3. Verify all dependencies are included
+4. Use dependency resolver to find all schemas
+====
+
+=== Missing interface item
+
+.Error
+[example]
+====
+[source]
+----
+Type: missing_interface_item
+Schema: action_schema
+Referenced: approval_schema
+Item: approval_status_item
+Message: Interface item 'approval_status_item' not found in schema 'approval_schema'
+----
+====
+
+.Causes
+[example]
+====
+* Item renamed or removed in target schema
+* Typo in interface item name
+* Wrong schema referenced
+* Version mismatch between schemas
+====
+
+.Solutions
+[example]
+====
+1. Update interface to use correct item name
+2. Add missing item to target schema
+3. Remove obsolete interface item
+4. Sync schema versions
+====
+
+=== Circular dependency
+
+.Warning
+[example]
+====
+[source]
+----
+Type: circular_dependency
+Cycle: action_schema -> approval_schema -> action_schema
+Message: Circular dependency (valid in EXPRESS): action_schema -> approval_schema -> action_schema
+----
+====
+
+.Note
+[example]
+====
+Circular dependencies are valid in EXPRESS but flagged as warnings for
+awareness. Mutual `USE FROM` statements are common and acceptable.
+====
+
+=== Unused schema
+
+.Warning (strict mode)
+[example]
+====
+[source]
+----
+Type: unused_schema
+Schema: utility_schema
+Message: Schema 'utility_schema' is not referenced by any other schema
+----
+====
+
+.Causes
+[example]
+====
+* Schema is entry point (no references expected)
+* Schema is utility library
+* Obsolete schema included accidentally
+* Missing interface statements
+====
+
+.Solutions
+[example]
+====
+1. Verify schema is needed
+2. Add as documented entry point
+3. Remove if obsolete
+4. Add missing USE FROM/REFERENCE FROM
+====
+
+=== Empty schema
+
+.Warning (completeness check)
+[example]
+====
+[source]
+----
+Type: empty_schema
+Schema: placeholder_schema
+Message: Schema 'placeholder_schema' has no entities defined
+----
+====
+
+.Causes
+[example]
+====
+* Work-in-progress schema
+* Interface-only schema
+* Template schema
+* Incomplete development
+====
+
+== Validation best practices
+
+=== Pre-deployment validation
+
+Always validate before deploying:
+
+[source,ruby]
+----
+def deploy_package(package_path)
+  # Load package
+  repo = Expressir::Model::Repository.from_package(package_path)
+
+  # Comprehensive validation
+  validation = repo.validate(
+    strict: true,
+    check_interfaces: true,
+    check_completeness: true,
+    check_duplicates: true,
+    check_self_references: true
+  )
+
+  # Fail fast on errors
+  if !validation[:valid?]
+    raise "Package validation failed: #{validation[:errors].size} errors"
+  end
+
+  # Log warnings
+  if validation[:warnings]&.any?
+    puts "Package has #{validation[:warnings].size} warnings"
+    validation[:warnings].each do |w|
+      puts "  - #{w[:message]}"
+    end
+  end
+
+  # Deploy package
+  deploy_to_production(package_path)
+end
+----
+
+=== CI/CD validation
+
+Automate validation in CI/CD:
+
+[source,yaml]
+----
+# .github/workflows/validate.yml
+name: Validate Package
+
+on: [push, pull_request]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.0
+
+      - name: Install Expressir
+        run: gem install expressir
+
+      - name: Build package
+        run: |
+          expressir package build \
+            schemas/main.exp \
+            output/schemas.ler \
+            --validate
+
+      - name: Validate package
+        run: |
+          expressir package validate \
+            output/schemas.ler \
+            --strict \
+            --check-interfaces \
+            --check-completeness \
+            --format json > validation.json
+
+      - name: Upload validation results
+        uses: actions/upload-artifact@v2
+        with:
+          name: validation-results
+          path: validation.json
+----
+
+=== Validation gates
+
+Implement validation gates:
+
+[source,ruby]
+----
+class ValidationGate
+  REQUIRED_CHECKS = {
+    basic: true,
+    interfaces: true,
+    completeness: false,  # Warning only
+    duplicates: true,
+    self_references: true
+  }
+
+  def self.validate(package_path)
+    repo = Expressir::Model::Repository.from_package(package_path)
+
+    validation = repo.validate(
+      strict: true,
+      check_interfaces: REQUIRED_CHECKS[:interfaces],
+      check_completeness: REQUIRED_CHECKS[:completeness],
+      check_duplicates: REQUIRED_CHECKS[:duplicates],
+      check_self_references: REQUIRED_CHECKS[:self_references]
+    )
+
+    # Fail on errors
+    if !validation[:valid?]
+      log_errors(validation)
+      return false
+    end
+
+    # Log but allow warnings
+    log_warnings(validation) if validation[:warnings]&.any?
+
+    true
+  end
+
+  def self.log_errors(validation)
+    puts "VALIDATION FAILED"
+    validation[:errors].each do |error|
+      puts "  ✗ #{error[:message]}"
+    end
+  end
+
+  def self.log_warnings(validation)
+    puts "VALIDATION WARNINGS"
+    validation[:warnings].each do |warning|
+      puts "  ⚠ #{warning[:message]}"
+    end
+  end
+end
+----
+
+== Fixing validation issues
+
+=== Automated fixes
+
+Some issues can be fixed automatically:
+
+[source,ruby]
+----
+def fix_and_validate(schema_dir, output_package)
+  # Parse all schemas
+  files = Dir.glob("#{schema_dir}/**/*.exp")
+  repo = Expressir::Express::Parser.from_files(files)
+
+  # Initial validation
+  validation = repo.validate(strict: true)
+
+  if validation[:errors].any?
+    puts "Found #{validation[:errors].size} errors"
+
+    # Attempt automated fixes
+    validation[:errors].each do |error|
+      case error[:type]
+      when :missing_schema_reference
+        puts "Cannot auto-fix missing schema: #{error[:referenced_schema]}"
+        puts "  Add schema manually or update reference"
+
+      when :missing_interface_item
+        puts "Cannot auto-fix missing item: #{error[:item]}"
+        puts "  Update interface or add item to schema"
+      end
+    end
+
+    return false
+  end
+
+  # Create package
+  repo.export_to_package(output_package)
+  true
+end
+----
+
+=== Manual review process
+
+Create validation report for review:
+
+[source,ruby]
+----
+def create_validation_report(package_path, output_file)
+  repo = Expressir::Model::Repository.from_package(package_path)
+
+  validation = repo.validate(
+    strict: true,
+    check_interfaces: true,
+    check_completeness: true,
+    detailed: true
+  )
+
+  report = {
+    package: package_path,
+    validated_at: Time.now.iso8601,
+    valid: validation[:valid?],
+    summary: {
+      errors: validation[:errors].size,
+      warnings: validation[:warnings].size
+    },
+    errors: validation[:errors],
+    warnings: validation[:warnings],
+    interface_report: validation[:interface_report]
+  }
+
+  File.write(output_file, JSON.pretty_generate(report))
+  puts "Validation report written to #{output_file}"
+end
+----
+
+== Next steps
+
+* link:package-formats.html[Package Formats] - Understanding serialization
+formats
+* link:creating-packages.html[Creating Packages] - Build validated packages
+* link:loading-packages.html[Loading Packages] - Load validated packages
+* link:../ruby-api/working-with-repository.html[Working with Repository] - API
+reference
+
+== Summary
+
+Key takeaways for validating LER packages:
+
+* Always validate packages before deployment
+* Use strict mode for production packages
+* Enable interface validation for completeness
+* Check for common errors: missing schemas and items
+* Automate validation in CI/CD pipelines
+* Log warnings even if validation passes
+* Create validation reports for review
+* Fix errors before creating packages
+
+Best practices:
+
+* Validate early and often
+* Use comprehensive checks for production
+* Automate validation in build process
+* Log validation results
+* Implement validation gates
+* Review warnings regularly
+* Fix errors at source
+* Document known issues

@@ -1,0 +1,7 @@
+SCHEMA schema_with_use;
+  USE FROM test_schema (test_entity);
+  
+  ENTITY my_entity;
+    ref : test_entity;
+  END_ENTITY;
+END_SCHEMA;

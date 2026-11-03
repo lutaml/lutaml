@@ -1,0 +1,547 @@
+---
+title: Format Schemas
+parent: CLI Guides
+grand_parent: Guides
+nav_order: 2
+---
+
+== Format Schemas
+
+=== Purpose
+
+The [`format`](../../../exe/expressir:1) command pretty-prints EXPRESS schemas with consistent indentation, spacing, and structure. This makes schemas more readable and ensures consistent formatting across projects.
+
+=== References
+
+* link:../../tutorials/parsing-your-first-schema.html[Tutorial: Parsing Your First Schema]
+* link:../../pages/parsers.html[Parsers Documentation]
+* link:validate-schemas.html[Validate Schemas]
+
+=== Concepts
+
+Pretty-printing:: Reformatting code with consistent style without changing semantics
+Schema formatting:: Apply EXPRESS language formatting conventions
+Idempotent:: Running format multiple times produces the same result
+
+=== Basic Usage
+
+==== Format to stdout
+
+[source,bash]
+----
+expressir format schema.exp
+----
+
+The formatted schema is printed to stdout, leaving the original file unchanged.
+
+==== Save to File
+
+[source,bash]
+----
+# Using output redirection
+expressir format schema.exp > formatted.exp
+
+# Using --output flag
+expressir format schema.exp --output formatted.exp
+
+# In-place formatting
+expressir format schema.exp --output schema.exp
+----
+
+==== Format Multiple Files
+
+[source,bash]
+----
+# Explicit files
+expressir format schema1.exp schema2.exp schema3.exp
+
+# Using wildcards
+expressir format schemas/*.exp
+
+# Process all exp files
+expressir format **/*.exp
+----
+
+=== Command Options
+
+==== Available Options
+
+[options="header"]
+|===
+| Option | Description | Default
+
+| `--output PATH`, `-o PATH`
+| Save formatted output to file
+| stdout
+
+| `--verbose`
+| Show detailed processing information
+| false
+
+| `--help`, `-h`
+| Display help message
+| -
+|===
+
+==== Output Option
+
+[source,bash]
+----
+# Save to specific file
+expressir format schema.exp --output formatted.exp
+
+# Short form
+expressir format schema.exp -o formatted.exp
+
+# In-place (overwrites original)
+expressir format schema.exp -o schema.exp
+----
+
+==== Verbose Option
+
+[source,bash]
+----
+# Show processing details
+expressir format schema.exp --verbose
+----
+
+Output:
+[source]
+----
+Parsing: schema.exp
+Schema: example_schema
+  Entities: 5
+  Types: 3
+  Functions: 2
+Formatting complete
+----
+
+=== Formatting Rules
+
+==== Indentation
+
+* **Keywords**: Flush left
+* **Declarations**: 2 spaces per level
+* **Nested blocks**: Additional 2 spaces
+
+Example:
+
+[source,express]
+----
+SCHEMA example_schema;
+
+  TYPE label = STRING;
+  END_TYPE;
+
+  ENTITY person;
+    name : label;
+    INVERSE
+      employed_by : SET [0:1] OF organization FOR employees;
+  END_ENTITY;
+
+END_SCHEMA;
+----
+
+==== Spacing
+
+* **After keywords**: One space
+* **Before colons**: One space
+* **Around operators**: One space each side
+* **Empty lines**: Between major declarations
+
+Example:
+
+[source,express]
+----
+ENTITY product;
+  id : identifier;
+  name : label;
+  price : REAL;
+WHERE
+  WR1: price > 0.0;
+END_ENTITY;
+----
+
+==== Case Preservation
+
+Keywords and identifiers maintain their original case:
+
+[source,express]
+----
+ENTITY Person;  (* Capital P preserved *)
+  Name : STRING;  (* Capital N preserved *)
+END_ENTITY;
+----
+
+==== Comment Handling
+
+Remarks are preserved in their original positions:
+
+[source,express]
+----
+(* Entity-level remark *)
+ENTITY person;
+  (* Attribute remark *)
+  name : STRING;
+END_ENTITY;
+----
+
+=== Use Cases
+
+==== Code Review Preparation
+
+[source,bash]
+----
+# Format before committing
+expressir format src/schemas/*.exp --output formatted/
+
+# Compare with original
+diff -u src/schemas/ formatted/
+
+# If acceptable, replace
+mv formatted/* src/schemas/
+----
+
+==== Standardize Project Formatting
+
+[source,bash]
+----
+#!/bin/bash
+# format-all.sh
+
+echo "Formatting all schemas..."
+
+for file in schemas/**/*.exp; do
+  echo "  Processing: $file"
+  expressir format "$file" --output "$file"
+done
+
+echo "Done!"
+----
+
+==== Pre-commit Hook
+
+Create `.git/hooks/pre-commit`:
+
+[source,bash]
+----
+#!/bin/bash
+
+# Get staged .exp files
+FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.exp$')
+
+if [ -z "$FILES" ]; then
+  exit 0
+fi
+
+echo "Formatting EXPRESS files..."
+
+for file in $FILES; do
+  expressir format "$file" --output "$file"
+  git add "$file"
+done
+
+echo "Formatting complete"
+----
+
+Make it executable:
+[source,bash]
+----
+chmod +x .git/hooks/pre-commit
+----
+
+==== CI/CD Formatting Check
+
+[source,bash]
+----
+#!/bin/bash
+# check-formatting.sh
+
+UNFORMATTED=()
+
+for file in schemas/*.exp; do
+  # Format to temp file
+  expressir format "$file" > /tmp/formatted.exp
+
+  # Compare with original
+  if ! diff -q "$file" /tmp/formatted.exp > /dev/null; then
+    UNFORMATTED+=("$file")
+  fi
+done
+
+if [ ${#UNFORMATTED[@]} -gt 0 ]; then
+  echo "❌ The following files need formatting:"
+  printf '  %s\n' "${UNFORMATTED[@]}"
+  exit 1
+fi
+
+echo "✓ All files properly formatted"
+----
+
+==== Batch Processing with Verification
+
+[source,bash]
+----
+#!/bin/bash
+
+for file in schemas/*.exp; do
+  echo "Processing: $file"
+
+  # Create backup
+  cp "$file" "$file.bak"
+
+  # Format
+  if expressir format "$file" --output "$file"; then
+    echo "  ✓ Formatted successfully"
+    rm "$file.bak"
+  else
+    echo "  ✗ Error formatting, restoring backup"
+    mv "$file.bak" "$file"
+  fi
+done
+----
+
+=== Formatting Workflow
+
+==== Development Workflow
+
+[source,bash]
+----
+# 1. Edit schema
+vim schema.exp
+
+# 2. Format
+expressir format schema.exp --output schema.exp
+
+# 3. Validate
+expressir validate schema.exp
+
+# 4. Commit
+git add schema.exp
+git commit -m "Update schema"
+----
+
+==== Team Standardization
+
+[source,bash]
+----
+# 1. Format entire project
+find schemas -name '*.exp' -exec expressir format {} -o {} \;
+
+# 2. Verify all formats
+./scripts/check-formatting.sh
+
+# 3. Commit standardized formatting
+git add schemas/
+git commit -m "Standardize schema formatting"
+----
+
+=== Common Patterns
+
+==== Backup Before Formatting
+
+[source,bash]
+----
+# Create backup
+cp schema.exp schema.exp.bak
+
+# Format in-place
+expressir format schema.exp -o schema.exp
+
+# If satisfied, remove backup
+rm schema.exp.bak
+----
+
+==== Format and Compare
+
+[source,bash]
+----
+# Format to temp file
+expressir format schema.exp > formatted.exp
+
+# Show differences
+diff -u schema.exp formatted.exp
+
+# Apply if acceptable
+mv formatted.exp schema.exp
+----
+
+==== Pipeline Processing
+
+[source,bash]
+----
+# Format, then validate, then check coverage
+expressir format schema.exp | \
+  tee formatted.exp | \
+  expressir validate && \
+  expressir coverage formatted.exp
+----
+
+=== Error Handling
+
+==== Invalid Syntax
+
+If schema has syntax errors, formatting will fail:
+
+[source,bash]
+----
+$ expressir format invalid.exp
+Error: Failed to parse invalid.exp
+Expected ';' at line 10, column 5
+----
+
+**Solution**: Fix syntax errors first.
+
+==== File Not Found
+
+[source,bash]
+----
+$ expressir format missing.exp
+Error: File not found: missing.exp
+----
+
+**Solution**: Check file path and name.
+
+==== Permission Denied
+
+[source,bash]
+----
+$ expressir format schema.exp -o /root/output.exp
+Error: Permission denied: /root/output.exp
+----
+
+**Solution**: Use writable output location.
+
+=== Best Practices
+
+**Always Validate After Formatting**::
+Ensure formatting didn't introduce issues
++
+[source,bash]
+----
+expressir format schema.exp -o schema.exp && expressir validate schema.exp
+----
+
+**Use Version Control**::
+Commit before and after formatting for safety
+
+**Automate Formatting**::
+Add to pre-commit hooks or CI/CD
+
+**Format Consistently**::
+Format all project files at once for consistency
+
+**Test Before Rollout**::
+Test formatting on sample files first
+
+=== Troubleshooting
+
+==== Formatting Changes Semantics
+
+**Problem**: Formatted schema behaves differently
+
+**Cause**: Rare parser bug or edge case
+
+**Solution**:
+1. Report issue to Expressir GitHub
+2. Revert to original file
+3. Use manual formatting
+
+==== Large Files Take Too Long
+
+**Problem**: Formatting very large schemas is slow
+
+**Solutions**:
+* Process files individually
+* Use more powerful hardware
+* Consider splitting large schemas
+
+==== Inconsistent Results
+
+**Problem**: Multiple format runs produce different output
+
+**Cause**: Non-deterministic formatting (shouldn't happen)
+
+**Solution**:
+1. Update to latest Expressir version
+2. Report bug if persists
+
+=== Integration Examples
+
+==== GitHub Actions
+
+[source,yaml]
+----
+name: Format Check
+
+on: [push, pull_request]
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Expressir
+        run: gem install expressir
+
+      - name: Check Formatting
+        run: |
+          for file in schemas/*.exp; do
+            expressir format "$file" > formatted.exp
+            if ! diff -q "$file" formatted.exp; then
+              echo "❌ $file needs formatting"
+              exit 1
+            fi
+          done
+          echo "✓ All files properly formatted"
+----
+
+==== Makefile Integration
+
+[source,makefile]
+----
+.PHONY: format format-check
+
+format:
+	@echo "Formatting schemas..."
+	@find schemas -name '*.exp' -exec expressir format {} -o {} \;
+	@echo "Done"
+
+format-check:
+	@echo "Checking formatting..."
+	@./scripts/check-formatting.sh
+----
+
+Usage:
+[source,bash]
+----
+make format        # Format all schemas
+make format-check  # Verify formatting
+----
+
+=== Next Steps
+
+**Related Commands**::
+* link:validate-schemas.html[Validate Schemas] - Check syntax and structure
+* link:coverage-analysis.html[Coverage Analysis] - Check documentation
+
+**Advanced Topics**::
+* link:../ruby-api/formatting-schemas.html[Ruby API Formatting] - Programmatic formatting
+* Custom formatters for specific standards
+
+**Automation**::
+* link:../deployment/ci-cd-setup.html[CI/CD Setup] - Automated workflows
+* Pre-commit hooks setup
+
+=== Summary
+
+The format command:
+
+* ✅ Pretty-prints EXPRESS schemas consistently
+* ✅ Preserves semantics while improving readability
+* ✅ Supports batch processing and automation
+* ✅ Integrates easily with CI/CD workflows
+* ✅ Helps maintain code quality standards
+
+Use formatting regularly to maintain clean, readable schemas across your project.

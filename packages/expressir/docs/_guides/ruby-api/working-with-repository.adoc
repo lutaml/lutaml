@@ -1,0 +1,577 @@
+---
+title: Working with Repository
+parent: Ruby API
+grand_parent: Guides
+nav_order: 2
+---
+
+= Working with Repository
+
+== Purpose
+
+The Repository class is the central container for managing collections of
+EXPRESS schemas. It provides methods for querying, validation, statistics,
+and export operations across multiple schemas.
+
+== References
+
+* link:parsing-files.html[Parsing Files] - Creating repositories
+* link:search-engine.html[Search Engine] - Advanced querying
+* link:../../pages/ler-packages.html[LER Packages] - Binary package format
+
+== Concepts
+
+repository:: Container holding multiple EXPRESS schemas with query and management capabilities
+schema:: Individual EXPRESS schema within a repository
+indexes:: Internal structures for fast entity and type lookup
+validation:: Checking repository consistency and completeness
+enumerable:: Repository implements Ruby's Enumerable interface for iteration
+
+== Creating repositories
+
+=== From parsed files
+
+The most common way to create a repository is through parsing:
+
+[source,ruby]
+----
+require "expressir"
+
+# Single file creates a repository
+repository = Expressir::Express::Parser.from_file("schema.exp")
+
+# Multiple files create a combined repository
+files = Dir.glob("schemas/**/*.exp")
+repository = Expressir::Express::Parser.from_files(files)
+----
+
+=== From file paths
+
+Build a repository directly from file paths:
+
+[source,ruby]
+----
+file_paths = [
+  "schemas/action_schema.exp",
+  "schemas/approval_schema.exp"
+]
+
+repository = Expressir::Model::Repository.from_files(
+  file_paths,
+  base_dir: "schemas"
+)
+----
+
+This automatically parses all files and resolves references.
+
+=== From LER package
+
+Load a pre-built LER package:
+
+[source,ruby]
+----
+# Load from binary package
+repository = Expressir::Model::Repository.from_package("schemas.ler")
+
+# Much faster than parsing source files
+puts "Loaded #{repository.schemas.size} schemas from package"
+----
+
+=== Creating empty repository
+
+Create an empty repository and populate it manually:
+
+[source,ruby]
+----
+repository = Expressir::Model::Repository.new(base_dir: "/path/to/schemas")
+
+# Add schemas manually if needed
+# repository.schemas << schema
+----
+
+== Accessing schemas
+
+=== Enumerable interface
+
+Repository implements `Enumerable`, enabling Ruby collection methods:
+
+[source,ruby]
+----
+# Iterate through schemas
+repository.each do |schema|
+  puts "Schema: #{schema.id}"
+end
+
+# Filter schemas
+action_schemas = repository.select { |s| s.id.include?("action") }
+
+# Find specific schema
+schema = repository.find { |s| s.id == "action_schema" }
+
+# Map over schemas
+schema_names = repository.map(&:id)
+
+# Count schemas
+total = repository.count
+----
+
+=== Direct access
+
+[source,ruby]
+----
+# Access schemas array directly
+all_schemas = repository.schemas
+
+# Get first/last schema
+first_schema = repository.schemas.first
+last_schema = repository.schemas.last
+
+# Find by index
+schema = repository.schemas[0]
+----
+
+=== Schema properties
+
+Each schema in the repository has useful properties:
+
+[source,ruby]
+----
+schema = repository.schemas.first
+
+puts "ID: #{schema.id}"
+puts "File: #{schema.file}"
+puts "Version: #{schema.version&.value}"
+puts "Entities: #{schema.entities&.size}"
+puts "Types: #{schema.types&.size}"
+puts "Functions: #{schema.functions&.size}"
+----
+
+== Querying entities and types
+
+=== List entities
+
+Get all entities across schemas or filtered by schema:
+
+[source,ruby]
+----
+# List all entities (returns objects by default)
+entities = repository.list_entities
+
+# Filter by schema
+entities = repository.list_entities(schema: "action_schema")
+
+# Get as hash
+entities = repository.list_entities(format: :hash)
+
+# Get as JSON
+json = repository.list_entities(format: :json)
+
+# Get as YAML
+yaml = repository.list_entities(format: :yaml)
+----
+
+=== List types
+
+Get all types with optional filtering:
+
+[source,ruby]
+----
+# List all types
+types = repository.list_types
+
+# Filter by schema
+types = repository.list_types(schema: "action_schema")
+
+# Filter by category
+select_types = repository.list_types(category: "select")
+enum_types = repository.list_types(category: "enumeration")
+
+# Combine filters
+types = repository.list_types(
+  schema: "action_schema",
+  category: "select",
+  format: :hash
+)
+----
+
+=== Find specific items
+
+Use the index methods for fast lookup:
+
+[source,ruby]
+----
+# Find entity by qualified name
+entity = repository.find_entity(
+  qualified_name: "action_schema.action"
+)
+
+if entity
+  puts "Found entity: #{entity.id}"
+  puts "Attributes: #{entity.attributes&.size}"
+end
+
+# Find type by qualified name
+type = repository.find_type(
+  qualified_name: "action_schema.action_items"
+)
+----
+
+== Building indexes
+
+Repositories use indexes for fast lookups. Indexes are built automatically
+when needed, but you can build them explicitly:
+
+[source,ruby]
+----
+# Build all indexes
+repository.build_indexes
+
+# Indexes are now available
+puts "Entity index size: #{repository.entity_index.count}"
+puts "Type index size: #{repository.type_index.count}"
+----
+
+Indexes are lazy-loaded by default - they're built on first use:
+
+[source,ruby]
+----
+# First query builds indexes automatically
+entity = repository.find_entity(qualified_name: "action_schema.action")
+
+# Subsequent queries use existing indexes (faster)
+another = repository.find_entity(qualified_name: "action_schema.event")
+----
+
+== Validation
+
+=== Basic validation
+
+Validate repository consistency and completeness:
+
+[source,ruby]
+----
+result = repository.validate
+
+if result[:valid?]
+  puts "Repository is valid"
+else
+  puts "Validation failed"
+
+  result[:errors].each do |error|
+    puts "ERROR: #{error}"
+  end
+
+  result[:warnings].each do |warning|
+    puts "WARNING: #{warning}"
+  end
+end
+----
+
+=== Strict validation
+
+Enable strict mode for more rigorous checking:
+
+[source,ruby]
+----
+result = repository.validate(strict: true)
+
+# Strict mode checks:
+# - Interface completeness
+# - Reference integrity
+# - Type consistency
+# - Entity relationships
+----
+
+== Statistics and analysis
+
+=== Basic statistics
+
+Get comprehensive repository statistics:
+
+[source,ruby]
+----
+stats = repository.statistics
+
+puts "Total schemas: #{stats[:total_schemas]}"
+puts "Total entities: #{stats[:total_entities]}"
+puts "Total types: #{stats[:total_types]}"
+puts "Total functions: #{stats[:total_functions]}"
+puts "Total rules: #{stats[:total_rules]}"
+puts "Total procedures: #{stats[:total_procedures]}"
+
+# Entities by schema
+stats[:entities_by_schema].each do |schema, count|
+  puts "#{schema}: #{count} entities"
+end
+
+# Types by category
+stats[:types_by_category].each do |category, count|
+  puts "#{category}: #{count} types"
+end
+----
+
+=== Output formats
+
+Statistics can be exported in different formats:
+
+[source,ruby]
+----
+# As Ruby hash (default)
+stats = repository.statistics(format: :hash)
+
+# As JSON string
+json = repository.statistics(format: :json)
+
+# As YAML string
+yaml = repository.statistics(format: :yaml)
+----
+
+=== Schema categorization
+
+Group schemas by their content:
+
+[source,ruby]
+----
+categories = repository.schemas_by_category
+
+puts "Schemas with entities: #{categories[:with_entities].size}"
+puts "Schemas with types: #{categories[:with_types].size}"
+puts "Schemas with functions: #{categories[:with_functions].size}"
+puts "Schemas with rules: #{categories[:with_rules].size}"
+puts "Interface-only schemas: #{categories[:interface_only].size}"
+puts "Empty schemas: #{categories[:empty].size}"
+----
+
+=== Largest schemas
+
+Find the largest schemas by element count:
+
+[source,ruby]
+----
+# Get top 10 largest schemas
+largest = repository.largest_schemas(10)
+
+largest.each do |item|
+  schema = item[:schema]
+  count = item[:total_elements]
+  puts "#{schema.id}: #{count} elements"
+end
+----
+
+=== Complexity analysis
+
+Calculate schema complexity scores:
+
+[source,ruby]
+----
+# Get schemas by complexity
+complex = repository.schemas_by_complexity(10)
+
+complex.each do |item|
+  schema = item[:schema]
+  score = item[:complexity]
+  puts "#{schema.id}: complexity score #{score}"
+end
+
+# Calculate complexity for specific schema
+schema = repository.schemas.first
+score = repository.schema_complexity(schema)
+puts "Complexity: #{score}"
+----
+
+Complexity scoring:
+
+* Entities: 2 points each
+* Types: 1 point each
+* Functions: 3 points each
+* Procedures: 3 points each
+* Rules: 4 points each
+* Interfaces: 2 points each
+
+=== Dependency statistics
+
+Analyze interface dependencies between schemas:
+
+[source,ruby]
+----
+deps = repository.dependency_statistics
+
+puts "Total interfaces: #{deps[:total_interfaces]}"
+puts "USE FROM: #{deps[:use_from_count]}"
+puts "REFERENCE FROM: #{deps[:reference_from_count]}"
+
+# Most referenced schemas
+puts "\nMost referenced schemas:"
+deps[:most_referenced].each do |schema, count|
+  puts "  #{schema}: #{count} references"
+end
+
+# Most dependent schemas
+puts "\nMost dependent schemas:"
+deps[:most_dependent].each do |schema, count|
+  puts "  #{schema}: #{count} dependencies"
+end
+----
+
+== Reference resolution
+
+=== Automatic resolution
+
+By default, the parser resolves references automatically:
+
+[source,ruby]
+----
+# References are resolved during parsing
+repository = Expressir::Express::Parser.from_file("schema.exp")
+
+# USE FROM and REFERENCE FROM are linked
+schema = repository.schemas.first
+schema.interfaces&.each do |interface|
+  puts "Interface to: #{interface.schema&.id}"
+end
+----
+
+=== Manual resolution
+
+Resolve references manually if needed:
+
+[source,ruby]
+----
+# Parse without resolving references
+repository = Expressir::Express::Parser.from_file(
+  "schema.exp",
+  skip_references: true
+)
+
+# Resolve later
+repository.resolve_all_references
+
+# Now references are linked
+----
+
+This is useful when building repositories incrementally or when you want
+control over when resolution happens.
+
+== Export operations
+
+=== Create schema manifest
+
+Generate a manifest file describing all schemas:
+
+[source,ruby]
+----
+manifest = repository.to_manifest
+
+# Save to file
+manifest.to_file("schemas.yml")
+
+# Access entries
+manifest.schemas.each do |entry|
+  puts "Schema: #{entry.id}"
+  puts "Path: #{entry.path}"
+end
+----
+
+=== Export to LER package
+
+Create a binary LER package for faster loading:
+
+[source,ruby]
+----
+# Export with default options
+repository.export_to_package("output.ler")
+
+# With custom options
+repository.export_to_package(
+  "output.ler",
+  name: "My Schema Set",
+  version: "1.0",
+  description: "Production schemas",
+  express_mode: "include_all",
+  resolution_mode: "resolved",
+  serialization_format: "marshal"
+)
+----
+
+Options:
+
+`name`:: Package name
+`version`:: Package version
+`description`:: Package description
+`express_mode`:: "include_all", "include_referenced", or "exclude_all"
+`resolution_mode`:: "resolved" or "unresolved"
+`serialization_format`:: "marshal", "yaml", or "json"
+
+== Performance best practices
+
+=== Use indexes efficiently
+
+[source,ruby]
+----
+# Build indexes once for multiple queries
+repository.build_indexes
+
+# Fast lookups using indexes
+100.times do |i|
+  entity = repository.find_entity(
+    qualified_name: "action_schema.entity_#{i}"
+  )
+end
+----
+
+=== Cache repositories
+
+For frequently used schema sets, consider caching:
+
+[source,ruby]
+----
+# Enable caching
+Expressir::Express::Cache.cache_path = ".cache"
+
+# First load parses and caches
+repository = Expressir::Express::Parser.from_file("schema.exp")
+
+# Subsequent loads use cache
+repository = Expressir::Express::Parser.from_file("schema.exp")
+----
+
+=== Use LER packages
+
+For production environments, use LER packages:
+
+[source,ruby]
+----
+# Build package once (development)
+repository = Expressir::Express::Parser.from_files(all_files)
+repository.export_to_package("production.ler")
+
+# Load package quickly (production)
+repository = Expressir::Model::Repository.from_package("production.ler")
+# Much faster than parsing source files
+----
+
+== Next steps
+
+* link:search-engine.html[Search Engine] - Advanced querying capabilities
+* link:formatting-schemas.html[Formatting Schemas] - Convert to EXPRESS
+* link:../../pages/ler-packages.html[LER Packages] - Learn about binary packages
+
+== Summary
+
+The Repository class provides comprehensive schema management:
+
+* Multiple ways to create repositories (parsing, packages, manual)
+* Enumerable interface for Ruby-style collection operations
+* Fast indexed lookups for entities and types
+* Validation and consistency checking
+* Rich statistics and analysis capabilities
+* Dependency tracking and complexity scoring
+* Export to manifests and LER packages
+
+Key takeaways:
+
+* Repository implements Enumerable for familiar collection methods
+* Indexes provide fast lookups and are built automatically
+* Statistics methods help understand schema characteristics
+* Validation identifies issues before deployment
+* LER packages offer faster loading for production use

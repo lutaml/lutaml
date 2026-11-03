@@ -1,0 +1,257 @@
+---
+title: Ruby API
+nav_order: 2
+has_children: true
+---
+
+= Ruby API
+
+== Purpose
+
+The Expressir Ruby API provides programmatic access to EXPRESS schema
+parsing, analysis, and manipulation. This section covers the core APIs for
+working with EXPRESS models in Ruby applications.
+
+== When to use the API vs CLI
+
+Use the Ruby API when:
+
+* Integrating Expressir into your Ruby application
+* Building custom tools or workflows
+* Performing programmatic schema analysis
+* Creating automated processing pipelines
+* Generating custom reports or documentation
+
+Use the CLI when:
+
+* Performing one-off operations
+* Quick validation or formatting tasks
+* Command-line scripting
+* CI/CD pipeline integration
+* Interactive exploration of schemas
+
+== Installation
+
+Add Expressir to your application's `Gemfile`:
+
+[source,ruby]
+----
+gem "expressir", "~> 0.2"
+----
+
+Then execute:
+
+[source,bash]
+----
+bundle install
+----
+
+Or install directly:
+
+[source,bash]
+----
+gem install expressir
+----
+
+== Basic usage
+
+.Parsing a schema and accessing its contents
+[example]
+====
+[source,ruby]
+----
+require "expressir"
+
+# Parse a schema file
+repository = Expressir::Express::Parser.from_file("schema.exp")
+
+# Access schemas and entities
+repository.schemas.each do |schema|
+  puts "Schema: #{schema.id}"
+
+  schema.entities&.each do |entity|
+    puts "  Entity: #{entity.id}"
+  end
+end
+----
+====
+
+== Core API components
+
+The Expressir Ruby API consists of several key components:
+
+=== Parser API
+
+The link:parsing-files.html[Parser] provides methods for reading and parsing
+EXPRESS schema files into Ruby model objects.
+
+Key classes:
+
+* `Expressir::Express::Parser` - Main parser interface
+* `Expressir::Express::Error::SchemaParseFailure` - Parse error handling
+
+=== Repository API
+
+The link:working-with-repository.html[Repository] represents a collection of
+schemas with methods for querying, validation, and export.
+
+Key classes:
+
+* `Expressir::Model::Repository` - Schema collection container
+* `Expressir::Model::Declarations::Schema` - Individual schema representation
+
+=== SearchEngine API
+
+The link:search-engine.html[SearchEngine] enables powerful querying and
+filtering of EXPRESS elements within a repository.
+
+Key classes:
+
+* `Expressir::Model::SearchEngine` - Main search interface
+* Pattern matching and type filtering capabilities
+
+=== Formatter API
+
+The link:formatting-schemas.html[Formatter] converts EXPRESS models back to
+formatted EXPRESS language text.
+
+Key classes:
+
+* `Expressir::Express::Formatter` - Main formatting interface
+* `Expressir::Express::HyperLinkFormatter` - HTML hyperlink generation
+
+== Common patterns
+
+=== Parse and validate
+
+[source,ruby]
+----
+repository = Expressir::Express::Parser.from_file("schema.exp")
+
+# Validate the repository
+result = repository.validate(strict: true)
+
+if result[:valid?]
+  puts "Schema is valid"
+else
+  puts "Validation errors:"
+  result[:errors].each { |err| puts "  - #{err}" }
+end
+----
+
+=== Search for entities
+
+[source,ruby]
+----
+repository = Expressir::Express::Parser.from_file("schema.exp")
+engine = Expressir::Model::SearchEngine.new(repository)
+
+# Find all entities matching a pattern
+results = engine.search(
+  pattern: "action*",
+  type: "entity",
+  case_sensitive: false
+)
+
+results.each do |result|
+  puts "Found: #{result[:path]}"
+end
+----
+
+=== Format and output
+
+[source,ruby]
+----
+repository = Expressir::Express::Parser.from_file("schema.exp")
+formatter = Expressir::Express::Formatter.new(no_remarks: true)
+
+# Format each schema
+repository.schemas.each do |schema|
+  output = formatter.format(schema)
+  File.write("formatted_#{schema.id}.exp", output)
+end
+----
+
+== Error handling
+
+Expressir provides specific exception classes for different error scenarios:
+
+[source,ruby]
+----
+begin
+  repository = Expressir::Express::Parser.from_file("schema.exp")
+rescue Expressir::Express::Error::SchemaParseFailure => e
+  puts "Parse error in #{e.filename}"
+  puts "Cause: #{e.parse_failure_cause.message}"
+  puts e.parse_failure_cause.ascii_tree
+rescue Errno::ENOENT => e
+  puts "File not found: #{e.message}"
+end
+----
+
+== Performance considerations
+
+=== Caching
+
+For repeatedly parsing the same files, consider using caching:
+
+[source,ruby]
+----
+# Enable caching for better performance
+Expressir::Express::Cache.cache_path = ".cache"
+repository = Expressir::Express::Parser.from_file("schema.exp")
+----
+
+=== Skipping references
+
+When you don't need resolved references, skip them for better performance:
+
+[source,ruby]
+----
+repository = Expressir::Express::Parser.from_file(
+  "schema.exp",
+  skip_references: true
+)
+----
+
+=== Batch processing
+
+Use `from_files` with progress tracking for processing multiple schemas:
+
+[source,ruby]
+----
+files = Dir.glob("schemas/**/*.exp")
+
+repository = Expressir::Express::Parser.from_files(files) do |file, schemas, error|
+  if error
+    warn "Error parsing #{file}: #{error.message}"
+  else
+    puts "Loaded #{schemas.size} schemas from #{file}"
+  end
+end
+----
+
+== Next steps
+
+Explore the detailed guides for each API component:
+
+* link:parsing-files.html[Parsing Files] - Learn about the Parser API
+* link:working-with-repository.html[Working with Repository] - Manage schema collections
+* link:search-engine.html[Search Engine] - Query and filter schemas
+* link:formatting-schemas.html[Formatting Schemas] - Generate EXPRESS output
+
+== Summary
+
+The Expressir Ruby API provides a comprehensive set of tools for working with
+EXPRESS schemas programmatically. The API is designed to be intuitive and
+follows Ruby best practices while providing powerful capabilities for schema
+analysis and manipulation.
+
+Key takeaways:
+
+* Parser API handles all EXPRESS file parsing
+* Repository API manages schema collections
+* SearchEngine API enables powerful querying
+* Formatter API generates EXPRESS output
+* Proper error handling ensures robust applications
+* Performance optimizations available for large schemas

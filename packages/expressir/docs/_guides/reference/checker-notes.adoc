@@ -1,0 +1,55 @@
+= Checker note-id catalog
+
+// Generated from lib/expressir/express/checker.rb by
+// `rake reference:notes`. Do not edit by hand; the reference
+// spec fails when this file is stale.
+
+== Purpose
+
+Every note id the Checker can raise, with the number of call
+sites in the implementation. New checks use `:check_*` ids;
+the conformance-derived ids (`:check_expr_*`, `:check_dialect_*`)
+cite their clause in the note message.
+
+[cols="3,1", options="header"]
+|===
+| Note id | Call sites
+
+| `check_agg_type` | 1
+| `check_attrib_name_fun` | 1
+| `check_attribute_redeclaration` | 3
+| `check_dialect_2004_only` | 1
+| `check_dialect_deprecated` | 1
+| `check_dialect_mixed` | 1
+| `check_duplicate_declaration` | 1
+| `check_enumeration_extended_type` | 1
+| `check_expr_assignment_type` | 1
+| `check_expr_initializer_type` | 1
+| `check_expr_operand_domain` | 7
+| `check_expr_return` | 2
+| `check_expr_unique_duplicate` | 1
+| `check_expr_where_boolean` | 1
+| `check_interface_kind_restriction` | 1
+| `check_inverse_attrib_ref` | 2
+| `check_inverse_derive` | 1
+| `check_inverse_entity` | 1
+| `check_inverse_inverse` | 1
+| `check_schema_iface_resource_duplicate` | 1
+| `check_schema_interface_redundant` | 1
+| `check_select_extended_type` | 1
+| `check_select_named_type` | 1
+| `check_self_schema_reference` | 2
+| `check_string_no_entity` | 1
+| `check_subtype_cycle` | 1
+| `check_subtype_ref` | 1
+| `check_subtypeof_invalid` | 1
+| `check_supertype_ref` | 2
+| `check_unique_name_pattern` | 1
+| `check_unresolved_ref` | 3
+| `check_where_name_pattern` | 1
+| `qualified_attrib_attr_not_found` | 1
+| `qualified_attrib_group_not_ancestor` | 1
+| `qualified_attrib_group_not_found` | 1
+|===
+
+The catalog covers 35 note ids.

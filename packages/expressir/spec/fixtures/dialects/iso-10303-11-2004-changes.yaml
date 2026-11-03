@@ -1,0 +1,110 @@
+# Audited edition-change list used by the dialect checker (TODO.sota/06).
+# Every entry carries the clause it comes from and a live example; the
+# dialect spec parses each example and asserts the declared note fires.
+edition: "ISO 10303-11:2004"
+base_edition: "ISO 10303-11:1994"
+verified_against:
+  - "ISO 10303-11:2004, 8.4.1 (extensible and extending enumerations)"
+  - "ISO 10303-11:2004, 8.4.2 (extensible and extending selects)"
+  - "ISO 10303-11:2004, clause 9 (subtype constraint declarations)"
+  - "ISO 10303-11:2004, Annex K (deprecated features)"
+  - "ISO 10303-11:2004, Annex G (conversion to the 1994 longform)"
+changes:
+  - id: extensible_enumeration
+    construct: "EXTENSIBLE ENUMERATION"
+    clause: "8.4.1"
+    introduced_in: "2004"
+    note_id: check_dialect_2004_only
+    example: |
+      SCHEMA d_ext_enum;
+      TYPE colour = EXTENSIBLE ENUMERATION OF (red);
+      END_TYPE;
+      END_SCHEMA;
+  - id: based_on_enumeration
+    construct: "ENUMERATION BASED_ON"
+    clause: "8.4.1"
+    introduced_in: "2004"
+    note_id: check_dialect_2004_only
+    example: |
+      SCHEMA d_based_enum;
+      TYPE colour = EXTENSIBLE ENUMERATION OF (red);
+      END_TYPE;
+      TYPE more_colour = ENUMERATION BASED_ON colour WITH (blue);
+      END_TYPE;
+      END_SCHEMA;
+  - id: extensible_select
+    construct: "EXTENSIBLE SELECT"
+    clause: "8.4.2"
+    introduced_in: "2004"
+    note_id: check_dialect_2004_only
+    example: |
+      SCHEMA d_ext_select;
+      ENTITY a;
+        x : INTEGER;
+      END_ENTITY;
+      TYPE s = EXTENSIBLE SELECT (a);
+      END_TYPE;
+      END_SCHEMA;
+  - id: based_on_select
+    construct: "SELECT BASED_ON"
+    clause: "8.4.2"
+    introduced_in: "2004"
+    note_id: check_dialect_2004_only
+    example: |
+      SCHEMA d_based_select;
+      ENTITY a;
+        x : INTEGER;
+      END_ENTITY;
+      ENTITY b;
+        y : INTEGER;
+      END_ENTITY;
+      TYPE s1 = EXTENSIBLE SELECT (a);
+      END_TYPE;
+      TYPE s2 = SELECT BASED_ON s1 WITH (b);
+      END_TYPE;
+      END_SCHEMA;
+  - id: generic_entity_select
+    construct: "EXTENSIBLE GENERIC_ENTITY SELECT"
+    clause: "8.4.2"
+    introduced_in: "2004"
+    note_id: check_dialect_2004_only
+    example: |
+      SCHEMA d_generic_entity;
+      ENTITY a;
+        x : INTEGER;
+      END_ENTITY;
+      TYPE s = EXTENSIBLE GENERIC_ENTITY SELECT (a);
+      END_TYPE;
+      END_SCHEMA;
+  - id: subtype_constraint_declaration
+    construct: "SUBTYPE_CONSTRAINT"
+    clause: "9 (Subtype constraints)"
+    introduced_in: "2004"
+    note_id: check_dialect_2004_only
+    example: |
+      SCHEMA d_subtype_constraint;
+      ENTITY sup;
+      END_ENTITY;
+      ENTITY a SUBTYPE OF (sup);
+      END_ENTITY;
+      ENTITY b SUBTYPE OF (sup);
+      END_ENTITY;
+      SUBTYPE_CONSTRAINT sc FOR sup;
+        ONEOF(a, b);
+      END_SUBTYPE_CONSTRAINT;
+      END_SCHEMA;
+  - id: inline_subtype_constraint
+    construct: "inline SUPERTYPE OF (ONEOF/AND/ANDOR)"
+    clause: "Annex K; clause 9"
+    deprecated_in: "2004"
+    note_id: check_dialect_deprecated
+    replacement: "SUBTYPE_CONSTRAINT declaration"
+    example: |
+      SCHEMA d_inline_constraint;
+      ENTITY sup SUPERTYPE OF (ONEOF(a, b));
+      END_ENTITY;
+      ENTITY a SUBTYPE OF (sup);
+      END_ENTITY;
+      ENTITY b SUBTYPE OF (sup);
+      END_ENTITY;
+      END_SCHEMA;

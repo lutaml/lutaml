@@ -1,0 +1,834 @@
+---
+title: Benchmark Performance
+parent: CLI Guides
+grand_parent: Guides
+nav_order: 4
+---
+
+== Benchmark Performance
+
+=== Purpose
+
+The [`benchmark`](../../../lib/expressir/commands/benchmark.rb:1) and [`benchmark-cache`](../../../lib/expressir/commands/benchmark_cache.rb:1) commands measure EXPRESS schema loading performance. These tools help identify performance bottlenecks, compare parsing speeds, and optimize schema processing workflows.
+
+=== References
+
+* link:../../pages/parsers.html[Parsers Documentation]
+* link:../../tutorials/parsing-your-first-schema.html[Tutorial: Parsing Your First Schema]
+* link:validate-schemas.html[Validate Schemas]
+
+=== Concepts
+
+Benchmarking:: Measuring the execution time and performance characteristics of operations
+Iterations per second (IPS):: Number of complete operations that can be performed per second
+Cache performance:: Comparing parsing time vs cached loading time
+Objects per second:: Throughput metric for schema elements processed
+Schema manifest:: YAML file listing multiple schemas for batch benchmarking
+
+=== Basic Usage
+
+==== Benchmark Single File
+
+[source,bash]
+----
+# Basic benchmark
+expressir benchmark schema.exp
+----
+
+Output:
+[source]
+----
+Express Schema Loading Benchmark
+--------------------------------
+Loading schema.exp: 0.1234s (1250 objects/s)
+Loaded 1 schemas
+----
+
+==== Benchmark with Verbose Output
+
+[source,bash]
+----
+expressir benchmark schema.exp --verbose
+----
+
+Output:
+[source]
+----
+Express Schema Loading Benchmark
+--------------------------------
+Loading schema.exp: 0.1234s (1250 objects/s)
+Loaded 1 schemas
+Objects per second: 1250
+----
+
+==== Benchmark with Caching
+
+[source,bash]
+----
+expressir benchmark-cache schema.exp
+----
+
+Output:
+[source]
+----
+Express Schema Loading Benchmark with Caching
+--------------------------------
+Schema: schema.exp
+Cache: /tmp/expressir_cache20231128.bin
+--------------------------------
+Parsing time:      0.1234s
+Cache write time:  0.0123s
+Cache read time:   0.0045s
+Total objects:     1250
+Objects per second (parsing): 10130.29
+Objects per second (reading): 277777.78
+Loaded 1 schemas
+----
+
+=== Command Options
+
+==== Benchmark Options
+
+[options="header"]
+|===
+| Option | Description | Default
+
+| `--ips`
+| Use benchmark-ips for detailed statistics
+| false
+
+| `--verbose`
+| Show detailed output including objects/second
+| false
+
+| `--save`
+| Save benchmark results to file
+| false
+
+| `--format FORMAT`
+| Output format: text, json, or csv
+| text
+
+| `--help`, `-h`
+| Display help message
+| -
+|===
+
+==== Benchmark-Cache Options
+
+[options="header"]
+|===
+| Option | Description | Default
+
+| `--cache_path PATH`
+| Custom cache file location
+| Temporary file
+
+| `--verbose`
+| Show detailed timing breakdowns
+| false
+
+| `--format FORMAT`
+| Output format: text, json, or csv
+| text
+
+| `--help`, `-h`
+| Display help message
+| -
+|===
+
+=== Benchmark Commands
+
+==== Standard Benchmark
+
+Measures parsing performance:
+
+[source,bash]
+----
+# Single file
+expressir benchmark schema.exp
+
+# Multiple files from manifest
+expressir benchmark schemas.yml --verbose
+----
+
+==== Benchmark with IPS
+
+Uses the `benchmark-ips` gem for more accurate statistics:
+
+[source,bash]
+----
+expressir benchmark schema.exp --ips
+----
+
+Output:
+[source]
+----
+Warming up --------------------------------------
+   Loading schema.exp     1.000  i/100ms
+Calculating -------------------------------------
+   Loading schema.exp      8.123  (± 0.0%) i/s -     41.000  in   5.048s
+----
+
+==== Benchmark with Caching
+
+Compares parsing vs cache loading performance:
+
+[source,bash]
+----
+# With automatic temp cache
+expressir benchmark-cache schema.exp --verbose
+
+# With custom cache location
+expressir benchmark-cache schema.exp --cache_path /tmp/my_cache.bin
+----
+
+=== Output Formats
+
+==== Text Format (Default)
+
+Human-readable output:
+
+[source,bash]
+----
+expressir benchmark schema.exp --verbose
+----
+
+[source]
+----
+Express Schema Loading Benchmark
+--------------------------------
+Loading schema.exp: 0.1234s (1250 objects/s)
+Loaded 1 schemas
+----
+
+==== JSON Format
+
+Machine-readable output:
+
+[source,bash]
+----
+expressir benchmark schema.exp --format json
+----
+
+[source,json]
+----
+{
+  "label": "schema.exp",
+  "time_seconds": 0.1234,
+  "objects_per_second": 1250
+}
+----
+
+For multiple files:
+
+[source,json]
+----
+{
+  "files_processed": 3,
+  "schemas_loaded": 5,
+  "total_objects": 3750,
+  "total_time_seconds": 0.4567,
+  "average_time_seconds": 0.1522,
+  "objects_per_second": 8210.18
+}
+----
+
+==== CSV Format
+
+Spreadsheet-compatible output:
+
+[source,bash]
+----
+expressir benchmark schemas.yml --format csv
+----
+
+[source,csv]
+----
+Files,Schemas,Objects,Total Time (s),Avg Time (s),Objects/s
+3,5,3750,0.4567,0.1522,8210.18
+----
+
+=== Schema Manifest Benchmarking
+
+==== Create Schema Manifest
+
+Create `schemas.yml`:
+
+[source,yaml]
+----
+schemas:
+  - path: schemas/action_schema.exp
+    id: action_schema
+  - path: schemas/approval_schema.exp
+    id: approval_schema
+  - path: schemas/date_time_schema.exp
+    id: date_time_schema
+----
+
+==== Benchmark Manifest
+
+[source,bash]
+----
+# Basic manifest benchmark
+expressir benchmark schemas.yml
+
+# With verbose output
+expressir benchmark schemas.yml --verbose
+----
+
+Output:
+[source]
+----
+Express Schema Loading Benchmark from Manifest
+--------------------------------
+Manifest File: schemas.yml
+Number of schemas in list: 3
+--------------------------------
+1/3 Processing schemas/action_schema.exp
+Loading schemas/action_schema.exp: 0.1234s (1250 objects/s)
+2/3 Processing schemas/approval_schema.exp
+Loading schemas/approval_schema.exp: 0.0987s (950 objects/s)
+3/3 Processing schemas/date_time_schema.exp
+Loading schemas/date_time_schema.exp: 0.0456s (600 objects/s)
+
+Processed 3 files in 0.2677s
+Loaded 5 schemas containing 2800 objects
+Average time per file: 0.0892s
+Performance: 10460.36 objects/s
+----
+
+==== Benchmark Manifest with Caching
+
+[source,bash]
+----
+expressir benchmark-cache schemas.yml --cache_path /tmp/schemas_cache.bin --verbose
+----
+
+=== Use Cases
+
+==== Performance Testing
+
+Compare schema loading speeds:
+
+[source,bash]
+----
+#!/bin/bash
+# benchmark-all.sh
+
+echo "Benchmarking schemas..."
+
+for schema in schemas/*.exp; do
+  echo "Testing: $schema"
+  expressir benchmark "$schema" --format json | jq '.time_seconds'
+done
+----
+
+==== Optimization Workflow
+
+[source,bash]
+----
+# 1. Baseline benchmark
+expressir benchmark schema.exp --verbose > baseline.txt
+
+# 2. Make optimizations to schema
+
+# 3. Re-benchmark
+expressir benchmark schema.exp --verbose > optimized.txt
+
+# 4. Compare results
+diff baseline.txt optimized.txt
+----
+
+==== Cache Performance Analysis
+
+[source,bash]
+----
+#!/bin/bash
+# analyze-cache-performance.sh
+
+echo "Analyzing cache performance..."
+
+# Benchmark with caching
+expressir benchmark-cache schemas.yml --cache_path /tmp/cache.bin --verbose > cache_results.txt
+
+# Extract times
+PARSE_TIME=$(grep "Parsing time:" cache_results.txt | awk '{print $3}')
+READ_TIME=$(grep "Cache read time:" cache_results.txt | awk '{print $4}')
+
+# Calculate speedup
+SPEEDUP=$(echo "scale=2; $PARSE_TIME / $READ_TIME" | bc)
+
+echo "Cache provides ${SPEEDUP}x speedup"
+----
+
+==== CI/CD Performance Monitoring
+
+Track performance over time:
+
+[source,bash]
+----
+#!/bin/bash
+# ci-benchmark.sh
+
+DATE=$(date +%Y%m%d)
+OUTPUT="benchmarks/${DATE}_results.json"
+
+mkdir -p benchmarks
+
+# Benchmark all schemas
+expressir benchmark schemas.yml --format json > "$OUTPUT"
+
+# Extract key metrics
+TOTAL_TIME=$(jq '.total_time_seconds' "$OUTPUT")
+THROUGHPUT=$(jq '.objects_per_second' "$OUTPUT")
+
+echo "Date: $DATE"
+echo "Total time: ${TOTAL_TIME}s"
+echo "Throughput: ${THROUGHPUT} objects/s"
+
+# Check if performance degraded
+THRESHOLD=5000
+if (( $(echo "$THROUGHPUT < $THRESHOLD" | bc -l) )); then
+  echo "⚠️  Performance below threshold!"
+  exit 1
+fi
+
+echo "✓ Performance acceptable"
+----
+
+==== Comparing Parser Versions
+
+[source,bash]
+----
+#!/bin/bash
+# compare-versions.sh
+
+# Test with current version
+echo "Testing current version..."
+expressir benchmark schemas.yml --format json > current.json
+
+# Upgrade gem
+gem update expressir
+
+# Test with new version
+echo "Testing new version..."
+expressir benchmark schemas.yml --format json > new.json
+
+# Compare
+echo "Performance comparison:"
+echo "Current: $(jq '.objects_per_second' current.json) objects/s"
+echo "New:     $(jq '.objects_per_second' new.json) objects/s"
+----
+
+=== Benchmark Workflows
+
+==== Development Workflow
+
+[source,bash]
+----
+# 1. Edit schema
+vim schema.exp
+
+# 2. Validate
+expressir validate schema.exp
+
+# 3. Benchmark
+expressir benchmark schema.exp --verbose
+
+# 4. If satisfactory, commit
+git add schema.exp
+git commit -m "Optimize schema structure"
+----
+
+==== Performance Optimization
+
+[source,bash]
+----
+# 1. Establish baseline
+expressir benchmark schemas/ --format json > baseline.json
+
+# 2. Identify slow schemas
+jq '.files[] | select(.time_seconds > 0.5)' baseline.json
+
+# 3. Optimize identified schemas
+# (refactor, split, simplify)
+
+# 4. Re-benchmark
+expressir benchmark schemas/ --format json > optimized.json
+
+# 5. Compare improvement
+python compare_benchmarks.py baseline.json optimized.json
+----
+
+==== Large Schema Analysis
+
+[source,bash]
+----
+#!/bin/bash
+# analyze-large-schema.sh
+
+SCHEMA="large_schema.exp"
+
+echo "Analyzing $SCHEMA performance..."
+
+# Standard benchmark
+echo "=== Standard Benchmark ==="
+expressir benchmark "$SCHEMA" --verbose
+
+# IPS benchmark for detailed stats
+echo ""
+echo "=== IPS Benchmark ==="
+expressir benchmark "$SCHEMA" --ips
+
+# Cache performance
+echo ""
+echo "=== Cache Performance ==="
+expressir benchmark-cache "$SCHEMA" --verbose
+----
+
+=== Performance Metrics
+
+==== Understanding Metrics
+
+**Time (seconds)**::
+Total wall-clock time to parse the schema
++
+Lower is better
+
+**Objects per second**::
+Throughput of schema elements processed
++
+Higher is better
++
+Calculated as: `(total_objects / time_seconds)`
+
+**Iterations per second (IPS)**::
+How many complete parse operations per second
++
+Higher is better
++
+Only available with `--ips` option
+
+**Cache speedup**::
+Ratio of parse time to cache read time
++
+Typical range: 10x - 100x speedup
+
+==== Interpreting Results
+
+[source]
+----
+# Good performance
+Loading schema.exp: 0.0234s (50000 objects/s)
+
+# Acceptable performance
+Loading schema.exp: 0.1234s (10000 objects/s)
+
+# Slow performance (needs investigation)
+Loading schema.exp: 1.2345s (1000 objects/s)
+----
+
+Factors affecting performance:
+
+* Schema complexity
+* Number of entities and types
+* Expression complexity
+* Reference resolution
+* System resources
+
+=== Advanced Usage
+
+==== Save Benchmark Results
+
+[source,bash]
+----
+# Save detailed results
+expressir benchmark schema.exp --ips --save
+# Creates: expressir_benchmark_schema.exp file
+----
+
+==== Batch Benchmarking
+
+[source,bash]
+----
+#!/bin/bash
+# batch-benchmark.sh
+
+RESULTS_DIR="benchmark_results"
+mkdir -p "$RESULTS_DIR"
+
+for schema in schemas/**/*.exp; do
+  basename=$(basename "$schema" .exp)
+  echo "Benchmarking $basename..."
+  
+  expressir benchmark "$schema" --format json > \
+    "$RESULTS_DIR/${basename}_benchmark.json"
+done
+
+echo "All benchmarks complete"
+----
+
+==== Statistical Analysis
+
+[source,bash]
+----
+#!/bin/bash
+# Run multiple iterations for statistical analysis
+
+SCHEMA="schema.exp"
+ITERATIONS=10
+
+echo "Running $ITERATIONS benchmark iterations..."
+
+for i in $(seq 1 $ITERATIONS); do
+  expressir benchmark "$SCHEMA" --format json | \
+    jq '.time_seconds' >> times.txt
+done
+
+# Calculate statistics
+echo "Statistics:"
+echo "Min: $(sort -n times.txt | head -1)"
+echo "Max: $(sort -n times.txt | tail -1)"
+echo "Avg: $(awk '{sum+=$1} END {print sum/NR}' times.txt)"
+
+rm times.txt
+----
+
+==== Memory Profiling
+
+Combine with memory profiling tools:
+
+[source,bash]
+----
+# Using Ruby memory profiler
+ruby -r memory_profiler <<EOF
+result = MemoryProfiler.report do
+  system("expressir benchmark schema.exp")
+end
+result.pretty_print
+EOF
+----
+
+=== Integration Examples
+
+==== GitHub Actions
+
+[source,yaml]
+----
+name: Performance Benchmark
+
+on: [push, pull_request]
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Expressir
+        run: gem install expressir
+
+      - name: Benchmark Schemas
+        run: |
+          expressir benchmark schemas.yml --format json > results.json
+          
+      - name: Check Performance
+        run: |
+          THROUGHPUT=$(jq '.objects_per_second' results.json)
+          THRESHOLD=5000
+          
+          if (( $(echo "$THROUGHPUT < $THRESHOLD" | bc -l) )); then
+            echo "Performance degraded: ${THROUGHPUT} objects/s"
+            exit 1
+          fi
+          
+          echo "Performance acceptable: ${THROUGHPUT} objects/s"
+
+      - name: Upload Results
+        uses: actions/upload-artifact@v2
+        with:
+          name: benchmark-results
+          path: results.json
+----
+
+==== Makefile Integration
+
+[source,makefile]
+----
+.PHONY: benchmark benchmark-cache benchmark-save
+
+benchmark:
+	@echo "Benchmarking schemas..."
+	@expressir benchmark schemas.yml --verbose
+
+benchmark-cache:
+	@echo "Benchmarking with cache..."
+	@expressir benchmark-cache schemas.yml \
+		--cache_path .cache/schemas.bin \
+		--verbose
+
+benchmark-save:
+	@mkdir -p benchmark_results
+	@DATE=$$(date +%Y%m%d_%H%M%S) && \
+	expressir benchmark schemas.yml --format json > \
+		benchmark_results/$${DATE}_results.json
+	@echo "Results saved to benchmark_results/"
+----
+
+==== Jenkins Pipeline
+
+[source,groovy]
+----
+pipeline {
+  agent any
+  stages {
+    stage('Benchmark') {
+      steps {
+        sh 'gem install expressir'
+        sh 'expressir benchmark schemas.yml --format json > results.json'
+        
+        script {
+          def results = readJSON file: 'results.json'
+          def throughput = results.objects_per_second
+          
+          if (throughput < 5000) {
+            error("Performance below threshold: ${throughput} objects/s")
+          }
+          
+          echo "Performance: ${throughput} objects/s"
+        }
+      }
+    }
+  }
+}
+----
+
+=== Troubleshooting
+
+==== Inconsistent Results
+
+**Problem**: Benchmark results vary between runs
+
+**Solutions**:
+* Use `--ips` for more stable measurements
+* Run multiple iterations and average
+* Close other applications
+* Use dedicated benchmarking environment
+
+==== Slow Benchmarks
+
+**Problem**: Benchmarking takes too long
+
+**Solutions**:
+* Benchmark individual files first
+* Use smaller schema subsets for testing
+* Skip `--ips` for faster results
+* Use caching for repeated tests
+
+==== Memory Issues
+
+**Problem**: Out of memory during benchmarking
+
+**Solutions**:
+* Benchmark files individually
+* Increase system memory
+* Consider schema splitting
+* Use incremental loading
+
+==== Cache Not Improving Performance
+
+**Problem**: Cache read time similar to parse time
+
+**Causes**:
+* Cache file on slow storage (network drive)
+* Very small schemas (overhead dominates)
+* Corrupted cache file
+
+**Solutions**:
+[source,bash]
+----
+# Use fast local storage
+expressir benchmark-cache schema.exp --cache_path /tmp/cache.bin
+
+# Rebuild cache
+rm /tmp/cache.bin
+expressir benchmark-cache schema.exp --cache_path /tmp/cache.bin
+----
+
+=== Best Practices
+
+**Benchmark Regularly**::
+Track performance over time to catch regressions
++
+[source,bash]
+----
+# Weekly performance check
+expressir benchmark schemas.yml --format json > weekly_benchmark.json
+----
+
+**Use Consistent Environment**::
+Run benchmarks on same hardware for comparability
+
+**Warm Up System**::
+Run a few iterations before timing for accurate results
+
+**Save Historical Data**::
+Keep benchmark results for trend analysis
++
+[source,bash]
+----
+DATE=$(date +%Y%m%d)
+expressir benchmark schemas.yml --format json > "results_${DATE}.json"
+----
+
+**Combine with Validation**::
+Ensure schemas are valid before benchmarking
++
+[source,bash]
+----
+expressir validate schema.exp && expressir benchmark schema.exp
+----
+
+**Use Caching for Development**::
+Speed up repeated processing with cache
++
+[source,bash]
+----
+# First time: parse and cache
+expressir benchmark-cache schemas.yml --cache_path .cache/schemas.bin
+
+# Subsequent times: use cached version
+# (manual loading with Ruby API)
+----
+
+=== Next Steps
+
+**Related Commands**::
+* link:validate-schemas.html[Validate Schemas] - Ensure correctness
+* link:coverage-analysis.html[Coverage Analysis] - Check documentation
+* link:format-schemas.html[Format Schemas] - Optimize structure
+
+**Advanced Topics**::
+* link:../ruby-api/parsing-files.html[Ruby API Parsing] - Programmatic benchmarking
+* Custom performance monitoring
+* Profiling and optimization
+
+**Tools and Integration**::
+* link:../deployment/ci-cd-setup.html[CI/CD Setup] - Automated monitoring
+* Performance regression detection
+* Historical trend analysis
+
+=== Summary
+
+The benchmark commands:
+
+* ✅ Measure parsing and loading performance
+* ✅ Support single files and manifests
+* ✅ Provide multiple output formats (text, JSON, CSV)
+* ✅ Offer cache performance comparison
+* ✅ Enable performance tracking over time
+* ✅ Integrate easily with CI/CD pipelines
+* ✅ Support both quick checks and detailed analysis
+
+Use benchmarking regularly to maintain optimal schema processing performance and catch performance regressions early.

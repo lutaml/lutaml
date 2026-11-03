@@ -1,0 +1,41 @@
+---
+title: Language Server
+parent: Reference
+grand_parent: Guides
+nav_order: 7
+---
+
+= Language Server
+
+== Purpose
+
+`expressir-lsp` is a stdio language server (JSON-RPC 2.0, LSP 3.17)
+exposing the parser, checker and resolution machinery to editors.
+
+== Launch
+
+[source,shell]
+----
+bundle exec expressir-lsp
+----
+
+== Capabilities
+
+* full-sync documents (`didOpen`, `didChange`, `didSave`, `didClose`);
+* diagnostics from Checker notes, mapped through `NodePositionIndex`
+  and `LineMap` to UTF-16 ranges, plus parse-error diagnostics;
+* document symbols for schemas, entities, types, functions, procedures,
+  rules and attributes;
+* go-to-definition through the USE/REFERENCE ladder and its alias map;
+* references across all open documents;
+* hover with a PrettyFormatter excerpt;
+* rename across schemas, with edits applied in memory, every affected
+  document reparsed, SchemaCompare rejecting unrelated removals, and
+  the renamed schema re-emitted through the Formatter.
+
+== Incremental behaviour
+
+Changes reparse the document through the native/core parser path;
+identical text is a no-op and checker results are memoized per document
+set. Content-incremental parsing awaits an incremental API in the
+expressir-rs core.

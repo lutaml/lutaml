@@ -1,0 +1,33 @@
+---
+schema: topology_schema
+versions:
+- version: 2
+  description: Also changes of technical corrigendum 1 of edition 2 are listed here.
+  additions:
+  - type: FUNCTION
+    name: closed_shell_reversed
+  - type: ENTITY
+    name: connected_face_sub_set
+  modifications:
+  - type: ENTITY
+    name: edge
+  - type: FUNCTION
+    name: edge_reversed
+- version: 7
+  description: WHERE 'WR4' expression changed
+  additions:
+  - type: ENTITY
+    name: connected_edge_sub_set
+  modifications:
+  - type: ENTITY
+    name: connected_face_sub_set
+    description: Add WHERE 'WR1'
+  - type: ENTITY
+    name: edge
+    description: 'ENTITY edge: Supertype expression changed'
+  deletions:
+  - type: REFERENCE_FROM
+    name: measure_schema
+    interfaced_items: length_measure
+  - type: ENTITY
+    name: vertex_on_edge
