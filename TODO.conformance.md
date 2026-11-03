@@ -238,13 +238,13 @@ corners.
 | mixed="true" on a particle-less complexType rejects text (ctA033/ctA035) | 2 | leptris-rs#35 (sub 2) |
 | xs:redefine composition compiles to an EMPTY content model (idF025/033/034, idG018/019/027/028) | 7 | leptris-rs#35 (sub 3) |
 | Default-supplied content on an empty list-typed element (stZ072) | 1 | leptris-rs#35 (sub 4) |
-| Empty content against a fixed element value — BARE leg FIXED in 1.9.403 (attribute leg addB104, attO006 still open) | 2 | leptris-rs#25 (comment) |
+| Fixed + empty ATTRIBUTE values still rejected — the #25 attribute leg (addB104, attO006) | 2 | leptris-rs#36 |
 | Content model enforced on NILLED elements (QFE1700g2, particlesIa002) | 2 | leptris-rs#26 |
 | dateTime enumeration rejects timezone-equal forms (dateTime_enumeration005a/b) | 2 | leptris-rs#27 |
 | "-0" rejected against nonNegativeInteger (errE002) | 1 | leptris-rs#28 |
 | xsi:type override / substitution-member type binding false rejects (elemZ002, elemZ020) | 2 | leptris-rs#29 |
 | Built-in lexical tables (char-reference shapes reZ003v/004v/005v/006v/006i, reK88; \D vintage reT51) | 7 | leptris/leptris#1936 (+ case-list comment) |
-| Facade strict re-check on composed schemas — attributes (attgD005/019/020/021/022/025/027/029/031/033/034, attJ018) and composed type binding (schF1/G2/G7/P2) | 15 | moxml#510 (+ consolidated evidence comment) |
+| Facade strict re-check on composed schemas — attributes (attgD class 11, attJ018), composed type binding (schF1/G2/P2), substitution straggler (addB114) — REMAINING after the #510 closure | 15 | moxml#522 (+#510 closed) |
 | Unresolvable include/import/redefine schemaLocation raises at parse instead of warning (anyURI_a001/a002, schD7, schG8) | 4 | lutaml-model#1087 |
 | Automaton size cap surfaces as an instance error instead of engine-inert silence | 0 — FIXED in leptris 1.9.398 | moxml#514 (follow-up to #473) |
 | Redefine self-extension drops the extension content model | 0 — FIXED in leptris 1.9.396 | leptris#1926 (closed) |
