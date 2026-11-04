@@ -1,5 +1,5 @@
 require "spec_helper"
-require_relative "../../../lib/lutaml/model"
+require "lutaml/model"
 
 # Define all test classes in a module to prevent namespace pollution
 module XmlSchemaPrimerFeaturesSpec

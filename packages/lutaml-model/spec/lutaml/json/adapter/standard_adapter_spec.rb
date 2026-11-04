@@ -127,7 +127,7 @@ RSpec.describe Lutaml::Json::Adapter::StandardAdapter do
 
       mod = Module.new
       mod.module_eval(
-        File.read(File.expand_path("../../../../lib/lutaml/json/generator_options.rb", __dir__)),
+        File.read(File.join(LUTAML_LIB, "lutaml/json/generator_options.rb")),
       )
       permitted = mod.const_get(:Lutaml).const_get(:Json)
         .const_get(:GeneratorOptions)::PERMITTED

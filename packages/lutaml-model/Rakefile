@@ -26,7 +26,7 @@ begin
   # for Opal. For `require "rexml/document"` and friends to resolve, the
   # gem's lib dir must be on Opal's load path (mirrors what moxml does).
   if defined?(Opal)
-    Opal.append_path File.expand_path("lib/compat/opal", __dir__)
+    Opal.append_path File.expand_path("../lutaml/lib/compat/opal", __dir__)
 
     moxml_gem_dir = Gem::Specification.find_by_name("moxml")&.gem_dir
     if moxml_gem_dir
@@ -64,7 +64,7 @@ begin
 rescue LoadError
 end
 
-Dir.glob("lib/tasks/**/*.rake").each { |r| load r }
+Dir.glob(File.expand_path("../lutaml/lib/tasks/**/*.rake", __dir__)).each { |r| load r }
 
 # Regenerate the ragel / ruby-ll outputs that the Opal-compatible forks
 # (vendored as submodules under vendor/) gitignore. The forks ship the

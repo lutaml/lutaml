@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require_relative "../../../../lib/lutaml/model"
+require "lutaml/model"
 require "lutaml/xml/adapter/nokogiri_adapter"
 
 # Specs for Lutaml::Model::Serialize::Builder — the module that gives

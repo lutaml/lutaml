@@ -1,6 +1,6 @@
 require "spec_helper"
 require "nokogiri"
-require_relative "../../../../lib/lutaml/xml/adapter/nokogiri_adapter"
+require "lutaml/xml/adapter/nokogiri_adapter"
 
 RSpec.describe Lutaml::Xml::Adapter::NokogiriAdapter do
   let(:xml_string) do

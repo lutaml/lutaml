@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+# The runtime these specs exercise lives in the lutaml package (#233).
+LUTAML_LIB = File.expand_path("../../lutaml/lib", __dir__)
+
 require "liquid" unless RUBY_ENGINE == "opal"
 require "rspec/matchers"
 require "canon" unless RUBY_ENGINE == "opal"
@@ -94,9 +97,9 @@ require "lutaml/model"
 require "lutaml/xml"
 require_relative "support/test_namespaces"
 require_relative "support/test_adapter_config"
-# require_relative "../lib/lutaml/xml/adapter/nokogiri_adapter"
-# require_relative "../lib/lutaml/xml/adapter/ox_adapter"
-# require_relative "../lib/lutaml/model/toml_adapter/toml_rb_adapter"
+# require "lutaml/xml/adapter/nokogiri_adapter"
+# require "lutaml/xml/adapter/ox_adapter"
+# require "lutaml/model/toml_adapter/toml_rb_adapter"
 
 Lutaml::Model::Config.configure do |config|
   config.xml_adapter_type  = if RUBY_ENGINE == "opal"

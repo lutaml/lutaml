@@ -1,4 +1,4 @@
-require_relative "../../lib/lutaml/model"
+require "lutaml/model"
 
 class Vase < Lutaml::Model::Serializable
   attribute :height, Lutaml::Model::Type::Float

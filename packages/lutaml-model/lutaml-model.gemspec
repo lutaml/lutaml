@@ -1,59 +1,34 @@
 # frozen_string_literal: true
 
-require_relative "lib/lutaml/model/version"
+require_relative "lib/lutaml_model_shim/version"
 
 Gem::Specification.new do |spec|
   spec.name = "lutaml-model"
-  spec.version = Lutaml::Model::VERSION
+  spec.version = LutamlModelShim::VERSION
   spec.authors = ["Ribose Inc."]
   spec.email = ["open.source@ribose.com"]
 
-  spec.summary = "LutaML creating data models in Ruby"
+  spec.summary = "Transitional alias of lutaml (the lutaml-model runtime)"
   spec.description = <<~DESCRIPTION
-    LutaML creating data models in Ruby
+    The lutaml-model runtime now ships in the `lutaml` gem. This gem only
+    depends on it so `require "lutaml-model"` keeps working for one
+    deprecation window; depend on `lutaml` directly.
   DESCRIPTION
 
-  spec.homepage = "https://github.com/lutaml/lutaml-model"
+  spec.homepage = "https://github.com/lutaml/lutaml"
   spec.license = "BSD-2-Clause"
 
   spec.bindir = "exe"
   spec.require_paths = ["lib"]
-  spec.required_ruby_version = Gem::Requirement.new(">= 3.0.0")
+  spec.required_ruby_version = Gem::Requirement.new(">= 3.2.0")
 
-  # Specify which files should be added to the gem when it is released.
-  # The `git ls-files -z` loads the files in the
-  # RubyGem that have been added into git.
-  # vendor/ is excluded so the opal-oga / opal-ruby-ll submodule checkouts
-  # are not shipped in the published gem.
   spec.files = Dir.chdir(File.expand_path(__dir__)) do
-    `git ls-files -z`.split("\x0").reject do |f|
-      f.match(%r{^(test|features|vendor/)/})
-    end
+    Dir["lib/lutaml-model.rb", "lib/lutaml_model_shim/**/*.rb", "exe/*",
+        "LICENSE.md", "README.adoc"]
   end
-  spec.executables = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
+  spec.executables = ["lutaml-model"]
 
-  # required for liquid
-  spec.add_dependency "base64", ">= 0.1.1"
-  spec.add_dependency "bigdecimal"
-  spec.add_dependency "canon"
-  spec.add_dependency "concurrent-ruby"
-  spec.add_dependency "liquid", ">= 4.0", "< 6.0"
-  # 0.5.84 always passes XML_PARSE_HUGE to libxml2: very large documents
-  # parse completely instead of being silently truncated at the 10 MB
-  # input-buffer cap (lutaml-model#871).
-  # moxml 0.6.0 removed the Opal surface (lutaml/moxml#516, the
-  # cross-language program's phase 4); the CRuby facade faces this
-  # gem uses are unchanged, and the full suite is green on the 0.6
-  # line (6386/0 with 0.6.0 resolved). Owner call (2026-10-31):
-  # forward-pin the 0.6 series, matching canon (lutaml/canon#298);
-  # floored at 0.6.1 per the maintainer's directive. The Opal lane's
-  # workspace-local 0.5.x pin is retired with this floor — it cannot
-  # resolve against it — and the boot's lib/compat/opal append is
-  # directory-guarded in the Rakefile for both lines.
-  spec.add_dependency "moxml", "~> 0.6.1"
-  spec.add_dependency "ostruct"
-  spec.add_dependency "rubyzip", "~> 3.7"
-  spec.add_dependency "thor", "~> 1.4"
+  spec.add_dependency "lutaml", ">= 0.11.7"
 
   spec.metadata["rubygems_mfa_required"] = "true"
 end

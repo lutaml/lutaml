@@ -1,4 +1,4 @@
-require_relative "../../lib/lutaml/model"
+require "lutaml/model"
 
 module YamlsRangeTest
   class Header < Lutaml::Model::Serializable

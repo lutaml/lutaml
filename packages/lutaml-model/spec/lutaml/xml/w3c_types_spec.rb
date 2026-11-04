@@ -290,7 +290,7 @@ RSpec.describe Lutaml::Xml::W3c do
     # Regression test: ensure W3C types are registered when require "lutaml/xml"
     # is called. W3C types are XML-specific and require the XML plugin.
 
-    let(:lib_path) { File.expand_path("../../../lib", __dir__) }
+    let(:lib_path) { LUTAML_LIB }
 
     it "registers all W3C types in Type registry after require 'lutaml/xml'" do
       # Use subprocess to ensure fresh require - write code to temp file to avoid shell escaping issues

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require_relative "../../../lib/lutaml/model"
+require "lutaml/model"
 
 RSpec.describe "Namespace declaration placement (no hoisting)" do
   # Regression test: child element's default namespace declaration must NOT

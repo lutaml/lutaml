@@ -1,5 +1,5 @@
 require "spec_helper"
-require_relative "../../../../lib/lutaml/xml/adapter/ox_adapter"
+require "lutaml/xml/adapter/ox_adapter"
 
 RSpec.describe Lutaml::Xml::Adapter::OxAdapter, :ox_adapter do
   let(:xml_string) do

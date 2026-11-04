@@ -1,5 +1,5 @@
 require "spec_helper"
-require_relative "../../../lib/lutaml/model"
+require "lutaml/model"
 
 module CustomCollection
   # Custom type classes for testing collections with Register

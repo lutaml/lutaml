@@ -1,5 +1,5 @@
 require "spec_helper"
-require_relative "../../../lib/lutaml/model"
+require "lutaml/model"
 
 module CollectionRegisterSpec
   # Inherits Collection#initialize, so it declares the register keyword.

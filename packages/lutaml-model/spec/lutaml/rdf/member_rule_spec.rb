@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require_relative "../../../lib/lutaml/rdf"
+require "lutaml/rdf"
 
 RSpec.describe Lutaml::Rdf::MemberRule do
   describe ".new" do
