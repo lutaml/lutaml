@@ -1,0 +1,739 @@
+(*
+ACME 5000 No. 11415
+
+EXPRESS Source:
+ACME 5000-42 ed8 Virtual reality spatial computing - VR Geometry schema
+
+The following permission notice and disclaimer shall be included in all copies of this EXPRESS schema ("the Schema"),
+and derivations of the Schema:
+
+Copyright Ribose 2025  All rights reserved
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+In addition, any modified copy of the Schema shall include the following notice:
+
+THIS SCHEMA HAS BEEN MODIFIED FROM THE SCHEMA DEFINED IN
+ACME 5000-42 ed8 Virtual reality spatial computing - VR Geometry schema
+AND SHOULD NOT BE INTERPRETED AS COMPLYING WITH THAT STANDARD
+*)
+
+SCHEMA vr_geometry_schema '{acme standard 5000 part(42) version(13) object(1) vr-geometry-schema(1)}';
+
+REFERENCE FROM vr_model_schema   -- ACME 5000-42
+  (vr_block,
+   boolean_result,
+   cyclide_segment_solid,
+   eccentric_cone,
+   edge_based_wireframe_model,
+   ellipsoid,
+   face_based_surface_model,
+   faceted_primitive,
+   vr_geometric_set,
+   half_space_solid,
+   primitive_2d,
+   rectangular_pyramid,
+   right_angular_wedge,
+   right_circular_cone,
+   right_circular_cylinder,
+   shell_based_surface_model,
+   shell_based_wireframe_model,
+   solid_model,
+   sphere,
+   tessellated_item,
+   torus);
+
+REFERENCE FROM measure_schema   -- ACME 5000-41
+  (global_unit_assigned_context,
+   length_measure,
+   parameter_value,
+   plane_angle_measure,
+   plane_angle_unit,
+   positive_length_measure,
+   positive_plane_angle_measure);
+
+REFERENCE FROM representation_schema   -- ACME 5000-43
+  (definitional_representation,
+   founded_item,
+   functionally_defined_transformation,
+   item_in_context,
+   representation,
+   representation_context,
+   representation_item,
+   using_representations);
+
+REFERENCE FROM vr_scan_data_3d_shape_model_schema    -- ACME 5000-42
+  (scanned_data_item);
+
+(* for immersive geometry added volume_with_faces *)
+REFERENCE FROM topology_schema   -- ACME 5000-42
+  (edge_curve,
+   face_surface,
+   poly_loop,
+   vertex_point,
+   volume_with_faces);
+
+CONSTANT
+  dummy_vr_gri : vr_geometric_representation_item := representation_item('')|| vr_geometric_representation_item();
+END_CONSTANT;
+
+TYPE vr_axis2_placement = SELECT
+   (vr_axis2_placement_2d,
+    vr_axis2_placement_3d);
+END_TYPE;
+
+TYPE vr_b_spline_curve_form = ENUMERATION OF
+   (polyline_form,
+    circular_arc,
+    elliptic_arc,
+    parabolic_arc,
+    hyperbolic_arc,
+    vr_immersive_path,
+    unspecified);
+END_TYPE;
+
+TYPE vr_b_spline_surface_form = ENUMERATION OF
+   (plane_surf,
+    cylindrical_surf,
+    conical_surf,
+    spherical_surf,
+    toroidal_surf,
+    surf_of_revolution,
+    ruled_surf,
+    generalised_cone,
+    quadric_surf,
+    surf_of_linear_extrusion,
+    vr_immersive_surface,
+    unspecified);
+END_TYPE;
+
+TYPE vr_curve_on_surface = SELECT
+   (vr_composite_curve_on_surface,
+    vr_pcurve,
+    vr_surface_curve);
+END_TYPE;
+
+TYPE vr_dimension_count = INTEGER;
+WHERE
+  WR1: SELF > 0;
+END_TYPE;
+
+TYPE vr_extent_enumeration = ENUMERATION OF
+   (invalid,
+    zero,
+    finite_non_zero,
+    infinite);
+END_TYPE;
+
+TYPE vr_knot_type = ENUMERATION OF
+   (uniform_knots,
+    quasi_uniform_knots,
+    piecewise_bezier_knots,
+    vr_adaptive_knots,
+    unspecified);
+END_TYPE;
+
+TYPE vr_pcurve_or_surface = SELECT
+   (vr_pcurve,
+    vr_surface);
+END_TYPE;
+
+TYPE vr_preferred_surface_curve_representation = ENUMERATION OF
+   (curve_3d,
+    pcurve_s1,
+    pcurve_s2);
+END_TYPE;
+
+TYPE vr_surface_boundary = SELECT
+   (vr_boundary_curve,
+    vr_degenerate_pcurve);
+END_TYPE;
+
+TYPE vr_transition_code = ENUMERATION OF
+   (discontinuous,
+    continuous,
+    cont_same_gradient,
+    cont_same_gradient_same_curvature);
+END_TYPE;
+
+TYPE vr_trimming_preference = ENUMERATION OF
+   (cartesian,
+    parameter,
+    unspecified);
+END_TYPE;
+
+TYPE vr_trimming_select = SELECT
+   (vr_cartesian_point,
+    parameter_value);
+END_TYPE;
+
+TYPE vr_vector_or_direction = SELECT
+   (vr_direction,
+    vr_vector);
+END_TYPE;
+
+(* VR spatial computing TYPE additions *)
+TYPE vr_locally_refined_spline_type_enum = ENUMERATION OF
+  (analysis_suitable_t_spline,
+  hierarchical_b_spline,
+  lr_b_spline,
+  semi_standard_t_spline,
+  standard_t_spline,
+  vr_adaptive_spline);
+END_TYPE;
+
+TYPE vr_linearly_independent_enum = ENUMERATION OF
+  (independent,
+  not_independent,
+  not_tested);
+END_TYPE;
+
+TYPE vr_spline_knot_values = LIST [2: ?] OF REAL;
+WHERE
+WR1 : vr_increasing_values_in_list(SELF);
+END_TYPE;
+
+TYPE vr_interaction_mode = ENUMERATION OF
+  (gesture_based,
+   voice_controlled,
+   eye_tracking,
+   haptic_feedback,
+   brain_computer_interface);
+END_TYPE;
+
+TYPE vr_spatial_anchor_type = ENUMERATION OF
+  (world_locked,
+   object_relative,
+   user_relative,
+   dynamic_tracking);
+END_TYPE;
+
+ENTITY vr_geometric_representation_context
+  SUBTYPE OF (representation_context);
+  coordinate_space_dimension : vr_dimension_count;
+  vr_environment_type : STRING;
+  tracking_system : STRING;
+END_ENTITY;
+
+ENTITY vr_geometric_representation_item
+  SUBTYPE OF (representation_item);
+  interaction_mode : OPTIONAL vr_interaction_mode;
+  spatial_anchor : OPTIONAL vr_spatial_anchor_type;
+DERIVE
+  dim : vr_dimension_count := vr_dimension_of(SELF);
+WHERE
+  WR1: SIZEOF (QUERY (using_rep <* using_representations (SELF) | NOT ('VR_GEOMETRY_SCHEMA.VR_GEOMETRIC_REPRESENTATION_CONTEXT' IN TYPEOF (using_rep.context_of_items)))) = 0;
+END_ENTITY;
+
+SUBTYPE_CONSTRAINT vr_gs_gri_subtypes FOR vr_geometric_representation_item;
+(ONEOF (vr_block,
+        boolean_result,
+        vr_cartesian_transformation_operator,
+        vr_curve,
+        cyclide_segment_solid,
+        vr_direction,
+        edge_based_wireframe_model,
+        edge_curve,
+        ellipsoid,
+        face_based_surface_model,
+        face_surface,
+        faceted_primitive,
+        vr_geometric_set,
+        half_space_solid,
+        vr_placement,
+        vr_point,
+        poly_loop,
+        primitive_2d,
+        rectangular_pyramid,
+        right_angular_wedge,
+        right_circular_cone,
+        right_circular_cylinder,
+        scanned_data_item,
+        shell_based_surface_model,
+        shell_based_wireframe_model,
+        solid_model,
+        sphere,
+        vr_surface,
+        tessellated_item,
+        torus,
+        vr_vector,
+        vertex_point,
+        vr_volume));
+END_SUBTYPE_CONSTRAINT;
+
+ENTITY vr_point
+  SUPERTYPE OF (ONEOF (vr_cartesian_point,
+                       vr_point_on_curve,
+                       vr_point_on_surface,
+                       vr_point_in_volume,
+                       vr_point_replica,
+                       vr_degenerate_pcurve))
+  SUBTYPE OF (vr_geometric_representation_item);
+END_ENTITY;
+
+ENTITY vr_cartesian_point
+  SUPERTYPE OF (ONEOF (vr_cylindrical_point,
+                       vr_polar_point,
+                       vr_spherical_point))
+  SUBTYPE OF (vr_point);
+  coordinates : LIST[1:3] OF length_measure;
+  vr_tracking_confidence : OPTIONAL REAL;
+END_ENTITY;
+
+ENTITY vr_cylindrical_point
+  SUBTYPE OF (vr_cartesian_point);
+  r : length_measure;
+  theta : plane_angle_measure;
+  z : length_measure;
+DERIVE
+  SELF\vr_cartesian_point.coordinates : LIST[3:3] OF length_measure := [r*cos(theta), r*sin(theta), z];
+WHERE
+  WR1: r >= 0.0;
+  --IP1:
+END_ENTITY;
+
+ENTITY vr_spherical_point
+  SUBTYPE OF (vr_cartesian_point);
+  r : length_measure;
+  theta : plane_angle_measure;
+  phi : plane_angle_measure;
+DERIVE
+  SELF\vr_cartesian_point.coordinates : LIST[3:3] OF length_measure := [r*sin(theta)*cos(phi), r*sin(theta)*sin(phi), r*cos(theta)];
+WHERE
+  WR1: r >= 0.0;
+  --IP1:
+  --IP2:
+END_ENTITY;
+
+ENTITY vr_polar_point
+  SUBTYPE OF (vr_cartesian_point);
+  r : length_measure;
+  theta : plane_angle_measure;
+DERIVE
+  SELF\vr_cartesian_point.coordinates : LIST[2:2] OF length_measure := [r*cos(theta), r*sin(theta)];
+WHERE
+  WR1: r >= 0.0;
+  --IP1:
+END_ENTITY;
+
+ENTITY vr_point_on_curve
+  SUBTYPE OF (vr_point);
+  basis_curve : vr_curve;
+  point_parameter : parameter_value;
+  --IP1:
+END_ENTITY;
+
+ENTITY vr_point_on_surface
+  SUBTYPE OF (vr_point);
+  basis_surface : vr_surface;
+  point_parameter_u : parameter_value;
+  point_parameter_v : parameter_value;
+  --IP1:
+END_ENTITY;
+
+ENTITY vr_point_in_volume
+  SUBTYPE OF (vr_point);
+  basis_volume : vr_volume;
+  point_parameter_u : parameter_value;
+  point_parameter_v : parameter_value;
+  point_parameter_w : parameter_value;
+  --IP1:
+END_ENTITY;
+
+ENTITY vr_point_replica
+  SUBTYPE OF (vr_point);
+  parent_pt : vr_point;
+  transformation : vr_cartesian_transformation_operator;
+WHERE
+  WR1: transformation.dim = parent_pt.dim;
+  WR2: vr_acyclic_point_replica (SELF,parent_pt);
+END_ENTITY;
+
+ENTITY vr_degenerate_pcurve
+  SUBTYPE OF (vr_point);
+  basis_surface : vr_surface;
+  reference_to_curve : definitional_representation;
+WHERE
+  WR1: SIZEOF(reference_to_curve\representation.items) = 1;
+  WR2: 'VR_GEOMETRY_SCHEMA.VR_CURVE' IN TYPEOF (reference_to_curve\representation.items[1]);
+  WR3: reference_to_curve\representation. items[1]\vr_geometric_representation_item.dim =2;
+  --IP1:
+END_ENTITY;
+
+ENTITY vr_evaluated_degenerate_pcurve
+  SUBTYPE OF (vr_degenerate_pcurve);
+  equivalent_point : vr_cartesian_point;
+END_ENTITY;
+
+ENTITY vr_direction
+  SUBTYPE OF (vr_geometric_representation_item);
+  direction_ratios : LIST[2:3] OF REAL;
+WHERE
+  WR1: SIZEOF(QUERY(tmp <* direction_ratios | tmp <> 0.0)) > 0;
+END_ENTITY;
+
+ENTITY vr_vector
+  SUBTYPE OF (vr_geometric_representation_item);
+  orientation : vr_direction;
+  magnitude : length_measure;
+WHERE
+  WR1: magnitude >= 0.0;
+END_ENTITY;
+
+ENTITY vr_placement
+  SUPERTYPE OF (ONEOF (vr_axis1_placement,
+                       vr_axis2_placement_2d,
+                       vr_axis2_placement_3d))
+  SUBTYPE OF (vr_geometric_representation_item);
+  location : vr_cartesian_point;
+END_ENTITY;
+
+ENTITY vr_axis1_placement
+  SUBTYPE OF (vr_placement);
+  axis : OPTIONAL vr_direction;
+DERIVE
+  z : vr_direction := NVL(vr_normalise(axis), dummy_vr_gri || vr_direction([0.0,0.0,1.0]));
+WHERE
+  WR1: SELF\vr_geometric_representation_item.dim = 3;
+END_ENTITY;
+
+ENTITY vr_axis2_placement_2d
+  SUBTYPE OF (vr_placement);
+  ref_direction : OPTIONAL vr_direction;
+DERIVE
+  p : LIST[2:2] OF vr_direction := vr_build_2axes(ref_direction);
+WHERE
+  WR1: SELF\vr_geometric_representation_item.dim = 2;
+END_ENTITY;
+
+ENTITY vr_axis2_placement_3d
+  SUBTYPE OF (vr_placement);
+  axis : OPTIONAL vr_direction;
+  ref_direction : OPTIONAL vr_direction;
+DERIVE
+  p : LIST[3:3] OF vr_direction := vr_build_axes(axis,ref_direction);
+WHERE
+  WR1: SELF\vr_placement.location.dim = 3;
+  WR2: (NOT (EXISTS (axis))) OR (axis.dim = 3);
+  WR3: (NOT (EXISTS (ref_direction))) OR (ref_direction.dim = 3);
+  WR4: (NOT (EXISTS (axis))) OR (NOT (EXISTS (ref_direction))) OR (vr_cross_product(axis,ref_direction).magnitude > 0.0);
+END_ENTITY;
+
+ENTITY vr_cartesian_transformation_operator
+  SUPERTYPE OF (ONEOF (vr_cartesian_transformation_operator_2d,
+                       vr_cartesian_transformation_operator_3d))
+  SUBTYPE OF (vr_geometric_representation_item, functionally_defined_transformation);
+  axis1 : OPTIONAL vr_direction;
+  axis2 : OPTIONAL vr_direction;
+  local_origin : vr_cartesian_point;
+  scale : OPTIONAL REAL;
+DERIVE
+  scl : REAL := NVL(scale, 1.0);
+WHERE
+  WR1: scl > 0.0;
+END_ENTITY;
+
+ENTITY vr_cartesian_transformation_operator_3d
+  SUBTYPE OF (vr_cartesian_transformation_operator);
+  axis3 : OPTIONAL vr_direction;
+DERIVE
+  u : LIST[3:3] OF vr_direction := vr_base_axis(3,SELF\vr_cartesian_transformation_operator.axis1, SELF\vr_cartesian_transformation_operator.axis2,axis3);
+WHERE
+  WR1: SELF\vr_geometric_representation_item.dim = 3;
+END_ENTITY;
+
+ENTITY vr_cartesian_transformation_operator_2d
+  SUBTYPE OF (vr_cartesian_transformation_operator);
+DERIVE
+  u : LIST[2:2] OF vr_direction := vr_base_axis(2,SELF\vr_cartesian_transformation_operator.axis1, SELF\vr_cartesian_transformation_operator.axis2,?);
+WHERE
+  WR1: SELF\vr_geometric_representation_item.dim = 2;
+END_ENTITY;
+
+ENTITY vr_curve
+  SUPERTYPE OF (ONEOF (vr_line,
+                       vr_conic,
+                       vr_clothoid,
+                       vr_circular_involute,
+                       vr_pcurve,
+                       vr_surface_curve,
+                       vr_offset_curve_2d,
+                       vr_offset_curve_3d,
+                       vr_curve_replica))
+  SUBTYPE OF (vr_geometric_representation_item);
+  --IP1:
+  --IP2:
+  --IP3:
+END_ENTITY;
+
+ENTITY vr_line
+  SUBTYPE OF (vr_curve);
+  pnt : vr_cartesian_point;
+  dir : vr_vector;
+WHERE
+  WR1: dir.dim = pnt.dim;
+END_ENTITY;
+
+ENTITY vr_conic
+  SUPERTYPE OF (ONEOF (vr_circle,
+                       vr_ellipse,
+                       vr_hyperbola,
+                       vr_parabola))
+  SUBTYPE OF (vr_curve);
+  position : vr_axis2_placement;
+END_ENTITY;
+
+ENTITY vr_circle
+  SUBTYPE OF (vr_conic);
+  radius : positive_length_measure;
+END_ENTITY;
+
+ENTITY vr_ellipse
+  SUBTYPE OF (vr_conic);
+  semi_axis_1 : positive_length_measure;
+  semi_axis_2 : positive_length_measure;
+END_ENTITY;
+
+ENTITY vr_hyperbola
+  SUBTYPE OF (vr_conic);
+  semi_axis : positive_length_measure;
+  semi_imag_axis : positive_length_measure;
+END_ENTITY;
+
+ENTITY vr_parabola
+  SUBTYPE OF (vr_conic);
+  focal_dist : length_measure;
+WHERE
+  WR1: focal_dist <> 0.0;
+END_ENTITY;
+
+ENTITY vr_clothoid
+  SUBTYPE OF (vr_curve);
+  position : vr_axis2_placement;
+  clothoid_constant : length_measure;
+END_ENTITY;
+
+ENTITY vr_circular_involute
+  SUBTYPE OF (vr_curve);
+  position : vr_axis2_placement;
+  base_radius : positive_length_measure;
+END_ENTITY;
+
+ENTITY vr_bounded_curve
+  SUPERTYPE OF (ONEOF (vr_polyline,
+                       vr_b_spline_curve,
+                       vr_trimmed_curve,
+                       vr_bounded_pcurve,
+                       vr_bounded_surface_curve,
+                       vr_composite_curve,
+                       vr_locally_refined_spline_curve))
+  SUBTYPE OF (vr_curve);
+  --IP1:
+  --IP2:
+END_ENTITY;
+
+ENTITY vr_polyline
+  SUBTYPE OF (vr_bounded_curve);
+  points : LIST[2:?] OF vr_cartesian_point;
+END_ENTITY;
+
+ENTITY vr_b_spline_curve
+  SUPERTYPE OF (ONEOF (vr_uniform_curve,
+                       vr_b_spline_curve_with_knots,
+                       vr_quasi_uniform_curve,
+                       vr_bezier_curve)
+               ANDOR vr_rational_b_spline_curve)
+  SUBTYPE OF (vr_bounded_curve);
+  degree : INTEGER;
+  control_points_list : LIST[2:?] OF vr_cartesian_point;
+  curve_form : vr_b_spline_curve_form;
+  closed_curve : LOGICAL;
+  self_intersect : LOGICAL;
+DERIVE
+  upper_index_on_control_points : INTEGER := (SIZEOF(control_points_list) - 1);
+  control_points : ARRAY[0:upper_index_on_control_points] OF vr_cartesian_point := vr_list_to_array(control_points_list,0, upper_index_on_control_points);
+WHERE
+  WR1: ('VR_GEOMETRY_SCHEMA.VR_UNIFORM_CURVE' IN TYPEOF(self)) OR ('VR_GEOMETRY_SCHEMA.VR_QUASI_UNIFORM_CURVE' IN TYPEOF(self)) OR ('VR_GEOMETRY_SCHEMA.VR_BEZIER_CURVE' IN TYPEOF(self)) OR ('VR_GEOMETRY_SCHEMA.VR_B_SPLINE_CURVE_WITH_KNOTS' IN TYPEOF(self));
+END_ENTITY;
+
+ENTITY vr_b_spline_curve_with_knots
+  SUBTYPE OF (vr_b_spline_curve);
+  knot_multiplicities : LIST[2:?] OF INTEGER;
+  knots : LIST[2:?] OF parameter_value;
+  knot_spec : vr_knot_type;
+DERIVE
+  upper_index_on_knots : INTEGER := SIZEOF(knots);
+WHERE
+  WR1: vr_constraints_param_b_spline(SELF\vr_b_spline_curve.degree, upper_index_on_knots, SELF\vr_b_spline_curve.upper_index_on_control_points, knot_multiplicities, knots);
+  WR2: SIZEOF(knot_multiplicities) = upper_index_on_knots;
+END_ENTITY;
+
+ENTITY vr_uniform_curve
+  SUBTYPE OF (vr_b_spline_curve);
+END_ENTITY;
+
+ENTITY vr_quasi_uniform_curve
+  SUBTYPE OF (vr_b_spline_curve);
+END_ENTITY;
+
+ENTITY vr_bezier_curve
+  SUBTYPE OF (vr_b_spline_curve);
+END_ENTITY;
+
+ENTITY vr_rational_b_spline_curve
+  SUBTYPE OF (vr_b_spline_curve);
+  weights_data : LIST[2:?] OF REAL;
+DERIVE
+  weights : ARRAY[0:upper_index_on_control_points] OF REAL := vr_list_to_array(weights_data,0, upper_index_on_control_points);
+WHERE
+  WR1: SIZEOF(weights_data) = SIZEOF(SELF\vr_b_spline_curve. control_points_list);
+  WR2: vr_curve_weights_positive(SELF);
+END_ENTITY;
+
+(* VR spatial computing additions  next 3 entities *)
+
+ENTITY vr_local_b_spline
+  SUBTYPE OF(representation_item);
+  degree : INTEGER;
+  knots : LIST [2:?] OF INTEGER;
+  multiplicities : LIST [2:?] OF INTEGER;
+WHERE
+  WR1 : degree > 0;
+  WR2 : SIZEOF(knots) = SIZEOF(multiplicities);
+  WR3 : vr_constraints_param_local_b_spline(degree, knots, multiplicities);
+END_ENTITY;
+
+ENTITY vr_locally_refined_spline_curve
+SUBTYPE OF(vr_bounded_curve);
+ b_splines : LIST [2:?] OF vr_local_b_spline;
+ knot_values                    : vr_spline_knot_values;
+ control_points_list : LIST [2:?] OF vr_cartesian_point;
+ scaling_factors            : LIST [2:?] OF REAL;
+ closed_curve : LOGICAL;
+ locally_refined_spline_type : vr_locally_refined_spline_type_enum;
+ self_intersect : LOGICAL;
+ domain : LIST [2:2] OF REAL;
+WHERE
+ WR1 : SIZEOF(b_splines) = SIZEOF(control_points_list);
+ WR2 : SIZEOF(scaling_factors) = SIZEOF(control_points_list);
+ WR3 : vr_constraints_scaling(scaling_factors);
+END_ENTITY;
+
+ENTITY vr_rational_locally_refined_spline_curve
+SUBTYPE OF(vr_locally_refined_spline_curve);
+ weights_data : LIST [2:?] OF REAL;
+WHERE
+  WR1 : SIZEOF(weights_data) = SIZEOF(SELF\vr_locally_refined_spline_curve.control_points_list);
+  WR2 : vr_weights_positive(weights_data);
+END_ENTITY;
+
+ENTITY vr_trimmed_curve
+  SUBTYPE OF (vr_bounded_curve);
+  basis_curve : vr_curve;
+  trim_1 : SET[1:2] OF vr_trimming_select;
+  trim_2 : SET[1:2] OF vr_trimming_select;
+  sense_agreement : BOOLEAN;
+  master_representation : vr_trimming_preference;
+WHERE
+  WR1: (HIINDEX(trim_1) = 1) OR (TYPEOF(trim_1[1]) <> TYPEOF(trim_1[2]));
+  WR2: (HIINDEX(trim_2) = 1) OR (TYPEOF(trim_2[1]) <> TYPEOF(trim_2[2]));
+  --IP1:
+  --IP2:
+  --IP3:
+  --IP4:
+  --IP5:
+END_ENTITY;
+
+ENTITY vr_composite_curve
+  SUBTYPE OF (vr_bounded_curve);
+  segments : LIST[1:?] OF vr_composite_curve_segment;
+  self_intersect : LOGICAL;
+DERIVE
+  n_segments : INTEGER := SIZEOF(segments);
+  closed_curve : LOGICAL := segments[n_segments].transition <> discontinuous;
+WHERE
+  WR1: ((NOT closed_curve) AND (SIZEOF(QUERY(temp <* segments | temp.transition = discontinuous)) = 1)) OR ((closed_curve) AND (SIZEOF(QUERY(temp <* segments | temp.transition = discontinuous)) = 0));
+END_ENTITY;
+
+ENTITY vr_composite_curve_segment
+  SUBTYPE OF (founded_item);
+  transition : vr_transition_code;
+  same_sense : BOOLEAN;
+  parent_curve : vr_curve;
+INVERSE
+  using_curves : BAG[1:?] OF vr_composite_curve FOR segments;
+WHERE
+  WR1: ('VR_GEOMETRY_SCHEMA.VR_BOUNDED_CURVE' IN TYPEOF(parent_curve));
+END_ENTITY;
+
+ENTITY vr_reparametrised_composite_curve_segment
+  SUBTYPE OF (vr_composite_curve_segment);
+  param_length : parameter_value;
+WHERE
+  WR1: param_length > 0.0;
+END_ENTITY;
+
+ENTITY vr_pcurve
+  SUBTYPE OF (vr_curve);
+  basis_surface : vr_surface;
+  reference_to_curve : definitional_representation;
+WHERE
+  WR1: SIZEOF(reference_to_curve\representation.items) = 1;
+  WR2: 'VR_GEOMETRY_SCHEMA.VR_CURVE' IN TYPEOF (reference_to_curve\representation.items[1]);
+  WR3: reference_to_curve\representation.items[1]\vr_geometric_representation_item.dim = 2;
+END_ENTITY;
+
+ENTITY vr_bounded_pcurve
+  SUBTYPE OF (vr_pcurve, vr_bounded_curve);
+WHERE
+  WR1: ('VR_GEOMETRY_SCHEMA.VR_BOUNDED_CURVE' IN TYPEOF(SELF\vr_pcurve.reference_to_curve.items[1]));
+END_ENTITY;
+
+ENTITY vr_surface_curve
+  SUPERTYPE OF (ONEOF (vr_intersection_curve,
+                       vr_seam_curve)
+               ANDOR vr_bounded_surface_curve)
+  SUBTYPE OF (vr_curve);
+  curve_3d : vr_curve;
+  associated_geometry : LIST[1:2] OF vr_pcurve_or_surface;
+  master_representation : vr_preferred_surface_curve_representation;
+DERIVE
+  basis_surface : SET[1:2] OF vr_surface := vr_get_basis_surface(SELF);
+WHERE
+  WR1: curve_3d.dim = 3;
+  WR2: ('VR_GEOMETRY_SCHEMA.VR_PCURVE' IN TYPEOF(associated_geometry[1])) OR (master_representation <> pcurve_s1);
+  WR3: ('VR_GEOMETRY_SCHEMA.VR_PCURVE' IN TYPEOF(associated_geometry[2])) OR (master_representation <> pcurve_s2);
+  WR4: NOT ('VR_GEOMETRY_SCHEMA.VR_PCURVE' IN TYPEOF(curve_3d));
+  --IP1:
+  --IP2:
+END_ENTITY;
+
+ENTITY vr_intersection_curve
+  SUBTYPE OF (vr_surface_curve);
+WHERE
+  WR1: SIZEOF(SELF\vr_surface_curve.associated_geometry) = 2;
+  WR2: vr_associated_surface(SELF\vr_surface_curve.associated_geometry[1]) <> vr_associated_surface(SELF\vr_surface_curve.associated_geometry[2]);
+END_ENTITY;
+
+ENTITY vr_seam_curve
+  SUBTYPE OF (vr_surface_curve);
+WHERE
+  WR1: SIZEOF(SELF\vr_surface_curve.associated_geometry) = 2;
+  WR2: vr_associated_surface(SELF\vr_surface_curve.associated_geometry[1]) = vr_associated_surface(SELF\vr_surface_curve.associated_geometry[2]);
+  WR3: 'VR_GEOMETRY_SCHEMA.VR_PCURVE' IN TYPEOF(SELF\vr_surface_curve.associated_geometry[1]);
+  WR4: 'VR_GEOMETRY_SCHEMA.VR_PCURVE' IN TYPEOF(SELF\vr_surface_curve.associated_geometry[2]);
+END_ENTITY;
+
+ENTITY vr_bounded_surface_curve
+  SUBTYPE OF (vr_surface_curve);
+WHERE
+  WR1: ('VR_GEOMETRY_SCHEMA.VR_BOUNDED_CURVE' IN TYPEOF(SELF\vr_surface_curve.curve_3d));
+END_ENTITY;
+
+END_SCHEMA; -- vr_geometry_schema

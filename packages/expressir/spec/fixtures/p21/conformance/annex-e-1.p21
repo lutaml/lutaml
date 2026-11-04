@@ -1,0 +1,16 @@
+ISO-10303-21;
+HEADER;
+..
+..
+FILE_SCHEMA(('LONGA', 'LONGB'));
+ENDSEC;
+DATA ('ONE', ('LONGA'));
+#1=A(-3.5);
+#2=B('Sam Smith');
+#3=B('John Doe');
+ENDSEC;
+DATA ('TWO', ('LONGB'));
+#4=C(#2, '100 Main Street');
+#5=C(#3, '1300 Elmwood Avenue');
+ENDSEC;
+END-ISO-10303-21;

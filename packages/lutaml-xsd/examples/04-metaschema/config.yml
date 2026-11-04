@@ -1,0 +1,21 @@
+# Metaschema Example Configuration
+# Purpose: Demonstrates self-referential schema (XSD defining XSD structure)
+# This is the NIST Metaschema XML Schema that defines metaschema itself
+
+files:
+  - ../../spec/fixtures/metaschema.xsd
+
+schema_location_mappings:
+  # Map metaschema includes to local files
+  - from: "metaschema-prose-module.xsd"
+    to: ../../spec/fixtures/metaschema-prose-module.xsd
+    pattern: false
+  - from: "metaschema-datatypes.xsd"
+    to: ../../spec/fixtures/metaschema-datatypes.xsd
+    pattern: false
+
+namespace_mappings:
+  - prefix: "xs"
+    uri: "http://www.w3.org/2001/XMLSchema"
+  - prefix: "m"
+    uri: "http://csrc.nist.gov/ns/oscal/metaschema/1.0"

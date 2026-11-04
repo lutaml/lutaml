@@ -1,0 +1,826 @@
+---
+title: Querying Packages
+parent: LER Packages
+grand_parent: Guides
+nav_order: 3
+---
+
+= Querying Packages
+
+== Purpose
+
+This guide explains how to search and query LER package contents using both the
+SearchEngine API and CLI commands. LER packages include pre-built indexes for
+efficient querying.
+
+== References
+
+* link:index.html[LER Packages Overview]
+* link:loading-packages.html[Loading Packages]
+* link:../ruby-api/search-engine.html[Search Engine API]
+* link:../ruby-api/working-with-repository.html[Working with Repository]
+
+== Concepts
+
+Search engine:: The [`SearchEngine`](../../lib/expressir/model/search_engine.rb:7)
+class provides pattern matching and filtering capabilities for EXPRESS elements.
+
+Pattern matching:: Supports simple names, qualified paths, wildcards, prefix
+matching, and regular expressions.
+
+Element types:: Schema, entity, type, attribute, function, procedure, rule,
+constant, parameter, variable, and more.
+
+Type categories:: Classification of types as select, enumeration, aggregate, or
+defined types.
+
+Pre-built indexes:: Entity, type, and reference indexes stored in the package
+for fast lookups.
+
+== Using SearchEngine with packages
+
+=== Basic search engine usage
+
+Load a package and create a search engine:
+
+[source,ruby]
+----
+require "expressir"
+
+# Load package
+repo = Expressir::Model::Repository.from_package("schemas.ler")
+
+# Create search engine
+engine = Expressir::Model::SearchEngine.new(repo)
+
+# Search for elements
+results = engine.search(pattern: "action")
+puts "Found #{results.size} results"
+----
+
+=== Listing all elements
+
+List elements by type:
+
+[source,ruby]
+----
+# List all entities
+entities = engine.list(type: "entity")
+puts "Total entities: #{entities.size}"
+
+entities.each do |e|
+  puts "  #{e[:schema]}.#{e[:id]}"
+end
+
+# List all types
+types = engine.list(type: "type")
+puts "Total types: #{types.size}"
+
+# List functions
+functions = engine.list(type: "function")
+puts "Total functions: #{functions.size}"
+----
+
+=== Filtering by schema
+
+Limit results to specific schema:
+
+[source,ruby]
+----
+# Entities from specific schema
+entities = engine.list(type: "entity", schema: "action_schema")
+puts "Entities in action_schema: #{entities.size}"
+
+# Types from specific schema
+types = engine.list(type: "type", schema: "approval_schema")
+puts "Types in approval_schema: #{types.size}"
+----
+
+=== Filtering types by category
+
+Filter types by their category:
+
+[source,ruby]
+----
+# List SELECT types
+select_types = engine.list(type: "type", category: "select")
+puts "SELECT types: #{select_types.size}"
+
+# List ENUMERATION types
+enum_types = engine.list(type: "type", category: "enumeration")
+puts "ENUMERATION types: #{enum_types.size}"
+
+# List AGGREGATE types
+agg_types = engine.list(type: "type", category: "aggregate")
+puts "AGGREGATE types: #{agg_types.size}"
+
+# List defined types
+defined_types = engine.list(type: "type", category: "defined")
+puts "Defined types: #{defined_types.size}"
+----
+
+== Search patterns
+
+=== Simple name search
+
+Search by element name:
+
+[source,ruby]
+----
+# Find all elements containing "action"
+results = engine.search(pattern: "action")
+
+results.each do |r|
+  puts "#{r[:type]}: #{r[:path]}"
+end
+----
+
+=== Qualified name search
+
+Search using qualified paths:
+
+[source,ruby]
+----
+# Search for schema.element
+results = engine.search(pattern: "action_schema.action")
+
+# Search for schema.entity.attribute
+results = engine.search(pattern: "action_schema.action.id")
+----
+
+=== Wildcard patterns
+
+Use `*` for wildcard matching:
+
+[source,ruby]
+----
+# Wildcard schema, specific element
+results = engine.search(pattern: "*.action")
+
+# Specific schema, wildcard element
+results = engine.search(pattern: "action_schema.*")
+
+# Multi-level wildcards
+results = engine.search(pattern: "*.*.id")
+
+# All elements
+results = engine.search(pattern: "*")
+----
+
+=== Prefix matching
+
+Match elements starting with a prefix:
+
+[source,ruby]
+----
+# Find all elements starting with "action"
+results = engine.search(pattern: "action*")
+
+# Combine with schema
+results = engine.search(pattern: "action_schema.action*")
+----
+
+=== Regular expression search
+
+Use regex for complex patterns:
+
+[source,ruby]
+----
+# Search with regex
+results = engine.search(
+  pattern: "action|approval",
+  regex: true
+)
+
+# Case-sensitive regex
+results = engine.search(
+  pattern: "^Action[A-Z]",
+  regex: true,
+  case_sensitive: true
+)
+----
+
+=== Exact matching
+
+Require exact name matches:
+
+[source,ruby]
+----
+# Exact match only
+results = engine.search(
+  pattern: "action_schema.action",
+  exact: true
+)
+----
+
+== Advanced search options
+
+=== Filtering by element type
+
+Limit search to specific element types:
+
+[source,ruby]
+----
+# Search only entities
+entities = engine.search(
+  pattern: "action",
+  type: "entity"
+)
+
+# Search only types
+types = engine.search(
+  pattern: "status",
+  type: "type"
+)
+
+# Search only attributes
+attributes = engine.search(
+  pattern: "id",
+  type: "attribute"
+)
+----
+
+=== Combining filters
+
+Use multiple filters together:
+
+[source,ruby]
+----
+# Search SELECT types in specific schema
+results = engine.search(
+  pattern: "*",
+  type: "type",
+  schema: "action_schema",
+  category: "select"
+)
+
+# Search entities with pattern in specific schema
+results = engine.search(
+  pattern: "action*",
+  type: "entity",
+  schema: "action_schema"
+)
+----
+
+=== Case sensitivity
+
+Control case-sensitive matching:
+
+[source,ruby]
+----
+# Case-insensitive (default)
+results = engine.search(pattern: "ACTION")
+
+# Case-sensitive
+results = engine.search(
+  pattern: "ACTION",
+  case_sensitive: true
+)
+----
+
+=== Depth filtering
+
+Limit search by path depth:
+
+[source,ruby]
+----
+# Maximum depth 2 (schema.entity)
+results = engine.search_with_depth(
+  pattern: "*",
+  max_depth: 2
+)
+
+# Maximum depth 3 (schema.entity.attribute)
+results = engine.search_with_depth(
+  pattern: "action*",
+  max_depth: 3
+)
+----
+
+=== Ranked search
+
+Search with relevance scoring:
+
+[source,ruby]
+----
+# Search with ranking
+results = engine.search_ranked(
+  pattern: "action",
+  boost_exact: 10,    # Boost for exact matches
+  boost_prefix: 5     # Boost for prefix matches
+)
+
+# Results include :relevance_score
+results.each do |r|
+  puts "Score #{r[:relevance_score]}: #{r[:path]}"
+end
+----
+
+=== Advanced combined search
+
+Use all features together:
+
+[source,ruby]
+----
+results = engine.search_advanced(
+  pattern: "action*",
+  type: "entity",
+  schema: "action_schema",
+  max_depth: 2,
+  ranked: true,
+  case_sensitive: false
+)
+----
+
+== CLI query commands
+
+=== Package list command
+
+List elements from command line:
+
+[source,bash]
+----
+# List all entities
+expressir package list schemas.ler --type entity
+
+# List all types
+expressir package list schemas.ler --type type
+
+# List SELECT types
+expressir package list schemas.ler --type type --category select
+
+# Filter by schema
+expressir package list schemas.ler --type entity --schema action_schema
+
+# Show only count
+expressir package list schemas.ler --type entity --count-only
+----
+
+.Output formats
+[example]
+====
+[source,bash]
+----
+# Text format (default)
+expressir package list schemas.ler --type entity
+
+# JSON format
+expressir package list schemas.ler --type entity --format json
+
+# YAML format
+expressir package list schemas.ler --type entity --format yaml
+----
+====
+
+=== Package search command
+
+Search patterns from command line:
+
+[source,bash]
+----
+# Simple search
+expressir package search schemas.ler "action"
+
+# With type filter
+expressir package search schemas.ler "action" --type entity
+
+# With schema filter
+expressir package search schemas.ler "action" --schema action_schema
+
+# Wildcard search
+expressir package search schemas.ler "*.action"
+
+# Prefix search
+expressir package search schemas.ler "action*"
+----
+
+.Search options
+[example]
+====
+[source,bash]
+----
+# Case-sensitive search
+expressir package search schemas.ler "Action" --case-sensitive
+
+# Regular expression search
+expressir package search schemas.ler "action|approval" --regex
+
+# Exact match only
+expressir package search schemas.ler "action_schema.action" --exact
+
+# With result limit
+expressir package search schemas.ler "action" --limit 10
+
+# Show only count
+expressir package search schemas.ler "action" --count-only
+----
+====
+
+=== Package tree command
+
+Display hierarchical tree view:
+
+[source,bash]
+----
+# Full tree
+expressir package tree schemas.ler
+
+# Limit depth
+expressir package tree schemas.ler --depth 2
+
+# Filter by schema
+expressir package tree schemas.ler --schema action_schema
+
+# Filter by type
+expressir package tree schemas.ler --type entity
+
+# Show element counts
+expressir package tree schemas.ler --counts
+
+# Disable colors
+expressir package tree schemas.ler --no-color
+----
+
+.Example tree output
+[example]
+====
+[source]
+----
+schemas.ler
+├─ action_schema (schema) [15 entities, 8 types, 2 functions]
+│  ├─ action (entity)
+│  │  ├─ id (attribute): STRING
+│  │  ├─ name (attribute): STRING
+│  │  └─ description (attribute): STRING
+│  ├─ action_directive (entity)
+│  │  ├─ id (attribute): STRING
+│  │  └─ directive (attribute): action_directive_type
+│  ├─ action_status (type)
+│  │  ├─ pending
+│  │  ├─ in_progress
+│  │  └─ completed
+│  └─ action_directive_type (type)
+└─ approval_schema (schema) [8 entities, 5 types]
+   ├─ approval (entity)
+   └─ approval_status (type)
+----
+====
+
+== Common query patterns
+
+=== Find specific entity
+
+[source,ruby]
+----
+# Using repository index directly (fastest)
+entity = repo.find_entity(qualified_name: "action_schema.action")
+
+if entity
+  puts "Found: #{entity.id}"
+  puts "Schema: #{entity.parent.id}"
+  puts "Path: #{entity.path}"
+end
+----
+
+=== List entities from schema
+
+[source,ruby]
+----
+# Using repository
+entities = repo.list_entities(schema: "action_schema", format: :hash)
+
+entities.each do |e|
+  puts "#{e[:schema]}.#{e[:id]}"
+end
+
+# Using search engine
+entities = engine.list(type: "entity", schema: "action_schema")
+----
+
+=== Find types by category
+
+[source,ruby]
+----
+# SELECT types
+select_types = repo.list_types(category: "select", format: :hash)
+
+select_types.each do |t|
+  puts "#{t[:schema]}.#{t[:id]} [#{t[:category]}]"
+end
+
+# ENUMERATION types
+enum_types = repo.list_types(category: "enumeration", format: :hash)
+----
+
+=== Search across all schemas
+
+[source,ruby]
+----
+# Find all entities named "action"
+results = engine.search(pattern: "action", type: "entity")
+
+results.each do |r|
+  puts "Found in #{r[:schema]}: #{r[:id]}"
+end
+----
+
+=== Find all attributes with specific name
+
+[source,ruby]
+----
+# Find all "id" attributes
+results = engine.search(pattern: "*.*.id", type: "attribute")
+
+results.each do |r|
+  puts "Attribute: #{r[:path]}"
+end
+----
+
+=== Count elements by type
+
+[source,ruby]
+----
+# Count all entities
+entity_count = engine.count(type: "entity")
+puts "Total entities: #{entity_count}"
+
+# Count entities in specific schema
+schema_entities = engine.count(
+  type: "entity",
+  schema: "action_schema"
+)
+puts "Entities in action_schema: #{schema_entities}"
+
+# Count SELECT types
+select_count = engine.count(
+  type: "type",
+  category: "select"
+)
+puts "SELECT types: #{select_count}"
+----
+
+== Performance optimization
+
+=== Use pre-built indexes
+
+Indexes are automatically loaded from packages:
+
+[source,ruby]
+----
+repo = Expressir::Model::Repository.from_package("schemas.ler")
+
+# Indexes already loaded - no build needed
+entity = repo.find_entity(qualified_name: "action_schema.action")
+----
+
+Performance comparison:
+
+[source]
+----
+Without indexes: ~500ms to find entity
+With pre-built indexes: ~2ms to find entity
+Speed improvement: 250x faster
+----
+
+=== Prefer specific queries
+
+More specific searches are faster:
+
+[source,ruby]
+----
+# Slower: Search all types
+all_results = engine.search(pattern: "action")
+
+# Faster: Search specific type
+entities_only = engine.search(
+  pattern: "action",
+  type: "entity"
+)
+
+# Fastest: Direct repository lookup
+entity = repo.find_entity(
+  qualified_name: "action_schema.action"
+)
+----
+
+=== Cache search results
+
+Cache frequently used queries:
+
+[source,ruby]
+----
+class QueryCache
+  def initialize(engine)
+    @engine = engine
+    @cache = {}
+  end
+
+  def search(pattern:, **options)
+    cache_key = [pattern, options].hash
+    @cache[cache_key] ||= @engine.search(
+      pattern: pattern,
+      **options
+    )
+  end
+
+  def clear
+    @cache.clear
+  end
+end
+
+# Usage
+cache = QueryCache.new(engine)
+results = cache.search(pattern: "action", type: "entity")
+----
+
+=== Limit result sets
+
+Use limits for large result sets:
+
+[source,bash]
+----
+# CLI with limit
+expressir package search schemas.ler "action" --limit 10
+
+# Or get count first
+expressir package search schemas.ler "action" --count-only
+----
+
+== Result formatting
+
+=== Hash format
+
+Default format for programmatic use:
+
+[source,ruby]
+----
+results = engine.search(pattern: "action")
+
+# Each result is a hash:
+# {
+#   id: "action",
+#   type: "entity",
+#   schema: "action_schema",
+#   path: "action_schema.action"
+# }
+
+results.each do |r|
+  puts "#{r[:type]}: #{r[:schema]}.#{r[:id]}"
+end
+----
+
+=== JSON format
+
+Convert to JSON for export:
+
+[source,ruby]
+----
+require "json"
+
+results = engine.search(pattern: "action")
+json = JSON.pretty_generate(results)
+File.write("results.json", json)
+----
+
+Or from CLI:
+
+[source,bash]
+----
+expressir package search schemas.ler "action" --format json > results.json
+----
+
+=== YAML format
+
+Convert to YAML:
+
+[source,ruby]
+----
+require "yaml"
+
+results = engine.search(pattern: "action")
+yaml = results.to_yaml
+File.write("results.yaml", yaml)
+----
+
+Or from CLI:
+
+[source,bash]
+----
+expressir package search schemas.ler "action" --format yaml > results.yaml
+----
+
+=== Custom formatting
+
+Create custom output format:
+
+[source,ruby]
+----
+def format_results(results)
+  results.map do |r|
+    {
+      full_name: "#{r[:schema]}.#{r[:id]}",
+      type: r[:type],
+      category: r[:category]
+    }.compact
+  end
+end
+
+results = engine.search(pattern: "action")
+formatted = format_results(results)
+----
+
+== Working with query results
+
+=== Accessing result data
+
+Extract information from results:
+
+[source,ruby]
+----
+results = engine.search(pattern: "action", type: "entity")
+
+# Get just the IDs
+ids = results.map { |r| r[:id] }
+puts "IDs: #{ids.join(', ')}"
+
+# Get qualified names
+qualified_names = results.map { |r| "#{r[:schema]}.#{r[:id]}" }
+puts "Qualified names: #{qualified_names.join(', ')}"
+
+# Group by schema
+by_schema = results.group_by { |r| r[:schema] }
+by_schema.each do |schema, items|
+  puts "#{schema}: #{items.size} items"
+end
+----
+
+=== Filtering results
+
+Apply additional filters to results:
+
+[source,ruby]
+----
+results = engine.search(pattern: "action")
+
+# Filter by type
+entities = results.select { |r| r[:type] == "entity" }
+
+# Filter by schema
+action_schema = results.select { |r| r[:schema] == "action_schema" }
+
+# Filter by path depth
+shallow = results.select { |r| r[:path].split(".").size <= 2 }
+----
+
+=== Sorting results
+
+Sort results by different criteria:
+
+[source,ruby]
+----
+results = engine.search(pattern: "action")
+
+# Sort by ID
+by_id = results.sort_by { |r| r[:id] }
+
+# Sort by schema
+by_schema = results.sort_by { |r| [r[:schema], r[:id]] }
+
+# Sort by type
+by_type = results.sort_by { |r| [r[:type], r[:id]] }
+
+# Sort by path depth (shortest first)
+by_depth = results.sort_by { |r| r[:path].split(".").size }
+----
+
+== Next steps
+
+* link:validating-packages.html[Validating Packages] - Verify package integrity
+* link:package-formats.html[Package Formats] - Understanding serialization formats
+* link:../ruby-api/search-engine.html[Search Engine API] - Detailed API reference
+* link:loading-packages.html[Loading Packages] - Package loading guide
+
+== Summary
+
+Key takeaways for querying LER packages:
+
+* SearchEngine provides powerful pattern matching
+* Pre-built indexes enable fast lookups
+* Support for wildcards, regex, and exact matching
+* Filter by type, schema, and category
+* CLI commands for interactive queries
+* Multiple output formats (text, JSON, YAML)
+* Tree view for hierarchical visualization
+* Rank results by relevance
+* Depth filtering for focused results
+
+Best practices:
+
+* Use direct repository lookups for known qualified names
+* Leverage pre-built indexes for performance
+* Filter early to reduce result sets
+* Cache frequently used queries
+* Use specific type filters when possible
+* Limit results for large queries
+* Choose appropriate output format for use case
+* Combine filters for precise results

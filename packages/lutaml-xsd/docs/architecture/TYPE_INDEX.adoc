@@ -1,0 +1,1000 @@
+---
+layout: default
+title: Type index implementation
+nav_order: 3
+parent: Architecture
+---
+= Type Index Implementation
+:toc:
+:toclevels: 3
+
+== Purpose
+
+This document provides detailed technical documentation on the type index implementation in lutaml-xsd. It explains how types are indexed during schema parsing, how lookups work, and the data structures used for fast qualified name resolution.
+
+== General
+
+The type index ([`TypeIndex`](../../lib/lutaml/xsd/schema_repository/type_index.rb:8)) is a critical component that enables fast type lookups across multiple schemas and namespaces. It provides O(1) hash-based lookups for type definitions using qualified names in multiple formats.
+
+The index is built during schema parsing and resolution, creating a comprehensive map of all type definitions across the schema collection. This eliminates the need for linear searches through schema structures and enables instant type resolution.
+
+== Index structure
+
+The type index organizes type definitions in three complementary dimensions for flexible querying:
+
+[source,ruby]
+----
+@index = {
+  # Clark notation keys → type information
+  "{http://www.opengis.net/gml/3.2}CodeType" => {
+    type: :complex_type,
+    definition: <ComplexType object>,
+    namespace: "http://www.opengis.net/gml/3.2",
+    schema_file: "basicTypes.xsd"
+  },
+  "{http://www.opengis.net/gml/3.2}MeasureType" => {
+    type: :complex_type,
+    definition: <ComplexType object>,
+    namespace: "http://www.opengis.net/gml/3.2",
+    schema_file: "basicTypes.xsd"
+  },
+  "{http://www.opengis.net/citygml/2.0}Building" => {
+    type: :element,
+    definition: <Element object>,
+    namespace: "http://www.opengis.net/citygml/2.0",
+    schema_file: "building.xsd"
+  }
+  # ... thousands more entries
+}
+----
+
+=== Index dimensions
+
+==== 1. By namespace
+
+Enables querying all types within a specific namespace:
+
+[source,ruby]
+----
+# Find all types in GML namespace
+types = index.find_all_in_namespace("http://www.opengis.net/gml/3.2")
+# Returns array of type information hashes
+----
+
+==== 2. By qualified name
+
+Enables lookup using Clark notation (the primary key):
+
+[source,ruby]
+----
+# Lookup by Clark notation
+type_info = index.find("{http://www.opengis.net/gml/3.2}CodeType")
+# Returns type information hash or nil
+----
+
+==== 3. By category
+
+Enables filtering types by their classification:
+
+[source,ruby]
+----
+# Get statistics by category
+stats = index.statistics
+stats[:by_type][:complex_type]  # => 1356
+stats[:by_type][:simple_type]   # => 92
+stats[:by_type][:element]       # => 1221
+----
+
+== Building the index
+
+The index is built incrementally as schemas are parsed:
+
+=== During schema parsing
+
+[source]
+----
+Schema Parsing Flow:
+═══════════════════
+
+1. Parse main schema
+   ┌────────────────────┐
+   │ urbanFunction.xsd  │
+   └─────────┬──────────┘
+             │
+             ▼
+   ┌────────────────────┐
+   │ Index schema       │
+   │ • Complex types    │
+   │ • Simple types     │
+   │ • Elements         │
+   │ • Attribute groups │
+   │ • Groups           │
+   └─────────┬──────────┘
+             │
+             ▼
+2. Process imports
+   ┌────────────────────┐
+   │ <xs:import>        │
+   │ urbanObject.xsd    │
+   └─────────┬──────────┘
+             │
+             ▼
+   ┌────────────────────┐
+   │ Parse & index      │
+   │ imported schema    │
+   └─────────┬──────────┘
+             │
+             ▼
+3. Process includes
+   ┌────────────────────┐
+   │ <xs:include>       │
+   │ common.xsd         │
+   └─────────┬──────────┘
+             │
+             ▼
+   ┌────────────────────┐
+   │ Parse & index      │
+   │ included schema    │
+   └─────────┬──────────┘
+             │
+             ▼
+4. Complete index
+   ┌────────────────────┐
+   │ All types indexed  │
+   │ Ready for lookups  │
+   └────────────────────┘
+----
+
+=== Index building algorithm
+
+The [`TypeIndex#build_from_schemas`](../../lib/lutaml/xsd/schema_repository/type_index.rb:16) method orchestrates indexing:
+
+[source,ruby]
+----
+def build_from_schemas(schemas)
+  schemas.each do |file_path, schema|
+    index_schema(schema, file_path)
+  end
+end
+----
+
+For each schema, the [`index_schema`](../../lib/lutaml/xsd/schema_repository/type_index.rb:25) method indexes all type collections:
+
+[source,ruby]
+----
+def index_schema(schema, file_path)
+  namespace = schema.target_namespace
+
+  # Index each type collection
+  index_collection(schema.simple_type, namespace, file_path, :simple_type)
+  index_collection(schema.complex_type, namespace, file_path, :complex_type)
+  index_collection(schema.element, namespace, file_path, :element)
+  index_collection(schema.attribute_group, namespace, file_path, :attribute_group)
+  index_collection(schema.group, namespace, file_path, :group)
+end
+----
+
+The [`index_collection`](../../lib/lutaml/xsd/schema_repository/type_index.rb:130) method processes each type:
+
+[source,ruby]
+----
+def index_collection(collection, namespace, file_path, type_symbol)
+  return unless collection && !collection.empty?
+
+  collection.each do |item|
+    next unless item&.name
+
+    # Build Clark notation key
+    clark_key = build_clark_key(namespace, item.name)
+
+    # Store type information
+    @index[clark_key] = {
+      type: type_symbol,           # :complex_type, :simple_type, etc.
+      definition: item,             # The actual type object
+      namespace: namespace,         # Namespace URI
+      schema_file: file_path        # Source file
+    }
+  end
+end
+----
+
+=== Clark notation keys
+
+The index uses Clark notation as the primary key format:
+
+[source,ruby]
+----
+def build_clark_key(namespace, local_name)
+  if namespace && !namespace.empty?
+    "{#{namespace}}#{local_name}"
+  else
+    local_name  # No namespace
+  end
+end
+----
+
+Examples:
+
+```
+{http://www.opengis.net/gml/3.2}CodeType
+{http://www.opengis.net/citygml/2.0}Building
+{https://www.geospatial.jp/iur/uro/3.2}BuildingType
+```
+
+== Fast lookup mechanisms
+
+The index provides multiple lookup methods optimized for different use cases:
+
+=== Direct lookup by Clark key
+
+O(1) hash lookup using Clark notation:
+
+[source,ruby]
+----
+# Direct hash lookup - fastest
+type_info = index.find("{http://www.opengis.net/gml/3.2}CodeType")
+
+if type_info
+  type_info[:type]        # => :complex_type
+  type_info[:definition]  # => <ComplexType object>
+  type_info[:namespace]   # => "http://www.opengis.net/gml/3.2"
+  type_info[:schema_file] # => "basicTypes.xsd"
+end
+----
+
+Implementation:
+
+[source,ruby]
+----
+def find(clark_key)
+  @index[clark_key]  # O(1) hash lookup
+end
+----
+
+=== Lookup by namespace and name
+
+Convenience method that builds Clark key:
+
+[source,ruby]
+----
+# Lookup by namespace + local name
+type_info = index.find_by_namespace_and_name(
+  "http://www.opengis.net/gml/3.2",
+  "CodeType"
+)
+----
+
+Implementation:
+
+[source,ruby]
+----
+def find_by_namespace_and_name(namespace, local_name)
+  return nil if local_name.nil?
+
+  clark_key = build_clark_key(namespace, local_name)
+  find(clark_key)  # Delegates to direct lookup
+end
+----
+
+=== Find all in namespace
+
+Get all types within a namespace:
+
+[source,ruby]
+----
+# Get all GML types
+gml_types = index.find_all_in_namespace(
+  "http://www.opengis.net/gml/3.2"
+)
+# Returns array of type information hashes
+----
+
+Implementation:
+
+[source,ruby]
+----
+def find_all_in_namespace(namespace)
+  @index.select { |key, _| key.start_with?("{#{namespace}}") }.values
+end
+----
+
+=== Similarity suggestions
+
+Find similar type names for error messages:
+
+[source,ruby]
+----
+# Get suggestions for misspelled type
+suggestions = index.suggest_similar(
+  "http://www.opengis.net/gml/3.2",
+  "CodeTypo",  # Misspelled
+  limit: 5
+)
+# => ["CodeType", "CodeWithAuthorityType", "CodeOrNilReasonListType"]
+----
+
+Implementation:
+
+[source,ruby]
+----
+def suggest_similar(namespace, local_name, limit: 5)
+  types_in_namespace = find_all_in_namespace(namespace)
+  return [] if types_in_namespace.empty?
+
+  # Simple similarity: substring matching
+  similar = types_in_namespace.select do |type_info|
+    name = type_info[:definition]&.name
+    next false unless name
+
+    # Check if search term is contained in type name or vice versa
+    name.downcase.include?(local_name.downcase) ||
+      local_name.downcase.include?(name.downcase)
+  end
+
+  similar.map { |info| info[:definition]&.name }.compact.take(limit)
+end
+----
+
+== Index serialization
+
+The index can be serialized for package distribution:
+
+=== Serialization format
+
+For packages, the index is converted to [`TypeIndexEntry`](../../lib/lutaml/xsd/type_index_entry.rb:6) objects:
+
+[source,ruby]
+----
+class TypeIndexEntry < Lutaml::Model::Serializable
+  attribute :clark_key, :string
+  attribute :type_category, :string
+  attribute :namespace, :string
+  attribute :local_name, :string
+  attribute :schema_file, :string
+end
+----
+
+Example serialized entry:
+
+[source,yaml]
+----
+clark_key: "{http://www.opengis.net/gml/3.2}CodeType"
+type_category: "complex_type"
+namespace: "http://www.opengis.net/gml/3.2"
+local_name: "CodeType"
+schema_file: "basicTypes.xsd"
+----
+
+=== Creating index entries
+
+Convert from index info hash to serializable entry:
+
+[source,ruby]
+----
+def self.from_index_info(clark_key, info)
+  new(
+    clark_key: clark_key,
+    type_category: info[:type].to_s,
+    namespace: info[:namespace],
+    local_name: info[:definition]&.name,
+    schema_file: info[:schema_file]
+  )
+end
+----
+
+=== Serialization workflow
+
+[source]
+----
+Index Serialization:
+═══════════════════
+
+1. Build index from schemas
+   ┌────────────────────────────┐
+   │ TypeIndex@index (Hash)     │
+   │  {clark_key} => info_hash  │
+   └──────────┬─────────────────┘
+              │
+              ▼
+2. Convert to entries
+   ┌────────────────────────────┐
+   │ TypeIndexEntry objects     │
+   │  Array of serializable     │
+   │  objects                   │
+   └──────────┬─────────────────┘
+              │
+              ▼
+3. Serialize to format
+   ┌────────────────────────────┐
+   │ Marshal/JSON/YAML          │
+   │  Based on package config   │
+   └──────────┬─────────────────┘
+              │
+              ▼
+4. Write to package
+   ┌────────────────────────────┐
+   │ type_index.marshal         │
+   │  in .lxr package           │
+   └────────────────────────────┘
+----
+
+== Integration with SchemaRepository
+
+The type index is used by [`SchemaRepository#find_type`](../../lib/lutaml/xsd/schema_repository.rb:171) for qualified name resolution:
+
+=== Resolution workflow
+
+[source]
+----
+Type Resolution Flow:
+════════════════════
+
+User Query: "gml:CodeType"
+         │
+         ▼
+┌─────────────────────────────┐
+│ QualifiedNameParser         │
+│ Parse qualified name        │
+│  prefix: "gml"              │
+│  local_name: "CodeType"     │
+└──────────┬──────────────────┘
+           │
+           ▼
+┌─────────────────────────────┐
+│ NamespaceRegistry           │
+│ Resolve prefix → URI        │
+│  "gml" →                    │
+│  "http://.../gml/3.2"       │
+└──────────┬──────────────────┘
+           │
+           ▼
+┌─────────────────────────────┐
+│ TypeIndex                   │
+│ Lookup by namespace + name  │
+│  namespace: http://.../gml  │
+│  local_name: CodeType       │
+└──────────┬──────────────────┘
+           │
+           ▼
+┌─────────────────────────────┐
+│ TypeResolutionResult        │
+│  found?: true               │
+│  type: ComplexType          │
+│  namespace: http://.../gml  │
+│  schema_file: basicTypes.xsd│
+└─────────────────────────────┘
+----
+
+=== Code example
+
+[source,ruby]
+----
+# In SchemaRepository#find_type(qname)
+
+# 1. Parse qualified name
+parsed = QualifiedNameParser.parse(qname, @namespace_registry)
+# => { prefix: "gml", local_name: "CodeType", namespace: "http://..." }
+
+# 2. Look up in type index
+type_info = @type_index.find_by_namespace_and_name(
+  parsed[:namespace],
+  parsed[:local_name]
+)
+
+# 3. Return result
+if type_info
+  TypeResolutionResult.success(
+    qname: qname,
+    namespace: type_info[:namespace],
+    local_name: type_info[:definition].name,
+    definition: type_info[:definition],
+    schema_file: type_info[:schema_file]
+  )
+else
+  TypeResolutionResult.failure(...)
+end
+----
+
+== Type index and package composition
+
+When loading composed packages, the type index respects package priorities during type resolution. This enables controlled conflict resolution when multiple packages define types with the same qualified name.
+
+=== Priority-based indexing
+
+Packages are loaded and indexed in priority order to ensure deterministic type resolution:
+
+[source]
+----
+Package Composition Indexing Flow:
+═══════════════════════════════════
+
+1. Load packages by priority (lower number = higher priority)
+   ┌────────────────────────────┐
+   │ Priority 0: core_gml.lxr   │ ← Loaded first
+   └──────────┬─────────────────┘
+              │
+              ▼
+   ┌────────────────────────────┐
+   │ Index all types            │
+   │ {http://.../gml}CodeType   │
+   └──────────┬─────────────────┘
+              │
+              ▼
+2. Load next priority package
+   ┌────────────────────────────┐
+   │ Priority 1: custom_gml.lxr │ ← Loaded second
+   └──────────┬─────────────────┘
+              │
+              ▼
+   ┌────────────────────────────┐
+   │ Conflict detection         │
+   │ {http://.../gml}CodeType   │ ← Already exists!
+   └──────────┬─────────────────┘
+              │
+              ▼
+3. Apply resolution strategy
+   ┌────────────────────────────┐
+   │ Strategy: keep             │ ← Keep first (priority 0)
+   │ OR                         │
+   │ Strategy: override         │ ← Replace with second
+   │ OR                         │
+   │ Strategy: error            │ ← Fail composition
+   └────────────────────────────┘
+----
+
+=== Type lookup with priorities
+
+The index stores the winning definition based on the resolution strategy:
+
+.Priority-based type resolution
+[example]
+====
+[source,ruby]
+----
+# Composition with priorities
+config = {
+  base_packages: [
+    {
+      package: 'gml_3.2.1.lxr',
+      priority: 0,           # Higher priority (loaded first)
+      conflict_resolution: 'keep'
+    },
+    {
+      package: 'custom_gml.lxr',
+      priority: 1,           # Lower priority (loaded second)
+      conflict_resolution: 'keep'
+    }
+  ]
+}
+
+# After composition, index lookup returns:
+result = repo.find_type('gml:CodeType')
+
+# With 'keep' strategy:
+#   Returns definition from gml_3.2.1.lxr (priority 0)
+#   custom_gml.lxr version is discarded
+
+# With 'override' strategy:
+#   Returns definition from custom_gml.lxr (priority 1)
+#   gml_3.2.1.lxr version is replaced
+----
+====
+
+=== Conflict resolution strategies
+
+==== Keep strategy (default)
+
+First definition wins - higher priority package definitions are preserved:
+
+[source,ruby]
+----
+# Priority 0 package defines CodeType
+@index["{http://www.opengis.net/gml/3.2}CodeType"] = {
+  type: :complex_type,
+  definition: <ComplexType from priority 0>,
+  namespace: "http://www.opengis.net/gml/3.2",
+  schema_file: "basicTypes.xsd",
+  source_package: "gml_3.2.1.lxr",
+  priority: 0
+}
+
+# Priority 1 package also defines CodeType
+# With 'keep' strategy: entry is NOT updated
+# Index retains priority 0 definition
+----
+
+==== Override strategy
+
+Later definition replaces earlier - lower priority packages can override:
+
+[source,ruby]
+----
+# Priority 0 package defines CodeType (indexed first)
+@index["{http://www.opengis.net/gml/3.2}CodeType"] = { ... }
+
+# Priority 1 package defines CodeType
+# With 'override' strategy: entry IS replaced
+@index["{http://www.opengis.net/gml/3.2}CodeType"] = {
+  type: :complex_type,
+  definition: <ComplexType from priority 1>,
+  namespace: "http://www.opengis.net/gml/3.2",
+  schema_file: "custom_types.xsd",
+  source_package: "custom_gml.lxr",
+  priority: 1
+}
+----
+
+==== Error strategy
+
+Composition fails if conflicts detected:
+
+[source]
+----
+Error: Type conflict detected during composition
+  Type: {http://www.opengis.net/gml/3.2}CodeType
+  
+  Defined in:
+    - gml_3.2.1.lxr (priority: 0)
+      File: basicTypes.xsd
+    
+    - custom_gml.lxr (priority: 1)
+      File: custom_types.xsd
+  
+  Resolution: Use 'keep' or 'override' strategy to resolve,
+              or remove conflicting definition from one package
+----
+
+=== Index structure with composition
+
+When packages are composed, the index stores metadata about the winning definition:
+
+[source,ruby]
+----
+@index = {
+  "{http://www.opengis.net/gml/3.2}CodeType" => {
+    type: :complex_type,
+    definition: <ComplexType>,
+    namespace: "http://www.opengis.net/gml/3.2",
+    schema_file: "basicTypes.xsd",
+    source_package: "gml_3.2.1.lxr",  # Which package won
+    priority: 0,                       # Winning priority
+    resolution: :keep                  # How it was resolved
+  },
+  
+  "{http://www.opengis.net/gml/3.2}MeasureType" => {
+    type: :complex_type,
+    definition: <ComplexType>,
+    namespace: "http://www.opengis.net/gml/3.2",
+    schema_file: "basicTypes.xsd",
+    source_package: "gml_3.2.1.lxr",
+    priority: 0,
+    resolution: :no_conflict          # No other package defined it
+  }
+}
+----
+
+=== Priority in package metadata
+
+Package metadata tracks which definitions came from which priority level:
+
+.Package composition report
+[example]
+====
+[source]
+----
+Composition Statistics:
+═══════════════════════
+
+Total packages: 2
+Total types: 2,850
+
+By source package:
+  gml_3.2.1.lxr (priority 0):     2,764 types
+  custom_gml.lxr (priority 1):       86 types
+
+Type conflicts:
+  Total conflicts: 12
+  Resolved by 'keep': 12
+  Resolved by 'override': 0
+  Failed (strategy: error): 0
+
+Priority distribution:
+  Priority 0 definitions: 2,776
+  Priority 1 definitions: 74
+----
+====
+
+=== Querying by priority
+
+While not commonly needed, you can query which priority level provided a type:
+
+.Finding type source and priority
+[example]
+====
+[source,ruby]
+----
+# Get type information including priority
+type_info = repo.type_index.find("{http://www.opengis.net/gml/3.2}CodeType")
+
+puts "Type: #{type_info[:definition].name}"
+puts "Source package: #{type_info[:source_package]}"
+puts "Priority: #{type_info[:priority]}"
+puts "Resolution: #{type_info[:resolution]}"
+
+# Output:
+# Type: CodeType
+# Source package: gml_3.2.1.lxr
+# Priority: 0
+# Resolution: keep
+----
+====
+
+=== Best practices for priority management
+
+1. **Lower numbers = higher priority**: Use 0 for most important packages
+2. **Group by trust level**: Core standards at priority 0, extensions at 1+
+3. **Document priorities**: Explain why each package has its priority
+4. **Test conflicts**: Verify expected types win in conflict scenarios
+5. **Use 'error' strategy initially**: Detect conflicts before deciding resolution
+
+.Priority assignment pattern
+[example]
+====
+[source,yaml]
+----
+base_packages:
+  # Priority 0: Core standards (highest priority)
+  - package: gml_3.2.1.lxr
+    priority: 0
+    conflict_resolution: keep
+  
+  # Priority 1: Domain extensions
+  - package: citygml_2.0.lxr
+    priority: 1
+    conflict_resolution: keep
+  
+  # Priority 2: Application schemas (lowest priority)
+  - package: app_extensions.lxr
+    priority: 2
+    conflict_resolution: keep
+----
+
+This ensures core GML types are never overridden by extensions.
+====
+
+See link:../PACKAGE_COMPOSITION.adoc#priority-system[Priority System] for complete documentation on package priorities and conflict resolution.
+
+== Statistics and introspection
+
+The index provides statistics for package metadata:
+
+=== Statistics method
+
+[source,ruby]
+----
+def statistics
+  type_counts = Hash.new(0)
+  @index.each_value do |info|
+    type_counts[info[:type]] += 1
+  end
+
+  {
+    total_types: @index.size,
+    by_type: type_counts,
+    namespaces: namespace_count
+  }
+end
+----
+
+Example output:
+
+[source,ruby]
+----
+{
+  total_types: 2764,
+  by_type: {
+    complex_type: 1356,
+    simple_type: 92,
+    element: 1221,
+    attribute_group: 68,
+    group: 27
+  },
+  namespaces: 34
+}
+----
+
+=== Namespace count
+
+Count unique namespaces in index:
+
+[source,ruby]
+----
+def namespace_count
+  @index.values.map { |info| info[:namespace] }.compact.uniq.size
+end
+----
+
+== Complete examples
+
+=== Example 1: Building and querying an index
+
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Create repository and parse schemas
+repo = Lutaml::Xsd::SchemaRepository.new
+
+# Configure namespaces
+repo.configure_namespace(prefix: 'gml', uri: 'http://www.opengis.net/gml/3.2')
+repo.configure_namespace(prefix: 'uro', uri: 'https://www.geospatial.jp/iur/uro/3.2')
+
+# Parse schemas (automatically builds index)
+xsd_content = File.read('urbanFunction.xsd')
+repo.parse_schema(
+  content: xsd_content,
+  location: File.dirname('urbanFunction.xsd')
+)
+
+# Resolve (builds type index)
+repo.resolve
+
+# Access the type index (internal)
+type_index = repo.instance_variable_get(:@type_index)
+
+# Query the index directly
+type_info = type_index.find_by_namespace_and_name(
+  'http://www.opengis.net/gml/3.2',
+  'CodeType'
+)
+
+puts "Type: #{type_info[:type]}"
+puts "Namespace: #{type_info[:namespace]}"
+puts "Schema file: #{type_info[:schema_file]}"
+
+# Get all types in namespace
+gml_types = type_index.find_all_in_namespace(
+  'http://www.opengis.net/gml/3.2'
+)
+puts "GML types count: #{gml_types.size}"
+
+# Get statistics
+stats = type_index.statistics
+puts "Total types: #{stats[:total_types]}"
+puts "Complex types: #{stats[:by_type][:complex_type]}"
+puts "Simple types: #{stats[:by_type][:simple_type]}"
+puts "Elements: #{stats[:by_type][:element]}"
+----
+
+=== Example 2: Type resolution with suggestions
+
+[source,ruby]
+----
+# Try to find a misspelled type
+result = repo.find_type('gml:CodeTypo')  # Wrong spelling
+
+unless result.found?
+  puts "Type not found: #{result.local_name}"
+
+  # Get suggestions from index
+  type_index = repo.instance_variable_get(:@type_index)
+  suggestions = type_index.suggest_similar(
+    'http://www.opengis.net/gml/3.2',
+    'CodeTypo',
+    limit: 5
+  )
+
+  if suggestions.any?
+    puts "Did you mean one of these?"
+    suggestions.each { |s| puts "  - #{s}" }
+  end
+end
+
+# Output:
+# Type not found: CodeTypo
+# Did you mean one of these?
+#   - CodeType
+#   - CodeWithAuthorityType
+#   - CodeOrNilReasonListType
+----
+
+=== Example 3: Indexing performance measurement
+
+[source,ruby]
+----
+require 'benchmark'
+
+repo = Lutaml::Xsd::SchemaRepository.new
+repo.configure_namespace(prefix: 'gml', uri: 'http://www.opengis.net/gml/3.2')
+
+# Measure parsing + indexing time
+parse_time = Benchmark.realtime do
+  xsd_content = File.read('large_schema.xsd')
+  repo.parse_schema(content: xsd_content, location: '.')
+  repo.resolve  # Builds index
+end
+
+# Measure lookup time
+type_index = repo.instance_variable_get(:@type_index)
+
+lookup_time = Benchmark.realtime do
+  1000.times do
+    type_index.find_by_namespace_and_name(
+      'http://www.opengis.net/gml/3.2',
+      'CodeType'
+    )
+  end
+end
+
+puts "Parse + index time: #{(parse_time * 1000).round(2)}ms"
+puts "1000 lookups time: #{(lookup_time * 1000).round(2)}ms"
+puts "Average lookup: #{(lookup_time / 1000 * 1000000).round(2)}µs"
+
+# Example output:
+# Parse + index time: 5234.56ms
+# 1000 lookups time: 2.34ms
+# Average lookup: 2.34µs
+----
+
+== Performance characteristics
+
+=== Time complexity
+
+* **Build index**: O(n) where n = total number of type definitions
+* **Direct lookup**: O(1) hash lookup by Clark key
+* **Namespace lookup**: O(1) for building key + O(1) for hash lookup
+* **Find all in namespace**: O(n) where n = total types (filters entire index)
+* **Suggest similar**: O(m) where m = types in namespace
+
+=== Space complexity
+
+* **Memory per type**: ~200-300 bytes (hash entry + type info)
+* **Total memory**: ~500KB - 1MB for typical schemas (2000-3000 types)
+* **Serialized size**: Depends on format
+  * Marshal: ~100KB - 500KB (most compact)
+  * JSON: ~200KB - 1MB (moderate)
+  * YAML: ~300KB - 1.5MB (largest)
+
+=== Indexing performance
+
+.Indexing performance by schema size
+|===
+|Schema Size |Type Count |Index Time |Memory
+
+|Small (GML subset)
+|~50 types
+|~10ms
+|~15KB
+
+|Medium (CityGML)
+|~500 types
+|~100ms
+|~150KB
+
+|Large (i-UR with deps)
+|~2800 types
+|~500ms
+|~800KB
+
+|Very Large (ISO/TC 211)
+|~5000 types
+|~1000ms
+|~1.5MB
+|===
+
+=== Lookup performance
+
+All lookups are O(1) regardless of index size:
+
+* Direct lookup: ~1-3 microseconds
+* Namespace + name lookup: ~2-5 microseconds
+* 1000 lookups: ~2-5 milliseconds
+
+This makes the index suitable for high-frequency queries in code generators and validation tools.
+
+== See also
+
+* link:ARCHITECTURE[System Architecture]
+* link:PACKAGE_INTERNALS[LXR Package Internals]
+* link:../core-concepts/TYPE_RESOLUTION[Type Resolution]
+* link:index[Architecture Index]

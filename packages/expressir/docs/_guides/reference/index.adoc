@@ -1,0 +1,22 @@
+---
+title: Reference
+nav_order: 13
+has_children: true
+---
+
+= Reference
+
+== Purpose
+
+Citable, generated reference material. The grammar cross-walk and the
+checker note-id catalog are generated from the implementation and kept
+in sync by specs; the subsystem guides describe the architecture and
+the standard clauses each subsystem enforces.
+
+== Generating
+
+[source,shell]
+----
+bundle exec rake reference:crosswalk
+bundle exec rake reference:notes
+----

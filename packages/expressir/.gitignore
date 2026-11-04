@@ -1,0 +1,58 @@
+/.bundle/
+/.yardoc
+/_yardoc/
+/coverage/
+/doc/
+/pkg/
+/spec/reports/
+/tmp/
+/Gemfile.lock
+/.idea
+/.vscode
+/lib/expressir/express/express_parser.bundle
+/lib/expressir/express/express_parser.so
+/lib/expressir/express/*/express_parser.bundle
+/lib/expressir/express/*/express_parser.so
+/spec/syntax/*-pretty.exp
+/ext/express_parser/rice-embed
+
+# rspec failure tracking
+.rspec_status
+
+# rubocop guide
+.rubocop-https---*
+_site/
+
+Gemfile.lock
+
+# Claude Code
+.claude/
+
+# Development / transient files
+*.ler
+*.pax
+TODO.*.md
+TODO.refactor/
+debug_*.rb
+measure_mem.rb
+tmp_*.rb
+mise.toml
+Gemfile.local
+Gemfile.local.lock
+Gemfile.original
+benchmark/
+CLAUDE.md
+
+# Rust workspace
+/target/
+Cargo.lock
+/ext/expressir_core/target/
+/ext/expressir_core/*.bundle
+
+# prebuilt binding staged by rake-compiler for platform gems
+/lib/expressir/expressir_core.bundle
+/lib/expressir/expressir_core.so
+/lib/expressir/expressir_core.dll
+
+# nightly conformance trend artifact (rake conformance:trend)
+/conformance-trend.json

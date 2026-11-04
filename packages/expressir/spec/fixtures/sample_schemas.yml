@@ -1,0 +1,8 @@
+---
+# Sample schema list for benchmarking
+# Format: Array of file paths to EXPRESS schema files
+schemas:
+  - ../syntax/syntax.exp
+  - ../syntax/single.exp
+  - ../syntax/multiple.exp
+  - ../syntax/remark.exp

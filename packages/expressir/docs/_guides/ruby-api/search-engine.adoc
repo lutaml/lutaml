@@ -1,0 +1,609 @@
+---
+title: Search Engine
+parent: Ruby API
+grand_parent: Guides
+nav_order: 3
+---
+
+= Search Engine
+
+== Purpose
+
+The SearchEngine provides powerful querying and filtering capabilities for
+EXPRESS elements within a repository. It supports pattern matching, wildcards,
+regular expressions, and type filtering to locate specific declarations across
+schemas.
+
+== References
+
+* link:working-with-repository.html[Working with Repository] - Repository basics
+* link:../../tutorials/querying-schemas.html[Tutorial: Querying Schemas]
+
+== Concepts
+
+search_engine:: Component for querying EXPRESS elements in a repository
+pattern_matching:: Finding elements using wildcards or regular expressions
+type_filtering:: Limiting search results by element type
+qualified_name:: Full path to an element (e.g., "schema.entity.attribute")
+relevance_ranking:: Scoring search results by match quality
+
+== Initialization
+
+Create a SearchEngine with a repository:
+
+[source,ruby]
+----
+require "expressir"
+
+# Parse schemas
+repository = Expressir::Express::Parser.from_file("schema.exp")
+
+# Create search engine
+engine = Expressir::Model::SearchEngine.new(repository)
+----
+
+The engine automatically builds indexes on first use.
+
+== Element types
+
+The SearchEngine can query these EXPRESS element types:
+
+Schema-level elements::
+* `schema` - Schema definitions
+* `entity` - Entity definitions
+* `type` - Type definitions (with category filtering)
+* `function` - Function definitions
+* `procedure` - Procedure definitions
+* `rule` - Rule definitions
+* `constant` - Constant definitions
+* `interface` - Interface definitions
+
+Nested elements::
+* `attribute` - Entity attributes
+* `derived_attribute` - Derived attributes
+* `inverse_attribute` - Inverse attributes
+* `parameter` - Function/procedure parameters
+* `variable` - Local variables
+* `where_rule` - Where rules
+* `unique_rule` - Unique rules
+* `enumeration_item` - Enumeration items
+
+== Listing elements
+
+=== List by type
+
+Get all elements of a specific type:
+
+[source,ruby]
+----
+# List all entities
+entities = engine.list(type: "entity")
+
+entities.each do |entity|
+  puts "Entity: #{entity[:path]}"
+  puts "  ID: #{entity[:id]}"
+  puts "  Schema: #{entity[:schema]}"
+end
+----
+
+=== Filter by schema
+
+Limit results to a specific schema:
+
+[source,ruby]
+----
+# List entities only in action_schema
+entities = engine.list(
+  type: "entity",
+  schema: "action_schema"
+)
+----
+
+=== Filter types by category
+
+For type elements, filter by category:
+
+[source,ruby]
+----
+# List only SELECT types
+select_types = engine.list(
+  type: "type",
+  category: "select"
+)
+
+# List only ENUMERATION types
+enum_types = engine.list(
+  type: "type",
+  category: "enumeration"
+)
+----
+
+Valid type categories:
+
+* `select` - SELECT types
+* `enumeration` - ENUMERATION types
+* `aggregate` - AGGREGATE types
+* `defined` - Defined types (e.g., INTEGER, STRING)
+
+== Pattern searching
+
+=== Simple patterns
+
+Search with substring matching:
+
+[source,ruby]
+----
+# Find entities containing "action"
+results = engine.search(pattern: "action", type: "entity")
+
+results.each do |result|
+  puts "Found: #{result[:path]}"
+end
+----
+
+=== Wildcard patterns
+
+Use `*` for wildcard matching:
+
+[source,ruby]
+----
+# Find entities starting with "action"
+results = engine.search(pattern: "action*", type: "entity")
+
+# Find entities ending with "item"
+results = engine.search(pattern: "*item", type: "entity")
+
+# Find entities containing "item" anywhere
+results = engine.search(pattern: "*item*", type: "entity")
+----
+
+=== Qualified path patterns
+
+Search with schema qualification:
+
+[source,ruby]
+----
+# Find in specific schema
+results = engine.search(
+  pattern: "action_schema.action*",
+  type: "entity"
+)
+
+# Wildcard schema name
+results = engine.search(
+  pattern: "*_schema.action",
+  type: "entity"
+)
+----
+
+=== Regular expression patterns
+
+Use regex for complex pattern matching:
+
+[source,ruby]
+----
+# Find entities matching regex
+results = engine.search(
+  pattern: "action_(item|event|directive)",
+  type: "entity",
+  regex: true
+)
+
+# Case-insensitive regex
+results = engine.search(
+  pattern: "(?i)action.*item",
+  type: "entity",
+  regex: true
+)
+----
+
+=== Exact matching
+
+Match exact element names only:
+
+[source,ruby]
+----
+results = engine.search(
+  pattern: "action",
+  type: "entity",
+  exact: true
+)
+
+# Only finds entities named exactly "action"
+----
+
+== Search options
+
+=== Case sensitivity
+
+Control case-sensitive matching:
+
+[source,ruby]
+----
+# Case-insensitive (default)
+results = engine.search(
+  pattern: "ACTION",
+  type: "entity",
+  case_sensitive: false
+)
+
+# Case-sensitive
+results = engine.search(
+  pattern: "Action",
+  type: "entity",
+  case_sensitive: true
+)
+----
+
+=== Type filtering
+
+Search across multiple types or specific types:
+
+[source,ruby]
+----
+# Search all types (if type not specified)
+results = engine.search(pattern: "action*")
+
+# Search specific type
+results = engine.search(
+  pattern: "action*",
+  type: "entity"
+)
+
+# Search functions only
+results = engine.search(
+  pattern: "validate*",
+  type: "function"
+)
+----
+
+=== Combining filters
+
+Combine multiple search criteria:
+
+[source,ruby]
+----
+results = engine.search(
+  pattern: "action*",
+  type: "entity",
+  schema: "action_schema",
+  case_sensitive: false
+)
+----
+
+== Advanced searching
+
+=== Search with depth filtering
+
+Limit results by path depth:
+
+[source,ruby]
+----
+# Depth 1: schema level only
+results = engine.search_with_depth(
+  pattern: "action*",
+  max_depth: 1
+)
+
+# Depth 2: schema.entity level
+results = engine.search_with_depth(
+  pattern: "action*",
+  max_depth: 2,
+  type: "entity"
+)
+
+# Depth 3: schema.entity.attribute level
+results = engine.search_with_depth(
+  pattern: "name",
+  max_depth: 3,
+  type: "attribute"
+)
+----
+
+Path depth levels:
+
+* 1 = Schema level (e.g., `action_schema`)
+* 2 = Schema.entity level (e.g., `action_schema.action`)
+* 3 = Schema.entity.attribute level (e.g., `action_schema.action.name`)
+
+=== Relevance ranking
+
+Get ranked search results by relevance:
+
+[source,ruby]
+----
+results = engine.search_ranked(
+  pattern: "action",
+  type: "entity",
+  boost_exact: 10,      # Boost for exact matches
+  boost_prefix: 5       # Boost for prefix matches
+)
+
+# Results include relevance_score
+results.each do |result|
+  puts "#{result[:path]} (score: #{result[:relevance_score]})"
+end
+----
+
+Relevance scoring factors:
+
+* Exact match: Highest score
+* Prefix match: Medium score
+* Shorter paths: Higher score
+* Schema-level results: Higher score
+
+=== Combined advanced search
+
+Use all advanced features together:
+
+[source,ruby]
+----
+results = engine.search_advanced(
+  pattern: "action",
+  max_depth: 2,
+  ranked: true,
+  type: "entity",
+  schema: "action_schema"
+)
+
+# Results are filtered by depth and ranked by relevance
+----
+
+== Counting elements
+
+Get element counts without retrieving items:
+
+[source,ruby]
+----
+# Count all entities
+count = engine.count(type: "entity")
+puts "Total entities: #{count}"
+
+# Count in specific schema
+count = engine.count(
+  type: "entity",
+  schema: "action_schema"
+)
+
+# Count types by category
+count = engine.count(
+  type: "type",
+  category: "select"
+)
+----
+
+== Working with results
+
+=== Result structure
+
+Search results are hashes containing:
+
+[source,ruby]
+----
+result = {
+  id: "action",              # Element identifier
+  type: "entity",            # Element type
+  path: "action_schema.action",  # Qualified path
+  schema: "action_schema",   # Parent schema
+  category: "select"         # (for types only)
+}
+----
+
+=== Processing results
+
+[source,ruby]
+----
+results = engine.search(pattern: "action*", type: "entity")
+
+# Extract IDs
+ids = results.map { |r| r[:id] }
+
+# Group by schema
+by_schema = results.group_by { |r| r[:schema] }
+
+# Filter results
+filtered = results.select { |r| r[:path].include?("item") }
+
+# Sort results
+sorted = results.sort_by { |r| r[:id] }
+----
+
+=== Accessing full objects
+
+Search returns summary hashes. To get full model objects:
+
+[source,ruby]
+----
+results = engine.search(pattern: "action", type: "entity")
+
+# Get full entity object via repository
+result = results.first
+entity = engine.repository.find_entity(qualified_name: result[:path])
+
+if entity
+  puts "Entity class: #{entity.class.name}"
+  puts "Attributes: #{entity.attributes&.size}"
+end
+----
+
+== Performance optimization
+
+=== Use specific types
+
+Narrow searches to specific types for better performance:
+
+[source,ruby]
+----
+# Slower - searches all types
+results = engine.search(pattern: "action*")
+
+# Faster - searches only entities
+results = engine.search(pattern: "action*", type: "entity")
+----
+
+=== Use schema filtering
+
+Limit searches to specific schemas:
+
+[source,ruby]
+----
+# Faster when you know the schema
+results = engine.search(
+  pattern: "action*",
+  type: "entity",
+  schema: "action_schema"
+)
+----
+
+=== Count before retrieving
+
+Use count to check result size before fetching:
+
+[source,ruby]
+----
+count = engine.count(pattern: "action*", type: "entity")
+
+if count > 100
+  puts "Too many results, refine your search"
+else
+  results = engine.search(pattern: "action*", type: "entity")
+end
+----
+
+=== Reuse engine instances
+
+Create one engine and reuse it for multiple searches:
+
+[source,ruby]
+----
+engine = Expressir::Model::SearchEngine.new(repository)
+
+# Indexes are built once and reused
+results1 = engine.search(pattern: "action*", type: "entity")
+results2 = engine.search(pattern: "approval*", type: "entity")
+results3 = engine.search(pattern: "date*", type: "type")
+----
+
+== Common search patterns
+
+=== Find all items in a schema
+
+[source,ruby]
+----
+# All entities in a schema
+entities = engine.list(
+  type: "entity",
+  schema: "action_schema"
+)
+
+# All types in a schema
+types = engine.list(
+  type: "type",
+  schema: "action_schema"
+)
+----
+
+=== Find by naming convention
+
+[source,ruby]
+----
+# Find all "validate" functions
+validators = engine.search(
+  pattern: "validate*",
+  type: "function"
+)
+
+# Find all "_label" types
+labels = engine.search(
+  pattern: "*_label",
+  type: "type"
+)
+----
+
+=== Cross-schema search
+
+[source,ruby]
+----
+# Find entities across all schemas
+results = engine.search(
+  pattern: "action*",
+  type: "entity"
+)
+
+# Group by schema
+by_schema = results.group_by { |r| r[:schema] }
+by_schema.each do |schema, items|
+  puts "#{schema}: #{items.size} matches"
+end
+----
+
+=== Find related elements
+
+[source,ruby]
+----
+# Find entity and its attributes
+entity_results = engine.search(
+  pattern: "action_schema.action",
+  type: "entity",
+  exact: true
+)
+
+attr_results = engine.search(
+  pattern: "action_schema.action.*",
+  type: "attribute"
+)
+----
+
+== Error handling
+
+The SearchEngine methods generally don't raise exceptions, but return empty
+results for invalid inputs:
+
+[source,ruby]
+----
+# Invalid type returns empty array
+results = engine.search(pattern: "action", type: "invalid_type")
+# => []
+
+# Invalid schema returns empty array
+results = engine.search(
+  pattern: "action",
+  type: "entity",
+  schema: "nonexistent_schema"
+)
+# => []
+
+# Invalid regex returns empty array
+results = engine.search(
+  pattern: "[invalid(",
+  type: "entity",
+  regex: true
+)
+# => []
+----
+
+== Next steps
+
+* link:formatting-schemas.html[Formatting Schemas] - Output EXPRESS code
+* link:../../tutorials/querying-schemas.html[Tutorial: Querying Schemas]
+
+== Summary
+
+The SearchEngine provides comprehensive querying capabilities:
+
+* List all elements of specific types
+* Search with patterns (wildcards, regex, exact)
+* Filter by schema and type category
+* Advanced features: depth filtering, relevance ranking
+* Efficient counting and performance optimization
+* Works across all EXPRESS element types
+
+Key takeaways:
+
+* Create one engine instance and reuse it for multiple searches
+* Use specific type filters for better performance
+* Wildcard patterns support flexible matching
+* Regex patterns enable complex searches
+* Results are summary hashes; use repository to get full objects
+* Depth filtering helps find elements at specific levels
+* Relevance ranking sorts results by match quality

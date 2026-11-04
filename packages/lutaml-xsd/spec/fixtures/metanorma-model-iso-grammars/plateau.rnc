@@ -1,0 +1,27 @@
+include "jis.rnc" {
+
+# include "relaton-jis.rnc" { } 
+# jis.rnc already includes relaton-jis.rnc, if we have distinct metadata, will need to abstract jis-compile.rnc
+
+TableBody =
+    ## The widths of the columns in the table
+    colgroup?,
+    ## Caption for the table
+    tname?,
+    ## Table rows constituting the table header
+    thead?,
+    ## Table rows constituting the table body
+    tbody,
+    ## Table rows constituting the table footer
+    tfoot?,
+    ## Definitions list defining any symbols used in the table
+    dl?,
+    ## Notes specific to this block
+    table-note*,
+    ## Examples specific to this block
+    example*,
+    ## A source for the table
+    BlockSource
+
+
+}

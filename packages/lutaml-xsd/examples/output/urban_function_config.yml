@@ -1,0 +1,14 @@
+---
+files:
+- spec/fixtures/i-ur/urbanFunction.xsd
+schema_location_mappings:
+- from: "../../uro/3.2/urbanObject.xsd"
+  to: spec/fixtures/i-ur/urbanObject.xsd
+- from: "(?:\\.\\./)+gml/(.+\\.xsd)$"
+  to: spec/fixtures/codesynthesis-gml-3.2.1/gml/\1
+  pattern: true
+namespace_mappings:
+- prefix: urf
+  uri: https://www.geospatial.jp/iur/urf/3.2
+- prefix: gml
+  uri: http://www.opengis.net/gml/3.2

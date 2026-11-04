@@ -1,0 +1,200 @@
+# Lutaml::Xsd Base Type Validators Registry
+# This file maps XSD built-in types to their validator classes
+
+base_type_validators:
+  # String types
+  string:
+    validator: Lutaml::Xsd::Validation::BaseTypes::StringValidator
+    description: "Validates xs:string type"
+
+  normalizedString:
+    validator: Lutaml::Xsd::Validation::BaseTypes::NormalizedStringValidator
+    description: "Validates xs:normalizedString (no line breaks/tabs)"
+
+  token:
+    validator: Lutaml::Xsd::Validation::BaseTypes::TokenValidator
+    description: "Validates xs:token (normalized, no leading/trailing spaces)"
+
+  # Numeric types
+  decimal:
+    validator: Lutaml::Xsd::Validation::BaseTypes::DecimalValidator
+    description: "Validates xs:decimal type"
+
+  integer:
+    validator: Lutaml::Xsd::Validation::BaseTypes::IntegerValidator
+    description: "Validates xs:integer type"
+
+  positiveInteger:
+    validator: Lutaml::Xsd::Validation::BaseTypes::PositiveIntegerValidator
+    description: "Validates xs:positiveInteger (> 0)"
+
+  negativeInteger:
+    validator: Lutaml::Xsd::Validation::BaseTypes::NegativeIntegerValidator
+    description: "Validates xs:negativeInteger (< 0)"
+
+  nonPositiveInteger:
+    validator: Lutaml::Xsd::Validation::BaseTypes::NonPositiveIntegerValidator
+    description: "Validates xs:nonPositiveInteger (<= 0)"
+
+  nonNegativeInteger:
+    validator: Lutaml::Xsd::Validation::BaseTypes::NonNegativeIntegerValidator
+    description: "Validates xs:nonNegativeInteger (>= 0)"
+
+  long:
+    validator: Lutaml::Xsd::Validation::BaseTypes::LongValidator
+    description: "Validates xs:long (-9223372036854775808 to 9223372036854775807)"
+
+  int:
+    validator: Lutaml::Xsd::Validation::BaseTypes::IntValidator
+    description: "Validates xs:int (-2147483648 to 2147483647)"
+
+  short:
+    validator: Lutaml::Xsd::Validation::BaseTypes::ShortValidator
+    description: "Validates xs:short (-32768 to 32767)"
+
+  byte:
+    validator: Lutaml::Xsd::Validation::BaseTypes::ByteValidator
+    description: "Validates xs:byte (-128 to 127)"
+
+  unsignedLong:
+    validator: Lutaml::Xsd::Validation::BaseTypes::UnsignedLongValidator
+    description: "Validates xs:unsignedLong (0 to 18446744073709551615)"
+
+  unsignedInt:
+    validator: Lutaml::Xsd::Validation::BaseTypes::UnsignedIntValidator
+    description: "Validates xs:unsignedInt (0 to 4294967295)"
+
+  unsignedShort:
+    validator: Lutaml::Xsd::Validation::BaseTypes::UnsignedShortValidator
+    description: "Validates xs:unsignedShort (0 to 65535)"
+
+  unsignedByte:
+    validator: Lutaml::Xsd::Validation::BaseTypes::UnsignedByteValidator
+    description: "Validates xs:unsignedByte (0 to 255)"
+
+  float:
+    validator: Lutaml::Xsd::Validation::BaseTypes::FloatValidator
+    description: "Validates xs:float type"
+
+  double:
+    validator: Lutaml::Xsd::Validation::BaseTypes::DoubleValidator
+    description: "Validates xs:double type"
+
+  # Boolean type
+  boolean:
+    validator: Lutaml::Xsd::Validation::BaseTypes::BooleanValidator
+    description: "Validates xs:boolean (true/false, 1/0)"
+
+  # Date/Time types
+  dateTime:
+    validator: Lutaml::Xsd::Validation::BaseTypes::DateTimeValidator
+    description: "Validates xs:dateTime (YYYY-MM-DDTHH:MM:SS)"
+
+  date:
+    validator: Lutaml::Xsd::Validation::BaseTypes::DateValidator
+    description: "Validates xs:date (YYYY-MM-DD)"
+
+  time:
+    validator: Lutaml::Xsd::Validation::BaseTypes::TimeValidator
+    description: "Validates xs:time (HH:MM:SS)"
+
+  duration:
+    validator: Lutaml::Xsd::Validation::BaseTypes::DurationValidator
+    description: "Validates xs:duration (PnYnMnDTnHnMnS)"
+
+  gYear:
+    validator: Lutaml::Xsd::Validation::BaseTypes::GYearValidator
+    description: "Validates xs:gYear (YYYY)"
+
+  gYearMonth:
+    validator: Lutaml::Xsd::Validation::BaseTypes::GYearMonthValidator
+    description: "Validates xs:gYearMonth (YYYY-MM)"
+
+  gMonth:
+    validator: Lutaml::Xsd::Validation::BaseTypes::GMonthValidator
+    description: "Validates xs:gMonth (--MM)"
+
+  gMonthDay:
+    validator: Lutaml::Xsd::Validation::BaseTypes::GMonthDayValidator
+    description: "Validates xs:gMonthDay (--MM-DD)"
+
+  gDay:
+    validator: Lutaml::Xsd::Validation::BaseTypes::GDayValidator
+    description: "Validates xs:gDay (---DD)"
+
+  # URI types
+  anyURI:
+    validator: Lutaml::Xsd::Validation::BaseTypes::AnyURIValidator
+    description: "Validates xs:anyURI type"
+
+  # Binary types
+  base64Binary:
+    validator: Lutaml::Xsd::Validation::BaseTypes::Base64BinaryValidator
+    description: "Validates xs:base64Binary encoding"
+
+  hexBinary:
+    validator: Lutaml::Xsd::Validation::BaseTypes::HexBinaryValidator
+    description: "Validates xs:hexBinary encoding"
+
+  # QName and NOTATION
+  QName:
+    validator: Lutaml::Xsd::Validation::BaseTypes::QNameValidator
+    description: "Validates xs:QName (prefix:localPart)"
+
+  NOTATION:
+    validator: Lutaml::Xsd::Validation::BaseTypes::NotationValidator
+    description: "Validates xs:NOTATION type"
+
+  # ID types (XML 1.0 compatible)
+  ID:
+    validator: Lutaml::Xsd::Validation::BaseTypes::IDValidator
+    description: "Validates xs:ID (unique identifier)"
+
+  IDREF:
+    validator: Lutaml::Xsd::Validation::BaseTypes::IDREFValidator
+    description: "Validates xs:IDREF (reference to ID)"
+
+  IDREFS:
+    validator: Lutaml::Xsd::Validation::BaseTypes::IDREFSValidator
+    description: "Validates xs:IDREFS (space-separated IDREFs)"
+
+  # Name types
+  Name:
+    validator: Lutaml::Xsd::Validation::BaseTypes::NameValidator
+    description: "Validates xs:Name (XML name)"
+
+  NCName:
+    validator: Lutaml::Xsd::Validation::BaseTypes::NCNameValidator
+    description: "Validates xs:NCName (non-colonized name)"
+
+  NMTOKEN:
+    validator: Lutaml::Xsd::Validation::BaseTypes::NMTOKENValidator
+    description: "Validates xs:NMTOKEN (name token)"
+
+  NMTOKENS:
+    validator: Lutaml::Xsd::Validation::BaseTypes::NMTOKENSValidator
+    description: "Validates xs:NMTOKENS (space-separated name tokens)"
+
+  # Language type
+  language:
+    validator: Lutaml::Xsd::Validation::BaseTypes::LanguageValidator
+    description: "Validates xs:language (RFC 3066 language code)"
+
+  # Entity types
+  ENTITY:
+    validator: Lutaml::Xsd::Validation::BaseTypes::ENTITYValidator
+    description: "Validates xs:ENTITY type"
+
+  ENTITIES:
+    validator: Lutaml::Xsd::Validation::BaseTypes::ENTITIESValidator
+    description: "Validates xs:ENTITIES (space-separated entities)"
+
+# Namespace mappings for type resolution
+namespaces:
+  xs: "http://www.w3.org/2001/XMLSchema"
+  xsd: "http://www.w3.org/2001/XMLSchema"
+
+# Default validator for unknown types
+default_validator:
+  validator: Lutaml::Xsd::Validation::BaseTypes::DefaultValidator
+  description: "Fallback validator for unrecognized types"

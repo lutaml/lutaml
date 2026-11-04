@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:include schemaLocation="biblio-standoc.xsd"/>
+  <xs:group name="bdate">
+    <xs:sequence>
+      <xs:element name="date">
+        <xs:complexType>
+          <xs:choice>
+            <xs:sequence>
+              <xs:element name="from" type="ISO8601Date"/>
+              <xs:element minOccurs="0" name="to" type="ISO8601Date"/>
+            </xs:sequence>
+            <xs:element ref="on"/>
+          </xs:choice>
+          <xs:attribute name="type" use="required"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:element name="on">
+    <xs:simpleType>
+      <xs:union memberTypes="ISO8601Date">
+        <xs:simpleType>
+          <xs:restriction base="xs:token">
+            <xs:enumeration value="--"/>
+          </xs:restriction>
+        </xs:simpleType>
+        <xs:simpleType>
+          <xs:restriction base="xs:token">
+            <xs:enumeration value="–"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:union>
+    </xs:simpleType>
+  </xs:element>
+  <xs:simpleType name="DocumentType">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="international-standard"/>
+      <xs:enumeration value="technical-specification"/>
+      <xs:enumeration value="technical-report"/>
+      <xs:enumeration value="publicly-available-specification"/>
+      <xs:enumeration value="international-workshop-agreement"/>
+      <xs:enumeration value="guide"/>
+      <xs:enumeration value="industry-technical-agreement"/>
+      <xs:enumeration value="system-reference-deliverable"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="DocumentSubtype">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="specification"/>
+      <xs:enumeration value="method-of-test"/>
+      <xs:enumeration value="vocabulary"/>
+      <xs:enumeration value="code-of-practice"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:element name="structuredidentifier">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="project-number"/>
+        <xs:element minOccurs="0" ref="tc-document-number"/>
+      </xs:sequence>
+      <xs:attribute name="type"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="updates-document-type" type="DocumentType"/>
+  <xs:element name="fast-track" type="xs:boolean"/>
+  <xs:element name="horizontal" type="xs:boolean"/>
+  <xs:element name="project-number">
+    <xs:complexType mixed="true">
+      <xs:attribute name="part" type="xs:int"/>
+      <xs:attribute name="subpart" type="xs:int"/>
+      <xs:attribute name="amendment" type="xs:int"/>
+      <xs:attribute name="corrigendum" type="xs:int"/>
+      <xs:attribute name="origyr" type="ISO8601Date"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="tc-document-number" type="xs:int"/>
+  <xs:element name="stagename">
+    <xs:complexType mixed="true">
+      <xs:attribute name="abbreviation"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="function">
+    <xs:simpleType>
+      <xs:restriction base="xs:token">
+        <xs:enumeration value="emc"/>
+        <xs:enumeration value="safety"/>
+        <xs:enumeration value="environment"/>
+        <xs:enumeration value="quality-assurance"/>
+      </xs:restriction>
+    </xs:simpleType>
+  </xs:element>
+  <xs:element name="accessibility-color-inside" type="xs:boolean"/>
+  <xs:element name="price-code" type="xs:string"/>
+  <xs:element name="cen-processing" type="xs:boolean"/>
+  <xs:element name="secretary" type="xs:string"/>
+  <xs:element name="interest-to-committees" type="xs:string"/>
+  <xs:element name="tc-sc-officers-note">
+    <xs:complexType>
+      <xs:group minOccurs="0" maxOccurs="unbounded" ref="BasicBlock"/>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

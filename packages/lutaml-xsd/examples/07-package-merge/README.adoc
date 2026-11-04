@@ -1,0 +1,177 @@
+= Package Merge Example - Two-Step Workflow
+
+This example demonstrates a two-step workflow for building packages:
+
+1. **Step 1**: Build base package with standards (CityGML + GML)
+2. **Step 2**: Compose domain schemas using base package
+
+This workflow enables the PLATEAU pattern where base standards are packaged once and reused with domain-specific schemas generated from UML models.
+
+== Configuration Files
+
+`base_config.yaml`:: Defines base package with CityGML 2.0 (uses `cityGMLBase.xsd` as entry point, which pulls in all GML dependencies). Specifies `output_package: citygml-schemas.lxr`.
+
+`compose_config.yaml`:: Composes i-UR domain schemas with base package reference. Uses `base_packages` to reference the base CityGML package. Specifies `output_package: iur-schemas.lxr`.
+
+== Key Design Elements
+
+=== output_package Field
+
+Both configs use `output_package` to specify the output filename:
+
+[source,yaml]
+----
+output_package: citygml-schemas.lxr
+----
+
+This field is fully implemented. The CLI honors it when building packages, though you can override it with the `-o` flag.
+
+=== base_packages Reference
+
+The compose config references the base package:
+
+[source,yaml]
+----
+base_packages:
+  - package: citygml-schemas.lxr
+    priority: 0
+    conflict_resolution: keep
+----
+
+=== Schema Location Mapping Inheritance
+
+The compose config automatically inherits mappings from the base package:
+
+[source,yaml]
+----
+schema_location_mappings:
+  - from: "../../uro/3.2/urbanObject.xsd"
+    to: schemas/urbanObject.xsd
+    
+  # CityGML/GML mappings inherited from citygml-schemas.lxr
+----
+
+This means the base package's mappings for CityGML/GML resolution are automatically available.
+
+== Building Packages
+
+=== Step 1: Build Base Package
+
+[source,bash]
+----
+cd examples/07-package-merge
+
+# Build base CityGML package
+../../exe/lutaml-xsd pkg build base_config.yaml
+
+# Verify it contains all CityGML and GML schemas
+../../exe/lutaml-xsd pkg ls citygml-schemas.lxr
+----
+
+Expected result: Package with 57 schemas (CityGML, GML, ISO)
+
+=== Step 2: Compose with Domain Schemas
+
+[source,bash]
+----
+# Build complete i-UR package referencing base
+../../exe/lutaml-xsd pkg build compose_config.yaml
+
+# Verify it contains base + i-UR schemas
+../../exe/lutaml-xsd pkg ls iur-schemas.lxr
+----
+
+Expected result: Package with 59 schemas (base + urbanObject + urbanFunction)
+
+=== Verify Package Composition
+
+[source,bash]
+----
+# Show package statistics
+../../exe/lutaml-xsd pkg stats iur-schemas.lxr
+
+# Inspect package metadata and mappings
+../../exe/lutaml-xsd pkg inspect iur-schemas.lxr
+
+# Show package composition tree (if base_packages metadata preserved)
+../../exe/lutaml-xsd pkg ls citygml-schemas.lxr --show-tree
+----
+
+Expected stats: 1869 types from 10 namespaces
+
+=== Generate Documentation
+
+[source,bash]
+----
+# Generate interactive SPA documentation
+../../exe/lutaml-xsd spa iur-schemas.lxr \
+  --output iur-docs.html
+
+# Open in browser to verify all namespaces shown
+open iur-docs.html
+----
+
+The SPA documentation will show all 10 namespaces including those from the base CityGML package, with proper cross-linking between base and composed schemas.
+
+== Package Composition Features
+
+This example demonstrates:
+
+* **Base package reuse**: Build CityGML once, reuse multiple times
+* **Automatic mapping inheritance**: Schema location mappings from base packages are inherited
+* **Namespace merging**: All namespaces from base and composed packages accessible
+* **Type resolution**: Cross-package type references work seamlessly
+* **SPA documentation**: All schemas from base and composed packages shown flatly with proper links
+
+== Integration with lutaml-klin
+
+This enables the PLATEAU workflow:
+
+[source,bash]
+----
+# Once: Build base package from standards
+lutaml-xsd pkg build base_config.yaml
+
+# Iterative: Generate XSD from UML
+lutaml-klin xsd --lur plateau.lur --output schemas/
+
+# Iterative: Compose base + generated
+lutaml-xsd pkg build compose_config.yaml
+
+# Generate documentation showing all schemas
+lutaml-xsd spa iur-schemas.lxr --output docs.html
+----
+
+== Troubleshooting
+
+=== Package not found during composition
+
+If you see "Base package not found" errors:
+
+1. Ensure the base package was built successfully
+2. Check the path in `base_packages[].package` is correct (relative to config file)
+3. Verify the base package file exists at the specified path
+
+=== Missing types in composed package
+
+If types from base package aren't accessible:
+
+1. Check `pkg stats` shows expected type count (1869 for this example)
+2. Verify all namespaces appear in stats (should show 10)
+3. Use `pkg inspect` to verify namespace mappings were inherited
+
+=== SPA documentation missing base package schemas
+
+The SPA generator automatically includes all schemas from the repository, which includes base packages. If schemas are missing:
+
+1. Verify the package stats show correct schema count
+2. Check the SPA output includes all expected namespaces
+3. Use browser dev tools to check the embedded JSON data
+
+== See Also
+
+* link:../06-package-composition/README.adoc[Package Composition] - Multi-package merging with conflict resolution
+* link:../../docs/PACKAGE_COMPOSITION.adoc[Package Composition Guide]
+* link:../../docs/LXR_PACKAGES.adoc[LXR Packages Guide]
+* link:../../docs/PACKAGE_CONFIGURATION.adoc[Package Configuration Reference]
+* link:../../docs/CLI.adoc[CLI Reference]

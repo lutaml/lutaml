@@ -1,0 +1,103 @@
+(*"annotated_3d_model_data_quality_criteria_schema"
+$Id: test.exp,v 1.3 2020/07/30 05:18:54 ftanaka Exp $
+ISO 10303 TC184/SC4/WG12 N10658
+
+EXPRESS Source:
+ISO 10303-59 ed3 Quality of product shape data - Annotated 3d model data quality criteria schema
+
+The following permission notice and disclaimer shall be included in all copies of this EXPRESS schema ("the Schema"),
+and derivations of the Schema:
+
+*)
+
+SCHEMA annotated_3d_model_data_quality_criteria_schema '{iso standard 10303 part(59) version(3) object(1) annotated_3d_model_data_quality_criteria_schema(6)}';
+
+(* Need select eleemnts for measure_value *)
+ REFERENCE FROM measure_schema
+   (measure_value);
+
+  REFERENCE FROM product_data_quality_criteria_schema
+    (data_quality_criteria_representation,
+     data_quality_criterion,
+     data_quality_measurement_requirement,
+     detailed_report_request_with_number_of_data,
+     summary_report_request);
+
+  REFERENCE FROM representation_schema
+    (representation,
+     representation_item);
+
+  REFERENCE FROM shape_data_quality_criteria_schema
+    (shape_data_quality_assessment_specification_select,
+     shape_measurement_accuracy);
+
+  REFERENCE FROM support_resource_schema
+    (identifier,
+     label,
+     text);
+
+  TYPE a3m_accuracy_associated_target_select = EXTENSIBLE SELECT;
+  END_TYPE;
+
+  TYPE a3m_data_quality_accuracy_type_name = EXTENSIBLE ENUMERATION;
+  END_TYPE;
+
+  TYPE a3m_data_quality_inspected_element_type_name = EXTENSIBLE ENUMERATION;
+  END_TYPE;
+
+  TYPE a3m_data_quality_measured_data_type_name = EXTENSIBLE ENUMERATION;
+  END_TYPE;
+
+  TYPE a3m_data_quality_type_name_for_location_of_extreme_value = EXTENSIBLE ENUMERATION;
+  END_TYPE;
+
+  TYPE summary_stats_value_type = ENUMERATION OF
+      (average_value,
+ 	   max_value,
+	   min_value);
+  END_TYPE;
+
+  ENTITY a3m_data_quality_criteria_representation
+    SUBTYPE OF (data_quality_criteria_representation);
+    WHERE
+      WR1: SIZEOF( QUERY( q <* SELF\representation.items|
+                               'ANNOTATED_3D_MODEL_DATA_QUALITY_CRITERIA_SCHEMA.' +
+                               'A3M_DATA_QUALITY_CRITERION' IN TYPEOF(q))) > 0;
+  END_ENTITY;
+
+  ENTITY a3m_data_quality_criterion
+    ABSTRACT SUPERTYPE
+    SUBTYPE OF(data_quality_criterion, data_quality_measurement_requirement);
+      assessment_specification : shape_data_quality_assessment_specification_select;
+      measured_data_type : a3m_data_quality_measured_data_type_name;
+      inspected_elements_types: LIST[1:?] OF a3m_data_quality_inspected_element_type_name;
+      accuracy_types : LIST [0:?] OF a3m_data_quality_accuracy_type_name;
+      location_of_extreme_value_types: LIST[0:?] OF a3m_data_quality_type_name_for_location_of_extreme_value;
+  END_ENTITY;
+
+  ENTITY a3m_data_quality_criterion_specific_applied_value
+    ABSTRACT SUPERTYPE
+    SUBTYPE OF(representation_item);
+      criterion_to_assign_the_value: a3m_data_quality_criterion;
+      applied_value : measure_value;
+  END_ENTITY;
+
+  ENTITY a3m_data_quality_target_accuracy_association;
+      id : identifier;
+      name : label;
+      description : OPTIONAL text;
+      accuracy_specification : shape_measurement_accuracy;
+      target_to_associate : a3m_accuracy_associated_target_select;
+  END_ENTITY;
+
+  ENTITY a3m_detailed_report_request
+    SUBTYPE OF(detailed_report_request_with_number_of_data);
+      value_type_requested : summary_stats_value_type;
+  END_ENTITY;
+
+  ENTITY a3m_summary_report_request_with_representative_value
+    SUBTYPE OF(summary_report_request);
+      value_type_requested : summary_stats_value_type;
+  END_ENTITY;
+
+END_SCHEMA;

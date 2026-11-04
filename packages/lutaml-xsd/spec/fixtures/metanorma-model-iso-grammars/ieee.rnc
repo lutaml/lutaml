@@ -1,0 +1,11 @@
+include "relaton-ieee.rnc" { }
+include "isodoc.rnc" { 
+
+sections =
+  element sections {
+    note?,
+    ( clause | terms | term-clause | definitions | floating-title )+
+} 
+
+
+}

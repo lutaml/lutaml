@@ -1,0 +1,173 @@
+# frozen_string_literal: true
+
+module Lutaml
+  module Model
+    module Serialize
+      # Handles value mapping methods for Serialize::ClassMethods
+      #
+      # Extracted from serialize.rb to improve code organization.
+      # Provides methods for applying value maps and mappings.
+      module ValueMapping
+        # Apply mappings from a document to create a model instance
+        #
+        # @param doc [Hash, Object] The document to map from
+        # @param format [Symbol] The format (:xml, :json, etc.)
+        # @param options [Hash] Options including :register, :instance
+        # @return [Object] The model instance with mapped values
+        def apply_mappings(doc, format, options = {})
+          register = options[:register] || Lutaml::Model::Config.default_register
+
+          # Use child's own default register if it has one
+          child_register = Lutaml::Model::Register.resolve_for_child(model,
+                                                                     register)
+
+          # For blank documents, return a bare instance without going
+          # through data_to_model (which would create a duplicate instance).
+          if Utils.blank?(doc)
+            if options.key?(:instance)
+              return options[:instance]
+            elsif model.include?(Lutaml::Model::Serialize)
+              return model.new({ lutaml_register: child_register })
+            else
+              object = model.new
+              register_accessor_methods_for(object, child_register)
+              return object
+            end
+          end
+
+          mappings = mappings_for(format, register)
+
+          if mappings.polymorphic_mapping
+            instance = if model.include?(Lutaml::Model::Serialize)
+                         model.new({ lutaml_register: child_register })
+                       else
+                         model.new
+                       end
+            return resolve_polymorphic(doc, format, mappings, instance, options)
+          end
+
+          transformer = Lutaml::Model::Config.transformer_for(format)
+          transformer.data_to_model(self, doc, format, options)
+        end
+
+        # Resolve a polymorphic type from a document
+        #
+        # @param doc [Hash] The document to resolve from
+        # @param format [Symbol] The format
+        # @param mappings [Mapping] The mappings object
+        # @param instance [Object] The base instance
+        # @param options [Hash] Additional options
+        # @return [Object] The resolved model instance
+        def resolve_polymorphic(doc, format, mappings, instance, options = {})
+          polymorphic_mapping = mappings.polymorphic_mapping
+          return instance if polymorphic_mapping.polymorphic_map.empty?
+
+          klass_key = doc[polymorphic_mapping.name]
+          klass_name = polymorphic_mapping.polymorphic_map[klass_key]
+          klass = Object.const_get(klass_name)
+
+          propagated = options.slice(*Lutaml::Model::Attribute::CHILD_PROPAGATION_KEYS)
+
+          # A map entry that resolves to the deserializing class itself
+          # (a subclass inheriting its base's map, or an apply_mappings
+          # override delegating back to super for its own concrete class)
+          # must fall through to this class's real deserialization:
+          # re-dispatching apply_mappings would resolve the same entry
+          # again and never make progress.
+          if klass == model
+            transformer = Lutaml::Model::Config.transformer_for(format)
+            return transformer.data_to_model(
+              self, doc, format,
+              propagated.merge(register: instance.lutaml_register)
+            )
+          end
+
+          klass.apply_mappings(doc, format,
+                               propagated.merge(register: instance.lutaml_register))
+        end
+
+        # Apply a value map to transform a value.
+        #
+        # Delegates to Attribute#apply_value_map. See attribute.rb for the
+        # canonical implementation.
+        #
+        # @param value [Object] The value to transform
+        # @param value_map [Hash] The value map configuration
+        # @param attr [Attribute] The attribute definition
+        # @return [Object] The transformed value
+        def apply_value_map(value, value_map, attr)
+          return value unless attr
+
+          attr.apply_value_map(value, value_map)
+        end
+
+        # Ensure a value is UTF-8 encoded
+        #
+        # @param value [Object] The value to encode
+        # @return [Object] The UTF-8 encoded value
+        def ensure_utf8(value)
+          case value
+          when String
+            # Opal strings are JS strings with no per-string encoding;
+            # String#encode there doesn't accept MRI's keyword options.
+            return value if Lutaml::Model.opal?
+            # The encode-with-options forces a fresh copy per value even
+            # when the string is already valid UTF-8 — the overwhelming
+            # case on parsed documents. Scan instead: no allocation on
+            # the happy path; encode still runs for genuinely invalid
+            # input.
+            return value if value.encoding == Encoding::UTF_8 && value.valid_encoding?
+
+            value.encode("UTF-8", invalid: :replace, undef: :replace,
+                                  replace: "")
+          when Array
+            value.map { |v| ensure_utf8(v) }
+          when ::Hash
+            value.transform_keys do |k|
+              ensure_utf8(k)
+            end.transform_values do |v|
+              ensure_utf8(v)
+            end
+          else
+            value
+          end
+        end
+
+        # Register accessor methods on an object
+        #
+        # @param object [Object] The object to add methods to
+        # @param register [Symbol] The register ID
+        def register_accessor_methods_for(object, register)
+          Utils.add_singleton_method_if_not_defined(object, :lutaml_register) do
+            @lutaml_register
+          end
+          Utils.add_singleton_method_if_not_defined(object,
+                                                    :lutaml_register=) do |value|
+            @lutaml_register = value
+          end
+          object.lutaml_register = register
+        end
+
+        # Extract register ID from various formats
+        #
+        # Resolution order:
+        # 1. Explicit register parameter
+        # 2. Class instance variable @register (set by set_register_context via registration)
+        # 3. Class's lutaml_default_register (for versioned schemas)
+        # 4. Global Config.default_register
+        #
+        # @param register [Symbol, Register, nil] The register
+        # @return [Symbol, nil] The register ID
+        def extract_register_id(register)
+          if register
+            register.is_a?(Lutaml::Model::Register) ? register.id : register
+          elsif instance_variable_defined?(:@register)
+            instance_variable_get(:@register)
+          else
+            lutaml_default_register || Lutaml::Model::Config.default_register
+          end
+        end
+      end
+    end
+  end
+end

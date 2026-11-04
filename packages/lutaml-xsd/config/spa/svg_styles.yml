@@ -1,0 +1,91 @@
+# SVG Diagram Styles Configuration
+# Controls all visual aspects of SVG diagram generation
+
+colors:
+  # Component colors with gradients
+  element:
+    base: "#0066CC"
+    gradient_start: "#0077DD"
+    gradient_end: "#0055BB"
+
+  type:
+    base: "#006600"
+    gradient_start: "#007700"
+    gradient_end: "#005500"
+
+  attribute:
+    base: "#993333"
+    gradient_start: "#AA4444"
+    gradient_end: "#882222"
+
+  group:
+    base: "#FFCC00"
+    gradient_start: "#FFDD11"
+    gradient_end: "#EEBB00"
+
+  # UI colors
+  ui:
+    text: "#000000"
+    border: "#333333"
+    shadow: "rgba(0,0,0,0.3)"
+    background: "#FFFFFF"
+
+  # State indicators
+  indicators:
+    required: "#FF0000"
+    optional: "#888888"
+    abstract: "#9900CC"
+
+dimensions:
+  box:
+    width: 120
+    height: 30
+    corner_radius: 5
+
+  spacing:
+    horizontal: 20
+    vertical: 15
+    indent: 40
+
+  text:
+    offset_y: 20
+    font_size: 14
+    small_font_size: 10
+    icon_size: 16
+
+effects:
+  shadow:
+    enabled: true
+    blur: 2
+    offset_x: 2
+    offset_y: 2
+    opacity: 0.3
+
+  gradient:
+    enabled: true
+    direction: "vertical"
+
+connectors:
+  inheritance:
+    type: "hollow_triangle"
+    stroke_width: 2
+    arrow_size: 8
+
+  containment:
+    type: "solid_triangle"
+    stroke_width: 2
+    arrow_size: 6
+
+  reference:
+    type: "dashed_hollow_triangle"
+    stroke_width: 2
+    dash_pattern: "5,5"
+    arrow_size: 6
+
+layout:
+  default: "tree"
+  tree:
+    direction: "top_down"
+    level_spacing: 60
+  vertical:
+    item_spacing: 15

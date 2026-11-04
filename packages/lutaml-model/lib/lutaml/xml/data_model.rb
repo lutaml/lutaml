@@ -1,0 +1,295 @@
+# frozen_string_literal: true
+
+module Lutaml
+  module Xml
+    # Pure data classes for XML intermediate representation.
+    #
+    # These classes represent XML structure without serialization logic,
+    # allowing transformation to produce XML data that can be serialized
+    # by different adapters (Nokogiri, Ox, Oga).
+    module DataModel
+      # Represents an XML element with namespace, attributes, and children.
+      class XmlElement
+        # @return [String] Element local name
+        attr_accessor :name
+
+        # @return [Class, nil] XmlNamespace class (not instance)
+        attr_accessor :namespace_class
+
+        # @return [Array<XmlAttribute>] Element attributes
+        attr_reader :attributes
+
+        # @return [Array<XmlElement, String>] Child elements and text nodes
+        attr_reader :children
+
+        # @return [String, nil] Direct text content (for simple elements)
+        attr_accessor :text_content
+
+        # @return [Boolean] Whether text content should be wrapped in CDATA section
+        attr_accessor :cdata
+
+        # @return [Symbol, nil] Form option (:qualified, :unqualified, or nil)
+        #   :qualified forces prefix format, :unqualified forces default format
+        attr_accessor :form
+
+        # @return [Boolean] Whether element needs xmlns="" declaration
+        attr_accessor :needs_xmlns_blank
+
+        # @return [Boolean] Whether element was created from nil value with render_nil
+        attr_accessor :xsi_nil
+
+        # @return [String, nil] Raw XML content for map_all custom methods
+        attr_accessor :raw_content
+
+        # @return [String, nil] XML namespace prefix (for doubly-defined namespace support)
+        attr_accessor :xml_namespace_prefix
+
+        # @return [String, nil] Original namespace URI (for alias support)
+        attr_accessor :original_namespace_uri
+
+        # @return [Array, nil] Namespace scope configuration (for hoisting)
+        attr_accessor :namespace_scope_config
+
+        # @return [Lutaml::Xml::XmlElement, nil] Original parsed XmlElement (for prefix fallback)
+        attr_accessor :original_xml_element
+
+        # @return [Array<XmlProcessingInstruction>] Processing instructions before this element
+        attr_reader :processing_instructions
+
+        # Initialize a new XML element
+        #
+        # @param name [String] Element local name
+        # @param namespace_class [Class, nil] XmlNamespace class
+        # @param explicit_namespace [Boolean] Whether namespace was explicitly set on this element
+        #   (true = from rule's namespace; false = inherited from parent or no namespace)
+        def initialize(name, namespace_class = nil, explicit_namespace: false)
+          @name = name
+          @namespace_class = namespace_class
+          @explicit_namespace = explicit_namespace
+          @attributes = []
+          @children = []
+          @text_content = nil
+          @cdata = false
+          @form = nil
+          @processing_instructions = []
+        end
+
+        # Whether this element's namespace was explicitly declared (from mapping rule)
+        # vs inherited from parent or unset.
+        #
+        # @return [Boolean]
+        attr_reader :explicit_namespace
+
+        # Add a child element or text node
+        #
+        # @param child [XmlElement, String, XmlComment] Child to add
+        # @return [self]
+        # @raise [TypeError] if child is not a supported type
+        def add_child(child)
+          unless child.is_a?(XmlElement) || child.is_a?(String) ||
+              child.is_a?(XmlComment) || child.is_a?(XmlRawFragment)
+            raise TypeError,
+                  "XmlElement#add_child expects XmlElement, String, " \
+                  "XmlComment, or XmlRawFragment, got #{child.class}"
+          end
+
+          @children << child
+          self
+        end
+
+        # Add an attribute to this element
+        #
+        # @param attribute [XmlAttribute] Attribute to add
+        # @return [self]
+        def add_attribute(attribute)
+          @attributes << attribute
+          self
+        end
+
+        def add_processing_instruction(target, content)
+          @processing_instructions << XmlProcessingInstruction.new(target,
+                                                                   content)
+          self
+        end
+
+        # Check if element has any children
+        #
+        # @return [Boolean]
+        def has_children?
+          !@children.empty?
+        end
+
+        # Check if element has any attributes
+        #
+        # @return [Boolean]
+        def has_attributes?
+          !@attributes.empty?
+        end
+
+        # Get qualified name (prefix:name or name)
+        #
+        # @param prefix [String, nil] Optional prefix override
+        # @return [String]
+        def qualified_name(prefix = nil)
+          if prefix
+            "#{prefix}:#{name}"
+          elsif namespace_class.is_a?(Class) && namespace_class < Lutaml::Xml::Namespace
+            ns_prefix = namespace_class.prefix_default
+            ns_prefix ? "#{ns_prefix}:#{name}" : name
+          else
+            name
+          end
+        end
+
+        # String representation for debugging
+        #
+        # @return [String]
+        def to_s
+          parts = ["<#{qualified_name}"]
+
+          if namespace_class
+            parts << " (ns: #{namespace_class})"
+          end
+
+          if has_attributes?
+            parts << " attrs: #{attributes.length}"
+          end
+
+          if text_content
+            parts << " text: #{text_content.inspect}"
+          elsif has_children?
+            parts << " children: #{children.length}"
+          end
+
+          parts << ">"
+          parts.join
+        end
+
+        # Detailed inspection for debugging
+        #
+        # @return [String]
+        def inspect
+          "#<#{self.class.name} #{self}>"
+        end
+      end
+
+      # Represents an XML attribute with optional namespace.
+      class XmlAttribute
+        # @return [String] Attribute local name
+        attr_reader :name
+
+        # @return [Class, nil] XmlNamespace class (not instance)
+        attr_reader :namespace_class
+
+        # @return [String] Attribute value
+        attr_reader :value
+
+        # Initialize a new XML attribute
+        #
+        # @param name [String] Attribute local name
+        # @param value [String] Attribute value
+        # @param namespace_class [Class, nil] XmlNamespace class
+        def initialize(name, value, namespace_class = nil)
+          @name = name
+          @value = value
+          @namespace_class = namespace_class
+        end
+
+        # Get qualified name (prefix:name or name)
+        #
+        # @param prefix [String, nil] Optional prefix override
+        # @return [String]
+        def qualified_name(prefix = nil)
+          if prefix
+            "#{prefix}:#{name}"
+          elsif namespace_class.is_a?(Class) && namespace_class < Lutaml::Xml::Namespace
+            ns_prefix = namespace_class.prefix_default
+            ns_prefix ? "#{ns_prefix}:#{name}" : name
+          else
+            name
+          end
+        end
+
+        # String representation for debugging
+        #
+        # @return [String]
+        def to_s
+          "#{qualified_name}=\"#{value}\""
+        end
+
+        # Detailed inspection for debugging
+        #
+        # @return [String]
+        def inspect
+          ns_info = namespace_class ? " (ns: #{namespace_class})" : ""
+          "#<#{self.class.name} #{self}#{ns_info}>"
+        end
+      end
+
+      # Represents an XML processing instruction.
+      class XmlProcessingInstruction
+        attr_accessor :target, :content
+
+        def initialize(target, content)
+          @target = target
+          @content = content
+        end
+
+        def to_s
+          "<?#{target} #{content}?>"
+        end
+
+        # Parse pseudo-attributes from PI content string.
+        #
+        # Handles both single and multiple pseudo-attributes:
+        #   'strict="yes"' → {"strict"=>"yes"}
+        #   'toc="yes" oxy-markup="no"' → {"toc"=>"yes", "oxy-markup"=>"no"}
+        #
+        # @param content [String] PI content with key="value" pairs
+        # @return [Hash] Parsed key-value pairs
+        def self.parse_pseudo_attributes(content)
+          return {} unless content.is_a?(String) && !content.strip.empty?
+
+          chunks = content.split(/=['"]([^'"]*)['"]/)
+          result = {}
+          chunks.each_slice(2) do |key, value|
+            next unless key && value
+
+            result[key.strip] = value
+          end
+          result
+        end
+      end
+
+      # Represents a raw XML fragment that should be serialized as-is.
+      #
+      # Used by raw_element mappings to embed complete XML elements (e.g., SVG,
+      # MathML) without parsing, wrapping, or escaping.
+      class XmlRawFragment
+        attr_reader :content
+
+        def initialize(content)
+          @content = content.to_s
+        end
+
+        def to_s
+          @content
+        end
+      end
+
+      # Represents an XML comment in the data model tree.
+      # Stored as a child of XmlElement alongside String (text) and XmlElement children.
+      class XmlComment
+        attr_accessor :content
+
+        def initialize(content)
+          @content = content
+        end
+
+        def to_s
+          "<!--#{content}-->"
+        end
+      end
+    end
+  end
+end

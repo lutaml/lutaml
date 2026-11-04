@@ -1,0 +1,38 @@
+# Conflict Resolution Example
+#
+# This example demonstrates all three conflict resolution strategies:
+# - keep: Keep the first definition (highest priority wins)
+# - override: Allow override (lower priority can replace higher priority)
+# - error: Fail if any conflicts detected
+
+base_packages:
+  # Base package with highest priority
+  - package: ../01-simple/simple.lxr
+    priority: 0
+    conflict_resolution: keep
+    # This package's definitions are protected - they win all conflicts
+
+  # Extension package that can add new types but won't override base
+  - package: ../03-unitsml/unitsml.lxr
+    priority: 10
+    conflict_resolution: keep
+    # If there are conflicts with priority 0, the base package wins
+    # If there are only conflicts with priority 20+, this package wins
+
+  # Strict package that must not conflict with anything
+  - package: ../04-metaschema/metaschema.lxr
+    priority: 20
+    conflict_resolution: error
+    # Any conflicts involving this package will cause composition to fail
+    # Use this for packages that must be conflict-free
+
+# Priority explanation:
+# - Lower number = higher priority = wins conflicts
+# - Priority 0: Highest priority (canonical/base schemas)
+# - Priority 10-50: Medium priority (extensions)
+# - Priority 100+: Lowest priority (project-specific)
+#
+# Resolution strategy per package:
+# - keep: This package keeps its definitions when it has priority
+# - override: This package can override higher-priority packages
+# - error: Fail composition if this package has any conflicts

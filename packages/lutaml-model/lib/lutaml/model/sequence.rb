@@ -1,0 +1,220 @@
+# frozen_string_literal: true
+
+module Lutaml
+  module Model
+    class Sequence
+      include DeepDupable
+
+      attr_accessor :model, :attributes, :compositors
+      attr_reader :format
+
+      def initialize(model, format: nil)
+        @attributes = []
+        @compositors = []
+        @model = model
+        @format = format
+      end
+
+      # Deep copy a sequence, creating independent copies of attributes
+      # The model reference is updated to point to the new parent mapping
+      def deep_dup(new_model = nil)
+        dup_seq = Sequence.new(new_model || @model, format: @format)
+        dup_seq.attributes = Utils.deep_dup(@attributes)
+        dup_seq.compositors = Utils.deep_dup(@compositors)
+        dup_seq
+      end
+
+      def attribute(name, type, options = {})
+        options[:sequence] = self
+        @model.attribute(name, type, options)
+      end
+
+      def sequence(&block)
+        instance_eval(&block)
+      end
+
+      def map_element(name, **options)
+        rule = @model.map_element(name, **options)
+        @attributes << rule
+        if (nested = @choice_in_progress)
+          nested.attributes << rule
+        end
+        rule
+      end
+
+      # An xs:choice compositor nested inside an xs:sequence
+      # (lutaml-model#687). Element rules mapped in the block take
+      # their positional place in this sequence AND carry the choice
+      # on their model attributes, so validation applies order and
+      # exclusivity exactly as a model-level choice does. The choice
+      # itself is remembered in #compositors — the compositor shape
+      # stays queryable next to the flat rule order.
+      def choice(min: 1, max: 1, &block)
+        nested = Choice.new(@model, min, max, format: @format)
+        previous = @choice_in_progress
+        @choice_in_progress = nested
+        begin
+          instance_eval(&block)
+        ensure
+          @choice_in_progress = previous
+        end
+        @compositors << nested
+        nested
+      end
+
+      # Bind nested choice compositors to the mapper's model attributes
+      # (options[:choice]), so validation applies order and exclusivity
+      # the same way a model-level choice does. Runs at mapping finalize,
+      # when the mapper class is known — the DSL block runs earlier.
+      def bind_choice_compositors!(mapper_class)
+        @compositors.each do |choice|
+          choice.model = mapper_class
+          # The choice's contents become the model attributes its rules
+          # target — the same shape a model-level choice carries — so
+          # validation machinery works unchanged.
+          bound = choice.attributes.filter_map do |rule|
+            mapper_class.attributes[rule.to]
+          end.uniq
+          choice.attributes.replace(bound)
+          bound.each { |target| target.options[:choice] = choice }
+        end
+      end
+
+      def import_model_mappings(model, register = nil)
+        if later_importable?(model)
+          return import_mappings_later(model,
+                                       register)
+        end
+        raise Lutaml::Model::ImportModelWithRootError.new(model) if model.root?(register)
+
+        register ||= Lutaml::Model::Config.default_register
+
+        # When importing a model into a sequence, we need BOTH:
+        # 1. Object model (attributes/structure) - what data exists
+        # 2. Serialization mappings (how to serialize) - how data maps to XML
+        # This mimics XSD where using a complexType in a sequence means
+        # adopting both its structure and its serialization rules
+
+        # Import serialization mappings first (element names → model attributes)
+        @model.import_model_mappings(model, register)
+        if @format
+          @attributes.concat(Utils.deep_dup(model.mappings_for(@format,
+                                                               register).elements(register)))
+        end
+      end
+
+      def map_attribute(*)
+        raise Lutaml::Model::UnknownSequenceMappingError.new("map_attribute")
+      end
+
+      def map_content(*)
+        raise Lutaml::Model::UnknownSequenceMappingError.new("map_content")
+      end
+
+      def map_all(*)
+        raise Lutaml::Model::UnknownSequenceMappingError.new("map_all")
+      end
+
+      def validate_content!(element_order, instance, register = nil)
+        validate_sequence!(
+          extract_defined_order(instance.class.attributes(register).transform_keys(&:to_s)),
+          element_order,
+          register,
+        )
+        validate_child_content(instance, register)
+      end
+
+      private
+
+      def validate_child_content(instance, register)
+        instance.class.attributes(register).each_key do |name|
+          value = instance.public_send(name)
+          if value.is_a?(Lutaml::Model::Serialize)
+            value.validate!
+          elsif value.is_a?(Array)
+            value.each do |v|
+              v.validate!(register: register) if v.is_a?(Lutaml::Model::Serialize)
+            end
+          end
+        end
+      end
+
+      def validate_sequence!(defined_order, element_order, register = nil)
+        eo_index = element_order_index(element_order, defined_order)
+        choices = {}
+
+        defined_order.each do |element, klass_attr|
+          eo_index = validate_sequence(element_order, eo_index, element,
+                                       klass_attr, choices, register)
+        end
+      end
+
+      def validate_sequence(element_order, eo_index, element, klass_attr,
+choices, register = nil)
+        if klass_attr.choice
+          return process_choice(element_order, eo_index, element, klass_attr,
+                                choices, register)
+        end
+
+        if klass_attr.collection?
+          occurrences = process_collection(element_order, eo_index, element,
+                                           klass_attr)
+        end
+        return eo_index + occurrences if occurrences&.positive?
+        return eo_index + 1 if element_order[eo_index] == element
+
+        raise_incorrect_sequence_error!(element, element_order[eo_index])
+      end
+
+      def process_choice(element_order, eo_index, element, klass_attr, choices,
+register = nil)
+        return eo_index if choices[klass_attr.choice] || element_order[eo_index] != element
+
+        choices[klass_attr.choice] = true
+        eo_index + klass_attr.choice.validate_sequence_content!(
+          element_order[eo_index..], 0, register
+        )
+      end
+
+      def raise_incorrect_sequence_error!(expected, found)
+        raise Lutaml::Model::IncorrectSequenceError.new(expected, found)
+      end
+
+      def process_collection(element_order, eo_index, element, klass_attr)
+        if add_missing_element?(element_order, eo_index, element, klass_attr)
+          element_order.insert(eo_index, element)
+          nil
+        else
+          klass_attr.sequenced_appearance_count(element_order, element,
+                                                eo_index)
+        end
+      end
+
+      def add_missing_element?(element_order, eo_index, element, klass_attr)
+        return false unless klass_attr.resolved_collection.min.zero?
+
+        element_order[eo_index] != element && !element_order.include?(element)
+      end
+
+      def element_order_index(element_order, defined_order)
+        element_order.find_index { |d| defined_order.key?(d) } || 0
+      end
+
+      def extract_defined_order(model_attrs)
+        @attributes.to_h do |rule|
+          [rule.name.to_s, model_attrs[rule.to.to_s]]
+        end
+      end
+
+      def later_importable?(model)
+        model.is_a?(Symbol) ||
+          model.is_a?(String)
+      end
+
+      def import_mappings_later(model, _register_id)
+        @model.sequence_importable_mappings[self] << model.to_sym
+        @model.set_mappings_imported(false)
+      end
+    end
+  end
+end

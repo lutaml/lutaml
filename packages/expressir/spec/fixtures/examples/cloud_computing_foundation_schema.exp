@@ -1,0 +1,88 @@
+(*
+ACME 5000 No. 10070
+
+EXPRESS Source:
+ACME 5000-120 ed1 Cloud computing foundation - Foundation schema
+
+The following permission notice and disclaimer shall be included in all copies of this EXPRESS schema ("the Schema"),
+and derivations of the Schema:
+
+Copyright Ribose 2025  All rights reserved
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+In addition, any modified copy of the Schema shall include the following notice:
+
+THIS SCHEMA HAS BEEN MODIFIED FROM THE SCHEMA DEFINED IN
+ACME 5000-120 ed1 Cloud computing foundation - Foundation schema
+AND SHOULD NOT BE INTERPRETED AS COMPLYING WITH THAT STANDARD
+*)
+
+SCHEMA cloud_computing_foundation_schema '{acme standard 5000 part(120) version(1) object(1) cloud-computing-foundation-schema(1)}';
+
+TYPE cloud_service_type = ENUMERATION OF
+     (infrastructure_as_a_service,
+      platform_as_a_service,
+      software_as_a_service,
+      function_as_a_service);
+END_TYPE;
+
+TYPE cloud_deployment_model = ENUMERATION OF
+     (public_cloud,
+      private_cloud,
+      hybrid_cloud,
+      multi_cloud);
+END_TYPE;
+
+TYPE cloud_resource_state = ENUMERATION OF
+     (provisioning,
+      running,
+      stopped,
+      terminated);
+END_TYPE;
+
+ENTITY cloud_provider;
+  name : STRING;
+  description : OPTIONAL STRING;
+  provider_id : STRING;
+END_ENTITY;
+
+ENTITY cloud_resource;
+  resource_id : STRING;
+  name : STRING;
+  description : OPTIONAL STRING;
+  provider : cloud_provider;
+  state : cloud_resource_state;
+END_ENTITY;
+
+ENTITY cloud_compute_resource
+  SUBTYPE OF (cloud_resource);
+  cpu_cores : INTEGER;
+  memory_gb : REAL;
+WHERE
+  WR1: cpu_cores > 0;
+  WR2: memory_gb > 0.0;
+END_ENTITY;
+
+ENTITY cloud_storage_resource
+  SUBTYPE OF (cloud_resource);
+  capacity_gb : REAL;
+  encryption_enabled : BOOLEAN;
+WHERE
+  WR1: capacity_gb > 0.0;
+END_ENTITY;
+
+ENTITY cloud_service_deployment;
+  deployment_id : STRING;
+  name : STRING;
+  deployment_model : cloud_deployment_model;
+  service_type : cloud_service_type;
+END_ENTITY;
+
+END_SCHEMA; -- cloud_computing_foundation_schema

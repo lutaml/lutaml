@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:include schemaLocation="relaton-iec.xsd"/>
+  <xs:include schemaLocation="isostandard.xsd"/>
+  <xs:element name="term">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="preferred"/>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="admitted"/>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="deprecates"/>
+        <xs:element minOccurs="0" ref="domain"/>
+        <xs:element ref="definition"/>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="termnote"/>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="termexample"/>
+        <xs:group minOccurs="0" maxOccurs="unbounded" ref="termsource"/>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="term"/>
+      </xs:sequence>
+      <xs:attributeGroup ref="TermAttributes"/>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>
+<!-- end overrides -->

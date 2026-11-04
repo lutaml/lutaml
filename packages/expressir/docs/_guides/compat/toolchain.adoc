@@ -1,0 +1,57 @@
+---
+title: Toolchain mapping
+nav_order: 2
+parent: Compatibility
+---
+
+= Toolchain mapping
+
+Expressir's commands cover the core EXPRESS toolchain surface. This
+table maps each capability to its expressir invocation, the format it
+produces, and where the behaviour is pinned.
+
+[cols="1,1,1,2"]
+|===
+| Capability | Command | Output | Pinned by
+
+| Comparison report | `expressir compare BASE REVISED -o report.xml`
+  | `schema.changes` XML | Round trip through the importer:
+  `spec/expressir/commands/compare_spec.rb`
+
+| Comparison import | `expressir changes` family
+  | EXPRESS Changes YAML | `spec/expressir/commands/changes_import_eengine_spec.rb`
+
+| Instance + schema validation | `expressir population validate MANIFEST`
+  | Deterministic receipt JSON (exit 1 on errors) |
+  `spec/expressir/commands/population_spec.rb`
+
+| Longform flatten | `expressir flatten PATH`
+  | Single longform schema | Annex G audit suite
+  (`spec/fixtures/shtolo/annex-g-rules.md`)
+
+| XML Schema rendering | `expressir xsd PATH`
+  | XSD | `spec/expressir/commands/xsd_spec.rb`
+
+| Corpus index | `expressir xml-index DIR`
+  | Index XML | `spec/expressir/commands/smrl_xml_index_spec.rb`
+
+| Workspace assessment | `expressir doctor DIR [-o manifest]`
+  | Readiness report + starter manifest |
+  `spec/expressir/commands/doctor_spec.rb`
+
+|===
+
+== Exit codes
+
+* `0` — success (validation runs report their verdicts in the output
+  or receipt)
+* `1` — the command completed but its findings include errors
+  (e.g. `population validate`)
+* command failures (unreadable input, missing files) raise and exit
+  non-zero
+
+== Divergences
+
+Tolerances and enhancements relative to strict standard readings are
+registered with IDs in xref:interchange[the interchange and
+divergences page] — every entry cites the spec that pins it.

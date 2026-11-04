@@ -1,0 +1,5 @@
+SCHEMA test_schema;
+  ENTITY test_entity;
+    name : STRING;
+  END_ENTITY;
+END_SCHEMA;

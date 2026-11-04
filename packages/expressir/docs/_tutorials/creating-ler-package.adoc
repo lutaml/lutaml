@@ -1,0 +1,735 @@
+---
+title: Creating LER Packages
+nav_order: 4
+---
+
+== Creating LER Packages
+
+=== Prerequisites
+
+Before starting this tutorial, ensure you have:
+
+* Completed link:working-with-multiple-schemas.html[Working with Multiple Schemas]
+* Understanding of EXPRESS schema dependencies
+* Multiple EXPRESS schema files to package
+* Expressir installed with CLI access
+
+=== Learning Objectives
+
+By the end of this tutorial, you will be able to:
+
+* Understand what LER packages are and their benefits
+* Create LER packages from EXPRESS schemas
+* Configure packaging options for different use cases
+* Load and query LER packages
+* Validate package integrity
+* Optimize packages for performance
+
+=== What You'll Build
+
+You'll create a distributable LER package from the multi-schema product catalog system, making it easy to share and use without re-parsing.
+
+=== Step 1: Understanding LER Packages
+
+==== What is a LER Package?
+
+LutaML EXPRESS Repository (LER) is a distributable package format that:
+
+* **Bundles all schemas** into a single `.ler` file
+* **Pre-builds indexes** for fast entity/type lookups
+* **Resolves references** so they're ready to use
+* **Loads instantly** (<500ms vs 10+ seconds parsing)
+
+==== Why Use LER Packages?
+
+**Performance**::
+Loading a pre-parsed package is 20-50x faster than parsing
+
+**Distribution**::
+One file contains everything needed
+
+**Consistency**::
+Everyone uses the same parsed result
+
+**Production-ready**::
+No parsing overhead in production
+
+==== LER Package Structure
+
+[source]
+----
+activity.ler (ZIP archive)
+├── metadata.yaml              # Package info
+├── repository.marshal         # Serialized schemas
+├── entity_index.marshal       # Fast entity lookups
+├── type_index.marshal         # Fast type lookups
+├── reference_index.marshal    # Reference mappings
+├── manifest.yaml              # Schema list
+└── express_files/             # Original EXPRESS files
+    ├── schema1.exp
+    └── schema2.exp
+----
+
+=== Step 2: Create Sample Schemas
+
+First, let's create schemas to package.
+
+==== Create `base_schema.exp`
+
+[source,express]
+----
+SCHEMA base_schema;
+
+  TYPE identifier = STRING;
+  END_TYPE;
+
+  TYPE label = STRING;
+  END_TYPE;
+
+  ENTITY person;
+    name : label;
+    email : OPTIONAL STRING;
+  END_ENTITY;
+
+  ENTITY organization;
+    org_name : label;
+    employees : SET [0:?] OF person;
+  END_ENTITY;
+
+END_SCHEMA;
+----
+
+==== Create `product_schema.exp`
+
+[source,express]
+----
+SCHEMA product_schema;
+
+  REFERENCE FROM base_schema (identifier, label, person, organization);
+
+  ENTITY product;
+    id : identifier;
+    name : label;
+    price : REAL;
+    manufacturer : organization;
+  END_ENTITY;
+
+  ENTITY product_category;
+    category_name : label;
+    products : SET [0:?] OF product;
+  END_ENTITY;
+
+END_SCHEMA;
+----
+
+=== Step 3: Create Your First Package
+
+==== Using the CLI
+
+The simplest way to create a package:
+
+[source,bash]
+----
+# Create package from schema files
+expressir package build base_schema.exp product_schema.exp catalog.ler
+
+# With metadata
+expressir package build base_schema.exp product_schema.exp catalog.ler \
+  --name "Product Catalog" \
+  --version "1.0.0" \
+  --description "Sample product catalog schemas"
+----
+
+**Expected output**:
+[source]
+----
+✓ Parsing base_schema.exp
+✓ Parsing product_schema.exp
+✓ Resolving references
+✓ Building indexes
+✓ Creating package catalog.ler
+
+Package created successfully!
+  Size: 45 KB
+  Schemas: 2
+  Entities: 4
+  Types: 2
+----
+
+==== Verify the Package
+
+[source,bash]
+----
+# Show package information
+expressir package info catalog.ler
+----
+
+**Output**:
+[source]
+----
+Package Information
+==================================================
+Name:        Product Catalog
+Version:     1.0.0
+Description: Sample product catalog schemas
+Created:     2025-11-28T03:00:00Z
+
+Configuration
+--------------------------------------------------
+Express mode:         include_all
+Resolution mode:      resolved
+Serialization format: marshal
+
+Statistics
+--------------------------------------------------
+Total schemas:    2
+Total entities:   4
+Total types:      2
+Total functions:  0
+Total rules:      0
+Total procedures: 0
+----
+
+=== Step 4: Package Configuration Options
+
+==== Express Mode
+
+Controls how EXPRESS files are bundled:
+
+**include_all** (default)::
+Includes original EXPRESS files in package
++
+[source,bash]
+----
+expressir package build schema.exp output.ler --express-mode include_all
+----
+
+**allow_external**::
+References external EXPRESS files (smaller package)
++
+[source,bash]
+----
+expressir package build schema.exp output.ler --express-mode allow_external
+----
+
+==== Resolution Mode
+
+Controls reference resolution:
+
+**resolved** (default)::
+Pre-resolves all references for faster loading
++
+[source,bash]
+----
+expressir package build schema.exp output.ler --resolution-mode resolved
+----
+
+**bare**::
+Does not pre-resolve (smaller but slower to load)
++
+[source,bash]
+----
+expressir package build schema.exp output.ler --resolution-mode bare
+----
+
+==== Serialization Format
+
+Controls internal data format:
+
+**marshal** (default)::
+Ruby's native format, fastest
++
+[source,bash]
+----
+expressir package build schema.exp output.ler --serialization-format marshal
+----
+
+**yaml**::
+Human-readable, cross-platform
++
+[source,bash]
+----
+expressir package build schema.exp output.ler --serialization-format yaml
+----
+
+**json**::
+Standard format, good compatibility
++
+[source,bash]
+----
+expressir package build schema.exp output.ler --serialization-format json
+----
+
+=== Step 5: Build Optimized Packages
+
+==== Production Package (Fastest)
+
+[source,bash]
+----
+expressir package build base_schema.exp product_schema.exp production.ler \
+  --name "Production Catalog" \
+  --version "1.0.0" \
+  --express-mode include_all \
+  --resolution-mode resolved \
+  --serialization-format marshal \
+  --validate
+----
+
+**When to use**: Production deployments where speed is critical
+
+==== Portable Package (Cross-Platform)
+
+[source,bash]
+----
+expressir package build base_schema.exp product_schema.exp portable.ler \
+  --name "Portable Catalog" \
+  --version "1.0.0" \
+  --serialization-format json \
+  --validate
+----
+
+**When to use**: Sharing across different Ruby versions or platforms
+
+==== Debug Package (Human-Readable)
+
+[source,bash]
+----
+expressir package build base_schema.exp product_schema.exp debug.ler \
+  --name "Debug Catalog" \
+  --version "1.0.0" \
+  --serialization-format yaml \
+  --validate
+----
+
+**When to use**: Development and debugging
+
+=== Step 6: Load and Use Packages
+
+==== Load with CLI
+
+[source,bash]
+----
+# List all entities
+expressir package list catalog.ler
+
+# List entities in specific schema
+expressir package list catalog.ler --schema product_schema
+
+# Search for entities
+expressir package search catalog.ler "product"
+----
+
+==== Load with Ruby API
+
+Create `use_package.rb`:
+
+[source,ruby]
+----
+require 'expressir'
+
+# Load package
+repo = Expressir::Model::Repository.from_package('catalog.ler')
+
+puts "Loaded package:"
+puts "  Schemas: #{repo.schemas.size}"
+puts "  Total entities: #{repo.schemas.sum { |s| s.entities.size }}"
+
+# Access schemas
+repo.schemas.each do |schema|
+  puts "\n#{schema.id}:"
+  schema.entities.each do |entity|
+    puts "  - #{entity.id}"
+  end
+end
+----
+
+Run it:
+
+[source,bash]
+----
+ruby use_package.rb
+----
+
+**Output**:
+[source]
+----
+Loaded package:
+  Schemas: 2
+  Total entities: 4
+
+base_schema:
+  - person
+  - organization
+
+product_schema:
+  - product
+  - product_category
+----
+
+=== Step 7: Query Package Contents
+
+==== Using the Search Engine
+
+Create `query_package.rb`:
+
+[source,ruby]
+----
+require 'expressir'
+
+# Load package
+repo = Expressir::Model::Repository.from_package('catalog.ler')
+
+# Create search engine
+search = Expressir::Model::SearchEngine.new(repo)
+
+# List all entities
+puts "All entities:"
+entities = search.list(type: 'entity')
+entities.each do |e|
+  puts "  #{e[:schema]}.#{e[:id]}"
+end
+
+# Search by pattern
+puts "\nEntities starting with 'product':"
+results = search.search(pattern: 'product*', type: 'entity')
+results.each do |r|
+  puts "  #{r[:path]}"
+end
+
+# Find specific entity
+puts "\nFinding 'product_category':"
+result = search.search(pattern: 'product_category', type: 'entity', exact: true)
+if result.any?
+  entity = result.first[:object]
+  puts "  Found in: #{result.first[:schema]}"
+  puts "  Attributes: #{entity.attributes.map(&:id).join(', ')}"
+end
+----
+
+**Output**:
+[source]
+----
+All entities:
+  base_schema.person
+  base_schema.organization
+  product_schema.product
+  product_schema.product_category
+
+Entities starting with 'product':
+  product_schema.product
+  product_schema.product_category
+
+Finding 'product_category':
+  Found in: product_schema
+  Attributes: category_name, products
+----
+
+=== Step 8: Validate Packages
+
+==== Validation with CLI
+
+[source,bash]
+----
+# Basic validation
+expressir package validate catalog.ler
+
+# Strict validation with checks
+expressir package validate catalog.ler --strict --check-interfaces --detailed
+----
+
+==== Validation with Ruby API
+
+Create `validate_package.rb`:
+
+[source,ruby]
+----
+require 'expressir'
+
+# Load package
+repo = Expressir::Model::Repository.from_package('catalog.ler')
+
+# Validate
+validation = repo.validate(strict: false)
+
+if validation[:valid?]
+  puts "✓ Package is valid"
+  puts "  Total schemas: #{validation[:total_schemas]}"
+  puts "  Valid schemas: #{validation[:valid_schemas]}"
+else
+  puts "✗ Validation failed"
+  validation[:errors].each do |error|
+    puts "  Error: #{error[:message]}"
+  end
+end
+
+# Check warnings
+if validation[:warnings]&.any?
+  puts "\nWarnings:"
+  validation[:warnings].each do |warning|
+    puts "  - #{warning[:message]}"
+  end
+end
+----
+
+=== Step 9: Package Statistics
+
+==== Get Detailed Statistics
+
+Create `package_stats.rb`:
+
+[source,ruby]
+----
+require 'expressir'
+
+repo = Expressir::Model::Repository.from_package('catalog.ler')
+stats = repo.statistics
+
+puts "Package Statistics"
+puts "=" * 60
+
+puts "\nElement counts:"
+puts "  Schemas: #{stats[:total_schemas]}"
+puts "  Entities: #{stats[:total_entities]}"
+puts "  Types: #{stats[:total_types]}"
+puts "  Functions: #{stats[:total_functions]}"
+puts "  Rules: #{stats[:total_rules]}"
+puts "  Procedures: #{stats[:total_procedures]}"
+
+if stats[:types_by_category]
+  puts "\nTypes by category:"
+  stats[:types_by_category].each do |category, count|
+    puts "  #{category}: #{count}"
+  end
+end
+
+if stats[:entities_by_schema]
+  puts "\nEntities per schema:"
+  stats[:entities_by_schema].each do |schema, count|
+    puts "  #{schema}: #{count} entities"
+  end
+end
+
+if stats[:interfaces]
+  puts "\nInterface usage:"
+  puts "  USE FROM: #{stats[:interfaces][:use_from]}"
+  puts "  REFERENCE FROM: #{stats[:interfaces][:reference_from]}"
+end
+----
+
+=== Step 10: Build from Schema Manifest
+
+==== Create Schema Manifest
+
+Create `schemas.yml`:
+
+[source,yaml]
+----
+schemas:
+  - path: base_schema.exp
+    id: base_schema
+  - path: product_schema.exp
+    id: product_schema
+----
+
+==== Build Package from Manifest
+
+[source,bash]
+----
+# Build from manifest
+expressir package build-from-manifest schemas.yml manifest_catalog.ler \
+  --name "Manifest Catalog" \
+  --version "1.0.0" \
+  --validate
+----
+
+==== Programmatic Build from Manifest
+
+Create `build_from_manifest.rb`:
+
+[source,ruby]
+----
+require 'expressir'
+
+# Load manifest
+manifest = Expressir::SchemaManifest.from_file('schemas.yml')
+
+# Get file paths
+files = manifest.schemas.map(&:path)
+
+puts "Building package from #{files.size} schemas..."
+
+# Parse all files
+repo = Expressir::Express::Parser.from_files(files) do |filename, schemas, error|
+  if error
+    puts "  ✗ Error: #{filename}"
+  else
+    puts "  ✓ Loaded: #{filename}"
+  end
+end
+
+# Export to package
+repo.export_to_package(
+  'programmatic.ler',
+  name: 'Programmatic Catalog',
+  version: '1.0.0',
+  express_mode: 'include_all',
+  resolution_mode: 'resolved',
+  serialization_format: 'marshal'
+)
+
+puts "\n✓ Package created: programmatic.ler"
+----
+
+=== Step 11: Package Version Comparison
+
+Compare different package configurations.
+
+==== Benchmark Package Performance
+
+Create `benchmark_packages.rb`:
+
+[source,ruby]
+----
+require 'expressir'
+require 'benchmark'
+
+formats = {
+  'marshal' => 'marshal_catalog.ler',
+  'yaml' => 'yaml_catalog.ler',
+  'json' => 'json_catalog.ler'
+}
+
+puts "Package Loading Benchmark"
+puts "=" * 60
+
+formats.each do |format, file|
+  next unless File.exist?(file)
+
+  time = Benchmark.realtime do
+    repo = Expressir::Model::Repository.from_package(file)
+  end
+
+  size = File.size(file) / 1024.0  # KB
+
+  puts "\n#{format.upcase} format:"
+  puts "  Load time: #{(time * 1000).round(2)}ms"
+  puts "  File size: #{size.round(2)} KB"
+end
+----
+
+=== Step 12: Practice Exercises
+
+==== Exercise 1: Multi-Format Packages
+
+Create three versions of the same package:
+* Production (marshal, resolved)
+* Development (yaml, resolved)
+* Minimal (json, bare)
+
+Compare file sizes and loading times.
+
+==== Exercise 2: Large Package
+
+Create a package with at least 10 schemas and 50+ entities.
+Measure:
+* Parsing time
+* Package creation time
+* Package loading time
+* Query performance
+
+==== Exercise 3: Package Distribution
+
+Create a package that:
+* Includes metadata (name, version, description)
+* Uses portable format (JSON)
+* Validates successfully
+* Can be loaded on different systems
+
+=== Common Issues and Solutions
+
+==== "Package file not found"
+
+**Problem**: Can't load package
+
+**Solution**:
+[source,ruby]
+----
+# Check file exists
+unless File.exist?('catalog.ler')
+  puts "Error: Package file not found"
+  exit 1
+end
+
+repo = Expressir::Model::Repository.from_package('catalog.ler')
+----
+
+==== "Invalid package format"
+
+**Problem**: Corrupted or incompatible package
+
+**Solution**:
+[source,bash]
+----
+# Rebuild package with validation
+expressir package build schema.exp output.ler --validate
+----
+
+==== Large Package Performance
+
+**Problem**: Package too large or slow to load
+
+**Solutions**:
+* Use marshal format (fastest)
+* Enable compression
+* Split into multiple packages
+* Use bare resolution mode for less critical packages
+
+=== Best Practices
+
+**Development**::
+* Use YAML format for readability
+* Include original EXPRESS files
+* Enable validation
+* Keep packages small for iteration
+
+**Production**::
+* Use marshal format for speed
+* Pre-resolve all references
+* Validate before deployment
+* Version your packages
+
+**Distribution**::
+* Use JSON format for compatibility
+* Include comprehensive metadata
+* Document dependencies
+* Provide examples
+
+=== Next Steps
+
+Congratulations! You can now create and use LER packages.
+
+**Continue learning**:
+
+* link:querying-schemas.html[Querying Schemas] - Advanced search techniques
+* link:liquid-templates.html[Liquid Templates] - Generate documentation
+* link:../pages/ler-packages.html[LER Packages] - Complete reference
+
+**Read more**:
+
+* link:../guides/ler/[LER Guides] - Advanced LER usage
+* link:../guides/ruby-api/[Ruby API Guides] - Programmatic access
+* link:../guides/cli/[CLI Guides] - Command-line tools
+
+=== Summary
+
+In this tutorial, you learned to:
+
+* ✅ Understand LER package benefits
+* ✅ Create packages with different configurations
+* ✅ Optimize packages for various use cases
+* ✅ Load and use packages efficiently
+* ✅ Validate package integrity
+* ✅ Query package contents
+* ✅ Compare package formats
+
+You're now ready to distribute EXPRESS schemas efficiently with LER packages!

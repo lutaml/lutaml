@@ -1,0 +1,942 @@
+---
+layout: default
+title: Architecture overview
+nav_order: 1
+parent: Architecture
+---
+= System Architecture
+:toc:
+:toclevels: 3
+
+== Purpose
+
+This document provides a high-level overview of the `lutaml-xsd` system architecture, design principles, and component relationships. It defines the architectural boundaries, responsibilities, and integration points within the larger lutaml ecosystem.
+
+`lutaml-xsd` is a focused Ruby library dedicated exclusively to parsing and manipulating XML Schema Definition (XSD) files. The architecture emphasizes clear separation of concerns, model-based design, and maintainability through well-defined boundaries.
+
+== General
+
+The `lutaml-xsd` architecture provides:
+
+* **Complete XSD support** - Parse and represent all XSD constructs (elements, types, attributes, groups, facets, etc.) as Ruby objects
+* **Schema resolution** - Handle imports, includes, and schema location mappings with flexible redirection
+* **Object model navigation** - Traverse and query parsed schema structures programmatically
+* **Round-trip serialization** - Convert schemas to XML and back while preserving structure
+* **Documentation integration** - Liquid template methods for schema introspection and documentation generation
+* **Repository management** - Namespace-aware type resolution across multiple schemas with packaging capabilities
+* **Clear architectural boundaries** - Well-defined scope focusing solely on XSD operations
+
+The architecture is built on the `lutaml-model` serialization framework, providing a flexible and extensible foundation for data modeling and transformation.
+
+== Core responsibility
+
+[source]
+----
+┌─────────────────────────────────────────────────────────┐
+│         Core Responsibility of lutaml-xsd               │
+└─────────────────────────────────────────────────────────┘
+
+    Parse XSD → Manipulate XSD → Serialize XSD
+----
+
+`lutaml-xsd` handles ALL operations related to XSD schemas:
+
+* **Parsing XSD files** into Ruby object models (from strings, files, or URLs)
+* **Navigating and manipulating** XSD structures programmatically
+* **Resolving schema imports and includes** with location mapping support
+* **Managing schema location mappings** for offline/local development
+* **Serializing XSD objects** back to XML with round-trip compatibility
+* **Providing Liquid template methods** for schema introspection and documentation
+
+== XSD object hierarchy
+
+The following diagram illustrates the hierarchical structure of XSD objects and their relationships:
+
+[source]
+----
+                        Schema
+                          │
+          ┌───────────────┼───────────────┐
+          │               │               │
+       Elements      ComplexTypes    SimpleTypes
+          │               │               │
+          │       ┌───────┴───────┐       │
+          │       │               │       │
+      Attributes Sequences    Extensions  │
+          │       │           Restrictions│
+          │   ┌───┴───┐           │       │
+          │   │       │           │       │
+      Groups Elements Choice      │   Facets
+                  │               │
+                  │               │
+              Attributes      Attributes
+----
+
+.XSD Model class relationships
+[source]
+----
+   Schema
+     ├── element: [Element]
+     ├── complex_type: [ComplexType]
+     ├── simple_type: [SimpleType]
+     ├── attribute: [Attribute]
+     ├── attribute_group: [AttributeGroup]
+     ├── group: [Group]
+     ├── notation: [Notation]
+     ├── import: [Import]
+     └── include: [Include]
+
+   Element
+     ├── name: String
+     ├── type: String
+     ├── ref: String
+     ├── min_occurs: String
+     ├── max_occurs: String
+     ├── complex_type: ComplexType
+     └── simple_type: SimpleType
+
+   ComplexType
+     ├── name: String
+     ├── sequence: Sequence
+     ├── choice: Choice
+     ├── all: All
+     ├── attribute: [Attribute]
+     ├── attribute_group: [AttributeGroup]
+     ├── simple_content: SimpleContent
+     └── complex_content: ComplexContent
+----
+
+== Data transformation flow
+
+The following diagram shows how XSD files are processed through the parsing pipeline:
+
+[source]
+----
+╔═══════════════════╗           ╔═══════════════════════╗
+║   XSD File(s)     ║           ║  Schema Mappings      ║
+║                   ║           ║  (Local redirects)    ║
+╚═════════┬═════════╝           ╚═══════════┬═══════════╝
+          │                                 │
+          └────────────┬────────────────────┘
+                       │
+                       ▼
+              ┌────────────────┐
+              │  XSD Parser    │
+              │  (XML → Model) │
+              └────────┬───────┘
+                       │
+          ┌────────────┼────────────┐
+          │            │            │
+          ▼            ▼            ▼
+    ┌─────────┐  ┌─────────┐  ┌─────────┐
+    │ Schema  │  │ Element │  │  Type   │
+    │ Object  │  │ Objects │  │ Objects │
+    └────┬────┘  └────┬────┘  └────┬────┘
+         │            │            │
+         └────────────┼────────────┘
+                      │
+                      ▼
+              ┌────────────────┐
+              │  Manipulation  │
+              │  & Traversal   │
+              └────────┬───────┘
+                       │
+          ┌────────────┼────────────┐
+          │            │            │
+          ▼            ▼            ▼
+    ┌─────────┐  ┌─────────┐  ┌─────────┐
+    │   XML   │  │  Liquid │  │  Code   │
+    │ Output  │  │Template │  │  Gen    │
+    └─────────┘  └─────────┘  └─────────┘
+----
+
+The transformation flow demonstrates:
+
+. **Input phase** - XSD files with optional schema mappings
+. **Parsing phase** - XML parsing into Ruby object model
+. **Object model** - Structured representation of all schema components
+. **Manipulation phase** - Programmatic traversal and modification
+. **Output phase** - XML serialization, template rendering, or code generation
+
+== Component interaction diagram
+
+The following diagram illustrates how the major components interact during typical operations:
+
+.Component interaction and data flow
+[source]
+----
+╔═══════════════════════════════════════════════════════════════╗
+║              lutaml-xsd Component Interaction                 ║
+╠═══════════════════════════════════════════════════════════════╣
+║                                                               ║
+║  ┌─────────────────────────────────────────────────────────┐ ║
+║  │                    User Application                     │ ║
+║  └────────────┬────────────────────────────┬────────────────┘ ║
+║               │                            │                  ║
+║               │ parse                      │ load_package     ║
+║               ▼                            ▼                  ║
+║  ┌───────────────────────┐   ┌──────────────────────────┐   ║
+║  │  Lutaml::Xsd.parse()  │   │  SchemaRepository        │   ║
+║  │                       │   │  .from_package()         │   ║
+║  └──────────┬────────────┘   └──────────┬───────────────┘   ║
+║             │                           │                    ║
+║             ▼                           ▼                    ║
+║  ┌─────────────────────┐   ┌──────────────────────────────┐ ║
+║  │  Schema Parser      │   │  SchemaRepositoryPackage     │ ║
+║  │  (XML → Objects)    │   │  (ZIP extraction)            │ ║
+║  └──────────┬──────────┘   └──────────┬───────────────────┘ ║
+║             │                         │                      ║
+║             │                         │ deserialize          ║
+║             │ creates                 ▼                      ║
+║             │              ┌─────────────────────┐           ║
+║             │              │ SerializedSchema    │           ║
+║             │              │ (marshal/json/yaml) │           ║
+║             │              └──────────┬──────────┘           ║
+║             │                         │                      ║
+║             ▼                         ▼                      ║
+║  ┌──────────────────────────────────────────────────────┐   ║
+║  │                 Schema Objects                       │   ║
+║  │  ┌────────┐  ┌───────────┐  ┌────────────┐         │   ║
+║  │  │Element │  │ComplexType│  │ SimpleType │         │   ║
+║  │  └────────┘  └───────────┘  └────────────┘         │   ║
+║  └──────────────────────┬───────────────────────────────┘   ║
+║                         │                                    ║
+║                         │ indexed by                         ║
+║                         ▼                                    ║
+║  ┌──────────────────────────────────────────────────────┐   ║
+║  │            SchemaRepository                          │   ║
+║  │  ┌─────────────────────────────────────────────────┐│   ║
+║  │  │  NamespaceRegistry                              ││   ║
+║  │  │  • Prefix → URI mappings                        ││   ║
+║  │  │  • URI → Prefix reverse lookup                  ││   ║
+║  │  └─────────────────────────────────────────────────┘│   ║
+║  │  ┌─────────────────────────────────────────────────┐│   ║
+║  │  │  TypeIndex                                      ││   ║
+║  │  │  • namespace → types                            ││   ║
+║  │  │  • qualified name → type                        ││   ║
+║  │  │  • category → types                             ││   ║
+║  │  └─────────────────────────────────────────────────┘│   ║
+║  │  ┌─────────────────────────────────────────────────┐│   ║
+║  │  │  QualifiedNameParser                            ││   ║
+║  │  │  • Parse prefixed names                         ││   ║
+║  │  │  • Parse Clark notation                         ││   ║
+║  │  └─────────────────────────────────────────────────┘│   ║
+║  └──────────────────────┬───────────────────────────────┘   ║
+║                         │                                    ║
+║                         │ provides                           ║
+║                         ▼                                    ║
+║  ┌──────────────────────────────────────────────────────┐   ║
+║  │              Resolution & Query API                  │   ║
+║  │  • find_type(name, namespace)                        │   ║
+║  │  • resolve_type(qualified_name)                      │   ║
+║  │  • types_in_namespace(uri)                           │   ║
+║  │  • statistics()                                      │   ║
+║  └──────────────────────┬───────────────────────────────┘   ║
+║                         │                                    ║
+║                         │ returns                            ║
+║                         ▼                                    ║
+║  ┌──────────────────────────────────────────────────────┐   ║
+║  │         TypeResolutionResult                         │   ║
+║  │  • found?: Boolean                                   │   ║
+║  │  • type: Schema object                               │   ║
+║  │  • namespace: URI                                    │   ║
+║  │  • local_name: String                                │   ║
+║  └──────────────────────────────────────────────────────┘   ║
+║                                                               ║
+╚═══════════════════════════════════════════════════════════════╝
+----
+
+== Component overview
+
+=== Schema Parser
+
+The [`Lutaml::Xsd::Schema`](lib/lutaml/xsd/schema.rb) class serves as the entry point for parsing XSD content.
+
+**Responsibilities:**
+
+* Parse XSD content from strings, files, or URLs
+* Manage schema-level properties (namespaces, element form defaults)
+* Coordinate resolution of imports and includes
+* Maintain references to all schema components
+
+**Key methods:**
+
+* `Lutaml::Xsd.parse(content, location:, schema_mappings:)` - Main parsing interface
+* `to_xml` - Serialize schema back to XML
+
+**Location context:**
+
+The `location` parameter provides the base path or URL for resolving relative schema references in `<xs:import>` and `<xs:include>` elements.
+
+=== XSD Elements
+
+Each XSD construct has a corresponding Ruby class in [`lib/lutaml/xsd/`](lib/lutaml/xsd/):
+
+.Core XSD constructs
+[cols="1,2"]
+|===
+| Class | Purpose
+
+| [`Element`](lib/lutaml/xsd/element.rb)
+| Element declarations with type references
+
+| [`ComplexType`](lib/lutaml/xsd/complex_type.rb)
+| Complex type definitions with sequences, attributes
+
+| [`SimpleType`](lib/lutaml/xsd/simple_type.rb)
+| Simple type definitions with restrictions
+
+| [`Attribute`](lib/lutaml/xsd/attribute.rb)
+| Attribute declarations
+
+| [`AttributeGroup`](lib/lutaml/xsd/attribute_group.rb)
+| Reusable attribute groups
+
+| [`Group`](lib/lutaml/xsd/group.rb)
+| Reusable element groups
+
+| [`Sequence`](lib/lutaml/xsd/sequence.rb)
+| Ordered element sequences
+
+| [`Choice`](lib/lutaml/xsd/choice.rb)
+| Element choice groups
+
+| [`All`](lib/lutaml/xsd/all.rb)
+| Unordered element groups
+
+| [`Import`](lib/lutaml/xsd/import.rb)
+| Namespace imports
+
+| [`Include`](lib/lutaml/xsd/include.rb)
+| Schema includes
+|===
+
+.Content model constructs
+[cols="1,2"]
+|===
+| Class | Purpose
+
+| [`ComplexContent`](lib/lutaml/xsd/complex_content.rb)
+| Complex content definitions
+
+| [`SimpleContent`](lib/lutaml/xsd/simple_content.rb)
+| Simple content definitions
+
+| [`ExtensionComplexContent`](lib/lutaml/xsd/extension_complex_content.rb)
+| Complex content extensions
+
+| [`ExtensionSimpleContent`](lib/lutaml/xsd/extension_simple_content.rb)
+| Simple content extensions
+
+| [`RestrictionComplexContent`](lib/lutaml/xsd/restriction_complex_content.rb)
+| Complex content restrictions
+
+| [`RestrictionSimpleContent`](lib/lutaml/xsd/restriction_simple_content.rb)
+| Simple content restrictions
+
+| [`RestrictionSimpleType`](lib/lutaml/xsd/restriction_simple_type.rb)
+| Simple type restrictions
+
+| [`List`](lib/lutaml/xsd/list.rb)
+| List type definitions
+|===
+
+.Constraint facets
+[cols="1,2"]
+|===
+| Class | Purpose
+
+| [`Enumeration`](lib/lutaml/xsd/enumeration.rb)
+| Enumeration facet
+
+| [`Pattern`](lib/lutaml/xsd/pattern.rb)
+| Pattern facet (regex)
+
+| [`MinLength`](lib/lutaml/xsd/min_length.rb)
+| Minimum length facet
+
+| [`MaxLength`](lib/lutaml/xsd/max_length.rb)
+| Maximum length facet
+
+| [`Length`](lib/lutaml/xsd/length.rb)
+| Exact length facet
+
+| [`MinInclusive`](lib/lutaml/xsd/min_inclusive.rb)
+| Minimum inclusive value
+
+| [`MaxInclusive`](lib/lutaml/xsd/max_inclusive.rb)
+| Maximum inclusive value
+
+| [`MinExclusive`](lib/lutaml/xsd/min_exclusive.rb)
+| Minimum exclusive value
+
+| [`MaxExclusive`](lib/lutaml/xsd/max_exclusive.rb)
+| Maximum exclusive value
+
+| [`TotalDigits`](lib/lutaml/xsd/total_digits.rb)
+| Total digits facet
+
+| [`FractionDigits`](lib/lutaml/xsd/fraction_digits.rb)
+| Fraction digits facet
+|===
+
+.Annotation and documentation
+[cols="1,2"]
+|===
+| Class | Purpose
+
+| [`Annotation`](lib/lutaml/xsd/annotation.rb)
+| Schema annotations
+
+| [`Documentation`](lib/lutaml/xsd/documentation.rb)
+| Human-readable documentation
+
+| [`Appinfo`](lib/lutaml/xsd/appinfo.rb)
+| Application information
+|===
+
+.Identity constraints
+[cols="1,2"]
+|===
+| Class | Purpose
+
+| [`Key`](lib/lutaml/xsd/key.rb)
+| Key identity constraint
+
+| [`Keyref`](lib/lutaml/xsd/keyref.rb)
+| Key reference constraint
+
+| [`Selector`](lib/lutaml/xsd/selector.rb)
+| XPath selector for constraints
+
+| [`Field`](lib/lutaml/xsd/field.rb)
+| XPath field for constraints
+|===
+
+.Miscellaneous constructs
+[cols="1,2"]
+|===
+| Class | Purpose
+
+| [`Any`](lib/lutaml/xsd/any.rb)
+| Wildcard element placeholder
+
+| [`AnyAttribute`](lib/lutaml/xsd/any_attribute.rb)
+| Wildcard attribute placeholder
+
+| [`Notation`](lib/lutaml/xsd/notation.rb)
+| Notation declarations
+
+| [`Redefine`](lib/lutaml/xsd/redefine.rb)
+| Schema redefinitions
+|===
+
+All classes inherit from [`Lutaml::Xsd::Base`](lib/lutaml/xsd/base.rb) and are defined using the `lutaml-model` framework for serialization.
+
+=== Schema Resolution (Glob)
+
+The [`Lutaml::Xsd::Glob`](lib/lutaml/xsd/glob.rb) class manages schema location resolution.
+
+**Responsibilities:**
+
+* Resolve schema locations from imports and includes
+* Apply schema location mappings (exact match and regex patterns)
+* Handle URL fetching for remote schemas
+* Resolve relative paths based on location context
+
+**Mapping types:**
+
+. **Exact string match** - `{ from: "url", to: "local/path" }`
+. **Regex pattern match** - `{ from: %r{pattern}, to: 'replacement' }`
+
+**Resolution order:**
+
+. Check schema_mappings array (in order)
+. Try URL fetching (for HTTP/HTTPS)
+. Fall back to relative path resolution
+
+This design allows offline development, schema version control, and consistent schema handling across environments.
+
+=== RNG to XSD Converter
+
+The [`Lutaml::Xsd::RngToXsdConverter`](lib/lutaml/xsd/rng_to_xsd_converter.rb) converts RELAX NG (`.rng` / `.rnc`) schemas to XSD.
+
+**Responsibilities:**
+
+* Convert `Rng::Grammar` objects to `Lutaml::Xsd::Schema` objects
+* Resolve named `<define>` blocks with cycle detection
+* Classify patterns as elements, attributes, or particles
+* Detect and handle element name collisions across defines
+* Convert include directives from RNC/RNG to XSD `<include>` elements
+* Map RNG patterns (`<element>`, `<attribute>`, `<choice>`, `<group>`, `<interleave>`, `<optional>`, `<zeroOrMore>`, `<oneOrMore>`, `<data>`, `<value>`, `<list>`, `<text>`) to XSD equivalents
+
+**Integration points:**
+
+* `SchemaRepository#parse_schema_file` — automatically invokes the converter for `.rng`/`.rnc` files
+* `SchemaRepository.from_file` — accepts `.rng` and `.rnc` paths
+
+**Conversion pipeline:**
+
+. Parse RNG/RNC file into `Rng::Grammar` object (via the `rng` gem)
+. `RngToXsdConverter#convert` maps the grammar to XSD constructs
+. Phase 0: Convert include directives
+. Phase 1: Convert all named defines (with caching and cycle guards)
+. Phase 2: Convert start elements and top-level elements
+. Result is a standard `Lutaml::Xsd::Schema` object usable by all downstream components
+
+=== Schema Repository
+
+The [`Lutaml::Xsd::SchemaRepository`](lib/lutaml/xsd/schema_repository.rb) provides namespace-aware type resolution across multiple schemas.
+
+**Components:**
+
+* [`SchemaRepository`](lib/lutaml/xsd/schema_repository.rb) - Main repository class
+* [`SchemaRepository::NamespaceRegistry`](lib/lutaml/xsd/schema_repository/namespace_registry.rb) - Namespace prefix management
+* [`SchemaRepository::TypeIndex`](lib/lutaml/xsd/schema_repository/type_index.rb) - Fast type lookup index
+* [`SchemaRepository::QualifiedNameParser`](lib/lutaml/xsd/schema_repository/qualified_name_parser.rb) - Parse qualified names
+* [`TypeIndexEntry`](lib/lutaml/xsd/type_index_entry.rb) - Index entry representation
+* [`TypeResolutionResult`](lib/lutaml/xsd/type_resolution_result.rb) - Resolution result
+
+**Responsibilities:**
+
+* Parse and index multiple schemas
+* Resolve types by qualified name (prefixed, Clark notation, unprefixed)
+* Manage namespace mappings
+* Validate schema consistency
+* Export/import as LXR packages
+
+=== Package System
+
+The LXR (LutaML XSD Repository) package system provides distributable schema collections.
+
+**Components:**
+
+* [`PackageBuilder`](lib/lutaml/xsd/package_builder.rb) - Build LXR packages from schemas
+* [`PackageConfiguration`](lib/lutaml/xsd/package_configuration.rb) - Package configuration management
+* [`SchemaRepositoryPackage`](lib/lutaml/xsd/schema_repository_package.rb) - Package loading and access
+* [`SchemaRepositoryMetadata`](lib/lutaml/xsd/schema_repository_metadata.rb) - Package metadata
+* [`SerializedSchema`](lib/lutaml/xsd/serialized_schema.rb) - Schema serialization wrapper
+
+**Configuration axes:**
+
+. **XSD bundling mode** - `include_all` or `allow_external`
+. **Resolution mode** - `resolved` or `bare`
+. **Serialization format** - `marshal`, `json`, `yaml`, or `parse`
+
+See link:../LXR_PACKAGES[LXR Packages documentation] for comprehensive details.
+
+=== Liquid Methods
+
+The [`lib/lutaml/xsd/liquid_methods/`](lib/lutaml/xsd/liquid_methods/) directory contains template helpers.
+
+.Liquid method modules
+[cols="1,2"]
+|===
+| Module | Purpose
+
+| [`Element`](lib/lutaml/xsd/liquid_methods/element.rb)
+| Element introspection (used_by, child_elements, referenced_type)
+
+| [`Attribute`](lib/lutaml/xsd/liquid_methods/attribute.rb)
+| Attribute helpers (referenced_name, cardinality)
+
+| [`AttributeGroup`](lib/lutaml/xsd/liquid_methods/attribute_group.rb)
+| Attribute group traversal
+
+| [`ComplexType`](lib/lutaml/xsd/liquid_methods/complex_type.rb)
+| Complex type introspection
+
+| [`Group`](lib/lutaml/xsd/liquid_methods/group.rb)
+| Group element access
+
+| [`Sequence`](lib/lutaml/xsd/liquid_methods/sequence.rb)
+| Sequence element access
+
+| [`Choice`](lib/lutaml/xsd/liquid_methods/choice.rb)
+| Choice element access
+
+| [`SimpleContent`](lib/lutaml/xsd/liquid_methods/simple_content.rb)
+| Simple content attributes
+
+| [`Extension`](lib/lutaml/xsd/liquid_methods/extension.rb)
+| Extension attributes
+|===
+
+These methods enable schema introspection in Liquid templates for documentation generation.
+
+=== Command-line Interface
+
+The [`Lutaml::Xsd::Cli`](lib/lutaml/xsd/cli.rb) provides command-line tools.
+
+**Commands:**
+
+* [`PackageCommand`](lib/lutaml/xsd/commands/package_command.rb) - Build, validate, inspect packages
+* [`TypeCommand`](lib/lutaml/xsd/commands/type_command.rb) - Find and list types
+* [`StatsCommand`](lib/lutaml/xsd/commands/stats_command.rb) - Display repository statistics
+
+All commands inherit from [`BaseCommand`](lib/lutaml/xsd/commands/base_command.rb).
+
+== Design principles
+
+The architecture follows these core principles:
+
+=== Single Responsibility Principle (SRP)
+
+`lutaml-xsd` focuses ONLY on XSD operations. All other concerns belong elsewhere:
+
+* **XMI/UML parsing** → `lutaml` gem (external)
+* **ShapeChange integration** → `lutaml-klin` gem
+* **Multi-library orchestration** → `lutaml-klin` gem
+
+This strict boundary ensures:
+
+* Clear scope and purpose
+* Easier maintenance
+* Better testability
+* Reduced complexity
+
+=== MECE (Mutually Exclusive, Collectively Exhaustive)
+
+Each component has distinct, non-overlapping responsibilities that together cover the complete XSD workflow:
+
+* **Schema parsing** - Convert XML to object model
+* **Schema resolution** - Handle imports/includes
+* **Schema navigation** - Traverse object structure
+* **Schema serialization** - Convert back to XML
+* **Schema documentation** - Liquid template methods
+* **Schema packaging** - LXR packages for distribution
+
+No functionality falls outside these categories, and no category duplicates another.
+
+=== Separation of Concerns
+
+Clear boundaries prevent architectural violations:
+
+.Component boundaries
+[source]
+----
+┌────────────────────────────────────────────────────────┐
+│  Parsing Layer                                         │
+│  - Lutaml::Xsd.parse                                   │
+│  - Schema, Element, ComplexType, etc.                  │
+└────────────────────────────────────────────────────────┘
+                        ▼
+┌────────────────────────────────────────────────────────┐
+│  Resolution Layer                                      │
+│  - Glob (schema location mapping)                     │
+│  - SchemaResolver                                      │
+└────────────────────────────────────────────────────────┘
+                        ▼
+┌────────────────────────────────────────────────────────┐
+│  Repository Layer                                      │
+│  - SchemaRepository                                    │
+│  - TypeIndex, NamespaceRegistry                        │
+└────────────────────────────────────────────────────────┘
+                        ▼
+┌────────────────────────────────────────────────────────┐
+│  Presentation Layer                                    │
+│  - Liquid methods                                      │
+│  - XML serialization                                   │
+│  - CLI commands                                        │
+└────────────────────────────────────────────────────────┘
+----
+
+Each layer has well-defined interfaces and dependencies flow downward.
+
+=== Open/Closed Principle
+
+The library is open for extension but closed for modification:
+
+**Extension points:**
+
+* Custom serialization via `to_xml` overrides
+* Additional Liquid methods for new use cases
+* Schema mapping patterns for specific environments
+* Package configuration for different deployment scenarios
+
+**Closed aspects:**
+
+* Core XSD parsing logic
+* Object model structure
+* Resolution algorithms
+
+=== Dependency Inversion
+
+The architecture depends on abstractions rather than concrete implementations:
+
+* **lutaml-model framework** - Abstract serialization interface
+* **Moxml adapter** - Abstract XML parsing
+* **Schema location mappings** - Abstract resolution strategy
+
+This enables:
+
+* Flexibility in implementation
+* Easier testing with mocks
+* Future adapter swapping
+
+== Integration with lutaml ecosystem
+
+`lutaml-xsd` is part of the larger lutaml ecosystem:
+
+[source]
+----
+┌─────────────────────────────────────────────────────────┐
+│                    Ecosystem View                       │
+└─────────────────────────────────────────────────────────┘
+
+┌─────────────────┐
+│  lutaml (gem)   │  External dependency
+│  Parse XMI/UML  │  Not part of lutaml-xsd
+└─────────────────┘
+        │
+        │ Uses for UML models
+        ▼
+┌─────────────────────────────────────────────────────────┐
+│  lutaml-klin (separate gem)                             │
+│  - Orchestrates lutaml + lutaml-xsd                     │
+│  - Parses ShapeChange configs                           │
+│  - Generates mapping YAML documentation                 │
+│  - Provides CLI tools                                   │
+└─────────────────────────────────────────────────────────┘
+        │
+        │ Uses for XSD operations
+        ▼
+┌─────────────────────────────────────────────────────────┐
+│  lutaml-xsd (THIS LIBRARY)                              │
+│  ✅ Parse XSD files                                      │
+│  ✅ Navigate XSD structures                             │
+│  ✅ Resolve schema imports/includes                     │
+│  ✅ Schema location mappings                            │
+│  ✅ Serialize to XML                                    │
+│  ✅ Liquid template methods                             │
+└─────────────────────────────────────────────────────────┘
+        │
+        │ Uses for serialization
+        ▼
+┌─────────────────────────────────────────────────────────┐
+│  lutaml-model (gem)                                     │
+│  - Serialization framework                              │
+│  - XML/JSON/YAML support                                │
+│  - Model definition DSL                                 │
+└─────────────────────────────────────────────────────────┘
+----
+
+**Upstream dependencies:**
+
+* **lutaml-model** (~> 0.7) - Serialization framework
+* **moxml** - XML parsing adapter
+
+**Downstream consumers:**
+
+* **lutaml-klin** - Uses lutaml-xsd for XSD analysis
+* **Direct users** - Applications needing XSD parsing
+
+**Integration boundaries:**
+
+* `lutaml-xsd` does NOT parse XMI/UML
+* `lutaml-xsd` does NOT handle ShapeChange
+* `lutaml-xsd` does NOT orchestrate multi-library workflows
+
+== Testing strategy
+
+All XSD functionality is thoroughly tested:
+
+**Test categories:**
+
+. **Unit tests** - Individual XSD constructs and their methods
+. **Integration tests** - Schema resolution with imports/includes
+. **Mapping tests** - Exact match and regex pattern mappings
+. **Round-trip tests** - Parse → serialize → parse consistency
+. **Real-world schema tests** - CityGML, i-UR, ISO/TC 211 schemas
+. **Repository tests** - Namespace resolution and type indexing
+. **Package tests** - LXR package creation and loading
+. **CLI tests** - Command-line interface functionality
+
+**Test coverage:**
+
+Focus exclusively on XSD operations. No tests for:
+
+* XMI parsing (belongs in `lutaml`)
+* ShapeChange (belongs in `lutaml-klin`)
+* Orchestration (belongs in `lutaml-klin`)
+
+**Test location:**
+
+All tests mirror the source structure:
+
+* Source: `lib/lutaml/xsd/`
+* Tests: `spec/lutaml/xsd/`
+
+**Test fixtures:**
+
+Real-world schemas in `spec/fixtures/`:
+
+* `codesynthesis-gml-3.2.1/` - GML schemas
+* `i-ur/` - i-UR (Urban and Rural) schemas
+* `isotc211/` - ISO/TC 211 standards
+* Test-specific minimal schemas
+
+== Future extensibility
+
+While focused on XSD operations, the library is designed for extension:
+
+**Potential extensions:**
+
+. **Custom serialization** - Extend `to_xml` methods for custom output
+. **Additional Liquid methods** - Add new template helpers for specific use cases
+. **Schema validation** - Add XSD validation capabilities beyond parsing
+. **Schema generation** - Add programmatic schema creation
+. **Schema transformation** - Add XSD-to-XSD transformation rules
+. **Additional serialization formats** - JSON Schema, RelaxNG output
+. **Performance optimizations** - Caching strategies, lazy loading
+
+**Extension guidelines:**
+
+All extensions must maintain the core principle: **XSD operations only**.
+
+Before adding features, ask:
+
+. Is this directly related to XSD parsing/manipulation?
+  * **Yes** → Consider proceeding
+  * **No** → Belongs in another library
+. Does this violate separation of concerns?
+  * **Yes** → Refactor approach
+  * **No** → Consider proceeding
+. Does this create new dependencies?
+  * Evaluate necessity
+  * Prefer dependencies aligned with XSD focus
+
+== Migration guide
+
+=== For users of removed features
+
+If you were using functionality that has been moved to other libraries:
+
+**XMI/UML parsing** → Use `lutaml` gem directly
+
+[source,ruby]
+----
+# Old (no longer in lutaml-xsd)
+# N/A - never existed in lutaml-xsd
+
+# New (use lutaml gem)
+require 'lutaml'
+uml_model = Lutaml::Parser.parse(xmi_content)
+----
+
+**ShapeChange integration** → Use `lutaml-klin` gem
+
+[source,bash]
+----
+# Old (no longer in lutaml-xsd)
+# N/A - never existed in lutaml-xsd
+
+# New (use lutaml-klin gem)
+lutaml-klin generate \
+  --xmi file.xmi \
+  --config config.xml \
+  --xsd-dir schemas/ \
+  --output mappings/
+----
+
+**Mapping generation** → Use `lutaml-klin` gem
+
+[source,bash]
+----
+# Use lutaml-klin for UML-to-XSD mapping workflows
+lutaml-klin generate \
+  --xmi file.xmi \
+  --config config.xml \
+  --xsd-dir schemas/ \
+  --output mappings/
+----
+
+=== Migration checklist
+
+If migrating from another XSD library:
+
+. Replace XSD parsing calls with `Lutaml::Xsd.parse`
+. Update schema location mappings to use array format
+. Configure namespace mappings for `SchemaRepository`
+. Update Liquid templates to use new method names
+. Update serialization to use `to_xml`
+. Consider using LXR packages for distribution
+
+== Maintenance guidelines
+
+=== Adding new features
+
+Before adding features, ask:
+
+. **Is this directly related to XSD parsing/manipulation?**
+  * **Yes** → Proceed with design
+  * **No** → Belongs in another library
+
+. **Does this violate separation of concerns?**
+  * **Yes** → Refactor approach
+  * **No** → Proceed with implementation
+
+. **Does this create new dependencies?**
+  * Evaluate necessity
+  * Prefer dependencies that align with XSD focus
+  * Document new dependencies clearly
+
+=== Code organization
+
+Maintain the established structure:
+
+* **XSD constructs** - `lib/lutaml/xsd/*.rb`
+* **Liquid methods** - `lib/lutaml/xsd/liquid_methods/`
+* **Repository components** - `lib/lutaml/xsd/schema_repository/`
+* **Commands** - `lib/lutaml/xsd/commands/`
+* **Tests** - Mirror source structure in `spec/lutaml/xsd/`
+
+=== Documentation requirements
+
+When adding features:
+
+. Update this ARCHITECTURE.adoc with component descriptions
+. Add examples to README.adoc
+. Create dedicated documentation in `docs/` if substantial
+. Update Liquid method documentation
+. Add RSpec tests mirroring source structure
+. Document any breaking changes
+
+=== Code style
+
+. Use 2 spaces for indentation
+. Maximum line length: 80 characters
+. Use `require_relative` for same-codebase files
+. Follow Ruby community best practices
+. Run `rubocop -A` before committing
+. Ensure all tests pass
+
+=== Review checklist
+
+Before merging changes:
+
+* [ ] All tests pass
+* [ ] No Rubocop violations
+* [ ] Documentation updated
+* [ ] Examples provided
+* [ ] No hardcoded paths or URLs
+* [ ] Proper error handling
+* [ ] Changes align with architecture principles
+
+== Conclusion
+
+`lutaml-xsd` is a focused, well-bounded library that does ONE thing well: XSD operations. By maintaining strict architectural discipline and clear separation of concerns, it remains:
+
+* **Maintainable** - Clear boundaries and responsibilities
+* **Testable** - Focused scope enables thorough testing
+* **Composable** - Clean interfaces for ecosystem integration
+* **Extensible** - Open for extension within XSD domain
+
+**Remember**: When in doubt, ask "Is this XSD parsing or manipulation?" If not, it belongs elsewhere.
+
+== See also
+
+* link:index[Architecture Documentation Index]
+* link:PACKAGE_INTERNALS[LXR Package Internals]
+* link:TYPE_INDEX[Type Index Details]
+* link:../INDEX[Documentation Index]

@@ -1,0 +1,89 @@
+---
+title: Formatting Schemas
+nav_order: 7
+---
+
+== Formatting Schemas
+
+Expressir renders parsed EXPRESS schemas back to source text via the `Formatter`. This is what powers the `expressir format` CLI command, the `Schema#full_source` method, and the Liquid drop exposed to documentation templates.
+
+=== The default formatter
+
+The default `Expressir::Express::Formatter` produces a normalized, consistently-indented version of the schema — comments preserved, original line breaks normalized:
+
+[source,ruby]
+----
+require "expressir"
+
+exp_file = Expressir::Express::Parser.from_file("my_schema.exp")
+schema = exp_file.schemas.first
+
+puts Expressir::Express::Formatter.format(schema)
+----
+
+To format every schema in an ExpFile (or Repository), pass the container:
+
+[source,ruby]
+----
+puts Expressir::Express::Formatter.format(exp_file)
+----
+
+=== Stripping remarks (`no_remarks:`)
+
+Pass `no_remarks: true` to produce a listing without tail (`--`) or embedded (`(* ... *)`) remarks. Useful for diffs, license headers, and "code-only" outputs.
+
+[source,ruby]
+----
+formatter = Class.new(Expressir::Express::Formatter) do
+  def initialize
+    super(no_remarks: true)
+  end
+end
+
+puts formatter.format(schema)
+----
+
+=== CLI: `expressir format`
+
+The CLI wraps the same formatter:
+
+[source,sh]
+----
+expressir format my_schema.exp            # prints formatted output
+expressir format my_schema.exp -o out.exp # writes to a file
+expressir format --no-remarks my_schema.exp
+----
+
+=== Schema head and hyperlink formatters
+
+Two optional mixins layer on top of the base formatter:
+
+* `Expressir::Express::SchemaHeadFormatter` — emits a file-level header banner before each schema (schema name, version, source file).
+* `Expressir::Express::HyperlinkFormatter` — inserts cross-reference hyperlinks (`<<express:...>>` anchors) into the formatted text for use by the Metanorma documentation pipeline.
+
+Combine them by defining a subclass that includes both:
+
+[source,ruby]
+----
+formatter = Class.new(Expressir::Express::Formatter) do
+  include Expressir::Express::SchemaHeadFormatter
+  include Expressir::Express::HyperlinkFormatter
+end
+
+puts formatter.format(exp_file)
+----
+
+=== `Schema#full_source`
+
+For convenience, `Schema#full_source` returns the default-formatted text (memoized). This is what templates should use when they want the canonical rendered schema body:
+
+[source,ruby]
+----
+schema = exp_file.schemas.first
+puts schema.full_source
+----
+
+=== See also
+
+* link:querying-schemas.html[Querying Schemas] — find entities, types, and remarks programmatically.
+* link:liquid-templates.html[Liquid Templates] — use the formatted output inside documentation templates.

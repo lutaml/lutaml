@@ -1,0 +1,124 @@
+# frozen_string_literal: true
+
+# Centralized gate configuration for downstream benchmark gating.
+#
+# Three gate layers:
+#   1. alloc_ratio  — current_allocs / base_allocs  (deterministic, load-independent)
+#   2. time_ratio   — min_time(current) / min_time(base)  (cancels load noise)
+#   3. absolute_max — min_time against per-fixture limit  (safety net)
+#
+# If no base comparison is available, only the absolute_max gate applies.
+
+module GateConfig
+  # Default thresholds applied when not overridden per-downstream
+  DEFAULT_ALLOC_RATIO = 1.05  # max 5% more allocations vs base
+  DEFAULT_TIME_RATIO  = 1.15  # max 15% slower vs base
+
+  # Primary fixture for each downstream (used as gate key)
+  # Format: { downstream_name => { fixture_label => config } }
+  GATES = {
+    xmi: {
+      "ea251" => {
+        file: "ea-xmi-2.5.1.xmi",
+        alloc_ratio: 1.10,
+        time_ratio: 1.15,
+        absolute_max: 0.50,
+      },
+      "medium" => {
+        file: "xmi-v2-4-2-default.xmi",
+        alloc_ratio: 1.05,
+        time_ratio: 1.15,
+        absolute_max: 1.0,
+      },
+      "citygml" => {
+        file: "xmi-v2-4-2-default-with-citygml.xmi",
+        alloc_ratio: 1.05,
+        time_ratio: 1.15,
+        absolute_max: 1.5,
+      },
+      "large" => {
+        file: "full-242.xmi",
+        alloc_ratio: 1.05,
+        time_ratio: 1.15,
+        absolute_max: 10.0,
+      },
+    },
+    sts: {
+      "feature-doc-23KB" => {
+        alloc_ratio: 1.05,
+        time_ratio: 1.15,
+        absolute_max: 0.5,
+      },
+      "tbx-nisosts-101KB" => {
+        alloc_ratio: 1.05,
+        time_ratio: 1.15,
+        absolute_max: 1.0,
+      },
+      "iso-13849-1MB" => {
+        alloc_ratio: 1.05,
+        time_ratio: 1.15,
+        # Post-TODO.max-perf/01-03 the fixture sits at ~4.88M allocs and
+        # 14.5-16.5s on GH-hosted ubuntu runners (runner-variance band);
+        # the old 15.0 missed by 0.06s on a healthy run. 30.0 keeps the
+        # 2x-catastrophe safety net over the healthy band (#313).
+        absolute_max: 30.0,
+      },
+      "din-iso-1.1MB" => {
+        alloc_ratio: 1.05,
+        time_ratio: 1.15,
+        absolute_max: 2.0,
+      },
+    },
+    mml: {
+      "complex1-46KB" => {
+        alloc_ratio: 25.0, # Small fixture: Moxml wrapper per-node overhead dominates
+        time_ratio: 1.15,
+        absolute_max: 0.5,
+      },
+      "complex3-567KB" => {
+        alloc_ratio: 1.05,
+        time_ratio: 1.15,
+        absolute_max: 3.0,
+      },
+      "complex4-50KB" => {
+        alloc_ratio: 1.35, # Moxml wrapper overhead for small fixtures
+        time_ratio: 1.15,
+        absolute_max: 0.5,
+      },
+      "size1000-245KB" => {
+        alloc_ratio: 1.15, # Known alloc increase from caching overhead
+        time_ratio: 1.15,
+        absolute_max: 1.0,
+      },
+    },
+    niso: {
+      "pnas-152KB" => {
+        alloc_ratio: 1.05,
+        time_ratio: 1.15,
+        absolute_max: 1.5,
+      },
+    },
+  }.freeze
+
+  module_function
+
+  # Find gate config for a fixture label across all downstreams.
+  # Returns the gate config hash or a default.
+  def find_gate(fixture_label)
+    GATES.each_value do |fixtures|
+      return fixtures[fixture_label] if fixtures.key?(fixture_label)
+    end
+
+    # Default gate for unregistered fixtures
+    {
+      alloc_ratio: DEFAULT_ALLOC_RATIO,
+      time_ratio: DEFAULT_TIME_RATIO,
+      absolute_max: nil, # no absolute gate if not configured
+    }
+  end
+
+  # All registered fixture labels (for reporting)
+  def all_gate_labels
+    GATES.flat_map { |_name, fixtures| fixtures.keys }
+  end
+end

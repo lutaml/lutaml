@@ -1,0 +1,898 @@
+---
+title: Importing from Express Engine
+parent: Changes
+grand_parent: Overview
+nav_order: 3
+---
+
+= Importing from Express Engine
+
+== Purpose
+
+Express Engine (eengine) is a commercial tool that can compare EXPRESS schema
+versions and generate detailed XML comparison reports. Expressir can import
+these reports to create or update EXPRESS Changes files automatically.
+
+== References
+
+* link:index.html[Changes Overview] - Introduction to Changes files
+* link:changes-format.html[Changes Format] - YAML format specification
+* link:validating-changes.html[Validating Changes] - Validation guide
+* link:programmatic-usage.html[Programmatic Usage] - Ruby API for import
+
+== Concepts
+
+Express Engine:: Commercial EXPRESS schema comparison tool that generates XML
+reports showing differences between schema versions
+
+comparison report:: XML document describing additions, modifications, and
+deletions between two schema versions
+
+automatic mode detection:: Expressir automatically detects whether XML uses
+Schema, ARM, or MIM mode
+
+incremental import:: Adding new versions to existing Changes files without
+replacing previous versions
+
+interfaced_items:: Field tracking which items are imported via `USE_FROM` or
+`REFERENCE_FROM` statements
+
+== Express Engine XML format
+
+=== What is Express Engine?
+
+Express Engine (eengine) is a commercial tool developed for working with
+EXPRESS schemas. One of its key features is comparing two versions of a schema
+and generating a detailed XML report of the differences.
+
+Expressir is compatible with **Express Engine v5.2.7** XML output format.
+
+=== Three XML modes
+
+Express Engine generates comparison reports in three different modes, each with
+a distinct XML structure:
+
+Schema mode:: Standard schema comparison
++
+[source,xml]
+----
+<schema.changes schema_name="action_schema">
+  <schema.modifications>
+    <modified.object type="ENTITY" name="action"/>
+  </schema.modifications>
+  <schema.additions>
+    <modified.object type="FUNCTION" name="new_function"/>
+  </schema.additions>
+  <schema.deletions>
+    <modified.object type="CONSTANT" name="old_constant"/>
+  </schema.deletions>
+</schema.changes>
+----
+
+ARM mode:: Application Reference Model comparison
++
+[source,xml]
+----
+<arm.changes schema_name="action_arm">
+  <arm.modifications>
+    <modified.object type="ENTITY" name="arm_entity"/>
+  </arm.modifications>
+  <arm.additions>
+    <modified.object type="TYPE" name="new_arm_type"/>
+  </arm.additions>
+  <arm.deletions>
+    <modified.object type="FUNCTION" name="old_arm_function"/>
+  </arm.deletions>
+</arm.changes>
+----
+
+MIM mode:: Module Implementation Model comparison
++
+[source,xml]
+----
+<mim.changes schema_name="action_mim">
+  <mim.modifications>
+    <modified.object type="ENTITY" name="mim_entity"/>
+  </mim.modifications>
+  <mim.additions>
+    <modified.object type="TYPE" name="new_mim_type"/>
+  </mim.additions>
+  <mim.deletions>
+    <modified.object type="FUNCTION" name="old_mim_function"/>
+  </mim.deletions>
+</mim.changes>
+----
+
+=== Automatic mode detection
+
+Expressir automatically detects which mode is used by examining the XML root
+element:
+
+* `<schema.changes>` → Schema mode
+* `<arm.changes>` → ARM mode
+* `<mim.changes>` → MIM mode
+
+You don't need to specify the mode manually.
+
+=== XML structure elements
+
+Each XML comparison report contains:
+
+modified.object:: Individual change item with attributes:
+* `type` - EXPRESS construct type (ENTITY, FUNCTION, etc.)
+* `name` - Name of the changed item
+* `interfaced.items` - For USE_FROM/REFERENCE_FROM (optional)
+
+description:: Optional nested element with HTML-formatted change description
+
+.XML with descriptions
+[example]
+====
+[source,xml]
+----
+<schema.changes schema_name="action_schema">
+  <schema.modifications>
+    <modified.object type="ENTITY" name="action">
+      <description>
+        <ul>
+          <li>Added new attribute 'status'</li>
+          <li>Modified WHERE rules</li>
+        </ul>
+      </description>
+    </modified.object>
+  </schema.modifications>
+</schema.changes>
+----
+
+This converts to:
+
+[source,yaml]
+----
+modifications:
+- type: ENTITY
+  name: action
+  description:
+  - Added new attribute 'status'
+  - Modified WHERE rules
+----
+====
+
+== CLI import
+
+=== Basic import syntax
+
+[source,bash]
+----
+expressir changes import-eengine INPUT_XML SCHEMA_NAME VERSION [options]
+----
+
+Where:
+
+`INPUT_XML`:: Path to Express Engine comparison XML file
+`SCHEMA_NAME`:: Name of the schema being tracked
+`VERSION`:: Version number for these changes
+
+=== Import to stdout
+
+Import and display YAML on stdout:
+
+[source,bash]
+----
+expressir changes import-eengine comparison.xml action_schema "2"
+----
+
+.Output example
+[example]
+====
+[source,yaml]
+----
+schema: action_schema
+versions:
+- version: 2
+  additions:
+  - type: ENTITY
+    name: new_entity
+  modifications:
+  - type: FUNCTION
+    name: updated_function
+----
+====
+
+=== Import to file
+
+Save imported changes to a YAML file:
+
+[source,bash]
+----
+expressir changes import-eengine comparison.xml action_schema "2" \
+  -o action_schema.changes.yaml
+----
+
+Or using long format:
+
+[source,bash]
+----
+expressir changes import-eengine comparison.xml action_schema "2" \
+  --output action_schema.changes.yaml
+----
+
+=== Verbose output
+
+Show detailed information during import:
+
+[source,bash]
+----
+expressir changes import-eengine comparison.xml action_schema "2" \
+  -o output.yaml --verbose
+----
+
+.Verbose output example
+[example]
+====
+[source,bash]
+----
+$ expressir changes import-eengine comparison.xml action_schema "2" \
+  -o output.yaml --verbose
+Detected mode: schema
+Found 5 additions
+Found 3 modifications
+Found 1 deletion
+Change YAML file written to: output.yaml
+----
+====
+
+=== Import options
+
+[options="header"]
+|===
+| Option | Short | Description | Example
+
+| `--output PATH`
+| `-o PATH`
+| Output YAML file path
+| `-o output.yaml`
+
+| `--verbose`
+| N/A
+| Show detailed output
+| `--verbose`
+|===
+
+== Building change history
+
+=== Incremental version building
+
+When the output file already exists, the import command intelligently merges
+the new version with existing versions:
+
+Same version:: Replaces the existing version with that version number
++
+[source,bash]
+----
+# First import (creates file)
+expressir changes import-eengine v2.xml schema "2" -o changes.yaml
+
+# Reimport same version (replaces version 2)
+expressir changes import-eengine v2_updated.xml schema "2" -o changes.yaml
+----
+
+New version:: Adds the new version to the file
++
+[source,bash]
+----
+# First import (creates file with version 2)
+expressir changes import-eengine v2.xml schema "2" -o changes.yaml
+
+# Import version 3 (appends to existing file)
+expressir changes import-eengine v3.xml schema "3" -o changes.yaml
+----
+
+=== Multi-version import workflow
+
+Build a complete change history incrementally:
+
+.Importing multiple versions
+[example]
+====
+[source,bash]
+----
+# Import version 2
+expressir changes import-eengine v2_comparison.xml action_schema "2" \
+  -o action_schema.changes.yaml
+
+# Import version 3 (appends)
+expressir changes import-eengine v3_comparison.xml action_schema "3" \
+  -o action_schema.changes.yaml
+
+# Import version 4 (appends)
+expressir changes import-eengine v4_comparison.xml action_schema "4" \
+  -o action_schema.changes.yaml
+
+# Verify complete history
+cat action_schema.changes.yaml
+----
+
+Results in:
+
+[source,yaml]
+----
+schema: action_schema
+versions:
+- version: 2
+  additions: [...]
+  modifications: [...]
+- version: 3
+  additions: [...]
+  modifications: [...]
+- version: 4
+  additions: [...]
+  modifications: [...]
+----
+====
+
+=== Overwriting existing versions
+
+If you reimport the same version, it replaces the existing one:
+
+[source,bash]
+----
+# Initial import
+expressir changes import-eengine v2.xml schema "2" -o changes.yaml
+
+# Update version 2 (replaces existing version 2)
+expressir changes import-eengine v2_revised.xml schema "2" -o changes.yaml
+----
+
+This is useful when:
+
+* Express Engine comparison was incorrect
+* Need to update descriptions
+* XML format changed
+
+== Interface changes
+
+=== Understanding interfaced_items
+
+The `interfaced.items` attribute in Express Engine XML specifies which items
+are being imported or referenced from another schema via `USE_FROM` or
+`REFERENCE_FROM` statements.
+
+.XML with interface changes
+[example]
+====
+[source,xml]
+----
+<schema.changes schema_name="aic_csg">
+  <schema.additions>
+    <modified.object type="USE_FROM" name="geometric_model_schema"
+      interfaced.items="convex_hexahedron" />
+
+    <modified.object type="USE_FROM" name="geometric_model_schema"
+      interfaced.items="cyclide_segment_solid" />
+
+    <modified.object type="REFERENCE_FROM" name="measure_schema"
+      interfaced.items="length_measure" />
+  </schema.additions>
+</schema.changes>
+----
+
+Converts to:
+
+[source,yaml]
+----
+schema: aic_csg
+versions:
+- version: 2
+  additions:
+  - type: USE_FROM
+    name: geometric_model_schema
+    interfaced_items: convex_hexahedron
+  - type: USE_FROM
+    name: geometric_model_schema
+    interfaced_items: cyclide_segment_solid
+  - type: REFERENCE_FROM
+    name: measure_schema
+    interfaced_items: length_measure
+----
+====
+
+=== Separate entries per item
+
+Express Engine creates separate `<modified.object>` entries for each imported
+item, even from the same schema. Expressir preserves this structure:
+
+[source,xml]
+----
+<!-- Separate entries for each item -->
+<modified.object type="USE_FROM" name="schema_a"
+  interfaced.items="item1" />
+<modified.object type="USE_FROM" name="schema_a"
+  interfaced.items="item2" />
+----
+
+This ensures clarity about which specific items changed.
+
+== Description handling
+
+=== HTML to array conversion
+
+Express Engine descriptions can contain HTML formatting. Expressir automatically
+converts HTML lists to YAML arrays:
+
+.HTML list in XML
+[example]
+====
+[source,xml]
+----
+<modified.object type="ENTITY" name="action">
+  <description>
+    <ul>
+      <li>Added new attribute 'priority'</li>
+      <li>Modified WHERE rule WR1</li>
+      <li>Updated documentation</li>
+    </ul>
+  </description>
+</modified.object>
+----
+
+Converts to:
+
+[source,yaml]
+----
+- type: ENTITY
+  name: action
+  description:
+  - Added new attribute 'priority'
+  - Modified WHERE rule WR1
+  - Updated documentation
+----
+====
+
+=== Plain text descriptions
+
+Non-list descriptions are preserved as single-item arrays:
+
+[source,xml]
+----
+<modified.object type="FUNCTION" name="validate">
+  <description>Updated validation logic</description>
+</modified.object>
+----
+
+Converts to:
+
+[source,yaml]
+----
+- type: FUNCTION
+  name: validate
+  description:
+  - Updated validation logic
+----
+
+=== Missing descriptions
+
+Items without descriptions in the XML will not have a `description` field in
+the YAML:
+
+[source,xml]
+----
+<modified.object type="TYPE" name="status_type" />
+----
+
+Converts to:
+
+[source,yaml]
+----
+- type: TYPE
+  name: status_type
+----
+
+== API import
+
+=== From XML string
+
+Import Express Engine XML directly from a string:
+
+[source,ruby]
+----
+require "expressir/commands/changes_import_eengine"
+
+xml_content = File.read("comparison.xml")
+
+# Parse and convert to SchemaChange
+changes = Expressir::Commands::ChangesImportEengine.from_xml(
+  xml_content,
+  "action_schema",  # Schema name
+  "2"               # Version
+)
+
+# Access imported data
+puts "Schema: #{changes.schema}"
+changes.versions.first.additions.each do |item|
+  puts "Added #{item.type}: #{item.name}"
+end
+
+# Save to file
+changes.to_file("output.changes.yaml")
+----
+
+=== From XML file
+
+Import directly from a file (backward compatible method):
+
+[source,ruby]
+----
+require "expressir/commands/changes_import_eengine"
+
+# Import and save
+Expressir::Commands::ChangesImportEengine.call(
+  "comparison.xml",           # Input XML file
+  "output.changes.yaml",      # Output YAML file
+  "action_schema",            # Schema name
+  "2",                        # Version
+  verbose: true               # Show progress
+)
+----
+
+=== Appending to existing file
+
+Add a new version to an existing Changes file:
+
+[source,ruby]
+----
+require "expressir/changes"
+require "expressir/commands/changes_import_eengine"
+
+# Load existing changes
+existing = if File.exist?("schema.changes.yaml")
+  Expressir::Changes::SchemaChange.from_file("schema.changes.yaml")
+end
+
+# Import new version
+xml_content = File.read("v3_comparison.xml")
+updated = Expressir::Commands::ChangesImportEengine.from_xml(
+  xml_content,
+  "action_schema",
+  "3",
+  existing_schema: existing  # Pass existing to append
+)
+
+# Save combined result
+updated.to_file("schema.changes.yaml")
+----
+
+=== Processing multiple versions
+
+Automate importing multiple versions:
+
+[source,ruby]
+----
+require "expressir/commands/changes_import_eengine"
+
+schema_name = "action_schema"
+output_file = "#{schema_name}.changes.yaml"
+
+# Import versions 2-5
+(2..5).each do |version|
+  xml_file = "v#{version}_comparison.xml"
+
+  if File.exist?(xml_file)
+    puts "Importing version #{version}..."
+
+    Expressir::Commands::ChangesImportEengine.call(
+      xml_file,
+      output_file,
+      schema_name,
+      version.to_s,
+      verbose: true
+    )
+  else
+    puts "Warning: #{xml_file} not found, skipping"
+  end
+end
+
+puts "Import complete: #{output_file}"
+----
+
+== Troubleshooting
+
+=== Invalid XML errors
+
+**Error**: `Invalid XML format`
+
+**Causes**:
+* Malformed XML syntax
+* Incorrect encoding
+* Truncated file
+
+**Solutions**:
+
+[source,bash]
+----
+# Validate XML syntax
+xmllint comparison.xml
+
+# Check encoding
+file comparison.xml
+
+# Verify file is complete
+tail comparison.xml  # Should see closing tags
+----
+
+=== Mode detection issues
+
+**Error**: `Unable to detect XML mode`
+
+**Cause**: XML doesn't match any expected root element
+
+**Solution**: Ensure XML starts with one of:
+* `<schema.changes>`
+* `<arm.changes>`
+* `<mim.changes>`
+
+[source,bash]
+----
+# Check root element
+head -n 5 comparison.xml
+----
+
+=== Missing interfaced_items
+
+**Issue**: `USE_FROM` or `REFERENCE_FROM` items missing `interfaced_items`
+
+**Cause**: Express Engine XML missing `interfaced.items` attribute
+
+**Impact**: Import succeeds but `interfaced_items` field will be empty
+
+**Solution**: Manually add `interfaced_items` to YAML after import:
+
+[source,yaml]
+----
+# After import, manually add:
+- type: USE_FROM
+  name: geometry_schema
+  interfaced_items: point  # Add this manually
+----
+
+=== File permission errors
+
+**Error**: `Permission denied`
+
+**Cause**: No write permission for output file or directory
+
+**Solutions**:
+
+[source,bash]
+----
+# Check permissions
+ls -la output_directory/
+
+# Fix permissions
+chmod +w output_directory/
+
+# Or save to different location
+expressir changes import-eengine comparison.xml schema "2" \
+  -o ~/tmp/output.yaml
+----
+
+=== Version conflicts
+
+**Issue**: Existing version has different content
+
+**Behavior**: Import replaces existing version with same number
+
+**Solution**: If you need to preserve both:
+
+[source,bash]
+----
+# Save current version
+cp schema.changes.yaml schema.changes.yaml.v2.backup
+
+# Import new version 2 (replaces)
+expressir changes import-eengine new_v2.xml schema "2" \
+  -o schema.changes.yaml
+
+# Compare differences
+diff schema.changes.yaml.v2.backup schema.changes.yaml
+----
+
+== Complete workflow examples
+
+=== Simple import workflow
+
+[source,bash]
+----
+# 1. Get Express Engine comparison XML
+# (Generated by Express Engine comparing v1 to v2)
+
+# 2. Import to YAML
+expressir changes import-eengine v2_comparison.xml action_schema "2" \
+  -o action_schema.changes.yaml
+
+# 3. Validate
+expressir changes validate action_schema.changes.yaml --verbose
+
+# 4. Review
+cat action_schema.changes.yaml
+
+# 5. Commit
+git add action_schema.changes.yaml
+git commit -m "Import version 2 changes from Express Engine"
+----
+
+=== Multi-version workflow
+
+[source,bash]
+----
+# Import versions 2-4 incrementally
+for version in 2 3 4; do
+  echo "Importing version $version..."
+  expressir changes import-eengine \
+    "v${version}_comparison.xml" \
+    action_schema \
+    "$version" \
+    -o action_schema.changes.yaml \
+    --verbose
+done
+
+# Validate final result
+expressir changes validate action_schema.changes.yaml --verbose
+
+# Review complete history
+cat action_schema.changes.yaml
+----
+
+=== Automated CI workflow
+
+[source,bash]
+----
+#!/bin/bash
+# import-changes.sh - Automated import script
+
+SCHEMA_NAME="action_schema"
+XML_DIR="eengine_reports"
+OUTPUT_FILE="${SCHEMA_NAME}.changes.yaml"
+
+# Find all comparison XMLs
+for xml in ${XML_DIR}/v*_comparison.xml; do
+  # Extract version from filename (e.g., v2_comparison.xml -> 2)
+  version=$(basename "$xml" | sed 's/v\([0-9]*\)_comparison.xml/\1/')
+
+  echo "Importing version $version from $xml..."
+  expressir changes import-eengine \
+    "$xml" \
+    "$SCHEMA_NAME" \
+    "$version" \
+    -o "$OUTPUT_FILE" \
+    --verbose || exit 1
+done
+
+# Validate result
+echo "Validating result..."
+expressir changes validate "$OUTPUT_FILE" --verbose || exit 1
+
+# Normalize for consistency
+echo "Normalizing..."
+expressir changes validate "$OUTPUT_FILE" --normalize --in-place
+
+echo "Import complete: $OUTPUT_FILE"
+----
+
+== Best practices
+
+=== Keep Express Engine XMLs
+
+Archive Express Engine comparison XMLs for reference:
+
+[source]
+----
+project/
+├── schemas/
+│   └── action_schema.exp
+├── changes/
+│   └── action_schema.changes.yaml
+└── eengine_reports/
+    ├── v2_comparison.xml
+    ├── v3_comparison.xml
+    └── v4_comparison.xml
+----
+
+=== Import in order
+
+Import versions chronologically:
+
+[source,bash]
+----
+# Good: chronological order
+expressir changes import-eengine v2.xml schema "2" -o changes.yaml
+expressir changes import-eengine v3.xml schema "3" -o changes.yaml
+expressir changes import-eengine v4.xml schema "4" -o changes.yaml
+
+# Avoid: out of order (though technically works)
+expressir changes import-eengine v4.xml schema "4" -o changes.yaml
+expressir changes import-eengine v2.xml schema "2" -o changes.yaml
+----
+
+=== Validate after import
+
+Always validate imported files:
+
+[source,bash]
+----
+expressir changes import-eengine comparison.xml schema "2" -o changes.yaml
+expressir changes validate changes.yaml --verbose
+----
+
+=== Review before committing
+
+Review imported changes before committing:
+
+[source,bash]
+----
+# Import
+expressir changes import-eengine comparison.xml schema "2" -o changes.yaml
+
+# Review
+cat changes.yaml
+
+# Verify specific changes
+grep -A 5 "additions:" changes.yaml
+
+# Commit if satisfied
+git add changes.yaml
+git commit -m "Import version 2 from Express Engine"
+----
+
+=== Enhance descriptions
+
+Express Engine descriptions may be minimal. Consider enhancing them:
+
+[source,yaml]
+----
+# After import - minimal Express Engine description
+- type: ENTITY
+  name: action
+  description:
+  - Modified
+
+# Enhance with details
+- type: ENTITY
+  name: action
+  description:
+  - Added new attribute 'priority'
+  - Modified WHERE rule WR1 to allow null status
+  - Updated subtype relationship to action_base
+----
+
+== Next steps
+
+After importing from Express Engine:
+
+* link:validating-changes.html[Validate Changes] - Validate imported files
+* link:changes-format.html[Changes Format] - Understand the YAML structure
+* link:programmatic-usage.html[Programmatic Usage] - Work with changes via API
+
+== Summary
+
+Importing from Express Engine automates change tracking:
+
+* Three XML modes automatically detected (Schema, ARM, MIM)
+* Simple CLI command for import
+* Incremental version building support
+* Automatic interface change handling via `interfaced_items`
+* HTML description conversion to YAML arrays
+* Both CLI and API import methods
+* Smart versioning (replace same, append new)
+* Compatible with Express Engine v5.2.7 format
+
+Key takeaways:
+
+* Express Engine comparison XMLs convert to Changes YAML
+* Mode detection is automatic
+* Build change history incrementally across versions
+* Interface changes preserve `interfaced_items` information
+* Always validate after import
+* Keep Express Engine XMLs for reference
+* Import in chronological order
+* Review and enhance descriptions as needed
+* Automate import in CI/CD workflows

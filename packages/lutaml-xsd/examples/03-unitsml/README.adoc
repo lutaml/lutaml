@@ -1,0 +1,244 @@
+= UnitsML Example
+
+== Purpose
+
+This example demonstrates working with scientific and technical standards focused on specialized domain vocabulary.
+
+Learn how to:
+
+* Build LXR packages from scientific standards
+* Work with measurement and unit definitions
+* Handle domain-specific type hierarchies
+* Explore specialized vocabularies
+
+UnitsML is an OASIS standard for representing units of measure in a machine-readable format, used in scientific computing, engineering, and metrology.
+
+== What This Example Demonstrates
+
+=== Scientific Standards
+
+The UnitsML schema provides:
+
+* Standard unit definitions (meter, kilogram, second, etc.)
+* Derived units (velocity, acceleration, force, etc.)
+* Unit conversions and relationships
+* Dimensional analysis support
+* Prefix handling (kilo, mega, milli, etc.)
+
+=== Domain-Specific Type Structures
+
+Unit-related types include:
+
+* Unit definitions (base and derived)
+* Quantity types (physical quantities)
+* Dimension specifications
+* Prefix definitions
+* Symbol representations
+
+=== Specialized Vocabulary
+
+Scientific terminology modeled:
+
+* SI Base Units (International System)
+* Physical dimensions
+* Measurement systems
+* Unit symbols and names
+
+=== Clean Schema Structure
+
+Unlike complex standards with many imports, UnitsML demonstrates:
+
+* Single-file schema organization
+* Clear type hierarchy
+* Well-defined namespaces
+* Focused domain model
+
+== Directory Structure
+
+[source]
+----
+03-unitsml/
+├── README.adoc           # This file
+├── config.yml            # Package configuration
+├── schemas/              # (empty - schema in spec/fixtures)
+├── ruby-api/             # Ruby API examples
+│   └── example.rb
+└── cli/                  # CLI examples
+    └── run.sh
+----
+
+== Configuration
+
+The [`config.yml`](config.yml) file is simple:
+
+[source,yaml]
+----
+files:
+  - ../../spec/fixtures/unitsml-v1.0-csd04.xsd
+
+namespace_mappings:
+  - prefix: "units"
+    uri: "urn:oasis:names:tc:unitsml:schema:xsd:UnitsMLSchema-1.0"
+----
+
+Where:
+
+`files`:: Single UnitsML schema file
+`namespace_mappings`:: UnitsML namespace with standard URN
+
+== Running the Examples
+
+=== Ruby API Example
+
+[source,bash]
+----
+ruby examples/03-unitsml/ruby-api/example.rb
+----
+
+Features demonstrated:
+
+. Building packages from scientific standards
+. Type categorization (complex vs simple types)
+. Domain-specific type discovery
+. Namespace analysis
+
+=== CLI Example
+
+[source,bash]
+----
+bash examples/03-unitsml/cli/run.sh
+----
+
+CLI commands demonstrated:
+
+. Standard package building
+. Type searching in scientific vocabulary
+. Package metadata inspection
+. Type listing and categorization
+
+== Expected Output
+
+Creates `unitsml.lxr` containing:
+
+* Schemas: 1 (self-contained standard)
+* Types: 30-50 (unit-related definitions)
+* Namespaces: 1-2 (UnitsML + XML Schema)
+
+Fast build time due to single-file structure.
+
+== Key Concepts
+
+=== Scientific Data Modeling
+
+UnitsML demonstrates:
+
+* Precise definition of scientific concepts
+* Machine-readable unit specifications
+* Conversion factor representations
+* Dimensional consistency
+
+=== Standard Vocabularies
+
+Benefits of standardized vocabulary:
+
+* Interoperability between systems
+* Unambiguous unit specifications
+* Automated unit conversions
+* Validation of dimensional consistency
+
+=== Domain-Focused Schemas
+
+Characteristics of good domain schemas:
+
+* Clear scope and purpose
+* Well-defined terminology
+* Minimal external dependencies
+* Comprehensive coverage of domain
+
+== Use Cases
+
+=== Scientific Computing
+
+UnitsML supports:
+
+* Automated unit conversion
+* Dimensional analysis
+* Physical quantity validation
+* Scientific data exchange
+
+=== Engineering Applications
+
+Applications include:
+
+* CAD/CAM systems
+* Simulation software
+* Measurement databases
+* Quality control systems
+
+=== Metrology
+
+Measurement science applications:
+
+* Calibration data
+* Uncertainty quantification
+* Traceability chains
+* Standards compliance
+
+== Type Examples
+
+Common UnitsML types you'll find:
+
+* `UnitType` - Definition of a measurement unit
+* `QuantityType` - Physical quantity (length, mass, time, etc.)
+* `DimensionSetType` - Dimensional specifications
+* `PrefixType` - Unit prefixes (kilo-, mega-, etc.)
+* `RootUnitsType` - Base unit combinations
+
+== Exploring Types
+
+Search for unit-related concepts:
+
+[source,bash]
+----
+# Search for unit definitions
+lutaml-xsd search Unit unitsml.lxr
+
+# Search for quantities
+lutaml-xsd search Quantity unitsml.lxr
+
+# Search for dimensions
+lutaml-xsd search Dimension unitsml.lxr
+----
+
+== Next Steps
+
+After mastering scientific schemas:
+
+. Try link:../04-metaschema/README.adoc[04-metaschema] for self-referential schemas
+. Review link:../02-urban-function/README.adoc[02-urban-function] for complex imports
+. Apply concepts to your own domain-specific schemas
+
+== Related Documentation
+
+* link:../../docs/RUBY_API.adoc[Ruby API Reference]
+* link:../../docs/TYPE_SYSTEM.adoc[Type System Documentation]
+* link:../../docs/SEARCH_CAPABILITIES.adoc[Search Capabilities]
+
+== UnitsML Standard Reference
+
+* Standard: OASIS UnitsML
+* Version: 1.0 CSD04
+* Domain: Scientific units and measurements
+* Official URL: https://www.oasis-open.org/committees/unitsml/
+* Purpose: Machine-readable unit representation
+
+== Application Areas
+
+UnitsML is used in:
+
+* Scientific data repositories
+* Engineering databases
+* Measurement standards
+* Chemical informatics
+* Physical property databases
+* Laboratory information systems

@@ -1,0 +1,204 @@
+# Prebuilt platform gems (TODO.suma-improvements/01), following the
+# parsanol-ruby gem-build pattern: oxidize-rb cross-gem builds
+# per-platform gems in rake-compiler-dock containers, smoke jobs install
+# them on real runners, and tag pushes publish to rubygems.
+name: native-gems
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, "cross-gem/*", "pkg/*"]
+    tags: ["v*"]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  ci-data:
+    runs-on: ubuntu-22.04
+    outputs:
+      result: ${{ steps.fetch.outputs.result }}
+    steps:
+      - id: fetch
+        uses: oxidize-rb/actions/fetch-ci-data@v1
+        with:
+          supported-ruby-platforms: |
+            exclude: [x64-mingw32]
+          stable-ruby-versions: |
+            only: [3.2, 3.3, 3.4, 4.0]
+
+  native:
+    name: Build native gems
+    needs: ci-data
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby-platform: ${{ fromJSON(needs.ci-data.outputs.result).supported-ruby-platforms }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+
+      - uses: oxidize-rb/actions/cross-gem@v1
+        id: cross-gem
+        env:
+          EXPRESSIR_CORE_FORCE: "1"
+        with:
+          platform: ${{ matrix.ruby-platform }}
+          # Must include the dock image's HOST ruby (4.0): when the
+          # running ruby is absent from this list, rake-compiler adds an
+          # extra leg for it built from the host toolchain's RbConfig,
+          # and rb-sys correctly refuses to generate bindings against a
+          # different target_os. Current rb-sys-dock images ship cross
+          # rubies for 3.2-4.0 (parsanol-ruby's identical cross-gem
+          # setup builds a working x86_64-mingw-ucrt ruby-4.0.2 leg).
+          ruby-versions: "3.2,3.3,3.4,4.0"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cross-gem-${{ matrix.ruby-platform }}
+          path: ${{ steps.cross-gem.outputs.gem-path }}
+          if-no-files-found: error
+
+  smoke-linux:
+    name: Smoke test Linux x86_64
+    needs: native
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+      - uses: actions/download-artifact@v4
+        with:
+          name: cross-gem-x86_64-linux
+          path: pkg/
+      - run: |
+          gem install pkg/expressir-*.gem --no-document
+          ruby .github/scripts/test_installed_gem.rb
+
+  smoke-linux-arm:
+    name: Smoke test Linux ARM64
+    needs: native
+    runs-on: ubuntu-22.04-arm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+      - uses: actions/download-artifact@v4
+        with:
+          name: cross-gem-aarch64-linux
+          path: pkg/
+      - run: |
+          gem install pkg/expressir-*.gem --no-document
+          ruby .github/scripts/test_installed_gem.rb
+
+  smoke-macos-arm:
+    name: Smoke test macOS ARM64
+    needs: native
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+      - uses: actions/download-artifact@v4
+        with:
+          name: cross-gem-arm64-darwin
+          path: pkg/
+      - run: |
+          gem install pkg/expressir-*.gem --no-document
+          ruby .github/scripts/test_installed_gem.rb
+
+  smoke-macos-intel:
+    name: Smoke test macOS x86_64
+    needs: native
+    runs-on: macos-15-intel
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+      - uses: actions/download-artifact@v4
+        with:
+          name: cross-gem-x86_64-darwin
+          path: pkg/
+      - run: |
+          gem install pkg/expressir-*.gem --no-document
+          ruby .github/scripts/test_installed_gem.rb
+
+  smoke-windows:
+    name: Smoke test Windows x64
+    needs: native
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+      - uses: actions/download-artifact@v4
+        with:
+          name: cross-gem-x64-mingw-ucrt
+          path: pkg/
+      - run: |
+          gem install pkg/expressir-*.gem --no-document
+          ruby .github/scripts/test_installed_gem.rb
+
+  source:
+    name: Build source gem
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oxidize-rb/actions/setup-ruby-and-rust@v1
+        with:
+          ruby-version: "3.4"
+          bundler-cache: true
+          cargo-cache: true
+      - run: bundle exec rake build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: source-gem
+          path: pkg/*.gem
+          if-no-files-found: error
+
+  release:
+    name: Release gems to rubygems
+    needs: [native, smoke-linux, smoke-linux-arm, smoke-macos-arm, smoke-macos-intel, smoke-windows, source]
+    # workflow_dispatch lets a fix publish the already-tagged version when
+    # the tag's own run failed after the builds (reruns reuse the tag's
+    # workflow copy, so fixes cannot reach them any other way).
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-22.04
+    # No environment: the rubygems.org trusted publisher for native-gems.yml
+    # is registered without one; an environment claim would fail the match.
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: pkg/
+          pattern: cross-gem-*
+          merge-multiple: true
+      - uses: actions/download-artifact@v4
+        with:
+          path: pkg/
+          name: source-gem
+      # OIDC trusted publishing - the repo has no rubygems API-key secret;
+      # release.yml publishes through the same exchange.
+      - uses: rubygems/configure-rubygems-credentials@v2.1.0
+      - name: Push to rubygems
+        run: |
+          for gem in pkg/expressir-*.gem; do
+            # Idempotent: a gem already on rubygems (e.g. the source gem
+            # shipped by release.yml ahead of the platform run) is a skip,
+            # not a failure.
+            gem push "$gem" || echo "::warning::$(basename "$gem") already published or rejected; continuing"
+          done

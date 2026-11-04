@@ -1,5 +1,8 @@
 # CLAUDE.md — Lutaml Project
 
+## Monorepo layout
+The repository is a monorepo: the `lutaml` gem described below lives in `packages/lutaml`; siblings are in `packages/` (see README.adoc). `cd` into a package and run its bundle there; paths in this file are relative to `packages/lutaml`.
+
 ## Project Overview
 Lutaml is a Ruby gem for parsing and transforming UML models from multiple formats (XMI, QEA/EA, DSL). It provides a CLI, interactive shell, and model transformation pipeline. The UML domain models, repository, converters, SPA generator, and web UI live in the companion `lutaml-uml` gem.
 

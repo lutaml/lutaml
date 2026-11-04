@@ -1,0 +1,74 @@
+# Urban Function Package Merge Example
+# This demonstrates creating a self-contained package with i-UR schemas
+# that properly resolves all CityGML, GML, and ISO dependencies
+
+# Output package path (can be overridden with -o flag)
+output_package: citygml-schemas.lxr
+
+files:
+  - ../../spec/fixtures/citygml/2.0/cityGMLBase.xsd
+  # - ../../spec/fixtures/codesynthesis-gml-3.2.1/gml/3.2.1/gml.xsd
+
+schema_location_mappings:
+  # Map relative ISO 19139 paths (gmd, gco, gss, gts, gmx, gsr)
+  - from: '(?:\.\./)+((?:gmd|gco|gss|gts|gmx|gsr)/(.+\.xsd))$'
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/\1
+    pattern: true
+
+  # Map bare ISO 19139 schema filenames
+  - from: '^(gmd|gco|gss|gts|gmx|gsr)\.xsd$'
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/\1/\1.xsd
+    pattern: true
+
+  # Map GML bare filenames (no gml/ prefix)
+  - from: '^(basicTypes|coordinateOperations|coordinateReferenceSystems|coordinateSystems|coverage|datums|defaultStyle|deprecatedTypes|dictionary|direction|dynamicFeature|feature|geometryAggregates|geometryBasic0d1d|geometryBasic2d|geometryComplexes|geometryPrimitives|gml|gmlBase|grids|measures|observation|referenceSystems|temporal|temporalReferenceSystems|temporalTopology|topology|units|valueObjects|geometryComplexes)\.xsd$'
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/gml/3.2.1/\1.xsd
+    pattern: true
+
+  # Map GML relative paths with gml/ prefix
+  - from: '(?:\.\./)+(gml/.+\.xsd)$'
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/\1
+    pattern: true
+
+  # Map ISO relative paths
+  - from: '(?:\.\./)+(iso/.+\.xsd)$'
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/\1
+    pattern: true
+
+  # Map xlink relative paths
+  - from: '(?:\.\./)+(xlink/.+\.xsd)$'
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/\1
+    pattern: true
+
+  # Map CityGML 2.0 HTTP URLs to local files
+  - from: '^http://schemas\.opengis\.net/citygml/2\.0/(.+\.xsd)$'
+    to: ../../spec/fixtures/citygml/2.0/\1
+    pattern: true
+
+  # Map CityGML module HTTP URLs to local files
+  - from: '^http://schemas\.opengis\.net/citygml/([^/]+)/2\.0/(.+\.xsd)$'
+    to: ../../spec/fixtures/citygml/\1/2.0/\2
+    pattern: true
+
+  # Map GML 3.1.1 base/gml.xsd specifically (3.1.1 not available, map to 3.2.1 gml.xsd)
+  - from: '^http://schemas\.opengis\.net/gml/3\.1\.1/base/gml\.xsd$'
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/gml/3.2.1/gml.xsd
+    pattern: false
+
+  # Map other GML 3.1.1 paths to 3.2.1 (stripping /base/ if present)
+  - from: '^http://schemas\.opengis\.net/gml/3\.1\.1/(?:base/)?(.+\.xsd)$'
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/gml/3.2.1/\1
+    pattern: true
+
+  # Map xAL HTTP URLs to local files (used by CityGML)
+  - from: '^http://docs\.oasis-open\.org/election/external/xAL\.xsd$'
+    to: ../../spec/fixtures/citygml/xAL/xAL.xsd
+    pattern: false
+
+namespace_mappings:
+  - prefix: "xs"
+    uri: "http://www.w3.org/2001/XMLSchema"
+  - prefix: "gml"
+    uri: "http://www.opengis.net/gml/3.2"
+  - prefix: "xlink"
+    uri: "http://www.w3.org/1999/xlink"

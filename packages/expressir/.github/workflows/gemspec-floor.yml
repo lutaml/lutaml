@@ -1,0 +1,61 @@
+# Floor guard: every released expressir must LOAD under the OLDEST
+# lutaml-model its own gemspec admits. v2.4.4/v2.4.5 shipped `map ...,
+# serialize: false` while declaring `lutaml-model ~> 0.8.0` — the
+# keyword first exists in 0.8.43 — so any bundle resolving that pair
+# died at class-load time (issue #566). This job pins lutaml-model to
+# the exact gemspec floor and loads the model classes against it.
+name: gemspec-floor
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+
+jobs:
+  floor:
+    runs-on: ubuntu-latest
+    name: lutaml-model at the gemspec floor
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+
+      - name: Extract the lutaml-model floor from the gemspec
+        id: floor
+        run: |
+          floor=$(ruby -e '
+            spec = Gem::Specification.load(Dir["*.gemspec"].first)
+            dep = spec.dependencies.find { |d| d.name == "lutaml-model" }
+            candidates = dep.requirement.requirements
+              .select { |op, _| [">=", "~>"].include?(op) }
+              .map { |_, v| v.version }
+            abort "no lutaml-model floor in the gemspec" if candidates.empty?
+            puts candidates.min
+          ')
+          echo "floor=$floor" >> "$GITHUB_OUTPUT"
+          echo "lutaml-model floor: $floor"
+
+      - name: Pin lutaml-model exactly at the floor
+        run: |
+          cat >> Gemfile <<'GEMFILE'
+
+          gem "lutaml-model", "= ${{ steps.floor.outputs.floor }}"
+          GEMFILE
+          bundle install
+
+      - name: Load the model classes under the floor
+        run: |
+          bundle exec ruby -e '
+            require "lutaml/model"
+            resolved = Gem.loaded_specs["lutaml-model"].version.to_s
+            abort "resolved #{resolved}, expected ${{ steps.floor.outputs.floor }}" unless resolved == "${{ steps.floor.outputs.floor }}"
+            require "expressir"
+            require "expressir/model/model_element"
+            require "expressir/model"
+            puts "model classes load under lutaml-model #{resolved}"
+          '
+
+      - name: Model specs under the floor
+        run: bundle exec rspec spec/expressir/model

@@ -1,0 +1,126 @@
+name: performance-release
+
+# Every release re-measures the per-command scoreboard (TODO.compat/03)
+# and appends the table to the release notes; the gate fails the run on
+# a regression against the committed CI baseline. Idempotent — the
+# marked notes section is replaced, not stacked.
+on:
+  workflow_run:
+    workflows: ["release"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      seed_baseline:
+        description: "Measure only and print the baseline JSON for committing"
+        type: boolean
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  report:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    # Pinned: runner-image and vCPU drift move the medians; the gate
+    # compares like against like.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # Pin to the exact tree the release run published, so the
+          # measured scoreboard describes the released code even when
+          # main moves between the release and this report.
+          ref: ${{ github.event.workflow_run.head_sha || 'main' }}
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: false
+
+      - name: Install dependencies
+        run: bundle install
+
+      - name: Let the runner settle after the build
+        run: |
+          # The install burst pushes the 1-minute load past the gate's
+          # budget (half the vCPUs); wait (bounded) for it to decay so
+          # the measurement judges steady-state load.
+          for i in $(seq 1 60); do
+            load=$(awk '{print $1}' /proc/loadavg)
+            ncpu=$(nproc)
+            awk -v l="$load" -v n="$ncpu" 'BEGIN { exit !(l <= n * 0.5) }' && break
+            sleep 5
+          done
+          echo "1-minute load at measure time: $(awk '{print $1}' /proc/loadavg)"
+
+      - name: Measure the scoreboard
+        run: |
+          SCOREBOARD_JSON=/tmp/scoreboard.json \
+            bundle exec rake scoreboard:print
+
+      - name: Gate against the committed CI baseline
+        if: ${{ inputs.seed_baseline != true }}
+        run: |
+          if [ ! -f scoreboard-ci-baseline.json ]; then
+            echo "::notice::no scoreboard-ci-baseline.json — gate skipped; seed it from this run's artifact"
+          else
+            SCOREBOARD_BASELINE=scoreboard-ci-baseline.json \
+              bundle exec rake scoreboard:gate
+          fi
+
+      - name: Seed mode — publish the baseline JSON for committing
+        if: ${{ inputs.seed_baseline == true }}
+        run: |
+          cp /tmp/scoreboard.json scoreboard-ci-baseline.json
+          echo '## CI scoreboard baseline' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Commit `scoreboard-ci-baseline.json` from this run to arm the gate.' >> "$GITHUB_STEP_SUMMARY"
+          echo '```json' >> "$GITHUB_STEP_SUMMARY"
+          cat /tmp/scoreboard.json >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the measurement
+        uses: actions/upload-artifact@v4
+        with:
+          name: scoreboard
+          path: /tmp/scoreboard.json
+          if-no-files-found: error
+
+      - name: Append the scoreboard to the release notes of the measured version
+        if: ${{ github.event_name == 'workflow_run' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # The notes target is the release created by the triggering
+          # run — NOT "latest" (a rerun of an old run would mis-aim).
+          TRIGGERED_AT="${{ github.event.workflow_run.created_at }}"
+          TAG=$(gh api "repos/${GITHUB_REPOSITORY}/releases" \
+            --jq "map(select(.created_at >= \"${TRIGGERED_AT}\")) | sort_by(.created_at) | last | .tag_name")
+          TAG=${TAG:-$(gh release view --json tagName --jq .tagName)}
+          echo "Reporting against $TAG"
+          gh release view "$TAG" --json body --jq .body > /tmp/body.md
+          # bundle exec: the expressir gem is linked through the Gemfile's
+          # gemspec — bare ruby cannot load it (LoadError, 2026-10-26+ runs)
+          bundle exec ruby -e '
+            require "json"
+            require "expressir"
+            require "expressir/scoreboard"
+            rows = JSON.parse(File.read("/tmp/scoreboard.json"))
+            File.write("/tmp/section.md", Expressir::Scoreboard.table(rows) + "\n")
+            body = File.read("/tmp/body.md")
+            section = File.read("/tmp/section.md")
+            block = "<!-- SCOREBOARD:BEGIN -->\n#{section}<!-- SCOREBOARD:END -->"
+            if body.include?("<!-- SCOREBOARD:BEGIN -->")
+              body = body.sub(/<!-- SCOREBOARD:BEGIN -->.*<!-- SCOREBOARD:END -->/m, block)
+            else
+              body = body.chomp + "\n\n" + block
+            end
+            File.write("/tmp/new_body.md", body)
+          '
+          gh release edit "$TAG" --notes-file /tmp/new_body.md

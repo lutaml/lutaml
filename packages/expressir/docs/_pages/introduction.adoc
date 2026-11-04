@@ -1,0 +1,256 @@
+---
+title: Introduction
+nav_order: 2
+---
+
+== Introduction to Expressir
+
+=== Purpose
+
+This page introduces Expressir, explaining what it is, its key capabilities, and when to use it. You'll understand the architecture and design of Expressir and how it fits into the EXPRESS ecosystem.
+
+=== References
+
+* link:express-language.html[EXPRESS Language] - Understanding EXPRESS
+* link:parsers.html[Parsers] - How parsing works
+* link:data-model.html[Data Model] - Ruby representation of EXPRESS
+* link:../tutorials/parsing-your-first-schema.html[Tutorial: Parsing Your First Schema]
+
+=== Concepts
+
+EXPRESS:: A data modeling language defined by ISO 10303-11, used for formal specification of product data in industrial automation and integration
+Schema:: A named collection of EXPRESS declarations (entities, types, functions, etc.) that defines a data model
+Repository:: Expressir's container for one or more parsed EXPRESS schemas
+Parser:: Component that reads EXPRESS text and converts it to Expressir's Ruby data model
+LER:: LutaML EXPRESS Repository - a high-performance binary package format for distributing pre-parsed schemas
+
+=== What is Expressir?
+
+Expressir ("`EXPRESS in Ruby`") is a Ruby parser for EXPRESS and a comprehensive set of Ruby tools for accessing ISO EXPRESS data models.
+
+EXPRESS is the data modeling language defined in ISO 10303-11:2007, widely used in product data representation and exchange, particularly in the STEP (Standard for the Exchange of Product model data) standard family.
+
+Expressir provides Ruby developers with the ability to:
+
+* Parse EXPRESS schemas from multiple formats
+* Manipulate EXPRESS data models programmatically
+* Convert between different representations
+* Generate documentation and derived artifacts
+* Analyze schema quality and coverage
+
+=== Key Capabilities
+
+Expressir consists of three main parts:
+
+==== Parsers
+
+Expressir includes parsers for multiple EXPRESS formats:
+
+EXPRESS data modelling language (ISO 10303-11:2007):: The standard EXPRESS language syntax used in most ISO 10303 application protocols
+
+STEPmod EXPRESS XML:: EXPRESS data modelling language in XML format used in the STEPmod modular STEP schema repository
+
+EXPRESS XML (ISO 10303-28:2007):: The XML representation of EXPRESS schemas defined in ISO 10303-28 "Industrial automation systems and integration — Product data representation and exchange — Part 28: Implementation methods: XML representations of EXPRESS schemas and data, using XML schemas"
+
+All parsers produce the same unified Ruby data model, allowing you to work with schemas from different sources consistently.
+
+==== Data Model
+
+The data model (`lib/expressir/model`) is Expressir's Ruby representation that fully captures an EXPRESS schema's structure and semantics.
+
+Key characteristics:
+
+* **Complete representation**: Every EXPRESS construct has a corresponding Ruby class
+* **Type-safe**: Strong typing ensures model integrity
+* **Navigable**: Easy traversal of schema relationships
+* **Serializable**: Can be converted to various output formats
+
+The model uses an object-oriented design with clear separation between:
+
+* Declarations (entities, types, functions, procedures, rules)
+* Data types (primitives, aggregates, constructed types)
+* Expressions and statements
+* References and relationships
+
+See link:data-model.html[Data Model] for detailed information.
+
+==== Converters
+
+Converters transform the EXPRESS Ruby data model into interoperable export formats:
+
+* **EXPRESS language output**: Pretty-print schemas in standard EXPRESS syntax
+* **Documentation formats**: Generate human-readable documentation
+* **Analysis formats**: Export for quality analysis and validation
+
+Future converters planned:
+
+* W3C OWL (Web Ontology Language)
+* OMG SysML (Systems Modeling Language)
+* OMG UML 2
+
+=== When to Use Expressir
+
+Expressir is ideal when you need to:
+
+**Parse and analyze EXPRESS schemas**::
+Read schemas from ISO standards, validate their structure, or analyze their content
+
+**Generate documentation**::
+Create HTML, PDF, or other formats from EXPRESS schemas with custom templates
+
+**Transform schemas**::
+Convert between EXPRESS and other modeling languages or formats
+
+**Validate schema quality**::
+Check documentation coverage, naming conventions, or structural patterns
+
+**Build tools for EXPRESS**::
+Create editors, validators, or other tools that work with EXPRESS data models
+
+**Integrate with Ruby applications**::
+Incorporate EXPRESS schema processing into Ruby/Rails applications
+
+**Distribute schemas efficiently**::
+Package schemas as LER files for fast loading and distribution
+
+=== When NOT to Use Expressir
+
+Consider alternatives when:
+
+**You only need basic text manipulation**::
+Simple grep or sed operations might suffice for basic tasks
+
+**You need runtime instance data processing**::
+Expressir focuses on schema-level operations; for STEP instance file parsing (Part 21), consider dedicated STEP readers
+
+**Performance is critical for real-time systems**::
+While Expressir is performant, compiled C/C++ parsers may be faster for extremely large schemas processed repeatedly
+
+**You need visual schema editing**::
+Expressir is programmatic; for visual modeling, consider EXPRESS-G tools
+
+=== Comparison with Other Tools
+
+==== vs Manual Parsing
+
+Manual regex or text parsing of EXPRESS:
+
+* ❌ Error-prone and incomplete
+* ❌ Difficult to maintain
+* ❌ Misses language subtleties
+* ❌ No semantic understanding
+
+Expressir:
+
+* ✅ Complete, validated parsing
+* ✅ Semantic model with relationships
+* ✅ Professional quality
+* ✅ Maintained and tested
+
+==== vs Other EXPRESS Tools
+
+Traditional EXPRESS tools (written in Lisp, C++, etc.):
+
+* Often hard to integrate with modern applications
+* May have licensing restrictions
+* Limited documentation generation
+
+Expressir:
+
+* Native Ruby integration
+* Open source (BSD 2-clause)
+* Flexible template-based output
+* Modern, maintainable codebase
+
+==== vs Other Modeling Languages
+
+**EXPRESS vs JSON Schema**::
+EXPRESS provides formal semantics, inheritance, constraints, and algorithms. JSON Schema is simpler but less expressive.
+
+**EXPRESS vs UML**::
+EXPRESS has formal semantics and is textual. UML is more visual but less precise for data modeling.
+
+**EXPRESS vs XSD**::
+EXPRESS has richer type system and built-in algorithms. XSD is XML-specific.
+
+=== Architecture
+
+Expressir follows a pipeline architecture:
+
+[source]
+----
+┌─────────────────┐
+│  EXPRESS Files  │ (source formats)
+│  - .exp files   │
+│  - STEPmod XML  │
+│  - EXPRESS XML  │
+└────────┬────────┘
+         │
+         ▼
+   ┌──────────┐
+   │ Parsers  │ (format-specific)
+   └────┬─────┘
+        │
+        ▼
+┌───────────────────┐
+│   Data Model      │ (unified representation)
+│  Repository       │
+│  └─ Schema        │
+│     └─ Entity     │
+│     └─ Type       │
+│     └─ Function   │
+│     └─ ...        │
+└─────────┬─────────┘
+          │
+      ┌───┴───┬────────┬────────────┐
+      ▼       ▼        ▼            ▼
+ ┌─────────┐ ┌──────┐ ┌──────┐ ┌─────────┐
+ │Formatter│ │Liquid│ │ LER  │ │Analysis │
+ │         │ │Drops │ │Export│ │ Tools   │
+ └─────────┘ └──────┘ └──────┘ └─────────┘
+      │         │        │          │
+      ▼         ▼        ▼          ▼
+  EXPRESS   HTML/PDF  .ler     Coverage
+   Output   Docs      Files    Reports
+----
+
+Key architectural principles:
+
+**Separation of concerns**:: Parsing, modeling, and output are distinct layers
+
+**Format independence**:: All parsers produce the same data model
+
+**Extensibility**:: New parsers and converters can be added without affecting the core
+
+**Performance**:: Caching and LER packages optimize for production use
+
+=== Architecture Benefits
+
+**Unified model**::
+Work with schemas from any format using the same API
+
+**Type safety**::
+Ruby classes ensure correctness and enable IDE support
+
+**Testability**::
+Clean separation enables comprehensive test coverage
+
+**Maintainability**::
+Clear responsibilities and well-defined interfaces
+
+**Performance**::
+Smart caching and binary packages for production efficiency
+
+=== Getting Started
+
+Ready to try Expressir? Continue to:
+
+* link:getting-started.html[Getting Started] - Install and try Expressir
+* link:../tutorials/parsing-your-first-schema.html[Tutorial: Parsing Your First Schema] - Hands-on tutorial
+
+=== Bibliography
+
+* https://www.iso.org/standard/38047.html[ISO 10303-11:2004] - Industrial automation systems and integration — Product data representation and exchange — Part 11: Description methods: The EXPRESS language reference manual
+* https://www.expresslang.org/[EXPRESS Language Foundation (ELF)] - Official EXPRESS resources and specifications
+* https://en.wikipedia.org/wiki/EXPRESS_(data_modeling_language)[EXPRESS on Wikipedia] - Overview and history
+* https://www.nist.gov/services-resources/software/step-file-analyzers-and-viewers[NIST STEP Tools] - Related EXPRESS tools and resources

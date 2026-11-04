@@ -1,0 +1,19 @@
+*** Written by Express Engine
+***    5.2.7 (GIT eeng-5.2.7)
+***    Steel Bank CL 2.5.8 (Unknown Bits)
+*** Express Engine Command Line:
+***   eengine --list
+***     -SCHEMA spec/fixtures/empty_schema.exp
+*** File: spec/fixtures/empty_schema.exp
+*** 1 Schema:
+   empty_schema
+
+
+SCHEMA empty_schema;
+
+(* TYPE                   0 *)
+(* ENTITY                 0 *)
+(* FUNCTION               0 *)
+(* PROCEDURE              0 *)
+(* RULE                   0 *)
+(* SUBTYPE_CONSTRAINT     0 *)

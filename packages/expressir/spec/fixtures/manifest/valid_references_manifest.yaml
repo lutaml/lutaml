@@ -1,0 +1,5 @@
+schemas:
+  test_schema:
+    path: ../schemas/test_schema.exp
+  schema_with_use:
+    path: ../schemas/schema_with_use.exp

@@ -1,0 +1,63 @@
+include "relaton-gb.rnc" {}
+include "isostandard.rnc" {
+  
+start = gb-standard
+
+preferred =
+  element preferred { ZhEnLocalizedString }
+
+admitted =
+  element admitted { ZhEnLocalizedString }
+
+deprecates =
+  element deprecates { ZhEnLocalizedString }
+
+term =
+  element term {
+    attribute id { xsd:ID }?,
+    preferred+, admitted*, deprecates*,
+    termdomain?, termdefinition, termnote*, termexample*, termsource*
+  }
+
+term-clause =
+  element clause {
+    attribute id { xsd:ID }?,
+    attribute language { text }?,
+    attribute script { text }?,
+    attribute inline-header { xsd:boolean }?,
+    attribute obligation { "normative" | "informative" }?,
+    section-title?,
+    # boilerplate not stripped
+    ( paragraph | ul )*,
+    (  
+       term-clause+ | (terms | definitions)*
+    )
+}
+
+terms =
+  element terms {
+    attribute id { xsd:ID }?,
+    attribute language { text }?,
+    attribute script { text }?,
+    attribute obligation { "normative" | "informative" }?,
+    section-title?,
+    # boilerplate not stripped
+    ( paragraph | ul )*,
+    (term+ | ( terms*, definitions?) )
+  }
+
+}
+
+# identical structure to iso-standard
+gb-standard =
+  element gb-standard {
+    Root-Attributes,
+    bibdata, termdocsource*, misccontainer?, boilerplate?, preface, sections+, annex*, bibliography, indexsect*
+  }     
+
+ZhEnLocalizedString =
+  # multiple languages and scripts possible: comma delimit them if so
+  attribute language { ( "zh" | "en" ) },
+  attribute script { ( "Hans" | "Latn" ) }?,
+  TextElement+
+

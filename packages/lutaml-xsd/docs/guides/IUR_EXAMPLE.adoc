@@ -1,0 +1,724 @@
+---
+layout: default
+title: i-UR example
+nav_order: 6
+parent: Guides
+---
+= i-UR example
+:toc:
+:toclevels: 3
+
+== Purpose
+
+This guide demonstrates how to work with i-UR (infrastructure for Urban Revitalization) schemas using lutaml-xsd. i-UR is a Japanese standard for urban planning and development data that extends CityGML with urban planning-specific features.
+
+== General
+
+i-UR (infrastructure for Urban Revitalization) is a data standard developed in Japan for representing urban planning information in a structured, machine-readable format. It provides schemas for:
+
+* Urban planning zones and regulations
+* Land use classifications
+* Development projects
+* Urban facilities
+* Disaster prevention planning
+* Statistical data (population, land prices)
+
+Key characteristics of i-UR schemas:
+
+* **CityGML extension**: Builds on CityGML 2.0 foundation
+* **GML dependency**: Requires GML 3.1.1 or 3.2.1
+* **ISO dependencies**: Uses ISO 19139 metadata schemas
+* **Complex mappings**: Multiple nested relative import paths
+* **Japanese standards**: Implements Japanese urban planning regulations
+
+== Urban schema dependencies
+
+i-UR schemas have a complex dependency tree:
+
+.i-UR dependency hierarchy
+[source]
+----
+i-UR Urban Function (urf)
+  ↓ imports
+i-UR Urban Object (uro)
+  ↓ imports
+CityGML 2.0
+  ↓ imports
+GML 3.1.1
+  ↓ imports
+├─ XLink
+├─ SMIL 2.0
+└─ ISO 19139 (metadata)
+    └─ ISO 19103 (gco)
+----
+
+Common challenges:
+
+* **Multiple relative paths**: Imports use `../../uro/3.2/`, `../../../gml/`, etc.
+* **Version variations**: Different schema versions in different directories
+* **ISO metadata**: Requires ISO/TC 211 schemas for metadata types
+* **Character encoding**: Some schemas use UTF-8 BOM
+
+== Complete configuration example
+
+This is based on the actual i-UR urban function repository configuration:
+
+.config/urban_function_repository.yml
+[example]
+====
+[source,yaml]
+----
+# i-UR Urban Function Repository Configuration
+# Based on i-UR 3.2 (Urban Function schemas)
+
+files:
+  - spec/fixtures/i-ur/urbanFunction.xsd
+
+schema_location_mappings:
+  # Map i-UR urban object dependency
+  - from: "../../uro/3.2/urbanObject.xsd"
+    to: "spec/fixtures/i-ur/urbanObject.xsd"
+
+  # Map XLink schemas (handles any number of ../)
+  - from: !ruby/regexp /(?:\.\.\/)+xlink\/(.+\.xsd)$/
+    to: "spec/fixtures/codesynthesis-gml-3.2.1/xlink/\\1"
+
+  # Map GML schemas
+  - from: !ruby/regexp /(?:\.\.\/)+gml\/(.+\.xsd)$/
+    to: "spec/fixtures/codesynthesis-gml-3.2.1/gml/\\1"
+
+  # Map ISO schemas
+  - from: !ruby/regexp /(?:\.\.\/)+iso\/(.+\.xsd)$/
+    to: "spec/fixtures/codesynthesis-gml-3.2.1/iso/\\1"
+
+  # Map ISO 19139 metadata schemas
+  - from: !ruby/regexp /^\.\.\/gmd\/(.+\.xsd)$/
+    to: "spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/gmd/\\1"
+
+  - from: !ruby/regexp /^\.\.\/gss\/(.+\.xsd)$/
+    to: "spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/gss/\\1"
+
+  - from: !ruby/regexp /^\.\.\/gts\/(.+\.xsd)$/
+    to: "spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/gts/\\1"
+
+  - from: !ruby/regexp /^\.\.\/gsr\/(.+\.xsd)$/
+    to: "spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/gsr/\\1"
+
+  - from: !ruby/regexp /^\.\.\/gco\/(.+\.xsd)$/
+    to: "spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/gco/\\1"
+
+  - from: !ruby/regexp /^\.\.\/gmx\/(.+\.xsd)$/
+    to: "spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/gmx/\\1"
+
+  # Map bare GML filenames
+  - from: !ruby/regexp /^(basicTypes|coordinateOperations|coordinateReferenceSystems|coordinateSystems|coverage|datums|defaultStyle|deprecatedTypes|dictionary|direction|dynamicFeature|feature|geometryAggregates|geometryBasic0d1d|geometryBasic2d|geometryComplexes|geometryPrimitives|gml|gmlBase|grids|measures|observation|referenceSystems|temporal|temporalReferenceSystems|temporalTopology|topology|units|valueObjects)\.xsd$/
+    to: "spec/fixtures/codesynthesis-gml-3.2.1/gml/3.2.1/\\1.xsd"
+
+  # Map ISO metadata bare filenames
+  - from: !ruby/regexp /^(applicationSchema|citation|constraints|content|dataQuality|distribution|extent|freeText|gmd|identification|maintenance|metadataApplication|metadataEntity|metadataExtension|portrayalCatalogue|referenceSystem|spatialRepresentation)\.xsd$/
+    to: "spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/gmd/\\1.xsd"
+
+  - from: !ruby/regexp /^(geometry|gss)\.xsd$/
+    to: "spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/gss/\\1.xsd"
+
+  - from: !ruby/regexp /^(gts|temporalObjects)\.xsd$/
+    to: "spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/gts/\\1.xsd"
+
+  - from: !ruby/regexp /^(gsr|spatialReferencing)\.xsd$/
+    to: "spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/gsr/\\1.xsd"
+
+  - from: !ruby/regexp /^(basicTypes|gco|gcoBase)\.xsd$/
+    to: "spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/gco/\\1.xsd"
+
+  - from: !ruby/regexp /^(catalogues|codelistItem|crsItem|extendedTypes|gmx|gmxUsage|uomItem)\.xsd$/
+    to: "spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/gmx/\\1.xsd"
+
+  # Map SMIL schemas
+  - from: !ruby/regexp /^(smil20-.*|smil20|xml-mod|rdf)\.xsd$/
+    to: "spec/fixtures/smil20/\\1.xsd"
+
+  # Map ISO TC211 HTTPS URLs
+  - from: !ruby/regexp /https:\/\/schemas\.isotc211\.org\/(.+)/
+    to: "spec/fixtures/isotc211/\\1"
+
+  # Map ISO TC211 relative paths
+  - from: !ruby/regexp /(?:\.\.\/)+(\d{5}\/.+\.xsd)$/
+    to: "spec/fixtures/isotc211/\\1"
+
+namespace_mappings:
+  # i-UR namespaces
+  - prefix: "urf"
+    uri: "https://www.geospatial.jp/iur/urf/3.2"
+
+  - prefix: "uro"
+    uri: "https://www.geospatial.jp/iur/uro/3.2"
+
+  # GML namespace
+  - prefix: "gml"
+    uri: "http://www.opengis.net/gml/3.2"
+
+  # XLink namespace
+  - prefix: "xlink"
+    uri: "http://www.w3.org/1999/xlink"
+----
+====
+
+== Building urban schema packages
+
+=== Project structure
+
+Organize your i-UR project:
+
+.i-UR project structure
+[example]
+====
+[source]
+----
+iur-project/
+├── schemas/
+│   ├── i-ur/
+│   │   ├── urbanFunction.xsd  # Urban planning zones
+│   │   └── urbanObject.xsd    # Urban objects
+│   ├── citygml/
+│   │   └── 2.0/
+│   │       └── cityGMLBase.xsd
+│   ├── gml/
+│   │   └── 3.2.1/
+│   │       └── *.xsd
+│   ├── iso/
+│   │   └── 19139/
+│   │       └── 20070417/
+│   │           ├── gmd/
+│   │           ├── gco/
+│   │           └── gss/
+│   └── xlink/
+│       └── xlinks.xsd
+├── config/
+│   └── urban_function.yml
+└── pkg/
+    └── urban_function.lxr
+----
+====
+
+=== Building the package
+
+.Building i-UR urban function package
+[example]
+====
+[source,bash]
+----
+lutaml-xsd pkg build config/urban_function.yml \
+  --name "i-UR Urban Function Repository" \
+  --version "3.2" \
+  --description "i-UR Urban Function schema with dependencies" \
+  --xsd-mode include_all \
+  --resolution-mode resolved \
+  --serialization-format marshal \
+  --output pkg/urban_function.lxr \
+  --validate \
+  --verbose
+----
+
+Output:
+
+----
+✓ Configuration loaded
+  Files: 1
+  Schema Location Mappings: 20
+  Namespace Mappings: 4
+
+Parsing and resolving schemas...
+  Parsing urbanFunction.xsd...
+  ✓ Resolved import: urbanObject.xsd
+  ✓ Resolved import: GML schemas
+  ✓ Resolved import: ISO metadata schemas
+  ✓ Resolved import: XLink schemas
+
+✓ Schemas parsed and resolved
+  Total schemas: 118
+
+Creating package: pkg/urban_function.lxr
+  XSD Mode: include_all
+  Resolution Mode: resolved
+  Serialization Format: marshal
+✓ Package created: pkg/urban_function.lxr
+  Size: 4683850 bytes
+
+Validating package...
+✓ Package structure is valid
+✓ All XSD files are present
+✓ Type index is complete (2764 types)
+✓ Metadata is well-formed
+
+Package validated successfully!
+----
+====
+
+=== Query urban types
+
+.Querying i-UR types
+[example]
+====
+[source,bash]
+----
+# Find urban planning zone types
+lutaml-xsd type find "urf:UseDistrict" --from pkg/urban_function.lxr
+lutaml-xsd type find "urf:UrbanPlanningArea" --from pkg/urban_function.lxr
+
+# List all urban function types
+lutaml-xsd type list \
+  --from pkg/urban_function.lxr \
+  --namespace "https://www.geospatial.jp/iur/urf/3.2"
+
+# Get package statistics
+lutaml-xsd stats show pkg/urban_function.lxr
+----
+
+Output:
+
+----
+Repository Statistics:
+  Total schemas parsed: 118
+  Total types indexed: 2764
+  Types by category:
+    attribute_group: 68
+    complex_type: 1356
+    element: 1221
+    group: 27
+    simple_type: 92
+  Total namespaces: 34
+----
+====
+
+== Working with i-UR programmatically
+
+=== Loading the package
+
+.Using i-UR package in Ruby
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Load i-UR package
+iur_repo = Lutaml::Xsd::SchemaRepository.from_package(
+  'pkg/urban_function.lxr'
+)
+
+puts "i-UR Urban Function Repository loaded"
+puts "Total types: #{iur_repo.statistics[:total_types]}"
+puts "Total namespaces: #{iur_repo.statistics[:total_namespaces]}"
+----
+====
+
+=== Querying urban planning types
+
+.Finding urban planning zone types
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+repo = Lutaml::Xsd::SchemaRepository.from_package('pkg/urban_function.lxr')
+
+# Find urban planning zone types
+urban_zones = [
+  'UseDistrict',
+  'UrbanPlanningArea',
+  'DistrictsAndZones',
+  'UrbanFacility',
+  'ProjectPromotionArea'
+]
+
+puts "Urban Planning Zone Types:"
+urban_zones.each do |zone_type|
+  result = repo.find_type("urf:#{zone_type}")
+  if result.resolved?
+    puts "  ✓ #{result.qname}"
+    puts "    Namespace: #{result.namespace}"
+    puts "    Type: #{result.type.class.name}"
+  else
+    puts "  ✗ Not found: #{zone_type}"
+  end
+end
+
+# List all urf: namespace types
+urf_types = repo.types_in_namespace('https://www.geospatial.jp/iur/urf/3.2')
+puts "\nTotal URF types: #{urf_types.count}"
+
+# Find types by category
+puts "\nURF Complex Types:"
+urf_types.select { |t| t.is_a?(Lutaml::Xsd::ComplexType) }.first(5).each do |type|
+  puts "  - #{type.name}"
+end
+----
+
+Output:
+
+----
+Urban Planning Zone Types:
+  ✓ urf:UseDistrict
+    Namespace: https://www.geospatial.jp/iur/urf/3.2
+    Type: Lutaml::Xsd::ComplexType
+  ✓ urf:UrbanPlanningArea
+    Namespace: https://www.geospatial.jp/iur/urf/3.2
+    Type: Lutaml::Xsd::ComplexType
+  ✓ urf:DistrictsAndZones
+    Namespace: https://www.geospatial.jp/iur/urf/3.2
+    Type: Lutaml::Xsd::ComplexType
+  ✓ urf:UrbanFacility
+    Namespace: https://www.geospatial.jp/iur/urf/3.2
+    Type: Lutaml::Xsd::ComplexType
+  ✓ urf:ProjectPromotionArea
+    Namespace: https://www.geospatial.jp/iur/urf/3.2
+    Type: Lutaml::Xsd::ComplexType
+
+Total URF types: 485
+
+URF Complex Types:
+  - AdministrationType
+  - AgreementType
+  - AgriculturalDevelopmentProjectTypeType
+  - AircraftNoiseControlZoneType
+  - AreaClassificationType
+----
+====
+
+=== Understanding urban type hierarchy
+
+.Exploring type inheritance
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+repo = Lutaml::Xsd::SchemaRepository.from_package('pkg/urban_function.lxr')
+
+# Find base urban function type
+base_type = repo.find_type('urf:_UrbanFunctionType')
+
+if base_type.resolved?
+  puts "Base Urban Function Type: #{base_type.qname}"
+  puts "  Abstract: #{base_type.type.respond_to?(:abstract) ? base_type.type.abstract : 'N/A'}"
+
+  # Find types that extend it
+  puts "\nTypes extending _UrbanFunctionType:"
+  urf_namespace = 'https://www.geospatial.jp/iur/urf/3.2'
+  extending_types = repo.types_in_namespace(urf_namespace).select do |type|
+    if type.is_a?(Lutaml::Xsd::ComplexType) && type.complex_content
+      extension = type.complex_content.extension
+      extension && extension.base == 'urf:_UrbanFunctionType'
+    end
+  end
+
+  extending_types.first(10).each do |type|
+    puts "  - #{type.name}"
+  end
+
+  puts "\nTotal extending types: #{extending_types.count}"
+end
+----
+
+Output:
+
+----
+Base Urban Function Type: urf:_UrbanFunctionType
+  Abstract: true
+
+Types extending _UrbanFunctionType:
+  - AdministrationType
+  - CensusBlockType
+  - DevelopmentProjectType
+  - DisasterDamageType
+  - DisasterPreventionBaseType
+  - DistributionOfFloraAndFaunaType
+  - GreenSpaceType
+  - HubCityType
+  - LandPriceType
+  - LandUseDiversionType
+
+Total extending types: 45
+----
+====
+
+== Complete working example
+
+This example shows a complete i-UR urban planning application:
+
+=== Urban planning analyzer
+
+.lib/urban_analyzer.rb
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+class UrbanPlanningAnalyzer
+  def initialize(package_path)
+    @repo = Lutaml::Xsd::SchemaRepository.from_package(package_path)
+  end
+
+  def find_zone_type(zone_name)
+    @repo.find_type("urf:#{zone_name}")
+  end
+
+  def list_all_zone_types
+    namespace = 'https://www.geospatial.jp/iur/urf/3.2'
+    zone_types = @repo.types_in_namespace(namespace)
+
+    # Filter for types ending with "Type" that are complex types
+    zone_types.select do |type|
+      type.is_a?(Lutaml::Xsd::ComplexType) &&
+      type.name.end_with?('Type')
+    end.map(&:name)
+  end
+
+  def get_zone_attributes(zone_type_name)
+    result = find_zone_type(zone_type_name)
+    return nil unless result.resolved?
+
+    type = result.type
+    attributes = []
+
+    # Get attributes from complex content extension
+    if type.complex_content && type.complex_content.extension
+      extension = type.complex_content.extension
+
+      # Get sequence elements
+      if extension.sequence
+        extension.sequence.element.each do |elem|
+          attributes << {
+            name: elem.name,
+            type: elem.type,
+            min_occurs: elem.min_occurs || '1',
+            max_occurs: elem.max_occurs || '1'
+          }
+        end
+      end
+    end
+
+    attributes
+  end
+
+  def analyze_urban_facilities
+    facilities = []
+
+    # Find all urban facility types
+    namespace = 'https://www.geospatial.jp/iur/urf/3.2'
+    @repo.types_in_namespace(namespace).each do |type|
+      if type.name.include?('Facility')
+        facilities << {
+          name: type.name,
+          type_class: type.class.name
+        }
+      end
+    end
+
+    facilities
+  end
+
+  def statistics
+    stats = @repo.statistics
+    {
+      total_types: stats[:total_types],
+      total_namespaces: stats[:total_namespaces],
+      types_by_category: stats[:types_by_category]
+    }
+  end
+end
+
+# Usage example
+analyzer = UrbanPlanningAnalyzer.new('pkg/urban_function.lxr')
+
+# Find a specific zone type
+use_district = analyzer.find_zone_type('UseDistrictType')
+puts "Use District Type: #{use_district.qname}" if use_district.resolved?
+
+# List all zone types
+puts "\nAll Zone Types:"
+analyzer.list_all_zone_types.first(10).each do |zone|
+  puts "  - #{zone}"
+end
+
+# Get attributes of a specific zone
+puts "\nUseDistrict attributes:"
+attrs = analyzer.get_zone_attributes('UseDistrictType')
+attrs&.each do |attr|
+  puts "  #{attr[:name]}: #{attr[:type]} (#{attr[:min_occurs]}..#{attr[:max_occurs]})"
+end
+
+# Analyze urban facilities
+puts "\nUrban Facilities:"
+facilities = analyzer.analyze_urban_facilities
+puts "  Total facility types: #{facilities.count}"
+facilities.first(5).each do |fac|
+  puts "  - #{fac[:name]}"
+end
+
+# Show statistics
+puts "\nRepository Statistics:"
+stats = analyzer.statistics
+puts "  Total types: #{stats[:total_types]}"
+puts "  Total namespaces: #{stats[:total_namespaces]}"
+stats[:types_by_category].each do |category, count|
+  puts "  #{category}: #{count}"
+end
+----
+====
+
+=== Testing
+
+.test/test_urban_analyzer.rb
+[example]
+====
+[source,ruby]
+----
+require_relative '../lib/urban_analyzer'
+
+# Initialize analyzer
+analyzer = UrbanPlanningAnalyzer.new('pkg/urban_function.lxr')
+
+# Test 1: Find key zone types
+puts "Test 1: Finding key zone types"
+key_zones = [
+  'UseDistrictType',
+  'UrbanPlanningAreaType',
+  'DistrictsAndZonesType',
+  'UrbanFacilityType'
+]
+
+key_zones.each do |zone_name|
+  result = analyzer.find_zone_type(zone_name)
+  if result&.resolved?
+    puts "  ✓ Found #{zone_name}"
+  else
+    puts "  ✗ Not found: #{zone_name}"
+    exit 1
+  end
+end
+
+# Test 2: Verify zone attributes
+puts "\nTest 2: Verifying zone attributes"
+attrs = analyzer.get_zone_attributes('UseDistrictType')
+if attrs && attrs.any?
+  puts "  ✓ UseDistrict has #{attrs.count} attributes"
+else
+  puts "  ✗ UseDistrict has no attributes"
+  exit 1
+end
+
+# Test 3: Check statistics
+puts "\nTest 3: Checking statistics"
+stats = analyzer.statistics
+expected_min_types = 2000
+
+if stats[:total_types] >= expected_min_types
+  puts "  ✓ Type count: #{stats[:total_types]} (>= #{expected_min_types})"
+else
+  puts "  ✗ Type count too low: #{stats[:total_types]}"
+  exit 1
+end
+
+# Test 4: Verify namespace coverage
+puts "\nTest 4: Verifying namespace coverage"
+expected_namespaces = 30
+
+if stats[:total_namespaces] >= expected_namespaces
+  puts "  ✓ Namespace count: #{stats[:total_namespaces]} (>= #{expected_namespaces})"
+else
+  puts "  ✗ Namespace count too low: #{stats[:total_namespaces]}"
+  exit 1
+end
+
+puts "\n✓ All tests passed!"
+----
+====
+
+== Best practices for i-UR
+
+=== Use comprehensive mappings
+
+i-UR requires extensive schema mappings. Always include:
+
+* i-UR schemas (urf, uro)
+* CityGML dependencies
+* GML dependencies
+* ISO metadata dependencies
+* XLink dependencies
+* SMIL dependencies (for GML 3.1.1)
+
+=== Test cross-namespace resolution
+
+Verify types resolve across all namespaces:
+
+.Testing cross-namespace resolution
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+repo = Lutaml::Xsd::SchemaRepository.from_package('pkg/urban_function.lxr')
+
+# Test resolution across different namespaces
+test_types = {
+  'urf:UseDistrict' => 'i-UR Urban Function',
+  'uro:DmAttribute' => 'i-UR Urban Object',
+  'gml:CodeType' => 'GML',
+  'gco:CharacterString' => 'ISO 19103'
+}
+
+puts "Testing cross-namespace resolution:"
+test_types.each do |type_name, source|
+  result = repo.find_type(type_name)
+  status = result.resolved? ? '✓' : '✗'
+  puts "  #{status} #{type_name} (#{source})"
+end
+----
+====
+
+=== Document Japanese urban planning context
+
+i-UR implements Japanese urban planning regulations. Document the context:
+
+.Documenting i-UR context
+[example]
+====
+[source,markdown]
+----
+# i-UR Urban Function Package
+
+## About i-UR
+
+i-UR (infrastructure for Urban Revitalization) implements Japanese urban
+planning standards including:
+
+- City Planning Act (都市計画法)
+- Building Standards Act (建築基準法)
+- Urban Regeneration Special Measures Act (都市再生特別措置法)
+
+## Use Districts
+
+Japanese urban planning divides areas into use districts (用途地域):
+- Residential districts (住居系)
+- Commercial districts (商業系)
+- Industrial districts (工業系)
+
+Each district has specific regulations for:
+- Floor area ratio (容積率)
+- Building coverage ratio (建蔽率)
+- Height limits (高さ制限)
+----
+====
+
+== See also
+
+* link:CREATING_PACKAGES[Creating packages] - Package creation workflow
+* link:CITYGML_EXAMPLE[CityGML example] - CityGML foundation for i-UR
+* link:GML_EXAMPLE[GML example] - GML schemas used by i-UR
+* link:ISO_TC211_EXAMPLE[ISO/TC 211 example] - ISO metadata dependencies
+* link:../core-concepts/SCHEMA_MAPPINGS[Schema mappings] - Advanced mapping techniques

@@ -1,0 +1,829 @@
+---
+title: Drops Reference
+parent: Liquid
+grand_parent: Guides
+nav_order: 2
+---
+
+= Expressir Liquid drops reference
+
+== Purpose
+
+This guide documents all Expressir Liquid drop classes and their
+available attributes. Drops are template-friendly wrappers around
+Expressir model objects that expose data for use in Liquid templates.
+
+== References
+
+* link:index.html[Liquid Overview] - Integration introduction
+* link:basic-templates.html[Basic Templates] - Template syntax
+* link:../../_pages/data-model.html[Data Model] - Understanding EXPRESS
+  structures
+* link:../../_tutorials/liquid-templates.html[Liquid Templates Tutorial]
+  - Hands-on examples
+
+== Concepts
+
+Drop:: A Ruby class that wraps an Expressir model object and exposes
+its attributes for Liquid template access.
+
+Attribute:: A data field accessible via dot notation in templates (e.g.,
+`entity.id`, `schema.entities`).
+
+Collection:: An array of objects that can be iterated with `for` loops.
+
+Reference:: A pointer to another model object, accessible through
+navigation.
+
+== What are drops?
+
+Drops are adapter objects that make Expressir's Ruby model accessible
+in Liquid templates. They provide:
+
+**Simplified access**::
+Use dot notation instead of method calls: `entity.id` instead of
+`entity.id()`.
+
+**Safe exposure**::
+Only expose relevant attributes, hiding internal implementation details.
+
+**Template-friendly types**::
+Convert Ruby objects to Liquid-compatible types automatically.
+
+**Consistent interface**::
+All drops follow the same access pattern.
+
+[source]
+----
+Expressir Model Object → to_liquid() → Drop Object → Template Access
+----
+
+== Understanding drop inheritance
+
+All drop classes inherit common attributes:
+
+[source]
+----
+ModelElement (base)
+  ├── id              (from Identifier mixin)
+  ├── remarks         (from Identifier mixin)
+  ├── remark_items    (from Identifier mixin)
+  ├── _class          (object type identifier)
+  ├── source          (formatted EXPRESS source)
+  └── parent          (parent object reference)
+----
+
+Every drop includes these base attributes plus its specific attributes.
+
+== Repository drop
+
+The top-level container for all schemas.
+
+=== Attributes
+
+`schemas`:: Array of `SchemaDrop` objects representing all loaded
+schemas.
+
+`_class`:: String `"Expressir::Model::Repository"`.
+
+=== Usage
+
+[source,liquid]
+----
+Total schemas: {{ repository.schemas.size }}
+
+{% for schema in repository.schemas %}
+- {{ schema.id }}
+{% endfor %}
+----
+
+=== Example
+
+[source,ruby]
+----
+repo = Expressir::Express::Parser.from_file("schema.exp")
+repo_drop = repo.to_liquid
+
+template = Liquid::Template.parse("{{ repository.schemas.size }} schemas")
+output = template.render("repository" => repo_drop)
+# Output: "1 schemas"
+----
+
+== Schema drop
+
+Represents an EXPRESS schema definition.
+
+=== Attributes
+
+`id`:: Schema name (String).
+
+`file`:: Source file path (String).
+
+`version`:: `SchemaVersionDrop` object with version information.
+
+`remarks`:: Array of documentation strings.
+
+`remark_items`:: Array of `RemarkItemDrop` for detailed documentation.
+
+`interfaces`:: Array of `InterfaceDrop` for USE_FROM and REFERENCE_FROM.
+
+`constants`:: Array of `ConstantDrop` objects.
+
+`types`:: Array of `TypeDrop` objects.
+
+`entities`:: Array of `EntityDrop` objects.
+
+`subtype_constraints`:: Array of `SubtypeConstraintDrop` objects.
+
+`functions`:: Array of `FunctionDrop` objects.
+
+`rules`:: Array of `RuleDrop` objects.
+
+`procedures`:: Array of `ProcedureDrop` objects.
+
+`source`:: Formatted EXPRESS source code (String).
+
+`_class`:: String `"Expressir::Model::Declarations::Schema"`.
+
+`parent`:: Reference to `RepositoryDrop`.
+
+=== Usage
+
+[source,liquid]
+----
+# {{ schema.id }}
+
+{% if schema.version %}
+Version: {{ schema.version.value }}
+{% endif %}
+
+File: {{ schema.file }}
+
+## Statistics
+
+- Entities: {{ schema.entities.size }}
+- Types: {{ schema.types.size }}
+- Functions: {{ schema.functions.size }}
+- Rules: {{ schema.rules.size }}
+
+## Contents
+
+{% for entity in schema.entities %}
+- {{ entity.id }}
+{% endfor %}
+----
+
+=== Example
+
+[source,ruby]
+----
+repo = Expressir::Express::Parser.from_file("action_schema.exp")
+schema_drop = repo.schemas.first.to_liquid
+
+puts schema_drop.id           # "action_schema"
+puts schema_drop.file         # "action_schema.exp"
+puts schema_drop.entities.size # 5
+----
+
+== Entity drop
+
+Represents an EXPRESS entity definition.
+
+=== Attributes
+
+`id`:: Entity name (String).
+
+`abstract`:: Boolean indicating if entity is abstract.
+
+`supertype_expression`:: Supertype expression object.
+
+`subtype_of`:: Array of supertype references.
+
+`attributes`:: Array of `AttributeDrop` for explicit attributes.
+
+`derived_attributes`:: Array of `DerivedAttributeDrop`.
+
+`inverse_attributes`:: Array of `InverseAttributeDrop`.
+
+`unique_rules`:: Array of `UniqueRuleDrop`.
+
+`where_rules`:: Array of `WhereRuleDrop`.
+
+`informal_propositions`:: Array of `InformalPropositionRuleDrop`.
+
+`remarks`:: Array of documentation strings.
+
+`remark_items`:: Array of `RemarkItemDrop`.
+
+`source`:: Formatted EXPRESS source code (String).
+
+`_class`:: String `"Expressir::Model::Declarations::Entity"`.
+
+`parent`:: Reference to `SchemaDrop`.
+
+=== Usage
+
+[source,liquid]
+----
+## {{ entity.id }}
+
+{% if entity.abstract %}
+**Abstract Entity**
+{% endif %}
+
+{% if entity.subtype_of.size > 0 %}
+Supertypes:
+{% for super in entity.subtype_of %}
+- {{ super }}
+{% endfor %}
+{% endif %}
+
+### Attributes
+
+{% for attr in entity.attributes %}
+- **{{ attr.id }}**: {{ attr.type }}
+  {% if attr.optional %}(optional){% endif %}
+{% endfor %}
+
+{% if entity.where_rules.size > 0 %}
+### Constraints
+
+{% for rule in entity.where_rules %}
+**{{ rule.id }}**: {{ rule.expression }}
+{% endfor %}
+{% endif %}
+----
+
+=== Example
+
+[source,ruby]
+----
+entity_drop = schema_drop.entities.first
+
+puts entity_drop.id              # "person"
+puts entity_drop.abstract        # false
+puts entity_drop.attributes.size # 2
+puts entity_drop.attributes.first.id # "name"
+----
+
+== Type drop
+
+Represents an EXPRESS type definition.
+
+=== Attributes
+
+`id`:: Type name (String).
+
+`underlying_type`:: The base type object (aggregate, select, etc.).
+
+`where_rules`:: Array of `WhereRuleDrop`.
+
+`informal_propositions`:: Array of `InformalPropositionRuleDrop`.
+
+`remarks`:: Array of documentation strings.
+
+`remark_items`:: Array of `RemarkItemDrop`.
+
+`source`:: Formatted EXPRESS source code (String).
+
+`_class`:: String `"Expressir::Model::Declarations::Type"`.
+
+`parent`:: Reference to `SchemaDrop`.
+
+=== Usage
+
+[source,liquid]
+----
+### {{ type.id }}
+
+Type: {{ type.underlying_type._class }}
+
+{% if type.remarks.size > 0 %}
+{{ type.remarks | join: " " }}
+{% endif %}
+
+{% if type.where_rules.size > 0 %}
+Constraints:
+{% for rule in type.where_rules %}
+- {{ rule.id }}
+{% endfor %}
+{% endif %}
+----
+
+=== Checking type categories
+
+[source,liquid]
+----
+{% if type.underlying_type._class contains "Select" %}
+This is a SELECT type.
+{% elsif type.underlying_type._class contains "Enumeration" %}
+This is an ENUMERATION type.
+{% elsif type.underlying_type._class contains "Aggregate" %}
+This is an AGGREGATE type.
+{% endif %}
+----
+
+=== Example
+
+[source,ruby]
+----
+type_drop = schema_drop.types.first
+
+puts type_drop.id                      # "label"
+puts type_drop.underlying_type._class #
+  # "Expressir::Model::DataTypes::String"
+----
+
+== Attribute drop
+
+Represents an entity attribute.
+
+=== Attributes
+
+`id`:: Attribute name (String).
+
+`kind`:: Attribute kind: `"EXPLICIT"`, `"DERIVED"`, or `"INVERSE"`.
+
+`optional`:: Boolean indicating if attribute is optional.
+
+`type`:: The attribute type object.
+
+`expression`:: Expression object (for derived attributes).
+
+`supertype_attribute`:: Reference to supertype attribute if redeclared.
+
+`remarks`:: Array of documentation strings.
+
+`remark_items`:: Array of `RemarkItemDrop`.
+
+`source`:: Formatted EXPRESS source code (String).
+
+`_class`:: String `"Expressir::Model::Declarations::Attribute"`.
+
+`parent`:: Reference to `EntityDrop`.
+
+=== Usage
+
+[source,liquid]
+----
+{% for attr in entity.attributes %}
+- **{{ attr.id }}**
+  - Type: {{ attr.type }}
+  - Optional: {{ attr.optional }}
+  - Kind: {{ attr.kind }}
+  {% if attr.remarks.size > 0 %}
+  - Description: {{ attr.remarks | join: " " }}
+  {% endif %}
+{% endfor %}
+----
+
+=== Example
+
+[source,ruby]
+----
+attr_drop = entity_drop.attributes.first
+
+puts attr_drop.id         # "name"
+puts attr_drop.kind       # "EXPLICIT"
+puts attr_drop.optional   # false
+puts attr_drop.type       # String representation
+----
+
+== Function drop
+
+Represents an EXPRESS function.
+
+=== Attributes
+
+`id`:: Function name (String).
+
+`parameters`:: Array of `ParameterDrop`.
+
+`return_type`:: Return type object.
+
+`types`:: Array of local `TypeDrop`.
+
+`entities`:: Array of local `EntityDrop`.
+
+`subtype_constraints`:: Array of local `SubtypeConstraintDrop`.
+
+`functions`:: Array of nested `FunctionDrop`.
+
+`procedures`:: Array of nested `ProcedureDrop`.
+
+`constants`:: Array of local `ConstantDrop`.
+
+`variables`:: Array of local `VariableDrop`.
+
+`statements`:: Array of statement objects.
+
+`remarks`:: Array of documentation strings.
+
+`remark_items`:: Array of `RemarkItemDrop`.
+
+`source`:: Formatted EXPRESS source code (String).
+
+`_class`:: String `"Expressir::Model::Declarations::Function"`.
+
+`parent`:: Reference to `SchemaDrop`.
+
+=== Usage
+
+[source,liquid]
+----
+### {{ function.id }}
+
+**Returns**: {{ function.return_type }}
+
+{% if function.parameters.size > 0 %}
+**Parameters**:
+{% for param in function.parameters %}
+- {{ param.id }}: {{ param.type }}
+{% endfor %}
+{% endif %}
+
+{% if function.remarks.size > 0 %}
+{{ function.remarks | join: " " }}
+{% endif %}
+----
+
+=== Example
+
+[source,ruby]
+----
+func_drop = schema_drop.functions.first
+
+puts func_drop.id                # "bag_to_set"
+puts func_drop.parameters.size   # 1
+puts func_drop.return_type       # Return type representation
+----
+
+== Procedure drop
+
+Similar to Function drop but without return type.
+
+=== Attributes
+
+`id`:: Procedure name (String).
+
+`parameters`:: Array of `ParameterDrop`.
+
+`types`:: Array of local `TypeDrop`.
+
+`entities`:: Array of local `EntityDrop`.
+
+`constants`:: Array of local `ConstantDrop`.
+
+`variables`:: Array of local `VariableDrop`.
+
+`statements`:: Array of statement objects.
+
+`remarks`:: Array of documentation strings.
+
+`remark_items`:: Array of `RemarkItemDrop`.
+
+`source`:: Formatted EXPRESS source code (String).
+
+`_class`:: String `"Expressir::Model::Declarations::Procedure"`.
+
+`parent`:: Reference to `SchemaDrop`.
+
+== Rule drop
+
+Represents an EXPRESS global rule.
+
+=== Attributes
+
+`id`:: Rule name (String).
+
+`applies_to`:: Array of entities the rule applies to.
+
+`types`:: Array of local `TypeDrop`.
+
+`entities`:: Array of local `EntityDrop`.
+
+`functions`:: Array of local `FunctionDrop`.
+
+`procedures`:: Array of local `ProcedureDrop`.
+
+`constants`:: Array of local `ConstantDrop`.
+
+`variables`:: Array of local `VariableDrop`.
+
+`statements`:: Array of statement objects.
+
+`where_rules`:: Array of `WhereRuleDrop`.
+
+`remarks`:: Array of documentation strings.
+
+`remark_items`:: Array of `RemarkItemDrop`.
+
+`source`:: Formatted EXPRESS source code (String).
+
+`_class`:: String `"Expressir::Model::Declarations::Rule"`.
+
+`parent`:: Reference to `SchemaDrop`.
+
+== Where rule drop
+
+Represents a WHERE constraint.
+
+=== Attributes
+
+`id`:: Rule identifier (String).
+
+`expression`:: Constraint expression object.
+
+`remarks`:: Array of documentation strings.
+
+`remark_items`:: Array of `RemarkItemDrop`.
+
+`_class`:: String `"Expressir::Model::Declarations::WhereRule"`.
+
+`parent`:: Reference to parent entity or type.
+
+=== Usage
+
+[source,liquid]
+----
+{% if entity.where_rules.size > 0 %}
+## Constraints
+
+{% for rule in entity.where_rules %}
+### {{ rule.id }}
+
+{{ rule.expression }}
+
+{% if rule.remarks.size > 0 %}
+{{ rule.remarks | join: " " }}
+{% endif %}
+{% endfor %}
+{% endif %}
+----
+
+== Interface drop
+
+Represents USE_FROM or REFERENCE_FROM declarations.
+
+=== Attributes
+
+`kind`:: Interface kind: `"USE"` or `"REFERENCE"`.
+
+`schema`:: Reference to referenced schema.
+
+`items`:: Array of `InterfaceItemDrop` for specific items imported.
+
+`_class`:: String `"Expressir::Model::Declarations::Interface"`.
+
+`parent`:: Reference to `SchemaDrop`.
+
+=== Usage
+
+[source,liquid]
+----
+{% if schema.interfaces.size > 0 %}
+## Dependencies
+
+{% for interface in schema.interfaces %}
+{% if interface.kind == "USE" %}
+**USE FROM** {{ interface.schema.id }}
+{% else %}
+**REFERENCE FROM** {{ interface.schema.id }}
+{% endif %}
+
+{% if interface.items.size > 0 %}
+Items:
+{% for item in interface.items %}
+- {{ item.id }}
+{% endfor %}
+{% endif %}
+{% endfor %}
+{% endif %}
+----
+
+== Schema version drop
+
+Represents schema version information.
+
+=== Attributes
+
+`value`:: Version string (e.g., `"ISO 10303-41:2019"`).
+
+`items`:: Array of `SchemaVersionItemDrop` for detailed version info.
+
+`_class`:: String `"Expressir::Model::Declarations::SchemaVersion"`.
+
+`parent`:: Reference to `SchemaDrop`.
+
+=== Usage
+
+[source,liquid]
+----
+{% if schema.version %}
+**Version**: {{ schema.version.value }}
+{% endif %}
+----
+
+== Parameter drop
+
+Represents function/procedure parameters.
+
+=== Attributes
+
+`id`:: Parameter name (String).
+
+`type`:: Parameter type object.
+
+`var`:: Boolean indicating VAR parameter.
+
+`remarks`:: Array of documentation strings.
+
+`_class`:: String `"Expressir::Model::Declarations::Parameter"`.
+
+`parent`:: Reference to function or procedure.
+
+=== Usage
+
+[source,liquid]
+----
+{% for param in function.parameters %}
+- {{ param.id }}: {{ param.type }}
+  {% if param.var %}(VAR){% endif %}
+{% endfor %}
+----
+
+== Variable drop
+
+Represents local variables in functions/rules/procedures.
+
+=== Attributes
+
+`id`:: Variable name (String).
+
+`type`:: Variable type object.
+
+`remarks`:: Array of documentation strings.
+
+`_class`:: String `"Expressir::Model::Declarations::Variable"`.
+
+`parent`:: Reference to containing function, rule, or procedure.
+
+== Constant drop
+
+Represents EXPRESS constant definitions.
+
+=== Attributes
+
+`id`:: Constant name (String).
+
+`type`:: Constant type object.
+
+`expression`:: Constant value expression.
+
+`remarks`:: Array of documentation strings.
+
+`_class`:: String `"Expressir::Model::Declarations::Constant"`.
+
+`parent`:: Reference to `SchemaDrop` or function/rule/procedure.
+
+== Navigating between drops
+
+Drops maintain parent-child relationships for navigation:
+
+[source,liquid]
+----
+{% comment %}Navigate up{% endcomment %}
+{{ entity.parent.id }}        {# Schema name #}
+{{ attribute.parent.id }}     {# Entity name #}
+
+{% comment %}Navigate down{% endcomment %}
+{% for entity in schema.entities %}
+  {% for attr in entity.attributes %}
+    {{ schema.id }}.{{ entity.id }}.{{ attr.id }}
+  {% endfor %}
+{% endfor %}
+
+{% comment %}Navigate across{% endcomment %}
+{% for entity in schema.entities %}
+  Same schema entities: {{ schema.entities.size }}
+{% endfor %}
+----
+
+== Common patterns
+
+=== Checking for empty collections
+
+[source,liquid]
+----
+{% if entity.attributes.size > 0 %}
+  Entity has attributes
+{% else %}
+  Entity has no attributes
+{% endif %}
+
+{% if schema.entities and schema.entities.size > 0 %}
+  Schema has entities
+{% endif %}
+----
+
+=== Accessing nested data
+
+[source,liquid]
+----
+{% for schema in repository.schemas %}
+  {% for entity in schema.entities %}
+    {% for attr in entity.attributes %}
+      {{ schema.id }}.{{ entity.id }}.{{ attr.id }}
+    {% endfor %}
+  {% endfor %}
+{% endfor %}
+----
+
+=== Type checking with _class
+
+[source,liquid]
+----
+{% if object._class contains "Entity" %}
+  This is an entity
+{% elsif object._class contains "Type" %}
+  This is a type
+{% elsif object._class contains "Function" %}
+  This is a function
+{% endif %}
+----
+
+=== Checking object types
+
+[source,liquid]
+----
+{% if type.underlying_type._class contains "Select" %}
+  SELECT type
+{% elsif type.underlying_type._class contains "Enumeration" %}
+  ENUMERATION type
+{% elsif type.underlying_type._class contains "Aggregate" %}
+  AGGREGATE type
+{% endif %}
+----
+
+== Best practices
+
+**Always check size before looping**::
+[source,liquid]
+----
+{% if entity.attributes.size > 0 %}
+  {% for attr in entity.attributes %}
+    ...
+  {% endfor %}
+{% endif %}
+----
+
+**Use meaningful variable names**::
+[source,liquid]
+----
+{% comment %}❌ Unclear{% endcomment %}
+{% for e in schema.entities %}
+
+{% comment %}✅ Clear{% endcomment %}
+{% for entity in schema.entities %}
+----
+
+**Access parent carefully**::
+[source,liquid]
+----
+{% if entity.parent %}
+  Schema: {{ entity.parent.id }}
+{% endif %}
+----
+
+**Cache frequently accessed values**::
+[source,liquid]
+----
+{% assign entity_count = schema.entities.size %}
+{% assign type_count = schema.types.size %}
+{% assign total = entity_count | plus: type_count %}
+----
+
+== Next steps
+
+Apply this knowledge:
+
+* link:basic-templates.html[Basic Templates] - Learn template syntax
+* link:filters-and-tags.html[Filters and Tags] - Transform drop data
+* link:documentation-generation.html[Documentation Generation] - Build
+  complete systems
+* link:../../_tutorials/liquid-templates.html[Liquid Templates Tutorial]
+  - Practice exercises
+
+== Summary
+
+Expressir Liquid drops provide:
+
+* ✅ Template-friendly access to all model attributes
+* ✅ Parent-child navigation through relationships
+* ✅ Consistent interface across all drop types
+* ✅ Safe exposure of data without implementation details
+* ✅ Full coverage of EXPRESS constructs
+* ✅ Type information via `_class` attribute
+
+Understanding drops enables effective template creation for EXPRESS
+schema documentation.

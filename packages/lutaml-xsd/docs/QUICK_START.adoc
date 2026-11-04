@@ -1,0 +1,421 @@
+---
+layout: default
+title: Quick start
+nav_order: 3
+---
+= Quick start
+:toc:
+:toclevels: 3
+
+== Purpose
+
+This guide walks you through your first steps with lutaml-xsd: parsing an XSD
+schema, creating an LXR package, and querying types.
+
+== Prerequisites
+
+Ensure lutaml-xsd is installed:
+
+[source,bash]
+----
+gem install lutaml-xsd
+----
+
+See link:INSTALLATION[Installation guide] for detailed instructions.
+
+== Your first XSD parsing
+
+=== Parsing a simple schema
+
+Create a simple XSD file:
+
+Create a simple XSD file:
+
+.Creating example.xsd
+[example]
+====
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="https://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://example.org/schema"
+           xmlns:ex="http://example.org/schema"
+           elementFormDefault="qualified">
+
+  <xs:element name="Person">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="name" type="xs:string"/>
+        <xs:element name="age" type="xs:integer"/>
+        <xs:element name="email" type="xs:string" minOccurs="0"/>
+      </xs:sequence>
+      <xs:attribute name="id" type="xs:string" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:simpleType name="PositiveInteger">
+    <xs:restriction base="xs:integer">
+      <xs:minInclusive value="1"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+</xs:schema>
+----
+====
+
+Parse the schema:
+
+.Parsing XSD with Ruby
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Read and parse the XSD file
+xsd_content = File.read('example.xsd')
+schema = Lutaml::Xsd.parse(xsd_content)
+
+# Access schema properties
+puts "Target namespace: #{schema.target_namespace}"
+puts "Element count: #{schema.element.size}"
+puts "Simple type count: #{schema.simple_type.size}"
+
+# Iterate through elements
+schema.element.each do |element|
+  puts "\nElement: #{element.name}"
+  if element.complex_type
+    puts "  Type: Complex"
+    if element.complex_type.sequence
+      puts "  Children:"
+      element.complex_type.sequence.element.each do |child|
+        puts "    - #{child.name} (#{child.type})"
+      end
+    end
+  end
+end
+----
+
+Output:
+
+[source]
+----
+Target namespace: http://example.org/schema
+Element count: 1
+Simple type count: 1
+
+Element: Person
+  Type: Complex
+  Children:
+    - name (xs:string)
+    - age (xs:integer)
+    - email (xs:string)
+----
+====
+
+== Creating your first LXR package
+
+=== Step 1: Create configuration
+
+Create a YAML configuration file for your schema package:
+
+.Creating my_schemas.yml
+[example]
+====
+[source,yaml]
+----
+files:
+  - example.xsd
+
+namespace_mappings:
+  - prefix: "ex"
+    uri: "http://example.org/schema"
+----
+====
+
+=== Step 2: Build the package
+
+Build an LXR package from the configuration:
+
+.Building package via CLI
+[example]
+====
+[source,bash]
+----
+lutaml-xsd pkg build my_schemas.yml \
+  --name "Example Schemas" \
+  --version "1.0" \
+  --description "Simple example schema package" \
+  --output my_schemas.lxr \
+  --validate
+----
+
+Output:
+
+[source]
+----
+✓ Configuration loaded
+  Files: 1
+  Schema Location Mappings: 0
+  Namespace Mappings: 1
+
+Parsing and resolving schemas...
+✓ Schemas parsed and resolved
+
+Creating package: my_schemas.lxr
+  XSD Mode: include_all
+  Resolution Mode: resolved
+  Serialization Format: marshal
+✓ Package created: my_schemas.lxr
+  Size: 8425 bytes
+
+Validating package...
+✓ Package is valid
+----
+====
+
+=== Step 3: Query types from the package
+
+Now query types from your package:
+
+.Finding types in the package
+[example]
+====
+[source,bash]
+----
+lutaml-xsd type find "ex:PositiveInteger" --from my_schemas.lxr
+----
+
+Output:
+
+[source]
+----
+================================================================================
+Type Resolution: ex:PositiveInteger
+================================================================================
+
+✓ Type found
+
+Qualified Name: ex:PositiveInteger
+Namespace: http://example.org/schema
+Local Name: PositiveInteger
+Schema File: example.xsd
+Type Class: Lutaml::Xsd::SimpleType
+----
+====
+
+== Using packages programmatically
+
+Load and use your package from Ruby:
+
+.Loading package in Ruby
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Load the package
+repo = Lutaml::Xsd::SchemaRepository.from_package('my_schemas.lxr')
+
+# Find a type
+result = repo.find_type('ex:PositiveInteger')
+
+if result.resolved?
+  puts "Found: #{result.qname}"
+  puts "Type: #{result.definition.class.name}"
+  puts "Namespace: #{result.namespace}"
+end
+
+# Get statistics
+stats = repo.statistics
+puts "\nPackage statistics:"
+puts "  Total types: #{stats[:total_types]}"
+puts "  Total namespaces: #{stats[:total_namespaces]}"
+stats[:types_by_category].each do |category, count|
+  puts "  #{category}: #{count}"
+end
+----
+
+Output:
+
+[source]
+----
+Found: ex:PositiveInteger
+Type: Lutaml::Xsd::SimpleType
+Namespace: http://example.org/schema
+
+Package statistics:
+  Total types: 2
+  Total namespaces: 1
+  element: 1
+  simple_type: 1
+----
+====
+
+== Working with RELAX NG schemas
+
+Lutaml::Xsd supports building packages directly from RELAX NG schemas (`.rng`
+XML syntax and `.rnc` compact syntax). The schemas are automatically converted
+to XSD during the build process.
+
+=== Creating a package from an RNC file
+
+.Building from RELAX NG Compact syntax
+[example]
+====
+[source,bash]
+----
+# 1. Create minimal configuration
+cat > rng_config.yml << 'EOF'
+files:
+  - path/to/schema.rnc
+EOF
+
+# 2. Build package
+lutaml-xsd pkg build rng_config.yml \
+  --name "My RNG Schemas" \
+  --output my_rng_schemas.lxr
+
+# 3. Query types as normal
+lutaml-xsd type list --from my_rng_schemas.lxr
+----
+====
+
+=== Using the Ruby API with RNG files
+
+.Loading RNG files programmatically
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Load directly from an RNG file
+repo = Lutaml::Xsd::SchemaRepository.load_from_file('schema.rng')
+
+# Or from an RNC file
+repo = Lutaml::Xsd::SchemaRepository.load_from_file('schema.rnc')
+
+# Query types exactly as with XSD packages
+result = repo.find_type('TypeName')
+puts result.qname if result.resolved?
+----
+====
+
+== Working with schema location mappings
+
+When schemas import other schemas, you need schema location mappings:
+
+=== Creating a schema with imports
+
+.Creating person_extended.xsd
+[example]
+====
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="https://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://example.org/extended"
+           xmlns:ex="http://example.org/schema">
+
+  <xs:import namespace="http://example.org/schema"
+             schemaLocation="example.xsd"/>
+
+  <xs:element name="Employee">
+    <xs:complexType>
+      <xs:complexContent>
+        <xs:extension base="ex:Person">
+          <xs:sequence>
+            <xs:element name="employeeId" type="xs:string"/>
+            <xs:element name="department" type="xs:string"/>
+          </xs:sequence>
+        </xs:extension>
+      </xs:complexContent>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>
+----
+====
+
+=== Adding schema location mappings
+
+Update the configuration to handle imports:
+
+.Updated configuration with mappings
+[example]
+====
+[source,yaml]
+----
+files:
+  - person_extended.xsd
+
+schema_location_mappings:
+  - from: "example.xsd"
+    to: "example.xsd"
+
+namespace_mappings:
+  - prefix: "ex"
+    uri: "http://example.org/schema"
+  - prefix: "ext"
+    uri: "http://example.org/extended"
+----
+
+Build the package:
+
+[source,bash]
+----
+lutaml-xsd pkg build extended_schemas.yml \
+  --output extended.lxr
+----
+====
+
+== Next steps
+
+Now that you've completed the quick start:
+
+. **Explore CLI commands**: link:CLI[Command-line interface reference]
+. **Learn Ruby API**: link:RUBY_API[Ruby API documentation]
+. **Understand LXR packages**: link:LXR_PACKAGES[LXR package concepts]
+. **Master schema mappings**: link:SCHEMA_MAPPINGS[Schema location mappings]
+. **Try real-world examples**:
+  * link:CITYGML_EXAMPLE[Working with CityGML schemas]
+  * link:ISO_TC211_EXAMPLE[Working with ISO/TC 211 schemas]
+
+== Common next tasks
+
+**Parse complex schemas**::
+Learn about handling schemas with imports and includes.
+See: link:SCHEMA_MAPPINGS[Schema mappings]
+
+**Create production packages**::
+Understand package configuration options for different use cases.
+See: link:PACKAGE_CONFIGURATION[Package configuration]
+
+**Query types efficiently**::
+Master the type resolution system.
+See: link:TYPE_RESOLUTION[Type resolution]
+
+**Generate documentation**::
+Use Liquid methods for schema documentation.
+See: link:LIQUID_METHODS[Liquid template methods]
+
+== Troubleshooting
+
+**Import/include not found**::
+Add schema location mappings. See link:SCHEMA_MAPPINGS[Schema mappings]
+
+**Type not resolved**::
+Check namespace mappings. See link:NAMESPACES[Namespaces]
+
+**Package validation fails**::
+Run `lutaml-xsd package validate --verbose` for details
+
+== See also
+
+* link:INSTALLATION[Installation] - Setup instructions
+* link:CLI[CLI commands] - Command reference
+* link:RUBY_API[Ruby API] - Programmatic interface
+* link:LXR_PACKAGES[LXR packages] - Package concepts
+* link:SCHEMA_MAPPINGS[Schema mappings] - Path resolution

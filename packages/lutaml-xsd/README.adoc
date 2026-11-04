@@ -1,0 +1,2366 @@
+=Lutaml::Xsd
+
+https://github.com/lutaml/lutaml-xsd[image:https://img.shields.io/github/stars/lutaml/lutaml-xsd.svg?style=social[GitHub Stars]]
+https://github.com/lutaml/lutaml-xsd[image:https://img.shields.io/github/forks/lutaml/lutaml-xsd.svg?style=social[GitHub Forks]]
+image:https://img.shields.io/gem/v/lutaml-xsd.svg[RubyGems Version]
+image:https://img.shields.io/github/license/lutaml/lutaml-xsd.svg[License]
+image:https://github.com/lutaml/lutaml-xsd/actions/workflows/rake.yml/badge.svg["Build", link="https://github.com/lutaml/lutaml-xsd/actions/workflows/rake.yml"]
+
+== Purpose
+
+Lutaml::Xsd is a Ruby gem designed to parse and manipulate XML Schema Definition
+(XSD) files. It provides a robust framework for handling XSD elements,
+attributes, complex types, and all other XSD constructs, allowing users to
+programmatically work with XML schemas. It also supports RELAX NG (RNG/RNC)
+schemas through automatic conversion to XSD.
+
+NOTE: For UML-to-XSD mapping and YAML documentation generation (including
+ShapeChange integration), see the
+https://github.com/lutaml/lutaml-klin[lutaml-klin] gem which orchestrates both
+https://github.com/lutaml/lutaml[lutaml] (for UML parsing) and lutaml-xsd (for
+XSD schema operations).
+
+The `lutaml-xsd` gem provides a Ruby library for working with XSD schemas,
+allowing users to parse XSD files into Ruby objects, manipulate schema
+structures, and serialize them back to XML. It is built on top of the
+`lutaml-model` serialization framework, which provides a flexible and extensible
+way to define data models.
+
+This library is particularly useful for developers working with XML-based
+standards, schema transformation tools, code generators, and XML validation
+systems.
+
+== Origin
+
+The name "Lutaml" is pronounced as "Looh-tah-mel".
+
+The name "Lutaml" comes from the Latin word for clay, "Lutum", and "ML" for
+"Markup Language". Just as clay can be molded and modeled into beautiful and
+practical end products, the Lutaml::Model gem is used for data modeling,
+allowing you to shape and structure your data into useful forms.
+
+== Features
+
+* <<spa-documentation,SPA documentation generation>> - Modern, responsive,
+  interactive HTML documentation with schema navigation and search
+  - Single-file mode
+  - Entrypoint prioritization in sidebar
+  - Schema detail views with elements/types/attributes tables
+  - Interactive group tree view with nested choices and sequences
+  - Inline complex type display for anonymous types within elements
+  - Hash-based navigation with browser back/forward support
+  - Dark mode with automatic theme detection
+* <<rng-rnc-support,RELAX NG (RNG/RNC) support>> - Convert and build from
+  RELAX NG schemas
+  - Automatic RNG/RNC to XSD conversion via `RngToXsdConverter`
+  - Build LXR packages directly from `.rng` and `.rnc` files
+  - Support for both XML syntax (`.rng`) and compact syntax (`.rnc`)
+  - Automatic include directive conversion
+* <<schema-validation,XSD schema validation>> with automatic version detection
+  - Pre-parsing validation to ensure valid XSD schema documents
+  - Automatic detection of XSD 1.0 vs 1.1 features
+  - Support for both W3C XML Schema 1.0 and 1.1 standards
+  - Comprehensive error messages for invalid schemas
+* <<package-composition,Package composition>> - Compose multiple LXR packages with
+  conflict detection and resolution
+  - Configurable conflict resolution strategies (keep, override, error)
+  - Namespace URI remapping to avoid conflicts
+  - Schema filtering with glob patterns (exclude/include)
+  - Priority-based conflict resolution
+  - See link:docs/PACKAGE_COMPOSITION.adoc[Package Composition Guide]
+* <<cli-commands,Command-line interface>>
+  - `pkg` commands for package inspection
+  - `xml` commands for XML validation
+  - `build` commands for package creation
+  - `spa` command for documentation generation
+* <<lxr-packages,LXR (LutaML XSD Repository) packages>> for distributable,
+  pre-indexed schema collections
+* <<parsing-xsd,XSD file parsing>> with full schema structure support
+* <<schema-representation,Schema object representation>> with all XSD
+  components
+* <<include-import,Include and import handling>> with location resolution
+* <<schema-mappings,Schema location mappings>> for local/remote schema
+  redirection
+* <<schema-repository,SchemaRepository>> for namespace-aware type resolution
+  across multiple schemas
+* Multiple serialization formats (marshal, json, yaml, parse)
+* Flexible package configuration with three independent axes (XSD mode,
+  resolution mode, serialization format)
+* Interactive package building from XSD files
+* Instant schema loading with pre-serialized schemas
+* Pre-built type indexes for fast qualified name lookups
+* <<serialization,XML serialization>> with round-trip compatibility
+* <<liquid-methods,Liquid template methods>> for schema introspection and
+  documentation
+* Integration with the `lutaml-model` serialization framework
+* Support for complex types, simple types, elements, attributes, and groups
+* Pattern-based schema location mapping with regular expressions
+* URL fetching for remote schemas with local caching support
+
+[[spa-documentation]]
+== XSD documentation generation
+
+=== General
+
+Lutaml::Xsd can generate modern, responsive, single-page application (SPA)
+documentation for your XML schemas. The generated documentation provides an
+interactive, user-friendly interface for exploring schema structures, types,
+elements, and relationships.
+
+A LXR package is required as input to generate the documentation.
+
+[NOTE]
+====
+**Frontend assets (frontend/dist/):**
+
+This directory is gitignored. The way assets are resolved differs between:
+
+* **Installed as a gem (RubyGems.org):** Assets are pre-built and bundled in the gem
+  at the root level. SPA generation works out of the box - no build required.
+
+* **Using from git (development):** `frontend/dist/` is NOT in the repo. You MUST
+  build the frontend before running SPA generation:
+
+[source,bash]
+----
+bundle exec rake build_frontend
+----
+
+If you see an error about missing frontend assets, run the build command above.
+====
+
+=== Quick start
+
+Generate single-file documentation:
+
+[source,bash]
+----
+# Generate standalone HTML file with semantic URLs
+lutaml-xsd spa your_package.lxr --output docs.html
+
+# Generate with custom title
+lutaml-xsd spa schemas.lxr --output docs.html \
+  --title "My Schema Documentation"
+----
+
+.Generated SPA includes:
+* Schema navigation with entrypoints prioritized
+* Element and type detail views
+* XML Instance Representation for each component
+* Inline complex type display for anonymous types within elements
+* Interactive group tree view showing nested choices, sequences, and sub-groups
+* Clickable cross-references throughout
+* xs3p-quality documentation
+
+=== Navigation and Linking
+
+The generated SPA provides comprehensive navigation:
+
+**Semantic URLs:**
+All components have bookmarkable, human-readable URLs:
+
+[source]
+----
+#/schemas/gml-base                              # Schema overview
+#/schemas/gml-base/elements/abstract-gml        # Element detail
+#/schemas/gml-base/types/type-abstract-gml-type # Complex type detail
+----
+
+**Cross-references:**
+All type and element references are clickable links:
+
+* Element type → type detail page
+* Base type → parent type page
+* Schema name → schema overview
+* Type columns in tables → type details
+* Element tags in XML instances → element details
+
+**XML Instance Examples:**
+Each element and type shows an XML Instance Representation demonstrating usage:
+
+[source,xml]
+----
+<Element
+ attribute="type" [0..1]
+>
+  Start Sequence [1..1]
+    <childElement> ... </childElement> [0..*]
+  End Sequence
+</Element> [1..1]
+----
+
+With xs3p-inspired color coding:
+* Blue - Element tags
+* Green - Attribute names
+* Red - Type values
+* Gray - Cardinality and model groups
+
+=== Output modes
+
+==== Single-file mode
+
+Generates a standalone HTML file with all assets (CSS, JavaScript, data) embedded.
+Perfect for:
+
+* Email attachments or file sharing
+* Offline documentation
+* Simple deployment (just one file)
+* Version control (single file to track)
+
+[source,bash]
+----
+lutaml-xsd spa schemas.lxr --output schema-docs.html
+----
+
+=== Configuration
+
+The SPA generator is fully configurable via YAML files in `config/spa/`:
+
+* `config/spa/ui_theme.yml` - Colors, typography, layout customization
+* `config/spa/features.yml` - Feature toggles and behavior settings
+* `config/spa/templates.yml` - Template structure and components
+
+.Example: Custom configuration
+[example]
+====
+[source,bash]
+----
+# Generate with custom configuration
+lutaml-xsd spa schemas.lxr \
+  --output custom-docs.html \
+  --config config/my-custom-spa-config.yml \
+  --title "Custom Schema Docs"
+----
+====
+
+=== Documentation
+
+For comprehensive documentation on SPA generation, see:
+
+* link:docs/SPA_GUIDE.adoc[SPA User Guide] - Complete usage guide
+* link:docs/SPA_CONFIGURATION.adoc[Configuration Reference] - All configuration options
+* link:docs/SPA_DEPLOYMENT.adoc[Deployment Guide] - Hosting and CI/CD integration
+* link:docs/SPA_ARCHITECTURE.adoc[Architecture Documentation] - Design and extension guide
+
+[[rng-rnc-support]]
+== RELAX NG (RNG/RNC) support
+
+=== General
+
+Lutaml::Xsd can convert RELAX NG schema files (`.rng` XML syntax and `.rnc`
+compact syntax) to XSD, allowing you to build LXR packages and generate
+documentation from RELAX NG schemas using the same tools and workflows.
+
+The `RngToXsdConverter` follows the same mapping logic as jing-trang's RNG-to-XSD
+conversion, handling define resolution, element classification, collision
+detection, and include directives.
+
+=== Building from RNG/RNC files
+
+Use `.rng` or `.rnc` files directly in your YAML configuration:
+
+[source,yaml]
+----
+# config.yml
+files:
+  - path/to/schema.rng
+----
+
+Or point to a compact syntax file:
+
+[source,yaml]
+----
+# config.yml
+files:
+  - path/to/schema.rnc
+----
+
+Then build the package as usual:
+
+[source,bash]
+----
+lutaml-xsd pkg build config.yml --output schema.lxr
+----
+
+During package creation, the RNG/RNC file is automatically converted to XSD.
+The generated `.xsd` file is written alongside the original source file (or to a
+temporary directory if the original location is not writable).
+
+=== Ruby API
+
+.Load and query an RNG schema programmatically
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Load directly from an RNG or RNC file
+repo = Lutaml::Xsd::SchemaRepository.load_from_file('schema.rng')
+
+# Or use the converter directly
+require 'rng'
+grammar = Rng.parse(File.read('schema.rng'))
+xsd_schema = Lutaml::Xsd::RngToXsdConverter.new(grammar).convert
+
+# Serialize to XML
+puts xsd_schema.to_formatted_xml
+----
+====
+
+=== Conversion details
+
+The converter handles:
+
+* **Define resolution** — Named `<define>` blocks are resolved and expanded
+* **Include directives** — RNC `include "path"` and RNG `<include href="..."/>` are
+  converted to XSD `<include>` elements
+* **Collision detection** — Element name collisions from multiple defines are
+  detected and handled
+* **Pattern mapping** — RNG patterns (`<element>`, `<attribute>`, `<choice>`,
+  `<group>`, `<interleave>`, `<optional>`, `<zeroOrMore>`, `<oneOrMore>`,
+  `<data>`, `<value>`, `<list>`, `<text>`) are mapped to their XSD equivalents
+* **Attribute classification** — Patterns that resolve to attributes (including
+  those wrapped in `<optional>`) are correctly classified
+* **Namespace handling** — Target namespace is preserved from the source grammar
+
+[[schema-validation]]
+== XSD schema validation
+
+=== General
+
+Lutaml::Xsd provides pre-parsing validation of XSD schema documents to ensure
+they are well-formed and compliant with XML Schema standards before attempting
+to parse them. This helps catch errors early and provides clear, actionable
+error messages.
+
+The schema validator supports both W3C XML Schema 1.0 and 1.1 standards, with
+automatic detection of version-specific features. Validation is automatically
+enabled when parsing schemas via [`Lutaml::Xsd.parse()`](lib/lutaml/xsd.rb:47) but can be disabled
+if needed.
+
+=== Instance validation
+
+Beyond schema-document checks, the `Lutaml::Xsd::Validation` module validates
+XML *instances* against parsed schemas: element structure and content models
+(sequences, choices, nested groups, `xs:any` wildcards with namespace
+constraints and `processContents` enforcement), attribute presence, typing and
+`xs:anyAttribute` on every shape, builtin/simple-type facets, `xsi:nil`
+handling, `xsi:type` dynamic resolution, key/keyref/unique identity
+constraints, and schema-side Unique Particle Attribution checking via
+`Lutaml::Xsd::Validation::UniqueParticleAttribution`.
+
+The pipeline passes 42/42 checks of its conformance corpus
+(`rake conformance`); measured results live in `docs/CONFORMANCE.adoc` and
+`TODO.conformance.md`.
+
+[NOTE]
+====
+Guaranteed feature set requires `lutaml-model >= 0.8.123` (the gemspec
+floor). Keyref resolution and complexType/extension `xs:anyAttribute`
+checking depend on model mappings introduced there.
+====
+
+=== Validation checks
+
+The schema validator performs these checks:
+
+* **XML syntax correctness**: Ensures the document is well-formed XML
+* **XML Schema namespace**: Verifies the schema uses the correct W3C namespace
+  (`http://www.w3.org/2001/XMLSchema`)
+* **Version compliance**: Detects XSD 1.1 features (like `xs:assert`) and
+  ensures they're only used with XSD 1.1 validation
+* **Root element validation**: Confirms the document root is `xs:schema`
+
+=== Automatic version detection
+
+The validator can automatically detect whether a schema uses XSD 1.0 or 1.1
+features:
+
+.Automatic XSD version detection
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+xsd_content = File.read('schema.xsd')
+
+# Detect version automatically
+version = Lutaml::Xsd::SchemaValidator.detect_version(xsd_content)
+puts "Detected XSD version: #{version}"  # "1.0" or "1.1"
+
+# Use detected version for validation
+validator = Lutaml::Xsd::SchemaValidator.new(version: version)
+validator.validate(xsd_content)  # Returns true or raises error
+----
+====
+
+XSD 1.1 features that trigger automatic detection:
+
+* `xs:assert` elements (CTA - Complex Type Assertions)
+* `xs:assertion` elements
+* `xs:openContent` elements
+* `xs:override` elements
+* `vc:minVersion` attributes
+
+=== Using schema validation
+
+==== Automatic validation (recommended)
+
+Schema validation is automatically enabled when using [`Lutaml::Xsd.parse()`](lib/lutaml/xsd.rb:47):
+
+.Automatic schema validation during parsing
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+xsd_content = File.read('schema.xsd')
+
+# Schema is automatically validated before parsing
+schema = Lutaml::Xsd.parse(xsd_content)
+
+# If validation fails, SchemaValidationError is raised
+begin
+  invalid_content = '<root>Not a schema</root>'
+  schema = Lutaml::Xsd.parse(invalid_content)
+rescue Lutaml::Xsd::SchemaValidationError => e
+  puts "Invalid schema: #{e.message}"
+  # Error: Not a valid XSD schema document
+end
+----
+====
+
+==== Disabling automatic validation
+
+To skip schema validation (not recommended):
+
+.Disabling schema validation
+[example]
+====
+[source,ruby]
+----
+# Parse without schema validation
+schema = Lutaml::Xsd.parse(xsd_content, validate_schema: false)
+
+# Note: This may lead to parsing errors if the schema is malformed
+----
+====
+
+==== Manual validation
+
+For standalone schema validation without parsing:
+
+.Manual schema validation
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+xsd_content = File.read('schema.xsd')
+
+# Create validator (default XSD 1.0)
+validator = Lutaml::Xsd::SchemaValidator.new
+
+# Validate the schema
+begin
+  validator.validate(xsd_content)
+  puts "Schema is valid!"
+rescue Lutaml::Xsd::SchemaValidationError => e
+  puts "Validation failed: #{e.message}"
+end
+
+# Validate against XSD 1.1
+validator_1_1 = Lutaml::Xsd::SchemaValidator.new(version: "1.1")
+validator_1_1.validate(xsd_content)
+----
+====
+
+==== CLI validation
+
+Validate XSD schema files from the command line:
+
+.Validating schemas with CLI
+[example]
+====
+[source,bash]
+----
+# Validate a single schema
+lutaml-xsd validate-schema schema.xsd
+
+# Validate multiple schemas
+lutaml-xsd validate-schema schema1.xsd schema2.xsd schema3.xsd
+
+# Validate with glob patterns
+lutaml-xsd validate-schema schemas/*.xsd
+
+# Validate against XSD 1.1
+lutaml-xsd validate-schema schema.xsd --version 1.1
+
+# Verbose output with version detection
+lutaml-xsd validate-schema schema.xsd --verbose
+
+# JSON output for CI/CD integration
+lutaml-xsd validate-schema schema.xsd --format json
+
+# YAML output for CI/CD integration
+lutaml-xsd validate-schema schema.xsd --format yaml
+----
+
+Text output (default):
+
+[source]
+----
+✓ schema.xsd
+
+Summary:
+  Total: 1
+  Valid: 1
+  Invalid: 0
+----
+
+With verbose mode:
+
+[source]
+----
+✓ schema.xsd (XSD 1.0)
+
+Summary:
+  Total: 1
+  Valid: 1
+  Invalid: 0
+----
+
+JSON output for CI/CD:
+
+[source,json]
+----
+{
+  "summary": {
+    "total": 2,
+    "valid": 1,
+    "invalid": 1
+  },
+  "results": [
+    {
+      "file": "valid_schema.xsd",
+      "valid": true,
+      "detected_version": "1.0"
+    },
+    {
+      "file": "invalid_schema.xsd",
+      "valid": false,
+      "error": "Not a valid XSD schema: root element must be 'schema', found 'root'"
+    }
+  ]
+}
+----
+
+YAML output for CI/CD:
+
+[source,yaml]
+----
+summary:
+  total: 2
+  valid: 1
+  invalid: 1
+results:
+- file: valid_schema.xsd
+  valid: true
+  detected_version: '1.0'
+- file: invalid_schema.xsd
+  valid: false
+  error: "Not a valid XSD schema: root element must be 'schema', found 'root'"
+----
+
+The `--format` option supports three formats:
+
+* `text` (default): Human-readable output with checkmarks and summary
+* `json`: Machine-readable JSON format for CI/CD pipelines
+* `yaml`: Machine-readable YAML format for CI/CD pipelines
+
+Both JSON and YAML formats include complete validation results with file paths, validity status, error messages, and detected versions (when `--verbose` is used).
+====
+
+=== Validation errors
+
+The validator provides clear error messages with context:
+
+.Common validation errors
+[example]
+====
+[source,bash]
+----
+# Missing XML Schema namespace
+$ lutaml-xsd validate-schema bad-schema.xsd
+
+✗ bad-schema.xsd
+  Error: Schema element must be in the XML Schema namespace
+  (http://www.w3.org/2001/XMLSchema)
+
+# Using XSD 1.1 features with 1.0 validator
+$ lutaml-xsd validate-schema schema-with-assert.xsd --version 1.0
+
+✗ schema-with-assert.xsd
+  Error: XSD 1.1 features detected (xs:assert) but validating as XSD 1.0
+
+# Malformed XML
+$ lutaml-xsd validate-schema malformed.xsd
+
+✗ malformed.xsd
+  Error: Invalid XML syntax: Missing closing tag
+----
+====
+
+=== See also
+
+* link:docs/CLI.adoc[Complete CLI reference]
+* link:docs/RUBY_API.adoc[Ruby API documentation]
+
+[[cli-commands]]
+== Command-line interface
+
+=== General
+
+The `lutaml-xsd` command-line interface provides powerful tools for inspecting,
+querying, and managing XSD schema packages. Commands are organized into four
+MECE (Mutually Exclusive, Collectively Exhaustive) categories based on what
+they operate on.
+
+=== Command structure
+
+The CLI follows this structure:
+
+[source,bash]
+----
+lutaml-xsd <CATEGORY> <command> [arguments] [options]
+----
+
+Where `<CATEGORY>` is one of:
+
+`pkg`:: Package inspection commands (operate on `.lxr` files)
+`xml`:: XML validation commands (operate on `.xml` files)
+`build`:: Package creation commands (operate on `.yml` configs)
+`spa`:: Documentation generation (operate on `.lxr` files)
+
+This structure ensures:
+
+* **Mutually exclusive**: Each command belongs to exactly one category
+* **Collectively exhaustive**: All operations are covered
+* **Clear separation**: Commands grouped by input type, not feature
+
+=== PKG commands (package inspection)
+
+All commands for inspecting and querying LXR packages.
+
+==== Listing schemas
+
+List all schemas in a package with namespace URIs.
+
+[source,bash]
+----
+# List all schemas
+lutaml-xsd pkg ls <package.lxr>
+
+# Detailed listing (like ls -l)
+lutaml-xsd pkg ls --long <package.lxr>
+
+# Tree view of package contents
+lutaml-xsd pkg tree <package.lxr>
+
+# Full package details
+lutaml-xsd pkg inspect <package.lxr>
+----
+
+.Listing schemas with namespace URIs
+[example]
+====
+[source,bash]
+----
+$ lutaml-xsd pkg ls pkg/urban_function_repository.lxr
+
+SCHEMAS (119 total)
+┌─────────────────────────────────────────┬───────────────────┬──────────┬───────┐
+│ Namespace URI                           │ File              │ Elements │ Types │
+├─────────────────────────────────────────┼───────────────────┼──────────┼───────┤
+│ https://www.geospatial.jp/iur/urf/3.2   │ urbanFunction.xsd │      245 │ 1,164 │
+│ http://www.w3.org/1999/xlink            │ xlinks.xsd        │       12 │    25 │
+│ http://www.opengis.net/gml/3.2          │ basicTypes.xsd    │       89 │   234 │
+│ ... (ALL 119 schemas shown)             │                   │          │       │
+└─────────────────────────────────────────┴───────────────────┴──────────┴───────┘
+
+⭐ 1 entrypoint, 118 dependencies
+----
+
+The output uses the `table-tennis` gem for beautiful terminal tables with:
+
+* Auto-theming based on terminal background (light/dark)
+* Zebra striping for readability
+* Proper column alignment
+* Unicode box-drawing characters
+
+All listings show **complete output** with no truncation.
+====
+
+==== Entrypoints and dependencies
+
+Show which XSD files are entry points and their dependency tree.
+
+[source,bash]
+----
+# List entrypoints and dependencies
+lutaml-xsd pkg entrypoints <package.lxr>
+
+# Show dependency tree from entrypoints
+lutaml-xsd pkg entrypoints --tree <package.lxr>
+
+# Limit tree depth
+lutaml-xsd pkg entrypoints --tree --depth 3 <package.lxr>
+----
+
+.Viewing entrypoint dependency tree
+[example]
+====
+[source,bash]
+----
+$ lutaml-xsd pkg entrypoints --tree pkg/urban_function_repository.lxr
+
+ENTRYPOINTS & DEPENDENCY TREE
+═══════════════════════════════════════════════════════════════
+
+📄 urbanFunction.xsd ⭐ ENTRYPOINT
+   URI: https://www.geospatial.jp/iur/urf/3.2
+   Types: 1,164 | Elements: 245
+
+   ├── import → xlinks.xsd
+   │   URI: http://www.w3.org/1999/xlink
+   │   └── (no dependencies)
+   │
+   ├── import → uro/UrbanObject.xsd
+   │   URI: https://www.geospatial.jp/iur/uro/3.2
+   │   ├── import → gml/Feature.xsd
+   │   │   URI: http://www.opengis.net/gml/3.2
+   │   │   ├── include → gmlBase.xsd
+   │   │   │   ├── include → basicTypes.xsd
+   │   │   │   │   ├── include → dictionary.xsd
+   │   │   │   │   └── include → gmlBase.xsd (↻ circular)
+   │   │   │   └── include → feature.xsd
+   │   │   │       └── ... (all shown)
+   │   │   │
+   │   │   ├── import → core/CityModel.xsd
+   │   │   │   URI: http://www.opengis.net/citygml/3.0
+   │   │   │   └── ... (all shown here)
+   │   │   │
+   │   │   └── import → gml/AbstractGML.xsd
+   │   │       URI: http://www.opengis.net/gml/3.2
+   │   │       └── (resolved above)
+   │   │
+   │   └── import → gml/AbstractGML.xsd
+   │       URI: http://www.opengis.net/gml/3.2
+   │       └── (resolved above)
+   │
+   └── (17 more levels shown)
+
+118 dependencies total → Review ↻
+----
+
+The tree view:
+
+* Shows complete import/include hierarchy
+* Displays namespace URI for each schema
+* Identifies circular dependencies
+* Never truncates output
+====
+
+==== Type definition display
+
+Show the actual XSD definition for types, elements, and attributes.
+
+[source,bash]
+----
+# Show type XSD definition
+lutaml-xsd pkg type-def <qname> <package.lxr>
+
+# Show element XSD definition
+lutaml-xsd pkg element-def <qname> <package.lxr>
+
+# Show attribute XSD definition
+lutaml-xsd pkg attribute-def <qname> <package.lxr>
+----
+
+.Displaying type definitions with XSD source
+[example]
+====
+[source,bash]
+----
+$ lutaml-xsd pkg type-def "gml:PointType" gml.lxr
+
+TYPE DEFINITION: gml:PointType
+═══════════════════════════════════════════════════════════════
+Namespace: http://www.opengis.net/gml/3.2
+File: geometryBasic0d1d.xsd
+Line: 156
+Category: Complex Type
+
+XSD DEFINITION:
+───────────────────────────────────────────────────────────────
+<xs:complexType name="PointType">
+  <xs:annotation>
+    <xs:documentation>
+      A Point is defined by a single coordinate tuple.
+    </xs:documentation>
+  </xs:annotation>
+  <xs:complexContent>
+    <xs:extension base="gml:AbstractGeometricPrimitiveType">
+      <xs:sequence>
+        <xs:choice>
+          <xs:element ref="gml:pos"/>
+          <xs:element ref="gml:coordinates"/>
+        </xs:choice>
+      </xs:sequence>
+    </xs:extension>
+  </xs:complexContent>
+</xs:complexType>
+
+INHERITS FROM:
+  gml:AbstractGeometricPrimitiveType
+    └─ gml:AbstractGeometryType
+       └─ gml:AbstractGMLType
+
+USED BY (15 types):
+┌────────────────────────────┬─────────────────┐
+│ Type                       │ Location        │
+├────────────────────────────┼─────────────────┤
+│ gml:PointPropertyType      │ geometry.xsd:89 │
+│ gml:MultiPointType         │ geometry.xsd:234│
+│ ... (all 15 shown)         │                 │
+└────────────────────────────┴─────────────────┘
+----
+
+This command:
+
+* Shows the exact XSD source code
+* Displays file location with line number
+* Shows inheritance hierarchy
+* Lists all types that use this definition
+* Always includes namespace URIs
+====
+
+==== Namespace filtering
+
+Show all types, elements, or attributes in a specific namespace.
+
+[source,bash]
+----
+# Show all types in a namespace
+lutaml-xsd pkg namespace-types <uri-or-prefix> <package.lxr>
+
+# Show all elements in a namespace
+lutaml-xsd pkg namespace-elements <uri-or-prefix> <package.lxr>
+
+# Show all attributes in a namespace
+lutaml-xsd pkg namespace-attributes <uri-or-prefix> <package.lxr>
+----
+
+.Filtering types by namespace
+[example]
+====
+[source,bash]
+----
+$ lutaml-xsd pkg namespace-types "urf" pkg/urban_function_repository.lxr
+
+NAMESPACE: https://www.geospatial.jp/iur/urf/3.2 (prefix: urf)
+═══════════════════════════════════════════════════════════════
+
+COMPLEX TYPES (892)
+┌──────────────────────────────────┬──────────┬────────────┬──────────────┐
+│ Type Name                        │ Elements │ Attributes │ Base Type    │
+├──────────────────────────────────┼──────────┼────────────┼──────────────┤
+│ urf:UrbanFacilityType            │       12 │          3 │ gml:Feature  │
+│ urf:PublicTransportationType     │        8 │          2 │ gml:Feature  │
+│ ... (ALL 892 types shown)        │          │            │              │
+└──────────────────────────────────┴──────────┴────────────┴──────────────┘
+
+SIMPLE TYPES (25)
+┌──────────────────────────────────┬───────────────┬─────────────┐
+│ Type Name                        │ Base Type     │ Restriction │
+├──────────────────────────────────┼───────────────┼─────────────┤
+│ urf:StatusType                   │ xs:string     │ enumeration │
+│ urf:CategoryType                 │ xs:string     │ enumeration │
+│ ... (ALL 25 shown)               │               │             │
+└──────────────────────────────────┴───────────────┴─────────────┘
+----
+
+This is useful for:
+
+* Understanding what's defined in each namespace
+* Finding all types from a specific schema standard
+* Comparing type coverage across namespaces
+====
+
+==== Type queries
+
+Query and explore types within a package.
+
+[source,bash]
+----
+# Find a specific type
+lutaml-xsd pkg type <qname> <package.lxr>
+
+# Show type dependencies
+lutaml-xsd pkg type-deps <qname> <package.lxr>
+
+# Show what depends on a type
+lutaml-xsd pkg type-uses <qname> <package.lxr>
+
+# Show type hierarchy
+lutaml-xsd pkg type-hierarchy <qname> <package.lxr>
+
+# List all types
+lutaml-xsd pkg type-list <package.lxr>
+----
+
+==== Package statistics
+
+Display package statistics and metrics.
+
+[source,bash]
+----
+# Show package statistics
+lutaml-xsd pkg stats <package.lxr>
+
+# Coverage analysis from entry points
+lutaml-xsd pkg coverage <package.lxr> --entry <schema-name>
+----
+
+=== XML commands (XML validation)
+
+Validate XML instance files against XSD schemas.
+
+[source,bash]
+----
+# Validate against a schema file
+lutaml-xsd xml validate <file.xml> --schema <file.xsd>
+
+# Validate against a package
+lutaml-xsd xml validate <file.xml> --package <file.lxr>
+
+# Batch validation
+lutaml-xsd xml validate-batch <directory/> --package <file.lxr>
+----
+
+=== BUILD commands (package creation)
+
+Create LXR packages from configurations. Supports XSD, RNG, and RNC input
+files.
+
+[source,bash]
+----
+# Build from YAML config (XSD files)
+lutaml-xsd pkg build <config.yml>
+
+# Build from RNG/RNC files (automatically converted to XSD)
+lutaml-xsd pkg build <config.yml>  # config.yml can reference .rng/.rnc files
+
+# Interactive initialization
+lutaml-xsd build init <entrypoint.xsd>
+
+# Quick build + validate + stats
+lutaml-xsd build quick <config.yml>
+
+# Build with smart caching
+lutaml-xsd build auto <config.yml>
+----
+
+==== Build warnings
+
+When building packages, individual warnings are displayed for any unresolved
+references.
+
+.Package build with warnings
+[example]
+====
+[source,bash]
+----
+$ lutaml-xsd pkg build config.yml
+
+Building package from config...
+
+✓ Parsing urbanFunction.xsd
+✓ Resolving imports: xlinks.xsd
+⚠ Warning: Reference not resolved in UrbanObject.xsd:234
+    Type "core:BuildingType" not found
+    Namespace: http://www.opengis.net/citygml/3.0
+    Hint: Add core CityGML schemas to dependencies
+
+✓ Resolving imports: gml/Feature.xsd
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Status: ✓ Package created with 1 warning(s)
+Action: Review warnings and update config if needed
+----
+====
+
+Each warning shows:
+
+* Location (file and line number)
+* Unresolved reference name
+* Namespace URI
+* Actionable hint for resolution
+====
+
+=== SPA command (documentation generation)
+
+Generate documentation from LXR packages.
+
+[source,bash]
+----
+# Generate single-file documentation
+lutaml-xsd spa <package.lxr> --output docs.html
+
+# Generate with custom title
+lutaml-xsd spa <package.lxr> --output docs.html --title "My Docs"
+----
+
+=== Table formatting
+
+All CLI table output uses the `table-tennis` gem for beautiful, auto-themed
+terminal tables.
+
+Features:
+
+* **Auto-theming**: Detects terminal background (light/dark)
+* **Zebra stripes**: Alternating row colors for readability
+* **Color scales**: Numeric columns use color gradients
+* **Row numbers**: Optional line numbering
+* **Search highlighting**: Highlights search terms in output
+
+.Table display features
+[example]
+====
+[source,bash]
+----
+# Tables automatically adapt to your terminal theme
+$ lutaml-xsd pkg ls package.lxr
+
+# In dark terminal: light text on dark background
+# In light terminal: dark text on light background
+
+# Zebra stripes improve readability for long lists
+# Color scales visualize numeric columns (more = redder/greener)
+----
+====
+
+
+== Installation
+
+Add this line to your application's Gemfile:
+
+[source,ruby]
+----
+gem 'lutaml-xsd'
+----
+
+And then execute:
+
+[source,sh]
+----
+$ bundle install
+----
+
+Or install it yourself as:
+
+[source,sh]
+----
+$ gem install lutaml-xsd
+----
+
+== Examples
+
+The `examples/` directory contains practical demonstrations organized by complexity:
+
+* **link:examples/01-simple/README.adoc[01-simple]** (★☆☆☆☆) - Basic schemas with no dependencies, perfect for learning
+  - Building LXR packages from YAML configuration
+  - Type searching and resolution
+  - Both Ruby API and CLI examples
+
+* **link:examples/02-urban-function/README.adoc[02-urban-function]** (★★★★☆) - Complex i-UR schemas with extensive imports
+  - Real-world Japanese urban planning standards
+  - Schema location mapping patterns
+  - 200+ types across multiple namespaces
+
+* **link:examples/03-unitsml/README.adoc[03-unitsml]** (★★☆☆☆) - OASIS UnitsML scientific standard
+  - Units of measure vocabulary
+  - Self-contained scientific schemas
+  - Domain-specific search examples
+
+* **link:examples/04-metaschema/README.adoc[04-metaschema]** (★★★★★) - NIST Metaschema (advanced)
+  - Self-referential schema patterns
+  - Meta-level type definitions
+  - Schemas defining schemas
+
+Each category includes:
+
+* `config.yml` - Visible package configuration
+* `ruby-api/example.rb` - Programmatic usage
+* `cli/run.sh` - Command-line usage
+* `README.adoc` - Category-specific documentation
+
+See link:examples/README.md[examples/README.md] for complete guidance.
+
+== Architecture
+
+=== XSD object hierarchy
+
+The following diagram illustrates the hierarchical structure of XSD objects
+and their relationships:
+
+[source]
+----
+                        Schema
+                          │
+          ┌───────────────┼───────────────┐
+          │               │               │
+       Elements      ComplexTypes    SimpleTypes
+          │               │               │
+          │       ┌───────┴───────┐       │
+          │       │               │       │
+      Attributes Sequences    Extensions  │
+          │       │           Restrictions│
+          │   ┌───┴───┐           │       │
+          │   │       │           │       │
+      Groups Elements Choice      │   Facets
+                  │               │
+                  │               │
+              Attributes      Attributes
+----
+
+.XSD Model class relationships
+[source]
+----
+   Schema
+     ├── element: [Element]
+     ├── complex_type: [ComplexType]
+     ├── simple_type: [SimpleType]
+     ├── attribute: [Attribute]
+     ├── attribute_group: [AttributeGroup]
+     ├── group: [Group]
+     ├── notation: [Notation]
+     ├── import: [Import]
+     └── include: [Include]
+
+   Element
+     ├── name: String
+     ├── type: String
+     ├── ref: String
+     ├── min_occurs: String
+     ├── max_occurs: String
+     ├── complex_type: ComplexType
+     └── simple_type: SimpleType
+
+   ComplexType
+     ├── name: String
+     ├── sequence: Sequence
+     ├── choice: Choice
+     ├── all: All
+     ├── attribute: [Attribute]
+     ├── attribute_group: [AttributeGroup]
+     ├── simple_content: SimpleContent
+     └── complex_content: ComplexContent
+----
+
+=== Data transformation flow
+
+The following diagram shows how XSD and RNG/RNC files are processed through the
+parsing pipeline:
+
+[source]
+----
+╔═══════════════════╗   ╔═══════════════════╗   ╔═══════════════════════╗
+║   XSD File(s)     ║   ║  RNG/RNC File(s)  ║   ║  Schema Mappings      ║
+║                   ║   ║                   ║   ║  (Local redirects)    ║
+╚═════════╦═════════╝   ╚═════════╦═════════╝   ╚═══════════╦═══════════╝
+          ║                       ║                         ║
+          ║             ╔═════════╩════════════╗              ║
+          ║             ║ RngToXsdConverter    ║              ║
+          ║             ║ (RNG/RNC → XSD)     ║              ║
+          ║             ╚═════════╦════════════╝              ║
+          ║                       ║                         ║
+          ╚════════════╦══════════╩═══════════════════════════╝
+                       ║
+                       ▼
+              ┌────────────────┐
+              │  XSD Parser    │
+              │  (XML → Model) │
+              └────────┬───────┘
+                       │
+          ┌────────────┼────────────┐
+          │            │            │
+          ▼            ▼            ▼
+    ┌─────────┐  ┌─────────┐  ┌─────────┐
+    │ Schema  │  │ Element │  │  Type   │
+    │ Object  │  │ Objects │  │ Objects │
+    └────┬────┘  └────┬────┘  └────┬────┘
+         │            │            │
+         └────────────┼────────────┘
+                      │
+                      ▼
+              ┌────────────────┐
+              │  Manipulation  │
+              │  & Traversal   │
+              └────────┬───────┘
+                       │
+          ┌────────────┼────────────┐
+          │            │            │
+          ▼            ▼            ▼
+    ┌─────────┐  ┌─────────┐  ┌─────────┐
+    │   XML   │  │  Liquid │  │  Code   │
+    │ Output  │  │Template │  │  Gen    │
+    └─────────┘  └─────────┘  └─────────┘
+----
+
+[[package-composition]]
+== Package composition
+
+=== General
+
+Multiple LXR packages can be composed together with automatic conflict detection
+and resolution. This enables combining schemas from different sources while
+managing namespace conflicts, duplicate type definitions, and schema file
+collisions.
+
+Package composition is configured through YAML files using the enhanced
+`base_packages` format that supports conflict resolution strategies, namespace
+URI remapping, and schema filtering.
+
+=== Quick example
+
+.Composing two packages with conflict resolution
+[example]
+====
+[source,yaml]
+----
+# config.yml
+base_packages:
+  - package: package_a.lxr
+    priority: 0                    # Higher priority (loaded first)
+    conflict_resolution: keep      # Keep definitions from this package
+
+  - package: package_b.lxr
+    priority: 10                   # Lower priority (loaded second)
+    conflict_resolution: override  # Override conflicts with this package
+----
+
+Load the configuration:
+
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+repo = Lutaml::Xsd::SchemaRepository.from_yaml_file('config.yml')
+repo.parse.resolve
+
+# Merged repository ready for use
+result = repo.find_type('gml:CodeType')
+----
+====
+
+=== Key capabilities
+
+* **Conflict detection**: Automatically detects namespace URI conflicts, type
+  name conflicts, and schema file conflicts
+* **Configurable resolution**: Choose how to handle conflicts (keep first,
+  override with last, or error)
+* **Namespace remapping**: Transform namespace URIs to avoid conflicts during
+  composition
+* **Schema filtering**: Exclude or include specific schemas using glob patterns
+* **Priority system**: Control which package wins in conflict scenarios (lower
+  number = higher priority)
+* **Backward compatible**: Legacy string array format still works
+
+=== See also
+
+For comprehensive documentation on package composition, see
+link:docs/PACKAGE_COMPOSITION.adoc[Package Composition Guide].
+
+[[lxr-packages]]
+== LutaML XML Repository (LXR) packages
+
+=== General
+
+A LutaML XML Repository (LXR) package is a self-contained, portable archive
+format (`.lxr` file extension) designed for distributing and using XSD schema
+collections. LXR packages solve the challenge of managing complex,
+multi-schema XML applications by bundling schemas, their dependencies, and a
+pre-built type index into a single, optimized file.
+
+An LXR package is essentially a ZIP archive containing:
+
+* XSD schema files (optional, based on configuration)
+* Pre-serialized schema objects for instant loading
+* A comprehensive type index for fast lookups
+* Namespace and schema location mappings
+* Package metadata (version, description, creation date)
+* Statistics about types, elements, and namespaces
+
+The `.lxr` extension stands for "LutaML XSD Repository", emphasizing its role
+as a complete repository of schema information rather than just a collection
+of files.
+
+=== What problems do LXR packages solve?
+
+LXR packages address several key challenges in working with XSD schemas:
+
+==== Performance
+
+Traditional workflow requires parsing XML schemas every time an application
+starts, which can take seconds or even minutes for large schema sets like
+CityGML or ISO/TC 211 standards.
+
+.Traditional vs. LXR workflow
+[source]
+----
+Traditional Workflow:
+  XSD Files (scattered) → Parse every time → Slow startup → External dependencies
+  ├─ schema1.xsd (parse: 2s)
+  ├─ schema2.xsd (parse: 3s)
+  └─ schema3.xsd (parse: 1s)
+  Total: 6+ seconds on every startup
+
+LXR Workflow:
+  package.lxr → Instant load → Fast queries → Self-contained
+  Total: <100ms to load pre-serialized schemas
+----
+
+LXR packages eliminate this overhead by pre-serializing schemas and building
+type indexes during package creation, not at runtime.
+
+==== Distribution complexity
+
+Distributing XSD schemas traditionally means sharing multiple files with
+complex directory structures, external dependencies, and version
+inconsistencies.
+
+LXR packages provide:
+
+* **Single-file distribution**: One `.lxr` file contains everything
+* **Dependency bundling**: All referenced schemas included (optional)
+* **Version tracking**: Metadata ensures schema version consistency
+* **Offline capability**: No external fetching required
+
+==== Type resolution challenges
+
+Finding types across namespaces in multi-schema applications requires manual
+tracking of imports, includes, and namespace URIs.
+
+LXR packages offer:
+
+* **Pre-built type index**: Instant qualified name lookups
+* **Namespace-aware queries**: Resolve `gml:CodeType` without manual mapping
+* **Cross-schema resolution**: Find types across all included schemas
+* **Three name formats**: Support prefixed, Clark notation, and unprefixed
+  names
+
+=== What can you do with LXR packages?
+
+LXR packages enable several practical use cases:
+
+==== Distribute schema collections
+
+Share complete schema sets with collaborators or users:
+
+[source,bash]
+----
+# Create a CityGML package
+lutaml-xsd pkg build citygml.yaml -o citygml-2.0.lxr
+
+# Distribute the single .lxr file
+# Recipients can immediately use it without setup
+----
+
+==== Build code generators
+
+Use pre-indexed schemas for fast code generation:
+
+[source,ruby]
+----
+# Load schema repository
+repo = Lutaml::Xsd::SchemaRepository.from_package('schemas.lxr')
+
+# Generate classes from types
+repo.complex_types.each do |type|
+  generate_class(type)
+end
+----
+
+==== Create validation tools
+
+Build XML validators with instant schema loading:
+
+[source,ruby]
+----
+validator = XmlValidator.new(
+  schema_package: 'validation.lxr'
+)
+
+result = validator.validate(xml_document)
+----
+
+==== Document schemas
+
+Query types and relationships for documentation generation:
+
+[source,bash]
+----
+# List all types
+lutaml-xsd type list --from schemas.lxr --format yaml > types.yaml
+
+# Find specific types
+lutaml-xsd type find "gml:CodeType" --from schemas.lxr
+----
+
+==== Version control schemas
+
+Track schema versions with embedded metadata:
+
+[source,yaml]
+----
+# Package metadata
+name: "CityGML Schemas"
+version: "2.0.0"
+created_at: "2024-10-24T18:00:00+08:00"
+description: "Complete CityGML 2.0 schema set with dependencies"
+----
+
+==== Enable offline development
+
+Work without network access to remote schemas:
+
+[source,bash]
+----
+# Build package with all dependencies bundled
+lutaml-xsd pkg build config.yaml \
+  --xsd-mode include_all \
+  --output offline_schemas.lxr
+
+# Use offline
+lutaml-xsd type find "uro:BuildingType" --from offline_schemas.lxr
+----
+
+=== LXR configuration options
+
+LXR packages are highly configurable through three independent axes, allowing
+you to optimize for your specific use case:
+
+.LXR Package configuration matrix
+[source]
+----
+╔═══════════════════════════════════════════════════════════╗
+║           LXR Package Configuration Matrix                ║
+╠═══════════════════════════════════════════════════════════╣
+║                                                           ║
+║  Axis 1: XSD Bundling Mode                               ║
+║  ┌────────────────────┬─────────────────────────┐        ║
+║  │   include_all      │    allow_external       │        ║
+║  ├────────────────────┼─────────────────────────┤        ║
+║  │ • Bundle all XSDs  │ • Keep URL references   │        ║
+║  │ • Rewrite paths    │ • Smaller packages      │        ║
+║  │ • Self-contained   │ • Requires network      │        ║
+║  │ • Larger file size │ • Faster packaging      │        ║
+║  └────────────────────┴─────────────────────────┘        ║
+║                                                           ║
+║  Axis 2: Resolution Mode                                 ║
+║  ┌────────────────────┬─────────────────────────┐        ║
+║  │     resolved       │         bare            │        ║
+║  ├────────────────────┼─────────────────────────┤        ║
+║  │ • Pre-serialized   │ • Parse on load         │        ║
+║  │ • Instant loading  │ • Slower startup        │        ║
+║  │ • Larger packages  │ • Best for editing      │        ║
+║  └────────────────────┴─────────────────────────┘        ║
+║                                                           ║
+║  Axis 3: Serialization Format                            ║
+║  ┌─────────┬─────────┬─────────┬──────────┐             ║
+║  │ marshal │  json   │  yaml   │  parse   │             ║
+║  ├─────────┼─────────┼─────────┼──────────┤             ║
+║  │ Fastest │Portable │ Human   │ No cache │             ║
+║  │ Binary  │ Slower  │readable │ Smallest │             ║
+║  │ Ruby    │ Cross   │friendly │ Always   │             ║
+║  │ only    │platform │       │ parse    │             ║
+║  └─────────┴─────────┴─────────┴──────────┘             ║
+╚═══════════════════════════════════════════════════════════╝
+----
+
+==== XSD bundling mode
+
+Controls how XSD files are included in the package:
+
+`include_all` (recommended)::
+  * Bundles all XSD files into the package
+  * Rewrites schema location paths to be package-relative
+  * Creates fully self-contained packages
+  * Larger file size but completely portable
+  * No network access required
+
+`allow_external`::
+  * Keeps original schema location references
+  * Package only contains metadata and indexes
+  * Smaller file size
+  * Requires network access or local schemas
+  * Useful for development environments
+
+==== Resolution mode
+
+Controls whether schemas are pre-serialized:
+
+`resolved` (recommended)::
+  * Pre-serializes all parsed schema objects
+  * Enables instant loading without XML parsing
+  * Larger package size due to serialized data
+  * Best for production use and queries
+  * Type index immediately available
+
+`bare`::
+  * Only includes XSD files and minimal metadata
+  * Schemas parsed on first load
+  * Smaller package size
+  * Slower startup
+  * Best for schema development and editing
+
+==== Serialization format
+
+Controls how schemas are serialized (only relevant for `resolved` mode):
+
+`marshal` (recommended for Ruby)::
+  * Ruby's native serialization format
+  * Fastest serialization and deserialization
+  * Binary format, not human-readable
+  * Ruby version dependent
+  * Best for Ruby-only applications (editable inheritance resolution and per-schema alias hints)
+
+`json`::
+  * JSON serialization format
+  * Cross-platform and cross-language compatible
+  * Human-readable text format
+  * Slower than marshal
+  * Good for interoperability (but must account for Ruby-incompatible types like Time if interacting with Ruby/Riex outside the schema repo)
+
+`yaml`::
+  * YAML serialization format
+  * Most human-readable
+  * Excellent for debugging
+  * Slowest format
+  * Best for development and inspection (readable inheritance resolution hints and per-schema alias properties)
+
+`parse`::
+  * No serialization, always parse XSD files
+  * Smallest package size
+  * Always fresh parsing
+  * Slowest loading
+  * Best when schemas change frequently (must reconstruct every query)
+
+=== Creating LXR packages
+
+LXR packages can be created in two ways: from a YAML configuration file or
+interactively from the command line.
+
+==== Via YAML configuration
+
+The recommended approach for reproducible builds is using a YAML configuration
+file.
+
+Syntax:
+
+[source,yaml]
+----
+files: <1>
+  - path/to/schema.xsd
+  - path/to/schema.rng   # RELAX NG XML syntax
+  - path/to/schema.rnc   # RELAX NG Compact syntax
+
+schema_location_mappings: <2>
+  - from: "http://schemas.example.com/schema.xsd"
+    to: "local/path/schema.xsd"
+
+  - from: !ruby/regexp /(?:\.\.\/)+gml\/(.+\.xsd)$/
+    to: "spec/fixtures/codesynthesis-gml-3.2.1/gml/\\1"
+
+namespace_mappings: <3>
+  - prefix: "ex"
+    uri: "http://example.com/namespace"
+----
+<1> List of schema file paths (`.xsd`, `.rng`, or `.rnc`) to include (required)
+<2> Schema location mappings for imports/includes (optional)
+<3> Namespace prefix mappings (optional)
+
+Where,
+
+`files`:: Array of schema file paths (`.xsd`, `.rng`, or `.rnc`) to include in the package (required). RNG/RNC files are automatically converted to XSD.
+`schema_location_mappings`:: Array of schema location redirections (optional)
+`namespace_mappings`:: Array of namespace prefix-to-URI mappings (optional)
+
+.Creating a package from YAML configuration
+[example]
+[source,yaml]
+----
+# config/urban_function_repository.yaml
+files:
+  - spec/fixtures/i-ur/urbanFunction.xsd
+
+schema_location_mappings:
+  - from: "../../uro/3.2/urbanObject.xsd"
+    to: "spec/fixtures/i-ur/urbanObject.xsd"
+
+  - from: !ruby/regexp /(?:\.\.\/)+gml\/(.+\.xsd)$/
+    to: "spec/fixtures/codesynthesis-gml-3.2.1/gml/\\1"
+
+namespace_mappings:
+  - prefix: "urf"
+    uri: "https://www.geospatial.jp/iur/urf/3.2"
+
+  - prefix: "gml"
+    uri: "http://www.opengis.net/gml/3.2"
+----
+
+Build the package:
+
+[source,bash]
+----
+lutaml-xsd pkg build config/urban_function_repository.yaml \
+  --name "Urban Function Schema Repository" \
+  --version "3.2" \
+  --description "i-UR Urban Function schema with dependencies" \
+  --xsd-mode include_all \
+  --resolution-mode resolved \
+  --serialization-format marshal \
+  --output pkg/urban_function.lxr \
+  --validate
+----
+
+Output:
+
+----
+✓ Configuration loaded
+  Files: 1
+  Schema Location Mappings: 2
+  Namespace Mappings: 2
+
+Parsing and resolving schemas...
+✓ Schemas parsed and resolved
+
+Creating package: pkg/urban_function.lxr
+  XSD Mode: include_all
+  Resolution Mode: resolved
+  Serialization Format: marshal
+✓ Package created: pkg/urban_function.lxr
+  Size: 4683850 bytes
+
+Validating package...
+✓ Package is valid
+----
+
+==== Via command-line with minimal configuration
+
+For quick package creation with a simple configuration, create a minimal YAML file:
+
+NOTE: The `pkg build` command requires a YAML configuration file as input. Direct XSD file input is not supported.
+
+.Building a package with minimal YAML configuration
+[example]
+[source,yaml]
+----
+# minimal_config.yaml (XSD)
+files:
+  - path/to/schema.xsd
+
+# minimal_config.yaml (RNG/RNC — automatically converted to XSD)
+files:
+  - path/to/schema.rng
+----
+
+Then build the package:
+
+[source,bash]
+----
+# Build with defaults (include_all, resolved, marshal)
+lutaml-xsd pkg build minimal_config.yaml
+
+# Build with custom options
+lutaml-xsd pkg build config.yaml \
+  --name "Urban Function Schema" \
+  --version "3.2" \
+  --description "i-UR Urban Function schema collection" \
+  --xsd-mode include_all \
+  --resolution-mode resolved \
+  --serialization-format marshal \
+  --output pkg/urban_function.lxr \
+  --validate
+
+# Build with JSON format for cross-platform use
+lutaml-xsd pkg build config.yaml \
+  --serialization-format json \
+  --output schema.lxr
+
+# Build bare package (parse on load)
+lutaml-xsd pkg build config.yaml \
+  --resolution-mode bare \
+  --output schema_bare.lxr
+----
+
+==== CLI build options
+
+The `lutaml-xsd pkg build` command supports these options:
+
+`--output, -o PATH`::
+  Output package path (default: `pkg/<name>.lxr`)
+
+`--xsd-mode MODE`::
+  XSD bundling mode: `include_all` or `allow_external` (default: `include_all`)
+
+`--resolution-mode MODE`::
+  Resolution mode: `resolved` or `bare` (default: `resolved`)
+
+`--serialization-format FORMAT`::
+  Serialization format: `marshal`, `json`, `yaml`, or `parse` (default:
+  `marshal`)
+
+`--name NAME`::
+  Package name for metadata
+
+`--version VERSION`::
+  Package version for metadata
+
+`--description DESC`::
+  Package description for metadata
+
+`--validate`::
+  Validate package after building
+
+`--verbose`::
+  Enable verbose output
+
+=== Using LXR packages
+
+Once created, LXR packages can be used programmatically via the Ruby API or
+interactively via the command-line interface.
+
+==== Loading via Ruby API
+
+.Loading and using an LXR package
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Load package
+repository = Lutaml::Xsd::SchemaRepository.from_package(
+  'pkg/urban_function.lxr'
+)
+
+# Package loads instantly (pre-serialized schemas)
+puts "Loaded in milliseconds!"
+
+# Query types
+result = repository.find_type('gml:CodeType')
+if result.resolved?
+  puts "Found: #{result.qname}"
+  puts "Namespace: #{result.namespace}"
+end
+
+# Get statistics
+stats = repository.statistics
+puts "Total types: #{stats[:total_types]}"
+puts "Total namespaces: #{stats[:total_namespaces]}"
+
+# List types by category
+stats[:types_by_category].each do |category, count|
+  puts "#{category}: #{count}"
+end
+----
+====
+
+==== Using via command-line interface
+
+The CLI provides convenient commands for working with packages:
+
+.Package information and validation
+[example]
+====
+[source,bash]
+----
+# Display package metadata
+lutaml-xsd package info pkg/urban_function.lxr
+
+# Validate package structure
+lutaml-xsd package validate pkg/urban_function.lxr
+
+# Validate with strict mode (fail on warnings)
+lutaml-xsd package validate pkg/urban_function.lxr --strict
+
+# Get validation results in JSON
+lutaml-xsd package validate pkg/urban_function.lxr --format json
+----
+
+Output from `package info`:
+
+----
+Package: urban_function.lxr
+Size: 4683850 bytes
+
+Metadata:
+--------------------------------------------------------------------------------
+name: Urban Function Schema Repository
+version: 3.2
+description: i-UR Urban Function schema with dependencies
+created_at: 2024-10-24T17:11:33+08:00
+lutaml_xsd_version: 1.0.4
+created_by: lutaml-xsd CLI
+xsd_mode: include_all
+resolution_mode: resolved
+serialization_format: marshal
+files: 1
+namespace_mappings: 4
+schema_location_mappings: 2
+----
+
+.Type queries
+[example]
+====
+[source,bash]
+----
+# Find a specific type
+lutaml-xsd type find "gml:CodeType" --from pkg/urban_function.lxr
+
+# Find with JSON output
+lutaml-xsd type find "gml:CodeType" \
+  --from pkg/urban_function.lxr \
+  --format json
+
+# List all types
+lutaml-xsd type list --from pkg/urban_function.lxr
+
+# List types in specific namespace
+lutaml-xsd type list \
+  --from pkg/urban_function.lxr \
+  --namespace "http://www.opengis.net/gml/3.2"
+
+# List types by category
+lutaml-xsd type list \
+  --from pkg/urban_function.lxr \
+  --category complex_type
+----
+
+Output from `type find`:
+
+----
+Type Resolution: gml:CodeType
+
+✓ Type found
+
+Qualified Name: gml:CodeType
+Namespace: http://www.opengis.net/gml/3.2
+Local Name: CodeType
+Schema File: basicTypes.xsd
+Type Class: Lutaml::Xsd::ComplexType
+
+Documentation:
+  gml:CodeType is a generalized type to be used for a term, keyword or name.
+  It adds a XML attribute codeSpace to a term, where the value of the
+  codeSpace attribute (if present) shall indicate a dictionary, thesaurus,
+  classification scheme, authority, or pattern for the term.
+
+Simple Content:
+  Extension:
+    Base: string
+    Attributes:
+      - codeSpace: anyURI (optional)
+----
+
+.Repository statistics
+[example]
+====
+[source,bash]
+----
+# Display repository statistics
+lutaml-xsd stats show pkg/urban_function.lxr
+
+# Get statistics in YAML format
+lutaml-xsd stats show pkg/urban_function.lxr --format yaml
+----
+
+Output:
+
+----
+Repository Statistics:
+  Total schemas parsed: 0
+  Total types indexed: 2764
+  Types by category:
+    attribute_group: 68
+    complex_type: 1356
+    element: 1221
+    group: 27
+    simple_type: 92
+  Total namespaces: 34
+----
+
+=== Namespace validation problems
+
+A common mistake is failing to register namespace prefixes. Without a `prefix`,
+you can only browse the default namespace.
+
+Find types in the default namespace:
+
+[source,bash]
+----
+# Find types in test namespace
+rutaml-xsd type find "gml:name" --from package.lxr
+rutaml-xsd type find "gml:name" --from package.lxr --tree
+
+# Find types in "test" namespace
+rutaml-xsd type find "{http://www.opengis.net/gml/3.2}name" \
+   --from package.lxr
+rutaml-xsd type find "{http://www.opengis.net/gml/3.2}name" \
+   --from package.lxr --tree
+
+# Find types anywhere
+rutaml-xsd type find "name" --from package.lxr
+rutaml-xsd type find "name" --from package.lxr --tree
+----
+
+== Finding types with the Ruby API
+
+=== General
+
+The SchemaRepository provides multiple ways to find types, with important
+nuances around namespace handling and resolution.
+
+=== Basic type finding
+
+.Finding a type by qualified name
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Load package
+repo = Lutaml::Xsd::SchemaRepository.from_package('schemas.lxr')
+
+# Find using prefixed name (requires namespace registration)
+result = repo.find_type('gml:CodeType')
+
+if result.resolved?
+  puts "Type: #{result.definition.name}"
+  puts "Namespace: #{result.namespace}"
+end
+----
+====
+
+=== Namespace nuances
+
+==== Prefixed names require namespace registration
+
+Prefixed names like `gml:CodeType` require the prefix to be registered in
+the namespace registry:
+
+.Registering namespace prefixes
+[example]
+====
+[source,ruby]
+----
+repo = Lutaml::Xsd::SchemaRepository.new
+
+# Register prefix before using it
+repo.add_namespace_mapping(
+  prefix: 'gml',
+  uri: 'http://www.opengis.net/gml/3.2'
+)
+
+# Now prefixed lookup works
+result = repo.find_type('gml:CodeType')  # Works!
+----
+
+If you don't register the prefix first:
+
+[source]
+----
+result = repo.find_type('gml:CodeType')
+# Error: Namespace prefix 'gml' not registered
+----
+====
+
+==== Clark notation doesn't require registration
+
+Clark notation uses the full namespace URI in braces and doesn't require
+prefix registration:
+
+.Using Clark notation
+[example]
+====
+[source,ruby]
+----
+# No prefix registration needed
+result = repo.find_type('{http://www.opengis.net/gml/3.2}CodeType')
+
+# Works immediately
+puts result.definition.name if result.resolved?
+----
+====
+
+==== Unprefixed names search all namespaces
+
+Unprefixed names are searched across all namespaces:
+
+.Searching with unprefixed names
+[example]
+====
+[source,ruby]
+----
+# Searches all namespaces
+result = repo.find_type('CodeType')
+
+# May find the first match from any namespace
+if result.resolved?
+  puts "Found in namespace: #{result.namespace}"
+end
+----
+
+WARNING: Unprefixed searches may return unexpected results if multiple
+namespaces define types with the same name.
+====
+
+=== Package loading automatically registers namespaces
+
+When loading from a package, namespace mappings are automatically registered:
+
+.Automatic namespace registration from packages
+[example]
+====
+[source,ruby]
+----
+# Load package (namespace mappings automatically registered)
+repo = Lutaml::Xsd::SchemaRepository.from_package('schemas.lxr')
+
+# Prefixed lookups work immediately
+result = repo.find_type('gml:CodeType')  # Works!
+
+# Check what namespaces are registered
+repo.namespace_summary.each do |ns|
+  puts "#{ns[:prefix]} => #{ns[:uri]}"
+end
+----
+====
+
+=== Finding attributes, elements, and groups
+
+Beyond types, you can find other schema components:
+
+.Finding schema components
+[example]
+====
+[source,ruby]
+----
+# Find an attribute
+attr = repo.find_attribute('xml:id')
+puts "Attribute type: #{attr.type}" if attr
+
+# Find an element
+elem = repo.find_element('gml:Point')
+puts "Element type: #{elem.type}" if elem
+
+# Find a group
+group = repo.find_group('gml:StandardObjectProperties')
+----
+====
+
+=== Cross-schema resolution
+
+The repository resolves references across all schemas in the package:
+
+.Cross-schema resolution example
+[example]
+====
+[source,ruby]
+----
+# Type in schema A references attribute from schema B
+repo = Lutaml::Xsd::SchemaRepository.from_package('multi-schema.lxr')
+
+# Find the main type
+result = repo.find_type('myns:MyType')
+
+# Attributes are resolved across schemas
+result.definition.attribute.each do |attr|
+  if attr.ref
+    # Resolve the attribute reference
+    attr_def = repo.find_attribute(attr.ref)
+    puts "#{attr.ref} => #{attr_def.type} (from #{attr_def.location})"
+  end
+end
+----
+
+This shows the power of lutaml-xsd: all cross-schema references are
+automatically resolved, making it easy to understand complex multi-schema
+applications.
+====
+
+=== See also
+
+* link:docs/core-concepts/TYPE_RESOLUTION.adoc[Type resolution guide]
+* link:docs/core-concepts/NAMESPACES.adoc[Namespace handling]
+* link:docs/RUBY_API.adoc[Complete Ruby API reference]
+
+[[serialization]]
+== Serialization
+
+=== General
+
+The gem supports serializing the schema back to XML. Each class like
+`Lutaml::Xsd::Schema` has a method `to_xml` that generates the XML
+representation of the object.
+
+=== Converting parsed schemas to XML
+
+.Serializing a schema to XML
+[example]
+====
+[source,ruby]
+----
+# Parse a schema
+xsd_content = File.read('schema.xsd')
+parsed_schema = Lutaml::Xsd.parse(xsd_content)
+
+# Serialize back to XML
+xml_output = parsed_schema.to_xml
+puts xml_output
+
+# Write to file
+File.write('output.xsd', xml_output)
+----
+====
+
+[[liquid-methods]]
+== Liquid methods
+
+=== General
+
+This gem exposes convenient methods for use in Liquid templates via
+`to_liquid` on parsed objects. These methods are particularly useful for
+generating documentation and analyzing schema structures.
+
+Below is a concise reference of the Liquid-enabled helpers organized by
+module/type.
+
+=== Element methods
+
+The `Lutaml::Xsd::LiquidMethods::Element` module provides methods for working
+with element objects in Liquid templates.
+
+`used_by`:: Returns complex types that use or reference this element
+`attributes`:: Returns attribute elements
+`min_occurrences`:: Returns the element's minimum occurrences as Integer
+  (default 1)
+`max_occurrences`:: Returns `*` for unbounded, otherwise Integer (default 1)
+`child_elements`:: Returns all nested child elements (resolved across
+  groups/choices/sequences)
+`referenced_type`:: Returns the name of the element's `type` if present, or
+  the type name indicated by `ref` if defined
+`referenced_object`:: Resolves and returns the element or its referenced
+  element by `ref`
+`referenced_complex_type`:: Resolves the complex type matching
+  `referenced_type`
+
+.Using element methods in Liquid templates
+[example]
+====
+[source,liquid]
+----
+{% for el in schema.element %}
+  Element: {{ el.name }} ({{ el.min_occurrences }}..{{ el.max_occurrences }})
+  Type: {{ el.referenced_type }}
+  {% assign attrs = el.attributes %}
+  {% if attrs.size > 0 %}
+    Attributes:
+    {% for a in attrs %}
+      - {{ a.referenced_name }} ({{ a.cardinality }})
+    {% endfor %}
+  {% endif %}
+{% endfor %}
+----
+====
+
+=== Attribute methods
+
+The `Lutaml::Xsd::LiquidMethods::Attribute` module provides methods for
+working with attribute objects in Liquid templates.
+
+`referenced_object`:: Returns the actual attribute object, resolving
+  references via `ref` if necessary
+`referenced_name`:: Retrieves the definitive attribute name, using `ref` if
+  not explicitly named
+`referenced_type`:: Retrieves the fully resolved type name for this attribute
+`cardinality`:: Returns `1` for required, `0..1` for optional
+
+.Using attribute methods in Liquid templates
+[example]
+====
+[source,liquid]
+----
+{% for a in complex_type.attribute %}
+  {{ a.referenced_name }}: {{ a.referenced_type }} ({{ a.cardinality }})
+{% endfor %}
+----
+====
+
+=== AttributeGroup methods
+
+The `Lutaml::Xsd::LiquidMethods::AttributeGroup` module provides methods for
+working with attribute group objects in Liquid templates.
+
+`used_by`:: Returns complex types that use this attribute group
+`attribute_elements`:: Returns a flattened list of attributes, resolving
+  nested groups
+
+.Using attribute group methods in Liquid templates
+[example]
+====
+[source,liquid]
+----
+{% for ag in schema.attribute_group %}
+  Group {{ ag.name }} used by:
+  {% for ct in ag.used_by %}
+    - {{ ct.name }}
+  {% endfor %}
+  Attributes:
+  {% for a in ag.attribute_elements %}
+    - {{ a.referenced_name }}
+  {% endfor %}
+{% endfor %}
+----
+====
+
+=== ComplexType methods
+
+The `Lutaml::Xsd::LiquidMethods::ComplexType` module provides methods for
+working with complex type objects in Liquid templates.
+
+`used_by`:: Returns elements and group elements that reference this type
+`attribute_elements`:: Returns all attributes (including those from groups
+  and simple content extensions)
+`child_elements`:: Returns all child elements (across
+  sequences/choices/groups)
+`find_elements_used(name)`:: Boolean indicating if an element name is used
+  within this type
+
+.Using complex type methods in Liquid templates
+[example]
+====
+[source,liquid]
+----
+{% for ct in schema.complex_type %}
+  ComplexType: {{ ct.name }}
+  Elements:
+  {% for el in ct.child_elements %}
+    - {{ el.referenced_name }}
+  {% endfor %}
+  Attributes:
+  {% for a in ct.attribute_elements %}
+    - {{ a.referenced_name }}
+  {% endfor %}
+{% endfor %}
+----
+====
+
+=== Group, Sequence, and Choice methods
+
+The `Lutaml::Xsd::LiquidMethods::Group`, `...::Sequence`, and `...::Choice`
+modules provide methods for working with these container objects in Liquid
+templates.
+
+`child_elements`:: Returns all nested `Element` instances contained within
+`find_elements_used(name)`:: Boolean indicating if an element name is used
+  within this container
+
+.Using group methods in Liquid templates
+[example]
+====
+[source,liquid]
+----
+{% for g in schema.group %}
+  Group {{ g.name }} elements:
+  {% for el in g.child_elements %}
+    - {{ el.referenced_name }}
+  {% endfor %}
+{% endfor %}
+----
+====
+
+=== SimpleContent methods
+
+The `Lutaml::Xsd::LiquidMethods::SimpleContent` module provides methods for
+working with simple content objects in Liquid templates.
+
+`attribute_elements`:: Returns attributes coming from the `extension` and
+  nested attribute groups
+
+.Using simple content methods in Liquid templates
+[example]
+====
+[source,liquid]
+----
+{% assign attrs = ct.simple_content.attribute_elements %}
+{% for a in attrs %}
+  - {{ a.referenced_name }}
+{% endfor %}
+----
+====
+
+=== Extension methods
+
+The `Lutaml::Xsd::LiquidMethods::Extension` module provides methods for
+working with extension objects in Liquid templates.
+
+`attribute_elements`:: Returns attributes of the extension and its attribute
+  groups
+
+.Using extension methods in Liquid templates
+[example]
+====
+[source,liquid]
+----
+{% for a in ct.simple_content.extension.attribute_elements %}
+  - {{ a.referenced_name }}
+{% endfor %}
+----
+====
+
+=== ResolvedElementOrder methods
+
+The `Lutaml::Xsd::LiquidMethods::ResolvedElementOrder` module provides a
+helper method for maintaining original element order.
+
+`resolved_element_order`:: Returns all elements in the order they originally
+  appeared in the XSD
+
+.Using resolved element order in Liquid templates
+[example]
+====
+[source,liquid]
+----
+{% assign ordered = ct.resolved_element_order %}
+{% for el in ordered %}
+  {{ el.name }} (position preserved from XSD)
+{% endfor %}
+----
+====
+
+== Copyright
+
+Copyright https://www.ribose.com[Ribose].
+
+== License
+
+The gem is available as open source under the terms of the
+https://opensource.org/licenses/BSD-2-Clause[2-Clause BSD License].

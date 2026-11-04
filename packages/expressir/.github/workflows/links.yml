@@ -1,0 +1,100 @@
+name: Check Links
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'docs/**'
+      - '.github/workflows/links.yml'
+      - 'lychee.toml'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'docs/**'
+  schedule:
+    # Run weekly on Monday at 9:00 UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+jobs:
+  link-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: false
+          working-directory: docs
+
+      - name: Cache gems
+        uses: actions/cache@v4
+        with:
+          path: docs/vendor/bundle
+          key: ${{ runner.os }}-gems-${{ hashFiles('docs/Gemfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-gems-
+
+      - name: Install dependencies
+        working-directory: docs
+        run: |
+          bundle config path vendor/bundle
+          bundle install --jobs 4 --retry 3
+
+      - name: Build Jekyll site
+        working-directory: docs
+        run: bundle exec jekyll build --trace
+        env:
+          JEKYLL_ENV: production
+
+      - name: Check links with lychee
+        uses: lycheeverse/lychee-action@v1
+        with:
+          args: |
+            --config docs/lychee.toml
+            --verbose
+            --no-progress
+            --format markdown
+            'docs/_site/**/*.html'
+          fail: true
+          output: link-check-report.md
+
+      - name: Upload link check report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: link-check-report
+          path: link-check-report.md
+          retention-days: 30
+
+      - name: Comment on PR with results
+        if: failure() && github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: link-check
+          path: link-check-report.md
+
+      - name: Create issue for broken links
+        if: failure() && github.event_name == 'schedule'
+        uses: peter-evans/create-issue-from-file@v5
+        with:
+          title: Broken links detected in documentation
+          content-filepath: link-check-report.md
+          labels: |
+            documentation
+            bug
+            automated
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Link Check Results" >> $GITHUB_STEP_SUMMARY
+          if [ -f "link-check-report.md" ]; then
+            cat link-check-report.md >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No broken links found! :white_check_mark:" >> $GITHUB_STEP_SUMMARY
+          fi

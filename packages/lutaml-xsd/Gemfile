@@ -1,0 +1,22 @@
+# frozen_string_literal: true
+
+source "https://rubygems.org"
+
+# Specify your gem's dependencies in lutaml-xsd.gemspec
+gemspec
+
+gem "base64"
+gem "canon"
+gem "fiddle"
+gem "leptris"
+gem "liquid"
+gem "rake"
+gem "rexml"
+gem "rspec"
+gem "rubocop"
+gem "rubocop-performance"
+
+# Monorepo: resolve the sibling lutaml-model package by path (the gemspec's
+# own `~> 0.8` constraint still applies to the sibling's version).
+model = File.expand_path("../lutaml-model", __dir__)
+gem "lutaml-model", path: model if File.directory?(model)

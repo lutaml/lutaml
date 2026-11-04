@@ -1,0 +1,231 @@
+---
+title: Tutorials
+has_children: true
+nav_order: 3
+---
+
+== Expressir Tutorials
+
+=== Purpose
+
+These hands-on tutorials guide you through common Expressir tasks from beginner to advanced topics. Each tutorial includes working code examples, practical exercises, and clear learning objectives.
+
+=== Getting Started
+
+If you're new to Expressir, start with these foundational tutorials:
+
+1. link:parsing-your-first-schema.html[Parsing Your First Schema] - Learn the basics of parsing EXPRESS files
+2. link:working-with-multiple-schemas.html[Working with Multiple Schemas] - Handle dependencies and interfaces
+3. link:creating-ler-package.html[Creating LER Packages] - Package schemas for distribution
+
+=== Tutorial Path
+
+Follow this recommended learning path:
+
+==== Beginner Level
+
+**link:parsing-your-first-schema.html[Parsing Your First Schema]**::
+Duration: 30-45 minutes
++
+Learn to parse EXPRESS schemas with both CLI and Ruby API, explore the parsed data model, and handle errors gracefully.
+
+**link:working-with-multiple-schemas.html[Working with Multiple Schemas]**::
+Duration: 45-60 minutes
++
+Master schema dependencies, interfaces (USE FROM / REFERENCE FROM), and cross-schema reference resolution.
+
+==== Intermediate Level
+
+**link:creating-ler-package.html[Creating LER Packages]**::
+Duration: 45-60 minutes
++
+Create distributable LER packages for instant loading and high-performance schema distribution.
+
+**link:querying-schemas.html[Querying Schemas]**::
+Duration: 60-75 minutes
++
+Use the SearchEngine API for pattern matching, filtering, and complex queries across schemas.
+
+==== Advanced Level
+
+**link:liquid-templates.html[Liquid Templates]**::
+Duration: 60-90 minutes
++
+Generate documentation automatically using Liquid templates and Expressir's drop objects.
+
+**link:documentation-coverage.html[Documentation Coverage]**::
+Duration: 45-60 minutes
++
+Analyze and improve schema documentation quality with coverage tools and metrics.
+
+**link:formatting-schemas.html[Formatting Schemas]**::
+Duration: 15-20 minutes
++
+Render parsed schemas back to EXPRESS source text — default formatting, remark stripping, schema-head and hyperlink mixins.
+
+=== Tutorial Features
+
+Each tutorial includes:
+
+**Prerequisites**::
+What you need to know before starting
+
+**Learning Objectives**::
+What you'll be able to do after completion
+
+**Step-by-Step Instructions**::
+Clear, numbered steps with explanations
+
+**Working Code Examples**::
+Complete, tested code you can run immediately
+
+**Expected Output**::
+What success looks like at each step
+
+**Practice Exercises**::
+Hands-on activities to reinforce learning
+
+**Common Pitfalls**::
+Mistakes to avoid and how to fix them
+
+**Next Steps**::
+Where to go after completing the tutorial
+
+=== Quick Reference
+
+[options="header"]
+|===
+| Tutorial | Level | Focus | Duration
+
+| link:parsing-your-first-schema.html[Parsing Your First Schema]
+| Beginner
+| Parsing basics, CLI, Ruby API
+| 30-45 min
+
+| link:working-with-multiple-schemas.html[Working with Multiple Schemas]
+| Beginner
+| Dependencies, interfaces
+| 45-60 min
+
+| link:creating-ler-package.html[Creating LER Packages]
+| Intermediate
+| Packaging, distribution
+| 45-60 min
+
+| link:querying-schemas.html[Querying Schemas]
+| Intermediate
+| SearchEngine, queries
+| 60-75 min
+
+| link:liquid-templates.html[Liquid Templates]
+| Advanced
+| Documentation generation
+| 60-90 min
+
+| link:documentation-coverage.html[Documentation Coverage]
+| Advanced
+| Coverage analysis
+| 45-60 min
+
+| link:formatting-schemas.html[Formatting Schemas]
+| Beginner
+| Rendering schemas to source text
+| 15-20 min
+|===
+
+=== Additional Resources
+
+==== Before Starting
+
+* link:../../getting-started.html[Getting Started] - Install and verify Expressir
+* link:../../express-language.html[EXPRESS Language] - Understanding EXPRESS syntax
+* link:../../data-model.html[Data Model] - Expressir's internal structure
+
+==== While Learning
+
+* link:../../guides/[Guides] - Detailed guides on specific topics
+* link:../../references/[References] - Complete API documentation
+* https://github.com/lutaml/expressir[GitHub Repository] - Source code and examples
+
+==== After Completion
+
+* link:../../guides/cli/[CLI Guides] - Master command-line tools
+* link:../../guides/ruby-api/[Ruby API Guides] - Advanced programmatic usage
+* link:../../guides/ler/[LER Guides] - Deep dive into LER packages
+
+=== Tutorial Conventions
+
+==== Code Blocks
+
+**EXPRESS code**:
+[source,express]
+----
+SCHEMA example;
+  ENTITY person;
+    name : STRING;
+  END_ENTITY;
+END_SCHEMA;
+----
+
+**Ruby code**:
+[source,ruby]
+----
+require 'expressir'
+repo = Expressir::Express::Parser.from_file('schema.exp')
+----
+
+**Shell commands**:
+[source,bash]
+----
+expressir format schema.exp
+----
+
+==== Callouts and Annotations
+
+* ✅ Success indicators
+* ❌ Error indicators
+* 💡 Tips and best practices
+* ⚠️ Important warnings
+
+==== File References
+
+File paths are shown relative to your working directory:
+* `schema.exp` - File in current directory
+* `schemas/base.exp` - File in subdirectory
+* `/full/path/to/file.exp` - Absolute path (rare)
+
+=== Getting Help
+
+**Issues During Tutorials**::
+* Check the "Common Pitfalls" section
+* Verify prerequisites are met
+* Ensure file paths are correct
+* Check Ruby and Expressir versions
+
+**Questions or Problems**::
+* link:https://github.com/lutaml/expressir/issues[GitHub Issues] - Report problems
+* link:https://github.com/lutaml/expressir/discussions[GitHub Discussions] - Ask questions
+* link:../../getting-started.html#getting-help[Getting Help] - Support resources
+
+**Contributing**::
+Found an error or want to improve a tutorial?
++
+* Open an issue on GitHub
+* Submit a pull request
+* Share your feedback
+
+=== Tutorial Versions
+
+These tutorials are written for:
+
+* **Expressir**: v1.0+
+* **Ruby**: 2.7+
+* **EXPRESS**: ISO 10303-11:2007
+
+If you're using different versions, some examples may need adjustment.
+
+=== Next Steps
+
+Ready to start? Begin with link:parsing-your-first-schema.html[Parsing Your First Schema] or choose any tutorial based on your needs.
+
+For quick reference without step-by-step instructions, see the link:../guides/[Guides] section.

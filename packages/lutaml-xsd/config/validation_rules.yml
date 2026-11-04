@@ -1,0 +1,163 @@
+# Lutaml::Xsd Validation Rules Configuration
+# This file defines which validation rules are enabled and their options
+
+validation_rules:
+  # Structure validation rules
+  structure:
+    enabled: true
+    rules:
+      # Validate elements exist in schema
+      - element_existence
+
+      # Validate element ordering in sequences
+      - element_order
+
+      # Validate namespace declarations
+      - namespace_declaration
+
+      # Validate element substitution groups
+      - substitution_group
+
+      # Prevent abstract element instantiation
+      - abstract_element
+
+  # Type validation rules
+  type:
+    enabled: true
+    rules:
+      # Validate simple type compliance
+      - type_compliance
+
+      # Validate complex type structure
+      - complex_type_structure
+
+      # Validate attribute types
+      - attribute_type_check
+
+      # Validate simple type constraints
+      - simple_type_constraint
+
+  # Constraint validation rules
+  constraint:
+    enabled: true
+    rules:
+      # Validate minOccurs constraint
+      - min_occurs
+
+      # Validate maxOccurs constraint
+      - max_occurs
+
+      # Validate unique constraints
+      - unique_constraint
+
+      # Validate key constraints
+      - key_constraint
+
+      # Validate keyref constraints
+      - keyref_constraint
+
+  # Content model validation rules
+  content_model:
+    enabled: true
+    rules:
+      # Validate sequence content model
+      - sequence_validation
+
+      # Validate choice content model
+      - choice_validation
+
+      # Validate all group content model
+      - all_validation
+
+  # Facet validation rules
+  facet:
+    enabled: true
+    rules:
+      # Validate pattern facet
+      - pattern_facet
+
+      # Validate length facets
+      - length_facet
+
+      # Validate enumeration facet
+      - enumeration_facet
+
+      # Validate numeric range facets
+      - range_facet
+
+# Rule-specific options
+rule_options:
+  # Type compliance options
+  type_compliance:
+    # Attempt to coerce types (e.g., "123" to integer)
+    coerce_types: false
+
+    # Strict numeric validation
+    strict_numerics: true
+
+    # Validate whitespace handling
+    validate_whitespace: true
+
+  # Occurrence validation options
+  min_occurs:
+    # Allow zero occurrences for optional elements
+    allow_zero: true
+
+  max_occurs:
+    # Limit for "unbounded" in practice
+    unbounded_limit: 1000
+
+    # Warn when approaching unbounded limit
+    warn_at_limit: 900
+
+  # Pattern matching options
+  pattern_facet:
+    # Timeout for regex matching (milliseconds)
+    regex_timeout: 1000
+
+    # Cache compiled patterns
+    cache_patterns: true
+
+  # Identity constraint options
+  unique_constraint:
+    # Case-sensitive comparison
+    case_sensitive: true
+
+  key_constraint:
+    # Require key fields to be non-null
+    require_non_null: true
+
+# Error severity levels per rule
+error_levels:
+  # Structure errors
+  element_not_found: error
+  element_order_violation: error
+  namespace_mismatch: error
+  abstract_instantiation: error
+
+  # Type errors
+  type_mismatch: error
+  invalid_value: error
+
+  # Constraint errors
+  min_occurs_violation: error
+  max_occurs_violation: error
+  unique_violation: error
+  key_violation: error
+  keyref_violation: error
+
+  # Content model errors
+  sequence_violation: error
+  choice_violation: error
+  all_violation: error
+
+  # Facet errors
+  pattern_mismatch: error
+  length_violation: error
+  range_violation: error
+  enumeration_violation: error
+
+  # Warnings
+  attribute_missing: warning
+  deprecated_usage: info
+  whitespace_issue: info

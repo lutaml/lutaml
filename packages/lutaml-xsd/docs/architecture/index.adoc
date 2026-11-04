@@ -1,0 +1,12 @@
+---
+layout: default
+title: Architecture
+nav_order: 50
+has_children: true
+---
+
+== Architecture
+
+This section explains the internal architecture of Lutaml::XSD.
+
+Understand how the library is structured and how its components work together.

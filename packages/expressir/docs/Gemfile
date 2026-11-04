@@ -1,0 +1,12 @@
+source "https://rubygems.org"
+
+gem "jekyll"
+gem "jekyll-asciidoc"
+gem "jekyll-seo-tag"
+gem "jekyll-sitemap"
+
+# Theme
+gem "just-the-docs", "~> 0.10.1"
+
+# AsciiDoc processing
+gem "asciidoctor"

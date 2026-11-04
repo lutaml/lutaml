@@ -1,0 +1,122 @@
+# frozen_string_literal: true
+
+# axe-core accessibility audit of the generated SPA (TODO.sota/09).
+# Uses the axe-core copy vendored by the frontend's npm devDependencies
+# (sovereign: no CDN fetch). Exits non-zero when violations are found;
+# skips cleanly when no Chrome binary or no built frontend exists, so
+# `rake` stays green on browser-less lanes (windows CI) while the
+# browser-equipped lanes (ubuntu/macos) always run it.
+
+require "json"
+require "open3"
+require "fileutils"
+require "tmpdir"
+require "lutaml/jsonschema"
+
+CHROME_CANDIDATES = [
+  ENV.fetch("CHROME_BIN", nil),
+  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+  "/usr/bin/chromium",
+  "/usr/bin/chromium-browser",
+  "/usr/bin/google-chrome",
+].freeze
+
+ROOT = File.expand_path("..", __dir__)
+SCHEMA = ARGV.first || File.join(ROOT, "spec", "fixtures", "heroku.json")
+
+chrome = CHROME_CANDIDATES.find { |path| path && File.executable?(path) }
+unless chrome
+  warn "axe audit: SKIP (no Chrome binary; set CHROME_BIN to enable)"
+  exit 0
+end
+
+dist = File.join(ROOT, "frontend", "dist")
+unless File.exist?(File.join(dist, "app.iife.js"))
+  warn "axe audit: SKIP (frontend/dist missing; run `rake frontend:build`)"
+  exit 0
+end
+
+axe = File.join(ROOT, "frontend", "node_modules", "axe-core", "axe.min.js")
+unless File.exist?(axe)
+  abort "axe audit: frontend/node_modules/axe-core missing; " \
+        "run `npm install` in frontend/"
+end
+
+INJECT = <<~SCRIPT
+  <script src="file://#{axe}"></script>
+  <script>
+    window.addEventListener('load', () => setTimeout(() => {
+      axe.run().then((r) => {
+        document.body.setAttribute('data-axe', JSON.stringify({
+          violations: r.violations.map((v) => ({ id: v.id, impact: v.impact,
+                                                 nodes: v.nodes.length,
+                                                 targets: v.nodes.map((n) => n.target.join(' ')) })),
+          passes: r.passes.length,
+        }));
+        document.title = 'AXE-DONE';
+      }).catch((e) => {
+        document.body.setAttribute('data-axe', JSON.stringify({ error: String(e) }));
+        document.title = 'AXE-ERROR';
+      });
+    }, 4000));
+  </script>
+SCRIPT
+
+dir = Dir.mktmpdir("axe-audit")
+schema_set = Lutaml::Jsonschema::SchemaSet.load_from_files(SCHEMA)
+Lutaml::Jsonschema::Spa::Generator.new(
+  schema_set, dir, metadata: Lutaml::Jsonschema::Spa::Metadata.new
+).generate
+
+# an empty schema set must boot and stay accessible too: a JS crash on
+# missing sections would otherwise ship and only surface in production
+empty_dir = File.join(dir, "empty")
+FileUtils.mkdir_p(empty_dir)
+Lutaml::Jsonschema::Spa::Generator.new(
+  Lutaml::Jsonschema::SchemaSet.new, empty_dir,
+  metadata: Lutaml::Jsonschema::Spa::Metadata.new
+).generate
+
+File.write(File.join(dir, "audit.html"),
+           File.read(File.join(dir, "index.html")).sub("</body>", "#{INJECT}\n</body>"))
+File.write(File.join(dir, "audit-empty.html"),
+           File.read(File.join(empty_dir, "index.html")).sub("</body>", "#{INJECT}\n</body>"))
+
+# gate matrix: both locales on the real document (the mirrored layout
+# must stay accessible, TODO.sota/09), plus the empty document in the
+# default locale
+VARIANTS = [
+  { label: "en", page: "audit.html", query: "" },
+  { label: "ar (rtl)", page: "audit.html", query: "?locale=ar" },
+  { label: "empty doc", page: "audit-empty.html", query: "" },
+].freeze
+
+failed = false
+
+VARIANTS.each do |variant|
+  dom, err, status = Open3.capture3(
+    chrome, "--headless=new", "--disable-gpu", "--virtual-time-budget=20000",
+    "--dump-dom", "file://#{File.join(dir, variant[:page])}#{variant[:query]}"
+  )
+  abort "axe audit: Chrome failed: #{err[0, 400]}" unless status.success?
+
+  match = dom[/data-axe="([^"]*)"/, 1]
+  abort "axe audit (#{variant[:label]}): no result captured" unless match
+
+  result = JSON.parse(match.gsub("&quot;", '"'))
+  abort "axe audit: axe failed: #{result['error']}" if result["error"]
+
+  if result["violations"].empty?
+    puts "axe audit (#{variant[:label]}): PASS (#{result['passes']} rule groups)"
+  else
+    failed = true
+    puts "axe audit (#{variant[:label]}): " \
+         "#{result['violations'].sum { |v| v['nodes'] }} violations"
+    result["violations"].each do |violation|
+      puts "  [#{violation['impact']}] #{violation['id']} x#{violation['nodes']}"
+      violation["targets"].each { |target| puts "    #{target}" }
+    end
+  end
+end
+
+exit 1 if failed

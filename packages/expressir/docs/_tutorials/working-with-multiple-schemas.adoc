@@ -1,0 +1,676 @@
+---
+title: Working with Multiple Schemas
+nav_order: 3
+---
+
+== Working with Multiple Schemas
+
+=== Prerequisites
+
+Before starting this tutorial, ensure you have:
+
+* Completed link:parsing-your-first-schema.html[Parsing Your First Schema]
+* Understanding of EXPRESS interfaces (USE FROM, REFERENCE FROM)
+* Basic knowledge of schema dependencies
+* Expressir installed and working
+
+=== Learning Objectives
+
+By the end of this tutorial, you will be able to:
+
+* Parse multiple EXPRESS schema files together
+* Understand and work with schema dependencies
+* Use interfaces to share entities and types
+* Resolve cross-schema references
+* Manage schema collections effectively
+* Handle circular dependencies
+
+=== What You'll Build
+
+You'll create a multi-schema EXPRESS application modeling a product catalog system with base definitions, product schemas, and an application schema that uses them all.
+
+=== Step 1: Understanding Schema Dependencies
+
+EXPRESS schemas often depend on each other through interfaces.
+
+==== Interface Types
+
+**USE FROM**::
+Imports all declarations from another schema
++
+[source,express]
+----
+USE FROM base_schema;
+----
+
+**REFERENCE FROM**::
+Imports specific declarations from another schema
++
+[source,express]
+----
+REFERENCE FROM base_schema (person, organization);
+----
+
+==== Why Multiple Schemas?
+
+* **Modularity**: Separate concerns into logical units
+* **Reusability**: Share common definitions across projects
+* **Maintainability**: Easier to update and test smaller schemas
+* **Standards compliance**: ISO standards use modular schemas
+
+=== Step 2: Create Base Schemas
+
+Let's create a foundation with reusable types.
+
+==== Create `base_types.exp`
+
+[source,express]
+----
+SCHEMA base_types;
+
+  TYPE identifier = STRING;
+  END_TYPE;
+
+  TYPE label = STRING;
+  END_TYPE;
+
+  TYPE text = STRING;
+  END_TYPE;
+
+  TYPE positive_integer = INTEGER;
+  WHERE
+    WR1: SELF > 0;
+  END_TYPE;
+
+  TYPE date_string = STRING;
+  END_TYPE;
+
+END_SCHEMA;
+----
+
+==== Create `base_entities.exp`
+
+[source,express]
+----
+SCHEMA base_entities;
+
+  USE FROM base_types;
+
+  ENTITY person;
+    name : label;
+    email : OPTIONAL text;
+  END_ENTITY;
+
+  ENTITY organization;
+    org_name : label;
+    employees : SET [0:?] OF person;
+  END_ENTITY;
+
+  ENTITY address;
+    street : text;
+    city : label;
+    country : label;
+  END_ENTITY;
+
+END_SCHEMA;
+----
+
+=== Step 3: Create Product Schema
+
+Now create a schema that uses the base schemas.
+
+==== Create `product_schema.exp`
+
+[source,express]
+----
+SCHEMA product_schema;
+
+  REFERENCE FROM base_types (identifier, label, text, positive_integer);
+  REFERENCE FROM base_entities (person, organization);
+
+  ENTITY product;
+    id : identifier;
+    name : label;
+    description : OPTIONAL text;
+    price : REAL;
+    quantity : positive_integer;
+    manufacturer : organization;
+  END_ENTITY;
+
+  ENTITY product_category;
+    category_name : label;
+    products : SET [0:?] OF product;
+  END_ENTITY;
+
+  TYPE product_list = LIST [1:?] OF product;
+  END_TYPE;
+
+END_SCHEMA;
+----
+
+=== Step 4: Create Application Schema
+
+Finally, create an application schema that ties everything together.
+
+==== Create `catalog_application.exp`
+
+[source,express]
+----
+SCHEMA catalog_application;
+
+  USE FROM product_schema;
+  REFERENCE FROM base_entities (address);
+
+  ENTITY catalog;
+    catalog_name : label;
+    categories : LIST [1:?] OF product_category;
+    contact : person;
+    location : address;
+  END_ENTITY;
+
+  ENTITY order_item;
+    product_ref : product;
+    quantity : positive_integer;
+  END_ENTITY;
+
+  ENTITY customer_order;
+    order_id : identifier;
+    customer : person;
+    items : LIST [1:?] OF order_item;
+    total : REAL;
+  END_ENTITY;
+
+END_SCHEMA;
+----
+
+=== Step 5: Parse Multiple Files with CLI
+
+Use the CLI to parse all schemas together.
+
+[source,bash]
+----
+# Format all schemas
+expressir format base_types.exp base_entities.exp product_schema.exp catalog_application.exp
+
+# Validate all schemas
+expressir validate base_types.exp base_entities.exp product_schema.exp catalog_application.exp
+----
+
+**Expected output**:
+[source]
+----
+Validation passed for all EXPRESS schemas.
+----
+
+=== Step 6: Parse Multiple Files with Ruby API
+
+Now let's parse programmatically.
+
+==== Basic Multi-File Parsing
+
+Create `parse_multiple.rb`:
+
+[source,ruby]
+----
+require 'expressir'
+
+# List all schema files in dependency order
+files = [
+  'base_types.exp',
+  'base_entities.exp',
+  'product_schema.exp',
+  'catalog_application.exp'
+]
+
+# Parse all files
+repository = Expressir::Express::Parser.from_files(files)
+
+# Display results
+puts "Loaded #{repository.schemas.size} schemas:"
+repository.schemas.each do |schema|
+  puts "  - #{schema.id}"
+  puts "    File: #{schema.file}"
+  puts "    Entities: #{schema.entities.size}"
+  puts "    Types: #{schema.types.size}"
+end
+----
+
+Run it:
+
+[source,bash]
+----
+ruby parse_multiple.rb
+----
+
+**Expected output**:
+[source]
+----
+Loaded 4 schemas:
+  - base_types
+    File: base_types.exp
+    Entities: 0
+    Types: 5
+  - base_entities
+    File: base_entities.exp
+    Entities: 3
+    Types: 0
+  - product_schema
+    File: product_schema.exp
+    Entities: 2
+    Types: 1
+  - catalog_application
+    File: catalog_application.exp
+    Entities: 3
+    Types: 0
+----
+
+==== Progress Tracking
+
+Add progress tracking:
+
+[source,ruby]
+----
+repository = Expressir::Express::Parser.from_files(files) do |filename, schemas, error|
+  if error
+    puts "❌ Error loading #{filename}:"
+    puts "   #{error.message}"
+  else
+    puts "✓ Loaded #{schemas.length} schema(s) from #{filename}"
+  end
+end
+
+puts "\n📊 Total: #{repository.schemas.size} schemas loaded successfully"
+----
+
+**Output**:
+[source]
+----
+✓ Loaded 1 schema(s) from base_types.exp
+✓ Loaded 1 schema(s) from base_entities.exp
+✓ Loaded 1 schema(s) from product_schema.exp
+✓ Loaded 1 schema(s) from catalog_application.exp
+
+📊 Total: 4 schemas loaded successfully
+----
+
+=== Step 7: Explore Cross-Schema References
+
+Now let's explore how references work across schemas.
+
+==== Inspect Interfaces
+
+Create `inspect_interfaces.rb`:
+
+[source,ruby]
+----
+require 'expressir'
+
+files = ['base_types.exp', 'base_entities.exp', 'product_schema.exp', 'catalog_application.exp']
+repo = Expressir::Express::Parser.from_files(files)
+
+repo.schemas.each do |schema|
+  next if schema.interfaces.empty?
+
+  puts "\n#{schema.id} interfaces:"
+  schema.interfaces.each do |interface|
+    puts "  #{interface.kind.upcase}: #{interface.schema.ref&.id || interface.schema.id}"
+
+    if interface.items && !interface.items.empty?
+      interface.items.each do |item|
+        puts "    - #{item.id}"
+      end
+    else
+      puts "    (all declarations)"
+    end
+  end
+end
+----
+
+**Output**:
+[source]
+----
+base_entities interfaces:
+  USE: base_types
+    (all declarations)
+
+product_schema interfaces:
+  REFERENCE: base_types
+    - identifier
+    - label
+    - text
+    - positive_integer
+  REFERENCE: base_entities
+    - person
+    - organization
+
+catalog_application interfaces:
+  USE: product_schema
+    (all declarations)
+  REFERENCE: base_entities
+    - address
+----
+
+==== Trace Reference Resolution
+
+Create `trace_references.rb`:
+
+[source,ruby]
+----
+require 'expressir'
+
+files = ['base_types.exp', 'base_entities.exp', 'product_schema.exp', 'catalog_application.exp']
+repo = Expressir::Express::Parser.from_files(files)
+
+# Find product entity
+product_schema = repo.schemas.find { |s| s.id == 'product_schema' }
+product_entity = product_schema.entities.find { |e| e.id == 'product' }
+
+puts "Product entity attributes:"
+product_entity.attributes.each do |attr|
+  puts "\n  #{attr.id}: #{attr.type}"
+
+  # Check if type is a reference
+  if attr.type.respond_to?(:ref) && attr.type.ref
+    ref = attr.type.ref
+    puts "    Resolved to: #{ref.class.name}"
+    puts "    Defined in: #{ref.parent.id}" if ref.respond_to?(:parent)
+  end
+end
+----
+
+**Output**:
+[source]
+----
+Product entity attributes:
+
+  id: identifier
+    Resolved to: Expressir::Model::Declarations::Type
+    Defined in: base_types
+
+  name: label
+    Resolved to: Expressir::Model::Declarations::Type
+    Defined in: base_types
+
+  description: text
+    Resolved to: Expressir::Model::Declarations::Type
+    Defined in: base_types
+
+  price: REAL
+
+  quantity: positive_integer
+    Resolved to: Expressir::Model::Declarations::Type
+    Defined in: base_types
+
+  manufacturer: organization
+    Resolved to: Expressir::Model::Declarations::Entity
+    Defined in: base_entities
+----
+
+=== Step 8: Handle Dependencies Automatically
+
+Expressir can discover dependencies automatically.
+
+==== Using Schema Manifests
+
+Create `schemas.yml`:
+
+[source,yaml]
+----
+schemas:
+  - path: base_types.exp
+    id: base_types
+  - path: base_entities.exp
+    id: base_entities
+  - path: product_schema.exp
+    id: product_schema
+  - path: catalog_application.exp
+    id: catalog_application
+----
+
+==== Load from Manifest
+
+Create `load_manifest.rb`:
+
+[source,ruby]
+----
+require 'expressir'
+
+# Load manifest
+manifest = Expressir::SchemaManifest.from_file('schemas.yml')
+
+# Get file paths
+files = manifest.schemas.map(&:path)
+puts "Loading #{files.size} schemas from manifest..."
+
+# Parse all
+repo = Expressir::Express::Parser.from_files(files)
+
+puts "\nLoaded successfully:"
+repo.schemas.each { |s| puts "  - #{s.id}" }
+----
+
+=== Step 9: Validate Cross-Schema Consistency
+
+Check that all references resolve correctly.
+
+==== Create Validation Script
+
+Create `validate_references.rb`:
+
+[source,ruby]
+----
+require 'expressir'
+
+files = ['base_types.exp', 'base_entities.exp', 'product_schema.exp', 'catalog_application.exp']
+repo = Expressir::Express::Parser.from_files(files)
+
+unresolved = []
+
+repo.schemas.each do |schema|
+  schema.entities.each do |entity|
+    entity.attributes.each do |attr|
+      if attr.type.respond_to?(:ref) && attr.type.ref.nil?
+        unresolved << {
+          schema: schema.id,
+          entity: entity.id,
+          attribute: attr.id,
+          type: attr.type.id
+        }
+      end
+    end
+  end
+end
+
+if unresolved.empty?
+  puts "✓ All references resolved successfully!"
+else
+  puts "❌ Found #{unresolved.size} unresolved references:"
+  unresolved.each do |item|
+    puts "  #{item[:schema]}.#{item[:entity]}.#{item[:attribute]}: #{item[:type]}"
+  end
+end
+----
+
+=== Step 10: Generate Dependency Graph
+
+Visualize schema dependencies.
+
+==== Create Dependency Report
+
+Create `dependency_graph.rb`:
+
+[source,ruby]
+----
+require 'expressir'
+
+files = ['base_types.exp', 'base_entities.exp', 'product_schema.exp', 'catalog_application.exp']
+repo = Expressir::Express::Parser.from_files(files)
+
+puts "Schema Dependency Graph:"
+puts "=" * 60
+
+repo.schemas.each do |schema|
+  puts "\n#{schema.id}:"
+
+  if schema.interfaces.empty?
+    puts "  (no dependencies)"
+  else
+    schema.interfaces.each do |interface|
+      target = interface.schema.ref&.id || interface.schema.id
+      kind = interface.kind == 'use' ? 'USES' : 'REFERENCES'
+      puts "  #{kind} #{target}"
+
+      if interface.items && !interface.items.empty?
+        puts "    Imports: #{interface.items.map(&:id).join(', ')}"
+      end
+    end
+  end
+end
+----
+
+**Output**:
+[source]
+----
+Schema Dependency Graph:
+============================================================
+
+base_types:
+  (no dependencies)
+
+base_entities:
+  USES base_types
+
+product_schema:
+  REFERENCES base_types
+    Imports: identifier, label, text, positive_integer
+  REFERENCES base_entities
+    Imports: person, organization
+
+catalog_application:
+  USES product_schema
+  REFERENCES base_entities
+    Imports: address
+----
+
+=== Step 11: Practice Exercises
+
+==== Exercise 1: Add New Schema
+
+Create a `shipping_schema.exp` that:
+
+* References `base_entities` for address
+* References `product_schema` for product
+* Defines shipment and delivery entities
+
+Parse all schemas together and verify references resolve.
+
+==== Exercise 2: Circular Dependencies
+
+Create two schemas that reference each other:
+
+[source,express]
+----
+SCHEMA schema_a;
+  REFERENCE FROM schema_b (entity_b);
+  ENTITY entity_a;
+    ref_b : entity_b;
+  END_ENTITY;
+END_SCHEMA;
+
+SCHEMA schema_b;
+  REFERENCE FROM schema_a (entity_a);
+  ENTITY entity_b;
+    ref_a : entity_a;
+  END_ENTITY;
+END_SCHEMA;
+----
+
+Parse them and observe how Expressir handles circular references.
+
+==== Exercise 3: Dependency Ordering
+
+Given these schemas:
+* `z_schema.exp` - References `m_schema`
+* `m_schema.exp` - References `a_schema`
+* `a_schema.exp` - No dependencies
+
+Find the correct parsing order and explain why it matters.
+
+=== Common Pitfalls
+
+==== Wrong File Order
+
+[source,ruby]
+----
+# ❌ Wrong: dependent schema before dependency
+files = ['catalog_application.exp', 'base_types.exp']
+
+# ✅ Correct: dependencies first
+files = ['base_types.exp', 'catalog_application.exp']
+----
+
+**Note**: Expressir handles this automatically, but explicit ordering is clearer.
+
+==== Missing Interface Declarations
+
+[source,express]
+----
+# ❌ Wrong: using type without interface
+SCHEMA my_schema;
+  ENTITY my_entity;
+    name : label;  -- label not declared or imported!
+  END_ENTITY;
+END_SCHEMA;
+
+# ✅ Correct: import the type
+SCHEMA my_schema;
+  REFERENCE FROM base_types (label);
+  ENTITY my_entity;
+    name : label;
+  END_ENTITY;
+END_SCHEMA;
+----
+
+==== Assuming Reference Resolution
+
+[source,ruby]
+----
+# ❌ Wrong: assuming ref is resolved
+attr.type.ref.id  # May crash if ref is nil!
+
+# ✅ Correct: check first
+if attr.type.respond_to?(:ref) && attr.type.ref
+  puts attr.type.ref.id
+else
+  puts "Unresolved reference: #{attr.type.id}"
+end
+----
+
+=== Next Steps
+
+Congratulations! You now understand multi-schema EXPRESS applications.
+
+**Continue learning**:
+
+* link:creating-ler-package.html[Creating LER Packages] - Package schemas for distribution
+* link:querying-schemas.html[Querying Schemas] - Search across multiple schemas
+* link:../pages/ler-packages.html[LER Packages] - Understanding LER format
+
+**Read more**:
+
+* link:../pages/parsers.html[Parsers] - Deep dive into parsing
+* link:../pages/data-model.html[Data Model] - Understanding the model
+* link:../guides/ruby-api/[Ruby API Guides] - Advanced techniques
+
+=== Summary
+
+In this tutorial, you learned to:
+
+* ✅ Parse multiple EXPRESS schema files
+* ✅ Work with USE FROM and REFERENCE FROM
+* ✅ Resolve and validate cross-schema references
+* ✅ Manage schema dependencies
+* ✅ Create dependency graphs
+* ✅ Use schema manifests
+
+You're now ready to work with complex, multi-schema EXPRESS applications!

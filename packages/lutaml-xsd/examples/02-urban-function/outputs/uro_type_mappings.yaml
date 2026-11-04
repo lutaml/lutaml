@@ -1,0 +1,16 @@
+Found 37 elements in _UrbanFunctionType
+
+Processing: keyValuePairAttribute with type uro:KeyValuePairAttributePropertyType
+  Found mapping: urf:keyValuePairAttribute -> uro:KeyValuePairAttribute
+
+Processing: dataQualityAttribute with type uro:DataQualityAttributePropertyType
+  Found mapping: urf:dataQualityAttribute -> uro:DataQualityAttribute
+
+============================================================
+YAML Output:
+============================================================
+---
+- source: urf:keyValuePairAttribute
+  target: uro:KeyValuePairAttribute
+- source: urf:dataQualityAttribute
+  target: uro:DataQualityAttribute

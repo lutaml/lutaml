@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+     $Id: module.dtd,v 1.44 2016/08/30 15:29:22 thomasrthurman Exp $
+                                                                   -->
+<!ENTITY % isodoc SYSTEM "isodoc.ent">
+%isodoc;
+
+<!--                    application module                         -->
+<!ELEMENT module (keywords, abstract?, comments_to_reader?, contacts, changes?, purpose, inscope, outscope?, normrefs?, definition*, abbreviations?, arm, arm_lf?, mapping_table?, mim, mim_lf?, refdata?, usage_guide?, bibliography?)>
+<!--         name         module directory name                    -->
+<!--	     name.french  French name, required for ISO            -->
+<!--                      publication, provided by SC4 secretariat -->
+<!--         part         ISO 10303 part number                    -->
+<!--         sc4.working_group  ISO TC184/SC4 Working group        -->
+<!--         wg.number    SC4 N-number                             -->
+<!--         wg.number.supersedes   superseded SC4 N-number        -->
+<!-- Attributes for source control software like RCS or CVS        -->
+<!--         rcs.date      $Date: 2016/08/30 15:29:22 $            -->
+<!--         rcs.revision  $Revision: 1.44 $                       -->
+<!ATTLIST module
+	xmlns:xlink CDATA #FIXED "http://www.w3.org/1999/xlink"
+	name NMTOKEN #REQUIRED
+	name.french  CDATA #IMPLIED
+	part NMTOKEN #REQUIRED
+	version NMTOKEN #REQUIRED
+        sc4.working_group (3 | 12) "12"
+	wg.number CDATA #REQUIRED
+	wg.number.supersedes CDATA #IMPLIED
+	wg.number.arm CDATA #REQUIRED
+	wg.number.mim CDATA #REQUIRED
+	wg.number.arm.supersedes CDATA #IMPLIED
+	wg.number.mim.supersedes CDATA #IMPLIED
+	wg.number.arm_lf CDATA #IMPLIED
+	wg.number.mim_lf CDATA #IMPLIED
+	wg.number.rd CDATA #IMPLIED	
+	wg.number.arm_lf.supersedes CDATA #IMPLIED
+	wg.number.mim_lf.supersedes CDATA #IMPLIED
+	wg.number.ballot_package CDATA #IMPLIED
+	wg.number.ballot_comment CDATA #IMPLIED
+	checklist.internal_review CDATA #IMPLIED
+	checklist.project_leader CDATA #IMPLIED
+	checklist.working_group CDATA #IMPLIED
+	checklist.convener CDATA #IMPLIED
+	status (CD | FDIS | DIS | IS | CD-TS | TS | WD) "CD-TS"
+	publication.year CDATA #REQUIRED
+	publication.date CDATA #IMPLIED
+	published (y | n) "y"
+	language (E) "E"
+	previous.revision.year CDATA #IMPLIED
+	previous.revision.cancelled (NO | YES) #IMPLIED
+	revision.complete (NO | YES) #IMPLIED
+	revision.scope CDATA #IMPLIED
+	rcs.date CDATA #REQUIRED
+	rcs.revision CDATA #REQUIRED
+        development.folder CDATA #IMPLIED
+>
+
+        
+<!ELEMENT changes (change+)>
+<!ATTLIST change
+  version CDATA #REQUIRED>
+
+<!ELEMENT change (description?, arm.changes?, mapping.changes?, mim.changes?, arm_longform.changes?, mim_longform.changes?)>
+
+<!ELEMENT arm.changes (description?,arm.additions?,arm.modifications?,arm.deletions?)>
+
+<!ELEMENT mim.changes (description?,mim.additions?,mim.modifications?,mim.deletions?)>
+
+<!ELEMENT arm_longform.changes (description?,arm.additions?,arm.modifications?,arm.deletions?)>
+
+<!ELEMENT mim_longform.changes (description?,mim.additions?,mim.modifications?,mim.deletions?)>
+
+<!ELEMENT arm.additions (modified.object)+>
+
+<!ELEMENT arm.modifications (modified.object)+>
+
+<!ELEMENT arm.deletions (modified.object)+>
+
+<!ELEMENT mapping.changes (description? , mapping.change*)>
+
+<!ELEMENT mapping.change (#PCDATA)>
+
+<!ELEMENT mim.additions (modified.object)+>
+
+<!ELEMENT mim.modifications (modified.object)+>
+
+<!ELEMENT mim.deletions (modified.object)+>
+
+
+<!ELEMENT modified.object (description)?>
+<!ATTLIST modified.object
+  moved-to-module NMTOKEN #IMPLIED
+  moved-to-resource NMTOKEN #IMPLIED
+  name NMTOKEN #REQUIRED
+  interfaced.items NMTOKENS #IMPLIED
+  type (USE_FROM | REFERENCE_FROM | CONSTANT | TYPE | ENTITY | SUBTYPE_CONSTRAINT | FUNCTION |RULE | PROCEDURE )  #REQUIRED>

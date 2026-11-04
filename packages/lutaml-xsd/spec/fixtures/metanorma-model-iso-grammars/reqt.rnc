@@ -1,0 +1,117 @@
+requirement = element requirement { RequirementType }
+
+# ALERT: cannot have root comments, because of https://github.com/metanorma/metanorma/issues/437
+
+#Presupposes isodoc.rnc, is included in it
+#include "isodoc.rnc" { }
+#
+# This is the Metanorma default provisions model; it is overridden by other provisions models,
+# such as Modspec
+
+## Specification of an attribute of a subject that is required.
+## NOTE: A requirement can contain other requirements
+
+## Specification of an attribute of a subject that is recommended
+recommendation = element recommendation { RequirementType }
+
+## Specification of an attribute of a subject that is permitted
+permission = element permission { RequirementType }
+
+RequirementType =  
+  ## An attribute that may be used to override the obligation represented in
+  ## the tag name of the top level containers
+  attribute obligation { ReqtObligationType }?,
+  attribute id { xsd:ID },
+  NumberingAttributes,
+  BlockAttributes,
+  ## File name of the requirement model when exported
+  attribute filename { text }?,
+  ## Model of requirements realised by this requirement, e.g. "ogc" for Modspec.
+  ## Current legal values: ogc, default
+  attribute model { text }?,
+  ## Rendering of requirements realised by this requirement. Current legal values:
+  ## default:: default, inline
+  ## ogc:: default
+  attribute render { text }?,
+  ## Type of requirement; does not override labelling, unlike `class`
+  attribute type { text }?,
+  ## Class of provision, used to sequence and label that class separately.
+  ## By default, provisions are sequenced and labelled as requirements, recommendations, or
+  ## permissions, by obligation; the class overrides that
+  attribute class { text }?,
+  ## Human-readable title of the requirement
+  reqtitle?,
+  ## Formal identifier with which the requirement is referenced
+  reqtlabel?,
+  ## The party subject to the obligation stated in the requirement
+  subject*,
+  ## Reference to the identifier of another requirement, of which this requirement
+  ## is a subclass, and from which it inherits attributes
+  reqinherit*,
+  ## Key/Value pairs of metadata used to describe the requirement.
+  ## A key can be associated with multiple values
+  classification*,
+  (
+    ## Quantitative statement of metrics that the requirement realises
+    measurementtarget |
+    ## Formal specification of the requirement. Expected to be machine-readable
+    specification |
+    ## Processes or code used to verify that the requirement is being complied
+    ## with. Can be a test (including test code), or a compliance statement
+    verification |
+    ## A reference to source code or a statement of prerequisites which is defined elsewhere
+    import |
+    ## Descriptive statement of the content of the requirement. Is expected to
+    ## be human-readable, and to contain formatting markup following Metanorma
+    ## conventions. Is expected to be discursive, and be resumed after
+    ## interruption by other sub-containers
+    description |
+    ## Provisions nested within this provision, which cannot be referenced autonomously and have
+    ## subclasses specific to the parent provision. Not expressed with provision metadata
+    component
+  )*,
+  ## A list of references for the requirement, following the Relaton model
+  reqt_references?,
+  ## Provisions nested within this provision, which are self-standing and do not have
+  ## subclasses specific to the parent provision
+  ( requirement | recommendation | permission )*
+
+reqtitle = element title { LocalizedMarkedUpString }
+reqtlabel = element identifier { TextElement+ }
+subject = element subject { TextElement+ }
+reqinherit = element inherit { TextElement+ }
+
+measurementtarget = element measurement-target { RequirementSubpart }
+specification = element specification { RequirementSubpart }
+verification = element verification { RequirementSubpart }
+import = element import { RequirementSubpart }
+description = element description { RequirementSubpart }
+
+component = element component { 
+  ## Class of component
+  attribute class { text },
+  RequirementSubpart 
+}
+
+reqt_references = element references { bibitem+ }
+
+## A subcontainer can be either machine-readable or human-readable, or a
+## mixture of the two.
+## A machine-readable component can be included as source code with
+## nomination of the language
+RequirementSubpart = 
+  ## Type of sub-container.
+  ## For example a `verification[@type = "unit-test"]` contains a unit test of a single
+  ## feature, and is to be treated differently from
+  ## `verification[@type = "comprehensive"]`, which represents a comprehensive test suite
+  attribute type { text }?,
+  ## Indicates that the current sub-container is only intended to be
+  ## machine-readable, and is not to be rendered as document output
+  attribute exclude { xsd:boolean }?,
+  BlockAttributes,
+  ## Content of subpart: blocks, rather than provisions
+  (BasicBlock|component)+
+
+## Values are "requirement", "recommendation", "permission"; multiple values can be comma-delimited
+ReqtObligationType = text
+

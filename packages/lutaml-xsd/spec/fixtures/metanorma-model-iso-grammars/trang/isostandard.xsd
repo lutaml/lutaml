@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:include schemaLocation="isodoc.xsd"/>
+  <xs:element name="sections">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+          <xs:group ref="note"/>
+          <xs:group ref="admonition"/>
+        </xs:choice>
+        <xs:group ref="clause"/>
+        <xs:choice minOccurs="0">
+          <xs:group ref="term-clause"/>
+          <xs:element ref="terms"/>
+        </xs:choice>
+        <xs:element minOccurs="0" ref="definitions"/>
+        <xs:choice maxOccurs="unbounded">
+          <xs:group ref="clause"/>
+          <xs:group ref="term-clause"/>
+          <xs:element ref="terms"/>
+        </xs:choice>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:complexType name="Clause-Section">
+    <xs:sequence>
+      <xs:group minOccurs="0" ref="section-title"/>
+      <xs:choice>
+        <xs:choice>
+          <xs:group maxOccurs="unbounded" ref="BasicBlock"/>
+          <xs:element ref="amend"/>
+        </xs:choice>
+        <xs:group maxOccurs="unbounded" ref="clause-subsection"/>
+      </xs:choice>
+    </xs:sequence>
+    <xs:attributeGroup ref="Section-Attributes"/>
+    <xs:attribute name="type"/>
+  </xs:complexType>
+  <xs:element name="annex">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:group minOccurs="0" ref="section-title"/>
+        <xs:group minOccurs="0" maxOccurs="unbounded" ref="BasicBlock"/>
+        <xs:group minOccurs="0" maxOccurs="unbounded" ref="clause-hanging-paragraph-with-footnote"/>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="appendix"/>
+      </xs:sequence>
+      <xs:attributeGroup ref="Annex-Section-Attributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:simpleType name="AdmonitionType">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="danger"/>
+      <xs:enumeration value="caution"/>
+      <xs:enumeration value="warning"/>
+      <xs:enumeration value="important"/>
+      <xs:enumeration value="safety precautions"/>
+      <xs:enumeration value="editorial"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:element name="preface">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:group minOccurs="0" ref="abstract"/>
+        <xs:element ref="foreword"/>
+        <xs:element minOccurs="0" ref="introduction"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="foreword" type="Basic-Section"/>
+  <xs:element name="introduction" type="Content-Section"/>
+  <xs:complexType name="Content-Section">
+    <xs:sequence>
+      <xs:group minOccurs="0" ref="section-title"/>
+      <xs:choice>
+        <xs:group minOccurs="0" maxOccurs="unbounded" ref="BasicBlock"/>
+        <xs:group maxOccurs="unbounded" ref="content-subsection"/>
+      </xs:choice>
+    </xs:sequence>
+    <xs:attributeGroup ref="Section-Attributes"/>
+    <xs:attribute name="type"/>
+  </xs:complexType>
+  <!-- end overrides -->
+  <xs:group name="clause-hanging-paragraph-with-footnote">
+    <xs:sequence>
+      <xs:element name="clause">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:group minOccurs="0" ref="section-title"/>
+            <xs:group minOccurs="0" maxOccurs="unbounded" ref="BasicBlock"/>
+            <xs:group minOccurs="0" maxOccurs="unbounded" ref="clause-hanging-paragraph-with-footnote"/>
+          </xs:sequence>
+          <xs:attributeGroup ref="Section-Attributes"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+</xs:schema>

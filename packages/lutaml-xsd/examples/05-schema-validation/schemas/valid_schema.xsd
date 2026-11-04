@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://example.com/validation"
+           xmlns:val="http://example.com/validation"
+           elementFormDefault="qualified">
+  
+  <xs:annotation>
+    <xs:documentation>
+      Valid XSD 1.0 Schema Example
+      This schema demonstrates a correctly structured XSD 1.0 schema.
+    </xs:documentation>
+  </xs:annotation>
+
+  <!-- Simple element definition -->
+  <xs:element name="person" type="val:PersonType"/>
+
+  <!-- Complex type with sequence -->
+  <xs:complexType name="PersonType">
+    <xs:sequence>
+      <xs:element name="firstName" type="xs:string"/>
+      <xs:element name="lastName" type="xs:string"/>
+      <xs:element name="age" type="xs:positiveInteger"/>
+      <xs:element name="email" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute name="id" type="xs:ID" use="required"/>
+  </xs:complexType>
+
+  <!-- Simple type with restriction -->
+  <xs:simpleType name="AgeType">
+    <xs:restriction base="xs:integer">
+      <xs:minInclusive value="0"/>
+      <xs:maxInclusive value="150"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+</xs:schema>

@@ -1,0 +1,64 @@
+include "isodoc.rnc" { 
+
+sections =
+  element sections {
+    (note | admonition)*, clause, (term-clause | terms)?, definitions?, (clause | term-clause | terms)+
+  }
+
+Clause-Section =
+    Section-Attributes,
+    attribute type { text }?,
+    section-title?,
+    (
+      ( ( BasicBlock+ ) | amend) | clause-subsection+
+    )
+
+term = 
+  element term { 
+    TermAttributes,
+    preferred, admitted*, deprecates*,
+    termdomain?, termdefinition, termnote*, termexample*, termsource*,
+    term*
+  }
+
+annex =
+  element annex { 
+    Annex-Section-Attributes,
+    section-title?,
+    # allow hanging paragraps in annexes: they introduce lists
+    #( paragraph-with-footnote | table | note | formula | admonition | ol | ul | dl | figure | quote | sourcecode | review | example )*,
+    BasicBlock*, 
+    clause-hanging-paragraph-with-footnote*,
+    annex-appendix*
+  }
+
+AdmonitionType =
+ ( "danger" | "caution" | "warning" | "important" | "safety precautions" | "editorial" )
+
+preface =
+  element preface {
+    abstract?, foreword, introduction?
+}
+
+foreword = element foreword { Basic-Section }
+introduction = element introduction { Content-Section }
+
+Content-Section =
+    Section-Attributes,
+    attribute type { text }?,
+    section-title?,
+    ( (BasicBlock*) |
+      content-subsection+ )
+
+}
+
+# end overrides
+clause-hanging-paragraph-with-footnote =
+  element clause {
+    Section-Attributes,
+    section-title?,
+    # allow hanging paragraphs in annexes: they introduce lists
+    BasicBlock*,
+    clause-hanging-paragraph-with-footnote*
+  }
+

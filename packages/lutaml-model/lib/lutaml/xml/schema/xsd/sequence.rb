@@ -1,0 +1,68 @@
+# frozen_string_literal: true
+
+module Lutaml
+  module Xml
+    module Schema
+      module Xsd
+        class Sequence < Base
+          attribute :id, :string
+          attribute :min_occurs, :string
+          attribute :max_occurs, :string
+          attribute :annotation, :annotation
+          attribute :sequence, :sequence, collection: true,
+                                          initialize_empty: true
+          attribute :element, :element, collection: true, initialize_empty: true
+          attribute :choice, :choice, collection: true, initialize_empty: true
+          attribute :group, :group, collection: true, initialize_empty: true
+          attribute :any, :any, collection: true, initialize_empty: true
+
+          xml do
+            element "sequence"
+            mixed_content
+            namespace Lutaml::Xml::Schema::XsdNamespace
+
+            map_attribute :id, to: :id
+            map_attribute :minOccurs, to: :min_occurs
+            map_attribute :maxOccurs, to: :max_occurs
+            map_element :annotation, to: :annotation
+            map_element :sequence, to: :sequence
+            map_element :element, to: :element
+            map_element :choice, to: :choice
+            map_element :group, to: :group
+            map_element :any, to: :any
+          end
+
+          liquid do
+            map "child_elements", to: :child_elements
+          end
+
+          # Walk the sequence recursively and collect contained element nodes.
+          def child_elements(array = [])
+            resolved_element_order&.each do |child|
+              if child.is_a?(Element)
+                array << child
+              elsif child.is_a?(Group) || child.is_a?(Sequence) || child.is_a?(Choice) || child.is_a?(ComplexType)
+                child.child_elements(array)
+              end
+            end
+            array
+          end
+
+          # Check whether the sequence references a given element name in any
+          # nested branch.
+          def find_elements_used(element_name)
+            resolved_element_order&.any? do |child|
+              if child.is_a?(Element)
+                reference_matches?(element_name, child.ref || child.name)
+              elsif child.is_a?(Group) || child.is_a?(Sequence) || child.is_a?(Choice) || child.is_a?(ComplexType)
+                child.find_elements_used(element_name)
+              end
+            end || false
+          end
+
+          Lutaml::Xml::Schema::Xsd.register_model(self, :sequence)
+        end
+      end
+    end
+  end
+end

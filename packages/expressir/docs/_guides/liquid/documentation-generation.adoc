@@ -1,0 +1,1042 @@
+---
+title: Documentation Generation
+parent: Liquid
+grand_parent: Guides
+nav_order: 4
+---
+
+= Documentation generation with Liquid
+
+== Purpose
+
+This guide demonstrates complete documentation generation workflows
+using Liquid templates and Expressir. Learn how to build sophisticated
+documentation systems that transform EXPRESS schemas into professional,
+maintainable documentation in various formats.
+
+== References
+
+* link:basic-templates.html[Basic Templates] - Template fundamentals
+* link:drops-reference.html[Drops Reference] - Available data
+* link:filters-and-tags.html[Filters and Tags] - Transform operations
+* link:../../_tutorials/liquid-templates.html[Liquid Templates Tutorial]
+  - Hands-on practice
+
+== Concepts
+
+Documentation generator:: A Ruby script that parses schemas, applies
+templates, and produces documentation files.
+
+Template organization:: A structured approach to organizing templates
+for maintainability and reuse.
+
+Multi-file output:: Generating multiple documentation files from a
+single schema or repository.
+
+Template inheritance:: Reusing common template elements across
+different documentation pages.
+
+Output format:: The target format for documentation (HTML, Markdown,
+AsciiDoc, LaTeX, etc.).
+
+== Documentation project structure
+
+Organize your documentation project with clear separation:
+
+[source]
+----
+documentation/
+├── templates/              # Template files
+│   ├── index.liquid       # Repository overview
+│   ├── schema.liquid      # Schema documentation
+│   ├── entity.liquid      # Entity reference
+│   ├── type.liquid        # Type reference
+│   └── partials/          # Reusable components
+│       ├── header.liquid
+│       ├── footer.liquid
+│       └── toc.liquid
+├── schemas/               # EXPRESS source files
+│   ├── action_schema.exp
+│   └── support_schema.exp
+├── output/                # Generated documentation
+│   ├── index.md
+│   ├── schemas/
+│   └── entities/
+├── generate.rb            # Generator script
+└── config.yml             # Configuration
+----
+
+== Basic documentation generator
+
+=== Simple generator script
+
+.generate.rb
+[source,ruby]
+----
+require "expressir"
+require "liquid"
+require "fileutils"
+
+class DocumentationGenerator
+  def initialize(schema_files, template_dir, output_dir)
+    @schema_files = schema_files
+    @template_dir = template_dir
+    @output_dir = output_dir
+    @templates = {}
+  end
+
+  def generate
+    # Parse schemas
+    puts "Parsing schemas..."
+    repo = Expressir::Express::Parser.from_files(@schema_files)
+    repo_drop = repo.to_liquid
+
+    # Create output directory
+    FileUtils.mkdir_p(@output_dir)
+
+    # Generate documentation
+    generate_index(repo_drop)
+    generate_schemas(repo_drop)
+
+    puts "Documentation generated in #{@output_dir}"
+  end
+
+  private
+
+  def load_template(name)
+    @templates[name] ||= begin
+      path = File.join(@template_dir, "#{name}.liquid")
+      Liquid::Template.parse(File.read(path))
+    end
+  end
+
+  def generate_index(repo_drop)
+    puts "Generating index..."
+    template = load_template("index")
+    output = template.render("repository" => repo_drop)
+    File.write(File.join(@output_dir, "index.md"), output)
+  end
+
+  def generate_schemas(repo_drop)
+    repo_drop.schemas.each do |schema|
+      generate_schema(schema)
+    end
+  end
+
+  def generate_schema(schema)
+    puts "Generating #{schema.id}..."
+    template = load_template("schema")
+    output = template.render("schema" => schema)
+
+    schema_dir = File.join(@output_dir, "schemas")
+    FileUtils.mkdir_p(schema_dir)
+    File.write(File.join(schema_dir, "#{schema.id}.md"), output)
+  end
+end
+
+# Usage
+generator = DocumentationGenerator.new(
+  ["schemas/action_schema.exp", "schemas/support_schema.exp"],
+  "templates",
+  "output"
+)
+generator.generate
+----
+
+=== Index template
+
+.templates/index.liquid
+[source,liquid]
+----
+# EXPRESS Schema Documentation
+
+Generated: {{ "now" | date: "%Y-%m-%d %H:%M" }}
+
+## Overview
+
+This documentation covers {{ repository.schemas.size }} EXPRESS schemas.
+
+## Schemas
+
+{% for schema in repository.schemas %}
+### [{{ schema.id }}](schemas/{{ schema.id }}.md)
+
+{% if schema.version %}
+**Version**: {{ schema.version.value }}
+{% endif %}
+
+{% if schema.remarks.size > 0 %}
+{{ schema.remarks | join: " " }}
+{% endif %}
+
+**Contents**:
+- Entities: {{ schema.entities.size }}
+- Types: {{ schema.types.size }}
+- Functions: {{ schema.functions.size }}
+
+{% endfor %}
+
+## Statistics
+
+- **Total Schemas**: {{ repository.schemas.size }}
+- **Total Entities**: {% assign total = 0 %}{% for s in repository.schemas %}{% assign total = total | plus: s.entities.size %}{% endfor %}{{ total }}
+- **Total Types**: {% assign total = 0 %}{% for s in repository.schemas %}{% assign total = total | plus: s.types.size %}{% endfor %}{{ total }}
+----
+
+=== Schema template
+
+.templates/schema.liquid
+[source,liquid]
+----
+# {{ schema.id }}
+
+{% if schema.version %}
+**Version**: {{ schema.version.value }}
+{% endif %}
+
+**File**: `{{ schema.file }}`
+
+{% if schema.remarks.size > 0 %}
+## Description
+
+{% for remark in schema.remarks %}
+{{ remark }}
+{% endfor %}
+{% endif %}
+
+## Contents
+
+- [Entities](#entities) ({{ schema.entities.size }})
+- [Types](#types) ({{ schema.types.size }})
+- [Functions](#functions) ({{ schema.functions.size }})
+
+{% if schema.interfaces.size > 0 %}
+## Dependencies
+
+{% for interface in schema.interfaces %}
+**{{ interface.kind | upcase }} FROM** `{{ interface.schema.id }}`
+{% if interface.items.size > 0 %}
+- Items: {{ interface.items | map: "id" | join: ", " }}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+## Entities
+
+{% for entity in schema.entities | sort: "id" %}
+### {{ entity.id }}
+
+{% if entity.abstract %}
+_Abstract entity_
+{% endif %}
+
+{% if entity.remarks.size > 0 %}
+{{ entity.remarks | join: " " }}
+{% endif %}
+
+**Attributes** ({{ entity.attributes.size }}):
+{% for attr in entity.attributes %}
+- `{{ attr.id }}`: {{ attr.type }}{% if attr.optional %} (optional){% endif %}
+{% endfor %}
+
+{% if entity.where_rules.size > 0 %}
+**Constraints** ({{ entity.where_rules.size }}):
+{% for rule in entity.where_rules %}
+- **{{ rule.id }}**: {{ rule.expression }}
+{% endfor %}
+{% endif %}
+
+---
+{% endfor %}
+
+## Types
+
+{% for type in schema.types | sort: "id" %}
+### {{ type.id }}
+
+**Base type**: {{ type.underlying_type._class }}
+
+{% if type.remarks.size > 0 %}
+{{ type.remarks | join: " " }}
+{% endif %}
+{% endfor %}
+
+## Functions
+
+{% for func in schema.functions | sort: "id" %}
+### {{ func.id }}
+
+**Returns**: {{ func.return_type }}
+
+{% if func.parameters.size > 0 %}
+**Parameters**:
+{% for param in func.parameters %}
+- `{{ param.id }}`: {{ param.type }}
+{% endfor %}
+{% endif %}
+
+{% if func.remarks.size > 0 %}
+{{ func.remarks | join: " " }}
+{% endif %}
+{% endfor %}
+----
+
+== Advanced generator with multiple outputs
+
+=== Enhanced generator
+
+.generate_advanced.rb
+[source,ruby]
+----
+require "expressir"
+require "liquid"
+require "fileutils"
+require "yaml"
+
+class AdvancedDocumentationGenerator
+  def initialize(config_file)
+    @config = YAML.load_file(config_file)
+    @templates = {}
+    setup_directories
+  end
+
+  def generate
+    puts "Loading schemas..."
+    repo = load_repository
+    repo_drop = repo.to_liquid
+
+    puts "Generating documentation..."
+    generate_index(repo_drop)
+    generate_schemas(repo_drop)
+    generate_entities(repo_drop)
+    generate_types(repo_drop)
+    generate_cross_references(repo_drop)
+
+    puts "\nDocumentation generated successfully!"
+    print_summary(repo_drop)
+  end
+
+  private
+
+  def setup_directories
+    [@config["output_dir"],
+     "#{@config['output_dir']}/schemas",
+     "#{@config['output_dir']}/entities",
+     "#{@config['output_dir']}/types"].each do |dir|
+      FileUtils.mkdir_p(dir)
+    end
+  end
+
+  def load_repository
+    Expressir::Express::Parser.from_files(@config["schema_files"])
+  end
+
+  def load_template(name)
+    @templates[name] ||= begin
+      path = File.join(@config["template_dir"], "#{name}.liquid")
+      Liquid::Template.parse(File.read(path))
+    end
+  end
+
+  def generate_index(repo_drop)
+    puts "  → index.md"
+    template = load_template("index")
+    output = template.render("repository" => repo_drop)
+    write_file("index.md", output)
+  end
+
+  def generate_schemas(repo_drop)
+    repo_drop.schemas.each do |schema|
+      puts "  → schemas/#{schema.id}.md"
+      template = load_template("schema")
+      output = template.render("schema" => schema)
+      write_file("schemas/#{schema.id}.md", output)
+    end
+  end
+
+  def generate_entities(repo_drop)
+    repo_drop.schemas.each do |schema|
+      schema.entities.each do |entity|
+        puts "  → entities/#{entity.id}.md"
+        template = load_template("entity")
+        output = template.render(
+          "entity" => entity,
+          "schema" => schema
+        )
+        write_file("entities/#{entity.id}.md", output)
+      end
+    end
+  end
+
+  def generate_types(repo_drop)
+    repo_drop.schemas.each do |schema|
+      schema.types.each do |type|
+        puts "  → types/#{type.id}.md"
+        template = load_template("type")
+        output = template.render(
+          "type" => type,
+          "schema" => schema
+        )
+        write_file("types/#{type.id}.md", output)
+      end
+    end
+  end
+
+  def generate_cross_references(repo_drop)
+    puts "  → cross-references.md"
+    template = load_template("cross_references")
+    output = template.render("repository" => repo_drop)
+    write_file("cross-references.md", output)
+  end
+
+  def write_file(path, content)
+    File.write(File.join(@config["output_dir"], path), content)
+  end
+
+  def print_summary(repo_drop)
+    total_entities = repo_drop.schemas.sum { |s| s.entities.size }
+    total_types = repo_drop.schemas.sum { |s| s.types.size }
+
+    puts "\nSummary:"
+    puts "  Schemas: #{repo_drop.schemas.size}"
+    puts "  Entities: #{total_entities}"
+    puts "  Types: #{total_types}"
+    puts "\nOutput directory: #{@config['output_dir']}"
+  end
+end
+
+# Configuration file
+config = {
+  "schema_files" => Dir["schemas/**/*.exp"],
+  "template_dir" => "templates",
+  "output_dir" => "output"
+}
+File.write("config.yml", config.to_yaml)
+
+# Usage
+generator = AdvancedDocumentationGenerator.new("config.yml")
+generator.generate
+----
+
+=== Entity detail template
+
+.templates/entity.liquid
+[source,liquid]
+----
+---
+title: {{ entity.id }}
+schema: {{ schema.id }}
+type: entity
+---
+
+# {{ entity.id }}
+
+**Schema**: [{{ schema.id }}](../schemas/{{ schema.id }}.md)
+
+{% if entity.abstract %}
+> **Abstract Entity** - Cannot be instantiated directly
+{% endif %}
+
+{% if entity.remarks.size > 0 %}
+## Description
+
+{% for remark in entity.remarks %}
+{{ remark }}
+{% endfor %}
+{% endif %}
+
+## Definition
+
+```express
+ENTITY {{ entity.id }}{% if entity.abstract %} ABSTRACT{% endif %};
+{% for attr in entity.attributes %}
+  {{ attr.id }} : {% if attr.optional %}OPTIONAL {% endif %}{{ attr.type }};
+{% endfor %}
+{% if entity.where_rules.size > 0 %}
+WHERE
+{% for rule in entity.where_rules %}
+  {{ rule.id }}: {{ rule.expression }};
+{% endfor %}
+{% endif %}
+END_ENTITY;
+```
+
+## Attributes
+
+| Name | Type | Optional | Description |
+|------|------|----------|-------------|
+{% for attr in entity.attributes %}
+| `{{ attr.id }}` | {{ attr.type }} | {{ attr.optional }} | {% if attr.remarks.size > 0 %}{{ attr.remarks | join: " " }}{% else %}-{% endif %} |
+{% endfor %}
+
+{% if entity.subtype_of.size > 0 %}
+## Supertypes
+
+{% for super in entity.subtype_of %}
+- {{ super }}
+{% endfor %}
+{% endif %}
+
+{% if entity.where_rules.size > 0 %}
+## Constraints
+
+{% for rule in entity.where_rules %}
+### {{ rule.id }}
+
+```express
+{{ rule.expression }}
+```
+
+{% if rule.remarks.size > 0 %}
+{{ rule.remarks | join: "\n" }}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+{% if entity.unique_rules.size > 0 %}
+## Unique Rules
+
+{% for rule in entity.unique_rules %}
+### {{ rule.id }}
+
+Attributes: {{ rule.attributes | map: "id" | join: ", " }}
+
+{% if rule.remarks.size > 0 %}
+{{ rule.remarks | join: "\n" }}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+---
+
+[Back to {{ schema.id }}](../schemas/{{ schema.id }}.md) |
+[All Entities](../index.md#entities)
+----
+
+=== Cross-reference template
+
+.templates/cross_references.liquid
+[source,liquid]
+----
+# Cross-Reference Tables
+
+## All Entities by Schema
+
+| Schema | Entity | Attributes | Constraints |
+|--------|--------|------------|-------------|
+{% for schema in repository.schemas | sort: "id" %}
+{% for entity in schema.entities | sort: "id" %}
+| [{{ schema.id }}](schemas/{{ schema.id }}.md) | [{{ entity.id }}](entities/{{ entity.id }}.md) | {{ entity.attributes.size }} | {{ entity.where_rules.size }} |
+{% endfor %}
+{% endfor %}
+
+## All Types by Schema
+
+| Schema | Type | Category |
+|--------|------|----------|
+{% for schema in repository.schemas | sort: "id" %}
+{% for type in schema.types | sort: "id" %}
+| [{{ schema.id }}](schemas/{{ schema.id }}.md) | [{{ type.id }}](types/{{ type.id }}.md) | {{ type.underlying_type._class | split: "::" | last }} |
+{% endfor %}
+{% endfor %}
+
+## Schema Dependencies
+
+{% for schema in repository.schemas | sort: "id" %}
+{% if schema.interfaces.size > 0 %}
+### {{ schema.id }}
+
+{% for interface in schema.interfaces %}
+- **{{ interface.kind | upcase }} FROM** {{ interface.schema.id }}
+  {% if interface.items.size > 0 %}
+  - Items: {{ interface.items | map: "id" | join: ", " }}
+  {% endif %}
+{% endfor %}
+{% endif %}
+{% endfor %}
+----
+
+== HTML documentation generation
+
+=== HTML template
+
+.templates/html_entity.liquid
+[source,liquid]
+----
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ entity.id }} - {{ schema.id }}</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2rem;
+      line-height: 1.6;
+    }
+    .header {
+      border-bottom: 2px solid #333;
+      padding-bottom: 1rem;
+      margin-bottom: 2rem;
+    }
+    .meta {
+      color: #666;
+      font-size: 0.9rem;
+    }
+    .abstract-badge {
+      background: #f0ad4e;
+      color: white;
+      padding: 0.25rem 0.5rem;
+      border-radius: 3px;
+      font-size: 0.8rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 0.75rem;
+      text-align: left;
+    }
+    th {
+      background: #f5f5f5;
+      font-weight: 600;
+    }
+    code {
+      background: #f5f5f5;
+      padding: 0.2rem 0.4rem;
+      border-radius: 3px;
+      font-family: monospace;
+    }
+    pre {
+      background: #f5f5f5;
+      padding: 1rem;
+      border-radius: 5px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>{{ entity.id }}</h1>
+    <div class="meta">
+      Schema: <a href="../schemas/{{ schema.id }}.html">{{ schema.id }}</a>
+      {% if entity.abstract %}
+      <span class="abstract-badge">ABSTRACT</span>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if entity.remarks.size > 0 %}
+  <section>
+    <h2>Description</h2>
+    {% for remark in entity.remarks %}
+    <p>{{ remark }}</p>
+    {% endfor %}
+  </section>
+  {% endif %}
+
+  <section>
+    <h2>Definition</h2>
+    <pre><code>ENTITY {{ entity.id }}{% if entity.abstract %} ABSTRACT{% endif %};
+{% for attr in entity.attributes %}  {{ attr.id }} : {% if attr.optional %}OPTIONAL {% endif %}{{ attr.type }};
+{% endfor %}{% if entity.where_rules.size > 0 %}WHERE
+{% for rule in entity.where_rules %}  {{ rule.id }}: {{ rule.expression }};
+{% endfor %}{% endif %}END_ENTITY;</code></pre>
+  </section>
+
+  <section>
+    <h2>Attributes</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Optional</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for attr in entity.attributes %}
+        <tr>
+          <td><code>{{ attr.id }}</code></td>
+          <td>{{ attr.type }}</td>
+          <td>{{ attr.optional }}</td>
+          <td>{% if attr.remarks.size > 0 %}{{ attr.remarks | join: " " }}{% else %}-{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  {% if entity.where_rules.size > 0 %}
+  <section>
+    <h2>Constraints</h2>
+    {% for rule in entity.where_rules %}
+    <h3>{{ rule.id }}</h3>
+    <pre><code>{{ rule.expression }}</code></pre>
+    {% if rule.remarks.size > 0 %}
+    <p>{{ rule.remarks | join: " " }}</p>
+    {% endif %}
+    {% endfor %}
+  </section>
+  {% endif %}
+
+  <footer>
+    <p><a href="../index.html">← Back to Index</a></p>
+  </footer>
+</body>
+</html>
+----
+
+== Template organization strategies
+
+=== Using partials
+
+Break templates into reusable components:
+
+.templates/partials/navigation.liquid
+[source,liquid]
+----
+<nav>
+  <a href="../index.html">Home</a> |
+  <a href="../schemas.html">Schemas</a> |
+  <a href="../entities.html">Entities</a> |
+  <a href="../types.html">Types</a>
+</nav>
+----
+
+Include partials (if your Liquid setup supports includes):
+
+[source,liquid]
+----
+{% include 'partials/navigation' %}
+----
+
+Or use template concatenation in Ruby:
+
+[source,ruby]
+----
+header = File.read("templates/partials/header.liquid")
+footer = File.read("templates/partials/footer.liquid")
+content = File.read("templates/entity.liquid")
+
+full_template = header + content + footer
+template = Liquid::Template.parse(full_template)
+----
+
+=== Template inheritance pattern
+
+.templates/base.liquid
+[source,liquid]
+----
+<!DOCTYPE html>
+<html>
+<head>
+  <title>{{ title }}</title>
+  {{ head_extra }}
+</head>
+<body>
+  <header>{{ header_content }}</header>
+
+  <main>
+    {{ content }}
+  </main>
+
+  <footer>{{ footer_content }}</footer>
+</body>
+</html>
+----
+
+Use in Ruby:
+
+[source,ruby]
+----
+base = Liquid::Template.parse(File.read("templates/base.liquid"))
+
+entity_content = entity_template.render(...)
+output = base.render(
+  "title" => "Entity: #{entity.id}",
+  "content" => entity_content,
+  "header_content" => header,
+  "footer_content" => footer
+)
+----
+
+== Complete workflow example
+
+=== Full production generator
+
+.lib/doc_generator.rb
+[source,ruby]
+----
+require "expressir"
+require "liquid"
+require "fileutils"
+require "yaml"
+
+module DocGenerator
+  class Generator
+    attr_reader :config, :stats
+
+    def initialize(config_path)
+      @config = YAML.load_file(config_path)
+      @templates = {}
+      @stats = { files: 0, schemas: 0, entities: 0, types: 0 }
+    end
+
+    def generate
+      start_time = Time.now
+
+      puts "🚀 Starting documentation generation..."
+
+      setup
+      repo_drop = load_schemas
+      generate_all(repo_drop)
+
+      elapsed = Time.now - start_time
+      print_summary(elapsed)
+    end
+
+    private
+
+    def setup
+      puts "📁 Setting up directories..."
+      [@config["output"]["dir"],
+       schemas_dir,
+       entities_dir,
+       types_dir,
+       assets_dir].each { |dir| FileUtils.mkdir_p(dir) }
+
+      copy_assets if @config["assets"]
+    end
+
+    def load_schemas
+      puts "📖 Loading schemas..."
+      files = @config["schemas"]["files"]
+      repo = Expressir::Express::Parser.from_files(files) do |file, schemas, error|
+        if error
+          puts "  ❌ Error in #{file}: #{error.message}"
+        else
+          puts "  ✓ Loaded #{file}"
+        end
+      end
+
+      @stats[:schemas] = repo.schemas.size
+      repo.to_liquid
+    end
+
+    def generate_all(repo_drop)
+      puts "✍️  Generating documentation..."
+
+      generate_index(repo_drop)
+      generate_schemas(repo_drop)
+      generate_entities(repo_drop)
+      generate_types(repo_drop) if @config["generate"]["types"]
+      generate_search_index(repo_drop) if @config["generate"]["search"]
+    end
+
+    def generate_index(repo_drop)
+      render_and_write("index", { "repository" => repo_drop }, "index.html")
+    end
+
+    def generate_schemas(repo_drop)
+      repo_drop.schemas.each do |schema|
+        render_and_write(
+          "schema",
+          { "schema" => schema },
+          "schemas/#{schema.id}.html"
+        )
+      end
+    end
+
+    def generate_entities(repo_drop)
+      repo_drop.schemas.each do |schema|
+        schema.entities.each do |entity|
+          @stats[:entities] += 1
+          render_and_write(
+            "entity",
+            { "entity" => entity, "schema" => schema },
+            "entities/#{entity.id}.html"
+          )
+        end
+      end
+    end
+
+    def generate_types(repo_drop)
+      repo_drop.schemas.each do |schema|
+        schema.types.each do |type|
+          @stats[:types] += 1
+          render_and_write(
+            "type",
+            { "type" => type, "schema" => schema },
+            "types/#{type.id}.html"
+          )
+        end
+      end
+    end
+
+    def generate_search_index(repo_drop)
+      # Generate JSON index for client-side search
+      index = build_search_index(repo_drop)
+      path = File.join(@config["output"]["dir"], "search-index.json")
+      File.write(path, JSON.pretty_generate(index))
+      puts "  ✓ search-index.json"
+    end
+
+    def render_and_write(template_name, context, output_path)
+      template = load_template(template_name)
+      output = template.render(context)
+
+      full_path = File.join(@config["output"]["dir"], output_path)
+      File.write(full_path, output)
+
+      @stats[:files] += 1
+      puts "  ✓ #{output_path}"
+    end
+
+    def load_template(name)
+      @templates[name] ||= begin
+        path = File.join(@config["templates"]["dir"], "#{name}.liquid")
+        Liquid::Template.parse(File.read(path))
+      end
+    end
+
+    def schemas_dir
+      File.join(@config["output"]["dir"], "schemas")
+    end
+
+    def entities_dir
+      File.join(@config["output"]["dir"], "entities")
+    end
+
+    def types_dir
+      File.join(@config["output"]["dir"], "types")
+    end
+
+    def assets_dir
+      File.join(@config["output"]["dir"], "assets")
+    end
+
+    def copy_assets
+      FileUtils.cp_r(@config["assets"]["dir"], assets_dir)
+    end
+
+    def build_search_index(repo_drop)
+      items = []
+
+      repo_drop.schemas.each do |schema|
+        schema.entities.each do |entity|
+          items << {
+            type: "entity",
+            id: entity.id,
+            schema: schema.id,
+            url: "entities/#{entity.id}.html",
+            description: entity.remarks.join(" ")
+          }
+        end
+      end
+
+      { items: items }
+    end
+
+    def print_summary(elapsed)
+      puts "\n✅ Documentation generated successfully!"
+      puts "\nStatistics:"
+      puts "  Schemas:  #{@stats[:schemas]}"
+      puts "  Entities: #{@stats[:entities]}"
+      puts "  Types:    #{@stats[:types]}"
+      puts "  Files:    #{@stats[:files]}"
+      puts "\n⏱  Time: #{elapsed.round(2)}s"
+      puts "📂 Output: #{@config['output']['dir']}"
+    end
+  end
+end
+
+# Usage
+if __FILE__ == $PROGRAM_NAME
+  generator = DocGenerator::Generator.new("config.yml")
+  generator.generate
+end
+----
+
+=== Configuration file
+
+.config.yml
+[source,yaml]
+----
+schemas:
+  files:
+    - "schemas/**/*.exp"
+
+templates:
+  dir: "templates"
+
+output:
+  dir: "docs"
+
+assets:
+  dir: "assets"
+
+generate:
+  types: true
+  search: true
+----
+
+== Best practices
+
+**Organize templates logically**::
+Group related templates together, use descriptive names, and document
+template purpose.
+
+**Cache parsed templates**::
+Load and parse templates once, reuse for multiple documents.
+
+**Validate input data**::
+Check for nil values and empty collections before rendering.
+
+**Handle errors gracefully**::
+Catch and report parsing errors, continue with other files.
+
+**Provide progress feedback**::
+Show what's being generated for long-running operations.
+
+**Use consistent naming**::
+Follow conventions for output file names and directory structure.
+
+**Test with various schemas**::
+Ensure templates work with different schema structures.
+
+**Version control templates**::
+Track template changes alongside code.
+
+== Next steps
+
+Explore related topics:
+
+* link:../cli/index.html[CLI Guides] - Command-line tools
+* link:../ruby-api/index.html[Ruby API Guides] - Programmatic usage
+* link:../../_tutorials/liquid-templates.html[Liquid Templates Tutorial]
+  - Practice examples
+
+== Summary
+
+Complete documentation generation includes:
+
+* ✅ Structured project organization
+* ✅ Reusable template components
+* ✅ Multiple output formats (HTML, Markdown, etc.)
+* ✅ Multi-file documentation generation
+* ✅ Cross-reference tables and indexes
+* ✅ Progress tracking and error handling
+* ✅ Configurable generation options
+* ✅ Scalable architecture for large schemas
+
+With these patterns and examples, you can build sophisticated
+documentation systems that transform EXPRESS schemas into professional,
+maintainable documentation automatically.

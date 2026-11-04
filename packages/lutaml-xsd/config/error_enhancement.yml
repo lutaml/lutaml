@@ -1,0 +1,53 @@
+# Error Enhancement Configuration
+# Controls behavior of enhanced error messages, suggestions, and troubleshooting
+
+error_enhancement:
+  # Suggestion settings
+  suggestions:
+    enabled: true
+    similarity_algorithm: levenshtein  # levenshtein or jaro_winkler
+    min_similarity: 0.6  # Minimum similarity score (0.0 to 1.0)
+    max_suggestions: 5   # Maximum number of suggestions to show
+
+  # Troubleshooting settings
+  troubleshooting:
+    enabled: true
+    include_cli_examples: true   # Include CLI command examples
+    include_doc_links: true      # Include documentation links
+    max_tips: 5                  # Maximum troubleshooting tips to show
+
+  # Error code definitions
+  error_codes:
+    type_not_found: E001
+    namespace_not_registered: E002
+    validation_failed: E003
+    circular_dependency: E004
+    element_not_allowed: E005
+    attribute_missing: E006
+    type_mismatch: E007
+    occurrence_violation: E008
+    pattern_violation: E009
+    import_not_found: E010
+
+  # Message formatting
+  message_format:
+    colorize: true          # Use ANSI color codes (terminal only)
+    verbose: true           # Include detailed context
+    include_context: true   # Include error context information
+    include_location: true  # Include XPath/file location
+    include_suggestions: true  # Include suggestion section
+    include_troubleshooting: true  # Include troubleshooting section
+
+  # Severity levels
+  severity_levels:
+    error: 3    # Critical issues that prevent success
+    warning: 2  # Issues that should be addressed
+    info: 1     # Informational messages
+    debug: 0    # Debug information
+
+  # Context display settings
+  context_display:
+    max_value_length: 100  # Maximum length for displayed values
+    truncate_long_values: true
+    show_namespaces: true
+    show_types: true

@@ -1,0 +1,201 @@
+---
+_class: Expressir::Model::ExpFile
+path: spec/syntax/multiple.exp
+schemas:
+- _class: Expressir::Model::Declarations::Schema
+  id: multiple_schema
+  file: spec/syntax/multiple.exp
+  interfaces:
+  - _class: Expressir::Model::Declarations::Interface
+    kind: REFERENCE
+    schema:
+      _class: Expressir::Model::References::SimpleReference
+      id: multiple_schema2
+      base_path: spec/syntax/multiple.exp.multiple_schema2
+  - _class: Expressir::Model::Declarations::Interface
+    kind: REFERENCE
+    schema:
+      _class: Expressir::Model::References::SimpleReference
+      id: multiple_schema3
+      base_path: spec/syntax/multiple.exp.multiple_schema3
+    items:
+    - _class: Expressir::Model::Declarations::InterfaceItem
+      ref:
+        _class: Expressir::Model::References::SimpleReference
+        id: attribute_entity3
+        base_path: spec/syntax/multiple.exp.multiple_schema3.attribute_entity3
+  - _class: Expressir::Model::Declarations::Interface
+    kind: REFERENCE
+    schema:
+      _class: Expressir::Model::References::SimpleReference
+      id: multiple_schema4
+      base_path: spec/syntax/multiple.exp.multiple_schema4
+    items:
+    - _class: Expressir::Model::Declarations::InterfaceItem
+      ref:
+        _class: Expressir::Model::References::SimpleReference
+        id: attribute_entity
+        base_path: spec/syntax/multiple.exp.multiple_schema4.attribute_entity
+      id: attribute_entity4
+  entities:
+  - _class: Expressir::Model::Declarations::Entity
+    id: test
+  - _class: Expressir::Model::Declarations::Entity
+    id: empty_entity
+  - _class: Expressir::Model::Declarations::Entity
+    id: attribute_entity
+    attributes:
+    - _class: Expressir::Model::Declarations::Attribute
+      id: test
+      kind: EXPLICIT
+      type:
+        _class: Expressir::Model::DataTypes::Boolean
+  - _class: Expressir::Model::Declarations::Entity
+    id: subtype_empty_entity
+    subtype_of:
+    - _class: Expressir::Model::References::SimpleReference
+      id: empty_entity
+      base_path: spec/syntax/multiple.exp.multiple_schema.empty_entity
+  - _class: Expressir::Model::Declarations::Entity
+    id: subtype_attribute_entity
+    subtype_of:
+    - _class: Expressir::Model::References::SimpleReference
+      id: attribute_entity
+      base_path: spec/syntax/multiple.exp.multiple_schema.attribute_entity
+    attributes:
+    - _class: Expressir::Model::Declarations::Attribute
+      id: test
+      kind: EXPLICIT
+      supertype_attribute:
+        _class: Expressir::Model::References::AttributeReference
+        ref:
+          _class: Expressir::Model::References::GroupReference
+          ref:
+            _class: Expressir::Model::References::SimpleReference
+            id: SELF
+          entity:
+            _class: Expressir::Model::References::SimpleReference
+            id: attribute_entity
+            base_path: spec/syntax/multiple.exp.multiple_schema.attribute_entity
+        attribute:
+          _class: Expressir::Model::References::SimpleReference
+          id: test
+      type:
+        _class: Expressir::Model::DataTypes::Boolean
+  - _class: Expressir::Model::Declarations::Entity
+    id: subtype_attribute_entity2
+    subtype_of:
+    - _class: Expressir::Model::References::SimpleReference
+      id: attribute_entity2
+    attributes:
+    - _class: Expressir::Model::Declarations::Attribute
+      id: test
+      kind: EXPLICIT
+      supertype_attribute:
+        _class: Expressir::Model::References::AttributeReference
+        ref:
+          _class: Expressir::Model::References::GroupReference
+          ref:
+            _class: Expressir::Model::References::SimpleReference
+            id: SELF
+          entity:
+            _class: Expressir::Model::References::SimpleReference
+            id: attribute_entity2
+        attribute:
+          _class: Expressir::Model::References::SimpleReference
+          id: test
+      type:
+        _class: Expressir::Model::DataTypes::Boolean
+  - _class: Expressir::Model::Declarations::Entity
+    id: subtype_attribute_entity3
+    subtype_of:
+    - _class: Expressir::Model::References::SimpleReference
+      id: attribute_entity3
+      base_path: spec/syntax/multiple.exp.multiple_schema3.attribute_entity3
+    attributes:
+    - _class: Expressir::Model::Declarations::Attribute
+      id: test
+      kind: EXPLICIT
+      supertype_attribute:
+        _class: Expressir::Model::References::AttributeReference
+        ref:
+          _class: Expressir::Model::References::GroupReference
+          ref:
+            _class: Expressir::Model::References::SimpleReference
+            id: SELF
+          entity:
+            _class: Expressir::Model::References::SimpleReference
+            id: attribute_entity3
+            base_path: spec/syntax/multiple.exp.multiple_schema3.attribute_entity3
+        attribute:
+          _class: Expressir::Model::References::SimpleReference
+          id: test
+      type:
+        _class: Expressir::Model::DataTypes::Boolean
+  - _class: Expressir::Model::Declarations::Entity
+    id: subtype_attribute_entity4
+    subtype_of:
+    - _class: Expressir::Model::References::SimpleReference
+      id: attribute_entity4
+      base_path: spec/syntax/multiple.exp.multiple_schema4.attribute_entity
+    attributes:
+    - _class: Expressir::Model::Declarations::Attribute
+      id: test
+      kind: EXPLICIT
+      supertype_attribute:
+        _class: Expressir::Model::References::AttributeReference
+        ref:
+          _class: Expressir::Model::References::GroupReference
+          ref:
+            _class: Expressir::Model::References::SimpleReference
+            id: SELF
+          entity:
+            _class: Expressir::Model::References::SimpleReference
+            id: attribute_entity4
+            base_path: spec/syntax/multiple.exp.multiple_schema4.attribute_entity
+        attribute:
+          _class: Expressir::Model::References::SimpleReference
+          id: test
+      type:
+        _class: Expressir::Model::DataTypes::Boolean
+  - _class: Expressir::Model::Declarations::Entity
+    id: subtype_missing_entity
+    subtype_of:
+    - _class: Expressir::Model::References::SimpleReference
+      id: missing_entity
+- _class: Expressir::Model::Declarations::Schema
+  id: multiple_schema2
+  file: spec/syntax/multiple.exp
+  entities:
+  - _class: Expressir::Model::Declarations::Entity
+    id: attribute_entity2
+    attributes:
+    - _class: Expressir::Model::Declarations::Attribute
+      id: test
+      kind: EXPLICIT
+      type:
+        _class: Expressir::Model::DataTypes::Boolean
+- _class: Expressir::Model::Declarations::Schema
+  id: multiple_schema3
+  file: spec/syntax/multiple.exp
+  entities:
+  - _class: Expressir::Model::Declarations::Entity
+    id: attribute_entity3
+    attributes:
+    - _class: Expressir::Model::Declarations::Attribute
+      id: test
+      kind: EXPLICIT
+      type:
+        _class: Expressir::Model::DataTypes::Boolean
+- _class: Expressir::Model::Declarations::Schema
+  id: multiple_schema4
+  file: spec/syntax/multiple.exp
+  entities:
+  - _class: Expressir::Model::Declarations::Entity
+    id: attribute_entity
+    attributes:
+    - _class: Expressir::Model::Declarations::Attribute
+      id: test
+      kind: EXPLICIT
+      type:
+        _class: Expressir::Model::DataTypes::Boolean

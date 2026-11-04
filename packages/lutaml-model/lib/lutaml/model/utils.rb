@@ -1,0 +1,352 @@
+# frozen_string_literal: true
+
+module Lutaml
+  module Model
+    module Utils
+      # Fetch sentinel distinguishing absent keys from present-nil
+      # values; shared by the deserialization fast paths.
+      MISSING = Object.new.freeze
+
+      class << self
+        UNINITIALIZED = Lutaml::Model::UninitializedClass.instance
+
+        # Cache size limit to prevent memory leaks
+        CACHE_SIZE_LIMIT = 1000
+
+        # Clear all caches (call between schema compilations)
+        def clear_caches
+          @camel_case_cache = {}
+          @snake_case_cache = {}
+        end
+
+        # Safely attempts to require a file and check for a constant
+        #
+        # @param file [String] the file to require
+        # @param constant [Symbol] the constant name to check for
+        # @return [Boolean] true if the constant is defined, false otherwise
+        def safe_load(file, constant)
+          return true if Object.const_defined?(constant)
+
+          require file
+
+          Object.const_defined?(constant)
+        rescue LoadError
+          false
+        end
+
+        # Parse-error classes of every YAML engine that may be answering
+        # ::YAML in this process. A host bundle can rebind ::YAML (a
+        # Psych drop-in), so the multi-document skip-rescues must cover
+        # each loaded engine's parse error, not only Psych's (#1053: a
+        # raw Yeptris::ParseError escaped from_yamls).
+        def yaml_parse_errors
+          errors = [Psych::SyntaxError]
+          errors << Yeptris::ParseError if defined?(Yeptris::ParseError)
+          errors
+        end
+
+        # Convert string to camel case (cached)
+        def camel_case(str)
+          return "" if str.nil? || str.empty?
+
+          @camel_case_cache ||= {}
+          cached = @camel_case_cache[str]
+          return cached if cached
+
+          result = str.split("/").map { |part| camelize_part(part) }.join("::")
+
+          # Evict oldest entry if cache is full
+          @camel_case_cache.shift if @camel_case_cache.size >= CACHE_SIZE_LIMIT
+          @camel_case_cache[str] = result
+        end
+
+        # Convert string to class name
+        def classify(str)
+          str = str.to_s.delete(".")
+          str = str.sub(/^[a-z\d]*/) { |match| camel_case(match) || match }
+
+          str.gsub("::", "/").gsub(%r{(?:_|-|(/))([a-z\d]*)}i) do
+            word = Regexp.last_match(2)
+            substituted = camel_case(word) || word
+            Regexp.last_match(1) ? "::#{substituted}" : substituted
+          end
+        end
+
+        # Convert string to snake case (cached)
+        def snake_case(str)
+          str = str.to_s.tr(".", "_")
+          return str unless /[A-Z-]|::/.match?(str)
+
+          @snake_case_cache ||= {}
+          cached = @snake_case_cache[str]
+          return cached if cached
+
+          result = str.gsub("::", "/")
+            .gsub(/(?<=[A-Z])(?=[A-Z][a-z])|(?<=[a-z\d])(?=[A-Z])/, "_")
+            .tr("-", "_")
+            .downcase
+
+          # Evict oldest entry if cache is full
+          @snake_case_cache.shift if @snake_case_cache.size >= CACHE_SIZE_LIMIT
+          @snake_case_cache[str] = result
+        end
+
+        # Simple English pluralization for method names.
+        # Handles common cases; not a full inflector.
+        def pluralize(str)
+          str = str.to_s
+          return str if str.empty?
+
+          if str.end_with?("s", "x", "z", "ch", "sh")
+            "#{str}es"
+          elsif str.end_with?("y") && str.length > 1 && !%w[a e i o
+                                                            u].include?(str[-2])
+            "#{str[0..-2]}ies"
+          else
+            "#{str}s"
+          end
+        end
+
+        # Extract the base name of the class
+        def base_class_name(klass)
+          klass.to_s.split("::").last
+        end
+
+        # Convert the extracted base class to snake case format
+        def base_class_snake_case(klass)
+          snake_case(base_class_name(klass))
+        end
+
+        # Return the final segment of a `prefix:local` style qualified name,
+        # e.g. `"xs:string" -> "string"`. Returns nil for nil input.
+        def last_of_split(field)
+          field&.split(":")&.last
+        end
+
+        def initialized?(value)
+          !value.equal?(UNINITIALIZED)
+        end
+
+        def uninitialized?(value)
+          value.equal?(UNINITIALIZED)
+        end
+
+        def present?(value)
+          !blank?(value)
+        end
+
+        def blank?(value)
+          # Hot path: the nil test is a pointer compare, and nil dominates
+          # in optional-field-heavy documents.
+          return true if value.nil?
+          return false unless value.is_a?(::String) || value.is_a?(::Array) || value.is_a?(::Hash)
+
+          value.empty?
+        end
+
+        def empty_collection?(collection)
+          return false if collection.nil?
+          return false unless [::Array, ::Hash].include?(collection.class)
+
+          collection.empty?
+        end
+
+        def empty?(value)
+          case value
+          when ::String, ::Array, ::Hash then value.empty?
+          else false
+          end
+        end
+
+        def add_if_present(hash, key, value)
+          hash[key] = value if value
+        end
+
+        # Check if the hash contains the given key in string or symbol format
+        # @param hash [Hash] the hash to check
+        # @param key [String, Symbol] the key to check
+        # @return [Boolean] true if the hash contains the key, false otherwise
+        # @example
+        #   hash = { "key" => "value" }
+        #   string_or_symbol_key?(hash, "key") # => true
+        #   string_or_symbol_key?(hash, :key) # => true
+        #   string_or_symbol_key?(hash, "invalid_key") # => false
+        def string_or_symbol_key?(hash, key)
+          if key.is_a?(String)
+            hash.key?(key) || hash.key?(key.to_sym)
+          elsif key.is_a?(Symbol)
+            # Same frozen-string probe as fetch_str_or_sym's Symbol branch.
+            hash.key?(key) || hash.key?(key.name)
+          else
+            hash.key?(key.to_s) || hash.key?(key.to_sym)
+          end
+        end
+
+        # Fetch the value from the hash using the key in string or symbol format
+        # @param hash [Hash] the hash to fetch the value from
+        # @param key [String, Symbol] the key to fetch the value for
+        # @return [Object] the value associated with the key
+        # @example
+        #   hash = { "key" => "value" }
+        #   fetch_str_or_sym(hash, "key") # => "value"
+        #   fetch_str_or_sym(hash, :key) # => "value"
+        #   fetch_str_or_sym(hash, "invalid_key") # => nil
+        def fetch_str_or_sym(hash, key, default = nil)
+          case key
+          when String
+            if hash.key?(key)
+              hash[key]
+            else
+              sym = key.to_sym
+              hash.key?(sym) ? hash[sym] : default
+            end
+          when Symbol
+            if hash.key?(key)
+              hash[key]
+            else
+              # Symbol#name is the frozen string — no allocation per probe.
+              # This branch is the hot path of the serialization walk
+              # (Symbol attribute names against String-keyed hashes), and
+              # the double key.to_s here was a top string allocation site
+              # in large-document metanorma compiles.
+              str = key.name
+              hash.key?(str) ? hash[str] : default
+            end
+          else
+            str = key.to_s
+            if hash.key?(str)
+              hash[str]
+            else
+              sym = key.to_sym
+              hash.key?(sym) ? hash[sym] : default
+            end
+          end
+        end
+
+        def add_method(instance, method_name, &block)
+          if instance.is_a?(Class)
+            instance.class_eval do
+              define_method(method_name, &block)
+            end
+          else
+            instance.define_singleton_method(method_name, &block)
+          end
+        end
+
+        def add_singleton_method_if_not_defined(instance, method_name, &block)
+          return if instance.singleton_class.method_defined?(method_name, false)
+
+          instance.define_singleton_method(method_name, &block)
+        end
+
+        # Determines the appropriate register for a child model during deserialization.
+        #
+        # @deprecated Use {Register.resolve_for_child} instead.
+        #   This method will be removed in a future version.
+        #
+        # @param child_class [Class] The child model class
+        # @param parent_register [Symbol, nil] The parent's register/context ID
+        # @return [Symbol, nil] The register ID to use for the child
+        def resolve_child_register(child_class, parent_register)
+          Lutaml::Model::Register.resolve_for_child(child_class,
+                                                    parent_register)
+        end
+
+        def add_method_if_not_defined(klass, method_name, &block)
+          unless klass.method_defined?(method_name)
+            klass.class_eval do
+              define_method(method_name, &block)
+            end
+          end
+        end
+
+        def add_accessor_if_not_defined(klass, attribute)
+          add_getter_if_not_defined(klass, attribute)
+          add_setter_if_not_defined(klass, attribute)
+        end
+
+        def add_boolean_accessor_if_not_defined(klass, attribute)
+          add_boolean_getter_if_not_defined(klass, attribute)
+          add_setter_if_not_defined(klass, attribute)
+        end
+
+        def add_getter_if_not_defined(klass, attribute)
+          # The ivar symbol closes over once per definition instead of
+          # being minted per call (14k+ per corpus parse on the setter).
+          ivar = :"@__#{attribute}"
+          add_method_if_not_defined(klass, attribute) do
+            instance_variable_get(ivar)
+          end
+        end
+
+        def add_boolean_getter_if_not_defined(klass, attribute)
+          ivar = :"@__#{attribute}"
+          add_method_if_not_defined(klass, "#{attribute}?") do
+            !!instance_variable_get(ivar)
+          end
+        end
+
+        def add_setter_if_not_defined(klass, attribute)
+          ivar = :"@__#{attribute}"
+          add_method_if_not_defined(klass, "#{attribute}=") do |value|
+            instance_variable_set(ivar, value)
+          end
+        end
+
+        def deep_dup(object)
+          return object if object.nil?
+          return object if immutable?(object)
+
+          case object
+          when ::Hash then deep_dup_hash(object)
+          when Array then deep_dup_array(object)
+          else deep_dup_object(object)
+          end
+        end
+
+        # Check if object is immutable and should not be duplicated
+        def immutable?(object)
+          object.is_a?(Symbol) ||
+            object.is_a?(TrueClass) ||
+            object.is_a?(FalseClass) ||
+            object.is_a?(Numeric) ||
+            object.is_a?(Class) ||
+            object.is_a?(Module) ||
+            object.is_a?(Proc) ||
+            object.is_a?(Method) ||
+            (object.is_a?(Range) && immutable_range?(object))
+        end
+
+        # Check if Range has immutable bounds
+        def immutable_range?(range)
+          immutable?(range.begin) && (range.end.nil? || immutable?(range.end))
+        end
+
+        private
+
+        def deep_dup_hash(hash)
+          new_hash = hash.transform_values { |value| deep_dup(value) }
+          new_hash.default_proc = hash.default_proc if hash.default_proc
+          new_hash.default = hash.default if hash.default
+          new_hash
+        end
+
+        def deep_dup_array(array)
+          array.map { |value| deep_dup(value) }
+        end
+
+        def deep_dup_object(object)
+          if object.is_a?(DeepDupable)
+            object.deep_dup
+          else
+            object.dup
+          end
+        end
+
+        def camelize_part(part)
+          part.gsub(/(?:_|-|^)([a-z\d])/i) { $1.upcase }
+        end
+      end
+    end
+  end
+end

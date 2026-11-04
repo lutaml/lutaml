@@ -1,0 +1,119 @@
+(*
+ISO 10303 TC184/SC4/WG12 Ntbd
+Supersedes ISO 10303 TC184/SC4/WG12 N0550
+
+EXPRESS Source:
+ISO 10303-104 ed2 Finite element analysis - Structural response definition schema
+
+The following permission notice and disclaimer shall be included in all copies of this EXPRESS schema ("the Schema"),
+and derivations of the Schema:
+
+Copyright ISO 2025  All rights reserved
+Permission is hereby granted, free of charge in perpetuity, to any person obtaining a copy of the Schema,
+to use, copy, modify, merge and distribute free of charge, copies of the Schema for the purposes of developing,
+implementing, installing and using software based on the Schema, and to permit persons to whom the Schema is furnished to do so,
+subject to the following conditions:
+
+THE SCHEMA IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ARISING FROM, OUT OF OR IN CONNECTION WITH THE SCHEMA OR THE
+USE OR OTHER DEALINGS IN THE SCHEMA.
+
+In addition, any modified copy of the Schema shall include the following notice:
+
+THIS SCHEMA HAS BEEN MODIFIED FROM THE SCHEMA DEFINED IN
+ISO 10303-104 ed2 Finite element analysis - Structural response definition schema
+AND SHOULD NOT BE INTERPRETED AS COMPLYING WITH THAT STANDARD
+*)
+
+SCHEMA structural_response_definition_schema '{ iso standard 10303 part(104) version(3) object(1) structural-response-definition-schema(1) }';
+
+  REFERENCE FROM product_property_definition_schema
+      (property_definition,
+       shape_aspect);
+
+(*"structural_response_definition_schema"
+
+The subject of the *structural_response_definition_schema* is the definitional aspects of a finite element analysis model that describe the structural response of a product.
+
+*)
+
+(*"structural_response_definition_schema.__fund_cons"
+
+The definitional aspects of a finite element model are related to the representational aspects that they describe by a *property_definition_representation* association to a <<express:structural_response_definition_schema.structural_response_property,structural_response_property>>. This relationship is enforced by the rules in the *structural_response_property_definition_representation* entity in the *structural_response_representation_schema*.
+
+NOTE: The relationships of the definitional and representational aspects of the FEA information model, which are established by the property_definition_representation and <<express:structural_response_definition_schema.structural_response_property,structural_response_property>> entities, are shown in <<fig-fea-information-model-high-level>>.
+
+*)
+
+(*"structural_response_definition_schema.structural_response_property"
+
+A <<express:structural_response_definition_schema.structural_response_property,structural_response_property>> relates the response of a finite element model representation of a product to the properties characterizing the product.
+
+[[fig-fea-information-model-high-level]]
+.FEA information model high level relationships EXPRESS-G partial model
+image::images/fig-2.svg[]
+
+*)
+
+ENTITY structural_response_property
+  SUBTYPE OF (property_definition);
+END_ENTITY;
+
+(*"structural_response_definition_schema.fea_model_definition"
+
+An <<express:structural_response_definition_schema.fea_model_definition,fea_model_definition>> describes a specific finite element analysis model. A finite element analysis model is a collection of information associated with the definition of a finite element analysis of a product.
+
+*)
+
+ENTITY fea_model_definition
+  SUBTYPE OF (shape_aspect);
+END_ENTITY;
+
+(*"structural_response_definition_schema.node_definition"
+
+A <<express:structural_response_definition_schema.node_definition,node_definition>> is a description of the shape aspect of a product that a node represents. Nodes are the
+discretized points in the continuum being modelled that are connected with elements.
+
+*)
+
+ENTITY node_definition
+  SUBTYPE OF (shape_aspect);
+END_ENTITY;
+
+(*"structural_response_definition_schema.element_definition"
+
+An <<express:structural_response_definition_schema.element_definition,element_definition>> is a description of the shape aspect of a product that a finite element represents. A finite element is an analytical subdivision of a continuum connected to nodes to model the continuum being analyzed.
+*)
+
+ENTITY element_definition
+  SUBTYPE OF (shape_aspect);
+END_ENTITY;
+
+END_SCHEMA; -- structural_response_definition_schema
+
+(*"structural_response_definition_schema.__expressg"
+[[structural_response_definition_schemaexpg1]]
+[.svgmap]
+====
+image::images/structural_response_definition_schemaexpg1.svg[]
+====
+*)
+
+(*"structural_response_definition_schema.__published_in"
+ISO 10303-104:2000 ED1
+*)
+
+(*"structural_response_definition_schema.__status"
+IS
+*)
+
+(*"structural_response_definition_schema.__title"
+finite_element_analysis
+*)
+
+(*"structural_response_definition_schema.__schema_file"
+data/resource_docs/finite_element_analysis/resource.xml
+*)

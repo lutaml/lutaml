@@ -1,0 +1,468 @@
+---
+title: Liquid
+has_children: true
+nav_order: 6
+---
+
+= Liquid integration with Expressir
+
+== Purpose
+
+This guide explains how Expressir integrates with the Liquid template
+language to enable flexible, automated documentation generation from
+EXPRESS schemas. Liquid templates provide a powerful way to transform
+EXPRESS data models into human-readable documentation in any format.
+
+== References
+
+* link:../../tutorials/liquid-templates.html[Liquid Templates Tutorial]
+  - Step-by-step introduction
+* link:../ruby-api/[Ruby API Guides] - Programming interface
+* https://shopify.github.io/liquid/[Liquid Documentation] - Official
+  Liquid language reference
+
+== Concepts
+
+Liquid:: A safe, customer-facing template language created by Shopify
+for generating dynamic content from data.
+
+Drop:: A Ruby object wrapper that makes Expressir model data accessible
+in Liquid templates with a simplified, template-friendly interface.
+
+Template:: A text file containing Liquid markup that defines how to
+transform data into output.
+
+Filter:: A Liquid function that transforms values (e.g., `upcase`,
+`join`, `map`).
+
+Tag:: A Liquid control structure for logic and flow control (e.g.,
+`if`, `for`, `assign`).
+
+== What is Liquid?
+
+Liquid is a template language that allows you to generate dynamic
+content from structured data. Originally created by Shopify, it provides:
+
+* **Safe execution**: Templates cannot execute arbitrary code
+* **Simple syntax**: Easy to learn and read
+* **Flexible output**: Generate HTML, Markdown, plain text, or any
+  format
+* **Powerful features**: Loops, conditionals, filters, and more
+* **Data binding**: Access object attributes naturally
+
+.Simple Liquid example
+[example]
+====
+[source,liquid]
+----
+Hello {{ user.name }}!
+
+{% if user.premium %}
+Thank you for your premium membership.
+{% endif %}
+
+Your items:
+{% for item in user.items %}
+- {{ item.name }}: ${{ item.price }}
+{% endfor %}
+----
+====
+
+== Why use Liquid with Expressir?
+
+Expressir + Liquid enables powerful documentation workflows:
+
+**Automated documentation**::
+Generate complete schema documentation automatically from EXPRESS
+source files without manual maintenance.
+
+**Consistent formatting**::
+Apply uniform styling and structure across all schema documentation.
+
+**Multiple output formats**::
+Create HTML, Markdown, LaTeX, or custom formats from the same source
+data.
+
+**Customizable templates**::
+Adapt documentation style to your organization's standards and
+requirements.
+
+**Maintainable**::
+Update templates independently of schema changes; regenerate
+documentation when schemas evolve.
+
+**Version control friendly**::
+Store templates in version control; track documentation changes
+alongside code.
+
+== How Expressir integrates with Liquid
+
+Expressir provides seamless Liquid integration through the "drops"
+pattern:
+
+[source]
+----
+EXPRESS Schema → Expressir Parser → Ruby Data Model →
+Liquid Drop → Template → Documentation Output
+----
+
+=== The drops pattern
+
+Expressir models implement a `to_liquid` method that converts them to
+"drop" objects specifically designed for template use:
+
+[source,ruby]
+----
+# Parse EXPRESS schema
+repository = Expressir::Express::Parser.from_file("schema.exp")
+
+# Convert to Liquid drop
+repo_drop = repository.to_liquid
+
+# Use in template
+template = Liquid::Template.parse("{{ repository.schemas.size }} schemas")
+output = template.render("repository" => repo_drop)
+----
+
+Every Expressir model class has a corresponding drop:
+
+* `Repository` → `RepositoryDrop`
+* `Schema` → `SchemaDrop`
+* `Entity` → `EntityDrop`
+* `Type` → `TypeDrop`
+* `Attribute` → `AttributeDrop`
+* And more...
+
+Drops provide:
+
+* Simplified attribute access for templates
+* Consistent interface across all model types
+* Safe data exposure (no internal implementation details)
+* Natural navigation through model relationships
+
+== Quick start
+
+This example demonstrates the basic workflow from EXPRESS to
+documentation:
+
+.Create sample schema (example.exp)
+[source,express]
+----
+SCHEMA example_schema;
+
+  ENTITY person;
+    name : STRING;
+    age : INTEGER;
+  END_ENTITY;
+
+  ENTITY company;
+    company_name : STRING;
+    employees : SET [0:?] OF person;
+  END_ENTITY;
+
+END_SCHEMA;
+----
+
+.Create template (template.liquid)
+[source,liquid]
+----
+# {{ schema.id }}
+
+## Entities
+
+{% for entity in schema.entities %}
+### {{ entity.id }}
+
+Attributes:
+{% for attr in entity.attributes %}
+- **{{ attr.id }}**: {{ attr.type }}
+{% endfor %}
+{% endfor %}
+----
+
+.Generate documentation (generate.rb)
+[source,ruby]
+----
+require "expressir"
+require "liquid"
+
+# Parse schema
+repo = Expressir::Express::Parser.from_file("example.exp")
+schema_drop = repo.schemas.first.to_liquid
+
+# Load and render template
+template = Liquid::Template.parse(File.read("template.liquid"))
+output = template.render("schema" => schema_drop)
+
+# Output result
+puts output
+----
+
+.Run the generator
+[source,bash]
+----
+ruby generate.rb
+----
+
+.Output (example_schema.md)
+[source,markdown]
+----
+# example_schema
+
+## Entities
+
+### person
+
+Attributes:
+- **name**: STRING
+- **age**: INTEGER
+
+### company
+
+Attributes:
+- **company_name**: STRING
+- **employees**: SET [0:?] OF person
+----
+
+== Key features
+
+=== Template-friendly data access
+
+Access model attributes naturally in templates:
+
+[source,liquid]
+----
+{{ repository.schemas.size }}
+{{ schema.id }}
+{{ entity.attributes.first.id }}
+{{ entity.attributes | map: "id" | join: ", " }}
+----
+
+=== Nested navigation
+
+Navigate relationships easily:
+
+[source,liquid]
+----
+{% for schema in repository.schemas %}
+  {% for entity in schema.entities %}
+    {% for attr in entity.attributes %}
+      {{ schema.id }}.{{ entity.id }}.{{ attr.id }}
+    {% endfor %}
+  {% endfor %}
+{% endfor %}
+----
+
+=== Built-in filters
+
+Use Liquid's powerful filters:
+
+[source,liquid]
+----
+{{ entity.id | upcase }}
+{{ schema.entities | size }}
+{{ entity.attributes | map: "id" | join: ", " }}
+{{ description | truncate: 100 }}
+----
+
+=== Control flow
+
+Apply logic in templates:
+
+[source,liquid]
+----
+{% if entity.abstract %}
+  Abstract entity
+{% endif %}
+
+{% for attr in entity.attributes %}
+  {% if attr.optional %}
+    Optional: {{ attr.id }}
+  {% endif %}
+{% endfor %}
+----
+
+== When to use Liquid templates
+
+Liquid templates are ideal for:
+
+**Documentation generation**::
+* Schema overviews
+* Entity reference pages
+* Type catalogs
+* Function documentation
+
+**Report creation**::
+* Coverage reports
+* Change summaries
+* Dependency analysis
+* Statistics dashboards
+
+**Code generation**::
+* Stub implementations
+* Test fixtures
+* Configuration files
+* API wrappers
+
+**Data transformation**::
+* Format conversion
+* Structure flattening
+* Cross-references
+* Index generation
+
+== When NOT to use Liquid templates
+
+Consider alternatives when:
+
+**Complex business logic**::
+If you need complex calculations, validations, or algorithms, use Ruby
+directly instead of cramming logic into templates.
+
+**Performance critical**::
+For processing thousands of schemas or generating large outputs,
+consider direct Ruby code or compiled templates.
+
+**Interactive applications**::
+Liquid is for batch generation. For interactive tools, use Rails views
+or other web frameworks.
+
+**Simple formatting**::
+For basic pretty-printing, use
+link:../ruby-api/formatting-schemas.html[Expressir's built-in
+formatter].
+
+== Architecture
+
+The Expressir Liquid integration consists of several layers:
+
+[source]
+----
+┌─────────────────────────────────────────────────────────────┐
+│                     Template Layer                          │
+│  (Liquid templates, filters, tags, includes)               │
+└─────────────────────┬───────────────────────────────────────┘
+                      │
+                      ↓
+┌─────────────────────────────────────────────────────────────┐
+│                      Drop Layer                             │
+│  (RepositoryDrop, SchemaDrop, EntityDrop, etc.)            │
+└─────────────────────┬───────────────────────────────────────┘
+                      │
+                      ↓
+┌─────────────────────────────────────────────────────────────┐
+│                     Model Layer                             │
+│  (Repository, Schema, Entity, Type, Attribute, etc.)       │
+└─────────────────────┬───────────────────────────────────────┘
+                      │
+                      ↓
+┌─────────────────────────────────────────────────────────────┐
+│                     Parser Layer                            │
+│  (EXPRESS Parser, Cache, References)                       │
+└─────────────────────────────────────────────────────────────┘
+----
+
+Each layer has a specific responsibility:
+
+**Template Layer**::
+User-facing templates that define output structure and format.
+
+**Drop Layer**::
+Adapters that expose model data to templates safely and conveniently.
+
+**Model Layer**::
+Rich Ruby objects representing EXPRESS constructs with full
+capabilities.
+
+**Parser Layer**::
+Converts EXPRESS text files into model objects.
+
+== Common patterns
+
+=== Single file documentation
+
+Generate one document per schema:
+
+[source,ruby]
+----
+schemas.each do |schema|
+  drop = schema.to_liquid
+  output = template.render("schema" => drop)
+  File.write("#{schema.id}.md", output)
+end
+----
+
+=== Multi-file documentation
+
+Generate multiple files from one schema:
+
+[source,ruby]
+----
+schema.entities.each do |entity|
+  drop = entity.to_liquid
+  output = template.render("entity" => drop)
+  File.write("entities/#{entity.id}.md", output)
+end
+----
+
+=== Index generation
+
+Create navigation and table of contents:
+
+[source,liquid]
+----
+# Schema Index
+
+{% for schema in repository.schemas %}
+- [{{ schema.id }}]({{ schema.id }}.md)
+  ({{ schema.entities.size }} entities)
+{% endfor %}
+----
+
+=== Conditional rendering
+
+Show different content based on data:
+
+[source,liquid]
+----
+{% if entity.abstract %}
+**Abstract Entity** - Cannot be instantiated
+{% endif %}
+
+{% if entity.attributes.size > 0 %}
+## Attributes
+...
+{% else %}
+No attributes defined.
+{% endif %}
+----
+
+== Next steps
+
+Continue learning about Liquid integration:
+
+* link:basic-templates.html[Basic Templates] - Template syntax and
+  structure
+* link:drops-reference.html[Drops Reference] - Complete drop API
+* link:filters-and-tags.html[Filters and Tags] - Available operations
+* link:documentation-generation.html[Documentation Generation] -
+  Complete workflows
+
+**Practice examples**:
+
+* link:../../tutorials/liquid-templates.html[Liquid Templates
+  Tutorial] - Hands-on exercises
+* Browse example templates in the Expressir repository
+
+== Summary
+
+Liquid integration with Expressir provides:
+
+* ✅ Safe, flexible template language for documentation generation
+* ✅ Natural data access through drop objects
+* ✅ Support for any output format (HTML, Markdown, etc.)
+* ✅ Powerful built-in filters and control structures
+* ✅ Maintainable, version-controlled template system
+* ✅ Separation of content (data) from presentation (templates)
+
+Liquid templates transform EXPRESS schemas into professional
+documentation automatically, consistently, and maintainably.

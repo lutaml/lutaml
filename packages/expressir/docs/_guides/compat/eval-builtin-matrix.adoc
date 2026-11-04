@@ -1,0 +1,42 @@
+= Eval built-in function matrix
+
+Coverage of the ISO 10303-11 clause 15 standard functions in
+`Expressir::Eval`, generated from `Expressir::Eval::BuiltinMatrix`.
+Divergent rows are registered in
+xref:interchange[the interchange and divergences page].
+
+[cols="1,1,1,2"]
+|===
+| Function | Clause | Status | Note
+| `ABS` | 15.1 | implemented |  |
+| `ACOS` | 15.2 | implemented |  |
+| `ASIN` | 15.3 | implemented |  |
+| `ATAN` | 15.4 | implemented |  |
+| `ATAN2` | 15.4 | implemented | two-argument arctangent |
+| `BLENGTH` | 15.5 | implemented |  |
+| `BOUNDS` | 15.6 | implemented | evaluated aggregates: [1, size] |
+| `COS` | 15.7 | implemented |  |
+| `EXISTS` | 15.8 | implemented |  |
+| `EXP` | 15.9 | implemented |  |
+| `FORMAT` | 15.10 | divergent | not evaluated (D-06) |
+| `HIBOUND` | 15.11 | implemented | evaluated aggregates: size |
+| `HIINDEX` | 15.12 | implemented | evaluated aggregates: size |
+| `LENGTH` | 15.13 | implemented |  |
+| `LOBOUND` | 15.14 | implemented | evaluated aggregates: 1 |
+| `LOINDEX` | 15.15 | implemented | evaluated aggregates: 1 |
+| `LOG` | 15.16 | implemented |  |
+| `LOG2` | 15.16 | implemented |  |
+| `LOG10` | 15.16 | implemented |  |
+| `NVL` | 15.19 | implemented |  |
+| `ODD` | 15.20 | implemented |  |
+| `ROLESOF` | 15.21 | implemented | degenerate: no role metadata — empty set (D-06) |
+| `SIN` | 15.22 | implemented |  |
+| `SIZEOF` | 15.23 | implemented |  |
+| `SQRT` | 15.24 | implemented |  |
+| `TAN` | 15.25 | implemented |  |
+| `TYPEOF` | 15.26 | implemented |  |
+| `USEDIN` | 15.27 | implemented |  |
+| `VALUE` | 15.28 | implemented |  |
+| `VALUE_IN` | 15.29 | implemented |  |
+| `VALUE_UA` | 15.29 | divergent | not evaluated (D-06) |
+|===

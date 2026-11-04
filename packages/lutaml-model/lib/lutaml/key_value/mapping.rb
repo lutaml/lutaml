@@ -1,0 +1,393 @@
+module Lutaml
+  module KeyValue
+    class Mapping < Lutaml::Model::Mapping
+      attr_reader :format, :key_mapping, :value_mapping
+
+      def initialize(format = nil)
+        super()
+        @mappings = {}
+        @key_mapping = {}
+        @value_mapping = {}
+        @register_mappings = ::Hash.new { |h, k| h[k] = {} }
+        @format = format
+        @finalized = false
+      end
+
+      def finalize(_mapper_class)
+        @finalized = true
+      end
+
+      def finalized?
+        @finalized
+      end
+
+      # Set the wrapper key for key-value serialization (JSON, YAML, TOML).
+      #
+      # When set, serialized output wraps all instances under this key
+      # (e.g., `key "items"` produces `{"items": [...]}`).
+      # When not called (or called with nil), instances are serialized directly
+      # at the top level (e.g., `[...]`).
+      #
+      # @param name [String, nil] the wrapper key name
+      def key(name = nil)
+        @key = name
+      end
+
+      def key_name
+        @key
+      end
+
+      # @deprecated Use {#key} instead. In key-value formats, the wrapper is a key, not a root.
+      def root(name = nil)
+        @key = name
+      end
+
+      # @deprecated Omit key call instead. Not calling key means no wrapper key.
+      def no_root
+        @key = nil
+      end
+
+      # Returns true when no wrapper key is set (instances serialized at top level).
+      def no_key?
+        @key.nil?
+      end
+
+      # @deprecated Use {#no_key?} instead.
+      def no_root?
+        no_key?
+      end
+
+      # @deprecated Use {#key_name} instead.
+      def root_name
+        @key
+      end
+
+      def map(
+        name = nil,
+        to: nil,
+        render_nil: false,
+        render_default: false,
+        render_empty: false,
+        treat_nil: nil,
+        treat_empty: nil,
+        treat_omitted: nil,
+        with: {},
+        delegate: nil,
+        child_mappings: nil,
+        root_mappings: nil,
+        polymorphic: {},
+        polymorphic_map: {},
+        transform: {},
+        value_map: {},
+        when_attribute: {},
+        unmatched: :drop,
+        serialize: true
+      )
+        mapping_name = name_for_mapping(root_mappings, name)
+        validate!(mapping_name, to, with, render_nil, render_empty)
+
+        # lutaml-model#88: grouped form — `when_attribute: "type"` plus
+        # `to: { value => attribute }` expands to one rule per value at
+        # DSL time; the compiled rules are identical to the per-rule
+        # form, so parse/serialize behavior and speed are unchanged.
+        if when_attribute.is_a?(::String) || when_attribute.is_a?(::Symbol)
+          when_attribute_group(when_attribute, to).each do |value, target|
+            map(
+              name,
+              to: target,
+              render_nil: render_nil,
+              render_default: render_default,
+              render_empty: render_empty,
+              treat_nil: treat_nil,
+              treat_empty: treat_empty,
+              treat_omitted: treat_omitted,
+              with: with,
+              delegate: delegate,
+              child_mappings: child_mappings,
+              root_mappings: root_mappings,
+              polymorphic: polymorphic,
+              polymorphic_map: polymorphic_map,
+              transform: transform,
+              value_map: value_map,
+              when_attribute: { when_attribute.to_s => value.to_s },
+              unmatched: unmatched,
+              serialize: serialize,
+            )
+          end
+          return
+        end
+        reject_ambiguous_when_attribute!(when_attribute, to)
+
+        validate_when_attribute!(when_attribute) unless when_attribute.empty?
+        validate_unmatched!(unmatched, when_attribute)
+        if !when_attribute.empty? && (!with.empty? || delegate)
+          raise Lutaml::Model::IncorrectMappingArgumentsError,
+                "when_attribute cannot be combined with :with or :delegate " \
+                "in key-value mappings"
+        end
+
+        rule = MappingRule.new(
+          mapping_name,
+          to: to,
+          render_nil: render_nil,
+          render_default: render_default,
+          render_empty: render_empty,
+          treat_nil: treat_nil,
+          treat_empty: treat_empty,
+          treat_omitted: treat_omitted,
+          with: with,
+          delegate: delegate,
+          child_mappings: child_mappings,
+          root_mappings: root_mappings,
+          polymorphic: polymorphic,
+          polymorphic_map: polymorphic_map,
+          transform: transform,
+          value_map: value_map,
+          when_attribute: when_attribute,
+          unmatched: unmatched,
+          serialize: serialize,
+        )
+        # lutaml-model#88: rules may share a wire key (when_attribute
+        # partitions) — store per-key arrays, like the XML mapping.
+        # Replacement policy, MECE by rule kind:
+        #   * a bare rule (no when_attribute) replaces prior BARE rules
+        #     on the same wire key — subclass remaps of a key to a
+        #     different attribute (e.g. base `ref → Ref`, subclass
+        #     `ref → text`) must not leave both rules active — while
+        #     when_attribute partitions on the key survive regardless
+        #     of declaration order;
+        #   * a when_attribute rule replaces only a prior partition
+        #     with the same target (`to:`), otherwise it accumulates.
+        existing = @mappings[mapping_name]
+        if existing.nil?
+          @mappings[mapping_name] = [rule]
+        elsif rule.when_attribute.empty?
+          # Bare claim: prior bare rules on the key are superseded;
+          # partitions survive regardless of declaration order.
+          @mappings[mapping_name] =
+            existing.reject { |r| r.when_attribute.empty? } + [rule]
+        else
+          index = kv_partition_replace_index(existing, rule)
+          if index
+            existing[index] = rule
+          else
+            existing << rule
+          end
+        end
+      end
+
+      # Index of the prior partition a when_attribute rule replaces
+      # (same target), or nil. Extracted: a block in an elsif condition
+      # mis-binds (the known do/end trap).
+      def kv_partition_replace_index(existing, rule)
+        existing.index do |r|
+          r.to == rule.to && !r.when_attribute.empty?
+        end
+      end
+
+      alias map_element map
+
+      # Collects every document key no declared rule claims into the given
+      # attribute (#985): vendor extensions and forward-compatible keywords
+      # survive the round-trip instead of being dropped. Allowed alongside
+      # normal mappings; keys claimed by any rule are never collected, and
+      # on serialization the collected hash is merged after the mapped
+      # rules so mapped keys win.
+      def map_unmapped(to:)
+        @unmapped_attribute = to
+      end
+
+      def unmapped_attribute
+        @unmapped_attribute
+      end
+
+      # Writer used by deep_dup to carry the catch-all across mapping
+      # copies (registers, value-map specializations).
+      attr_writer :unmapped_attribute
+
+      def map_all(
+        to: nil,
+        render_nil: false,
+        render_default: false,
+        with: {},
+        delegate: nil
+      )
+        @raw_mapping = true
+        validate!(Lutaml::Model::Constants::RAW_MAPPING_KEY, to, with,
+                  render_nil, nil)
+        @mappings[Lutaml::Model::Constants::RAW_MAPPING_KEY] = [MappingRule.new(
+          Lutaml::Model::Constants::RAW_MAPPING_KEY,
+          to: to,
+          render_nil: render_nil,
+          render_default: render_default,
+          with: with,
+          delegate: delegate,
+        )]
+      end
+
+      alias map_all_content map_all
+
+      def map_instances(to:, polymorphic: {})
+        @instance = to
+        map(key_name || to, to: to, polymorphic: polymorphic)
+        map_to_instance
+      end
+
+      def map_key(to_instance: nil, as_attribute: nil)
+        @key_mapping = { "#{to_instance || as_attribute}": :key }
+        map_to_instance
+      end
+
+      def map_value(to_instance: nil, as_attribute: nil)
+        @value_mapping = { "#{to_instance || as_attribute}": :value }
+        map_to_instance
+      end
+
+      def instance_mapping?
+        @instance && (!@key_mapping.empty? || !@value_mapping.empty?)
+      end
+
+      def map_to_instance
+        return if !instance_mapping?
+
+        mapping_name = name_for_mapping(nil, key_name || @instance)
+        @mappings[mapping_name].each do |rule|
+          rule.child_mappings = @key_mapping.merge(@value_mapping)
+        end
+      end
+
+      def name_for_mapping(root_mappings, name)
+        return "root_mapping" if root_mappings
+
+        name
+      end
+
+      def mappings(register_id = nil)
+        ensure_mappings_imported!(register_id) if finalized?
+        mappings_hash(register_id).values.flatten
+      end
+
+      def mappings_hash(register_id = nil)
+        if register_id.nil? || register_id == :default
+          @mappings
+        else
+          @mappings.merge(@register_mappings[register_id])
+        end
+      end
+
+      def import_model_mappings(model, register_id = nil)
+        reg_id = register(register_id).id
+        return import_mappings_later(model, reg_id) if model_importable?(model)
+
+        if reg_id == :default
+          @mappings.merge!(::Lutaml::Model::Utils.deep_dup(model.mappings_for(
+            @format, reg_id
+          ).mappings_hash))
+        else
+          @register_mappings[register_id].merge!(
+            ::Lutaml::Model::Utils.deep_dup(model.mappings_for(@format,
+                                                               register_id).mappings_hash),
+          )
+        end
+      end
+
+      def validate!(key, to, with, render_nil, render_empty)
+        validate_mappings!(key)
+        validate_to_and_with_arguments!(key, to, with)
+
+        # Validate `render_nil` for unsupported value
+        validate_blank_mappings!(render_nil, render_empty)
+        validate_root_mappings!(key)
+      end
+
+      def validate_to_and_with_arguments!(key, to, with)
+        if to.nil? && with.empty? && !@raw_mapping
+          raise Lutaml::Model::IncorrectMappingArgumentsError.new(
+            ":to or :with argument is required for mapping '#{key}'",
+          )
+        end
+
+        validate_with_options!(to, key, with)
+      end
+
+      def validate_with_options!(to, key, with)
+        return true if to
+
+        if !with.empty? && (with[:from].nil? || with[:to].nil?) && !@raw_mapping
+          raise Lutaml::Model::IncorrectMappingArgumentsError.new(
+            ":with argument for mapping '#{key}' requires :to and :from keys",
+          )
+        end
+      end
+
+      def validate_root_mappings!(name)
+        if root_mapping || (name == "root_mapping" && @mappings.any?)
+          raise Lutaml::Model::MultipleMappingsError.new(
+            "root_mappings cannot be used with other mappings",
+          )
+        end
+      end
+
+      def validate_blank_mappings!(render_nil, render_empty)
+        if render_nil == :as_blank || render_empty == :as_blank
+          raise Lutaml::Model::IncorrectMappingArgumentsError.new(
+            ":as_blank is not supported for key-value mappings. " \
+            "Use :as_empty instead to create explicit empty values.",
+          )
+        end
+      end
+
+      def validate_mappings!(_type)
+        if (@raw_mapping && Lutaml::Model::Utils.present?(@mappings)) ||
+            (!@raw_mapping && mappings.any?(&:raw_mapping?))
+          raise StandardError, "map_all is not allowed with other mappings"
+        end
+      end
+
+      # Writers for deep_dup in subclasses
+      attr_writer :register_mappings
+
+      def deep_dup
+        dup_instance.tap do |new_mapping|
+          new_mapping.mappings = duplicate_mappings
+          new_mapping.register_mappings = Lutaml::Model::Utils.deep_dup(@register_mappings)
+          new_mapping.unmapped_attribute = @unmapped_attribute
+        end
+      end
+
+      def dup_instance
+        self.class.new(@format)
+      end
+
+      def find_by_to(to)
+        mappings.find { |m| m.to.to_s == to.to_s }
+      end
+
+      def find_by_to!(to)
+        mapping = find_by_to(to)
+
+        return mapping if !!mapping
+
+        raise Lutaml::Model::NoMappingFoundError.new(to.to_s)
+      end
+
+      def find_by_name(name)
+        mappings.find { |m| m.name.to_s == name.to_s }
+      end
+
+      def polymorphic_mapping
+        mappings.find(&:polymorphic_mapping?)
+      end
+
+      def root_mapping
+        mappings.find(&:root_mapping?)
+      end
+
+      Lutaml::Model::Config::KEY_VALUE_FORMATS.each do |format|
+        define_method(:"format_#{format}?") do
+          @format == format
+        end
+      end
+    end
+  end
+end

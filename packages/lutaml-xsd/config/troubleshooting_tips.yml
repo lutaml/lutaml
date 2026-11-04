@@ -1,0 +1,135 @@
+# Troubleshooting Tips Database
+# Provides contextual help for common error scenarios
+
+troubleshooting_tips:
+  # Type-related errors
+  type_not_found:
+    - "Verify the type name is spelled correctly"
+    - "Check if the type is defined in an imported schema"
+    - "Ensure all required schemas are included in the package"
+    - "List available types: lutaml-xsd type list --from package.lxr"
+    - "Search for similar types: lutaml-xsd search 'typename' package.lxr"
+
+  type_mismatch:
+    - "Verify the element value matches the expected type"
+    - "Check type constraints (facets, patterns, enumerations)"
+    - "Review the type definition: lutaml-xsd type show TypeName --from package.lxr"
+    - "Ensure proper type derivation (extension/restriction)"
+
+  # Namespace-related errors
+  namespace_not_registered:
+    - "Check if namespace prefix is declared in XML"
+    - "Verify namespace URI matches schema targetNamespace"
+    - "List available namespaces: lutaml-xsd namespace list --from package.lxr"
+    - "Review namespace configuration in config/namespace_mapping.yml"
+    - "Ensure xmlns declarations are present in root element"
+
+  namespace_mismatch:
+    - "Verify element namespace matches schema targetNamespace"
+    - "Check for typos in namespace URI"
+    - "Ensure proper namespace prefix mappings"
+    - "Review schema imports for correct namespace references"
+
+  # Element-related errors
+  element_not_allowed:
+    - "Check if element is defined in the schema"
+    - "Verify element appears in correct position (sequence/choice/all)"
+    - "Review content model of parent element"
+    - "Check for substitution group alternatives"
+    - "Ensure element is not abstract"
+
+  element_not_found:
+    - "Verify element name is spelled correctly"
+    - "Check if element is defined in imported schemas"
+    - "List available elements: lutaml-xsd element list --from package.lxr"
+    - "Search for similar elements: lutaml-xsd search 'element' package.lxr"
+
+  # Attribute-related errors
+  attribute_missing:
+    - "Check if attribute is marked as required (use='required')"
+    - "Verify attribute name matches schema definition"
+    - "Review attribute definitions: lutaml-xsd type show TypeName --from package.lxr"
+    - "Check for attribute groups that may include required attributes"
+
+  attribute_not_allowed:
+    - "Verify attribute is defined for this element type"
+    - "Check anyAttribute declarations"
+    - "Review complex type attribute definitions"
+    - "Ensure attribute namespace is correct"
+
+  # Occurrence-related errors
+  min_occurs_violation:
+    - "Check minOccurs constraint in schema definition"
+    - "Verify all required elements are present"
+    - "Review sequence/choice/all group requirements"
+    - "Consider using default or fixed values"
+
+  max_occurs_violation:
+    - "Check maxOccurs constraint in schema definition"
+    - "Verify element count doesn't exceed maximum"
+    - "Review if unbounded is appropriate"
+    - "Consider restructuring content model"
+
+  # Pattern and facet errors
+  pattern_violation:
+    - "Review the regular expression pattern in schema"
+    - "Test pattern with sample values"
+    - "Check for proper escaping in pattern"
+    - "Verify value format matches expected pattern"
+
+  enumeration_violation:
+    - "Check list of allowed enumeration values in schema"
+    - "Verify value matches exactly (case-sensitive)"
+    - "Review enumeration definition: lutaml-xsd type show TypeName --from package.lxr"
+
+  length_violation:
+    - "Check minLength/maxLength/length facets in schema"
+    - "Verify string length meets requirements"
+    - "Consider whitespace handling settings"
+
+  # Import and dependency errors
+  import_not_found:
+    - "Verify schema location is correct"
+    - "Check if schema file exists at specified location"
+    - "Review schemaLocation attributes in imports"
+    - "Ensure all dependencies are in the package"
+    - "Use package init to resolve dependencies interactively"
+
+  circular_dependency:
+    - "Review schema import structure"
+    - "Consider restructuring schemas to avoid cycles"
+    - "Use forward declarations where possible"
+    - "Check include vs import usage"
+
+  # Validation configuration errors
+  validation_failed:
+    - "Review validation configuration in config/validation.yml"
+    - "Check if all required rules are enabled"
+    - "Verify schema package is properly resolved"
+    - "Run validation with --verbose for details"
+
+  # General tips
+  general:
+    - "Enable verbose mode for detailed information: --verbose"
+    - "Check schema documentation for element/type usage"
+    - "Use interactive explorer: lutaml-xsd explore package.lxr"
+    - "Search documentation: lutaml-xsd search 'term' package.lxr --in documentation"
+    - "View package statistics: lutaml-xsd stats package.lxr"
+
+# CLI command examples for common tasks
+cli_examples:
+  list_types: "lutaml-xsd type list --from package.lxr"
+  show_type: "lutaml-xsd type show TypeName --from package.lxr"
+  list_namespaces: "lutaml-xsd namespace list --from package.lxr"
+  search_types: "lutaml-xsd search 'query' package.lxr"
+  validate_xml: "lutaml-xsd validate instance.xml package.lxr"
+  explore_interactive: "lutaml-xsd explore package.lxr"
+  show_stats: "lutaml-xsd stats package.lxr"
+
+# Documentation links
+documentation:
+  main: "https://github.com/lutaml/lutaml-xsd"
+  validation: "https://github.com/lutaml/lutaml-xsd/blob/main/docs/VALIDATION.md"
+  packages: "https://github.com/lutaml/lutaml-xsd/blob/main/docs/PACKAGES.md"
+  namespaces: "https://github.com/lutaml/lutaml-xsd/blob/main/docs/NAMESPACES.md"
+  cli: "https://github.com/lutaml/lutaml-xsd/blob/main/docs/CLI.md"

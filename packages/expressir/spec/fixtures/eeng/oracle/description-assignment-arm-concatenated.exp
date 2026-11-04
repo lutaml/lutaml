@@ -1,0 +1,168 @@
+(* Concatenated File produced by Express Engine
+     5.0.20-Beta1 (GIT 754efdd)
+     Steel Bank CL 2.6.8 (Unknown Bits)
+
+   In Directory: /Users/mulgogi/src/mn/iso-10303/schemas/modules/description_assignment/
+   Commandline:
+     /Users/mulgogi/src/external/exp-engine-engine/eengine-5.0.20-Beta1-mac00sbcl --concat_schema
+       -mode arm_shortform
+       -schema /Users/mulgogi/src/mn/iso-10303/schemas/modules/description_assignment/arm.exp
+       -stepmod /Users/mulgogi/src/mn/iso-10303/
+       -out-dir /tmp/eeng-concat/
+*)
+
+(* 1 Schemata for Concatenated File
+
+description_assignment_arm
+   Filename: /Users/mulgogi/src/mn/iso-10303/schemas/modules/description_assignment/arm.exp
+   CVS Rev:   NIL
+   File Status: not-vcs-controlled
+   Timestamp: 2026-08-27 01:37:56 GMT
+   Version:   { iso standard 10303 part(1473) version(4) schema(1) description-assignment-arm(1) }
+
+ *)
+
+--
+-- DESCRIPTION_ASSIGNMENT_ARM (/Users/mulgogi/src/mn/iso-10303/schemas/modules/description_assignment/arm.exp)
+--
+(*
+   ISO TC184/SC4/WG12 N10292 - ISO/TS 10303-1473 Description assignment - EXPRESS ARM
+   Supersedes ISO TC184/SC4/WG12 N5848
+*)
+
+SCHEMA Description_assignment_arm '{ iso standard 10303 part(1473) version(4) schema(1) description-assignment-arm(1) }';
+
+TYPE description_item = EXTENSIBLE GENERIC_ENTITY SELECT ;
+END_TYPE;
+
+ENTITY Description_text;
+  description : STRING;
+END_ENTITY;
+
+ENTITY Description_text_assignment;
+  description : Description_text;
+  items : SET [1 : ?] OF description_item;
+END_ENTITY;
+
+ENTITY Description_text_assignment_relationship;
+	description 	: OPTIONAL STRING;
+	id 				: OPTIONAL STRING;
+	related 		: Description_text_assignment;
+	relating 		: Description_text_assignment;
+	relation_type	: STRING;
+ WHERE
+	WR1 : relating :<>: related;
+END_ENTITY;
+
+END_SCHEMA;
+
+
+(*"Description_assignment_arm.__published_in"
+ISO 10303-1473:2019 ED4
+*)
+
+(*"Description_assignment_arm.__identifier"
+ISO/TC 184/SC 4/WG 12 N10292
+*)
+
+(*"Description_assignment_arm.__supersedes"
+ISO/TC 184/SC 4/WG 12 N5848
+*)
+
+(*"Description_assignment_arm.__status"
+TS
+*)
+
+(*"Description_assignment_arm.__title"
+description_assignment
+*)
+
+(*"Description_assignment_arm.__expressg"
+[.svgmap]
+====
+image::armexpg1.svg[]
+
+* <<express:Description_assignment_arm.required_am_arms>>; 1
+====
+*)
+
+(*"Description_assignment_arm.__expressg"
+[.svgmap]
+====
+image::armexpg2.svg[]
+
+* <<express:Description_assignment_arm.description_item>>; 1
+* <<express:Description_assignment_arm.Description_text>>; 2
+* <<express:Description_assignment_arm.Description_text_assignment>>; 3
+* <<express:Description_assignment_arm.Description_text_assignment_relationship>>; 4
+====
+*)
+
+(*"Description_assignment_arm.Description_text"
+A **Description_text** is a set of words that describe something.
+*)
+
+(*"Description_assignment_arm.Description_text.__example"
+The same thing may have multiple descriptions associated with it. Relating both a short description and a long description to an operational activity or an organization, as required by the US DoD Architecture Framework, are examples of multiple descriptions applied to the same item.
+*)
+
+(*"Description_assignment_arm.Description_text.description"
+the text that constitutes the description
+*)
+
+
+(*"Description_assignment_arm.Description_text_assignment"
+A **Description_text_assignment** is the assignment of a description to something.
+*)
+
+
+(*"Description_assignment_arm.Description_text_assignment.description"
+the text that constitutes the description
+*)
+
+
+(*"Description_assignment_arm.Description_text_assignment.items"
+the set of items being described
+*)
+
+
+(*"Description_assignment_arm.Description_text_assignment_relationship"
+A **Description_text_assignment_relationship** is a relationship between two <<express:Description_assignment_arm.Description_text_assignment,Description_text_assignment>> objects.
+*)
+
+
+(*"Description_assignment_arm.Description_text_assignment_relationship.description"
+the text or the set of texts that provide further information about the **Description_text_assignment_relationship**. The value of this attribute need not be specified.
+*)
+
+
+(*"Description_assignment_arm.Description_text_assignment_relationship.id"
+the identifier or set of identifiers for the **Description_text_assignment_relationship**. The value of this attribute need not be specified.
+*)
+
+
+(*"Description_assignment_arm.Description_text_assignment_relationship.related"
+the other object of <<express:Description_assignment_arm.Description_text_assignment,Description_text_assignment>> that is part of the relationship.
+*)
+
+
+(*"Description_assignment_arm.Description_text_assignment_relationship.relating"
+one object of <<express:Description_assignment_arm.Description_text_assignment,Description_text_assignment>> that is part of the relationship.
+*)
+
+
+(*"Description_assignment_arm.Description_text_assignment_relationship.relation_type"
+the meaning of the relationship.
+*)
+
+
+(*"Description_assignment_arm.Description_text_assignment_relationship.wr:WR1"
+the **related** and the **relating** must be different.
+*)
+
+
+(*"Description_assignment_arm.__schema_file"
+data/modules/description_assignment/module.xml
+*)
+
+

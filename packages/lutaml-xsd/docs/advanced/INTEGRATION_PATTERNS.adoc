@@ -1,0 +1,1145 @@
+---
+layout: default
+title: Integration patterns
+nav_order: 2
+parent: Advanced
+---
+= Integration patterns
+:toc:
+:toclevels: 3
+
+== Purpose
+
+This guide demonstrates how to integrate Lutaml::XSD with other tools and workflows. Learn about code generation, documentation generation with Liquid templates, validation tool integration, build automation, and custom workflow patterns.
+
+== General
+
+Lutaml::XSD is designed to integrate seamlessly into existing toolchains and workflows. Common integration scenarios include:
+
+* **Code generation**: Generate classes, types, or bindings from XSD schemas
+* **Documentation generation**: Create human-readable documentation using Liquid templates
+* **Validation**: Integrate with XML validation tools
+* **Build automation**: Incorporate schema processing into Rake tasks or CI/CD pipelines
+* **Custom workflows**: Build domain-specific tools on top of Lutaml::XSD
+
+== Code generation integration
+
+=== Generating Ruby classes from schemas
+
+.Basic code generation pattern
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+require 'erb'
+
+# Load schema repository
+repo = Lutaml::Xsd::SchemaRepository.from_package('schemas.lxr')
+
+# Template for Ruby class generation
+class_template = ERB.new(<<~TEMPLATE)
+  # Generated from <%= type_name %>
+  class <%= class_name %>
+    <% attributes.each do |attr| %>
+    attr_accessor :<%= attr[:name] %> # <%= attr[:type] %>
+    <% end %>
+
+    def initialize(attrs = {})
+      <% attributes.each do |attr| %>
+      @<%= attr[:name] %> = attrs[:<%= attr[:name] %>]
+      <% end %>
+    end
+  end
+TEMPLATE
+
+# Generate class for a specific type
+def generate_class(repo, type_name)
+  result = repo.find_type(type_name)
+  return unless result.resolved?
+
+  definition = result.definition
+
+  # Extract attributes from complex type
+  attributes = []
+  if definition.respond_to?(:sequence)
+    definition.sequence&.element&.each do |elem|
+      attributes << {
+        name: elem.name,
+        type: elem.type
+      }
+    end
+  end
+
+  # Generate class name from type name
+  class_name = type_name.split(':').last
+
+  # Render template
+  class_template.result(binding)
+end
+
+# Generate classes for multiple types
+types_to_generate = ['gml:CodeType', 'gml:MeasureType', 'gml:ReferenceType']
+
+types_to_generate.each do |type_name|
+  code = generate_class(repo, type_name)
+
+  # Write to file
+  class_name = type_name.split(':').last
+  File.write("generated/#{class_name.downcase}.rb", code)
+  puts "Generated: generated/#{class_name.downcase}.rb"
+end
+----
+
+Output files:
+
+[source,ruby]
+----
+# generated/codetype.rb
+# Generated from gml:CodeType
+class CodeType
+  attr_accessor :code_space # anyURI
+  attr_accessor :value # string
+
+  def initialize(attrs = {})
+    @code_space = attrs[:code_space]
+    @value = attrs[:value]
+  end
+end
+----
+====
+
+=== Type-safe bindings generation
+
+.Generating type-safe data classes
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+class TypeSafeGenerator
+  def initialize(repo)
+    @repo = repo
+  end
+
+  def generate_binding(type_name, output_file)
+    result = @repo.find_type(type_name)
+    raise "Type not found: #{type_name}" unless result.resolved?
+
+    definition = result.definition
+    namespace = result.namespace
+
+    # Analyze type structure
+    binding_code = generate_binding_class(
+      type_name: type_name,
+      definition: definition,
+      namespace: namespace
+    )
+
+    File.write(output_file, binding_code)
+  end
+
+  private
+
+  def generate_binding_class(type_name:, definition:, namespace:)
+    class_name = type_name.split(':').last
+
+    <<~RUBY
+      # Generated binding for #{type_name}
+      # Namespace: #{namespace}
+
+      require 'lutaml/model'
+
+      class #{class_name} < Lutaml::Model::Serializable
+        #{generate_attributes(definition)}
+
+        xml do
+          root '#{definition.name}'
+          namespace '#{namespace}'
+
+          #{generate_xml_mappings(definition)}
+        end
+      end
+    RUBY
+  end
+
+  def generate_attributes(definition)
+    return "" unless definition.respond_to?(:sequence)
+
+    attributes = []
+    definition.sequence&.element&.each do |elem|
+      ruby_type = xsd_to_ruby_type(elem.type)
+      attributes << "attribute :#{elem.name}, #{ruby_type}"
+    end
+
+    attributes.join("\n  ")
+  end
+
+  def generate_xml_mappings(definition)
+    return "" unless definition.respond_to?(:sequence)
+
+    mappings = []
+    definition.sequence&.element&.each do |elem|
+      mappings << "map_element '#{elem.name}', to: :#{elem.name}"
+    end
+
+    mappings.join("\n    ")
+  end
+
+  def xsd_to_ruby_type(xsd_type)
+    case xsd_type
+    when /string$/i then ':string'
+    when /int$/i, /integer$/i then ':integer'
+    when /boolean$/i then ':boolean'
+    when /date$/i then ':date'
+    when /decimal$/i, /double$/i, /float$/i then ':float'
+    else ':string'
+    end
+  end
+end
+
+# Usage
+repo = Lutaml::Xsd::SchemaRepository.from_package('schemas.lxr')
+generator = TypeSafeGenerator.new(repo)
+
+generator.generate_binding('gml:CodeType', 'lib/bindings/code_type.rb')
+generator.generate_binding('gml:MeasureType', 'lib/bindings/measure_type.rb')
+----
+====
+
+== Documentation generation with Liquid
+
+=== Using Liquid templates
+
+Lutaml::XSD provides Liquid methods for schema elements to enable powerful documentation generation:
+
+.Basic Liquid template for documentation
+[example]
+====
+[source,liquid]
+----
+{% comment %}
+  Template: schema_documentation.liquid
+  Generates HTML documentation for XSD schemas
+{% endcomment %}
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Schema Documentation</title>
+  <style>
+    .type { margin-bottom: 2em; }
+    .type-header { font-size: 1.5em; font-weight: bold; }
+    .attribute { margin-left: 2em; }
+    .description { color: #666; }
+  </style>
+</head>
+<body>
+  <h1>Schema Documentation</h1>
+
+  {% for type in complex_types %}
+  <div class="type">
+    <div class="type-header">{{ type.name }}</div>
+
+    {% if type.annotation %}
+    <div class="description">
+      {{ type.annotation.documentation }}
+    </div>
+    {% endif %}
+
+    <h3>Elements:</h3>
+    {% for element in type.elements %}
+    <div class="attribute">
+      <strong>{{ element.name }}</strong>: {{ element.type }}
+      {% if element.min_occurs %}
+        [{{ element.min_occurs }}..{{ element.max_occurs }}]
+      {% endif %}
+    </div>
+    {% endfor %}
+
+    <h3>Attributes:</h3>
+    {% for attr in type.attributes %}
+    <div class="attribute">
+      <strong>@{{ attr.name }}</strong>: {{ attr.type }}
+      {% if attr.use == "required" %}(required){% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</body>
+</html>
+----
+
+Ruby code to render template:
+
+[source,ruby]
+----
+require 'lutaml/xsd'
+require 'liquid'
+
+# Load schema
+repo = Lutaml::Xsd::SchemaRepository.from_package('schemas.lxr')
+
+# Get all complex types
+complex_types = []
+repo.statistics[:types_by_category][:complex_type].times do |i|
+  # Collect complex type definitions
+  # (Implementation depends on schema structure)
+end
+
+# Load and render template
+template = Liquid::Template.parse(File.read('schema_documentation.liquid'))
+output = template.render('complex_types' => complex_types)
+
+File.write('docs/schema_documentation.html', output)
+----
+====
+
+=== Advanced Liquid documentation
+
+.Generating comprehensive API documentation
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+require 'liquid'
+
+class SchemaDocumentationGenerator
+  def initialize(repo)
+    @repo = repo
+  end
+
+  def generate(output_dir)
+    FileUtils.mkdir_p(output_dir)
+
+    # Generate index page
+    generate_index(output_dir)
+
+    # Generate type pages
+    generate_type_pages(output_dir)
+
+    # Generate namespace pages
+    generate_namespace_pages(output_dir)
+  end
+
+  private
+
+  def generate_index(output_dir)
+    template = Liquid::Template.parse(<<~LIQUID)
+      # Schema Documentation
+
+      ## Overview
+
+      - Total Types: {{ stats.total_types }}
+      - Total Namespaces: {{ stats.total_namespaces }}
+      - Total Schemas: {{ stats.total_schemas }}
+
+      ## Namespaces
+
+      {% for namespace in namespaces %}
+      - [{{ namespace.prefix }}](namespaces/{{ namespace.prefix }}.html): {{ namespace.uri }}
+      {% endfor %}
+
+      ## Type Categories
+
+      {% for category in type_categories %}
+      - {{ category.name }}: {{ category.count }} types
+      {% endfor %}
+    LIQUID
+
+    stats = @repo.statistics
+    namespaces = @repo.all_namespaces.map do |uri|
+      prefix = find_prefix_for_uri(uri)
+      { 'prefix' => prefix, 'uri' => uri }
+    end
+
+    type_categories = stats[:types_by_category].map do |name, count|
+      { 'name' => name, 'count' => count }
+    end
+
+    output = template.render(
+      'stats' => stats,
+      'namespaces' => namespaces,
+      'type_categories' => type_categories
+    )
+
+    File.write(File.join(output_dir, 'index.md'), output)
+  end
+
+  def generate_type_pages(output_dir)
+    types_dir = File.join(output_dir, 'types')
+    FileUtils.mkdir_p(types_dir)
+
+    # Iterate through all types and generate documentation
+    # (Implementation depends on access to type index)
+  end
+
+  def generate_namespace_pages(output_dir)
+    ns_dir = File.join(output_dir, 'namespaces')
+    FileUtils.mkdir_p(ns_dir)
+
+    @repo.all_namespaces.each do |uri|
+      prefix = find_prefix_for_uri(uri)
+      # Generate namespace documentation page
+    end
+  end
+
+  def find_prefix_for_uri(uri)
+    # Find prefix from namespace registry
+    # (Implementation depends on access to registry)
+    uri.split('/').last
+  end
+end
+
+# Usage
+repo = Lutaml::Xsd::SchemaRepository.from_package('schemas.lxr')
+generator = SchemaDocumentationGenerator.new(repo)
+generator.generate('docs/api')
+----
+====
+
+=== Cross-reference documentation
+
+.Generating documentation with cross-references
+[example]
+====
+[source,liquid]
+----
+{% comment %}
+  Template: type_documentation.liquid
+  Generates detailed type documentation with cross-references
+{% endcomment %}
+
+# {{ type.name }}
+
+**Namespace:** {{ type.namespace }}
+
+{% if type.annotation %}
+## Description
+
+{{ type.annotation.documentation }}
+{% endif %}
+
+## Structure
+
+{% if type.base_type %}
+**Extends:** [{{ type.base_type }}]({{ type.base_type | slugify }}.html)
+{% endif %}
+
+### Elements
+
+| Name | Type | Cardinality | Description |
+|------|------|-------------|-------------|
+{% for element in type.elements %}
+| `{{ element.name }}` | [{{ element.type }}]({{ element.type | slugify }}.html) | {{ element.min_occurs }}..{{ element.max_occurs }} | {{ element.description }} |
+{% endfor %}
+
+### Attributes
+
+| Name | Type | Use | Description |
+|------|------|-----|-------------|
+{% for attr in type.attributes %}
+| `{{ attr.name }}` | [{{ attr.type }}]({{ attr.type | slugify }}.html) | {{ attr.use }} | {{ attr.description }} |
+{% endfor %}
+
+## Usage Examples
+
+```xml
+<{{ type.name }}{% for attr in type.attributes %} {{ attr.name }}="{{ attr.example }}"{% endfor %}>
+  {% for element in type.elements %}
+  <{{ element.name }}>{{ element.example }}</{{ element.name }}>
+  {% endfor %}
+</{{ type.name }}>
+```
+
+## Related Types
+
+{% for related in type.related_types %}
+- [{{ related.name }}]({{ related.name | slugify }}.html) - {{ related.relationship }}
+{% endfor %}
+----
+====
+
+== Validation tool integration
+
+=== Integrating with XML validators
+
+.Using Lutaml::XSD with XML validation
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+require 'moxml'
+
+class SchemaValidator
+  def initialize(lxr_package_path)
+    @repo = Lutaml::Xsd::SchemaRepository.from_package(lxr_package_path)
+  end
+
+  def validate_xml(xml_content, root_type)
+    # Find the schema containing the root type
+    result = @repo.find_type(root_type)
+    raise "Type not found: #{root_type}" unless result.resolved?
+
+    # Get the XSD file for this type
+    xsd_file = result.schema_file
+    xsd_content = load_xsd_content(xsd_file)
+
+    # Parse XML document using Moxml
+    ctx = Moxml::Context.new
+    doc = ctx.parse(xml_content)
+
+    # Validate against XSD schema
+    # (Use a dedicated XSD validation library for full schema validation)
+    errors = []
+
+    {
+      valid: errors.empty?,
+      errors: errors.map(&:message)
+    }
+  end
+
+  def load_xsd_content(schema_file)
+    # Load XSD content from package or file system
+    File.read(schema_file)
+  end
+end
+
+# Usage
+validator = SchemaValidator.new('schemas.lxr')
+
+xml_doc = <<~XML
+  <?xml version="1.0"?>
+  <gml:CodeType codeSpace="http://example.com">
+    <gml:value>example</gml:value>
+  </gml:CodeType>
+XML
+
+result = validator.validate_xml(xml_doc, 'gml:CodeType')
+
+if result[:valid]
+  puts "✓ XML is valid"
+else
+  puts "✗ Validation errors:"
+  result[:errors].each { |err| puts "  - #{err}" }
+end
+----
+====
+
+=== Building validation workflows
+
+.Automated validation pipeline
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+require 'moxml'
+
+class ValidationPipeline
+  def initialize(schemas_package)
+    @repo = Lutaml::Xsd::SchemaRepository.from_package(schemas_package)
+    @validation_results = []
+  end
+
+  def validate_directory(dir_path, type_mapping = {})
+    Dir.glob(File.join(dir_path, '**', '*.xml')).each do |xml_file|
+      # Determine expected type from filename or mapping
+      expected_type = determine_type(xml_file, type_mapping)
+
+      result = validate_file(xml_file, expected_type)
+      @validation_results << result
+
+      report_result(result)
+    end
+
+    generate_report
+  end
+
+  private
+
+  def validate_file(xml_file, expected_type)
+    xml_content = File.read(xml_file)
+
+    begin
+      validation = validate_against_schema(xml_content, expected_type)
+
+      {
+        file: xml_file,
+        type: expected_type,
+        valid: validation[:valid],
+        errors: validation[:errors]
+      }
+    rescue StandardError => e
+      {
+        file: xml_file,
+        type: expected_type,
+        valid: false,
+        errors: [e.message]
+      }
+    end
+  end
+
+  def validate_against_schema(xml_content, type_name)
+    result = @repo.find_type(type_name)
+    raise "Schema type not found: #{type_name}" unless result.resolved?
+
+    # Perform validation (implementation depends on validator)
+    { valid: true, errors: [] }
+  end
+
+  def determine_type(xml_file, type_mapping)
+    # Extract from filename or use mapping
+    basename = File.basename(xml_file, '.xml')
+    type_mapping[basename] || 'unknown'
+  end
+
+  def report_result(result)
+    status = result[:valid] ? '✓' : '✗'
+    puts "#{status} #{result[:file]}"
+
+    unless result[:valid]
+      result[:errors].each { |err| puts "    #{err}" }
+    end
+  end
+
+  def generate_report
+    total = @validation_results.size
+    valid = @validation_results.count { |r| r[:valid] }
+    invalid = total - valid
+
+    puts "\n" + "=" * 50
+    puts "Validation Report"
+    puts "=" * 50
+    puts "Total files:   #{total}"
+    puts "Valid:         #{valid}"
+    puts "Invalid:       #{invalid}"
+    puts "Success rate:  #{(valid.to_f / total * 100).round(2)}%"
+  end
+end
+
+# Usage
+pipeline = ValidationPipeline.new('schemas.lxr')
+
+type_mapping = {
+  'building' => 'citygml:Building',
+  'land_use' => 'citygml:LandUse',
+  'transportation' => 'citygml:Road'
+}
+
+pipeline.validate_directory('test_data/xml', type_mapping)
+----
+====
+
+== Build tool integration
+
+=== Rake task integration
+
+.Creating Rake tasks for schema operations
+[example]
+====
+[source,ruby]
+----
+# Rakefile
+require 'lutaml/xsd'
+
+namespace :schemas do
+  desc 'Build schema package'
+  task :build do
+    puts "Building schema package..."
+
+    repo = Lutaml::Xsd::SchemaRepository.from_yaml_file('config/schemas.yml')
+    repo.parse.resolve
+
+    repo.to_package(
+      'pkg/schemas.lxr',
+      xsd_mode: :include_all,
+      resolution_mode: :resolved,
+      serialization_format: :marshal,
+      metadata: {
+        name: 'Application Schemas',
+        version: ENV['VERSION'] || '1.0.0',
+        description: 'Complete schema package'
+      }
+    )
+
+    puts "✓ Package created: pkg/schemas.lxr"
+  end
+
+  desc 'Validate schema package'
+  task :validate do
+    puts "Validating schema package..."
+
+    result = Lutaml::Xsd::SchemaRepository.validate_package('pkg/schemas.lxr')
+
+    if result.valid?
+      puts "✓ Package is valid"
+    else
+      puts "✗ Package validation failed:"
+      result.errors.each { |err| puts "  - #{err}" }
+      exit 1
+    end
+  end
+
+  desc 'Generate documentation'
+  task :docs => :build do
+    puts "Generating documentation..."
+
+    repo = Lutaml::Xsd::SchemaRepository.from_package('pkg/schemas.lxr')
+
+    # Generate documentation (implementation depends on generator)
+    # DocumentationGenerator.new(repo).generate('docs/schemas')
+
+    puts "✓ Documentation generated"
+  end
+
+  desc 'Display statistics'
+  task :stats => :build do
+    repo = Lutaml::Xsd::SchemaRepository.from_package('pkg/schemas.lxr')
+    stats = repo.statistics
+
+    puts "Schema Statistics:"
+    puts "  Total schemas: #{stats[:total_schemas]}"
+    puts "  Total types: #{stats[:total_types]}"
+    puts "  Total namespaces: #{stats[:total_namespaces]}"
+
+    puts "\nTypes by category:"
+    stats[:types_by_category].each do |category, count|
+      puts "  #{category}: #{count}"
+    end
+  end
+
+  desc 'Clean build artifacts'
+  task :clean do
+    FileUtils.rm_rf('pkg')
+    puts "✓ Cleaned build artifacts"
+  end
+end
+
+# Default task
+task default: ['schemas:build', 'schemas:validate']
+----
+
+Usage:
+
+[source,bash]
+----
+# Build package
+rake schemas:build
+
+# Validate package
+rake schemas:validate
+
+# Generate documentation
+rake schemas:docs
+
+# Display statistics
+rake schemas:stats
+
+# Clean artifacts
+rake schemas:clean
+
+# Run default tasks
+rake
+----
+====
+
+=== CI/CD integration
+
+.GitHub Actions workflow
+[example]
+====
+[source,yaml]
+----
+# .github/workflows/schemas.yml
+name: Schema Processing
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'schemas/**'
+      - 'config/schemas.yml'
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-validate:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.2'
+        bundler-cache: true
+
+    - name: Install lutaml-xsd
+      run: gem install lutaml-xsd
+
+    - name: Build schema package
+      run: |
+        lutaml-xsd pkg build config/schemas.yml \
+          --name "Application Schemas" \
+          --version "${{ github.sha }}" \
+          --output pkg/schemas.lxr \
+          --verbose
+
+    - name: Validate package
+      run: |
+        lutaml-xsd package validate pkg/schemas.lxr --strict
+
+    - name: Display statistics
+      run: |
+        lutaml-xsd stats show --from pkg/schemas.lxr
+
+    - name: Upload package artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: schema-package
+        path: pkg/schemas.lxr
+        retention-days: 30
+
+    - name: Generate checksum
+      run: |
+        sha256sum pkg/schemas.lxr > pkg/schemas.lxr.sha256
+
+    - name: Upload to release (on tag)
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          pkg/schemas.lxr
+          pkg/schemas.lxr.sha256
+----
+====
+
+== Custom workflow patterns
+
+=== Schema versioning workflow
+
+.Managing schema versions
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+class SchemaVersionManager
+  def initialize(config_file)
+    @config_file = config_file
+    @versions_dir = 'versions'
+    FileUtils.mkdir_p(@versions_dir)
+  end
+
+  def create_version(version_tag)
+    # Build package with version metadata
+    repo = Lutaml::Xsd::SchemaRepository.from_yaml_file(@config_file)
+    repo.parse.resolve
+
+    package_path = File.join(@versions_dir, "schemas-#{version_tag}.lxr")
+
+    repo.to_package(
+      package_path,
+      xsd_mode: :include_all,
+      resolution_mode: :resolved,
+      serialization_format: :marshal,
+      metadata: {
+        name: 'Application Schemas',
+        version: version_tag,
+        created_at: Time.now.iso8601,
+        git_commit: `git rev-parse HEAD`.strip
+      }
+    )
+
+    # Create version manifest
+    create_manifest(version_tag, package_path, repo)
+
+    package_path
+  end
+
+  def list_versions
+    Dir.glob(File.join(@versions_dir, '*.lxr')).map do |path|
+      extract_version_from_path(path)
+    end.sort
+  end
+
+  def compare_versions(v1, v2)
+    repo1 = load_version(v1)
+    repo2 = load_version(v2)
+
+    stats1 = repo1.statistics
+    stats2 = repo2.statistics
+
+    {
+      schemas: {
+        v1: stats1[:total_schemas],
+        v2: stats2[:total_schemas],
+        diff: stats2[:total_schemas] - stats1[:total_schemas]
+      },
+      types: {
+        v1: stats1[:total_types],
+        v2: stats2[:total_types],
+        diff: stats2[:total_types] - stats1[:total_types]
+      }
+    }
+  end
+
+  private
+
+  def create_manifest(version, package_path, repo)
+    stats = repo.statistics
+
+    manifest = {
+      version: version,
+      package: File.basename(package_path),
+      created_at: Time.now.iso8601,
+      statistics: stats,
+      checksum: Digest::SHA256.file(package_path).hexdigest
+    }
+
+    File.write(
+      File.join(@versions_dir, "#{version}.json"),
+      JSON.pretty_generate(manifest)
+    )
+  end
+
+  def extract_version_from_path(path)
+    File.basename(path, '.lxr').sub('schemas-', '')
+  end
+
+  def load_version(version)
+    path = File.join(@versions_dir, "schemas-#{version}.lxr")
+    Lutaml::Xsd::SchemaRepository.from_package(path)
+  end
+end
+
+# Usage
+manager = SchemaVersionManager.new('config/schemas.yml')
+
+# Create new version
+version = "1.2.0"
+package = manager.create_version(version)
+puts "Created version #{version}: #{package}"
+
+# List all versions
+puts "Available versions: #{manager.list_versions.join(', ')}"
+
+# Compare versions
+diff = manager.compare_versions('1.1.0', '1.2.0')
+puts "Schema changes: #{diff[:schemas][:diff]}"
+puts "Type changes: #{diff[:types][:diff]}"
+----
+====
+
+=== Multi-environment workflow
+
+.Managing different environments
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+class EnvironmentManager
+  ENVIRONMENTS = {
+    development: {
+      config: 'config/schemas.dev.yml',
+      package: 'pkg/schemas.dev.lxr',
+      options: {
+        xsd_mode: :include_all,
+        resolution_mode: :bare,
+        serialization_format: :parse
+      }
+    },
+    staging: {
+      config: 'config/schemas.staging.yml',
+      package: 'pkg/schemas.staging.lxr',
+      options: {
+        xsd_mode: :include_all,
+        resolution_mode: :resolved,
+        serialization_format: :json
+      }
+    },
+    production: {
+      config: 'config/schemas.prod.yml',
+      package: 'pkg/schemas.prod.lxr',
+      options: {
+        xsd_mode: :include_all,
+        resolution_mode: :resolved,
+        serialization_format: :marshal
+      }
+    }
+  }
+
+  def build_for_environment(env)
+    config = ENVIRONMENTS[env.to_sym]
+    raise "Unknown environment: #{env}" unless config
+
+    puts "Building package for #{env}..."
+
+    repo = Lutaml::Xsd::SchemaRepository.from_yaml_file(config[:config])
+    repo.parse.resolve
+
+    repo.to_package(
+      config[:package],
+      **config[:options],
+      metadata: {
+        name: "Application Schemas - #{env.capitalize}",
+        environment: env,
+        built_at: Time.now.iso8601
+      }
+    )
+
+    puts "✓ Built: #{config[:package]}"
+    config[:package]
+  end
+
+  def deploy(env, target_path)
+    package = ENVIRONMENTS[env.to_sym][:package]
+
+    FileUtils.cp(package, target_path)
+    puts "✓ Deployed #{env} package to #{target_path}"
+  end
+end
+
+# Usage
+manager = EnvironmentManager.new
+
+# Build for each environment
+manager.build_for_environment(:development)
+manager.build_for_environment(:staging)
+manager.build_for_environment(:production)
+
+# Deploy to specific location
+manager.deploy(:production, '/var/app/schemas.lxr')
+----
+====
+
+== Complete integration example
+
+.End-to-end schema workflow
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+require 'liquid'
+require 'moxml'
+
+class SchemaWorkflow
+  def initialize(config_file)
+    @config_file = config_file
+    @output_dir = 'build'
+    FileUtils.mkdir_p(@output_dir)
+  end
+
+  def run
+    puts "=" * 60
+    puts "Schema Processing Workflow"
+    puts "=" * 60
+
+    # Step 1: Build package
+    package_path = build_package
+
+    # Step 2: Validate package
+    validate_package(package_path)
+
+    # Step 3: Generate code
+    generate_code(package_path)
+
+    # Step 4: Generate documentation
+    generate_documentation(package_path)
+
+    # Step 5: Run tests
+    run_tests(package_path)
+
+    puts "\n✓ Workflow completed successfully!"
+  end
+
+  private
+
+  def build_package
+    puts "\n1. Building package..."
+
+    repo = Lutaml::Xsd::SchemaRepository.from_yaml_file(@config_file)
+    repo.parse.resolve
+
+    package_path = File.join(@output_dir, 'schemas.lxr')
+    repo.to_package(
+      package_path,
+      xsd_mode: :include_all,
+      resolution_mode: :resolved,
+      serialization_format: :marshal
+    )
+
+    puts "   ✓ Package created: #{package_path}"
+    package_path
+  end
+
+  def validate_package(package_path)
+    puts "\n2. Validating package..."
+
+    result = Lutaml::Xsd::SchemaRepository.validate_package(package_path)
+
+    if result.valid?
+      puts "   ✓ Package is valid"
+    else
+      puts "   ✗ Validation failed:"
+      result.errors.each { |err| puts "     - #{err}" }
+      exit 1
+    end
+  end
+
+  def generate_code(package_path)
+    puts "\n3. Generating code..."
+
+    repo = Lutaml::Xsd::SchemaRepository.from_package(package_path)
+    code_dir = File.join(@output_dir, 'generated')
+    FileUtils.mkdir_p(code_dir)
+
+    # Generate code for key types
+    # (Implementation depends on code generator)
+
+    puts "   ✓ Code generated in #{code_dir}"
+  end
+
+  def generate_documentation(package_path)
+    puts "\n4. Generating documentation..."
+
+    repo = Lutaml::Xsd::SchemaRepository.from_package(package_path)
+    docs_dir = File.join(@output_dir, 'docs')
+    FileUtils.mkdir_p(docs_dir)
+
+    # Generate documentation
+    # (Implementation depends on doc generator)
+
+    puts "   ✓ Documentation generated in #{docs_dir}"
+  end
+
+  def run_tests(package_path)
+    puts "\n5. Running tests..."
+
+    # Run validation tests, code tests, etc.
+
+    puts "   ✓ All tests passed"
+  end
+end
+
+# Run the workflow
+workflow = SchemaWorkflow.new('config/schemas.yml')
+workflow.run
+----
+====
+
+== See also
+
+* link:PERFORMANCE_TUNING[Performance tuning] - Optimizing integrations
+* link:DEBUGGING[Debugging] - Troubleshooting integration issues
+* link:../guides/CREATING_PACKAGES[Creating packages] - Package creation guide
+* link:../reference/CLI[CLI reference] - Command-line tool reference

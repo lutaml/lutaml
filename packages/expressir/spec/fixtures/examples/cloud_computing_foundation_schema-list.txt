@@ -1,0 +1,28 @@
+*** Written by Express Engine
+***    5.2.7 (GIT eeng-5.2.7)
+***    Steel Bank CL 2.5.8 (Unknown Bits)
+*** Express Engine Command Line:
+***   eengine --list
+***     -SCHEMA spec/fixtures/examples/cloud_computing_foundation_schema.exp
+*** File: spec/fixtures/examples/cloud_computing_foundation_schema.exp
+*** 1 Schema:
+   cloud_computing_foundation_schema
+
+
+SCHEMA cloud_computing_foundation_schema {acme standard 5000 part(120) version(1) object(1) cloud-computing-foundation-schema(1)};
+
+(* TYPE                   3 *)
+(* ENTITY                 5 *)
+(* FUNCTION               0 *)
+(* PROCEDURE              0 *)
+(* RULE                   0 *)
+(* SUBTYPE_CONSTRAINT     0 *)
+
+  TYPE CLOUD_COMPUTING_FOUNDATION_SCHEMA.cloud_deployment_model;
+  TYPE CLOUD_COMPUTING_FOUNDATION_SCHEMA.cloud_resource_state;
+  TYPE CLOUD_COMPUTING_FOUNDATION_SCHEMA.cloud_service_type;
+  ENTITY CLOUD_COMPUTING_FOUNDATION_SCHEMA.cloud_compute_resource;
+  ENTITY CLOUD_COMPUTING_FOUNDATION_SCHEMA.cloud_provider;
+  ENTITY CLOUD_COMPUTING_FOUNDATION_SCHEMA.cloud_resource;
+  ENTITY CLOUD_COMPUTING_FOUNDATION_SCHEMA.cloud_service_deployment;
+  ENTITY CLOUD_COMPUTING_FOUNDATION_SCHEMA.cloud_storage_resource;

@@ -1,0 +1,2044 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <!--
+    ALERT: we cannot have comments on root element, as they intervene with https://github.com/metanorma/metanorma/issues/437 fix
+    
+    Instantiations of this grammar may replace leaf strings
+    with more elaborated types; e.g. title (text) replaced with
+    title-main, title-intro, title-part; type replaced with
+    enum.
+    
+    Some renaming at leaf nodes is permissible
+    
+    Obligations can change both from optional to mandatory,
+    and from mandatory to optional; optional elements may
+    be omitted; freely positioned alternatives may be replaced
+    with strict ordering
+    
+    DO NOT introduce a namespace here. We do not want a distinct namespace
+    for these elements, and a distinct namespace for any grammar inheriting
+    these elements; we just want one namespace for any child grammars
+    of this.
+  -->
+  <!--
+    https://www.myintervals.com/blog/2009/05/20/iso-8601-date-validation-that-doesnt-suck/
+    iso8601date = xsd:string { pattern = "([\+-]?\d{4}(?!\d{2}\b))((-?)((0[1-9]|1[0-2])(\3([12]\d|0[1-9]|3[01]))?|W([0-4]\d|5[0-2])(-?[1-7])?|(00[1-9]|0[1-9]\d|[12]\d{2}|3([0-5]\d|6[1-6])))([T\s]((([01]\d|2[0-3])((:?)[0-5]\d)?|24\:?00)([\.,]\d+(?!:))?)?(\17[0-5]\d([\.,]\d+)?)?([zZ]|([\+-])([01]\d|2[0-3]):?([0-5]\d)?)?)?)?" }
+    Somewhat dumbed down for XSD regex:
+  -->
+  <xs:simpleType name="ISO8601DateTime">
+    <xs:annotation>
+      <xs:documentation>Date/Time conforming with ISO 8601</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:pattern value="([\+\-]?\d{4})((-?)((0[1-9]|1[0-2])((-?)([12]\d|0[1-9]|3[01]))?|W([0-4]\d|5[0-2])(-?[1-7])?|(00[1-9]|0[1-9]\d|[12]\d{2}|3([0-5]\d|6[1-6])))([T\s]((([01]\d|2[0-3])((:?)[0-5]\d)?|24:?00)([\.,]\d+)?)?((:?)[0-5]\d([.,]\d+)?)?([zZ]|([\+\-])([01]\d|2[0-3]):?([0-5]\d)?)?)?)?"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="ISO8601Date">
+    <xs:annotation>
+      <xs:documentation>Date conforming with ISO 8601</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:pattern value="([\+\-]?\d{4})((-?)((0[1-9]|1[0-2])((-?)([12]\d|0[1-9]|3[01]))?|W([0-4]\d|5[0-2])(-?[1-7])?|(00[1-9]|0[1-9]\d|[12]\d{2}|3([0-5]\d|6[1-6]))))?"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:element name="status">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="stage">
+          <xs:annotation>
+            <xs:documentation>The stage of the document status, e.g. "Published", "Unpublished", "Committee Draft", "Preprint"</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element minOccurs="0" ref="substage">
+          <xs:annotation>
+            <xs:documentation>The substage of the document status. These are used particularly in Standards Defining Organizations</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element minOccurs="0" ref="iteration">
+          <xs:annotation>
+            <xs:documentation>The iteration of the given status that the document is currently in (e.g. "3" for a third draft)</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="stage">
+    <xs:complexType mixed="true">
+      <xs:attribute name="abbreviation">
+        <xs:annotation>
+          <xs:documentation>A canonical abbreviation of the document stage</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="substage">
+    <xs:complexType mixed="true">
+      <xs:attribute name="abbreviation">
+        <xs:annotation>
+          <xs:documentation>A canonical abbreviation of the document substage</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="iteration" type="xs:string"/>
+  <xs:element name="language" type="xs:string"/>
+  <xs:element name="locale" type="xs:string"/>
+  <xs:element name="script" type="xs:string"/>
+  <xs:group name="edition">
+    <xs:annotation>
+      <xs:documentation>Edition of a bibliographic item</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="edition">
+        <xs:complexType mixed="true">
+          <xs:attribute name="number">
+            <xs:annotation>
+              <xs:documentation>Number of edition.
+NOTE: The number attribute can be used to represent the numeric equivalent of the edition string</xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:attributeGroup name="LocalizedStringAttributes">
+    <xs:annotation>
+      <xs:documentation>multiple values are comma-delimited</xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="language"/>
+    <xs:attribute name="locale"/>
+    <xs:attribute name="script"/>
+  </xs:attributeGroup>
+  <xs:attributeGroup name="LocalizedString">
+    <xs:attributeGroup ref="LocalizedStringAttributes"/>
+  </xs:attributeGroup>
+  <!--
+    LocalizedString =
+     LocalizedStringAttributes,
+     text
+    
+    LocalizedString =
+     LocalizedString1 |
+     element variant { LocalizedString1 }+
+  -->
+  <xs:complexType name="LocalizedMarkedUpString" mixed="true">
+    <xs:group maxOccurs="unbounded" ref="PureTextElement"/>
+    <xs:attributeGroup ref="LocalizedStringAttributes"/>
+  </xs:complexType>
+  <!--
+    LocalizedMarkedUpString =
+    LocalizedMarkedUpString1 |
+    Variants of the string, with the same content, but in different language, script, or format
+    element variant { LocalizedMarkedUpString1 }+
+  -->
+  <!--
+    Unlike UML, change type to format: type is overloaded
+    Would be need if plain were default value and could omit the attribute
+    Added LocalizedStringOrXsAny
+  -->
+  <!-- LocalizedStringOrXsAny1 = -->
+  <xs:group name="LocalizedStringOrXsAny">
+    <xs:sequence>
+      <xs:group minOccurs="0" maxOccurs="unbounded" ref="AnyElement"/>
+    </xs:sequence>
+  </xs:group>
+  <xs:attributeGroup name="LocalizedStringOrXsAny">
+    <xs:attributeGroup ref="LocalizedStringAttributes"/>
+  </xs:attributeGroup>
+  <!--
+    LocalizedStringOrXsAny =
+     LocalizedStringOrXsAny1 |
+     element variant { LocalizedStringOrXsAny1 }+
+  -->
+  <xs:element name="contributor">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="role">
+          <xs:annotation>
+            <xs:documentation>A description of the role of the contributor in the production of the bibliographic item</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:group ref="ContributorInfo">
+          <xs:annotation>
+            <xs:documentation>The contributor involved in the production of the bibliographic item.
+May be either a person or an organization</xs:documentation>
+          </xs:annotation>
+        </xs:group>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="role">
+    <xs:complexType>
+      <xs:group minOccurs="0" maxOccurs="unbounded" ref="roledescription">
+        <xs:annotation>
+          <xs:documentation>A more detailed description of the role of the contributor</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+      <xs:attribute name="type" use="required">
+        <xs:annotation>
+          <xs:documentation>The broad class of role of the contributor. Mandatory in order to enforce orderly management of contributors.
+Detailed in https://www.relaton.org/model/creator/</xs:documentation>
+        </xs:annotation>
+        <xs:simpleType>
+          <xs:restriction base="xs:token">
+            <xs:enumeration value="author"/>
+            <xs:enumeration value="performer"/>
+            <xs:enumeration value="publisher"/>
+            <xs:enumeration value="editor"/>
+            <xs:enumeration value="adapter"/>
+            <xs:enumeration value="translator"/>
+            <xs:enumeration value="distributor"/>
+            <xs:enumeration value="realizer"/>
+            <xs:enumeration value="owner"/>
+            <xs:enumeration value="authorizer"/>
+            <xs:enumeration value="enabler"/>
+            <xs:enumeration value="subject"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+  <xs:group name="ContributorInfo">
+    <xs:choice>
+      <xs:element ref="person"/>
+      <xs:group ref="organization"/>
+    </xs:choice>
+  </xs:group>
+  <xs:group name="roledescription">
+    <xs:annotation>
+      <xs:documentation>A more detailed description of the role of the contributor
+Some descriptions are reserved words; in particular, the editorial committee of a standard has the role description "committee"</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="description" type="LocalizedMarkedUpString"/>
+    </xs:sequence>
+  </xs:group>
+  <xs:element name="person">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:group minOccurs="0" ref="fullname">
+          <xs:annotation>
+            <xs:documentation>The name of the person</xs:documentation>
+          </xs:annotation>
+        </xs:group>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="credential">
+          <xs:annotation>
+            <xs:documentation>Credentials given for the person postnominally, e.g. "PhD"</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="affiliation">
+          <xs:annotation>
+            <xs:documentation>The affiliation of the person within an organization</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:group minOccurs="0" maxOccurs="unbounded" ref="person-identifier">
+          <xs:annotation>
+            <xs:documentation>An identifier of the person according to an international identifier scheme</xs:documentation>
+          </xs:annotation>
+        </xs:group>
+        <xs:group minOccurs="0" ref="contact">
+          <xs:annotation>
+            <xs:documentation>Contact information for the person, including URI, address, phone number, and email</xs:documentation>
+          </xs:annotation>
+        </xs:group>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:group name="fullname">
+    <xs:annotation>
+      <xs:documentation>The name of a person</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="name" type="FullNameType"/>
+    </xs:sequence>
+  </xs:group>
+  <xs:element name="credential" type="xs:string"/>
+  <xs:complexType name="FullNameType">
+    <xs:sequence>
+      <xs:element minOccurs="0" ref="abbreviation">
+        <xs:annotation>
+          <xs:documentation>The initials of the person, used as an abbreviation for the person, and including the
+surname. Can be used instead of the complete name. Distinct from formatted-initials,
+which are the initials only of the forenames of the person</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:sequence>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="prefix">
+          <xs:annotation>
+            <xs:documentation>A prefixed addition to the name of the person, such as "Dr"</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="forename">
+          <xs:annotation>
+            <xs:documentation>A forename or given name of the person. Includes middle names</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element minOccurs="0" ref="formatted-initials">
+          <xs:annotation>
+            <xs:documentation>The initials of the person, as a formatted string, including punctuation, dropping
+punctuation as desired, and including hyphens where necessary. For example,
+the initial set for Jean-Paul would be J, P; the formatted initials would be "J.-P."
+or "J-P.". Can be used instead of forenames</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element minOccurs="0" ref="surname">
+          <xs:annotation>
+            <xs:documentation>The surname, family name, or equivalent of the person</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="addition">
+          <xs:annotation>
+            <xs:documentation>A suffixed addition to the name of the person, such as "Jr"</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element minOccurs="0" ref="completename">
+          <xs:annotation>
+            <xs:documentation>A preformatted version of the name of the person, not broken down into its component parts</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+      </xs:sequence>
+      <xs:group minOccurs="0" maxOccurs="unbounded" ref="biblionote">
+        <xs:annotation>
+          <xs:documentation>An additional note about the name of the person</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="variant">
+        <xs:annotation>
+          <xs:documentation>A variant name of the person</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="abbreviation">
+    <xs:complexType mixed="true">
+      <xs:attributeGroup ref="LocalizedString"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="prefix">
+    <xs:complexType mixed="true">
+      <xs:attributeGroup ref="LocalizedString"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="formatted-initials">
+    <xs:complexType mixed="true">
+      <xs:attributeGroup ref="LocalizedString"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="addition">
+    <xs:complexType mixed="true">
+      <xs:attributeGroup ref="LocalizedString"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="surname">
+    <xs:complexType mixed="true">
+      <xs:attributeGroup ref="LocalizedString"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="forename">
+    <xs:complexType mixed="true">
+      <xs:attribute name="initial">
+        <xs:annotation>
+          <xs:documentation>An individual initial of the person, corresponding to the given forename.
+Does not include final punctuation, but can include hyphens.
+Can be used instead of forenames, if formatted-initials are not provided 
+(in which case each initial will be punctuated following local practice).</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attributeGroup ref="LocalizedString"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="completename">
+    <xs:complexType mixed="true">
+      <xs:attributeGroup ref="LocalizedString"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="variant">
+    <xs:complexType>
+      <xs:complexContent>
+        <xs:extension base="FullNameType">
+          <xs:attribute name="type" use="required">
+            <xs:annotation>
+              <xs:documentation>The type of variant name for the person. Examples include pseudonyms; user names (online);
+real names (if the person is named with a pseudonym or user name); previous legal names</xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:extension>
+      </xs:complexContent>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="affiliation">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:group minOccurs="0" ref="affiliationname">
+          <xs:annotation>
+            <xs:documentation>The name of the affiliation of the person with the organization; typically a position title</xs:documentation>
+          </xs:annotation>
+        </xs:group>
+        <xs:group minOccurs="0" maxOccurs="unbounded" ref="affiliationdescription">
+          <xs:annotation>
+            <xs:documentation>A more detailed description of the affiliation of the person</xs:documentation>
+          </xs:annotation>
+        </xs:group>
+        <xs:group minOccurs="0" ref="organization">
+          <xs:annotation>
+            <xs:documentation>The organization with which the person is affiliated</xs:documentation>
+          </xs:annotation>
+        </xs:group>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:group name="affiliationname">
+    <xs:sequence>
+      <xs:element name="name">
+        <xs:complexType mixed="true">
+          <xs:attributeGroup ref="LocalizedString"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="affiliationdescription">
+    <xs:sequence>
+      <xs:element name="description" type="LocalizedMarkedUpString"/>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="organization">
+    <xs:annotation>
+      <xs:documentation>Organization associated with a bibliographic item</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="organization" type="OrganizationType"/>
+    </xs:sequence>
+  </xs:group>
+  <xs:complexType name="OrganizationType">
+    <xs:sequence>
+      <xs:group maxOccurs="unbounded" ref="orgname">
+        <xs:annotation>
+          <xs:documentation>The name of the organization</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="subdivision">
+        <xs:annotation>
+          <xs:documentation>The subdivision of the organization directly involved with the production of the bibliographic item.
+Multiple subdivisions can be specified for an organization, with no implication of hierarchical
+relation between them
+Editorial and advisory groups are represented as consecutive subdivisions of the SDO</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" ref="abbreviation">
+        <xs:annotation>
+          <xs:documentation>Abbreviation under which the organization is known</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:group minOccurs="0" maxOccurs="unbounded" ref="org-identifier">
+        <xs:annotation>
+          <xs:documentation>An identifier of the organization according to an international identifier scheme</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+      <xs:group minOccurs="0" ref="contact">
+        <xs:annotation>
+          <xs:documentation>Contact information for the organization, including address, phone number, and email</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="logo">
+        <xs:annotation>
+          <xs:documentation>A logo for the organization</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:group name="orgname">
+    <xs:sequence>
+      <xs:element name="name">
+        <xs:complexType mixed="true">
+          <xs:attribute name="type">
+            <xs:annotation>
+              <xs:documentation>Type of organisation name, to differentiate variant names</xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attributeGroup ref="LocalizedString"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:element name="subdivision">
+    <xs:complexType>
+      <xs:complexContent>
+        <xs:extension base="OrganizationType">
+          <xs:attribute name="type">
+            <xs:annotation>
+              <xs:documentation>The type of subdivision</xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="subtype">
+            <xs:annotation>
+              <xs:documentation>The subtype of subdivision; e.g. different types of technical committee</xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:extension>
+      </xs:complexContent>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="logo">
+    <xs:complexType>
+      <xs:group ref="image-no-id"/>
+      <xs:attribute name="type">
+        <xs:annotation>
+          <xs:documentation>The type of logo</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="depiction">
+    <xs:complexType>
+      <xs:group minOccurs="0" maxOccurs="unbounded" ref="image-no-id">
+        <xs:annotation>
+          <xs:documentation>A visual depiction of the bibliographic item</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+      <xs:attribute name="scope">
+        <xs:annotation>
+          <xs:documentation>Description of what is being depicted</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="type">
+        <xs:annotation>
+          <xs:documentation>Description of what kind of depiction this</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+  <!--
+    NameWithVariants =
+    element primary { LocalizedString },
+    element variant { NameWithVariants1 }*
+    
+    NameWithVariants1 =
+    attribute type { text },
+    element primary { LocalizedString },
+    element variant { NameWithVariants1 }*
+  -->
+  <xs:group name="uri">
+    <xs:annotation>
+      <xs:documentation>URI associated with a type</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="uri">
+        <xs:complexType>
+          <xs:simpleContent>
+            <xs:restriction base="xs:anyType">
+              <xs:simpleType>
+                <xs:restriction base="xs:anyURI"/>
+              </xs:simpleType>
+              <xs:attribute name="type">
+                <xs:annotation>
+                  <xs:documentation>The types of URI are open-ended, but include the IANA link relations specified in RFC 8288</xs:documentation>
+                </xs:annotation>
+              </xs:attribute>
+              <xs:attributeGroup ref="LocalizedStringAttributes"/>
+            </xs:restriction>
+          </xs:simpleContent>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <!-- TODO may change -->
+  <xs:group name="contact">
+    <xs:annotation>
+      <xs:documentation>Contact information for a person or organization</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="address"/>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="phone"/>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="email"/>
+      <xs:group minOccurs="0" maxOccurs="unbounded" ref="uri"/>
+    </xs:sequence>
+  </xs:group>
+  <xs:element name="phone">
+    <xs:complexType mixed="true">
+      <xs:attribute name="type">
+        <xs:annotation>
+          <xs:documentation>The type of phone number; can include "Fax" and "Mobile"</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="email" type="xs:string"/>
+  <xs:element name="address">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="street">
+          <xs:annotation>
+            <xs:documentation>The street and street number or equivalent in the address, as one or more lines of text</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element minOccurs="0" ref="city">
+          <xs:annotation>
+            <xs:documentation>The settlement or municipality in the address</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element minOccurs="0" ref="state">
+          <xs:annotation>
+            <xs:documentation>The region of the country in the address</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:group minOccurs="0" ref="country">
+          <xs:annotation>
+            <xs:documentation>The country in the address</xs:documentation>
+          </xs:annotation>
+        </xs:group>
+        <xs:element minOccurs="0" ref="postcode">
+          <xs:annotation>
+            <xs:documentation>The postal code or equivalent in the address</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element minOccurs="0" ref="formattedAddress">
+          <xs:annotation>
+            <xs:documentation>Preformatted version of the address, not decomposed into its component parts</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="street" type="xs:string"/>
+  <xs:element name="city" type="xs:string"/>
+  <xs:element name="state" type="xs:string"/>
+  <xs:group name="country">
+    <xs:sequence>
+      <xs:element name="country" type="xs:string"/>
+    </xs:sequence>
+  </xs:group>
+  <xs:element name="postcode" type="xs:string"/>
+  <xs:element name="formattedAddress">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="br"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:group name="person-identifier">
+    <xs:annotation>
+      <xs:documentation>An identifier of a person according to an international identifier scheme</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="identifier">
+        <xs:complexType mixed="true">
+          <xs:attribute name="type" use="required">
+            <xs:annotation>
+              <xs:documentation>The international identifier scheme for the identifier of the person.
+Examples include "isni", "orcid", "uri"</xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="org-identifier">
+    <xs:annotation>
+      <xs:documentation>An identifier of an organization according to an international identifier scheme</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="identifier">
+        <xs:complexType mixed="true">
+          <xs:attribute name="type">
+            <xs:annotation>
+              <xs:documentation>The international identifier scheme for the identifier of the organization.
+Examples include GRID, LEI, CrossRef, and Ringgold</xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:element name="citation">
+    <xs:complexType>
+      <xs:group ref="CitationType"/>
+      <xs:attributeGroup ref="CitationType"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:group name="CitationType">
+    <xs:sequence>
+      <xs:choice>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="locality">
+          <xs:annotation>
+            <xs:documentation>Describes the location of the cited information resource within the subject of the bibliographic item.
+Multiple ``bibLocality``s are interpreted as discontinuous references.</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="localityStack">
+          <xs:annotation>
+            <xs:documentation>Describes the location of the cited information resource within the subject of the bibliographic item in a multi-level manner.
+For example, the hierarchical specification "Part IV, Chapter 3, Paragraphs 22-24" 
+is represented as a single `bibLocalityStack`, composed of those three localities
+(as opposed to three `bibLocality` references, which would be treated as three discontinuous references).
+Multiple ``bibLocalityStack``s are themselves interpreted as discontinuous references</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+      </xs:choice>
+      <xs:group minOccurs="0" ref="date">
+        <xs:annotation>
+          <xs:documentation>Date of the citation, typically date of publication. 
+A combination of the date time elements year, month and day should be specified.
+Specification of month and day are optional. 
+This date is not intended for disambiguation, since `bibitemid`
+already identifies the source unambiguously; it is added for ease of processing, in case author-date
+citations cannot straightforwardly extract the date from the bibliographic source</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+    </xs:sequence>
+  </xs:group>
+  <xs:attributeGroup name="CitationType">
+    <xs:attribute name="bibitemid" use="required">
+      <xs:annotation>
+        <xs:documentation>Bibliographic item that the citation applies to, referenced as the anchor of a bibliographic description</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <xs:group name="date">
+    <xs:sequence>
+      <xs:element name="date" type="ISO8601Date"/>
+    </xs:sequence>
+  </xs:group>
+  <xs:element name="locality" type="BibItemLocality"/>
+  <xs:element name="localityStack">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="locality">
+          <xs:annotation>
+            <xs:documentation>Component bibliographic localities which group together to designate a single span of text.
+Earlier localities are assumed to include later localities, and be of different types;
+e.g. "Chapter 7, paragraph 9–11"</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="connective">
+        <xs:annotation>
+          <xs:documentation>Logical connective linking localities. If not supplied, "and" is understood</xs:documentation>
+        </xs:annotation>
+        <xs:simpleType>
+          <xs:restriction base="xs:token">
+            <xs:enumeration value="and"/>
+            <xs:enumeration value="or"/>
+            <xs:enumeration value="from"/>
+            <xs:enumeration value="to"/>
+            <xs:enumeration value=""/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="sourceLocality" type="BibItemLocality"/>
+  <xs:element name="sourceLocalityStack">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="sourceLocality"/>
+      </xs:sequence>
+      <xs:attribute name="connective">
+        <xs:simpleType>
+          <xs:restriction base="xs:token">
+            <xs:enumeration value="and"/>
+            <xs:enumeration value="or"/>
+            <xs:enumeration value="from"/>
+            <xs:enumeration value="to"/>
+            <xs:enumeration value=""/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+  <xs:complexType name="BibItemLocality">
+    <xs:sequence>
+      <xs:element minOccurs="0" ref="referenceFrom">
+        <xs:annotation>
+          <xs:documentation>The starting value of the extent, or point location</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" ref="referenceTo">
+        <xs:annotation>
+          <xs:documentation>The end value of the extent as a range, if applicable</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="type" use="required" type="LocalityType">
+      <xs:annotation>
+        <xs:documentation>The type of extent of a locality (e.g. section, clause, page)</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:simpleType name="LocalityType">
+    <xs:annotation>
+      <xs:documentation>Type of indicator of a location or extent within a bibliographic item.
+When the value `whole` or `title` is used, the corresponding `BibItemLocality`
+attribute `identifier` should be empty
+`whole` refers to the entire document.
+`list` is used for ordered lists in standards documents
+`time` is used for timestamps in audio and visual media
+`anchor` is used for locations within web pages
+`line` is a line number, dependent on printed form of document
+`locality:...` is an extension point: it allows a free-form text string that is human-readable</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:pattern value="section|clause|part|paragraph|chapter|page|title|line|whole|table|annex|figure|note|list|example|volume|issue|time|anchor|locality:[a-zA-Z0-9_]+"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:element name="referenceFrom" type="xs:string"/>
+  <xs:element name="referenceTo" type="xs:string"/>
+  <!-- unlike UML, has id attribute; that results from including bibitem in a docmodel -->
+  <xs:group name="bibitem">
+    <xs:annotation>
+      <xs:documentation>Description of a bibliographic item</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="bibitem">
+        <xs:complexType>
+          <xs:complexContent>
+            <xs:extension base="BibliographicItem">
+              <xs:attribute name="id" use="required" type="xs:ID"/>
+            </xs:extension>
+          </xs:complexContent>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="bibitem_no_id">
+    <xs:annotation>
+      <xs:documentation>Description of a bibliographic item: no ID attribute (for use in Relaton, metadata)</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="bibitem" type="BibliographicItem"/>
+    </xs:sequence>
+  </xs:group>
+  <xs:element name="relaton-collection">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:group ref="btitle">
+          <xs:annotation>
+            <xs:documentation>The title given to the grouping of bibliographic items</xs:documentation>
+          </xs:annotation>
+        </xs:group>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="contributor">
+          <xs:annotation>
+            <xs:documentation>Contributors to the production of the bibliographic items as a grouping,
+with corporate responsibility for all the items in the group 
+(e.g. as compilers of a collection or corporate authors)</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="relation">
+          <xs:annotation>
+            <xs:documentation>The individual items which constitute the group, expressed as relations to the
+document group. The `type` attribute of each relation is expected to be either `includes` or `hasPart`, 
+depending on whether the items exist as independent documents, or are parts of a multi-part document</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="type">
+        <xs:annotation>
+          <xs:documentation>The type of grouping of bibliographic items</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+  <xs:simpleType name="BibItemType">
+    <xs:annotation>
+      <xs:documentation>Type of bibliographic item.
+The value list complies with the types provided in ISO 690:2021.
+NOTE: These values represent a strict superset to BibTeX
+publication types, and therefore any BibTeX type value can be
+mapped to these values. Some values here do not have a corresponding
+entry in BibTeX, for instance, "standard" and "website".</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="article">
+        <xs:annotation>
+          <xs:documentation>An article from a journal or magazine</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="book">
+        <xs:annotation>
+          <xs:documentation>A monograph</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="booklet">
+        <xs:annotation>
+          <xs:documentation>A booklet or pamphlet. The distinction between book and booklet is not made frequently</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="manual">
+        <xs:annotation>
+          <xs:documentation>A manual</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="proceedings">
+        <xs:annotation>
+          <xs:documentation>A conference proceedings</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="presentation">
+        <xs:annotation>
+          <xs:documentation>A presentation given in a formal meeting</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="thesis">
+        <xs:annotation>
+          <xs:documentation>A dissertation given in an academic institution, as a summation of research</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="techreport">
+        <xs:annotation>
+          <xs:documentation>A technical report</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="standard">
+        <xs:annotation>
+          <xs:documentation>A standard, a document issued by a Standards Defining Organization</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="unpublished">
+        <xs:annotation>
+          <xs:documentation>An intellectual creation which has not been published, e.g. a manuscript.
+NOTE: Properly this does not represent a distinct bibliographic type, and it
+should be avoided in favour of using the `status` element of `BibliographicItem`</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="map">
+        <xs:annotation>
+          <xs:documentation>A map or other cartographic resource</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="electronic resource">
+        <xs:annotation>
+          <xs:documentation>A resource avaiulable in digital form
+NOTE: The overloaded type `electronicResource` should be avoided where possible, particularly if the
+resource corresponds closely to a paper bibliographic type, such as `book` or `article`.
+The distinction between offline and online resources should be made through `medium` (electronic vs physical).
+Specialisations of `electronicResource` include `dataset`, `webResource`, `website`,
+`socialMedia`, and `software`.</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="audiovisual">
+        <xs:annotation>
+          <xs:documentation>An audiovisual resource. Is a superclass of other types such as `video` and `music`</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="film">
+        <xs:annotation>
+          <xs:documentation>A film</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="video">
+        <xs:annotation>
+          <xs:documentation>A video</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="broadcast">
+        <xs:annotation>
+          <xs:documentation>A broadcast made through mass media, including radio and television</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="software">
+        <xs:annotation>
+          <xs:documentation>Computer executable code, not itself human-readable text (though it may generate such text)</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="graphic_work">
+        <xs:annotation>
+          <xs:documentation>A graphic work, a work with two-dimensional or three-dimensional content</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="music">
+        <xs:annotation>
+          <xs:documentation>A musical work. Includes both notated music and music performances:
+The two are differentiated through `BibliographicItem/medium/content` as "notated music" vs "performed music"</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="patent">
+        <xs:annotation>
+          <xs:documentation>A patent</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="inbook">
+        <xs:annotation>
+          <xs:documentation>A (typically untitled) part of a book. May be a chapter (or section, etc.) and/or a range of pages</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="incollection">
+        <xs:annotation>
+          <xs:documentation>A part of a book having its own title, and typically having distinct authorship</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="inproceedings">
+        <xs:annotation>
+          <xs:documentation>An article in a conference proceedings</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="journal">
+        <xs:annotation>
+          <xs:documentation>A journal or periodical publication</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="website">
+        <xs:annotation>
+          <xs:documentation>A collection of web resources, presented under the same URL domain and under the same (individual or corporate) authorship</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="webresource">
+        <xs:annotation>
+          <xs:documentation>A human-readable or consumable web resource, a single item accessible online via a web browser,
+which is not composed of components all of which can be accessed in the same way.
+Includes media files, as well as individual web pages</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="dataset">
+        <xs:annotation>
+          <xs:documentation>An electronic dataset, a collection of data that is not meant to be human-readable, and which is typically only machine readable</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="archival">
+        <xs:annotation>
+          <xs:documentation>A instance of a resource curated and preserved in an archive, which mediates any access to it. 
+Typically it is physical, unique, and unpublished.
+ NOTE: The content of the resource may be published separately,
+ but that makes it a distinct bibliographic item, as access to it is no longer mediated through the archive</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="social_media">
+        <xs:annotation>
+          <xs:documentation>One or more resources within a collection that is typically collectively authored by member users.
+Includes blog posts, forum posts, social media posts, tweets. Is usually a `webResource`,
+but not always (e.g. blogs on WeChat are only accessible within the WeChat app.)</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="alert">
+        <xs:annotation>
+          <xs:documentation>A single communication intended for multiple persons, and publicly accessible. 
+May be electronic (e.g. Facebook status update) or voice (e.g. evacuation alert), but is typically not print</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="message">
+        <xs:annotation>
+          <xs:documentation>A single communication intended for a restricted number of authorised persons (typically one).
+May be electronic (e.g. Twitter direct message, email) or voice (e.g. a remark made to someone,
+typically cited as "personal communication")</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="conversation">
+        <xs:annotation>
+          <xs:documentation>An exchange of messages between two or more persons. May be electronic (e.g. web chat) or voice (e.g. phone call)</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="collection">
+        <xs:annotation>
+          <xs:documentation>A compound resource consisting of other resources, which are themselves presupposed to have their type specified..</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="misc">
+        <xs:annotation>
+          <xs:documentation>Bibliographic type not adequately described in the foregoing</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="internal">
+        <xs:annotation>
+          <xs:documentation>Internal reference (for Metanorma document collections)</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:complexType name="BibliographicItem">
+    <xs:annotation>
+      <xs:documentation>Description of a bibliographic resource</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element minOccurs="0" ref="fetched">
+        <xs:annotation>
+          <xs:documentation>The date at which the bibliographic item was last updated</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" ref="formattedref">
+        <xs:annotation>
+          <xs:documentation>A pre-formatted version of the full bibliographic item reference,
+rendered for human reading, and used to sidestep the rendering of the reference out of its component parts</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:group maxOccurs="unbounded" ref="btitle">
+        <xs:annotation>
+          <xs:documentation>The title(s) of the bibliographic item</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+      <xs:group minOccurs="0" maxOccurs="unbounded" ref="bsource">
+        <xs:annotation>
+          <xs:documentation>The URI(s) associated with the bibliographic item</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+      <xs:element maxOccurs="unbounded" ref="docidentifier">
+        <xs:annotation>
+          <xs:documentation>The identifier(s) of the bibliographic item in an international standard scheme</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" ref="docnumber">
+        <xs:annotation>
+          <xs:documentation>Unprefixed, preferably numeric version of an identifier of the bibliographic item, intended for sorting of bibliography</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:group minOccurs="0" maxOccurs="unbounded" ref="bdate">
+        <xs:annotation>
+          <xs:documentation>One or more date-times associated with the production of or access to the bibliographic item</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="contributor">
+        <xs:annotation>
+          <xs:documentation>Contributors to the production of the bibliographic item</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:group minOccurs="0" ref="edition">
+        <xs:annotation>
+          <xs:documentation>The edition of the bibliographic item</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="version">
+        <xs:annotation>
+          <xs:documentation>The version of the bibliographic item (within an edition). Can be used for drafts. 
+Can be more than one, in case of multiple versioning schemes</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:group minOccurs="0" maxOccurs="unbounded" ref="biblionote">
+        <xs:annotation>
+          <xs:documentation>Note(s) associated with the bibliographic item</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="language">
+        <xs:annotation>
+          <xs:documentation>The language(s) in which the bibliographic item is expressed</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="locale">
+        <xs:annotation>
+          <xs:documentation>The locale(s) in which the bibliographic item is expressed</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="script">
+        <xs:annotation>
+          <xs:documentation>The script(s) in which the bibliographic item is written</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:group minOccurs="0" maxOccurs="unbounded" ref="bibabstract">
+        <xs:annotation>
+          <xs:documentation>The abstract of the bibliographic item</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+      <xs:element minOccurs="0" ref="status">
+        <xs:annotation>
+          <xs:documentation>The publication or preparation status of the bibliographic item</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="copyright">
+        <xs:annotation>
+          <xs:documentation>The copyright status of the bibliographic item</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="relation">
+        <xs:annotation>
+          <xs:documentation>The relation(s) of the bibliographic item to other bibliographic items</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="series">
+        <xs:annotation>
+          <xs:documentation>The series of the bibliographic item</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" ref="medium">
+        <xs:annotation>
+          <xs:documentation>The medium the subject is realized on.
+Medium can be used to differentiate between "electronic" and "physical" manifestations of an information resource.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="place">
+        <xs:annotation>
+          <xs:documentation>The geographic location associated with the production of the bibliographic item</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="price">
+        <xs:annotation>
+          <xs:documentation>The price set on accessing the bibliographic item.
+The price should be treated as nominal, rather than capturing all possible pricings at a given time</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="extent">
+        <xs:annotation>
+          <xs:documentation>The extent of the bibliographic item, if reference is not being made to the entirety of the item described.
+Repeats for different levels of granularity (e.g. volume number, page number), or for discontinuous ranges
+(e.g. multiple page ranges, pages plus plates)</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:group minOccurs="0" ref="bibliographic_size">
+        <xs:annotation>
+          <xs:documentation>The bibliographic size of the bibliographic item, measured in the same units as extent (i.e. pages, volumes,
+megabytes, hours, rather than cm^2.) Distinct from the physical size of the bibliographic item, captured in medium/size</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="accesslocation">
+        <xs:annotation>
+          <xs:documentation>The location where the bibliographic item may be accessed.
+Used for archival resources. Also used for pathways to access digital resources, where a URI is not practical</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="license">
+        <xs:annotation>
+          <xs:documentation>A license under which the bibliographic item has been issued.
+NOTE: This should preferably be encoded as  a URI or short identifier, rather than descriptive text</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:group minOccurs="0" maxOccurs="unbounded" ref="bclassification">
+        <xs:annotation>
+          <xs:documentation>The classification of the bibliographic item according to a standard classification scheme</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+      <xs:group minOccurs="0" maxOccurs="unbounded" ref="bkeyword">
+        <xs:annotation>
+          <xs:documentation>Keyword(s) for the bibliographic item</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+      <xs:element minOccurs="0" ref="validity">
+        <xs:annotation>
+          <xs:documentation>Information about how long the current description of the bibliographic item is valid for</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="depiction">
+        <xs:annotation>
+          <xs:documentation>Depiction of the bibliographic item, typically an image</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="type" type="BibItemType">
+      <xs:annotation>
+        <xs:documentation>The type of the bibliographic item</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="schema-version">
+      <xs:annotation>
+        <xs:documentation>The version of the Relaton schema that this description conforms to</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="ReducedBibliographicItem">
+    <xs:annotation>
+      <xs:documentation>Reduced description of a bibliographic resource, without mandatory title and docidentifier, used for document relations
+Refer to `BibliographicItem` for definitions</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element minOccurs="0" ref="fetched"/>
+      <xs:element minOccurs="0" ref="formattedref"/>
+      <xs:group minOccurs="0" maxOccurs="unbounded" ref="btitle"/>
+      <xs:group minOccurs="0" maxOccurs="unbounded" ref="bsource"/>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="docidentifier"/>
+      <xs:element minOccurs="0" ref="docnumber"/>
+      <xs:group minOccurs="0" maxOccurs="unbounded" ref="bdate"/>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="contributor"/>
+      <xs:group minOccurs="0" ref="edition"/>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="version"/>
+      <xs:group minOccurs="0" maxOccurs="unbounded" ref="biblionote"/>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="language"/>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="locale"/>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="script"/>
+      <xs:group minOccurs="0" maxOccurs="unbounded" ref="bibabstract"/>
+      <xs:element minOccurs="0" ref="status"/>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="copyright"/>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="relation"/>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="series"/>
+      <xs:element minOccurs="0" ref="medium"/>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="place"/>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="price"/>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="extent"/>
+      <xs:group minOccurs="0" ref="bibliographic_size"/>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="accesslocation"/>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="license"/>
+      <xs:group minOccurs="0" maxOccurs="unbounded" ref="bclassification"/>
+      <xs:group minOccurs="0" maxOccurs="unbounded" ref="bkeyword"/>
+      <xs:element minOccurs="0" ref="validity"/>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="depiction"/>
+    </xs:sequence>
+    <xs:attribute name="type" type="BibItemType"/>
+    <xs:attribute name="schema-version"/>
+  </xs:complexType>
+  <xs:group name="btitle">
+    <xs:annotation>
+      <xs:documentation>A title of a bibliographic item, associated with a type of title</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="title" type="TypedTitleString"/>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="bsource">
+    <xs:sequence>
+      <xs:element name="uri" type="TypedUri"/>
+    </xs:sequence>
+  </xs:group>
+  <xs:element name="formattedref">
+    <xs:complexType mixed="true">
+      <xs:group maxOccurs="unbounded" ref="TextElement"/>
+      <xs:attribute name="format">
+        <xs:annotation>
+          <xs:documentation>format of formatted reference; Metanorma assumes references are formatted as Metanorma XML</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="license" type="xs:string"/>
+  <xs:element name="fetched" type="ISO8601DateTime"/>
+  <xs:element name="validity">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" ref="validityBegins">
+          <xs:annotation>
+            <xs:documentation>The date and time when this bibliographic item becomes valid</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element minOccurs="0" ref="validityEnds">
+          <xs:annotation>
+            <xs:documentation>The date and time when this bibliographic item becomes invalid</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element minOccurs="0" ref="revision">
+          <xs:annotation>
+            <xs:documentation>The date and time of issuance of the version of the document
+for which this claim of validity is made, if applicable</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="validityBegins" type="ISO8601DateTime"/>
+  <xs:element name="validityEnds" type="ISO8601DateTime"/>
+  <xs:element name="revision" type="ISO8601DateTime"/>
+  <xs:complexType name="TypedTitleString">
+    <xs:complexContent>
+      <xs:extension base="LocalizedMarkedUpString">
+        <xs:attribute name="type">
+          <xs:annotation>
+            <xs:documentation>Type of title given to a bibliographic item. Indicative values include:
+"alternative": alternate title for the item
+"original": The original title of the item. Includes the source language title of a translated item
+"unofficial": A title that has become prevalent but has never been the official or intended title of the item
+"subtitle": Subsidiary title of the item
+"main": The default title of the item, privileged in citation</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="format">
+          <xs:annotation>
+            <xs:documentation>(legacy attribute) format; can have value text/plain</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  <!-- TitleType = ( "alternative" | "original" | "unofficial" | "subtitle" | "main" ) -->
+  <xs:complexType name="TypedUri">
+    <xs:annotation>
+      <xs:documentation>URI with type</xs:documentation>
+    </xs:annotation>
+    <xs:simpleContent>
+      <xs:extension base="xs:anyURI">
+        <xs:attribute name="type">
+          <xs:annotation>
+            <xs:documentation>Type of URI</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attributeGroup ref="LocalizedStringAttributes"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:simpleType name="DateType">
+    <xs:annotation>
+      <xs:documentation>Type which allows date and time to be specified as either a Gregorian
+date and time, as specified in ISO 8601, as text, or as both</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="ISO8601Date"/>
+  </xs:simpleType>
+  <xs:attributeGroup name="DateType">
+    <xs:annotation>
+      <xs:documentation>Type which allows date and time to be specified as either a Gregorian
+date and time, as specified in ISO 8601, as text, or as both</xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="text">
+      <xs:annotation>
+        <xs:documentation>Date and time, as specified in text</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <xs:simpleType name="BibliographicDateType">
+    <xs:annotation>
+      <xs:documentation>Indicates type of date within a bibliographic lifecycle.
+NOTE: Typically only the `published` date is of interest</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="published">
+        <xs:annotation>
+          <xs:documentation>The date on which the document was published (distributed by the publisher)</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="accessed">
+        <xs:annotation>
+          <xs:documentation>Date a document was last accessed by the compiler of the bibliographic record; routinely used for online publications.
+NOTE: Unlike in ISO 690:2021, no distinction is made between
+"viewed" and "accessed" based on whether the resource is human-readable or machine-readable.)</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="created">
+        <xs:annotation>
+          <xs:documentation>The date on which the first version of the document was created</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="implemented">
+        <xs:annotation>
+          <xs:documentation>The date on which the document takes effect. Applies to normative documents</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="obsoleted">
+        <xs:annotation>
+          <xs:documentation>The date on which the document was obsoleted/</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="confirmed">
+        <xs:annotation>
+          <xs:documentation>The date on which the document was reviewed and approved by the issuing authority</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="updated">
+        <xs:annotation>
+          <xs:documentation>The date on which the current version of the document was updated</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="corrected">
+        <xs:annotation>
+          <xs:documentation>The date on which the current version of the document was corrected, without that correction considered to amount to a full document update</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="issued">
+        <xs:annotation>
+          <xs:documentation>The date on which the document was issued (authorised for publication by the issuing authority).
+Is typically differentiated from `published` for normative documents, such as standards and legislation</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="transmitted">
+        <xs:annotation>
+          <xs:documentation>The date on which the document was broadcast</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="copied">
+        <xs:annotation>
+          <xs:documentation>The date on which the document physically copied, or recreated without any substantial change in content (allowing for change in medium)</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="unchanged">
+        <xs:annotation>
+          <xs:documentation>The date on which the document was last renewed or reprinted without any changes in content</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="circulated">
+        <xs:annotation>
+          <xs:documentation>The date on which the unpublished document was last circulated officially as a preprint.
+For standards, this is associated with the latest transition to a formally defined preparation stage,
+such as Working Draft or Committee Draft</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="adapted">
+        <xs:annotation>
+          <xs:documentation>The date on which a document adapted for a new purpose or audience, with some change in content (includes translation)</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="vote-started">
+        <xs:annotation>
+          <xs:documentation>The date on which a formal process for approval of a document was initiated. Typically applies to standards documents in draft</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="vote-ended">
+        <xs:annotation>
+          <xs:documentation>The date on which a formal process for approval of a document was closed. Typically applies to standards documents in draft</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="announced">
+        <xs:annotation>
+          <xs:documentation>The date on which the existence of a document is made public.
+Applies whether the resource has already been created or not, and whether it is to be published or not</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="stable-until">
+        <xs:annotation>
+          <xs:documentation>The document is guaranteed not to be changed or updated until this date</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:attributeGroup name="bDateAttributes">
+    <xs:attribute name="type" use="required">
+      <xs:annotation>
+        <xs:documentation>The phase of the production of or access to a bibliographic item</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="text">
+      <xs:annotation>
+        <xs:documentation>An optional textual description of the date, especially when a Gregorian date is not applicable</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <xs:element name="docidentifier" type="DocIdentifierType"/>
+  <xs:complexType name="DocIdentifierType">
+    <xs:complexContent>
+      <xs:extension base="LocalizedMarkedUpString">
+        <xs:attribute name="type">
+          <xs:annotation>
+            <xs:documentation>The scheme or namespace of the identifier</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="scope">
+          <xs:annotation>
+            <xs:documentation>The scope of the identifier, in case the identifier does not apply to the document 
+but to a superset or subset of entities; or in case the identifier 
+is for a particular instance of the document, e.g. for a particular format or edition of the document</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="primary" type="xs:boolean">
+          <xs:annotation>
+            <xs:documentation>This is a primary identifier for the item, to be used in citation</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  <xs:element name="docnumber" type="xs:string"/>
+  <xs:group name="bclassification">
+    <xs:sequence>
+      <xs:element name="classification" type="DocIdentifierType"/>
+    </xs:sequence>
+  </xs:group>
+  <xs:element name="place">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" ref="city">
+          <xs:annotation>
+            <xs:documentation>City</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="region">
+          <xs:annotation>
+            <xs:documentation>Region that city is located in, given for disambiguation purposes.</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:group minOccurs="0" maxOccurs="unbounded" ref="bibliocountry">
+          <xs:annotation>
+            <xs:documentation>Country that city is located in, given for disambiguation purposes.</xs:documentation>
+          </xs:annotation>
+        </xs:group>
+        <xs:element minOccurs="0" ref="formattedPlace">
+          <xs:annotation>
+            <xs:documentation>Name of the place, not broken down semantically</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:group minOccurs="0" ref="uri">
+          <xs:annotation>
+            <xs:documentation>URI in a geographical registry identifying the place</xs:documentation>
+          </xs:annotation>
+        </xs:group>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="formattedPlace" type="xs:string"/>
+  <xs:element name="region">
+    <xs:complexType mixed="true">
+      <xs:attributeGroup ref="RegionType"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:group name="bibliocountry">
+    <xs:sequence>
+      <xs:element name="country">
+        <xs:complexType mixed="true">
+          <xs:attributeGroup ref="RegionType"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:attributeGroup name="RegionType">
+    <xs:annotation>
+      <xs:documentation>Encoding of region in bibliographic `place`. ISO 3166 encoding is recommended</xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="iso">
+      <xs:annotation>
+        <xs:documentation>ISO 3166 encoding</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="recommended" type="xs:boolean">
+      <xs:annotation>
+        <xs:documentation>Whether the region should be included in rendering of the place, for disambiguation</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <xs:element name="price">
+    <xs:complexType mixed="true">
+      <xs:attribute name="currency" use="required">
+        <xs:annotation>
+          <xs:documentation>The currency denomination for the price</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="medium">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" ref="content">
+          <xs:annotation>
+            <xs:documentation>The content type of the bibliographic item, reflecting the form of
+communication with which it is expressed and perceived. For example,
+`text`, `video`, `audio`.</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element minOccurs="0" ref="genre">
+          <xs:annotation>
+            <xs:documentation>The genre of the bibliographic item, as a classification of the
+type of communication it represents that is more specific than `content` or `BibliographicItem/type`.
+For example, "statistical dataset"</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:group minOccurs="0" ref="form">
+          <xs:annotation>
+            <xs:documentation>The media type of the bibliographic item, used to access the content
+of the item, including file format for electronic media.</xs:documentation>
+          </xs:annotation>
+        </xs:group>
+        <xs:element minOccurs="0" ref="carrier">
+          <xs:annotation>
+            <xs:documentation>The storage medium of the physical representation of the bibliographic item.</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:group minOccurs="0" ref="size">
+          <xs:annotation>
+            <xs:documentation>The size of the physical representation of the bibliographic item</xs:documentation>
+          </xs:annotation>
+        </xs:group>
+        <xs:element minOccurs="0" ref="scale">
+          <xs:annotation>
+            <xs:documentation>The scale of the cartographic material in the bibliographic item</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="content" type="xs:string"/>
+  <xs:element name="genre" type="xs:string"/>
+  <xs:group name="form">
+    <xs:sequence>
+      <xs:element name="form" type="xs:string"/>
+    </xs:sequence>
+  </xs:group>
+  <xs:element name="carrier" type="xs:string"/>
+  <xs:group name="size">
+    <xs:sequence>
+      <xs:element name="size" type="xs:string"/>
+    </xs:sequence>
+  </xs:group>
+  <xs:element name="scale" type="xs:string"/>
+  <xs:element name="accesslocation" type="xs:string"/>
+  <xs:group name="sizevalue">
+    <xs:annotation>
+      <xs:documentation>The size of a bibliographic item being referred to.
+A sequence of sizes can be used to indicate different numberings, e.g. xii + 40 pp.,
+or different kinds of measures, e.g. pages + plates</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="value">
+        <xs:complexType mixed="true">
+          <xs:attribute name="type" use="required">
+            <xs:annotation>
+              <xs:documentation>The type of size. Recommended values: page, volume, time (in ISO 8601 duration values), 
+data (including unit), value (free-form string)</xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="bibliographic_size">
+    <xs:sequence>
+      <xs:element name="size">
+        <xs:complexType>
+          <xs:group maxOccurs="unbounded" ref="sizevalue"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:element name="extent">
+    <xs:complexType>
+      <xs:choice>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="locality"/>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="localityStack"/>
+      </xs:choice>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="series">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" ref="formattedref">
+          <xs:annotation>
+            <xs:documentation>A pre-formatted version of the series description, incorporating
+all needed disambiguating information in human-readable format</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:group maxOccurs="unbounded" ref="btitle">
+          <xs:annotation>
+            <xs:documentation>The title of the series</xs:documentation>
+          </xs:annotation>
+        </xs:group>
+        <xs:element minOccurs="0" ref="place">
+          <xs:annotation>
+            <xs:documentation>The place where the series is issued; used for disambiguation</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:group minOccurs="0" ref="seriesorganization">
+          <xs:annotation>
+            <xs:documentation>The organization issuing the series; used for disambiguation</xs:documentation>
+          </xs:annotation>
+        </xs:group>
+        <xs:element minOccurs="0" ref="abbreviation">
+          <xs:annotation>
+            <xs:documentation>The abbreviation under which the series is known</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:group minOccurs="0" ref="seriesfrom">
+          <xs:annotation>
+            <xs:documentation>The start of the date range when the series has been known under the given title</xs:documentation>
+          </xs:annotation>
+        </xs:group>
+        <xs:group minOccurs="0" ref="seriesto">
+          <xs:annotation>
+            <xs:documentation>The end of the date range when the series has been known under the given title</xs:documentation>
+          </xs:annotation>
+        </xs:group>
+        <xs:group minOccurs="0" ref="seriesnumber">
+          <xs:annotation>
+            <xs:documentation>The number of the bibliographic item within the series</xs:documentation>
+          </xs:annotation>
+        </xs:group>
+        <xs:element minOccurs="0" ref="partnumber">
+          <xs:annotation>
+            <xs:documentation>The part-number of the bibliographic item within the series. For example,
+if the series is a journal, the number is the volume number, and the partnumber is the issue number</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element minOccurs="0" ref="run">
+          <xs:annotation>
+            <xs:documentation>An iteration of numbering of the series, if the series has restarted numbering
+(as occurs in some journals); referred to as "series" in the context of journals.
+For example, "n.s." (new series) or "2" indicates
+that the `number` given for the series applies to the second iteration of numbering</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="type">
+        <xs:annotation>
+          <xs:documentation>The type of series description expressed in this container</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+  <xs:group name="seriesorganization">
+    <xs:sequence>
+      <xs:element name="organization" type="xs:string"/>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="seriesfrom">
+    <xs:sequence>
+      <xs:element name="from" type="ISO8601Date"/>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="seriesto">
+    <xs:sequence>
+      <xs:element name="to" type="ISO8601Date"/>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="seriesnumber">
+    <xs:sequence>
+      <xs:element name="number" type="xs:string"/>
+    </xs:sequence>
+  </xs:group>
+  <xs:element name="partnumber" type="xs:string"/>
+  <xs:element name="run" type="xs:string"/>
+  <xs:group name="biblionote">
+    <xs:annotation>
+      <xs:documentation>A note associated with the bibliographic item</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="note">
+        <xs:complexType mixed="true">
+          <xs:choice>
+            <xs:group maxOccurs="unbounded" ref="BasicBlockNoId">
+              <xs:annotation>
+                <xs:documentation>Multiple blocks of content</xs:documentation>
+              </xs:annotation>
+            </xs:group>
+            <xs:group maxOccurs="unbounded" ref="TextElement">
+              <xs:annotation>
+                <xs:documentation>Single block of content</xs:documentation>
+              </xs:annotation>
+            </xs:group>
+          </xs:choice>
+          <xs:attribute name="type">
+            <xs:annotation>
+              <xs:documentation>The class of the note associated with the bibliographic item.
+May be used to differentiate rendering of notes in bibliographies</xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attributeGroup ref="LocalizedStringAttributes"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="bibabstract">
+    <xs:annotation>
+      <xs:documentation>Abstract of bibliographic item</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="abstract">
+        <xs:complexType mixed="true">
+          <xs:choice>
+            <xs:group maxOccurs="unbounded" ref="BasicBlockNoId">
+              <xs:annotation>
+                <xs:documentation>Multiple blocks of content</xs:documentation>
+              </xs:annotation>
+            </xs:group>
+            <xs:group maxOccurs="unbounded" ref="TextElement">
+              <xs:annotation>
+                <xs:documentation>Single block of content</xs:documentation>
+              </xs:annotation>
+            </xs:group>
+          </xs:choice>
+          <xs:attributeGroup ref="LocalizedStringAttributes"/>
+          <xs:attribute name="format">
+            <xs:annotation>
+              <xs:documentation>What format the formatted abstract is in. In Metanorma, assumed to be Metanorma XML</xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:element name="copyright">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:group ref="from">
+          <xs:annotation>
+            <xs:documentation>The copyright date of the bibliographic item</xs:documentation>
+          </xs:annotation>
+        </xs:group>
+        <xs:group minOccurs="0" ref="to">
+          <xs:annotation>
+            <xs:documentation>The date when the copyright of the bibliographic item expires</xs:documentation>
+          </xs:annotation>
+        </xs:group>
+        <xs:element maxOccurs="unbounded" ref="owner">
+          <xs:annotation>
+            <xs:documentation>The copyright owner for the bibliographic item.</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element minOccurs="0" ref="scope">
+          <xs:annotation>
+            <xs:documentation>The extent of the bibliographic item, or contexts of use, for which this
+assertion of copyright applies. For example, this description may only apply
+to the preface of a book</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <!-- TODO potentially should be locality | localityStack -->
+  <xs:element name="scope" type="xs:string"/>
+  <xs:group name="from">
+    <xs:sequence>
+      <xs:element name="from" type="xs:gYear"/>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="to">
+    <xs:sequence>
+      <xs:element name="to" type="xs:gYear"/>
+    </xs:sequence>
+  </xs:group>
+  <xs:element name="owner">
+    <xs:complexType>
+      <xs:group ref="ContributorInfo"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:simpleType name="DocRelationType">
+    <xs:annotation>
+      <xs:documentation>Type of the relationship between a main document (described in `BibliographicItem`) and a target document
+Detailed in https://www.relaton.org/model/relations/</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="includes"/>
+      <xs:enumeration value="includedIn"/>
+      <xs:enumeration value="hasPart"/>
+      <xs:enumeration value="partOf"/>
+      <xs:enumeration value="merges"/>
+      <xs:enumeration value="mergedInto"/>
+      <xs:enumeration value="splits"/>
+      <xs:enumeration value="splitInto"/>
+      <xs:enumeration value="instanceOf"/>
+      <xs:enumeration value="hasInstance"/>
+      <xs:enumeration value="exemplarOf"/>
+      <xs:enumeration value="hasExemplar"/>
+      <xs:enumeration value="manifestationOf"/>
+      <xs:enumeration value="hasManifestation"/>
+      <xs:enumeration value="reproductionOf"/>
+      <xs:enumeration value="hasReproduction"/>
+      <xs:enumeration value="reprintOf"/>
+      <xs:enumeration value="hasReprint"/>
+      <xs:enumeration value="expressionOf"/>
+      <xs:enumeration value="hasExpression"/>
+      <xs:enumeration value="translatedFrom"/>
+      <xs:enumeration value="hasTranslation"/>
+      <xs:enumeration value="arrangementOf"/>
+      <xs:enumeration value="hasArrangement"/>
+      <xs:enumeration value="abridgementOf"/>
+      <xs:enumeration value="hasAbridgement"/>
+      <xs:enumeration value="annotationOf"/>
+      <xs:enumeration value="hasAnnotation"/>
+      <xs:enumeration value="draftOf"/>
+      <xs:enumeration value="hasDraft"/>
+      <xs:enumeration value="predecessorDraftOf"/>
+      <xs:enumeration value="hasPredecessorDraft"/>
+      <xs:enumeration value="successorDraftOf"/>
+      <xs:enumeration value="hasSuccessorDraft"/>
+      <xs:enumeration value="editionOf"/>
+      <xs:enumeration value="hasEdition"/>
+      <xs:enumeration value="updates"/>
+      <xs:enumeration value="updatedBy"/>
+      <xs:enumeration value="derivedFrom"/>
+      <xs:enumeration value="derives"/>
+      <xs:enumeration value="describes"/>
+      <xs:enumeration value="describedBy"/>
+      <xs:enumeration value="catalogues"/>
+      <xs:enumeration value="cataloguedBy"/>
+      <xs:enumeration value="hasSuccessor"/>
+      <xs:enumeration value="successorOf"/>
+      <xs:enumeration value="adaptedFrom"/>
+      <xs:enumeration value="hasAdaptation"/>
+      <xs:enumeration value="adoptedFrom"/>
+      <xs:enumeration value="adoptedAs"/>
+      <xs:enumeration value="reviewOf"/>
+      <xs:enumeration value="hasReview"/>
+      <xs:enumeration value="commentaryOf"/>
+      <xs:enumeration value="hasCommentary"/>
+      <xs:enumeration value="related"/>
+      <xs:enumeration value="hasComplement"/>
+      <xs:enumeration value="complementOf"/>
+      <xs:enumeration value="obsoletes"/>
+      <xs:enumeration value="obsoletedBy"/>
+      <xs:enumeration value="cites"/>
+      <xs:enumeration value="isCitedIn"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:element name="version">
+    <xs:complexType mixed="true">
+      <xs:attribute name="type">
+        <xs:annotation>
+          <xs:documentation>Versioning scheme, in case of multiple versioning schemes</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+  <xs:group name="vedition">
+    <xs:sequence>
+      <xs:element name="edition" type="xs:int"/>
+    </xs:sequence>
+  </xs:group>
+  <xs:element name="revision-date" type="ISO8601Date"/>
+  <xs:element name="draft" type="xs:string"/>
+  <!--
+    bkeyword = element keyword {
+    LocalizedString |
+    (
+    element vocab { LocalizedString },
+    vocabid+
+    ) |
+    (
+    element taxon { LocalizedString }+,
+    vocabid+
+    )
+    }
+  -->
+  <xs:group name="bkeyword">
+    <xs:annotation>
+      <xs:documentation>Keyword for a bibliographic item</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="keyword">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element minOccurs="0" ref="vocab"/>
+            <xs:element minOccurs="0" maxOccurs="unbounded" ref="taxon"/>
+            <xs:element minOccurs="0" maxOccurs="unbounded" ref="vocabid">
+              <xs:annotation>
+                <xs:documentation>Identifiers for the keyword as a controlled vocabulary</xs:documentation>
+              </xs:annotation>
+            </xs:element>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:element name="vocab">
+    <xs:annotation>
+      <xs:documentation>The keyword as a single, controlled or uncontrolled vocabulary item</xs:documentation>
+    </xs:annotation>
+    <xs:complexType mixed="true">
+      <xs:attributeGroup ref="LocalizedString"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="taxon">
+    <xs:annotation>
+      <xs:documentation>The keywords as a hierarchical taxonomy. For example, the sequence of `taxon` elements
+`pump`, `centrifugal pump`, `line shaft pump` represents a taxonomic classification</xs:documentation>
+    </xs:annotation>
+    <xs:complexType mixed="true">
+      <xs:attributeGroup ref="LocalizedString"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="vocabid">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="code" type="xs:string">
+          <xs:annotation>
+            <xs:documentation>The code or identifier for the controlled vocabulary item</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element minOccurs="0" name="term" type="xs:string">
+          <xs:annotation>
+            <xs:documentation>The term itself for the controlled vocabulary item</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="type" use="required">
+        <xs:annotation>
+          <xs:documentation>A label for the controlled vocabulary</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="uri" type="xs:anyURI">
+        <xs:annotation>
+          <xs:documentation>A URI for the controlled vocabulary item</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+  <!--
+    Anycontents = mixed {
+    https://github.com/relaxng/jing-trang/issues/211
+    https://lists.oasis-open.org/archives/office/200808/msg00024.html
+    https://lists.oasis-open.org/archives/office/200808/msg00099.html
+    For this to work, we will actually strip any attributes in the Anycontents before
+    passing it for validation. Horrible I know, but there are no good alternatives
+    that also allow us to do grammar inheritance
+    (attribute * { text } | Any)*
+           Any*
+    }
+  -->
+  <xs:group name="AnyElement">
+    <xs:sequence>
+      <xs:any processContents="skip"/>
+    </xs:sequence>
+  </xs:group>
+</xs:schema>

@@ -1,0 +1,533 @@
+# frozen_string_literal: true
+
+module Lutaml
+  module Model
+    module Serialize
+      # Autoload subdirectory modules
+      autoload :Initialization, "#{__dir__}/serialize/initialization"
+      autoload :AttributeDefinition, "#{__dir__}/serialize/attribute_definition"
+      autoload :DeserializationContext,
+               "#{__dir__}/serialize/deserialization_context"
+      autoload :EnumHandling, "#{__dir__}/serialize/enum_handling"
+      autoload :ModelImport, "#{__dir__}/serialize/model_import"
+      autoload :FormatConversion, "#{__dir__}/serialize/format_conversion"
+      autoload :ConversionCaching, "#{__dir__}/serialize/conversion_caching"
+      autoload :ValueMapping, "#{__dir__}/serialize/value_mapping"
+      autoload :TransformationBuilder,
+               "#{__dir__}/serialize/transformation_builder"
+      autoload :Builder, "#{__dir__}/serialize/builder"
+
+      include ComparableModel
+      include Validation
+      include Lutaml::Model::Liquefiable
+      include Lutaml::Model::Registrable
+
+      # Performance: Pre-computed default value map to avoid per-call allocations
+      DEFAULT_VALUE_MAP = {
+        omitted: :nil,
+        nil: :nil,
+        empty: :empty,
+      }.freeze
+
+      # Shared frozen sentinel for lazy collection initialization.
+      # The getter materializes a real Array on first access.
+      LAZY_EMPTY_COLLECTION = [].freeze
+
+      # Ivar symbols for lazy collections, memoized per attribute name:
+      # the "@name" interpolation allocated twice per collection read
+      # (491k on the ISO-13849 serialize profile).
+      LAZY_IVAR = {}.compare_by_identity
+
+      # Sentinel distinguishing "getter called with no argument" from
+      # builder-syntax `g.attr(value)` where value may be nil. Compiled
+      # getters default to it instead of a `*args` splat.
+      NO_ARG = Object.new.freeze
+
+      # Shared frozen empty hash for constructor default arguments. The init
+      # walk only reads attrs/options, so one frozen instance replaces the
+      # per-instantiation `{}` defaults (68k+ allocations per corpus parse).
+      EMPTY_HASH = {}.freeze
+
+      INTERNAL_ATTRIBUTES = %i[@using_default @lutaml_register @lutaml_parent @lutaml_root
+                               @register_records].freeze
+
+      def self.included(base)
+        base.extend(ClassMethods)
+        base.initialize_attrs(base)
+      end
+
+      module ClassMethods
+        include Lutaml::Model::Liquefiable::ClassMethods
+        include Serialize::Initialization
+        include Serialize::AttributeDefinition
+        include Serialize::EnumHandling
+        include Serialize::ModelImport
+        include Serialize::FormatConversion
+        include Serialize::ConversionCaching
+        include Serialize::ValueMapping
+        include Serialize::TransformationBuilder
+
+        attr_accessor :choice_attributes, :mappings, :register_records
+      end
+
+      def self.register_format_mapping_method(format)
+        method_name = format == :hash ? :hsh : format
+
+        ::Lutaml::Model::Serialize::ClassMethods.define_method(method_name) do |*args, &block|
+          process_mapping(format, *args, &block)
+        end
+      end
+
+      def self.register_from_format_method(format)
+        ClassMethods.define_method(:"from_#{format}") do |data, options = {}|
+          # #265 version routing: with a family detector declared, the
+          # document's version picks the family class that parses it.
+          # Terminates because the routed class resolves the same
+          # detected version to itself and parses directly.
+          detector = detect_version
+          if detector
+            parsed = ::Lutaml::Model::Config.adapter_for(format)
+              .parse(data, options)
+            detected = detector.call(parsed)
+            routed = version_class_for(detected) unless detected.nil?
+            return routed.public_send(:"from_#{format}", data, options) if routed && routed != self
+          end
+          from(format, data, options)
+        end
+
+        ClassMethods.define_method(:"of_#{format}") do |doc, options = {}|
+          of(format, doc, options)
+        end
+      end
+
+      # lutaml-model#436: multi-document streams. `from_<f>_stream`
+      # parses each document separately; `discriminator:` receives each
+      # parsed document hash and returns the model class to build with,
+      # enabling polymorphic streams. `to_<f>_stream` joins instances
+      # into one stream document.
+      def self.register_stream_methods(format)
+        ClassMethods.define_method(:"from_#{format}_stream") do |data, options = {}|
+          docs = Lutaml::Model::Serialize.stream_documents(data, format, options)
+          discriminator = options[:discriminator]
+          docs.map do |doc|
+            target = discriminator ? discriminator.call(doc) : self
+            target.send(:"of_#{format}", doc, options)
+          end
+        end
+
+        ClassMethods.define_method(:"to_#{format}_stream") do |instances, options = {}|
+          instances.map do |instance|
+            instance.send(:"to_#{format}", options)
+          end.join("---\n")
+        end
+      end
+
+      def self.stream_documents(data, format, options)
+        require "yaml"
+        if YAML.respond_to?(:load_stream, true)
+          begin
+            docs = YAML.load_stream(data,
+                                    aliases: options.fetch(:aliases, true))
+          rescue ArgumentError
+            # Older Psych builds without the aliases keyword: aliases are
+            # on by default there.
+            docs = YAML.load_stream(data)
+          end
+          docs.is_a?(Array) ? docs.compact : [docs].compact
+        else
+          data.split(/^---\s*$/).filter_map do |chunk|
+            chunk.strip.empty? ? nil : YAML.safe_load(chunk)
+          end
+        end
+      rescue StandardError => e
+        raise Lutaml::Model::InvalidFormatError.new(format, e.message)
+      end
+
+      def self.register_to_format_method(format)
+        ClassMethods.define_method(:"to_#{format}") do |instance, options = {}|
+          to(format, instance, options)
+        end
+
+        ClassMethods.define_method(:"as_#{format}") do |instance, options = {}|
+          as(format, instance, options)
+        end
+
+        define_method(:"to_#{format}") do |options = {}|
+          to_format(format, options)
+        end
+      end
+
+      attr_accessor :lutaml_register, :lutaml_parent, :lutaml_root
+
+      # Internal deserialization state (#1059): the XML constructor path
+      # seeds constructor-equivalent compiled state, runs the user
+      # initialize, and only then resets attribute state to the
+      # deserialization markers (#922). While the flag is set,
+      # #initialize stands down — its generic attribute walk would only
+      # re-materialize defaults that the post-run reset discards.
+      attr_accessor :lutaml_constructor_seeded
+
+      def initialize(attrs = EMPTY_HASH, options = EMPTY_HASH)
+        if lutaml_constructor_seeded
+          # The deserialization constructor seeded constructor-equivalent
+          # compiled state (defaults resolved, non-defaulted nil) and
+          # resets attribute state after this initialize returns; the
+          # generic attribute walk here would only materialize defaults
+          # that the reset then discards (#922). This IS the custom
+          # initialize's super call — the body above us has already run
+          # against that state.
+          return
+        end
+
+        @using_default = {}
+        @lutaml_register = extract_register_id(attrs, options)
+        return unless self.class.attributes(@lutaml_register)
+
+        initialize_attributes(attrs, options)
+        define_singleton_attribute_methods
+
+        register_in_reference_store
+      end
+
+      # Initialize instance state for fast deserialization path.
+      # Called by allocate_for_deserialization instead of initialize.
+      # Uses nil for @using_default to mean "all attributes use default" —
+      # no hash allocation needed until value_set_for is called.
+      def init_deserialization_state(register)
+        @using_default = nil
+        @lutaml_register = register
+
+        # Seed every attribute through the per-(class, register) compiled
+        # method: plain `@x = sentinel` writes, no per-call "@#{name}"
+        # string interpolation, no instance_variable_set. The previous
+        # generic walk interpolated a name string per attribute per
+        # instance — 581k allocations on the ISO-13849 profile.
+        public_send(self.class.compiled_state_defaults_name!(self.class.extract_register_id(register)))
+      end
+
+      # Complete deserialization initialization after allocation.
+      # Called by allocate_for_deserialization to set up instance state,
+      # define register-specific methods, and register in the reference store.
+      def finalize_deserialization(register)
+        init_deserialization_state(register)
+        define_singleton_attribute_methods
+        register_in_reference_store
+      end
+
+      # Walk-side construction (#1003): constructor-equivalent state
+      # (defaults resolved, non-defaulted attributes nil, explicit
+      # using-default marks) seeded in one compiled pass, replacing the
+      # per-attribute determine_value walk on every parsed instance.
+      def init_walk_state(register)
+        register_id = self.class.extract_register_id(register)
+        @lutaml_register = register_id
+        public_send(self.class.walk_state_defaults_name!(register_id))
+        define_singleton_attribute_methods
+        register_in_reference_store
+      end
+
+      def extract_register_id(attrs, options)
+        register = attrs&.dig(:lutaml_register) || options&.dig(:register)
+        self.class.extract_register_id(register)
+      end
+
+      def value_map(options)
+        # Fast path: return default map if no custom options
+        return DEFAULT_VALUE_MAP if options.equal?(Type::Value::EMPTY_OPTIONS)
+        return DEFAULT_VALUE_MAP if options.empty?
+
+        # Slow path: merge with custom options
+        {
+          omitted: options[:omitted] || :nil,
+          nil: options[:nil] || :nil,
+          empty: options[:empty] || :empty,
+        }
+      end
+
+      def attr_value(attrs, name, attribute)
+        # The default is computed only on absence: it used to be
+        # evaluated eagerly as the fetch fallback on EVERY value,
+        # paying proc/static default dispatch per present attribute.
+        value = Utils.fetch_str_or_sym(attrs, name, Utils::MISSING)
+        value = attribute.default(lutaml_register, self) if value.equal?(Utils::MISSING)
+        attribute.cast_value(value, lutaml_register)
+      end
+
+      def using_default_for(attribute_name)
+        @using_default ||= ::Hash.new(true)
+        @using_default[attribute_name] = true
+      end
+
+      def value_set_for(attribute_name)
+        # Only allocate hash when transitioning from "all defaults" (nil)
+        # Hash.new(true) ensures unset keys still return true
+        @using_default ||= ::Hash.new(true)
+        @using_default[attribute_name] = false
+      end
+
+      def values_set_for(attribute_names)
+        @using_default ||= ::Hash.new(true)
+        attribute_names.each { |name| @using_default[name] = false }
+      end
+
+      def using_default?(attribute_name)
+        # nil means "all attributes using default" — return true without allocation
+        return true if @using_default.nil?
+
+        @using_default[attribute_name]
+      end
+
+      def method_missing(method_name, *args, &block)
+        if method_name.to_s.end_with?("=") && attribute_exist?(method_name)
+          define_singleton_method(method_name) do |value|
+            instance_variable_set(:"@#{method_name.to_s.chomp('=')}", value)
+          end
+          send(method_name, *args)
+        elsif ::Lutaml::Model::Attribute.default_evaluation? &&
+            self.class.respond_to?(method_name)
+          self.class.public_send(method_name, *args, &block)
+        else
+          super
+        end
+      end
+
+      def respond_to_missing?(method_name, include_private = false)
+        # Setter probes from non-compiled dispatch land here ~24k times per
+        # ISO-13849 parse; strip the suffix once instead of re-walking
+        # attribute_exist?'s to_s/chomp/to_sym chain.
+        name = method_name.to_s
+        if name.end_with?("=") &&
+            self.class.attributes(lutaml_register)
+                .key?(name.delete_suffix("=").to_sym)
+          return true
+        end
+
+        super
+      end
+
+      def attribute_exist?(name)
+        name = name.to_s.delete_suffix("=").to_sym if name.end_with?("=")
+
+        self.class.attributes(lutaml_register).key?(name)
+      end
+
+      def validate_attribute!(attr_name)
+        attr = self.class.attributes[attr_name]
+        value = instance_variable_get(:"@#{attr_name}")
+        attr.validate_value!(value, lutaml_register, instance_object: self)
+      end
+
+      def key_exist?(hash, key)
+        hash.key?(key.to_sym) || hash.key?(key.to_s)
+      end
+
+      def key_value(hash, key)
+        hash[key.to_sym] || hash[key.to_s]
+      end
+
+      def pretty_print_instance_variables
+        reference_attributes = instance_variables.select do |var|
+          var.to_s.end_with?("_ref")
+        end
+        (instance_variables - INTERNAL_ATTRIBUTES - reference_attributes).sort
+      end
+
+      def to_yaml_hash
+        self.class.as_yaml(self)
+      end
+
+      # Ruby's JSON generator hands #to_json its own JSON::State instead of an
+      # options hash. It carries no LutaML options, but it does carry the
+      # surrounding indent context, so it travels IN BAND under a private key
+      # rather than replacing the options hash. Wrapping rather than returning
+      # early keeps every later step -- register propagation, root-mapping
+      # validation, Collection's `collection: true` merge -- working on a real
+      # Hash. json 3.0 removed JSON::State#[] and rejects unknown keys in
+      # State#merge, so nothing may treat it as a Hash.
+      GENERATOR_STATE_KEY = :_generator_state
+
+      def self.wrap_generator_state(options)
+        return options if options.is_a?(::Hash)
+
+        { GENERATOR_STATE_KEY => options }
+      end
+
+      def to_format(format, options = {})
+        options = Lutaml::Model::Serialize.wrap_generator_state(options)
+
+        # Hook for format-specific validation (e.g., XML root mapping check)
+        validate_root_mapping!(format, options)
+
+        # Pass instance's lutaml_register if not explicitly provided
+        options[:register] ||= lutaml_register if lutaml_register
+
+        # Hook for format-specific options preparation
+        # XML overrides to handle prefix, doctype, declaration, namespaces
+        prepare_instance_format_options(format, options)
+
+        self.class.to(format, self, options)
+      end
+
+      # Hook for format-specific instance-level options preparation.
+      # XML overrides via InstanceMethods prepend.
+      #
+      # @param _format [Symbol] The format
+      # @param _options [Hash] Options hash (modified in place)
+      def prepare_instance_format_options(_format, _options)
+        # No-op by default
+      end
+
+      # Hook for format-specific root mapping validation.
+      # XML overrides via InstanceMethods prepend.
+      #
+      # @param _format [Symbol] The format
+      # @param _options [Hash] Options hash
+      def validate_root_mapping!(_format, _options)
+        # No-op by default
+      end
+
+      # Ensure register-specific attribute methods are defined on the class.
+      # Delegates to the class method which defines methods once per
+      # (class, register) combination instead of per-instance singleton methods.
+      def define_singleton_attribute_methods
+        self.class.ensure_register_methods_defined(lutaml_register)
+      end
+
+      def register_in_reference_store
+        Lutaml::Model::Store.register(self) if self.class.reference_resolvable?
+      end
+
+      private
+
+      # Resolve the Attribute object for a register-specific attribute.
+      # Used by class-level setter methods to get the correct Attribute
+      # for the instance's active register.
+      def resolve_register_attr(name)
+        self.class.register_records[lutaml_register]&.dig(:attributes, name) ||
+          self.class.attributes[name]
+      end
+
+      def initialize_attributes(attrs, options = {})
+        # Performance: Get value_map once for all attributes
+        vmap = value_map(options)
+
+        self.class.attributes(lutaml_register).each do |name, attr|
+          next if attr.derived?
+
+          initialize_single_attribute(attrs, name, attr, vmap)
+        end
+      end
+
+      # The constructor's per-attribute body, callable one attribute at
+      # a time — the compiled walk seed (#1003) routes every attribute
+      # it does not inline through this exact code, so its state is
+      # identical by construction.
+      def initialize_single_attribute(attrs, name, attr, vmap)
+        value = determine_value(attrs, name, attr)
+        default = using_default?(name)
+        value = self.class.apply_value_map(value, vmap, attr)
+        # Performance: Only call ensure_utf8 for string values
+        value = self.class.ensure_utf8(value) if value.is_a?(::String)
+        # Interpolating the writer symbol allocated a String per
+        # attribute per instance; the per-register writer table is
+        # interned once per class.
+        public_send(self.class.instantiate_writers(lutaml_register)[name], value)
+        using_default_for(name) if default
+      end
+
+      def determine_value(attrs, name, attr)
+        # One hash pass: a sentinel fetch distinguishes absent keys
+        # from present-nil values, replacing two key probes plus the
+        # re-fetch inside attr_value (four hash ops per attribute).
+        value = Utils.fetch_str_or_sym(attrs, name, Utils::MISSING)
+        return attr.cast_value(value, lutaml_register) unless value.equal?(Utils::MISSING)
+
+        resolved = attr.default_value(lutaml_register, self)
+        return Lutaml::Model::UninitializedClass.instance if Lutaml::Model::Utils.uninitialized?(resolved)
+
+        using_default_for(name)
+        attr.cast_value(resolved, lutaml_register)
+      end
+
+      def resolve_reference_key(ref)
+        return nil if ref.nil?
+
+        return ref.map { |r| resolve_reference_key(r) } if ref.is_a?(Array)
+
+        ref.is_a?(Type::Reference) ? ref.key : ref
+      end
+
+      def resolve_reference_value(ref)
+        return nil if ref.nil?
+
+        return ref.map { |r| resolve_reference_value(r) } if ref.is_a?(Array)
+
+        ref.is_a?(Type::Reference) ? ref.object : ref
+      end
+
+      # Hand back a collection the caller can push onto.
+      #
+      # An unused collection points at LAZY_EMPTY_COLLECTION, one frozen Array
+      # shared by every instance of every class, so an untouched collection
+      # costs nothing. A reader cannot hand that array out: `model.items << x`
+      # raises FrozenError, and unfreezing it would leak one instance's items
+      # into all the others. So the first read swaps in this instance's own
+      # empty Array and stores it — which is what the sentinel's own comment
+      # has promised all along. A frozen model keeps the sentinel; there is
+      # nothing to store into.
+      #
+      # nil is left alone on purpose. A nil collection is a state of its own
+      # here, distinct from an empty one — `initialize_empty: false` is what
+      # produces it and `render_nil` renders it — so a reader that turned nil
+      # into [] would erase a documented distinction.
+      #
+      # @param attribute_name [Symbol] the collection attribute
+      # @return [Object] the stored collection
+      def materialize_lazy_collection(attribute_name)
+        ivar = LAZY_IVAR[attribute_name]
+        unless ivar
+          ivar = :"@#{attribute_name}"
+          LAZY_IVAR[attribute_name] = ivar
+        end
+        current = instance_variable_get(ivar)
+        return current unless current.equal?(LAZY_EMPTY_COLLECTION)
+        return current if frozen?
+
+        instance_variable_set(ivar, [])
+      end
+
+      # Hand back a reference collection the caller can push onto.
+      #
+      # A reference attribute stores Type::Reference objects, and resolving
+      # them built a fresh Array per read — so `book.co_authors << author`
+      # landed on a throwaway and never reached the document. A Reference
+      # stays lazy until its target registers itself, so the reader can only
+      # store the resolved Array once every reference has actually resolved;
+      # until then it has to keep re-resolving and keeps handing back a copy.
+      # Once stored there is nothing left to resolve: resolve_reference_value
+      # passes a model instance straight through, and the generated key reader
+      # runs Attribute#reference_key over it to get the key back.
+      #
+      # Storing means `#{name}_ref` reports resolved objects from then on. It
+      # is the backing store, and after this the objects are what it holds.
+      #
+      # @param attribute_name [Symbol] the reference collection attribute
+      # @return [Object] the stored collection
+      def materialize_reference_collection(attribute_name)
+        refs = instance_variable_get(:"@#{attribute_name}_ref")
+        return resolve_reference_value(refs) unless refs.is_a?(::Array)
+        return refs if refs.none?(Type::Reference)
+
+        resolved = resolve_reference_value(refs)
+        # Only a Reference that resolved to nothing keeps this lazy. A raw nil
+        # the caller put there is data, and waiting on it would never end.
+        dangling = refs.zip(resolved).any? do |ref, value|
+          ref.is_a?(Type::Reference) && value.nil?
+        end
+        return resolved if frozen? || dangling
+
+        instance_variable_set(:"@#{attribute_name}_ref", resolved)
+      end
+    end
+  end
+end

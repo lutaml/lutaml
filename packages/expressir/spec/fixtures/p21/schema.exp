@@ -1,0 +1,46 @@
+SCHEMA the_schema;
+  TYPE status = ENUMERATION OF (GOOD, BAD);
+  END_TYPE;
+
+  TYPE magnitude = REAL;
+  END_TYPE;
+
+  ENTITY thing;
+    a : STRING;
+    s : status;
+    b : BINARY;
+    u : NUMBER;
+    d : NUMBER;
+  END_ENTITY;
+
+  ENTITY deep
+    SUBTYPE OF (thing);
+    DERIVE
+      u : NUMBER := 0;
+  END_ENTITY;
+
+  ENTITY sub_one
+    SUBTYPE OF (thing);
+    x : INTEGER;
+  END_ENTITY;
+
+  ENTITY sub_two
+    SUBTYPE OF (thing);
+    y : status;
+  END_ENTITY;
+
+  ENTITY listed;
+    items : LIST [0:?] OF INTEGER;
+    ref : thing;
+    mag : magnitude;
+  END_ENTITY;
+
+  ENTITY things;
+    flag : status;
+  END_ENTITY;
+
+  ENTITY referring;
+    r1 : thing;
+    r2 : thing;
+  END_ENTITY;
+END_SCHEMA;

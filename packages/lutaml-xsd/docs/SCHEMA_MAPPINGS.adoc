@@ -1,0 +1,509 @@
+---
+layout: default
+title: Schema mappings
+nav_order: 1
+parent: Guides
+---
+= Schema Location Mappings
+:toc:
+:toclevels: 3
+
+== Purpose
+
+Schema location mappings allow you to redirect XSD imports and includes from remote URLs to local file paths. This feature is essential when:
+
+* Remote schemas are unavailable or inaccessible
+* You want to work offline
+* You have local copies of standard schemas (e.g., CityGML, GML, ISO/TC 211)
+* You need to ensure consistent schema versions
+* Working with complex schema hierarchies with multiple cross-references
+
+The `schema_mappings` parameter enables you to provide an array of mappings that redirect original schema locations to local file paths or alternative URLs.
+
+== General
+
+When parsing XSD files that import or include schemas from remote URLs, Lutaml::Xsd provides a flexible mapping system to override those locations. The system supports both exact string matching and powerful regular expression patterns with capture groups.
+
+Schema mappings are provided as an array of hash objects, each containing `from` and `to` keys:
+
+[source,ruby]
+----
+schema_mappings = [
+  {
+    from: 'original/path/or/pattern',  # String or Regexp
+    to: 'replacement/path'              # String with optional \1, \2 for captures
+  }
+]
+----
+
+The mapping system is designed to work seamlessly with the built-in URL fetching capability, allowing you to map only what you need while letting other schemas be fetched automatically.
+
+== Basic usage
+
+=== Simple string mappings
+
+The most straightforward approach uses exact string matching.
+
+.Basic schema mapping example
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+xsd_content = File.read('path/to/your/schema.xsd')
+
+# Define schema location mappings
+schema_mappings = [
+  # Exact string match
+  {
+    from: 'http://schemas.opengis.net/gml/3.1.1/base/gml.xsd',
+    to: '/local/path/to/gml.xsd'
+  },
+
+  # Relative path mapping
+  {
+    from: '../../external/schema.xsd',
+    to: '/absolute/path/to/schema.xsd'
+  }
+]
+
+parsed_schema = Lutaml::Xsd.parse(
+  xsd_content,
+  location: 'path/to/your/',
+  schema_mappings: schema_mappings
+)
+----
+
+This example redirects two schema locations to local files.
+====
+
+== Pattern-based mappings with regular expressions
+
+For more flexible mappings, use regular expressions in the `from` field. This is particularly useful when mapping multiple schemas under a common base URL.
+
+=== Using regex patterns
+
+.Using regex patterns for schema mappings
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+xsd_content = File.read('spec/fixtures/i-ur/urbanFunction.xsd')
+
+# Define pattern-based mappings using regex in the 'from' field
+schema_mappings = [
+  # Map all CityGML schemas to local directory using regex pattern
+  {
+    from: %r{http://schemas\.opengis\.net/citygml/(.+)},
+    to: File.expand_path('../fixtures/citygml/\1', __dir__)
+  },
+
+  # Map specific relative imports to local paths using exact string match
+  {
+    from: '../../uro/3.2/urbanObject.xsd',
+    to: File.expand_path('../fixtures/i-ur/urbanObject.xsd', __dir__)
+  }
+]
+
+parsed_schema = Lutaml::Xsd.parse(
+  xsd_content,
+  location: File.dirname(
+    File.expand_path('spec/fixtures/i-ur/urbanFunction.xsd')
+  ),
+  schema_mappings: schema_mappings
+)
+----
+
+In the regex pattern example above:
+
+* The `from` field contains the pattern `%r{http://schemas\.opengis\.net/citygml/(.+)}` which matches any URL starting with `http://schemas.opengis.net/citygml/`
+* The capture group `(.+)` captures the rest of the path
+* The `to` field uses `\1` to insert the captured path portion in the replacement
+* This allows mapping `http://schemas.opengis.net/citygml/2.0/cityGMLBase.xsd` to `/local/path/citygml/2.0/cityGMLBase.xsd`
+====
+
+=== Capture groups for flexible mappings
+
+Regex capture groups allow you to map entire directory structures efficiently.
+
+.Using capture groups to map directory structures
+[example]
+====
+[source,ruby]
+----
+# Maps: ../../gml/3.2.1/gml.xsd
+#   to: /local/codesynthesis/gml/3.2.1/gml.xsd
+# And:  ../../../../gml/3.2.1/feature.xsd
+#   to: /local/codesynthesis/gml/3.2.1/feature.xsd
+{
+  from: %r{(?:\.\./)+gml/(.+\.xsd)$},
+  to: '/local/codesynthesis/gml/\1'
+}
+----
+====
+
+== Working with CityGML and i-UR schemas
+
+When working with CityGML and i-UR (Urban and Rural) schemas, which commonly reference remote OGC schemas, comprehensive mappings are essential.
+
+=== Real-world example: CityGML and i-UR
+
+.Mapping CityGML schemas to local copies
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Path to your i-UR schema that imports CityGML schemas
+xsd_file = 'spec/fixtures/i-ur/urbanFunction.xsd'
+xsd_content = File.read(xsd_file)
+
+# Map remote CityGML schemas to local copies (array of mappings)
+schema_mappings = [
+  # Map all CityGML schemas from OGC to local directory
+  {
+    from: %r{http://schemas\.opengis\.net/citygml/2\.0/(.+)},
+    to: File.expand_path('spec/fixtures/citygml/2.0/\1', __dir__)
+  },
+
+  {
+    from: %r{http://schemas\.opengis\.net/citygml/appearance/2\.0/(.+)},
+    to: File.expand_path('spec/fixtures/citygml/appearance/2.0/\1', __dir__)
+  },
+
+  {
+    from: %r{http://schemas\.opengis\.net/citygml/building/2\.0/(.+)},
+    to: File.expand_path('spec/fixtures/citygml/building/2.0/\1', __dir__)
+  },
+
+  # Map i-UR schema imports
+  {
+    from: '../../uro/3.2/urbanObject.xsd',
+    to: File.expand_path('spec/fixtures/i-ur/urbanObject.xsd', __dir__)
+  }
+]
+
+parsed_schema = Lutaml::Xsd.parse(
+  xsd_content,
+  location: File.dirname(File.expand_path(xsd_file)),
+  schema_mappings: schema_mappings
+)
+----
+====
+
+== Mapping resolution order
+
+The schema mapping resolution follows a 4-step process:
+
+. *Check schema mappings* — Iterate through the mappings array in order
+. For each mapping, check if the `from` field matches:
+  * If `from` is a String and matches exactly, use the `to` value
+  * If `from` is a Regexp and matches the location, substitute using the `to` value
+. *If no mapping matches, try URL fetching* — The system will attempt to fetch the schema from its original URL
+. *Fall back to relative path resolution* — Resolve as a relative path from the location parameter
+
+When multiple mappings could match, the first matching mapping in the array is used. This allows you to control precedence by ordering your mappings appropriately.
+
+IMPORTANT: Overly broad regex patterns can prevent the built-in URL fetching from working. Only map schemas that you have locally.
+
+== Best practices
+
+=== Keep mappings minimal
+
+Only map schemas that you actually have available locally. Don't create mappings for schemas that should be fetched from URLs.
+
+.Comparing broad vs. specific mappings
+[example]
+====
+[source,ruby]
+----
+# BAD - too broad, blocks URL fetching for ALL .xsd files
+schema_mappings = [
+  {
+    from: %r{^([^/]+\.xsd)$},  # Catches everything!
+    to: '/local/path/\1'
+  }
+]
+
+# GOOD - specific to files you have locally
+schema_mappings = [
+  {
+    from: %r{^(gml|gmlBase|feature)\.xsd$},  # Only specific files
+    to: '/local/path/gml/3.2.1/\1.xsd'
+  }
+]
+----
+====
+
+=== Order matters - specific before general
+
+Place more specific patterns before more general ones to ensure correct matching.
+
+.Ordering mappings from specific to general
+[example]
+====
+[source,ruby]
+----
+schema_mappings = [
+  # Specific relative path first
+  {
+    from: '../../uro/3.2/urbanObject.xsd',
+    to: '/local/path/urbanObject.xsd'
+  },
+
+  # General pattern for GML schemas
+  {
+    from: %r{(?:\.\./)+gml/(.+\.xsd)$},
+    to: '/local/path/gml/\1'
+  }
+]
+----
+====
+
+=== Use capture groups
+
+Regex capture groups allow you to map entire directory structures efficiently.
+
+.Using multiple capture groups
+[example]
+====
+[source,ruby]
+----
+# Map schemas with version and file preservation
+{
+  from: %r{http://schemas\.isotc211\.org/(\d{5})/(\d{4})/(.+)},
+  to: '/local/iso/\1/\2/\3'
+}
+
+# This transforms:
+# http://schemas.isotc211.org/19115/2006/gmd/gmd.xsd
+# → /local/iso/19115/2006/gmd/gmd.xsd
+----
+====
+
+=== Let URL fetching work
+
+The system has built-in support for fetching schemas from HTTP/HTTPS URLs. Don't block this with overly broad mappings.
+
+.Allowing URL fetching for unmapped schemas
+[example]
+====
+[source,ruby]
+----
+# This lets sweCommon.xsd be fetched from its URL automatically
+schema_mappings = [
+  # Only map what you have locally
+  {
+    from: %r{^(gml|gmlBase|feature)\.xsd$},
+    to: '/local/path/gml/\1.xsd'
+  }
+
+  # sweCommon.xsd will be fetched from URL - no mapping needed!
+]
+----
+====
+
+== Complete example with best practices
+
+This example demonstrates all best practices in a comprehensive schema mapping configuration.
+
+.Comprehensive schema mapping example
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+xsd_file = File.expand_path('spec/fixtures/i-ur/urbanFunction.xsd')
+xsd_content = File.read(xsd_file)
+
+# Targeted mappings following best practices
+schema_mappings = [
+  # 1. Specific relative path (exact match)
+  {
+    from: '../../uro/3.2/urbanObject.xsd',
+    to: File.expand_path('spec/fixtures/i-ur/urbanObject.xsd')
+  },
+
+  # 2-4. Relative path patterns (handles any number of ../)
+  {
+    from: %r{(?:\.\./)+xlink/(.+\.xsd)$},
+    to: File.expand_path('spec/fixtures/codesynthesis-gml-3.2.1/xlink/\1')
+  },
+  {
+    from: %r{(?:\.\./)+gml/(.+\.xsd)$},
+    to: File.expand_path('spec/fixtures/codesynthesis-gml-3.2.1/gml/\1')
+  },
+  {
+    from: %r{(?:\.\./)+iso/(.+\.xsd)$},
+    to: File.expand_path('spec/fixtures/codesynthesis-gml-3.2.1/iso/\1')
+  },
+
+  # 5-10. Simple relative paths for ISO metadata schemas
+  {
+    from: %r{^\.\./gmd/(.+\.xsd)$},
+    to: File.expand_path(
+      'spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/gmd/\1'
+    )
+  },
+  {
+    from: %r{^\.\./gss/(.+\.xsd)$},
+    to: File.expand_path(
+      'spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/gss/\1'
+    )
+  },
+  {
+    from: %r{^\.\./gts/(.+\.xsd)$},
+    to: File.expand_path(
+      'spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/gts/\1'
+    )
+  },
+  {
+    from: %r{^\.\./gsr/(.+\.xsd)$},
+    to: File.expand_path(
+      'spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/gsr/\1'
+    )
+  },
+  {
+    from: %r{^\.\./gco/(.+\.xsd)$},
+    to: File.expand_path(
+      'spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/gco/\1'
+    )
+  },
+  {
+    from: %r{^\.\./gmx/(.+\.xsd)$},
+    to: File.expand_path(
+      'spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/gmx/\1'
+    )
+  },
+
+  # Bare filename patterns (specific files only)
+  {
+    from: %r{^(basicTypes|coordinateOperations|gml|feature|geometry)\.xsd$},
+    to: File.expand_path('spec/fixtures/codesynthesis-gml-3.2.1/gml/3.2.1/\1.xsd')
+  },
+
+  # URL mappings
+  {
+    from: %r{https://schemas\.isotc211\.org/(.+)},
+    to: File.expand_path('spec/fixtures/codesynthesis-gml-3.2.1/iso/\1')
+  },
+  {
+    from: %r{(?:\.\./)+(\d{5}/.+\.xsd)$},
+    to: File.expand_path('spec/fixtures/isotc211/\1')
+  }
+]
+
+parsed_schema = Lutaml::Xsd.parse(
+  xsd_content,
+  location: File.dirname(xsd_file),
+  schema_mappings: schema_mappings
+)
+
+# Access parsed data
+puts "Target namespace: #{parsed_schema.target_namespace}"
+puts "Elements: #{parsed_schema.element.size}"
+puts "Complex types: #{parsed_schema.complex_type.size}"
+puts "Imports: #{parsed_schema.import.size}"
+----
+
+This example demonstrates:
+
+* Minimal, targeted mappings (only for local files)
+* Proper ordering (specific before general)
+* Effective use of regex patterns and capture groups
+* Leaving room for automatic URL fetching
+====
+
+== Debugging tips
+
+=== Testing individual mappings
+
+When troubleshooting mapping issues, test patterns individually:
+
+.Test if a specific path matches your patterns
+[example]
+====
+[source,ruby]
+----
+# Test if a specific path matches your patterns
+test_path = "../../gml/3.2.1/gml.xsd"
+
+schema_mappings.each do |mapping|
+  from = mapping[:from]
+  to = mapping[:to]
+
+  if from.is_a?(Regexp)
+    if test_path =~ from
+      result = test_path.gsub(from, to)
+      puts "MATCH: #{test_path} → #{result}"
+    end
+  elsif from == test_path
+    puts "EXACT MATCH: #{test_path} → #{to}"
+  end
+end
+----
+====
+
+=== Enable verbose output
+
+Add logging to see which mappings are being used:
+
+.Add logging to see resolution
+[example]
+====
+[source,ruby]
+----
+# Add logging to see which mappings are used
+schema_mappings.each_with_index do |mapping, i|
+  puts "Mapping #{i}: #{mapping[:from]} → #{mapping[:to]}"
+end
+
+# Parse with mappings
+parsed_schema = Lutaml::Xsd.parse(
+  xsd_content,
+  location: location,
+  schema_mappings: schema_mappings
+)
+
+# Check what was actually imported
+puts "\nImported schemas:"
+parsed_schema.import.each do |imp|
+  puts "  - #{imp.schema_location} (namespace: #{imp.namespace})"
+end
+----
+====
+
+=== Verify file existence
+
+Check that mapped paths actually exist:
+
+.Debugging path resolution
+[example]
+====
+[source,ruby]
+----
+mapping = {
+  from: %r{(?:\.\./)+gml/(.+)},
+  to: '/local/schemas/gml/\1'
+}
+
+test_path = "../../gml/3.2.1/gml.xsd"
+resolved = test_path.gsub(mapping[:from], mapping[:to])
+
+puts "Original: #{test_path}"
+puts "Resolved: #{resolved}"
+puts "Exists? #{File.exist?(resolved)}"
+----
+====
+
+== See also
+
+* link:../README.adoc[Main Documentation]
+* link:schema_mapping.adoc[Advanced Schema Location Mappings] - Comprehensive guide with CityGML examples
+* link:URL_FETCHING.adoc[URL Fetching] - How automatic URL fetching works
+* link:PACKAGE_CONFIGURATION.adoc[Package Configuration] - Using mappings in LXR packages

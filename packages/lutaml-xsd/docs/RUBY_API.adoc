@@ -1,0 +1,1592 @@
+---
+layout: default
+title: Ruby API
+nav_order: 2
+parent: Reference
+---
+= Ruby API Reference
+:toc:
+:toclevels: 3
+
+== Purpose
+
+This document provides the complete Ruby API reference for `lutaml-xsd`. It covers all public methods and classes for parsing, manipulating, and querying XML Schema Definition (XSD) files.
+
+The Ruby API is designed for developers who need to:
+
+* Parse XSD files programmatically
+* Navigate and inspect schema structures
+* Resolve types across multiple schemas with namespace awareness
+* Build schema-aware tools and applications
+* Generate code or documentation from XSD schemas
+* Validate and analyze schema collections
+
+For a quick introduction to basic usage, see link:../QUICK_START[Quick Start]. For command-line usage, see link:../CLI[CLI Reference].
+
+== General
+
+The lutaml-xsd Ruby API is organized into several key components:
+
+=== Core parsing API
+
+[`Lutaml::Xsd.parse()`](lib/lutaml/xsd.rb:24):: Main entry point for parsing XSD content into Ruby objects
+
+=== Schema objects
+
+[`Lutaml::Xsd::Schema`](lib/lutaml/xsd/schema.rb:6):: Root schema object containing all schema components
+[`Lutaml::Xsd::Element`](lib/lutaml/xsd/element.rb):: Element definitions
+[`Lutaml::Xsd::ComplexType`](lib/lutaml/xsd/complex_type.rb):: Complex type definitions
+[`Lutaml::Xsd::SimpleType`](lib/lutaml/xsd/simple_type.rb):: Simple type definitions
+[`Lutaml::Xsd::Attribute`](lib/lutaml/xsd/attribute.rb):: Attribute definitions
+[`Lutaml::Xsd::Group`](lib/lutaml/xsd/group.rb):: Group definitions
+[`Lutaml::Xsd::AttributeGroup`](lib/lutaml/xsd/attribute_group.rb):: Attribute group definitions
+
+=== Repository and type resolution
+
+[`Lutaml::Xsd::SchemaRepository`](lib/lutaml/xsd/schema_repository.rb:10):: Multi-schema repository with namespace-aware type resolution
+[`Lutaml::Xsd::TypeResolutionResult`](lib/lutaml/xsd/type_resolution_result.rb):: Type resolution result with detailed information
+
+=== Package management
+
+[`Lutaml::Xsd::SchemaRepository#to_package()`](lib/lutaml/xsd/schema_repository.rb:259):: Export repository as LXR package
+[`Lutaml::Xsd::SchemaRepository.from_package()`](lib/lutaml/xsd/schema_repository.rb:300):: Load repository from LXR package
+
+== Parsing XSD files
+
+=== General
+
+To parse an XSD file, use the [`Lutaml::Xsd.parse()`](lib/lutaml/xsd.rb:24) method. This method takes the content of an XSD file as a string and optional parameters for resolving relative paths and schema locations.
+
+Syntax:
+
+NOTE: This is a syntax template showing the method signature. Replace `{location}` and `{mappings}` with actual values.
+
+[source,ruby]
+----
+Lutaml::Xsd.parse(xsd_content, location: {location}, schema_mappings: {mappings}) <1>
+----
+<1> Parse XSD content with optional location and schema mappings
+
+Where,
+
+`xsd_content`:: The XSD file content as a string (required)
+`location`:: The base path or URL for resolving relative schema locations (optional)
+`schema_mappings`:: An array of hash mappings for redirecting schema locations (optional)
+
+Returns a [`Lutaml::Xsd::Schema`](lib/lutaml/xsd/schema.rb:6) object representing the parsed schema.
+
+=== Basic parsing
+
+.Parsing an XSD file with location context
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+xsd_content = File.read('path/to/your/schema.xsd')
+parsed_schema = Lutaml::Xsd.parse(
+  xsd_content,
+  location: 'path/to/your/'
+)
+
+# Access schema properties
+puts "Target namespace: #{parsed_schema.target_namespace}"
+puts "Element count: #{parsed_schema.element.size}"
+puts "Complex type count: #{parsed_schema.complex_type.size}"
+----
+
+This example parses an XSD file and displays basic schema information.
+====
+
+=== Working with location parameter
+
+The `location` parameter is used for resolving relative paths specified in `<xs:include>` and `<xs:import>` elements' `schemaLocation` attributes.
+
+.Parsing with a URL base location
+[example]
+====
+[source,ruby]
+----
+Lutaml::Xsd.parse(
+  xsd_content,
+  location: 'http://example.com/schemas/'
+)
+----
+
+The schema can include references like:
+
+[source,xml]
+----
+<xs:include schemaLocation="common/types.xsd"/>
+<xs:import schemaLocation="external/definitions.xsd"/>
+----
+
+These will be resolved as:
+
+* `http://example.com/schemas/common/types.xsd`
+* `http://example.com/schemas/external/definitions.xsd`
+====
+
+.Parsing with a local base path
+[example]
+====
+[source,ruby]
+----
+Lutaml::Xsd.parse(
+  xsd_content,
+  location: '/path/to/schemas/'
+)
+----
+
+The schema can include references like:
+
+[source,xml]
+----
+<xs:include schemaLocation="common/types.xsd"/>
+<xs:import schemaLocation="../external/definitions.xsd"/>
+----
+
+These will be resolved as:
+
+* `/path/to/schemas/common/types.xsd`
+* `/path/to/external/definitions.xsd`
+====
+
+=== Using schema_mappings parameter
+
+The `schema_mappings` parameter allows redirecting schema locations to local files or alternative URLs. This is useful when working offline or with local copies of standard schemas.
+
+Syntax:
+
+NOTE: This is a syntax template. Replace `{original_location}` and `{replacement_location}` with actual values.
+
+[source,ruby]
+----
+schema_mappings = [
+  {
+    from: {original_location},
+    to: {replacement_location}
+  }
+]
+----
+
+Where,
+
+`from`:: Original schema location (String or Regexp)
+`to`:: Replacement location (String, may include capture group references like `\1`)
+
+.Basic schema mapping example
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+xsd_content = File.read('path/to/your/schema.xsd')
+
+# Define schema location mappings
+schema_mappings = [
+  # Exact string match
+  {
+    from: 'http://schemas.opengis.net/gml/3.1.1/base/gml.xsd',
+    to: '/local/path/to/gml.xsd'
+  },
+
+  # Regex pattern with capture group
+  {
+    from: %r{http://schemas\.opengis\.net/citygml/(.+)},
+    to: '/local/citygml/\1'
+  }
+]
+
+parsed_schema = Lutaml::Xsd.parse(
+  xsd_content,
+  location: 'path/to/your/',
+  schema_mappings: schema_mappings
+)
+----
+
+The first mapping uses exact string matching, while the second uses a regular expression with a capture group (`\1`) to map an entire directory structure.
+====
+
+For comprehensive documentation on schema mappings, see link:SCHEMA_MAPPINGS[Schema Mappings Reference].
+
+=== Accessing parsed schema properties
+
+Once parsed, the schema object provides access to all schema components:
+
+.Accessing schema elements
+[example]
+====
+[source,ruby]
+----
+schema = <<~SCHEMA
+  <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <xsd:element name="root">
+      <xsd:complexType>
+        <xsd:sequence>
+          <xsd:element name="child" type="xsd:string"/>
+        </xsd:sequence>
+      </xsd:complexType>
+    </xsd:element>
+    <xsd:element name="root1">
+      <xsd:complexType>
+        <xsd:attribute name="id" type="xsd:string"/>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+SCHEMA
+
+parsed_schema = Lutaml::Xsd.parse(
+  schema,
+  location: 'http://example.com/'
+)
+
+# Iterate through elements
+parsed_schema.element.each do |element|
+  puts "Element name: #{element.name}"
+
+  if element.complex_type
+    puts "  Has complex type"
+
+    # Access sequences
+    if element.complex_type.sequence
+      element.complex_type.sequence.element.each do |child|
+        puts "    Child element: #{child.name}"
+      end
+    end
+
+    # Access attributes
+    element.complex_type.attribute.each do |attr|
+      puts "    Attribute: #{attr.name}"
+    end
+  end
+end
+----
+
+Output:
+
+----
+Element name: root
+  Has complex type
+    Child element: child
+Element name: root1
+  Has complex type
+    Attribute: id
+----
+====
+
+== Schema validation
+
+=== General
+
+The [`Lutaml::Xsd::SchemaValidator`](lib/lutaml/xsd/schema_validator.rb:22) provides pre-parsing validation of XSD schema documents according to W3C XML Schema Definition Language (XSD) 1.0 or 1.1 standards. It validates the schema structure before parsing to ensure correctness and detect version-specific features.
+
+Schema validation is useful for:
+
+* Catching schema errors early before parsing
+* Validating XSD files in development and CI/CD pipelines
+* Ensuring schema compatibility with XSD 1.0 or 1.1 standards
+* Detecting incorrect namespaces or root elements
+* Identifying XSD version-specific features
+
+By default, [`Lutaml::Xsd.parse()`](lib/lutaml/xsd.rb:22) automatically validates schemas before parsing. This behavior can be disabled if needed.
+
+=== Creating a validator
+
+==== new()
+
+Create a new SchemaValidator instance for a specific XSD version.
+
+Syntax:
+
+NOTE: This is a syntax template. Replace `{version}` with `"1.0"` or `"1.1"`.
+
+[source,ruby]
+----
+validator = Lutaml::Xsd::SchemaValidator.new(version: {version}) <1>
+----
+<1> Create a validator for the specified XSD version
+
+Where,
+
+`version`:: XSD version to validate against: `"1.0"` or `"1.1"` (String, default: `"1.0"`) (optional)
+
+Returns a new [`SchemaValidator`](lib/lutaml/xsd/schema_validator.rb:22) instance.
+
+Raises [`ArgumentError`] if version is not `"1.0"` or `"1.1"`.
+
+.Creating validators for different versions
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Create XSD 1.0 validator (default)
+validator_1_0 = Lutaml::Xsd::SchemaValidator.new
+validator_1_0 = Lutaml::Xsd::SchemaValidator.new(version: "1.0")
+
+# Create XSD 1.1 validator
+validator_1_1 = Lutaml::Xsd::SchemaValidator.new(version: "1.1")
+
+# Invalid version raises error
+begin
+  Lutaml::Xsd::SchemaValidator.new(version: "2.0")
+rescue ArgumentError => e
+  puts e.message  # "Invalid XSD version: 2.0. Must be '1.0' or '1.1'"
+end
+----
+====
+
+=== Validating schemas
+
+==== validate()
+
+Validate that XML content is a valid XSD schema document.
+
+Syntax:
+
+NOTE: This is a syntax template. Replace `content` with the actual XSD content string.
+
+[source,ruby]
+----
+validator.validate(content) <1>
+----
+<1> Validate the XSD schema content
+
+Where,
+
+`content`:: XML content to validate (String) (required)
+
+Returns `true` if validation succeeds.
+
+Raises [`SchemaValidationError`](lib/lutaml/xsd/errors.rb:86) if validation fails with a specific error message describing the problem.
+
+The validator checks for:
+
+* Valid XML syntax
+* Correct root element (`xs:schema` or `xsd:schema`)
+* Correct XML Schema namespace (`http://www.w3.org/2001/XMLSchema`)
+* XSD version compatibility (1.1 features only allowed when validating as 1.1)
+
+.Validating an XSD 1.0 schema
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+xsd_content = <<~XSD
+  <?xml version="1.0" encoding="UTF-8"?>
+  <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+             targetNamespace="http://example.com/test"
+             elementFormDefault="qualified">
+    <xs:element name="person" type="xs:string"/>
+  </xs:schema>
+XSD
+
+# Validate as XSD 1.0
+validator = Lutaml::Xsd::SchemaValidator.new(version: "1.0")
+validator.validate(xsd_content)  # Returns true
+
+puts "Schema is valid!"
+----
+====
+
+.Handling validation errors
+[example]
+====
+[source,ruby]
+----
+invalid_content = <<~XML
+  <?xml version="1.0" encoding="UTF-8"?>
+  <root>
+    <child>Not a schema</child>
+  </root>
+XML
+
+validator = Lutaml::Xsd::SchemaValidator.new
+begin
+  validator.validate(invalid_content)
+rescue Lutaml::Xsd::SchemaValidationError => e
+  puts "Validation failed: #{e.message}"
+  # Output: Not a valid XSD schema: root element must be 'schema', found 'root'
+end
+----
+====
+
+.Validating XSD 1.1 features
+[example]
+====
+[source,ruby]
+----
+xsd_1_1_content = <<~XSD
+  <?xml version="1.0" encoding="UTF-8"?>
+  <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:element name="positiveNumber">
+      <xs:complexType>
+        <xs:sequence>
+          <xs:element name="value" type="xs:integer"/>
+        </xs:sequence>
+        <xs:assert test="value gt 0"/>
+      </xs:complexType>
+    </xs:element>
+  </xs:schema>
+XSD
+
+# XSD 1.0 validator rejects 1.1 features
+validator_1_0 = Lutaml::Xsd::SchemaValidator.new(version: "1.0")
+begin
+  validator_1_0.validate(xsd_1_1_content)
+rescue Lutaml::Xsd::SchemaValidationError => e
+  puts e.message
+  # Output: Schema uses XSD 1.1 features but validator is set to version 1.0.
+  # Features found: xs:assert. Use SchemaValidator.new(version: '1.1')...
+end
+
+# XSD 1.1 validator accepts 1.1 features
+validator_1_1 = Lutaml::Xsd::SchemaValidator.new(version: "1.1")
+validator_1_1.validate(xsd_1_1_content)  # Returns true
+----
+
+XSD 1.1 introduced several new features that are detected:
+
+* Elements: `xs:assert`, `xs:assertion`, `xs:alternative`, `xs:openContent`, `xs:defaultOpenContent`
+* Attributes: `defaultAttributes`, `xpathDefaultNamespace`
+* Types: `xs:anyAtomicType`, `xs:dateTimeStamp`, `xs:yearMonthDuration`, `xs:dayTimeDuration`
+====
+
+==== detect_version()
+
+Detect the XSD version from schema content by analyzing XSD 1.1 specific features.
+
+Syntax:
+
+NOTE: This is a class method. Replace `content` with the actual XSD content string.
+
+[source,ruby]
+----
+version = Lutaml::Xsd::SchemaValidator.detect_version(content) <1>
+----
+<1> Detect the XSD version automatically
+
+Where,
+
+`content`:: XML content to analyze (String) (required)
+
+Returns the detected version as a String: `"1.0"` or `"1.1"`.
+
+The method returns `"1.0"` if the content cannot be parsed or no XSD 1.1 features are detected.
+
+.Detecting XSD version automatically
+[example]
+====
+[source,ruby]
+----
+# Basic XSD 1.0 schema
+xsd_1_0 = <<~XSD
+  <?xml version="1.0" encoding="UTF-8"?>
+  <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:element name="root" type="xs:string"/>
+  </xs:schema>
+XSD
+
+version = Lutaml::Xsd::SchemaValidator.detect_version(xsd_1_0)
+puts "Detected version: #{version}"  # Output: 1.0
+
+# XSD 1.1 schema with assertions
+xsd_1_1 = <<~XSD
+  <?xml version="1.0" encoding="UTF-8"?>
+  <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:element name="root">
+      <xs:complexType>
+        <xs:assert test="true()"/>
+      </xs:complexType>
+    </xs:element>
+  </xs:schema>
+XSD
+
+version = Lutaml::Xsd::SchemaValidator.detect_version(xsd_1_1)
+puts "Detected version: #{version}"  # Output: 1.1
+----
+====
+
+=== Integration with parse()
+
+==== validate_schema parameter
+
+The [`Lutaml::Xsd.parse()`](lib/lutaml/xsd.rb:22) method automatically validates schemas before parsing. This can be controlled with the `validate_schema` parameter.
+
+Syntax:
+
+NOTE: This is a syntax template. Replace `{validate}` with `true` or `false`.
+
+[source,ruby]
+----
+schema = Lutaml::Xsd.parse(content, validate_schema: {validate}) <1>
+----
+<1> Parse with optional schema validation
+
+Where,
+
+`validate_schema`:: Whether to validate the schema before parsing (Boolean, default: `true`) (optional)
+
+When `validate_schema` is `true` (default):
+
+1. The XSD version is automatically detected using [`SchemaValidator.detect_version()`](lib/lutaml/xsd/schema_validator.rb:81)
+2. A validator for the detected version is created
+3. The schema is validated before parsing
+4. If validation fails, [`SchemaValidationError`](lib/lutaml/xsd/errors.rb:86) is raised
+
+.Automatic schema validation during parsing
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+valid_schema = <<~XSD
+  <?xml version="1.0" encoding="UTF-8"?>
+  <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:element name="root" type="xs:string"/>
+  </xs:schema>
+XSD
+
+# Default: validation enabled
+schema = Lutaml::Xsd.parse(valid_schema)
+puts "Schema parsed successfully"
+
+# Explicit validation enabled
+schema = Lutaml::Xsd.parse(valid_schema, validate_schema: true)
+
+# Validation disabled (use with caution)
+schema = Lutaml::Xsd.parse(valid_schema, validate_schema: false)
+----
+====
+
+.Error handling with automatic validation
+[example]
+====
+[source,ruby]
+----
+invalid_schema = <<~XML
+  <?xml version="1.0" encoding="UTF-8"?>
+  <root>
+    <child>Not a schema</child>
+  </root>
+XML
+
+# Validation catches the error before parsing
+begin
+  Lutaml::Xsd.parse(invalid_schema)
+rescue Lutaml::Xsd::SchemaValidationError => e
+  puts "Schema validation failed: #{e.message}"
+  # Output: Not a valid XSD schema: root element must be 'schema', found 'root'
+end
+
+# Disable validation to see parsing error instead
+begin
+  Lutaml::Xsd.parse(invalid_schema, validate_schema: false)
+rescue => e
+  puts "Parsing failed: #{e.class} - #{e.message}"
+  # Will raise a different parsing-related error
+end
+----
+====
+
+=== SchemaValidationError
+
+The [`Lutaml::Xsd::SchemaValidationError`](lib/lutaml/xsd/errors.rb:86) exception is raised when schema validation fails. It inherits from [`Lutaml::Xsd::Error`](lib/lutaml/xsd/errors.rb:6).
+
+Common validation errors include:
+
+* Invalid XML syntax
+* Missing or incorrect root element
+* Wrong or missing XML Schema namespace
+* XSD 1.1 features in XSD 1.0 validation mode
+
+.Common validation error scenarios
+[example]
+====
+[source,ruby]
+----
+validator = Lutaml::Xsd::SchemaValidator.new(version: "1.0")
+
+# Invalid XML syntax
+begin
+  validator.validate("<xs:schema")
+rescue Lutaml::Xsd::SchemaValidationError => e
+  puts "Error: #{e.message}"
+  # Output: Invalid XML syntax: ...
+end
+
+# Wrong namespace
+begin
+  validator.validate(<<~XML)
+    <?xml version="1.0"?>
+    <xs:schema xmlns:xs="http://example.com/wrong">
+      <xs:element name="test"/>
+    </xs:schema>
+  XML
+rescue Lutaml::Xsd::SchemaValidationError => e
+  puts "Error: #{e.message}"
+  # Output: Not a valid XSD schema: 'schema' element has invalid namespace...
+end
+
+# XSD 1.1 features in 1.0 mode
+begin
+  validator.validate(<<~XSD)
+    <?xml version="1.0"?>
+    <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+      <xs:element name="test">
+        <xs:complexType>
+          <xs:assert test="true()"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:schema>
+  XSD
+rescue Lutaml::Xsd::SchemaValidationError => e
+  puts "Error: #{e.message}"
+  # Output: Schema uses XSD 1.1 features but validator is set to version 1.0...
+end
+----
+====
+
+=== Complete validation workflow
+
+.Comprehensive schema validation workflow
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Read schema file
+schema_content = File.read('path/to/schema.xsd')
+
+# 1. Detect XSD version automatically
+detected_version = Lutaml::Xsd::SchemaValidator.detect_version(schema_content)
+puts "Detected XSD version: #{detected_version}"
+
+# 2. Create validator for detected version
+validator = Lutaml::Xsd::SchemaValidator.new(version: detected_version)
+
+# 3. Validate schema
+begin
+  validator.validate(schema_content)
+  puts "Schema validation passed"
+rescue Lutaml::Xsd::SchemaValidationError => e
+  puts "Schema validation failed: #{e.message}"
+  exit 1
+end
+
+# 4. Parse the validated schema
+schema = Lutaml::Xsd.parse(schema_content)
+
+# 5. Use the parsed schema
+puts "Schema target namespace: #{schema.target_namespace}"
+puts "Element count: #{schema.element.size}"
+puts "Complex type count: #{schema.complex_type.size}"
+----
+
+This workflow demonstrates:
+
+* Automatic version detection
+* Explicit validation before parsing
+* Error handling for validation failures
+* Parsing and using the validated schema
+====
+
+== Schema representation
+
+=== General
+
+The [`Lutaml::Xsd::Schema`](lib/lutaml/xsd/schema.rb:6) class represents an XSD schema. It includes attributes for various schema properties like target namespace, element form default, and collections of schema components.
+
+=== Schema class properties
+
+The Schema class provides access to schema-level attributes and component collections:
+
+==== Schema-level attributes
+
+`target_namespace`:: The target namespace URI of the schema (String)
+`element_form_default`:: Default form for elements: `"qualified"` or `"unqualified"` (String)
+`attribute_form_default`:: Default form for attributes: `"qualified"` or `"unqualified"` (String)
+`version`:: Schema version string (String)
+`id`:: Schema identifier (String)
+`final_default`:: Default final constraints (String)
+`block_default`:: Default block constraints (String)
+
+==== Component collections
+
+`element`:: Array of top-level [`Element`](lib/lutaml/xsd/element.rb) definitions
+`complex_type`:: Array of [`ComplexType`](lib/lutaml/xsd/complex_type.rb) definitions
+`simple_type`:: Array of [`SimpleType`](lib/lutaml/xsd/simple_type.rb) definitions
+`attribute`:: Array of top-level [`Attribute`](lib/lutaml/xsd/attribute.rb) definitions
+`attribute_group`:: Array of [`AttributeGroup`](lib/lutaml/xsd/attribute_group.rb) definitions
+`group`:: Array of [`Group`](lib/lutaml/xsd/group.rb) definitions
+`notation`:: Array of [`Notation`](lib/lutaml/xsd/notation.rb) definitions
+`import`:: Array of [`Import`](lib/lutaml/xsd/import.rb) directives
+`include`:: Array of [`Include`](lib/lutaml/xsd/include.rb) directives
+
+=== Accessing schema components
+
+.Schema object properties
+[example]
+====
+[source,ruby]
+----
+# Access schema-level properties
+puts "Target namespace: #{parsed_schema.target_namespace}"
+puts "Element form default: #{parsed_schema.element_form_default}"
+puts "Attribute form default: #{parsed_schema.attribute_form_default}"
+
+# Access schema components
+puts "Elements: #{parsed_schema.element.size}"
+puts "Complex types: #{parsed_schema.complex_type.size}"
+puts "Simple types: #{parsed_schema.simple_type.size}"
+puts "Attributes: #{parsed_schema.attribute.size}"
+puts "Groups: #{parsed_schema.group.size}"
+puts "Attribute groups: #{parsed_schema.attribute_group.size}"
+puts "Imports: #{parsed_schema.import.size}"
+puts "Includes: #{parsed_schema.include.size}"
+----
+====
+
+=== Finding types and elements
+
+The Schema class provides helper methods for finding specific components:
+
+==== find_type()
+
+Find a type definition by local name.
+
+Syntax:
+
+NOTE: This is a syntax template. Replace `local_name` with the actual type name.
+
+[source,ruby]
+----
+type = schema.find_type(local_name) <1>
+----
+<1> Find a type by its local name
+
+Where,
+
+`local_name`:: The local name of the type (String)
+
+Returns the [`SimpleType`](lib/lutaml/xsd/simple_type.rb) or [`ComplexType`](lib/lutaml/xsd/complex_type.rb) object, or `nil` if not found.
+
+.Finding a type by name
+[example]
+====
+[source,ruby]
+----
+# Find a complex type
+address_type = parsed_schema.find_type('AddressType')
+if address_type
+  puts "Found type: #{address_type.name}"
+end
+
+# Find a simple type
+code_type = parsed_schema.find_type('CodeType')
+----
+====
+
+==== find_element()
+
+Find an element definition by local name.
+
+Syntax:
+
+NOTE: This is a syntax template. Replace `local_name` with the actual element name.
+
+[source,ruby]
+----
+element = schema.find_element(local_name) <1>
+----
+<1> Find an element by its local name
+
+Where,
+
+`local_name`:: The local name of the element (String)
+
+Returns the [`Element`](lib/lutaml/xsd/element.rb) object, or `nil` if not found.
+
+.Finding an element by name
+[example]
+====
+[source,ruby]
+----
+# Find an element
+root_element = parsed_schema.find_element('root')
+if root_element
+  puts "Found element: #{root_element.name}"
+  puts "Element type: #{root_element.type}"
+end
+----
+====
+
+== SchemaRepository
+
+=== General
+
+The [`Lutaml::Xsd::SchemaRepository`](lib/lutaml/xsd/schema_repository.rb:10) provides namespace-aware type resolution across multiple XSD schemas. It builds a comprehensive index of all types, elements, and other schema components, enabling efficient lookups by qualified names in multiple formats.
+
+This is particularly valuable when working with complex schema sets like CityGML, GML, ISO/TC 211 standards, or any multi-schema XML application where types need to be resolved across namespace boundaries.
+
+Key capabilities:
+
+* Parse and index multiple schemas with their imports and includes
+* Resolve types using prefixed names (`gml:CodeType`), Clark notation (`{http://...}CodeType`), or unprefixed names
+* Validate schema consistency and detect circular dependencies
+* Query schema statistics and component counts
+* Export and import schema collections as LXR packages
+* Integrate seamlessly with schema location mappings
+
+=== Creating a schema repository
+
+Use the constructor to create a new repository instance:
+
+Syntax:
+
+NOTE: This is a syntax template. The `**attributes` parameter accepts keyword arguments.
+
+[source,ruby]
+----
+repo = Lutaml::Xsd::SchemaRepository.new(**attributes) <1>
+----
+<1> Create a new schema repository
+
+.Basic repository initialization
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Create a new repository
+repo = Lutaml::Xsd::SchemaRepository.new
+----
+====
+
+=== Configuring namespaces
+
+Before parsing schemas, configure namespace prefix-to-URI mappings to enable prefixed name resolution.
+
+==== configure_namespace()
+
+Register a single namespace prefix mapping.
+
+Syntax:
+
+NOTE: This is a syntax template. Replace `{prefix}` and `{uri}` with actual values.
+
+[source,ruby]
+----
+repo.configure_namespace(prefix: {prefix}, uri: {uri}) <1>
+----
+<1> Register a namespace prefix and its corresponding URI
+
+Where,
+
+`prefix`:: The namespace prefix (e.g., `"gml"`, `"xlink"`) (required)
+`uri`:: The full namespace URI (e.g., `"http://www.opengis.net/gml/3.2"`) (required)
+
+Returns `self` for method chaining.
+
+.Configuring namespace mappings
+[example]
+====
+[source,ruby]
+----
+repo = Lutaml::Xsd::SchemaRepository.new
+
+# Add namespace mappings for common schemas
+repo.configure_namespace(
+  prefix: 'gml',
+  uri: 'http://www.opengis.net/gml/3.2'
+)
+
+repo.configure_namespace(
+  prefix: 'xlink',
+  uri: 'http://www.w3.org/1999/xlink'
+)
+
+repo.configure_namespace(
+  prefix: 'gco',
+  uri: 'https://www.isotc211.org/2005/gco'
+)
+----
+
+Namespace mappings enable resolving qualified names like `gml:CodeType` to their full namespace URIs.
+====
+
+==== configure_namespaces()
+
+Register multiple namespace prefix mappings at once.
+
+Syntax:
+
+NOTE: This is a syntax template. Replace `mappings` with a Hash or Array of namespace mappings.
+
+[source,ruby]
+----
+repo.configure_namespaces(mappings) <1>
+----
+<1> Register multiple namespace mappings
+
+Where,
+
+`mappings`:: Hash or Array of namespace mappings (required)
+
+.Configuring multiple namespaces
+[example]
+====
+[source,ruby]
+----
+# Using a Hash
+repo.configure_namespaces({
+  'gml' => 'http://www.opengis.net/gml/3.2',
+  'xlink' => 'http://www.w3.org/1999/xlink',
+  'gco' => 'https://www.isotc211.org/2005/gco'
+})
+
+# Using an Array of hashes
+repo.configure_namespaces([
+  { prefix: 'gml', uri: 'http://www.opengis.net/gml/3.2' },
+  { prefix: 'xlink', uri: 'http://www.w3.org/1999/xlink' }
+])
+----
+====
+
+=== Parsing schemas
+
+Use the `parse()` method to parse schemas from the configured files.
+
+==== parse()
+
+Parse XSD schemas from configured files.
+
+Syntax:
+
+NOTE: This is a syntax template. Replace `{locations}` and `{lazy}` with actual values.
+
+[source,ruby]
+----
+repo.parse(schema_locations: {locations}, lazy_load: {lazy}) <1>
+----
+<1> Parse schemas with optional additional mappings
+
+Where,
+
+`schema_locations`:: Additional schema location mappings (Hash) (optional)
+`lazy_load`:: Whether to lazy load imported schemas (Boolean, default: `true`) (optional)
+
+Returns `self` for method chaining.
+
+NOTE: Before calling `parse()`, you must configure the `files`, `schema_location_mappings`, and `namespace_mappings` attributes using a YAML configuration file or by setting them directly.
+
+.Loading from YAML and parsing
+[example]
+====
+[source,ruby]
+----
+# Load repository configuration from YAML
+repo = Lutaml::Xsd::SchemaRepository.from_yaml_file(
+  'config/urban_function_repository.yaml'
+)
+
+# Parse the configured schemas
+repo.parse
+
+# Repository is now ready for queries
+puts "Parsed #{repo.statistics[:total_schemas]} schemas"
+----
+====
+
+=== Resolving schemas
+
+Use the `resolve()` method to force full resolution of all imports/includes and build type indexes.
+
+==== resolve()
+
+Force full resolution of all imports/includes and build indexes.
+
+Syntax:
+
+NOTE: This is a method call without parameters.
+
+[source,ruby]
+----
+repo.resolve <1>
+----
+<1> Resolve all schemas and build type index
+
+Returns `self` for method chaining.
+
+.Resolving a repository
+[example]
+====
+[source,ruby]
+----
+# Load and parse
+repo = Lutaml::Xsd::SchemaRepository.from_yaml_file('config.yaml')
+repo.parse
+
+# Force full resolution
+repo.resolve
+
+# Now all imports are resolved and type index is built
+stats = repo.statistics
+puts "Total types indexed: #{stats[:total_types]}"
+----
+====
+
+=== Type resolution methods
+
+==== find_type()
+
+Resolve a qualified type name to its definition. Supports three name formats:
+
+* Prefixed: `gml:CodeType`
+* Clark notation: `{http://www.opengis.net/gml/3.2}CodeType`
+* Unprefixed: `CodeType` (searches all namespaces)
+
+Syntax:
+
+NOTE: This is a syntax template. Replace `qname` with the actual qualified type name.
+
+[source,ruby]
+----
+result = repo.find_type(qname) <1>
+----
+<1> Resolve a type by its qualified name
+
+Where,
+
+`qname`:: The type name in any supported format (String) (required)
+
+Returns a [`TypeResolutionResult`](lib/lutaml/xsd/type_resolution_result.rb) with:
+
+`resolved?`:: Boolean indicating if the type was found
+`qname`:: The original qualified name
+`namespace`:: The namespace URI of the type (if found)
+`local_name`:: The local name portion of the type
+`definition`:: The resolved type object (if found)
+`schema_file`:: The schema file containing the type (if found)
+`resolution_path`:: Array showing resolution steps
+`error_message`:: Error message (if not found)
+
+.Resolving types by qualified name
+[example]
+====
+[source,ruby]
+----
+# Resolve using prefixed name
+result = repo.find_type('gml:CodeType')
+
+if result.resolved?
+  puts "Found: #{result.definition.name}"
+  puts "Namespace: #{result.namespace}"
+  puts "Local name: #{result.local_name}"
+  puts "Schema file: #{result.schema_file}"
+end
+
+# Resolve using Clark notation
+result = repo.find_type(
+  '{http://www.opengis.net/gml/3.2}CodeType'
+)
+
+# Resolve using unprefixed name (searches all namespaces)
+result = repo.find_type('CodeType')
+
+# Check resolution status
+unless result.resolved?
+  puts "Type not found: #{result.error_message}"
+end
+----
+====
+
+=== Validation
+
+The repository can validate schema consistency.
+
+==== validate()
+
+Validate the repository for schema consistency, including detection of missing type definitions, circular schema dependencies, invalid namespace references, and unresolved imports.
+
+Syntax:
+
+NOTE: This is a syntax template. Replace `{strict}` with `true` or `false`.
+
+[source,ruby]
+----
+errors = repo.validate(strict: {strict}) <1>
+----
+<1> Validate all schemas in the repository
+
+Where,
+
+`strict`:: Whether to raise on first error (Boolean, default: `false`) (optional)
+
+Returns an Array of validation error messages (empty if valid).
+
+.Validating schema consistency
+[example]
+====
+[source,ruby]
+----
+# Validate the repository
+errors = repo.validate
+
+if errors.empty?
+  puts "All schemas are valid!"
+else
+  puts "Validation errors:"
+  errors.each do |error|
+    puts "  - #{error}"
+  end
+end
+
+# Strict validation (raises on first error)
+begin
+  repo.validate(strict: true)
+  puts "Validation passed!"
+rescue Lutaml::Xsd::Error => e
+  puts "Validation failed: #{e.message}"
+end
+----
+====
+
+=== Statistics and queries
+
+==== statistics()
+
+Get comprehensive statistics about parsed schemas.
+
+Syntax:
+
+NOTE: This is a method call without parameters.
+
+[source,ruby]
+----
+stats = repo.statistics <1>
+----
+<1> Get repository statistics
+
+Returns a Hash with:
+
+`total_schemas`:: Number of schemas parsed (Integer)
+`total_types`:: Total number of types indexed (Integer)
+`types_by_category`:: Hash of type counts by category (Hash)
+`total_namespaces`:: Number of unique namespaces (Integer)
+`namespace_prefixes`:: Number of registered prefixes (Integer)
+`resolved`:: Whether repository is fully resolved (Boolean)
+`validated`:: Whether repository has been validated (Boolean)
+
+.Querying repository statistics
+[example]
+====
+[source,ruby]
+----
+# Get overall statistics
+stats = repo.statistics
+
+puts "Total schemas: #{stats[:total_schemas]}"
+puts "Total namespaces: #{stats[:total_namespaces]}"
+puts "Total types: #{stats[:total_types]}"
+
+# Types by category
+puts "\nTypes by category:"
+stats[:types_by_category].each do |category, count|
+  puts "  #{category}: #{count}"
+end
+
+puts "\nStatus:"
+puts "  Resolved: #{stats[:resolved]}"
+puts "  Validated: #{stats[:validated]}"
+----
+====
+
+==== all_namespaces()
+
+Get all registered namespace URIs.
+
+Syntax:
+
+NOTE: This is a method call without parameters.
+
+[source,ruby]
+----
+namespaces = repo.all_namespaces <1>
+----
+<1> Get all namespace URIs
+
+Returns an Array of namespace URI strings.
+
+.Listing all namespaces
+[example]
+====
+[source,ruby]
+----
+# List all namespaces
+repo.all_namespaces.each do |uri|
+  puts "Namespace: #{uri}"
+end
+----
+====
+
+=== Package management
+
+==== to_package()
+
+Export repository as an LXR package with schemas and metadata.
+
+Syntax:
+
+NOTE: This is a syntax template. Replace `{mode}`, `{res_mode}`, `{format}`, and `{metadata}` with actual values.
+
+[source,ruby]
+----
+package = repo.to_package(
+  output_path,
+  xsd_mode: {mode},
+  resolution_mode: {res_mode},
+  serialization_format: {format},
+  metadata: {metadata}
+) <1>
+----
+<1> Export repository to an LXR package
+
+Where,
+
+`output_path`:: Path to output LXR file (String) (required)
+`xsd_mode`:: `:include_all` or `:allow_external` (Symbol, default: `:include_all`) (optional)
+`resolution_mode`:: `:bare` or `:resolved` (Symbol, default: `:resolved`) (optional)
+`serialization_format`:: `:marshal`, `:json`, `:yaml`, or `:parse` (Symbol, default: `:marshal`) (optional)
+`metadata`:: Additional metadata to include (Hash) (optional)
+
+Returns a [`SchemaRepositoryPackage`](lib/lutaml/xsd/schema_repository_package.rb) object.
+
+.Exporting a schema repository
+[example]
+====
+[source,ruby]
+----
+# Export repository to LXR package
+package = repo.to_package(
+  'citygml_schemas.lxr',
+  xsd_mode: :include_all,
+  resolution_mode: :resolved,
+  serialization_format: :marshal,
+  metadata: {
+    name: 'CityGML Schemas',
+    version: '2.0',
+    description: 'Complete CityGML 2.0 schema set with dependencies'
+  }
+)
+
+puts "Exported to citygml_schemas.lxr"
+----
+====
+
+==== from_package()
+
+Load repository from an LXR package.
+
+Syntax:
+
+NOTE: This is a syntax template. Replace `zip_path` with the actual path to the LXR file.
+
+[source,ruby]
+----
+repo = Lutaml::Xsd::SchemaRepository.from_package(zip_path) <1>
+----
+<1> Import a repository from an LXR package
+
+Where,
+
+`zip_path`:: Path to the LXR file to import (String) (required)
+
+Returns a new [`SchemaRepository`](lib/lutaml/xsd/schema_repository.rb:10) instance with all schemas and mappings loaded.
+
+.Importing a schema repository
+[example]
+====
+[source,ruby]
+----
+# Import from previously exported LXR package
+repo = Lutaml::Xsd::SchemaRepository.from_package(
+  'citygml_schemas.lxr'
+)
+
+# Repository is ready to use
+result = repo.find_type('gml:CodeType')
+puts "Type found: #{result.resolved?}"
+
+# Get statistics
+stats = repo.statistics
+puts "Loaded #{stats[:total_types]} types"
+----
+====
+
+==== from_file()
+
+Load repository from a single schema file. Supports XSD (`.xsd`), RELAX NG
+XML syntax (`.rng`), and RELAX NG Compact syntax (`.rnc`) files. RNG/RNC files
+are automatically converted to XSD.
+
+Syntax:
+
+[source,ruby]
+----
+repo = Lutaml::Xsd::SchemaRepository.from_file(path) <1>
+----
+<1> Load repository from a schema file
+
+Where,
+
+`path`:: Path to a schema file (`.xsd`, `.rng`, or `.rnc`) (String) (required)
+
+Returns a new [`SchemaRepository`](lib/lutaml/xsd/schema_repository.rb:10) instance.
+
+.Loading from different schema formats
+[example]
+====
+[source,ruby]
+----
+# Load from XSD
+repo = Lutaml::Xsd::SchemaRepository.from_file('schema.xsd')
+
+# Load from RELAX NG XML syntax
+repo = Lutaml::Xsd::SchemaRepository.from_file('schema.rng')
+
+# Load from RELAX NG Compact syntax
+repo = Lutaml::Xsd::SchemaRepository.from_file('schema.rnc')
+
+# All formats produce the same type of repository object
+repo.parse.resolve
+result = repo.find_type('TypeName')
+----
+====
+
+==== RngToXsdConverter
+
+Convert a RELAX NG grammar to an XSD Schema object directly.
+
+Syntax:
+
+[source,ruby]
+----
+require 'rng'
+grammar = Rng.parse(rng_content)
+schema = Lutaml::Xsd::RngToXsdConverter.new(grammar, file_path: 'schema.rng').convert
+----
+
+Where,
+
+`grammar`:: A parsed `Rng::Grammar` object (required)
+`file_path`:: Original file path for include directive extraction (optional)
+
+Returns an [`Lutaml::Xsd::Schema`](lib/lutaml/xsd/schema.rb) object.
+
+.Converting RELAX NG to XSD
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+require 'rng'
+
+# Parse an RNG file
+rng_content = File.read('schema.rng')
+grammar = Rng.parse(rng_content,
+  location: File.dirname('schema.rng'),
+  resolve_external: true)
+
+# Convert to XSD
+converter = Lutaml::Xsd::RngToXsdConverter.new(grammar, file_path: 'schema.rng')
+xsd_schema = converter.convert
+
+# Serialize the result
+puts xsd_schema.to_formatted_xml
+
+# Or parse an RNC file directly
+grammar = Rng.parse_file('schema.rnc')
+xsd_schema = Lutaml::Xsd::RngToXsdConverter.new(grammar, file_path: 'schema.rnc').convert
+----
+====
+
+==== from_yaml_file()
+
+Load repository configuration from a YAML file.
+
+Syntax:
+
+NOTE: This is a syntax template. Replace `yaml_path` with the actual path to the YAML configuration file.
+
+[source,ruby]
+----
+repo = Lutaml::Xsd::SchemaRepository.from_yaml_file(yaml_path) <1>
+----
+<1> Load repository configuration from YAML
+
+Where,
+
+`yaml_path`:: Path to YAML configuration file (String) (required)
+
+Returns a configured [`SchemaRepository`](lib/lutaml/xsd/schema_repository.rb:10) instance.
+
+.Loading from YAML configuration
+[example]
+====
+[source,ruby]
+----
+# Load repository from YAML
+repo = Lutaml::Xsd::SchemaRepository.from_yaml_file(
+  'config/urban_function_repository.yaml'
+)
+
+# Parse the schemas
+repo.parse
+
+# Resolve and query
+repo.resolve
+result = repo.find_type('urf:UrbanFunctionType')
+----
+====
+
+=== Complete workflow example
+
+.Comprehensive schema repository workflow
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# 1. Load repository from YAML configuration
+repo = Lutaml::Xsd::SchemaRepository.from_yaml_file(
+  'config/urban_function_repository.yaml'
+)
+
+# 2. Parse schemas (follows imports and includes)
+repo.parse
+
+# 3. Force full resolution and build type index
+repo.resolve
+
+# 4. Query statistics
+stats = repo.statistics
+puts "\nRepository Statistics:"
+puts "  Schemas: #{stats[:total_schemas]}"
+puts "  Namespaces: #{stats[:total_namespaces]}"
+puts "  Types: #{stats[:total_types]}"
+
+# 5. List all namespaces
+puts "\nNamespaces:"
+repo.all_namespaces.each do |uri|
+  puts "  #{uri}"
+end
+
+# 6. Resolve types
+puts "\nType Resolution:"
+['gml:CodeType', 'uro:BuildingType', 'urf:UrbanFunctionType'].each do |qname|
+  result = repo.find_type(qname)
+  if result.resolved?
+    puts "  ✓ #{qname} -> #{result.definition.name}"
+  else
+    puts "  ✗ #{qname}: #{result.error_message}"
+  end
+end
+
+# 7. Validate schemas
+errors = repo.validate
+puts "\nValidation: #{errors.empty? ? 'PASS' : 'FAIL'}"
+errors.each { |e| puts "  Error: #{e}" }
+
+# 8. Export to LXR package
+repo.to_package(
+  'schema_package.lxr',
+  metadata: {
+    name: 'i-UR Schema Package',
+    version: '3.2',
+    description: 'Urban and Rural schemas with dependencies'
+  }
+)
+puts "\nExported to schema_package.lxr"
+
+# 9. Import from LXR package (in a new session)
+imported_repo = Lutaml::Xsd::SchemaRepository.from_package(
+  'schema_package.lxr'
+)
+imported_stats = imported_repo.statistics
+puts "Imported repository with #{imported_stats[:total_types]} types"
+----
+
+This example demonstrates the complete lifecycle:
+
+* Repository loading from YAML configuration
+* Schema parsing with imports
+* Full resolution and type indexing
+* Statistics and queries
+* Type resolution
+* Validation
+* Package export and import
+====
+
+== Serialization
+
+=== General
+
+The gem supports serializing schema objects back to XML. Each schema class provides a [`to_xml()`](lib/lutaml/xsd/schema.rb) method that generates the XML representation.
+
+=== to_xml()
+
+Convert a schema object to its XML representation.
+
+Syntax:
+
+NOTE: This is a method call without parameters.
+
+[source,ruby]
+----
+xml_string = schema.to_xml <1>
+----
+<1> Serialize schema to XML
+
+Returns the XML representation as a String.
+
+=== Converting parsed schemas to XML
+
+.Serializing a schema to XML
+[example]
+====
+[source,ruby]
+----
+# Parse a schema
+xsd_content = File.read('schema.xsd')
+parsed_schema = Lutaml::Xsd.parse(xsd_content)
+
+# Serialize back to XML
+xml_output = parsed_schema.to_xml
+puts xml_output
+
+# Write to file
+File.write('output.xsd', xml_output)
+----
+====
+
+NOTE: The XML serialization provides round-trip compatibility, meaning you can parse an XSD file, modify the schema objects, and serialize back to valid XSD.
+
+== See also
+
+* link:../QUICK_START[Quick Start] - Getting started with lutaml-xsd
+* link:../CLI[CLI Reference] - Command-line interface documentation
+* link:../SCHEMA_MAPPINGS[Schema Mappings] - Advanced schema location mapping patterns
+* link:../LXR_PACKAGES[LXR Packages] - Package format and management
+* link:../LIQUID_METHODS[Liquid Methods] - Template methods for schema introspection
+* link:../INDEX[Documentation Index] - Complete documentation index

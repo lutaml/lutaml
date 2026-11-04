@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<c:company xmlns:c="http://example.com/company"
+           xmlns:p="http://example.com/person"
+           id="COMP001">
+  <c:name>TechCorp Industries</c:name>
+  <c:founded>2010-05-15</c:founded>
+
+  <c:departments>
+    <c:department id="DEPT001">
+      <c:name>Engineering</c:name>
+      <c:manager>EMP001</c:manager>
+    </c:department>
+    <c:department id="DEPT002">
+      <c:name>Sales</c:name>
+      <c:manager>EMP002</c:manager>
+    </c:department>
+  </c:departments>
+
+  <c:employees>
+    <c:employee id="EMP001">
+      <p:name>Alice Johnson</p:name>
+      <p:age>35</p:age>
+      <p:email>alice.johnson@techcorp.com</p:email>
+      <c:hireDate>2010-06-01</c:hireDate>
+      <c:departmentRef>DEPT001</c:departmentRef>
+    </c:employee>
+
+    <c:employee id="EMP002">
+      <p:name>Bob Williams</p:name>
+      <p:age>42</p:age>
+      <p:email>bob.williams@techcorp.com</p:email>
+      <p:address>
+        <p:street>789 Business Blvd</p:street>
+        <p:city>Commerce City</p:city>
+        <p:postalCode>98765</p:postalCode>
+        <p:country>USA</p:country>
+      </p:address>
+      <c:hireDate>2010-07-15</c:hireDate>
+      <c:departmentRef>DEPT002</c:departmentRef>
+    </c:employee>
+  </c:employees>
+</c:company>

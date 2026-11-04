@@ -1,0 +1,91 @@
+SCHEMA remark_schema;
+
+CONSTANT
+  remark_constant : STRING := 'xxx';
+END_CONSTANT;
+
+TYPE remark_type = ENUMERATION OF
+  (remark_enumeration_item);
+WHERE
+  WR1: TRUE;
+END_TYPE;
+
+ENTITY remark_entity;
+  remark_attribute : STRING;
+DERIVE
+  remark_derived_attribute : STRING := 'xxx';
+INVERSE
+  remark_inverse_attribute : remark_entity FOR remark_attribute;
+UNIQUE
+  UR1: remark_attribute;
+WHERE
+  WR1: TRUE;
+END_ENTITY;
+
+SUBTYPE_CONSTRAINT remark_subtype_constraint FOR remark_entity;
+END_SUBTYPE_CONSTRAINT;
+
+FUNCTION remark_function(remark_parameter : STRING) : BOOLEAN;
+  TYPE remark_type = ENUMERATION OF
+    (remark_enumeration_item);
+  END_TYPE;
+  CONSTANT
+    remark_constant : STRING := 'xxx';
+  END_CONSTANT;
+  LOCAL
+    remark_variable : STRING;
+  END_LOCAL;
+  ALIAS remark_alias FOR remark_variable;
+    ;
+    --"remark_alias" function alias scope - function alias
+  END_ALIAS;
+  REPEAT remark_repeat := 1 TO 9;
+    ;
+    --"remark_repeat" function repeat scope - function repeat
+  END_REPEAT;
+  remark_variable := QUERY(remark_query <* remark_variable | TRUE
+  --"remark_query" function query scope - function query
+  );
+END_FUNCTION;
+
+RULE remark_rule FOR (remark_entity);
+  TYPE remark_type = ENUMERATION OF
+    (remark_enumeration_item);
+  END_TYPE;
+  CONSTANT
+    remark_constant : STRING := 'xxx';
+  END_CONSTANT;
+  LOCAL
+    remark_variable : STRING;
+  END_LOCAL;
+  remark_variable := QUERY(remark_query <* remark_variable | TRUE
+  --"remark_query" rule query scope - rule query
+  );
+WHERE
+  WR1: TRUE;
+END_RULE;
+
+PROCEDURE remark_procedure(remark_parameter : STRING);
+  TYPE remark_type = ENUMERATION OF
+    (remark_enumeration_item);
+  END_TYPE;
+  CONSTANT
+    remark_constant : STRING := 'xxx';
+  END_CONSTANT;
+  LOCAL
+    remark_variable : STRING;
+  END_LOCAL;
+  ALIAS remark_alias FOR remark_variable;
+    ;
+    --"remark_alias" procedure alias scope - procedure alias
+  END_ALIAS;
+  REPEAT remark_repeat := 1 TO 9;
+    ;
+    --"remark_repeat" procedure repeat scope - procedure repeat
+  END_REPEAT;
+  remark_variable := QUERY(remark_query <* remark_variable | TRUE
+  --"remark_query" procedure query scope - procedure query
+  );
+END_PROCEDURE;
+
+END_SCHEMA;

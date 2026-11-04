@@ -1,0 +1,11 @@
+SCHEMA test_undocumented;
+
+ENTITY undocumented_entity;
+  name : STRING;
+END_ENTITY;
+
+ENTITY another_undocumented_entity;
+  count : INTEGER;
+END_ENTITY;
+
+END_SCHEMA;

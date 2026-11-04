@@ -1,0 +1,1051 @@
+---
+layout: default
+title: Liquid methods
+nav_order: 4
+parent: Reference
+---
+= Liquid Template Methods
+:toc:
+:toclevels: 3
+
+== Purpose
+
+Complete reference for Liquid template methods available for schema introspection and documentation generation. These methods enable powerful schema analysis and documentation workflows through the Liquid templating language.
+
+== General
+
+Lutaml::XSD exposes convenient methods for use in Liquid templates via [`to_liquid`](docs/LIQUID_METHODS.adoc:197) on parsed objects. These methods are particularly useful for:
+
+* Generating comprehensive schema documentation
+* Analyzing schema structures and relationships
+* Creating type hierarchies and dependency graphs
+* Producing cross-reference documentation
+* Building schema visualization tools
+
+All parsed XSD objects (Schema, Element, ComplexType, etc.) expose their properties and relationships through Liquid-friendly methods that can be used in templates for automated documentation generation.
+
+== Element methods
+
+The [`Lutaml::Xsd::LiquidMethods::Element`](lib/lutaml/xsd/liquid_methods/element.rb) module provides methods for working with element objects in Liquid templates.
+
+=== `used_by`
+
+Returns complex types that use or reference this element.
+
+Syntax:
+[source,liquid]
+----
+{% assign users = element.used_by %}
+----
+
+Returns::
+Array of [`ComplexType`](lib/lutaml/xsd/complex_type.rb) objects that reference this element
+
+.Finding which types use an element
+[example]
+====
+[source,liquid]
+----
+{% for el in schema.element %}
+  Element: {{ el.name }}
+  {% assign types = el.used_by %}
+  {% if types.size > 0 %}
+    Used by:
+    {% for type in types %}
+      - {{ type.name }}
+    {% endfor %}
+  {% else %}
+    (Not referenced by any complex type)
+  {% endif %}
+{% endfor %}
+----
+
+Output:
+----
+Element: Building
+Used by:
+  - CityObjectType
+  - FeatureCollectionType
+
+Element: Address
+  (Not referenced by any complex type)
+----
+====
+
+=== `attributes`
+
+Returns attribute elements for this element.
+
+Syntax:
+[source,liquid]
+----
+{% assign attrs = element.attributes %}
+----
+
+Returns::
+Array of [`Attribute`](lib/lutaml/xsd/attribute.rb) objects
+
+.Listing element attributes
+[example]
+====
+[source,liquid]
+----
+{% for el in schema.element %}
+  Element: {{ el.name }}
+  {% assign attrs = el.attributes %}
+  {% if attrs.size > 0 %}
+    Attributes:
+    {% for attr in attrs %}
+      - {{ attr.referenced_name }}: {{ attr.referenced_type }} ({{ attr.cardinality }})
+    {% endfor %}
+  {% endif %}
+{% endfor %}
+----
+
+Output:
+----
+Element: Building
+Attributes:
+  - id: xs:ID (0..1)
+  - class: xs:string (1)
+  - status: StatusType (0..1)
+----
+====
+
+=== `min_occurrences`
+
+Returns the element's minimum occurrences as an Integer.
+
+Syntax:
+[source,liquid]
+----
+{{ element.min_occurrences }}
+----
+
+Returns::
+Integer (default: 1)
+
+.Displaying cardinality information
+[example]
+====
+[source,liquid]
+----
+{% for el in sequence.element %}
+  {{ el.name }}: {{ el.min_occurrences }}..{{ el.max_occurrences }}
+{% endfor %}
+----
+
+Output:
+----
+name: 1..1
+address: 0..1
+contact: 1..*
+----
+====
+
+=== `max_occurrences`
+
+Returns the element's maximum occurrences. Returns `*` for unbounded, otherwise Integer.
+
+Syntax:
+[source,liquid]
+----
+{{ element.max_occurrences }}
+----
+
+Returns::
+String `*` for unbounded, or Integer (default: 1)
+
+.Checking for repeatable elements
+[example]
+====
+[source,liquid]
+----
+{% for el in sequence.element %}
+  {% if el.max_occurrences == "*" %}
+    {{ el.name }} - repeatable (unbounded)
+  {% elsif el.max_occurrences > 1 %}
+    {{ el.name }} - repeatable (max {{ el.max_occurrences }})
+  {% else %}
+    {{ el.name }} - single occurrence
+  {% endif %}
+{% endfor %}
+----
+====
+
+=== `child_elements`
+
+Returns all nested child elements, resolved across groups, choices, and sequences.
+
+Syntax:
+[source,liquid]
+----
+{% assign children = element.child_elements %}
+----
+
+Returns::
+Array of [`Element`](lib/lutaml/xsd/element.rb) objects representing all descendant elements
+
+.Recursively listing all child elements
+[example]
+====
+[source,liquid]
+----
+{% for el in schema.element %}
+  Element: {{ el.name }}
+  {% assign children = el.child_elements %}
+  {% if children.size > 0 %}
+    Child elements:
+    {% for child in children %}
+      - {{ child.name }} ({{ child.referenced_type }})
+    {% endfor %}
+  {% endif %}
+{% endfor %}
+----
+
+Output:
+----
+Element: Building
+Child elements:
+  - name (xs:string)
+  - address (AddressType)
+  - height (MeasureType)
+  - function (CodeListType)
+----
+====
+
+=== `referenced_type`
+
+Returns the name of the element's type if present, or the type name indicated by ref if defined.
+
+Syntax:
+[source,liquid]
+----
+{{ element.referenced_type }}
+----
+
+Returns::
+String containing the type name
+
+.Displaying element type information
+[example]
+====
+[source,liquid]
+----
+{% for el in schema.element %}
+  {{ el.name }}: {{ el.referenced_type }}
+{% endfor %}
+----
+
+Output:
+----
+Building: BuildingType
+Address: AddressType
+Code: gml:CodeType
+----
+====
+
+=== `referenced_object`
+
+Resolves and returns the element or its referenced element by ref.
+
+Syntax:
+[source,liquid]
+----
+{% assign obj = element.referenced_object %}
+----
+
+Returns::
+The resolved [`Element`](lib/lutaml/xsd/element.rb) object
+
+.Following element references
+[example]
+====
+[source,liquid]
+----
+{% for el in sequence.element %}
+  Element: {{ el.name }}
+  {% assign actual = el.referenced_object %}
+  {% if actual.name != el.name %}
+    (References: {{ actual.name }})
+  {% endif %}
+  Type: {{ actual.type }}
+{% endfor %}
+----
+====
+
+=== `referenced_complex_type`
+
+Resolves the complex type matching [`referenced_type`](docs/LIQUID_METHODS.adoc:165).
+
+Syntax:
+[source,liquid]
+----
+{% assign complex_type = element.referenced_complex_type %}
+----
+
+Returns::
+The resolved [`ComplexType`](lib/lutaml/xsd/complex_type.rb) object, or nil if not found
+
+.Accessing complex type details
+[example]
+====
+[source,liquid]
+----
+{% for el in schema.element %}
+  Element: {{ el.name }}
+  {% assign ct = el.referenced_complex_type %}
+  {% if ct %}
+    Complex Type: {{ ct.name }}
+    Has {{ ct.child_elements.size }} child elements
+    Has {{ ct.attribute_elements.size }} attributes
+  {% endif %}
+{% endfor %}
+----
+====
+
+== Attribute methods
+
+The [`Lutaml::Xsd::LiquidMethods::Attribute`](lib/lutaml/xsd/liquid_methods/attribute.rb) module provides methods for working with attribute objects in Liquid templates.
+
+=== `referenced_object`
+
+Returns the actual attribute object, resolving references via ref if necessary.
+
+Syntax:
+[source,liquid]
+----
+{% assign actual = attribute.referenced_object %}
+----
+
+Returns::
+The resolved [`Attribute`](lib/lutaml/xsd/attribute.rb) object
+
+.Resolving attribute references
+[example]
+====
+[source,liquid]
+----
+{% for attr in complex_type.attribute %}
+  {% assign actual = attr.referenced_object %}
+  Attribute: {{ actual.name }}
+  Original ref: {{ attr.ref }}
+{% endfor %}
+----
+====
+
+=== `referenced_name`
+
+Retrieves the definitive attribute name, using ref if not explicitly named.
+
+Syntax:
+[source,liquid]
+----
+{{ attribute.referenced_name }}
+----
+
+Returns::
+String containing the attribute name
+
+.Displaying attribute names
+[example]
+====
+[source,liquid]
+----
+{% for attr in complex_type.attribute %}
+  - {{ attr.referenced_name }}
+{% endfor %}
+----
+
+Output:
+----
+- id
+- class
+- gml:id
+- status
+----
+====
+
+=== `referenced_type`
+
+Retrieves the fully resolved type name for this attribute.
+
+Syntax:
+[source,liquid]
+----
+{{ attribute.referenced_type }}
+----
+
+Returns::
+String containing the type name
+
+.Creating attribute type documentation
+[example]
+====
+[source,liquid]
+----
+{% for attr in complex_type.attribute %}
+  {{ attr.referenced_name }}: {{ attr.referenced_type }}
+{% endfor %}
+----
+
+Output:
+----
+id: xs:ID
+name: xs:string
+href: xs:anyURI
+codeSpace: xs:anyURI
+----
+====
+
+=== `cardinality`
+
+Returns `1` for required attributes, `0..1` for optional attributes.
+
+Syntax:
+[source,liquid]
+----
+{{ attribute.cardinality }}
+----
+
+Returns::
+String `1` for required, `0..1` for optional
+
+.Documenting attribute requirements
+[example]
+====
+[source,liquid]
+----
+Attributes:
+{% for attr in complex_type.attribute %}
+  {{ attr.referenced_name }}: {{ attr.referenced_type }}
+  {% if attr.cardinality == "1" %}
+    (required)
+  {% else %}
+    (optional)
+  {% endif %}
+{% endfor %}
+----
+
+Output:
+----
+Attributes:
+id: xs:ID (required)
+name: xs:string (optional)
+class: xs:string (optional)
+----
+====
+
+== AttributeGroup methods
+
+The [`Lutaml::Xsd::LiquidMethods::AttributeGroup`](lib/lutaml/xsd/liquid_methods/attribute_group.rb) module provides methods for working with attribute group objects in Liquid templates.
+
+=== `used_by`
+
+Returns complex types that use this attribute group.
+
+Syntax:
+[source,liquid]
+----
+{% assign users = attribute_group.used_by %}
+----
+
+Returns::
+Array of [`ComplexType`](lib/lutaml/xsd/complex_type.rb) objects
+
+.Finding attribute group usage
+[example]
+====
+[source,liquid]
+----
+{% for ag in schema.attribute_group %}
+  Attribute Group: {{ ag.name }}
+  Used by:
+  {% for ct in ag.used_by %}
+    - {{ ct.name }}
+  {% endfor %}
+{% endfor %}
+----
+
+Output:
+----
+Attribute Group: gml:AssociationAttributeGroup
+Used by:
+  - AbstractFeatureType
+  - AbstractGMLType
+  - ReferenceType
+----
+====
+
+=== `attribute_elements`
+
+Returns a flattened list of attributes, resolving nested groups.
+
+Syntax:
+[source,liquid]
+----
+{% assign attrs = attribute_group.attribute_elements %}
+----
+
+Returns::
+Array of [`Attribute`](lib/lutaml/xsd/attribute.rb) objects from this group and nested groups
+
+.Listing all attributes in a group
+[example]
+====
+[source,liquid]
+----
+{% for ag in schema.attribute_group %}
+  Group: {{ ag.name }}
+  Attributes:
+  {% for attr in ag.attribute_elements %}
+    - {{ attr.referenced_name }}: {{ attr.referenced_type }} ({{ attr.cardinality }})
+  {% endfor %}
+{% endfor %}
+----
+
+Output:
+----
+Group: gml:AssociationAttributeGroup
+Attributes:
+  - xlink:href: xs:anyURI (0..1)
+  - xlink:role: xs:anyURI (0..1)
+  - xlink:arcrole: xs:anyURI (0..1)
+  - xlink:title: xs:string (0..1)
+----
+====
+
+== ComplexType methods
+
+The [`Lutaml::Xsd::LiquidMethods::ComplexType`](lib/lutaml/xsd/liquid_methods/complex_type.rb) module provides methods for working with complex type objects in Liquid templates.
+
+=== `used_by`
+
+Returns elements and group elements that reference this type.
+
+Syntax:
+[source,liquid]
+----
+{% assign users = complex_type.used_by %}
+----
+
+Returns::
+Array of [`Element`](lib/lutaml/xsd/element.rb) objects that use this type
+
+.Finding type usage
+[example]
+====
+[source,liquid]
+----
+{% for ct in schema.complex_type %}
+  Type: {{ ct.name }}
+  {% assign users = ct.used_by %}
+  {% if users.size > 0 %}
+    Used by elements:
+    {% for el in users %}
+      - {{ el.name }}
+    {% endfor %}
+  {% endif %}
+{% endfor %}
+----
+
+Output:
+----
+Type: BuildingType
+Used by elements:
+  - Building
+  - AbstractBuilding
+
+Type: AddressType
+Used by elements:
+  - address
+  - mailingAddress
+----
+====
+
+=== `attribute_elements`
+
+Returns all attributes, including those from attribute groups and simple content extensions.
+
+Syntax:
+[source,liquid]
+----
+{% assign attrs = complex_type.attribute_elements %}
+----
+
+Returns::
+Array of [`Attribute`](lib/lutaml/xsd/attribute.rb) objects
+
+.Comprehensive attribute listing
+[example]
+====
+[source,liquid]
+----
+{% for ct in schema.complex_type %}
+  Type: {{ ct.name }}
+  Attributes:
+  {% for attr in ct.attribute_elements %}
+    - {{ attr.referenced_name }}: {{ attr.referenced_type }} ({{ attr.cardinality }})
+  {% endfor %}
+{% endfor %}
+----
+
+Output:
+----
+Type: FeatureType
+Attributes:
+  - gml:id: xs:ID (1)
+  - xlink:href: xs:anyURI (0..1)
+  - codeSpace: xs:anyURI (0..1)
+----
+====
+
+=== `child_elements`
+
+Returns all child elements across sequences, choices, and groups.
+
+Syntax:
+[source,liquid]
+----
+{% assign children = complex_type.child_elements %}
+----
+
+Returns::
+Array of [`Element`](lib/lutaml/xsd/element.rb) objects representing all child elements
+
+.Listing type structure
+[example]
+====
+[source,liquid]
+----
+{% for ct in schema.complex_type %}
+  Type: {{ ct.name }}
+  Elements:
+  {% for el in ct.child_elements %}
+    - {{ el.name }} ({{ el.min_occurrences }}..{{ el.max_occurrences }}): {{ el.referenced_type }}
+  {% endfor %}
+{% endfor %}
+----
+
+Output:
+----
+Type: BuildingType
+Elements:
+  - name (1..1): xs:string
+  - function (0..*): gml:CodeType
+  - address (0..1): AddressType
+  - lod1Geometry (0..1): gml:GeometryPropertyType
+----
+====
+
+=== `find_elements_used(name)`
+
+Boolean indicating if an element name is used within this type.
+
+Syntax:
+[source,liquid]
+----
+{% if complex_type.find_elements_used("elementName") %}
+----
+
+Parameters::
+`name` - String containing the element name to search for
+
+Returns::
+Boolean - true if element is used in this type
+
+.Checking for specific elements
+[example]
+====
+[source,liquid]
+----
+{% for ct in schema.complex_type %}
+  Type: {{ ct.name }}
+  {% if ct.find_elements_used("geometry") %}
+    ✓ Contains geometry element
+  {% endif %}
+  {% if ct.find_elements_used("description") %}
+    ✓ Contains description element
+  {% endif %}
+{% endfor %}
+----
+
+Output:
+----
+Type: BuildingType
+✓ Contains geometry element
+✓ Contains description element
+
+Type: AddressType
+✓ Contains description element
+----
+====
+
+== Group methods
+
+The [`Lutaml::Xsd::LiquidMethods::Group`](lib/lutaml/xsd/liquid_methods/group.rb) module provides methods for working with group objects in Liquid templates.
+
+=== `child_elements`
+
+Returns all nested [`Element`](lib/lutaml/xsd/element.rb) instances contained within this group.
+
+Syntax:
+[source,liquid]
+----
+{% assign children = group.child_elements %}
+----
+
+Returns::
+Array of [`Element`](lib/lutaml/xsd/element.rb) objects
+
+.Listing group contents
+[example]
+====
+[source,liquid]
+----
+{% for g in schema.group %}
+  Group: {{ g.name }}
+  Elements:
+  {% for el in g.child_elements %}
+    - {{ el.name }}: {{ el.referenced_type }}
+  {% endfor %}
+{% endfor %}
+----
+
+Output:
+----
+Group: StandardObjectProperties
+Elements:
+  - name: xs:string
+  - description: xs:string
+  - identifier: xs:anyURI
+----
+====
+
+=== `find_elements_used(name)`
+
+Boolean indicating if an element name is used within this group.
+
+Syntax:
+[source,liquid]
+----
+{% if group.find_elements_used("elementName") %}
+----
+
+Parameters::
+`name` - String containing the element name to search for
+
+Returns::
+Boolean - true if element exists in this group
+
+.Searching group contents
+[example]
+====
+[source,liquid]
+----
+{% for g in schema.group %}
+  {% if g.find_elements_used("identifier") %}
+    Group {{ g.name }} contains identifier element
+  {% endif %}
+{% endfor %}
+----
+====
+
+== Sequence methods
+
+The [`Lutaml::Xsd::LiquidMethods::Sequence`](lib/lutaml/xsd/liquid_methods/sequence.rb) module provides methods for working with sequence objects in Liquid templates.
+
+=== `child_elements`
+
+Returns all nested [`Element`](lib/lutaml/xsd/element.rb) instances in this sequence.
+
+Syntax:
+[source,liquid]
+----
+{% assign children = sequence.child_elements %}
+----
+
+Returns::
+Array of [`Element`](lib/lutaml/xsd/element.rb) objects in sequence order
+
+.Documenting element order
+[example]
+====
+[source,liquid]
+----
+{% if complex_type.sequence %}
+  Element Sequence:
+  {% for el in complex_type.sequence.child_elements %}
+    {{ forloop.index }}. {{ el.name }} ({{ el.referenced_type }})
+  {% endfor %}
+{% endif %}
+----
+
+Output:
+----
+Element Sequence:
+1. name (xs:string)
+2. description (xs:string)
+3. geometry (gml:GeometryPropertyType)
+4. properties (PropertyType)
+----
+====
+
+=== `find_elements_used(name)`
+
+Boolean indicating if an element name is used within this sequence.
+
+Syntax:
+[source,liquid]
+----
+{% if sequence.find_elements_used("elementName") %}
+----
+
+Parameters::
+`name` - String containing the element name to search for
+
+Returns::
+Boolean - true if element exists in this sequence
+
+== Choice methods
+
+The [`Lutaml::Xsd::LiquidMethods::Choice`](lib/lutaml/xsd/liquid_methods/choice.rb) module provides methods for working with choice objects in Liquid templates.
+
+=== `child_elements`
+
+Returns all nested [`Element`](lib/lutaml/xsd/element.rb) instances available as choices.
+
+Syntax:
+[source,liquid]
+----
+{% assign options = choice.child_elements %}
+----
+
+Returns::
+Array of [`Element`](lib/lutaml/xsd/element.rb) objects representing alternative choices
+
+.Documenting choice options
+[example]
+====
+[source,liquid]
+----
+{% if complex_type.choice %}
+  Choose one of:
+  {% for el in complex_type.choice.child_elements %}
+    - {{ el.name }} ({{ el.referenced_type }})
+  {% endfor %}
+{% endif %}
+----
+
+Output:
+----
+Choose one of:
+  - point (gml:PointPropertyType)
+  - lineString (gml:LineStringPropertyType)
+  - polygon (gml:PolygonPropertyType)
+----
+====
+
+=== `find_elements_used(name)`
+
+Boolean indicating if an element name is available as a choice.
+
+Syntax:
+[source,liquid]
+----
+{% if choice.find_elements_used("elementName") %}
+----
+
+Parameters::
+`name` - String containing the element name to search for
+
+Returns::
+Boolean - true if element is one of the choices
+
+== SimpleContent methods
+
+The [`Lutaml::Xsd::LiquidMethods::SimpleContent`](lib/lutaml/xsd/liquid_methods/simple_content.rb) module provides methods for working with simple content objects in Liquid templates.
+
+=== `attribute_elements`
+
+Returns attributes from the extension and nested attribute groups.
+
+Syntax:
+[source,liquid]
+----
+{% assign attrs = simple_content.attribute_elements %}
+----
+
+Returns::
+Array of [`Attribute`](lib/lutaml/xsd/attribute.rb) objects
+
+.Documenting simple content attributes
+[example]
+====
+[source,liquid]
+----
+{% if complex_type.simple_content %}
+  Simple content with attributes:
+  {% for attr in complex_type.simple_content.attribute_elements %}
+    - {{ attr.referenced_name }}: {{ attr.referenced_type }} ({{ attr.cardinality }})
+  {% endfor %}
+{% endif %}
+----
+
+Output:
+----
+Simple content with attributes:
+  - uom: xs:string (0..1)
+  - codeSpace: xs:anyURI (0..1)
+----
+====
+
+== Extension methods
+
+The [`Lutaml::Xsd::LiquidMethods::Extension`](lib/lutaml/xsd/liquid_methods/extension.rb) module provides methods for working with extension objects in Liquid templates.
+
+=== `attribute_elements`
+
+Returns attributes of the extension and its attribute groups.
+
+Syntax:
+[source,liquid]
+----
+{% assign attrs = extension.attribute_elements %}
+----
+
+Returns::
+Array of [`Attribute`](lib/lutaml/xsd/attribute.rb) objects
+
+.Documenting extension attributes
+[example]
+====
+[source,liquid]
+----
+{% if complex_type.simple_content.extension %}
+  {% assign ext = complex_type.simple_content.extension %}
+  Extension of {{ ext.base }}:
+  {% for attr in ext.attribute_elements %}
+    - {{ attr.referenced_name }}: {{ attr.referenced_type }}
+  {% endfor %}
+{% endif %}
+----
+
+Output:
+----
+Extension of xs:string:
+  - codeSpace: xs:anyURI
+  - nilReason: gml:NilReasonType
+----
+====
+
+== Complete template examples
+
+=== Comprehensive type documentation
+
+.Generating complete type documentation
+[example]
+====
+[source,liquid]
+----
+# Schema Documentation: {{ schema.target_namespace }}
+
+## Complex Types
+
+{% for ct in schema.complex_type %}
+### {{ ct.name }}
+
+{% if ct.used_by.size > 0 %}
+**Used by:**
+{% for el in ct.used_by %}
+- `{{ el.name }}`
+{% endfor %}
+{% endif %}
+
+{% assign children = ct.child_elements %}
+{% if children.size > 0 %}
+**Child Elements:**
+
+| Element | Type | Cardinality |
+|---------|------|-------------|
+{% for el in children %}
+| {{ el.name }} | {{ el.referenced_type }} | {{ el.min_occurrences }}..{{ el.max_occurrences }} |
+{% endfor %}
+{% endif %}
+
+{% assign attrs = ct.attribute_elements %}
+{% if attrs.size > 0 %}
+**Attributes:**
+
+| Attribute | Type | Required |
+|-----------|------|----------|
+{% for attr in attrs %}
+| {{ attr.referenced_name }} | {{ attr.referenced_type }} | {{ attr.cardinality }} |
+{% endfor %}
+{% endif %}
+
+---
+{% endfor %}
+----
+====
+
+=== Cross-reference matrix
+
+.Creating element-to-type cross-reference
+[example]
+====
+[source,liquid]
+----
+# Element Usage Matrix
+
+| Element | Type | Used By |
+|---------|------|---------|
+{% for el in schema.element %}
+| {{ el.name }} | {{ el.referenced_type }} | {% assign users = el.used_by %}{% for ct in users %}{{ ct.name }}{% unless forloop.last %}, {% endunless %}{% endfor %} |
+{% endfor %}
+----
+====
+
+=== Type hierarchy documentation
+
+.Documenting type hierarchies
+[example]
+====
+[source,liquid]
+----
+# Type Hierarchy
+
+{% for ct in schema.complex_type %}
+## {{ ct.name }}
+
+{% if ct.complex_content %}
+  {% if ct.complex_content.extension %}
+Extends: `{{ ct.complex_content.extension.base }}`
+  {% elsif ct.complex_content.restriction %}
+Restricts: `{{ ct.complex_content.restriction.base }}`
+  {% endif %}
+{% endif %}
+
+{% if ct.simple_content %}
+  {% if ct.simple_content.extension %}
+Simple content extending: `{{ ct.simple_content.extension.base }}`
+  {% endif %}
+{% endif %}
+
+{% assign children = ct.child_elements %}
+{% if children.size > 0 %}
+Structure:
+{% for el in children %}
+  - {{ el.name }}: {{ el.referenced_type }} ({{ el.min_occurrences }}..{{ el.max_occurrences }})
+{% endfor %}
+{% endif %}
+{% endfor %}
+----
+====
+
+== See also
+
+* link:../guides/index[User Guides]
+* link:RUBY_API[Ruby API Reference]
+* link:CLI[Command-Line Interface]
+* link:../core-concepts/XSD_ELEMENTS[XSD Elements]

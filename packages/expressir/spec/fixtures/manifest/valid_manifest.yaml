@@ -1,0 +1,5 @@
+schemas:
+  test_schema:
+    path: ../schemas/test_schema.exp
+  another_schema:
+    path: ../schemas/another_schema.exp

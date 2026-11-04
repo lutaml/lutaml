@@ -1,0 +1,7 @@
+grammar ExpressRemarks version "0.1.0" edition 2 {
+  atomic embeddedRemark = ("(" "*" ")" / ("(" "*" 0* (!("*" ")") (embeddedRemark / %x01-10FFFF)) "*" ")")) as embeddedRemark
+  atomic space = (%x20 / %x0D / %x0A / %x09 / %x0C) / embeddedRemark / tailRemark
+  atomic spaces = (0* space) as spaces
+  atomic tailRemark = ("-" "-" 0* (!(%x0A) %x01-10FFFF) [ %x0A ]) as tailRemark
+  trivia = 1* (%x20 / %x0D / %x0A / %x09 / %x0C)
+}

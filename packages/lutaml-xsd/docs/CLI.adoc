@@ -1,0 +1,1572 @@
+---
+layout: default
+title: CLI
+nav_order: 1
+parent: Reference
+---
+= Command-line interface
+:toc:
+:toclevels: 3
+
+== Purpose
+
+This document provides complete reference for all lutaml-xsd command-line
+interface (CLI) commands, options, and usage patterns.
+
+== General
+
+The `lutaml-xsd` CLI provides five main command groups:
+
+* `package` - Manage LXR schema repository packages
+* `type` - Query and explore schema types
+* `namespace` - Explore namespaces
+* `element` - Explore elements
+* `stats` - Display repository statistics
+
+All commands support a `--verbose` flag for detailed output.
+
+== Global options
+
+`--verbose`::
+Enable verbose output showing detailed progress and debugging information.
+
+.Using verbose mode
+[example]
+====
+[source,bash]
+----
+lutaml-xsd pkg build config.yml --verbose
+----
+====
+
+== Package commands
+
+=== General
+
+Package commands create, validate, and inspect LXR schema repository packages.
+
+=== pkg build
+
+Build an LXR package from a YAML configuration file. The `files` list in the
+configuration may reference `.xsd`, `.rng`, or `.rnc` files. RNG/RNC files are
+automatically converted to XSD during the build process.
+
+Syntax:
+
+[source,bash]
+----
+lutaml-xsd pkg build CONFIG_FILE [options]
+----
+
+Where,
+
+`CONFIG_FILE`:: Path to YAML configuration file (required). The `files` list
+supports `.xsd`, `.rng` (RELAX NG XML syntax), and `.rnc` (RELAX NG Compact
+syntax) files.
+
+Options:
+
+`--output, -o PATH`::
+Output package path (default: `pkg/<name>.lxr`)
+
+`--xsd-mode MODE`::
+XSD bundling mode: `include_all` or `allow_external` (default: `include_all`)
+
+`--resolution-mode MODE`::
+Resolution mode: `resolved` or `bare` (default: `resolved`)
+
+`--serialization-format FORMAT`::
+Serialization format: `marshal`, `json`, `yaml`, or `parse` (default:
+`marshal`)
+
+`--name NAME`::
+Package name for metadata
+
+`--version VERSION`::
+Package version for metadata
+
+`--description DESC`::
+Package description for metadata
+
+`--validate`::
+Validate package after building
+
+.Building a package with all options
+[example]
+====
+[source,bash]
+----
+lutaml-xsd pkg build urban_schemas.yml \
+  --output pkg/urban_schemas.lxr \
+  --xsd-mode include_all \
+  --resolution-mode resolved \
+  --serialization-format marshal \
+  --name "Urban Planning Schemas" \
+  --version "3.2.0" \
+  --description "i-UR urban function schemas with dependencies" \
+  --validate
+----
+
+Output:
+
+[source]
+----
+✓ Configuration loaded
+  Files: 1
+  Schema Location Mappings: 12
+  Namespace Mappings: 4
+
+Parsing and resolving schemas...
+✓ Schemas parsed and resolved
+
+Creating package: pkg/urban_schemas.lxr
+  XSD Mode: include_all
+  Resolution Mode: resolved
+  Serialization Format: marshal
+✓ Package created: pkg/urban_schemas.lxr
+  Size: 4683850 bytes
+
+Validating package...
+✓ Package is valid
+----
+====
+
+=== package validate
+
+Validate an LXR package structure and completeness.
+
+Syntax:
+
+[source,bash]
+----
+lutaml-xsd package validate PACKAGE_FILE [options]
+----
+
+Where,
+
+`PACKAGE_FILE`:: Path to `.lxr` package file (required)
+
+Options:
+
+`--format FORMAT`::
+Output format: `text`, `json`, or `yaml` (default: `text`)
+
+`--strict`::
+Fail on warnings (not just errors)
+
+.Validating a package
+[example]
+====
+[source,bash]
+----
+lutaml-xsd package validate pkg/schemas.lxr
+----
+
+Output:
+
+[source]
+----
+✓ Package is VALID
+----
+====
+
+.Validating with strict mode
+[example]
+====
+[source,bash]
+----
+lutaml-xsd package validate pkg/schemas.lxr --strict
+----
+
+If the package has warnings, exit code will be 1.
+====
+
+=== package info
+
+Display package metadata and statistics.
+
+Syntax:
+
+[source,bash]
+----
+lutaml-xsd package info PACKAGE_FILE [options]
+----
+
+Where,
+
+`PACKAGE_FILE`:: Path to `.lxr` package file (required)
+
+Options:
+
+`--format FORMAT`::
+Output format: `text`, `json`, or `yaml` (default: `text`)
+
+.Displaying package information
+[example]
+====
+[source,bash]
+----
+lutaml-xsd package info pkg/urban_schemas.lxr
+----
+
+Output:
+
+[source]
+----
+Package: urban_schemas.lxr
+Size: 4683850 bytes
+
+Metadata:
+--------------------------------------------------------------------------------
+name: Urban Planning Schemas
+version: 3.2.0
+description: i-UR urban function schemas with dependencies
+created_at: 2024-10-24T17:11:33+08:00
+lutaml_xsd_version: 1.0.4
+created_by: lutaml-xsd CLI
+xsd_mode: include_all
+resolution_mode: resolved
+serialization_format: marshal
+files: 1
+namespace_mappings: 4
+schema_location_mappings: 12
+----
+====
+
+=== package quick
+
+Quick workflow combining build, validate, and stats commands.
+
+Syntax:
+
+[source,bash]
+----
+lutaml-xsd package quick CONFIG_FILE [options]
+----
+
+Where,
+
+`CONFIG_FILE`:: Path to YAML configuration file (required)
+
+Options:
+
+`--output, -o PATH`::
+Output package path (default: `pkg/<name>.lxr`)
+
+`--no-validate`::
+Skip validation step
+
+`--no-stats`::
+Skip statistics display
+
+`--xsd-mode MODE`::
+XSD bundling mode: `include_all` or `allow_external` (default: `include_all`)
+
+`--resolution-mode MODE`::
+Resolution mode: `resolved` or `bare` (default: `resolved`)
+
+`--serialization-format FORMAT`::
+Serialization format: `marshal`, `json`, `yaml`, or `parse` (default: `marshal`)
+
+`--name NAME`::
+Package name for metadata
+
+`--version VERSION`::
+Package version for metadata
+
+`--description DESC`::
+Package description for metadata
+
+.Quick workflow for package creation
+[example]
+====
+[source,bash]
+----
+lutaml-xsd package quick urban_schemas.yml \
+  --name "Urban Schemas" \
+  --version "3.2"
+----
+
+Output:
+
+[source]
+----
+================================================================================
+Step 1: Building package
+================================================================================
+✓ Configuration loaded
+  Files: 1
+  Schema Location Mappings: 12
+  Namespace Mappings: 4
+
+Parsing and resolving schemas...
+✓ Schemas parsed and resolved
+
+Creating package: pkg/urbanFunction.lxr
+  XSD Mode: include_all
+  Resolution Mode: resolved
+  Serialization Format: marshal
+✓ Package created: pkg/urbanFunction.lxr
+  Size: 4683850 bytes
+
+================================================================================
+Step 2: Validating package
+================================================================================
+✓ Package is VALID
+
+================================================================================
+Step 3: Package statistics
+================================================================================
+Repository Statistics:
+  Total schemas parsed: 118
+  Total types indexed: 2764
+  Types by category:
+    attribute_group: 68
+    complex_type: 1356
+    element: 1221
+    group: 27
+    simple_type: 92
+  Total namespaces: 34
+
+================================================================================
+✓ Quick workflow completed successfully
+================================================================================
+----
+====
+
+.Quick workflow without validation
+[example]
+====
+[source,bash]
+----
+lutaml-xsd package quick config.yml --no-validate
+----
+
+This skips the validation step, only building and showing statistics.
+====
+
+=== package auto_build
+
+Build package with smart caching - only rebuilds if source files have changed.
+
+Syntax:
+
+[source,bash]
+----
+lutaml-xsd package auto-build CONFIG_FILE [options]
+----
+
+Where,
+
+`CONFIG_FILE`:: Path to YAML configuration file (required)
+
+Options:
+
+`--output, -o PATH`::
+Output package path (default: `pkg/<name>.lxr`)
+
+`--force, -f`::
+Force rebuild even if cache is fresh
+
+`--xsd-mode MODE`::
+XSD bundling mode: `include_all` or `allow_external` (default: `include_all`)
+
+`--resolution-mode MODE`::
+Resolution mode: `resolved` or `bare` (default: `resolved`)
+
+`--serialization-format FORMAT`::
+Serialization format: `marshal`, `json`, `yaml`, or `parse` (default: `marshal`)
+
+`--name NAME`::
+Package name for metadata
+
+`--version VERSION`::
+Package version for metadata
+
+`--description DESC`::
+Package description for metadata
+
+.Auto-build with smart caching
+[example]
+====
+[source,bash]
+----
+lutaml-xsd package auto-build urban_schemas.yml
+----
+
+If package is up-to-date:
+
+[source]
+----
+✓ Package is up-to-date: pkg/urbanFunction.lxr
+  Use --force to rebuild anyway
+----
+
+If config or schemas have changed:
+
+[source]
+----
+Cache is stale or --force specified, rebuilding...
+✓ Configuration loaded
+  Files: 1
+...
+✓ Package created: pkg/urbanFunction.lxr
+----
+====
+
+.Force rebuild
+[example]
+====
+[source,bash]
+----
+lutaml-xsd package auto-build config.yml --force
+----
+
+Forces a complete rebuild regardless of modification times.
+====
+
+== Using composed packages
+
+=== General
+
+Package composition configurations can be used with all CLI commands that accept package files. This allows you to work with composed repositories just like regular LXR packages.
+
+See link:PACKAGE_COMPOSITION.adoc[Package Composition Guide] for configuration details.
+
+=== Listing schemas from composed repository
+
+.List all schemas in composed repository
+[example]
+====
+[source,bash]
+----
+# List all schemas
+lutaml-xsd package info my_composition.yml
+
+# View statistics
+lutaml-xsd stats show my_composition.yml
+----
+====
+
+=== Finding types in composed repository
+
+.Find a specific type
+[example]
+====
+[source,bash]
+----
+# Find by qualified name
+lutaml-xsd type find "gml:CodeType" --from my_composition.yml
+
+# List all types
+lutaml-xsd type list --from my_composition.yml
+
+# List types by namespace
+lutaml-xsd type list --from my_composition.yml \
+  --namespace "http://www.opengis.net/gml/3.2"
+----
+====
+
+=== Validating XML with composed repository
+
+.Validate XML instances
+[example]
+====
+[source,bash]
+----
+# Basic validation
+lutaml-xsd xml validate instance.xml --schema my_composition.yml
+
+# Validation with verbose output
+lutaml-xsd xml validate instance.xml \
+  --schema my_composition.yml \
+  --verbose
+----
+====
+
+=== Generating documentation from composed repository
+
+.Generate SPA documentation
+[example]
+====
+[source,bash]
+----
+# Single file output (default)
+lutaml-xsd spa my_composition.yml --output docs.html
+
+# With separate asset files
+lutaml-xsd spa my_composition.yml --output docs.html --mode cdn
+----
+====
+
+=== Namespace operations with composed repository
+
+.Work with namespaces
+[example]
+====
+[source,bash]
+----
+# List all namespaces
+lutaml-xsd namespace list --from my_composition.yml
+
+# Show namespace details
+lutaml-xsd namespace show https://www.opengis.net/gml/3.2 \
+  --from my_composition.yml
+
+# Show namespace tree
+lutaml-xsd namespace tree --from my_composition.yml
+----
+====
+
+=== Element operations with composed repository
+
+.Query elements
+[example]
+====
+[source,bash]
+----
+# List all elements
+lutaml-xsd element list --from my_composition.yml
+
+# Show element details
+lutaml-xsd element show gml:Point --from my_composition.yml
+
+# Show element tree
+lutaml-xsd element tree gml:Point --from my_composition.yml
+----
+====
+
+== Command aliases
+
+The CLI provides convenient short aliases for frequently used commands:
+
+[cols="1,1,2",options="header"]
+|===
+| Alias | Full Command | Description
+
+| `package b`
+| `package build`
+| Build a package
+
+| `package v`
+| `package validate`
+| Validate a package
+
+| `package i`
+| `package info`
+| Show package info
+
+| `package q`
+| `package quick`
+| Quick workflow (build + validate + stats)
+
+| `package ab`
+| `package auto-build`
+| Auto-build with caching
+
+| `type f`
+| `type find`
+| Find a type
+
+| `type ls`
+| `type list`
+| List types
+
+| `namespace ls`
+| `namespace list`
+| List namespaces
+
+| `namespace s`
+| `namespace show`
+| Show namespace details
+
+| `namespace t`
+| `namespace tree`
+| Show namespace tree
+
+| `element ls`
+| `element list`
+| List elements
+
+| `element s`
+| `element show`
+| Show element details
+
+| `element t`
+| `element tree`
+| Show element tree
+
+| `element u`
+| `element usage`
+| Show element usage
+
+| `stats s`
+| `stats show`
+| Show statistics
+|===
+
+.Using command aliases
+[example]
+====
+[source,bash]
+----
+# Short form
+lutaml-xsd package b config.yml
+lutaml-xsd package q config.yml
+lutaml-xsd type f "gml:CodeType" --from pkg/schemas.lxr
+lutaml-xsd stats s pkg/schemas.lxr
+
+# Equivalent long form
+lutaml-xsd pkg build config.yml
+lutaml-xsd package quick config.yml
+lutaml-xsd type find "gml:CodeType" --from pkg/schemas.lxr
+lutaml-xsd stats show pkg/schemas.lxr
+----
+====
+
+== Type commands
+
+=== General
+
+Type commands query and explore schema types within LXR packages.
+
+=== type find
+
+Find and display information about a specific type.
+
+Syntax:
+
+[source,bash]
+----
+lutaml-xsd type find QNAME --from PACKAGE [options]
+----
+
+Where,
+
+`QNAME`:: Qualified type name (required)
+`--from PACKAGE`:: Path to `.lxr` package file (required)
+
+Options:
+
+`--format FORMAT`::
+Output format: `text`, `json`, or `yaml` (default: `text`)
+
+`--show-docs`::
+Include documentation (default: `true`)
+
+`--show-attributes`::
+Include attributes (default: `true`)
+
+.Finding a type using prefixed name
+[example]
+====
+[source,bash]
+----
+lutaml-xsd type find "gml:CodeType" --from pkg/urban_schemas.lxr
+----
+
+Output:
+
+[source]
+----
+================================================================================
+Type Resolution: gml:CodeType
+================================================================================
+
+✓ Type found
+
+Qualified Name: gml:CodeType
+Namespace: https://www.opengis.net/gml/3.2
+Local Name: CodeType
+Schema File: basicTypes.xsd
+Type Class: Lutaml::Xsd::ComplexType
+
+Documentation:
+  gml:CodeType is a generalized type to be used for a term, keyword or name.
+  It adds a XML attribute codeSpace to a term, where the value of the
+  codeSpace attribute (if present) shall indicate a dictionary, thesaurus,
+  classification scheme, authority, or pattern for the term.
+
+Simple Content:
+  Extension:
+    Base: string
+    Attributes:
+      - codeSpace: anyURI (optional)
+----
+====
+
+.Finding a type using Clark notation
+[example]
+====
+[source,bash]
+----
+lutaml-xsd type find "{https://www.opengis.net/gml/3.2}CodeType" \
+  --from pkg/urban_schemas.lxr
+----
+
+This is equivalent to the previous example.
+====
+
+.Getting type information in JSON
+[example]
+====
+[source,bash]
+----
+lutaml-xsd type find "gml:CodeType" \
+  --from pkg/urban_schemas.lxr \
+  --format json
+----
+
+Output:
+
+[source,json]
+----
+{
+  "resolved": true,
+  "qname": "gml:CodeType",
+  "namespace": "https://www.opengis.net/gml/3.2",
+  "local_name": "CodeType",
+  "schema_file": "basicTypes.xsd",
+  "resolution_path": ["..."],
+  "definition_class": "Lutaml::Xsd::ComplexType"
+}
+----
+====
+
+=== type list
+
+List all types in the repository.
+
+Syntax:
+
+[source,bash]
+----
+lutaml-xsd type list --from PACKAGE [options]
+----
+
+Where,
+
+`--from PACKAGE`:: Path to `.lxr` package file (required)
+
+Options:
+
+`--namespace URI`::
+Filter by namespace URI
+
+`--category CATEGORY`::
+Filter by type category: `element`, `complex_type`, `simple_type`,
+`attribute_group`, or `group`
+
+`--format FORMAT`::
+Output format: `text`, `json`, or `yaml` (default: `text`)
+
+.Listing all types
+[example]
+====
+[source,bash]
+----
+lutaml-xsd type list --from pkg/urban_schemas.lxr
+----
+
+Output:
+
+[source]
+----
+Schema Repository Type Listing
+================================================================================
+
+Total Types: 2764
+Total Namespaces: 34
+
+Types by Category:
+--------------------------------------------------------------------------------
+  attribute_group: 68
+  complex_type: 1356
+  element: 1221
+  group: 27
+  simple_type: 92
+
+Note: Use 'lutaml-xsd type find <qname> --from <package>' to get details about a specific type
+----
+====
+
+.Listing types in a specific namespace
+[example]
+====
+[source,bash]
+----
+lutaml-xsd type list \
+  --from pkg/urban_schemas.lxr \
+  --namespace "https://www.opengis.net/gml/3.2"
+----
+====
+
+.Listing types by category
+[example]
+====
+[source,bash]
+----
+lutaml-xsd type list \
+  --from pkg/urban_schemas.lxr \
+  --category complex_type
+----
+====
+
+== Namespace commands
+
+=== General
+
+Namespace commands explore namespaces in the schema repository, showing their
+prefixes, type counts, and relationships.
+
+=== namespace list
+
+List all namespaces in the repository.
+
+Syntax:
+
+[source,bash]
+----
+lutaml-xsd namespace list --from PACKAGE [options]
+----
+
+Where,
+
+`--from PACKAGE`:: Path to `.lxr` package file (required)
+
+Options:
+
+`--format FORMAT`::
+Output format: `text`, `json`, or `yaml` (default: `text`)
+
+`--show-counts`::
+Show type counts for each namespace (default: `true`)
+
+.Listing all namespaces
+[example]
+====
+[source,bash]
+----
+lutaml-xsd namespace list --from pkg/urban_schemas.lxr
+----
+
+Output:
+
+[source]
+----
+Namespaces in Repository
+================================================================================
+
+Total Namespaces: 34
+
+https://www.opengis.net/gml/3.2 (gml) - 150 types
+http://www.opengis.net/citygml/2.0 (citygml) - 45 types
+https://www.geospatial.jp/iur/urf/3.2 (urf) - 89 types
+...
+----
+====
+
+.Listing namespaces in JSON format
+[example]
+====
+[source,bash]
+----
+lutaml-xsd namespace list --from pkg/urban_schemas.lxr --format json
+----
+
+Output:
+
+[source,json]
+----
+[
+  {
+    "uri": "https://www.opengis.net/gml/3.2",
+    "prefix": "gml",
+    "type_count": 150,
+    "types_by_category": {
+      "complex_type": 89,
+      "simple_type": 23,
+      "element": 38
+    }
+  }
+]
+----
+====
+
+=== namespace show
+
+Show details about a specific namespace.
+
+Syntax:
+
+[source,bash]
+----
+lutaml-xsd namespace show NAMESPACE_URI --from PACKAGE [options]
+----
+
+Where,
+
+`NAMESPACE_URI`:: The namespace URI to display (required)
+`--from PACKAGE`:: Path to `.lxr` package file (required)
+
+Options:
+
+`--format FORMAT`::
+Output format: `text`, `json`, or `yaml` (default: `text`)
+
+`--show-types`::
+Show types in the namespace (default: `true`)
+
+.Showing namespace details
+[example]
+====
+[source,bash]
+----
+lutaml-xsd namespace show https://www.opengis.net/gml/3.2 \
+  --from pkg/urban_schemas.lxr
+----
+
+Output:
+
+[source]
+----
+================================================================================
+Namespace: https://www.opengis.net/gml/3.2
+================================================================================
+
+Prefix: gml
+Total Types: 150
+
+Types by Category:
+  complex_type: 89
+  element: 38
+  simple_type: 23
+
+Types in Namespace:
+--------------------------------------------------------------------------------
+
+complex_type:
+  - AbstractFeatureType
+  - CodeType
+  - GeometryPropertyType
+  ...
+
+element:
+  - Point
+  - LineString
+  - Polygon
+  ...
+----
+====
+
+=== namespace tree
+
+Show namespace hierarchy and relationships.
+
+Syntax:
+
+[source,bash]
+----
+lutaml-xsd namespace tree --from PACKAGE [options]
+----
+
+Where,
+
+`--from PACKAGE`:: Path to `.lxr` package file (required)
+
+Options:
+
+`--depth N`::
+Maximum depth to display (default: `3`)
+
+.Showing namespace tree
+[example]
+====
+[source,bash]
+----
+lutaml-xsd namespace tree --from pkg/urban_schemas.lxr
+----
+
+Output:
+
+[source]
+----
+Namespace Hierarchy
+================================================================================
+
+├── https://www.opengis.net/gml/3.2 (gml)
+│   └── 150 types
+├── http://www.opengis.net/citygml/2.0 (citygml)
+│   └── 45 types
+└── https://www.geospatial.jp/iur/urf/3.2 (urf)
+    └── 89 types
+----
+====
+
+== Element commands
+
+=== General
+
+Element commands explore element definitions in the schema repository,
+showing their structure, types, and usage.
+
+=== element list
+
+List all elements in the repository.
+
+Syntax:
+
+[source,bash]
+----
+lutaml-xsd element list --from PACKAGE [options]
+----
+
+Where,
+
+`--from PACKAGE`:: Path to `.lxr` package file (required)
+
+Options:
+
+`--namespace URI`::
+Filter by namespace URI
+
+`--format FORMAT`::
+Output format: `text`, `json`, or `yaml` (default: `text`)
+
+.Listing all elements
+[example]
+====
+[source,bash]
+----
+lutaml-xsd element list --from pkg/urban_schemas.lxr
+----
+
+Output:
+
+[source]
+----
+Elements in Repository
+================================================================================
+
+Total Elements: 1221
+
+https://www.opengis.net/gml/3.2 (gml) - 38 elements
+--------------------------------------------------------------------------------
+  - Point : gml:PointType
+  - LineString : gml:LineStringType
+  - Polygon : gml:PolygonType
+  ...
+
+https://www.geospatial.jp/iur/urf/3.2 (urf) - 10 elements
+--------------------------------------------------------------------------------
+  - UrbanFunction : urf:UrbanFunctionType
+  - District : urf:DistrictType
+  ...
+----
+====
+
+.Filtering elements by namespace
+[example]
+====
+[source,bash]
+----
+lutaml-xsd element list --from pkg/urban_schemas.lxr \
+  --namespace https://www.opengis.net/gml/3.2
+----
+====
+
+=== element show
+
+Show details about a specific element.
+
+Syntax:
+
+[source,bash]
+----
+lutaml-xsd element show ELEMENT_NAME --from PACKAGE [options]
+----
+
+Where,
+
+`ELEMENT_NAME`:: Qualified element name (required)
+`--from PACKAGE`:: Path to `.lxr` package file (required)
+
+Options:
+
+`--show-type`::
+Show the element's type definition (default: `true`)
+
+`--show-attributes`::
+Show element attributes (default: `true`)
+
+.Showing element details
+[example]
+====
+[source,bash]
+----
+lutaml-xsd element show gml:Point --from pkg/urban_schemas.lxr
+----
+
+Output:
+
+[source]
+----
+================================================================================
+Element: Point
+================================================================================
+
+Qualified Name: gml:Point
+Namespace: https://www.opengis.net/gml/3.2
+Schema File: geometryBasic0d1d.xsd
+Type Reference: gml:PointType
+
+Documentation:
+  A Point is defined by a single coordinate tuple. The direct position of a
+  point is specified by the pos element which is of type DirectPositionType.
+----
+====
+
+=== element tree
+
+Show element structure tree.
+
+Syntax:
+
+[source,bash]
+----
+lutaml-xsd element tree ELEMENT_NAME --from PACKAGE [options]
+----
+
+Where,
+
+`ELEMENT_NAME`:: Qualified element name (required)
+`--from PACKAGE`:: Path to `.lxr` package file (required)
+
+Options:
+
+`--depth N`::
+Maximum depth to display (default: `3`)
+
+.Showing element tree
+[example]
+====
+[source,bash]
+----
+lutaml-xsd element tree gml:Point --from pkg/urban_schemas.lxr --depth 2
+----
+
+Output:
+
+[source]
+----
+Element Structure: gml:Point
+================================================================================
+
+└── Point : gml:PointType
+    ├── pos : gml:DirectPositionType
+    └── coordinates : gml:CoordinatesType
+----
+====
+
+=== element usage
+
+Show where element is used.
+
+Syntax:
+
+[source,bash]
+----
+lutaml-xsd element usage ELEMENT_NAME --from PACKAGE
+----
+
+Where,
+
+`ELEMENT_NAME`:: Qualified element name (required)
+`--from PACKAGE`:: Path to `.lxr` package file (required)
+
+.Showing element usage
+[example]
+====
+[source,bash]
+----
+lutaml-xsd element usage gml:Point --from pkg/urban_schemas.lxr
+----
+
+Output:
+
+[source]
+----
+Element Usage: gml:Point
+================================================================================
+
+Namespace: https://www.opengis.net/gml/3.2
+Schema File: geometryBasic0d1d.xsd
+
+Note: Full usage tracking is not yet implemented.
+This feature will show which types reference this element in future versions.
+----
+====
+
+== Stats commands
+
+=== General
+
+Stats commands display repository statistics and metrics.
+
+=== stats show
+
+Display statistics for a schema repository package.
+
+Syntax:
+
+[source,bash]
+----
+lutaml-xsd stats show PACKAGE [options]
+----
+
+Where,
+
+`PACKAGE`:: Path to `.lxr` package file (required)
+
+Options:
+
+`--format FORMAT`::
+Output format: `text`, `json`, or `yaml` (default: `text`)
+
+.Displaying statistics
+[example]
+====
+[source,bash]
+----
+lutaml-xsd stats show pkg/urban_schemas.lxr
+----
+
+Output:
+
+[source]
+----
+Repository Statistics:
+  Total schemas parsed: 118
+  Total types indexed: 2764
+  Types by category:
+    attribute_group: 68
+    complex_type: 1356
+    element: 1221
+    group: 27
+    simple_type: 92
+  Total namespaces: 34
+----
+====
+
+.Getting statistics in YAML
+[example]
+====
+[source,bash]
+----
+lutaml-xsd stats show pkg/urban_schemas.lxr --format yaml
+----
+
+Output:
+
+[source,yaml]
+----
+:total_schemas: 118
+:total_types: 2764
+:types_by_category:
+  :attribute_group: 68
+  :complex_type: 1356
+  :element: 1221
+  :group: 27
+  :simple_type: 92
+:total_namespaces: 34
+----
+====
+
+== Schema validation commands
+
+=== General
+
+Schema validation commands validate XSD schema files for correctness without
+parsing them into full schema objects.
+
+=== `validate-schema` - Validate XSD schemas
+
+Validates one or more XSD schema files for correctness before parsing.
+
+==== Usage
+
+[source,bash]
+----
+lutaml-xsd validate-schema [SCHEMA_FILES...] [OPTIONS]
+----
+
+==== Options
+
+`--version VERSION`:: XSD version to validate against (default: `1.0`). Options: `1.0` or `1.1`.
+`--verbose`:: Enable verbose output, including detected XSD version.
+`--format FORMAT`:: Output format: `text` (default), `json`, or `yaml`.
+
+==== Examples
+
+.Validate a single schema
+[source,bash]
+----
+lutaml-xsd validate-schema schema.xsd
+----
+
+.Validate multiple schemas
+[source,bash]
+----
+lutaml-xsd validate-schema schema1.xsd schema2.xsd
+----
+
+.Validate with glob patterns
+[source,bash]
+----
+lutaml-xsd validate-schema schemas/*.xsd
+----
+
+.Validate with version specification
+[source,bash]
+----
+lutaml-xsd validate-schema schema.xsd --version 1.1
+----
+
+.Validate with verbose output
+[source,bash]
+----
+lutaml-xsd validate-schema schema.xsd --verbose
+----
+
+.Output in JSON format (for CI/CD integration)
+[example]
+====
+[source,bash]
+----
+lutaml-xsd validate-schema schema.xsd --format json
+----
+
+Example JSON output:
+[source,json]
+----
+{
+  "summary": {
+    "total": 2,
+    "valid": 1,
+    "invalid": 1
+  },
+  "results": [
+    {
+      "file": "valid_schema.xsd",
+      "valid": true
+    },
+    {
+      "file": "invalid_schema.xsd",
+      "valid": false,
+      "error": "Not a valid XSD schema: root element must be 'schema', found 'root'"
+    }
+  ]
+}
+----
+====
+
+.Output in YAML format (for CI/CD integration)
+[example]
+====
+[source,bash]
+----
+lutaml-xsd validate-schema schema.xsd --format yaml
+----
+
+Example YAML output:
+[source,yaml]
+----
+summary:
+  total: 2
+  valid: 1
+  invalid: 1
+results:
+- file: valid_schema.xsd
+  valid: true
+- file: invalid_schema.xsd
+  valid: false
+  error: "Not a valid XSD schema: root element must be 'schema', found 'root'"
+----
+====
+
+.JSON output with verbose mode
+[example]
+====
+[source,bash]
+----
+lutaml-xsd validate-schema schema.xsd --format json --verbose
+----
+
+The verbose mode adds detected XSD version to each result:
+[source,json]
+----
+{
+  "summary": {
+    "total": 1,
+    "valid": 1,
+    "invalid": 0
+  },
+  "results": [
+    {
+      "file": "schema.xsd",
+      "valid": true,
+      "detected_version": "1.0"
+    }
+  ]
+}
+----
+====
+
+==== Output Formats
+
+The `validate-schema` command supports three output formats:
+
+`text`:: Human-readable text output (default). Shows checkmarks (✓) for valid schemas and crosses (✗) for invalid ones, with error messages and summary statistics.
+
+`json`:: JSON format for machine-readable output. Ideal for CI/CD pipelines and automated processing. Includes a summary object and an array of result objects.
+
+`yaml`:: YAML format for machine-readable output. Similar to JSON but in YAML format, which may be easier to read and work with in some CI/CD systems.
+
+Both JSON and YAML formats include:
+
+* `summary`: Total, valid, and invalid file counts
+* `results`: Array of file validation results, each containing:
+** `file`: File path
+** `valid`: Boolean indicating if the file is valid
+** `error`: Error message (only present if `valid` is false)
+** `detected_version`: Detected XSD version (only present with `--verbose`)
+
+== Common workflows
+
+=== Creating and using a package
+
+.Complete package workflow
+[example]
+====
+[source,bash]
+----
+# 1. Create configuration file (urban_schemas.yml)
+cat > urban_schemas.yml << 'EOF'
+files:
+  - spec/fixtures/i-ur/urbanFunction.xsd
+
+schema_location_mappings:
+  - from: "../../uro/3.2/urbanObject.xsd"
+    to: "spec/fixtures/i-ur/urbanObject.xsd"
+
+  - from: !ruby/regexp /(?:\.\.\/)+gml\/(.+\.xsd)$/
+    to: "spec/fixtures/gml/\\1"
+
+namespace_mappings:
+  - prefix: "urf"
+    uri: "https://www.geospatial.jp/iur/urf/3.2"
+  - prefix: "gml"
+    uri: "https://www.opengis.net/gml/3.2"
+EOF
+
+# 2. Build package
+lutaml-xsd pkg build urban_schemas.yml \
+  --name "Urban Schemas" \
+  --version "3.2" \
+  --output pkg/urban.lxr \
+  --validate
+
+# 3. Verify package
+lutaml-xsd package info pkg/urban.lxr
+
+# 4. Query types
+lutaml-xsd type find "gml:CodeType" --from pkg/urban.lxr
+
+# 5. Get statistics
+lutaml-xsd stats show pkg/urban.lxr
+----
+====
+
+=== Building from RELAX NG schemas
+
+.Building a package from RNG/RNC files
+[example]
+====
+[source,bash]
+----
+# 1. Create configuration file referencing .rng or .rnc files
+cat > rng_schemas.yml << 'EOF'
+files:
+  - schemas/isostandard.rnc
+  - schemas/biblio.rnc
+EOF
+
+# 2. Build package (RNG/RNC files are automatically converted to XSD)
+lutaml-xsd pkg build rng_schemas.yml \
+  --name "ISO Standard Schemas" \
+  --version "1.0" \
+  --output pkg/iso_schemas.lxr
+
+# 3. Query types as normal
+lutaml-xsd type list --from pkg/iso_schemas.lxr
+----
+====
+
+=== Validating package integrity
+
+.Package validation workflow
+[example]
+====
+[source,bash]
+----
+# Validate structure
+lutaml-xsd package validate pkg/schemas.lxr
+
+# Validate with strict mode (fail on warnings)
+lutaml-xsd package validate pkg/schemas.lxr --strict
+
+# Get validation results in JSON for programmatic use
+lutaml-xsd package validate pkg/schemas.lxr --format json
+----
+====
+
+=== Querying types programmatically
+
+.Type query workflow
+[example]
+====
+[source,bash]
+----
+# Find specific types
+lutaml-xsd type find "gml:CodeType" --from pkg/schemas.lxr --format json > code_type.json
+lutaml-xsd type find "urf:UrbanFunctionType" --from pkg/schemas.lxr --format yaml > urban_type.yaml
+
+# List all types in a namespace
+lutaml-xsd type list \
+  --from pkg/schemas.lxr \
+  --namespace "https://www.opengis.net/gml/3.2" \
+  --format json > gml_types.json
+
+# List all elements
+lutaml-xsd type list \
+  --from pkg/schemas.lxr \
+  --category element \
+  --format yaml > elements.yaml
+----
+====
+
+== Exit codes
+
+All commands use standard exit codes:
+
+`0`:: Success
+`1`:: Error or validation failure
+`1`:: Missing required arguments
+`1`:: File not found
+
+== See also
+
+* link:RUBY_API[Ruby API] - Programmatic interface
+* link:CREATING_PACKAGES[Creating packages] - Package creation guide
+* link:PACKAGE_CONFIGURATION[Package configuration] - Configuration reference
+* link:TYPE_RESOLUTION[Type resolution] - Type lookup concepts

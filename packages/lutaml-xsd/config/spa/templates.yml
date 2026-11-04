@@ -1,0 +1,275 @@
+# Templates Configuration for SPA Documentation Generator
+# This file defines template structure, component organization, and layout settings
+
+templates:
+  # Default template layout
+  layout: "default"
+
+  # Template engine settings
+  engine:
+    # Use Liquid template engine
+    type: "liquid"
+    # Template file extension
+    extension: ".liquid"
+    # Template directory relative to lib/lutaml/xsd/spa/
+    directory: "templates"
+    # Cache compiled templates
+    cache_enabled: true
+
+  # Component structure (order matters for rendering)
+  components:
+    - head
+    - header
+    - navigation
+    - search
+    - content
+    - footer
+    - scripts
+
+  # Component-specific settings
+  component_settings:
+    head:
+      template: "head.html"
+      # Meta tags to include
+      meta_tags:
+        - charset
+        - viewport
+        - generator
+        - description
+        - keywords
+      # External resources
+      external_resources:
+        enabled: false
+        # CDN links for optional libraries
+        cdn:
+          alpine_js: "https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
+          prism_js: "https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"
+          prism_css: "https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css"
+
+    header:
+      template: "header.html"
+      # Header content options
+      show_logo: true
+      show_search_toggle: true
+      show_theme_toggle: true
+      show_version: true
+      # Header layout
+      sticky: true
+      transparent: false
+
+    navigation:
+      template: "navigation.html"
+      # Navigation structure
+      style: "tree"  # Options: tree, flat, accordion
+      # Show icons
+      show_icons: true
+      # Icon set to use
+      icon_set: "emoji"  # Options: emoji, unicode, fontawesome, custom
+      # Collapsible sections
+      collapsible: true
+      # Initially expanded levels
+      initial_expand_level: 1
+      # Show item counts
+      show_counts: true
+      # Enable drag and drop
+      drag_drop: false
+
+    search:
+      template: "search.html"
+      # Search box placement
+      placement: "sidebar"  # Options: sidebar, header, both
+      # Search input styling
+      style: "embedded"  # Options: embedded, modal, dropdown
+      # Live search results
+      live_results: true
+      # Results display
+      results_limit: 10
+      # Show no results message
+      show_no_results: true
+
+    content:
+      template: "content.html"
+      # Content area layout
+      layout: "single"  # Options: single, split, tabs
+      # Show breadcrumbs
+      breadcrumbs: true
+      # Show table of contents
+      toc: true
+      toc_position: "right"  # Options: left, right, top
+      # Content sections to display
+      sections:
+        - overview
+        - properties
+        - documentation
+        - examples
+        - relationships
+        - usage
+
+    footer:
+      template: "footer.html"
+      # Footer content
+      show_generator_info: true
+      show_timestamp: true
+      show_links: true
+      # Custom footer links
+      links:
+        - text: "Documentation"
+          url: "#"
+        - text: "Repository"
+          url: "#"
+
+    scripts:
+      template: "scripts.html"
+      # Script loading strategy
+      loading: "defer"  # Options: defer, async, blocking
+      # Inline vs external
+      inline: true
+      # Module type
+      module: false
+
+  # Layout variants
+  layouts:
+    default:
+      description: "Standard single-page layout with sidebar navigation"
+      components:
+        - head
+        - header
+        - navigation
+        - search
+        - content
+        - footer
+        - scripts
+
+    minimal:
+      description: "Minimal layout without navigation sidebar"
+      components:
+        - head
+        - header
+        - content
+        - scripts
+
+    full_width:
+      description: "Full-width layout for large schemas"
+      components:
+        - head
+        - header
+        - content
+        - navigation
+        - scripts
+
+  # Partial templates (reusable components)
+  partials:
+    schema_card:
+      template: "partials/schema_card.html"
+      description: "Display schema summary card"
+
+    type_detail:
+      template: "partials/type_detail.html"
+      description: "Display detailed type information"
+
+    element_card:
+      template: "partials/element_card.html"
+      description: "Display element summary card"
+
+    attribute_list:
+      template: "partials/attribute_list.html"
+      description: "Display list of attributes"
+
+    documentation_block:
+      template: "partials/documentation_block.html"
+      description: "Display formatted documentation"
+
+    property_table:
+      template: "partials/property_table.html"
+      description: "Display property table"
+
+    code_block:
+      template: "partials/code_block.html"
+      description: "Display syntax-highlighted code"
+
+    relationship_diagram:
+      template: "partials/relationship_diagram.html"
+      description: "Display relationship diagram"
+
+  # Single-file template settings
+  single_file:
+    # Embed all resources inline
+    embed_resources: true
+    # Minify embedded resources
+    minify: false
+    # Inline CSS
+    inline_css: true
+    # Inline JavaScript
+    inline_js: true
+    # Inline JSON data
+    inline_data: true
+
+  # Multi-file template settings
+  multi_file:
+    # Create separate files for resources
+    separate_resources: true
+    # Directory structure
+    directories:
+      css: "css"
+      js: "js"
+      data: "data"
+      assets: "assets"
+    # File naming
+    css_file: "styles.css"
+    js_file: "app.js"
+    data_file: "schemas.json"
+    # Generate index file
+    generate_index: true
+    index_file: "index.html"
+
+  # Custom template overrides
+  overrides:
+    enabled: true
+    # Directory for user custom templates
+    custom_directory: null
+    # Override priority: custom > default
+    priority: "custom_first"
+
+  # Template helpers/filters available in Liquid
+  helpers:
+    # Text formatting
+    - truncate
+    - capitalize
+    - upcase
+    - downcase
+    - strip
+
+    # URL helpers
+    - url_encode
+    - url_decode
+    - link_to
+
+    # Schema-specific helpers
+    - type_icon
+    - format_type
+    - format_occurrence
+    - format_namespace
+
+    # Date/time helpers
+    - format_date
+    - time_ago
+
+    # Array helpers
+    - sort_by
+    - filter_by
+    - group_by
+
+    # Utility helpers
+    - default
+    - presence
+    - json
+    - escape_html
+
+  # Localization support
+  localization:
+    enabled: false
+    default_locale: "en"
+    available_locales:
+      - en
+    # Translation file location
+    translations_dir: "locales"

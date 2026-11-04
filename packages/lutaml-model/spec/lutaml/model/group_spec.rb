@@ -1,0 +1,618 @@
+require "spec_helper"
+require_relative "../../support/xml_mapping_namespaces"
+
+module GroupSpec
+  class Ceramic < Lutaml::Model::Serializable
+    attribute :type, :string, default: "Data"
+    attribute :name, :string, default: "Starc"
+
+    xml do
+      # Type-only model - no element declaration needed
+      map_element :type, to: :type
+      map_element :name, to: :name
+    end
+
+    key_value do
+      map :type, to: :type
+      map :name, to: :name
+    end
+  end
+
+  class CeramicCollection < Lutaml::Model::Serializable
+    attribute :ceramic, Ceramic, collection: 1..2
+
+    xml do
+      element "collection"
+      map_element "ceramic", to: :ceramic
+    end
+  end
+
+  class AttributeValueType < Lutaml::Model::Type::Decimal
+  end
+
+  # Create child model for description element with GML namespace
+  class GmlDescription < Lutaml::Model::Serializable
+    attribute :value, :string
+
+    xml do
+      element "description"
+      namespace GmlNamespace
+      map_content to: :value
+    end
+  end
+
+  # Create custom type for code attribute with Example namespace
+  class ExampleCodeType < Lutaml::Model::Type::String
+    xml do
+      namespace ExampleNamespace
+    end
+  end
+
+  class GroupOfItems < Lutaml::Model::Serializable
+    attribute :name, :string
+    attribute :type, :string
+    attribute :description, GmlDescription
+    attribute :code, ExampleCodeType
+
+    xml do
+      # Type-only model - no element declaration needed
+      sequence do
+        map_element "name", to: :name
+        map_element "type", to: :type
+        map_element "description", to: :description
+      end
+      map_attribute "code", to: :code
+    end
+  end
+
+  class ComplexType < Lutaml::Model::Serializable
+    attribute :tag, AttributeValueType
+    attribute :content, :string
+    attribute :group, :string
+    import_model_attributes GroupOfItems
+
+    xml do
+      element "GroupOfItems"
+      map_attribute "tag", to: :tag
+      map_content to: :content
+      map_element :group, to: :group
+      import_model_mappings :group_of_items
+    end
+  end
+
+  class SimpleType < Lutaml::Model::Serializable
+    import_model :group_of_items
+  end
+
+  class GenericType < Lutaml::Model::Serializable
+    import_model_mappings GroupOfItems
+  end
+
+  class GroupWithRoot < Lutaml::Model::Serializable
+    attribute :name, :string
+
+    xml do
+      element "group"
+      map_element :name, to: :name
+    end
+  end
+
+  class CommonAttributes < Lutaml::Model::Serializable
+    choice(min: 1, max: 3) do
+      attribute :mstyle, :string
+      attribute :mcol, :string
+      attribute :mr, :string
+    end
+
+    xml do
+      # Type-only model - no element declaration needed
+      sequence do
+        map_element :mstyle, to: :mstyle
+        map_element :mr, to: :mr
+      end
+      map_attribute :mcol, to: :mcol
+    end
+  end
+
+  class Mrow < Lutaml::Model::Serializable
+    attribute :mi, :string
+    import_model CommonAttributes
+
+    xml do
+      element "mrow"
+      map_element :mi, to: :mi
+    end
+
+    import_model GroupOfItems
+
+    key_value do
+      map :mcol, to: :mcol
+    end
+
+    import_model Ceramic
+  end
+
+  class Mfrac < Lutaml::Model::Serializable
+    attribute :num, :string
+    import_model CommonAttributes
+
+    xml do
+      element "mfrac"
+      map_element :num, to: :num
+    end
+  end
+
+  class ContributionInfo < Lutaml::Model::Serializable
+    attribute :person, :string
+    attribute :organization, :string
+
+    xml do
+      # Type-only model - no element declaration needed
+      map_element "person", to: :person
+      map_element "organization", to: :organization
+    end
+  end
+
+  class Contributor < Lutaml::Model::Serializable
+    attribute :role, :string
+    import_model_attributes ContributionInfo
+
+    xml do
+      element "contributor"
+      map_element "role", to: :role
+      map_element "person", to: :person
+      map_element "organization", to: :organization
+    end
+  end
+
+  class Identifier < Lutaml::Model::Serializable
+    attribute :id, :string
+    attribute :remarks, :string, collection: true
+    attribute :remark_items, :string, collection: true
+
+    key_value do
+      map "id", to: :id
+      map "remarks", to: :remarks
+      map "remark_items", to: :remark_items
+    end
+  end
+
+  class ModelElement < Lutaml::Model::Serializable
+    import_model Identifier
+  end
+
+  class Address < Lutaml::Model::Serializable
+    attribute :street, :string
+    attribute :city, :string
+
+    key_value do
+      map :street, to: :street
+      map :city, to: :city
+    end
+  end
+
+  class Location < Lutaml::Model::Serializable
+    attribute :id, :string
+    import_model_attributes Address
+
+    key_value do
+      map :id, to: :id
+      import_model_mappings Address
+    end
+  end
+
+  class UserLocation < Lutaml::Model::Serializable
+    attribute :username, :string
+    import_model_attributes :location
+
+    key_value do
+      map :username, to: :username
+      import_model_mappings :location
+    end
+  end
+end
+
+RSpec.describe "Group" do
+  context "when serializing and deserializing imported type-only models" do
+    let(:xml) do
+      # W3C Rule: Namespaces can be declared at point of use (local) or at root (hoisted).
+      # Implementation prefers default format for cleaner output when creating new instances.
+      <<~XML
+        <mrow>
+          <mstyle>italic</mstyle>
+          <mr>y</mr>
+          <mi>x</mi>
+          <name>Smith</name>
+          <type>product</type>
+          <description xmlns="http://www.sparxsystems.com/profiles/GML/1.0">Item</description>
+        </mrow>
+      XML
+    end
+
+    let(:input_xml) do
+      <<~XML
+        <contributor>
+          <role>author</role>
+          <person>John Doe</person>
+          <organization>ACME</organization>
+        </contributor>
+      XML
+    end
+
+    it "parse the imported model correctly" do
+      parsed = GroupSpec::Mrow.from_xml(xml)
+      expect(parsed.mi).to eq("x")
+      expect(parsed.mstyle).to eq("italic")
+      expect(parsed.name).to eq("Smith")
+      expect(parsed.type).to eq("product")
+      expect(parsed.description.value).to eq("Item")
+    end
+
+    it "parse the imported model attributes correctly" do
+      parsed = GroupSpec::Contributor.from_xml(input_xml)
+      expect(parsed.person).to eq("John Doe")
+      expect(parsed.role).to eq("author")
+      expect(parsed.organization).to eq("ACME")
+    end
+
+    it "serialize the imported model correctly" do
+      instance = GroupSpec::Mrow.new(mi: "x", mstyle: "italic", mr: "y",
+                                     name: "Smith", type: "product", description: GroupSpec::GmlDescription.new(value: "Item"))
+      expect(instance.to_xml).to be_xml_equivalent_to(xml)
+    end
+  end
+
+  context "with type-only model (no element declared)" do
+    let(:mapper) { GroupSpec::CeramicCollection }
+
+    it "raises error if type-only class used directly for parsing" do
+      xml = <<~XML
+        <type>Data</type>
+        <name>Smith</name>
+      XML
+
+      expect { GroupSpec::Ceramic.from_xml(xml) }.to raise_error(
+        Lutaml::Model::TypeOnlyMappingError,
+        /type-only model/,
+      )
+    end
+
+    context "serializing XML" do
+      let(:ceramic) { GroupSpec::Ceramic.new(type: "Data", name: "Starc") }
+
+      it "raises error for type-only class" do
+        expect { ceramic.to_xml }.to raise_error(
+          Lutaml::Model::TypeOnlyMappingError,
+          /type-only model/,
+        )
+      end
+    end
+
+    context "deserializing key-value formats" do
+      let(:ceramic) { GroupSpec::Ceramic.new(type: "Data", name: "Starc") }
+
+      it "does not raises error for root_less class" do
+        expect { ceramic.to_yaml }
+          .not_to raise_error(Lutaml::Model::NoRootMappingError)
+      end
+    end
+
+    it "correctly get the element of root-less class" do
+      xml = <<~XML
+        <collection>
+          <ceramic>
+            <type>Data</type>
+          </ceramic>
+        </collection>
+      XML
+
+      expect { mapper.from_xml(xml) }.not_to raise_error
+    end
+  end
+
+  context "with model" do
+    before do
+      Lutaml::Model::GlobalRegister
+        .lookup(Lutaml::Model::Config.default_register)
+        .register_model(GroupSpec::GroupOfItems, id: :group_of_items)
+    end
+
+    shared_examples "imports attributes from" do |source_class, target_class|
+      it "#{source_class.name} correctly" do
+        source_attributes = source_class.attributes
+        target_attributes = target_class.attributes
+
+        source_attributes.each do |name, attr|
+          expect(target_attributes[name].name).to eq(attr.name)
+          expect(target_attributes[name].type).to eq(attr.type)
+          # can't compare the 'choice' directly as their 'model' will be different
+          expect(target_attributes[name].options.except(:choice)).to eq(attr.options.except(:choice))
+          if target_attributes[name].options.key?(:choice)
+            target_choice = target_attributes[name].options[:choice]
+            source_choice = attr.options[:choice]
+            expect(target_choice.min).to eql(source_choice.min)
+            expect(target_choice.max).to eql(source_choice.max)
+            expect(target_choice.model).not_to be(source_choice.model)
+            # can't compare the attributes directly as 'model' of their 'choice' will be different
+            expect(target_choice.attributes).not_to be(source_choice.attributes)
+          end
+        end
+      end
+    end
+
+    shared_examples "imports mappings from" do |source_class, target_class|
+      it "#{source_class.name} correctly" do
+        source_elements = source_class.mappings_for(:xml).elements
+        target_elements = target_class.mappings_for(:xml).elements
+
+        source_elements.each do |element|
+          matching_element = target_elements.find { |e| e.name == element.name }
+          expect(matching_element).not_to be_nil
+          expect(matching_element.to).to eq(element.to)
+        end
+      end
+    end
+
+    describe GroupSpec::ComplexType do
+      it_behaves_like "imports attributes from", GroupSpec::GroupOfItems,
+                      described_class
+      it_behaves_like "imports mappings from", GroupSpec::GroupOfItems,
+                      described_class
+    end
+
+    describe GroupSpec::GenericType do
+      it_behaves_like "imports mappings from", GroupSpec::GroupOfItems,
+                      described_class
+    end
+
+    describe GroupSpec::SimpleType do
+      it_behaves_like "imports attributes from", GroupSpec::GroupOfItems,
+                      described_class
+      it_behaves_like "imports mappings from", GroupSpec::GroupOfItems,
+                      described_class
+    end
+
+    describe GroupSpec::ModelElement do
+      it_behaves_like "imports attributes from", GroupSpec::Identifier,
+                      described_class
+      it_behaves_like "imports mappings from", GroupSpec::Identifier,
+                      described_class
+    end
+
+    describe GroupSpec::Mrow do
+      it_behaves_like "imports attributes from", GroupSpec::CommonAttributes,
+                      described_class
+      it_behaves_like "imports attributes from", GroupSpec::Ceramic,
+                      described_class
+      it_behaves_like "imports mappings from", GroupSpec::CommonAttributes,
+                      described_class
+      it_behaves_like "imports mappings from", GroupSpec::Ceramic,
+                      described_class
+    end
+
+    describe GroupSpec::Contributor do
+      it_behaves_like "imports attributes from", GroupSpec::ContributionInfo,
+                      described_class
+    end
+
+    context "when importing multiple models with overlapping attributes" do
+      let(:mrow_instance) do
+        GroupSpec::Mrow.new
+      end
+
+      it "uses Ceramic's default values for overlapping attributes" do
+        expect(mrow_instance.type).to eq("Data")
+        expect(mrow_instance.name).to eq("Starc")
+      end
+
+      it "maintains the correct XML serialization order from last import" do
+        xml = mrow_instance.to_xml
+        # W3C Rule: Empty elements don't need namespace declarations
+        expected_xml = "<mrow/>"
+
+        expect(xml).to be_xml_equivalent_to(expected_xml)
+      end
+    end
+
+    context "when update the imported attribute" do
+      it "updates the attribute `mstyle` only in `Mrow`" do
+        attr = GroupSpec::Mrow.attributes[:mstyle]
+        attr.instance_variable_set(:@type, :integer)
+        attr.instance_variable_set(:@unresolved_type, nil) # Clear unresolved_type cache
+        attr.instance_variable_set(:@cached_type_default, nil) # Clear performance cache
+        attr.instance_variable_set(:@default_type_context, nil) # Clear context cache
+        expect(GroupSpec::Mrow.attributes[:mstyle].type).to eq(Lutaml::Model::Type::Integer)
+      end
+
+      it "maintains original type for the attribute `mstyle` in `Mfrac`" do
+        expect(GroupSpec::Mfrac.attributes[:mstyle].type).to eq(Lutaml::Model::Type::String)
+      end
+
+      it "maintains original type for the attribute `mstyle` in importable class `CommonAttributes`" do
+        expect(GroupSpec::CommonAttributes.attributes[:mstyle].type).to eq(Lutaml::Model::Type::String)
+      end
+    end
+
+    context "when updating imported choice" do
+      it "updates choice min/max only in Mrow" do
+        choice = GroupSpec::Mrow.choice_attributes.first
+        choice.instance_variable_set(:@min, 2)
+        choice.instance_variable_set(:@max, 3)
+
+        expect(choice.min).to eq(2)
+        expect(choice.max).to eq(3)
+      end
+
+      it "maintains original choice min/max in Mfrac" do
+        choice = GroupSpec::Mfrac.choice_attributes.first
+        expect(choice.min).to eq(1)
+        expect(choice.max).to eq(3)
+      end
+
+      it "maintains original choice min/max in CommonAttributes" do
+        choice = GroupSpec::CommonAttributes.choice_attributes.first
+        expect(choice.min).to eq(1)
+        expect(choice.max).to eq(3)
+      end
+    end
+
+    context "when updating imported mappings" do
+      let(:new_namespace) { ExampleNewNamespace }
+      let(:new_prefix) { "test" }
+
+      context "with element mappings" do
+        it "updates the mapping namespace only in `Mrow`" do
+          mapping = GroupSpec::Mrow.mappings_for(:xml).elements.find do |e|
+            e.name == :mstyle
+          end
+          mapping.instance_variable_set(:@namespace, new_namespace)
+          mapping.instance_variable_set(:@prefix, new_prefix)
+
+          expect(mapping.namespace).to eq(new_namespace)
+          expect(mapping.prefix).to eq(new_prefix)
+        end
+
+        it "maintains original namespace for `mstyle` mapping in `Mfrac`" do
+          mapping = GroupSpec::Mfrac.mappings_for(:xml).elements.find do |e|
+            e.name == :mstyle
+          end
+          expect(mapping.namespace).to be_nil
+          expect(mapping.prefix).to be_nil
+        end
+
+        it "maintains original namespace for `mstyle` mapping in `CommonAttributes`" do
+          mapping = GroupSpec::CommonAttributes.mappings_for(:xml).elements.find do |e|
+            e.name == :mstyle
+          end
+          expect(mapping.namespace).to be_nil
+          expect(mapping.prefix).to be_nil
+        end
+      end
+
+      context "with attribute mappings" do
+        it "updates attribute mapping only in `Mrow`" do
+          mapping = GroupSpec::Mrow.mappings_for(:xml).attributes.find do |a|
+            a.name == :mcol
+          end
+          mapping.instance_variable_set(:@namespace, new_namespace)
+
+          expect(mapping.namespace).to eq(new_namespace)
+        end
+
+        it "maintains original attribute mapping in `Mfrac`" do
+          mapping = GroupSpec::Mfrac.mappings_for(:xml).attributes.find do |a|
+            a.name == :mcol
+          end
+          expect(mapping.namespace).to be_nil
+        end
+
+        it "maintains original attribute mapping in `CommonAttributes`" do
+          mapping = GroupSpec::CommonAttributes.mappings_for(:xml).attributes.find do |a|
+            a.name == :mcol
+          end
+          expect(mapping.namespace).to be_nil
+        end
+      end
+
+      context "with sequence elements" do
+        it "updates sequence elements only in `Mrow`" do
+          sequence = GroupSpec::Mrow.mappings_for(:xml).element_sequence.first
+          sequence.attributes << Lutaml::Xml::MappingRule.new(
+            "new_element",
+            to: :new_element,
+            namespace: ExampleComNamespace,
+          )
+
+          expect(sequence.attributes.map(&:name)).to include("new_element")
+        end
+
+        it "maintains original sequence elements in `Mfrac`" do
+          original_sequence = GroupSpec::Mfrac.mappings_for(:xml).element_sequence.first
+          expect(original_sequence.attributes.map(&:name)).not_to include("new_element")
+        end
+
+        it "maintains original sequence elements in `CommonAttributes`" do
+          original_sequence = GroupSpec::CommonAttributes.mappings_for(:xml).element_sequence.first
+          expect(original_sequence.attributes.map(&:name)).not_to include("new_element")
+        end
+
+        it "creates new sequence object with the new mapping object as model of sequence in `Mrow`" do
+          mrow_sequence_model = GroupSpec::Mrow.mappings_for(:xml).element_sequence[0].model
+          common_attributes_sequence_model = GroupSpec::CommonAttributes.mappings_for(:xml).element_sequence[0].model
+          expect(mrow_sequence_model).not_to be(common_attributes_sequence_model)
+        end
+      end
+    end
+
+    it "raises error if root is defined on imported class" do
+      expect do
+        Class.new(Lutaml::Model::Serializable) do
+          import_model GroupSpec::GroupWithRoot
+        end
+      end.to raise_error(Lutaml::Model::ImportModelWithRootError,
+                         "Cannot import a model `GroupSpec::GroupWithRoot` with a root element")
+    end
+
+    it "raises error if namespace is defined with deprecated no_root" do
+      expect do
+        Class.new(Lutaml::Model::Serializable) do
+          xml do
+            no_root
+            namespace XmiNamespace
+          end
+        end
+      end.to raise_error(Lutaml::Model::TypeOnlyNamespaceError,
+                         /type-only model/)
+    end
+  end
+
+  context "when importing model in key-value mappings" do
+    let(:custom_register) do
+      register = Lutaml::Model::Register.new(:custom_register)
+      Lutaml::Model::GlobalRegister.register(register)
+      register
+    end
+
+    after do
+      Lutaml::Model::GlobalRegister.unregister(:custom_register)
+    end
+
+    it "imports mappings from the model correctly with default register" do
+      instance = GroupSpec::Location.new(
+        id: "LOC123",
+        street: "123 Main St",
+        city: "Metropolis",
+      )
+
+      expect(instance.to_yaml).to eq(
+        <<~YAML,
+          ---
+          id: LOC123
+          street: 123 Main St
+          city: Metropolis
+        YAML
+      )
+    end
+
+    it "imports mappings from the model correctly with custom register" do
+      custom_register.register_model(GroupSpec::Location, id: :location)
+      instance = GroupSpec::UserLocation.new(
+        id: "LOC123",
+        username: "johndoe",
+        street: "123 Main St",
+        city: "Metropolis",
+        lutaml_register: custom_register,
+      )
+
+      expect(instance.to_yaml(register: custom_register)).to eq(
+        <<~YAML,
+          ---
+          username: johndoe
+          id: LOC123
+          street: 123 Main St
+          city: Metropolis
+        YAML
+      )
+    end
+  end
+end

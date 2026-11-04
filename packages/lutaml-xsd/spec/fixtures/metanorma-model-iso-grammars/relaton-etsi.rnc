@@ -1,0 +1,36 @@
+include "biblio-standoc.rnc" {
+
+status =
+  element status {
+     ( stage )
+}
+
+stage = element stage { StageType }
+
+doctype = element doctype {
+    attribute abbreviation { DocumentTypeAbbreviation }?,
+    DocumentType
+}
+
+DocumentType = "European Standard" | "ETSI Standard" | "ETSI Guide" | "Technical Specification" |
+"Group Specification" | "Group Report" | "Technical Report" | "ETSI Technical Report" |
+"GSM Technical Specification" | "Special Report" | "Technical Committee Reference Technical Report" | "Technical Basis for Regulation" |
+"European Telecommunication Standard" | "Interim European Telecommunication Standard" | "Norme Européenne de Télécommunication"
+
+
+}
+
+BibDataExtensionType &=
+        marker, frequency*, mandate*, custom-collection?
+
+StageType = "EN approval" | "SG approval" | "ES approval" | "Published" | "Withdrawn" | "Historical"
+
+DocumentTypeAbbreviation = "EN" | "ES" | "EG" | "TS" |
+"GS" | "GR" | "TR" | "ETR" |
+"GTS" | "SR" | "TCRTR" | "TBR" |
+"ETS" | "I-ETS" | "NET"
+
+marker = element marker { "Current" | "Superseded" }
+frequency = element frequency { text }
+mandate = element mandate { text }
+custom-collection = element custom-collection { "HSs cited in OJ" | "HSs not yet cited in OJ" | "HSs RED cited in OJ" | "HSs EMC cited in OJ" }

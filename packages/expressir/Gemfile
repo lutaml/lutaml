@@ -1,0 +1,27 @@
+# frozen_string_literal: true
+
+source "https://rubygems.org"
+
+gemspec
+
+gem "canon"
+gem "irb"
+# The suite's XML engine per #534 is moxml's leptris adapter; without this
+# dev dependency moxml silently falls back to nokogiri and CI never
+# exercises the mandated lane. moxml enforces the >= 1.9.386.0 binding
+# floor at load; the pessimistic range follows it.
+gem "leptris", "~> 1.9.386"
+gem "openssl", "~> 3.0"
+gem "rake"
+gem "rake-compiler"
+gem "rspec"
+gem "rubocop"
+gem "rubocop-performance"
+gem "rubocop-rake"
+gem "rubocop-rspec"
+gem "yard"
+
+# Monorepo: resolve the sibling lutaml-model package by path (the gemspec's
+# own `~> 0.8` constraint still applies to the sibling's version).
+model = File.expand_path("../lutaml-model", __dir__)
+gem "lutaml-model", path: model if File.directory?(model)

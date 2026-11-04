@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://example.com/xsd11"
+           xmlns:xsd11="http://example.com/xsd11"
+           elementFormDefault="qualified">
+  
+  <xs:annotation>
+    <xs:documentation>
+      Valid XSD 1.1 Schema Example
+      This schema demonstrates XSD 1.1 features including assertions.
+    </xs:documentation>
+  </xs:annotation>
+
+  <!-- Element with XSD 1.1 assertion -->
+  <xs:element name="positiveNumber" type="xsd11:PositiveNumberType"/>
+
+  <xs:complexType name="PositiveNumberType">
+    <xs:sequence>
+      <xs:element name="value" type="xs:integer"/>
+    </xs:sequence>
+    <!-- XSD 1.1 assertion: value must be greater than 0 -->
+    <xs:assert test="value gt 0"/>
+  </xs:complexType>
+
+  <!-- Another XSD 1.1 feature: alternative types -->
+  <xs:element name="flexibleData">
+    <xs:alternative test="@type = 'string'" type="xs:string"/>
+    <xs:alternative test="@type = 'number'" type="xs:decimal"/>
+  </xs:element>
+
+  <!-- Complex type with multiple assertions -->
+  <xs:complexType name="DateRangeType">
+    <xs:sequence>
+      <xs:element name="startDate" type="xs:date"/>
+      <xs:element name="endDate" type="xs:date"/>
+    </xs:sequence>
+    <!-- XSD 1.1 assertion: endDate must be after startDate -->
+    <xs:assert test="endDate ge startDate"/>
+  </xs:complexType>
+
+</xs:schema>

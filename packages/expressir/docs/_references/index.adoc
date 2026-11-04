@@ -1,0 +1,228 @@
+---
+title: References
+has_children: true
+nav_order: 5
+---
+
+= References
+
+Comprehensive technical specifications and API documentation for Expressir. Use this section when you need complete, detailed information about specific features.
+
+== About These References
+
+The References section provides:
+
+* Complete command-line interface (CLI) specification
+* Full Ruby API documentation
+* Detailed data model class references
+* Liquid drops attribute listings
+* File format specifications
+* Configuration options
+
+== Reference Documents
+
+=== link:cli-commands.html[CLI Commands Reference]
+
+Complete reference for all command-line tools.
+
+*Includes:*
+
+* Full command syntax
+* All options and parameters
+* Usage examples
+* Exit codes and error messages
+* Environment variables
+
+---
+
+=== link:ruby-api.html[Ruby API Reference]
+
+Comprehensive API documentation for programmatic usage.
+
+*Covers:*
+
+* Parser classes and methods
+* Repository API
+* Model classes overview
+* Utility functions
+* Error handling
+
+---
+
+=== link:data-model/[Data Model Reference]
+
+Detailed documentation of Expressir's Ruby data model classes.
+
+*Sections:*
+
+* link:data-model/declarations.html[Declarations] - Entities, types, functions, etc.
+* link:data-model/data-types.html[Data Types] - Type system classes
+* link:data-model/expressions.html[Expressions] - Expression classes
+* link:data-model/statements.html[Statements] - Statement classes
+* link:data-model/references.html[References] - Reference types
+
+---
+
+=== link:liquid-drops/[Liquid Drops Reference]
+
+Complete attribute listings for Liquid template integration.
+
+*Sections:*
+
+* link:liquid-drops/identifier-drop.html[Identifier Drop] - Common identifier attributes
+* link:liquid-drops/declaration-drops.html[Declaration Drops] - Schema declarations
+* link:liquid-drops/data-type-drops.html[Data Type Drops] - Type system drops
+* link:liquid-drops/expression-drops.html[Expression Drops] - Expression drops
+* link:liquid-drops/statement-drops.html[Statement Drops] - Statement drops
+
+---
+
+=== link:ler-format.html[LER Format Specification]
+
+Detailed specification of the LutaML EXPRESS Repository format.
+
+*Covers:*
+
+* Package structure
+* Metadata format
+* Index formats
+* Serialization options
+* Version compatibility
+
+---
+
+=== link:changes-format.html[EXPRESS Changes Format]
+
+Specification for EXPRESS Changes YAML format.
+
+*Includes:*
+
+* File structure
+* Schema change format
+* Version change format
+* Item change types
+* Validation rules
+
+---
+
+=== link:schema-manifest.html[Schema Manifest Format]
+
+Format specification for schema manifest files.
+
+*Describes:*
+
+* YAML structure
+* Entry attributes
+* Optional fields
+* Usage patterns
+
+---
+
+=== link:benchmarking.html[Benchmarking Reference]
+
+Complete benchmarking configuration reference.
+
+*Details:*
+
+* Environment variables
+* Configuration options
+* Output formats
+* Performance metrics
+
+---
+
+=== link:configuration.html[Configuration Reference]
+
+All configuration options for Expressir.
+
+*Includes:*
+
+* Global configuration
+* Environment variables
+* Programmatic configuration
+* Default values
+
+== Using These References
+
+=== Quick Lookup
+
+Use these references when you need to:
+
+* Find the exact syntax for a CLI command
+* Look up a specific API method signature
+* Check which attributes are available in a Liquid drop
+* Understand a file format specification
+* Configure environment variables
+
+=== Navigation Tips
+
+* Use the built-in search to find specific terms
+* Click on section headings to get direct links
+* Use the table of contents on each page
+* Reference pages link to related documentation
+
+=== API Documentation Conventions
+
+*Method signatures* use this format:
+
+[source,ruby]
+----
+method_name(required_param, optional: 'default') → return_type
+----
+
+*Parameters* are documented with:
+
+* Name and type
+* Whether required or optional
+* Default value (if optional)
+* Description of purpose
+
+*Return values* specify:
+
+* Type returned
+* Possible values
+* Nil conditions
+
+=== Example Usage
+
+Suppose you want to use the `from_file` parser method:
+
+. Navigate to link:ruby-api.html[Ruby API Reference]
+. Find the Parser section
+. Look up `from_file` method
+. Read the method signature and parameters
+. Check the examples
+. Try it in your code
+
+== Related Documentation
+
+*For learning:*
+
+* Start with link:../../[Core Topics] to understand concepts
+* Try link:../../tutorials/[Tutorials] for hands-on practice
+
+*For tasks:*
+
+* Use link:../../guides/[Guides] for step-by-step instructions
+* Return here for detailed specifications
+
+== Contributing
+
+Help improve these references:
+
+* Report missing or incorrect information
+* Suggest additional examples
+* Clarify confusing descriptions
+* Add missing API methods
+
+See the https://github.com/lutaml/expressir/blob/main/CONTRIBUTING.md[Contributing Guide] for details.
+
+== Versioning
+
+These references document Expressir version **latest**.
+
+For version-specific documentation:
+
+* Check the gem version: `gem list expressir`
+* Visit https://rubygems.org/gems/expressir[RubyGems] for older versions
+* See the https://github.com/lutaml/expressir/blob/main/CHANGELOG.md[CHANGELOG] for version differences

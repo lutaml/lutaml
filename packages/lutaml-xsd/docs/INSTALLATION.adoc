@@ -1,0 +1,274 @@
+---
+layout: default
+title: Installation
+nav_order: 2
+---
+= Installation
+:toc:
+:toclevels: 3
+
+== Purpose
+
+This document provides detailed installation instructions for lutaml-xsd on
+various platforms and environments.
+
+== Prerequisites
+
+lutaml-xsd requires:
+
+* Ruby 3.0.0 or higher
+* RubyGems package manager
+* Bundler (recommended)
+
+== Standard installation
+
+=== Via RubyGems
+
+The simplest way to install lutaml-xsd is through RubyGems:
+
+.Installing from RubyGems
+[example]
+====
+[source,bash]
+----
+gem install lutaml-xsd
+----
+====
+
+=== Via Bundler
+
+For project-specific installation, add lutaml-xsd to your `Gemfile`:
+
+.Adding to Gemfile
+[example]
+====
+[source,ruby]
+----
+# Gemfile
+gem 'lutaml-xsd'
+----
+
+Then install:
+
+[source,bash]
+----
+bundle install
+----
+====
+
+=== Verifying installation
+
+Check that lutaml-xsd is installed correctly:
+
+.Verifying installation
+[example]
+====
+[source,bash]
+----
+lutaml-xsd version
+----
+
+Output:
+
+[source]
+----
+lutaml-xsd version 1.0.4
+----
+====
+
+== Development installation
+
+=== From source
+
+To install from the source repository:
+
+.Installing from source
+[example]
+====
+[source,bash]
+----
+# Clone the repository
+git clone https://github.com/lutaml/lutaml-xsd.git
+cd lutaml-xsd
+
+# Install dependencies
+bundle install
+
+# Build and install the gem
+rake install
+----
+====
+
+=== Development mode
+
+For active development:
+
+.Setting up development environment
+[example]
+====
+[source,bash]
+----
+# Clone repository
+git clone https://github.com/lutaml/lutaml-xsd.git
+cd lutaml-xsd
+
+# Install development dependencies
+bundle install
+
+# Run tests
+bundle exec rspec
+
+# Run linter
+bundle exec rubocop
+----
+====
+
+== Dependencies
+
+lutaml-xsd has the following dependencies:
+
+Required dependencies::
+* `lutaml-model` (~> 0.7) - Serialization framework
+* `rubyzip` (~> 3.2) - ZIP file handling for LXR packages
+
+Development dependencies::
+* `rake` - Build automation
+* `rspec` - Testing framework
+* `rubocop` - Code style linter
+
+== Platform-specific notes
+
+=== macOS
+
+On macOS, ensure you have a working Ruby installation:
+
+.Installing Ruby on macOS
+[example]
+====
+Using Homebrew:
+
+[source,bash]
+----
+brew install ruby
+----
+
+Or using rbenv:
+
+[source,bash]
+----
+brew install rbenv ruby-build
+rbenv install 3.2.0
+rbenv global 3.2.0
+----
+====
+
+=== Linux
+
+On Linux distributions, install Ruby through your package manager:
+
+.Installing Ruby on Ubuntu/Debian
+[example]
+====
+[source,bash]
+----
+sudo apt-get update
+sudo apt-get install ruby-full
+----
+====
+
+.Installing Ruby on Fedora/RHEL
+[example]
+====
+[source,bash]
+----
+sudo dnf install ruby ruby-devel
+----
+====
+
+=== Windows
+
+On Windows, use RubyInstaller:
+
+. Download RubyInstaller from https://rubyinstaller.org/
+. Run the installer
+. Select "Add Ruby to PATH" during installation
+. Install the MSYS2 development toolchain when prompted
+
+== Troubleshooting
+
+=== Permission errors
+
+If you encounter permission errors:
+
+.Using user-local gem installation
+[example]
+====
+[source,bash]
+----
+gem install --user-install lutaml-xsd
+----
+
+Add to your shell profile (`~/.bashrc` or `~/.zshrc`):
+
+[source,bash]
+----
+export PATH="$HOME/.gem/ruby/3.2.0/bin:$PATH"
+----
+====
+
+=== Dependency conflicts
+
+If you have dependency conflicts:
+
+.Resolving conflicts
+[example]
+====
+[source,bash]
+----
+# Update RubyGems
+gem update --system
+
+# Clean gem cache
+gem cleanup
+
+# Install specific version
+gem install lutaml-xsd -v 1.0.4
+----
+====
+
+=== Building native extensions
+
+Some dependencies may require native extensions:
+
+.Installing build tools on Ubuntu/Debian
+[example]
+====
+[source,bash]
+----
+sudo apt-get install build-essential
+----
+====
+
+.Installing build tools on macOS
+[example]
+====
+[source,bash]
+----
+xcode-select --install
+----
+====
+
+== Next steps
+
+After installation, proceed to:
+
+* link:QUICK_START[Quick start guide] - Your first XSD parsing
+* link:CLI[Command-line interface] - CLI reference
+* link:RUBY_API[Ruby API] - Programmatic usage
+
+== See also
+
+* link:QUICK_START[Quick start] - Getting started tutorial
+* link:CLI[CLI commands] - Command reference
+* https://github.com/lutaml/lutaml-xsd[GitHub repository,role=external,window=_blank]
+* https://rubygems.org/gems/lutaml-xsd[RubyGems page,role=external,window=_blank]

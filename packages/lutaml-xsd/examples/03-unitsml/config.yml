@@ -1,0 +1,12 @@
+# UnitsML Example Configuration
+# Purpose: Demonstrates scientific units standard with specialized vocabulary
+# Uses UnitsML v1.0 CSD04 standard for units of measure
+
+files:
+  - ../../spec/fixtures/unitsml-v1.0-csd04.xsd
+
+namespace_mappings:
+  - prefix: "xs"
+    uri: "http://www.w3.org/2001/XMLSchema"
+  - prefix: "xsd"
+    uri: "urn:oasis:names:tc:unitsml:schema:xsd:UnitsMLSchema-1.0"

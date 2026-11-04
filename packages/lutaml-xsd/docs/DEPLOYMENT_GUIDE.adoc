@@ -1,0 +1,845 @@
+= Deployment Guide
+:toc:
+:toc-placement!:
+:toclevels: 3
+
+Complete deployment documentation for the lutaml-xsd documentation system.
+
+toc::[]
+
+== Prerequisites
+
+=== Required software
+
+Before deploying the documentation, ensure you have the following installed:
+
+Ruby version:: 3.1 or higher
++
+[source,shell]
+----
+ruby --version
+# Should output: ruby 3.1.0 or higher
+----
+
+Bundler:: Latest version
++
+[source,shell]
+----
+gem install bundler
+bundle --version
+----
+
+Git:: For version control and GitHub Pages deployment
++
+[source,shell]
+----
+git --version
+----
+
+GitHub account:: With access to the lutaml/lutaml-xsd repository
+
+=== Repository access
+
+Ensure you have appropriate permissions:
+
+* Read access: To clone and view the repository
+* Write access: To push changes
+* Admin access: To configure GitHub Pages and deployment settings
+
+== Local development setup
+
+=== Initial setup
+
+Clone the repository and navigate to the documentation directory:
+
+[source,shell]
+----
+# Clone the repository
+git clone https://github.com/lutaml/lutaml-xsd.git
+cd lutaml-xsd/docs
+
+# Install dependencies
+bundle install
+----
+
+=== Running locally
+
+Start the Jekyll development server:
+
+[source,shell]
+----
+cd docs
+bundle exec jekyll serve
+----
+
+The documentation will be available at:
+
+* Local URL: http://localhost:4000/lutaml-xsd
+* Live reload: Enabled by default
+* Build directory: `_site/`
+
+=== Advanced development options
+
+Build without serving::
++
+[source,shell]
+----
+bundle exec jekyll build
+----
+
+Serve with drafts::
++
+[source,shell]
+----
+bundle exec jekyll serve --drafts
+----
+
+Serve on different port::
++
+[source,shell]
+----
+bundle exec jekyll serve --port 4001
+----
+
+Enable incremental builds::
++
+[source,shell]
+----
+bundle exec jekyll serve --incremental
+----
+
+== Testing before deployment
+
+Before deploying to production, run the following validation checks.
+
+=== Jekyll build validation
+
+Ensure Jekyll builds without errors:
+
+[source,shell]
+----
+cd docs
+bundle exec jekyll build
+
+# Check exit code
+echo $?  # Should output: 0
+----
+
+Common build errors and solutions:
+
+Invalid YAML front matter:: Check for proper formatting in all `.adoc` files
+Liquid syntax errors:: Validate template syntax in layouts
+Missing dependencies:: Run `bundle install` to update gems
+
+=== Link validation
+
+Run the link checker to verify all internal and external links:
+
+[source,shell]
+----
+# Using the GitHub Actions link checker
+bundle exec rake check_links
+
+# Or manually check specific files
+bundle exec htmlproofer ./_site --assume-extension
+----
+
+Expected results:
+
+* Internal links: 100% valid
+* External links: 95%+ valid (some may be temporarily unavailable)
+* Anchor links: All valid
+
+=== Code example validation
+
+Verify code examples are syntactically correct:
+
+[source,shell]
+----
+# Run Ruby syntax checks on embedded code
+bundle exec rake validate_examples
+----
+
+=== Navigation verification
+
+Manually verify the following:
+
+* [ ] All navigation links work
+* [ ] Breadcrumbs display correctly
+* [ ] Table of contents generates properly
+* [ ] Search functionality works (if enabled)
+* [ ] Mobile navigation is functional
+
+=== Visual inspection checklist
+
+. Start local server: `bundle exec jekyll serve`
+. Navigate to http://localhost:4000/lutaml-xsd
+. Verify:
+   * [ ] Homepage renders correctly
+   * [ ] All images load
+   * [ ] Code syntax highlighting works
+   * [ ] Tables format properly
+   * [ ] Admonitions (NOTE, TIP, etc.) display correctly
+   * [ ] Cross-references work
+   * [ ] Footer displays properly
+
+== Production deployment
+
+=== GitHub Pages automatic deployment
+
+The documentation uses GitHub Pages with automatic deployment via GitHub Actions.
+
+==== How it works
+
+. Push changes to the `main` branch
+. GitHub Actions workflow triggers automatically
+. Jekyll builds the documentation
+. Built site deploys to `gh-pages` branch
+. GitHub Pages serves the site
+
+==== Deployment workflow
+
+[source,yaml]
+----
+# .github/workflows/docs.yml
+name: Deploy Documentation
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'docs/**'
+      - '.github/workflows/docs.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1'
+          bundler-cache: true
+      - name: Build site
+        run: |
+          cd docs
+          bundle exec jekyll build
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/_site
+----
+
+==== Triggering deployment
+
+Automatic trigger::
+Push to `main` branch with changes in `docs/` directory
+
+Manual trigger::
++
+[source,shell]
+----
+# Navigate to GitHub Actions
+# Select "Deploy Documentation" workflow
+# Click "Run workflow"
+----
+
+==== Deployment timeline
+
+* Build time: 2-3 minutes
+* Propagation time: 1-2 minutes
+* Total deployment: ~5 minutes
+
+=== Manual deployment
+
+If automatic deployment fails, deploy manually:
+
+[source,shell]
+----
+# Build the site
+cd docs
+bundle exec jekyll build
+
+# Deploy to gh-pages branch
+cd _site
+git init
+git add .
+git commit -m "Manual deployment"
+git remote add origin https://github.com/lutaml/lutaml-xsd.git
+git push -f origin HEAD:gh-pages
+----
+
+=== Custom domain configuration
+
+To use a custom domain (e.g., docs.lutaml.org):
+
+. Create `docs/CNAME` file:
++
+[source]
+----
+docs.lutaml.org
+----
+
+. Configure DNS records:
++
+[source]
+----
+Type: CNAME
+Name: docs
+Value: lutaml.github.io
+----
+
+. Update `_config.yml`:
++
+[source,yaml]
+----
+url: "https://docs.lutaml.org"
+baseurl: ""
+----
+
+. Wait for DNS propagation (up to 24 hours)
+
+=== SSL/HTTPS setup
+
+GitHub Pages provides automatic HTTPS:
+
+. Navigate to repository Settings
+. Scroll to "GitHub Pages" section
+. Check "Enforce HTTPS"
+. Certificate provisions automatically (may take 15 minutes)
+
+Verify HTTPS is working:
+
+[source,shell]
+----
+curl -I https://lutaml.github.io/lutaml-xsd
+# Should return: HTTP/2 200
+----
+
+== Continuous integration
+
+=== GitHub Actions workflow explained
+
+The project uses two main workflows:
+
+==== Documentation deployment workflow
+
+File:: `.github/workflows/docs.yml`
+Purpose:: Build and deploy documentation to GitHub Pages
+Trigger:: Push to `main` branch with changes in `docs/`
+
+Key steps:
+
+. Checkout repository
+. Setup Ruby environment
+. Install dependencies with Bundler cache
+. Build Jekyll site
+. Deploy to `gh-pages` branch
+
+==== Link validation workflow
+
+File:: `.github/workflows/link-check.yml`
+Purpose:: Validate all links in documentation
+Schedule:: Weekly on Sundays at 00:00 UTC
+
+Key steps:
+
+. Build documentation site
+. Run link checker on generated HTML
+. Report broken links as issues
+
+=== Automated deployment details
+
+Build environment::
+* OS: Ubuntu Latest
+* Ruby: 3.1
+* Bundler: Latest with caching enabled
+
+Deployment method::
+* Action: `peaceiris/actions-gh-pages@v3`
+* Target branch: `gh-pages`
+* Force push: Yes (overwrites previous deployment)
+
+Cache optimization::
+* Bundler gems cached between runs
+* Speeds up builds by 60-80%
+
+=== Triggering manual builds
+
+To manually trigger a workflow:
+
+. Navigate to repository on GitHub
+. Click "Actions" tab
+. Select workflow (e.g., "Deploy Documentation")
+. Click "Run workflow" dropdown
+. Select branch (usually `main`)
+. Click "Run workflow" button
+
+Manual run use cases:
+
+* Testing workflow changes
+* Forcing rebuild without code changes
+* Recovering from failed automatic deployment
+
+=== Troubleshooting CI failures
+
+==== Common failure scenarios
+
+Build fails with "Jekyll build error"::
++
+Check the build logs for specific error messages:
++
+[source,shell]
+----
+# Common issues:
+# - Invalid YAML front matter
+# - Liquid syntax errors
+# - Missing includes or layouts
+----
++
+Solution: Fix the error locally and test with `bundle exec jekyll build`
+
+Deployment fails with permission error::
++
+Verify repository has `GITHUB_TOKEN` permissions:
++
+. Go to Settings → Actions → General
+. Under "Workflow permissions", ensure "Read and write permissions" is selected
+
+Link checker fails::
++
+Review broken links in the action log:
++
+. Some external links may be temporarily unavailable
+. Update or remove broken links
+. Re-run the workflow
+
+==== Debugging workflow issues
+
+View detailed logs::
++
+. Click on the failed workflow run
+. Click on the failed job
+. Expand each step to see detailed output
+
+Test workflow locally::
++
+[source,shell]
+----
+# Install act (GitHub Actions local runner)
+brew install act  # macOS
+# or
+curl https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash
+
+# Run workflow locally
+act -j deploy
+----
+
+Force workflow re-run::
++
+. Click "Re-run all jobs" in the workflow run page
+. Or push an empty commit:
++
+[source,shell]
+----
+git commit --allow-empty -m "Trigger rebuild"
+git push
+----
+
+== Post-deployment verification
+
+=== Deployment success checklist
+
+After deployment completes, verify the following:
+
+. **Site accessibility**
++
+[source,shell]
+----
+curl -I https://lutaml.github.io/lutaml-xsd
+# Expected: HTTP/2 200
+----
+
+. **Homepage loads**
++
+Navigate to: https://lutaml.github.io/lutaml-xsd
++
+* [ ] Page displays without errors
+* [ ] CSS loads correctly
+* [ ] Images display
+* [ ] Navigation works
+
+. **Internal links work**
++
+* [ ] Click through major sections
+* [ ] Verify cross-references
+* [ ] Test table of contents links
+
+. **Search functionality** (if enabled)
++
+* [ ] Search box appears
+* [ ] Search returns results
+* [ ] Results link to correct pages
+
+. **Code examples render**
++
+* [ ] Syntax highlighting works
+* [ ] Code blocks display correctly
+* [ ] Copy buttons function (if present)
+
+. **Mobile responsiveness**
++
+* [ ] Test on mobile device or browser dev tools
+* [ ] Navigation menu works
+* [ ] Content is readable
+* [ ] No horizontal scrolling
+
+=== Link health monitoring
+
+Set up automated link monitoring:
+
+Weekly check::
+The `.github/workflows/link-check.yml` runs automatically every Sunday
+
+Manual check::
++
+[source,shell]
+----
+bundle exec rake check_links
+----
+
+Expected results::
+* Internal links: 100% valid
+* External links: 95%+ valid
+
+Handling broken links::
+. Review the link checker output
+. Determine if link is permanently broken or temporarily unavailable
+. Update or remove broken links
+. Consider using web.archive.org for historical references
+
+=== User accessibility testing
+
+Verify accessibility standards:
+
+Keyboard navigation::
+* [ ] Tab through all interactive elements
+* [ ] All links are reachable via keyboard
+* [ ] Skip to content link works
+
+Screen reader compatibility::
+* [ ] Test with screen reader (VoiceOver, NVDA, JAWS)
+* [ ] Headings properly structured
+* [ ] Images have alt text
+* [ ] Tables have proper headers
+
+Color contrast::
+* [ ] Text meets WCAG AA standards (4.5:1 ratio)
+* [ ] Links are distinguishable
+* [ ] Code blocks are readable
+
+=== Performance verification
+
+Check site performance:
+
+Page load time::
+* Target: < 3 seconds for initial load
+* Tool: Chrome DevTools Network tab
+
+Lighthouse score::
++
+[source,shell]
+----
+# Run Lighthouse audit
+lighthouse https://lutaml.github.io/lutaml-xsd --view
+----
++
+Target scores:
++
+* Performance: 90+
+* Accessibility: 95+
+* Best Practices: 95+
+* SEO: 100
+
+Asset optimization::
+* [ ] Images are compressed
+* [ ] CSS is minified
+* [ ] No render-blocking resources
+
+== Rollback procedures
+
+=== Reverting to previous version
+
+If the deployment introduces critical issues:
+
+==== Option 1: Revert commit
+
+[source,shell]
+----
+# Find the commit to revert to
+git log --oneline docs/
+
+# Revert to specific commit
+git revert <commit-hash>
+git push origin main
+
+# Automatic deployment will trigger
+----
+
+==== Option 2: Force push previous state
+
+[source,shell]
+----
+# Find the last good commit
+git log --oneline
+
+# Reset to that commit
+git reset --hard <commit-hash>
+
+# Force push (use with caution!)
+git push --force origin main
+----
+
+==== Option 3: Redeploy gh-pages branch
+
+[source,shell]
+----
+# Switch to gh-pages branch
+git checkout gh-pages
+
+# Reset to previous commit
+git log --oneline
+git reset --hard <previous-commit>
+
+# Force push
+git push --force origin gh-pages
+----
+
+=== Emergency fixes process
+
+For critical issues requiring immediate fix:
+
+. **Create hotfix branch**
++
+[source,shell]
+----
+git checkout -b hotfix/critical-issue main
+----
+
+. **Make minimal fix**
++
+Focus only on resolving the critical issue
+
+. **Test locally**
++
+[source,shell]
+----
+cd docs
+bundle exec jekyll serve
+# Verify fix works
+----
+
+. **Deploy directly**
++
+[source,shell]
+----
+git add .
+git commit -m "fix: critical documentation issue"
+git push origin hotfix/critical-issue
+----
+
+. **Create pull request**
++
+* Target: `main` branch
+* Label: `priority: critical`
+* Request immediate review
+
+. **Merge and verify**
++
+After merge, verify deployment:
++
+[source,shell]
+----
+# Wait 5 minutes for deployment
+curl -I https://lutaml.github.io/lutaml-xsd
+# Check the site
+----
+
+=== Hotfix deployment workflow
+
+For immediate deployment bypassing normal review:
+
+[source,shell]
+----
+# Make fix on main branch directly (admin only)
+git checkout main
+git pull
+# Make changes
+git add docs/
+git commit -m "fix: emergency fix for [issue]"
+git push origin main
+
+# Monitor deployment
+# GitHub Actions → Deploy Documentation workflow
+----
+
+Hotfix checklist::
+* [ ] Issue is genuinely critical (site down, security issue)
+* [ ] Fix is minimal and focused
+* [ ] Fix tested locally
+* [ ] Documentation updated if needed
+* [ ] Team notified of emergency deployment
+* [ ] Post-deployment verification completed
+
+== Deployment best practices
+
+=== Pre-deployment checklist
+
+Before pushing to production:
+
+* [ ] All tests pass locally
+* [ ] Jekyll builds without errors
+* [ ] Links validated
+* [ ] Code examples tested
+* [ ] Visual inspection completed
+* [ ] Changes reviewed by another team member
+* [ ] Changelog updated (if applicable)
+
+=== Deployment timing
+
+Recommended deployment windows:
+
+Best:: Monday-Thursday, 10:00-16:00 UTC
++
+Allows time for monitoring and quick fixes
+
+Avoid:: Friday evenings, weekends, holidays
++
+Limited support availability
+
+Emergency only:: Outside business hours
++
+Only for critical fixes
+
+=== Monitoring after deployment
+
+After successful deployment:
+
+First 30 minutes::
+* Monitor GitHub Actions for errors
+* Check site is accessible
+* Test major user paths
+
+First 24 hours::
+* Monitor for user-reported issues
+* Check analytics for unusual patterns
+* Verify search indexing updates
+
+First week::
+* Review error logs
+* Check for broken link reports
+* Gather user feedback
+
+=== Documentation versioning
+
+Consider versioning for major releases:
+
+Version directory structure::
++
+[source]
+----
+docs/
+  v1.0/
+    index.adoc
+    ...
+  v2.0/
+    index.adoc
+    ...
+  latest/  -> v2.0/
+----
+
+Version switcher::
+Add version selector to documentation UI
+
+Archive policy::
+Keep last 3 major versions accessible
+
+== Additional resources
+
+=== Documentation
+
+* link:README.md[Documentation README]
+* link:MAINTENANCE_GUIDE.adoc[Maintenance Guide]
+* link:DOCUMENTATION_PLAN.adoc[Documentation Plan]
+* https://jekyllrb.com/docs/[Jekyll Documentation]
+* https://docs.github.com/en/pages[GitHub Pages Documentation]
+
+=== Tools
+
+* Jekyll: https://jekyllrb.com/
+* GitHub Actions: https://github.com/features/actions
+* htmlproofer: https://github.com/gjtorikian/html-proofer
+* Lighthouse: https://developers.google.com/web/tools/lighthouse
+
+=== Support
+
+For deployment issues:
+
+. Check this guide first
+. Review GitHub Actions logs
+. Search existing issues: https://github.com/lutaml/lutaml-xsd/issues
+. Create new issue with `deployment` label
+. Contact maintainers: see link:README.md[README]
+
+== Appendix
+
+=== Environment variables
+
+Used in GitHub Actions:
+
+[source,yaml]
+----
+GITHUB_TOKEN: # Automatic authentication
+BUNDLE_PATH: vendor/bundle  # Gem installation directory
+JEKYLL_ENV: production  # Build environment
+----
+
+=== Configuration files
+
+Key configuration files:
+
+`docs/_config.yml`:: Jekyll configuration
+`.github/workflows/docs.yml`:: Deployment workflow
+`.github/workflows/link-check.yml`:: Link validation workflow
+`docs/Gemfile`:: Ruby dependencies
+
+=== Useful commands
+
+Quick reference for common tasks:
+
+[source,shell]
+----
+# Local development
+cd docs && bundle exec jekyll serve
+
+# Build only
+cd docs && bundle exec jekyll build
+
+# Clean build
+cd docs && bundle exec jekyll clean
+cd docs && bundle exec jekyll build
+
+# Check links
+bundle exec rake check_links
+
+# Update dependencies
+cd docs && bundle update
+
+# Check Ruby version
+ruby --version
+
+# Check Bundler version
+bundle --version
+----

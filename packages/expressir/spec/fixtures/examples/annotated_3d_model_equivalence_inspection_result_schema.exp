@@ -1,0 +1,344 @@
+(*
+ACME 5000 No. 11626
+
+EXPRESS Source:
+ACME 5000-62 ed1 Digital art gallery management - Digital artwork comparison result schema
+
+The following permission notice and disclaimer shall be included in all copies of this EXPRESS schema ("the Schema"),
+and derivations of the Schema:
+
+Copyright Ribose 2025  All rights reserved
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+In addition, any modified copy of the Schema shall include the following notice:
+
+THIS SCHEMA HAS BEEN MODIFIED FROM THE SCHEMA DEFINED IN
+ACME 5000-62 ed1 Digital art gallery management - Digital artwork comparison result schema
+AND SHOULD NOT BE INTERPRETED AS COMPLYING WITH THAT STANDARD
+*)
+
+SCHEMA digital_artwork_comparison_result_schema '{acme standard 5000 part(62) version(2) object(1) digital-artwork-comparison-result-schema(1)}';
+
+  REFERENCE FROM digital_artwork_comparison_criteria_schema
+    (representative_value_type);
+
+  REFERENCE FROM gallery_data_comparison_result_schema
+    (criterion_report_item_with_number_of_instances,
+     criterion_report_item_with_value,
+     data_comparison_result,
+     data_comparison_result_representation,
+     data_comparison_criterion_report_item,
+     data_comparison_instance_report_item);
+
+  REFERENCE FROM artwork_quality_criteria_schema
+    (artwork_measurement_accuracy);
+
+  TYPE comparison_detected_difference_select = EXTENSIBLE SELECT;
+  END_TYPE;
+
+  TYPE comparison_measured_value_select = EXTENSIBLE SELECT;
+  END_TYPE;
+
+  TYPE target_digital_artwork_select = EXTENSIBLE SELECT;
+  END_TYPE;
+
+  ENTITY artwork_comparison_criterion_report_item_with_measured_value
+    SUBTYPE OF(data_comparison_criterion_report_item);
+      representative_measured_value : comparison_measured_value_select;
+      value_type : representative_value_type;
+    UNIQUE
+      UR1: SELF\data_comparison_criterion_report_item.criterion_report,value_type;
+  END_ENTITY;
+
+  ENTITY artwork_comparison_instance_report_item
+    SUBTYPE OF(data_comparison_instance_report_item);
+      measured_value_for_inspected_element    :comparison_measured_value_select;
+  END_ENTITY;
+
+  ENTITY artwork_comparison_result_representation
+    SUBTYPE OF(data_comparison_result_representation);
+  END_ENTITY;
+
+  ENTITY artwork_and_comparison_result_relationship;
+     inspected_artwork   : target_digital_artwork_select;
+     comparison_result : artwork_comparison_result_representation;
+  END_ENTITY;
+
+  ENTITY comparison_instance_report_item_with_notable_instances
+    SUBTYPE OF(artwork_comparison_instance_report_item);
+      notable_instances : LIST [1:?] OF comparison_notable_instance;
+  END_ENTITY;
+
+  ENTITY comparison_notable_instance;
+      comparing_elements : LIST [0:?] OF comparison_detected_difference_select;
+      compared_elements  : LIST [0:?] OF comparison_detected_difference_select;
+      measured_value    : comparison_measured_value_select;
+    WHERE
+     WR1: (SIZEOF(comparing_elements) <> 0) OR (SIZEOF(compared_elements) <> 0);
+  END_ENTITY;
+
+  SUBTYPE_CONSTRAINT artwork_criterion_report_item_subtypes
+              FOR data_comparison_criterion_report_item;
+    ONEOF (artwork_comparison_criterion_report_item_with_measured_value,
+           criterion_report_item_with_number_of_instances,
+           criterion_report_item_with_value);
+  END_SUBTYPE_CONSTRAINT;
+
+END_SCHEMA; -- digital_artwork_comparison_result_schema
+
+(*"digital_artwork_comparison_result_schema.__published_in"
+ACME 5000-62:2025 ED2
+*)
+
+(*"digital_artwork_comparison_result_schema.__identifier"
+ACME/TC 184/SC 4/WG 12 N11626
+*)
+
+(*"digital_artwork_comparison_result_schema.__status"
+DIS
+*)
+
+(*"digital_artwork_comparison_result_schema.__title"
+digital_art_gallery_management
+*)
+
+
+(*"digital_artwork_comparison_result_schema"
+// Note schema EXPRESS are in ..\resources\resource_name name_of_schema.xml
+
+*)
+(*"digital_artwork_comparison_result_schema.__fund_cons"
+
+This schema provides a representation of the comparison results of digital artwork analysis. This schema is a specialisation of the <<express:gallery_data_comparison_result_schema,gallery_data_comparison_result_schema>> presented in clause 6 for the comparison of digital artwork data. Therefore, all the fundamental concepts and assumptions described in 6.2 also apply.
+
+As this schema deals with the comparison result of digital artwork data, a relationship is established between <<express:digital_artwork_comparison_result_schema.artwork_comparison_result_representation,artwork_comparison_result_representation>>, which is a type of <<express:gallery_data_comparison_result_schema.data_comparison_result_representation,data_comparison_result_representation>> defined in <<express:gallery_data_comparison_result_schema,gallery_data_comparison_result_schema>> and <<express:representation_schema.representation,representation>> representing target digital artwork data by <<express:digital_artwork_comparison_result_schema.artwork_and_comparison_result_relationship,artwork_and_comparison_result_relationship>>.
+
+[NOTE]
+--
+Artistic data newly created for representing comparison results, such as points where a difference is detected, have to be created in the context of the inspected artwork data.
+--
+
+<<express:digital_artwork_comparison_result_schema.artwork_comparison_criterion_report_item_with_measured_value,artwork_comparison_criterion_report_item_with_measured_value>> that is a type of <<express:gallery_data_comparison_result_schema.data_comparison_criterion_report_item,data_comparison_criterion_report_item>> defined in <<express:gallery_data_comparison_result_schema,gallery_data_comparison_result_schema>> reports the summarised comparison result for a specific criterion together with the measured value obtained.
+
+<<express:digital_artwork_comparison_result_schema.artwork_comparison_instance_report_item,artwork_comparison_instance_report_item>> is a type of <<express:gallery_data_comparison_result_schema.data_comparison_instance_report_item,data_comparison_instance_report_item>> defined in the <<express:gallery_data_comparison_result_schema,gallery_data_comparison_result_schema>> represents the most detailed information on the result of comparison for a specific digital artwork comparison criterion together with a measured value. If the exact location is required to know where a notable value is detected, <<express:digital_artwork_comparison_result_schema.comparison_instance_report_item_with_notable_instances,comparison_instance_report_item_with_notable_instances>> that has location information on inspected artwork elements where differences were detected shall be used.
+
+Users will specify thresholds to judge if a criterion holds or not, which depends on the gallery situation. They may or may not specify the accuracy to control the precision of the numerical calculation used in the comparison. But there are many cases where the information on the accuracy that is actually applied by the comparison is useful to interpret a comparison result. For this purpose, representations of the common accuracy applied to every comparison as well as the accuracy applied to comparisons for specific criterion are provided in this schema.
+
+// EXPRESS-G
+
+*)
+(*"digital_artwork_comparison_result_schema.__expressg"
+[[digital_artwork_comparison_result_schemaexpg1]]
+[.svgmap]
+====
+image::digital_artwork_comparison_result_schemaexpg1.svg[]
+
+* <<express:digital_artwork_comparison_result_schema>>; 1
+* <<express:digital_artwork_comparison_criteria_schema>>; 2
+* <<express:artwork_quality_criteria_schema>>; 3
+* <<express:gallery_data_comparison_result_schema>>; 4
+====
+
+*)
+(*"digital_artwork_comparison_result_schema.__expressg"
+[[digital_artwork_comparison_result_schemaexpg2]]
+[.svgmap]
+====
+image::digital_artwork_comparison_result_schemaexpg2.svg[]
+
+* <<express:digital_artwork_comparison_result_schema.target_digital_artwork_select>>; 1
+* <<digital_artwork_comparison_result_schemaexpg3>>; 2
+* <<express:gallery_data_comparison_result_schema.data_comparison_criterion_report_item>>; 3
+* <<express:digital_artwork_comparison_criteria_schema.representative_value_type>>; 4
+* <<express:gallery_data_comparison_result_schema.data_comparison_criterion_report_item>>; 5
+* <<express:gallery_data_comparison_result_schema.data_comparison_result_representation>>; 6
+* <<express:digital_artwork_comparison_result_schema.artwork_and_comparison_result_relationship>>; 7
+* <<express:digital_artwork_comparison_result_schema.artwork_comparison_result_representation>>; 8
+* <<express:digital_artwork_comparison_result_schema.artwork_comparison_criterion_report_item_with_measured_value>>; 9
+* <<express:digital_artwork_comparison_result_schema.artwork_criterion_report_item_subtypes>>; 10
+====
+
+*)
+(*"digital_artwork_comparison_result_schema.__expressg"
+[[digital_artwork_comparison_result_schemaexpg3]]
+[.svgmap]
+====
+image::digital_artwork_comparison_result_schemaexpg3.svg[]
+
+* <<express:digital_artwork_comparison_result_schema.comparison_detected_difference_select>>; 1
+* <<express:digital_artwork_comparison_result_schema.comparison_measured_value_select>>; 2
+* <<digital_artwork_comparison_result_schemaexpg2>>; 3
+* <<express:gallery_data_comparison_result_schema.data_comparison_instance_report_item>>; 4
+* <<express:digital_artwork_comparison_result_schema.artwork_comparison_instance_report_item>>; 5
+* <<express:digital_artwork_comparison_result_schema.comparison_instance_report_item_with_notable_instances>>; 6
+* <<express:digital_artwork_comparison_result_schema.comparison_notable_instance>>; 7
+====
+*)
+
+(*"digital_artwork_comparison_result_schema.comparison_detected_difference_select"
+The **comparison_detected_difference_select** type is an extensible list of alternate data types.
+
+The **comparison_detected_difference_select** allows selection of the type of detected difference in digital artworks.
+*)
+
+
+(*"digital_artwork_comparison_result_schema.comparison_detected_difference_select.__note"
+The list of entity data types can be extended by SELECT types that reference this construct.
+*)
+
+(*"digital_artwork_comparison_result_schema.comparison_detected_difference_select.__note"
+The detected difference could happen to be the measured value that causes a difference or the measured value that is close to the threshold but not within the specified range. The detected difference is represented by the attribute <<express:digital_artwork_comparison_result_schema.comparison_notable_instance.measured_value,measured_value>> of an entity <<express:digital_artwork_comparison_result_schema.comparison_notable_instance,comparison_notable_instance>> referred from the <<express:digital_artwork_comparison_result_schema.comparison_instance_report_item_with_notable_instances,comparison_instance_report_item_with_notable_instances>>.
+*)
+
+(*"digital_artwork_comparison_result_schema.comparison_measured_value_select"
+The **comparison_measured_value_select** type is an extensible list of alternate data types.
+
+The **comparison_measured_value_select** allows selection of the type of measured value that shall be calculated by artwork comparison software based on the comparison requirements.
+*)
+
+
+(*"digital_artwork_comparison_result_schema.comparison_measured_value_select.__note"
+The list of entity data types can be extended by SELECT types that reference this construct.
+*)
+
+(*"digital_artwork_comparison_result_schema.target_digital_artwork_select"
+The **target_digital_artwork_select** type is an extensible list of alternate data types. The **target_digital_artwork_select** allows the selection of digital artwork data to be compared.
+*)
+
+
+(*"digital_artwork_comparison_result_schema.target_digital_artwork_select.__note"
+The list of entity data types can be extended by SELECT types that reference this construct.
+*)
+
+(*"digital_artwork_comparison_result_schema.artwork_comparison_criterion_report_item_with_measured_value"
+An **artwork_comparison_criterion_report_item_with_measured_value** is a type of <<express:gallery_data_comparison_result_schema.data_comparison_criterion_report_item,data_comparison_criterion_report_item>>. It reports the summarised comparison result for a specific criterion together with the measured value obtained.
+*)
+
+
+(*"digital_artwork_comparison_result_schema.artwork_comparison_criterion_report_item_with_measured_value.representative_measured_value"
+a measured value to report.
+*)
+
+
+(*"digital_artwork_comparison_result_schema.artwork_comparison_criterion_report_item_with_measured_value.value_type"
+the type of a measured value to report.
+*)
+
+
+(*"digital_artwork_comparison_result_schema.artwork_comparison_criterion_report_item_with_measured_value.ur:UR1"
+The combination of <<express:gallery_data_comparison_result_schema.data_comparison_criterion_report_item.criterion_report,criterion_report>> and **value_type** shall be unique within a population of **artwork_comparison_criterion_report_item_with_measured_value**.
+*)
+
+
+(*"digital_artwork_comparison_result_schema.artwork_comparison_instance_report_item"
+An **artwork_comparison_instance_report_item** is a type of <<express:gallery_data_comparison_result_schema.data_comparison_instance_report_item,data_comparison_instance_report_item>> and represents detailed information on the result of comparison for a specific <<express:digital_artwork_comparison_criteria_schema.artwork_comparison_criterion,artwork_comparison_criterion>> together with a measured value.
+*)
+
+
+(*"digital_artwork_comparison_result_schema.artwork_comparison_instance_report_item.measured_value_for_inspected_element"
+a value obtained by the comparison.
+*)
+
+
+(*"digital_artwork_comparison_result_schema.artwork_comparison_instance_report_item.measured_value_for_inspected_element.__note"
+The types of *measured_value_for_inspected_element* and the inherited attribute <<express:gallery_data_comparison_result_schema.data_comparison_instance_report_item.inspected_element,inspected_element>> are specified in each <<express:digital_artwork_comparison_criteria_schema.artwork_comparison_criterion,artwork_comparison_criterion>> entity defined in <<express:digital_artwork_comparison_criteria_schema,digital_artwork_comparison_criteria_schema>>.
+*)
+
+(*"digital_artwork_comparison_result_schema.artwork_comparison_result_representation"
+An **artwork_comparison_result_representation** is a type of <<express:gallery_data_comparison_result_schema.data_comparison_result_representation,data_comparison_result_representation>> defined in <<express:gallery_data_comparison_result_schema,gallery_data_comparison_result_schema>> and represents all the comparison results for a set of <<express:digital_artwork_comparison_criteria_schema.artwork_comparison_criterion,artwork_comparison_criterion>> against a specific pair of artwork data instances.
+*)
+
+
+(*"digital_artwork_comparison_result_schema.artwork_and_comparison_result_relationship"
+An **artwork_and_comparison_result_relationship** is the relationship between <<express:digital_artwork_comparison_result_schema.artwork_comparison_result_representation,artwork_comparison_result_representation>> and the target digital artwork represented by <<express:digital_artwork_comparison_result_schema.target_digital_artwork_select,target_digital_artwork_select>>.
+*)
+
+
+(*"digital_artwork_comparison_result_schema.artwork_and_comparison_result_relationship.inspected_artwork"
+target digital artwork data type that will be defined in detail via <<express:digital_artwork_comparison_result_schema.target_digital_artwork_select,target_digital_artwork_select>>.
+*)
+
+
+(*"digital_artwork_comparison_result_schema.artwork_and_comparison_result_relationship.comparison_result"
+an <<express:digital_artwork_comparison_result_schema.artwork_comparison_result_representation,artwork_comparison_result_representation>> with regard to **inspected_artwork**.
+*)
+
+
+(*"digital_artwork_comparison_result_schema.artwork_and_comparison_result_relationship.comparison_result.__note"
+Digital artwork data (vector graphics, raster images, and metadata) are regarded as major constituents of digital artwork data in this standard.
+// Therefore, companion standards such as the <b>digital_artwork_comparison_vector</b> module, the <b>digital_artwork_comparison_raster</b> module, the <b>digital_artwork_comparison_metadata</b> module are developed together with this document to support gallery management jobs.
+*)
+
+(*"digital_artwork_comparison_result_schema.comparison_instance_report_item_with_notable_instances"
+A **comparison_instance_report_item_with_notable_instances** is a type of <<express:digital_artwork_comparison_result_schema.artwork_comparison_instance_report_item,artwork_comparison_instance_report_item>> and has information on pairs of notable measured values and difference information.
+*)
+
+
+(*"digital_artwork_comparison_result_schema.comparison_instance_report_item_with_notable_instances.notable_instances"
+a list of <<express:digital_artwork_comparison_result_schema.comparison_notable_instance,comparison_notable_instance>> that represent pairs of notable measured values and difference information detected by the comparison. The notable value is the measured value that causes the criterion to hold or the measured value that is closest to the threshold even when the criterion does not hold.
+*)
+
+
+(*"digital_artwork_comparison_result_schema.comparison_notable_instance"
+A **comparison_notable_instance** is information on differences, including a notable measured value.
+*)
+
+(*"digital_artwork_comparison_result_schema.comparison_notable_instance.__example"
+When different artwork data are compared, the difference information will become location information where notable measured values are detected.
+*)
+
+(*"digital_artwork_comparison_result_schema.comparison_notable_instance.__note"
+As for the correspondence between *compared_elements* and *comparing_elements*, there are various cases. For detecting the correspondence between two color regions of the compared digital artwork and comparing digital artwork having similar visual content, the notable instances are regions in both digital artworks. One region in the compared artwork may be split into two regions in the comparing artwork by modification. In this case, the correspondence becomes 1-2 correspondence. In general, 1-N correspondence, M-1 correspondence, and even N-M correspondence are probable. For detecting the removed and added regions of the compared digital artwork, LIST[0:?] is used. The reason why LIST[0:?] is used both for *compared_elements* and *comparing_elements* is to cope with no correspondence cases, though both of them are not allowed to be 0 at the same time because that is unrealistic.
+*)
+
+(*"digital_artwork_comparison_result_schema.comparison_notable_instance.comparing_elements"
+a list of <<express:digital_artwork_comparison_result_schema.comparison_detected_difference_select,comparison_detected_difference_select>> that are the difference information of the comparing artwork.
+// the location(s) in the comparing artwork where the <b>measured_value</b> was detected.
+*)
+
+
+(*"digital_artwork_comparison_result_schema.comparison_notable_instance.compared_elements"
+a list of <<express:digital_artwork_comparison_result_schema.comparison_detected_difference_select,comparison_detected_difference_select>> that are the difference information of the compared artwork.
+// the location(s) in the compared artwork where the <b>measured_value</b> was detected.
+*)
+
+
+(*"digital_artwork_comparison_result_schema.comparison_notable_instance.measured_value"
+the notable value obtained by the comparison.
+
+// <note>
+
+// Each <express_ref linkend="digital_artwork_comparison_criteria_schema:ir_express:digital_artwork_comparison_criteria_schema.artwork_comparison_criterion"/>
+
+// entity defined in
+
+// <express_ref linkend="digital_artwork_comparison_criteria_schema:ir_express:digital_artwork_comparison_criteria_schema">digital_artwork_comparison_criteria_schema</express_ref>
+
+// has a rule to specify what type of
+
+// <express_ref linkend="digital_artwork_comparison_result_schema:ir_express:digital_artwork_comparison_result_schema.comparison_detected_difference_select"/>
+
+// shall be required.
+
+// </note>
+*)
+
+(*"digital_artwork_comparison_result_schema.comparison_notable_instance.measured_value.__example"
+When a significant color difference between two artwork regions is detected, the difference information will be location information that comprises two points, one on each artwork. The notable value represented by the *measured_value* is the color distance between these two points.
+*)
+
+(*"digital_artwork_comparison_result_schema.comparison_notable_instance.wr:WR1"
+Either the size of **comparing_elements** or that of **compared_elements** shall be non-zero.
+*)
+
+
+(*"digital_artwork_comparison_result_schema.__schema_file"
+data/resource_docs/digital_art_gallery_management/resource.xml
+*)

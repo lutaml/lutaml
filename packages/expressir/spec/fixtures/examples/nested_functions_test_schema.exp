@@ -1,0 +1,48 @@
+SCHEMA nested_functions_test_schema;
+
+-- Simple entity for the rule
+ENTITY empty_entity;
+END_ENTITY;
+
+-- Top-level function (should be included in coverage)
+FUNCTION top_level_function : BOOLEAN;
+  -- Inner function within top-level function (should be excluded with FUNCTION:INNER)
+  FUNCTION inner_function_in_function : BOOLEAN;
+    -- Deeply nested function (should also be excluded with FUNCTION:INNER)
+    FUNCTION deeply_nested_function : BOOLEAN;
+      RETURN (TRUE);
+    END_FUNCTION;
+    RETURN (TRUE);
+  END_FUNCTION;
+
+  RETURN (TRUE);
+END_FUNCTION;
+
+-- Top-level rule with inner function
+RULE top_level_rule FOR (empty_entity);
+  -- Inner function within rule (should be excluded with FUNCTION:INNER)
+  FUNCTION inner_function_in_rule : BOOLEAN;
+    RETURN (TRUE);
+  END_FUNCTION;
+
+  WHERE TRUE;
+END_RULE;
+
+-- Top-level procedure with inner function
+PROCEDURE top_level_procedure;
+  -- Inner function within procedure (should be excluded with FUNCTION:INNER)
+  FUNCTION inner_function_in_procedure : BOOLEAN;
+    -- Another nested function (should also be excluded with FUNCTION:INNER)
+    FUNCTION nested_in_procedure_function : BOOLEAN;
+      RETURN (TRUE);
+    END_FUNCTION;
+    RETURN (TRUE);
+  END_FUNCTION;
+END_PROCEDURE;
+
+-- Another top-level function (should be included in coverage)
+FUNCTION another_top_level_function : BOOLEAN;
+  RETURN (TRUE);
+END_FUNCTION;
+
+END_SCHEMA;

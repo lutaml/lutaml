@@ -1,0 +1,542 @@
+---
+layout: default
+title: Serialization
+parent: Core concepts
+nav_order: 4
+---
+
+== Serialization
+:toc:
+:toclevels: 3
+
+== Purpose
+
+This document explains how to serialize parsed XSD schema objects back to XML
+format. Serialization enables round-trip processing where schemas can be
+parsed, modified, and written back to XSD files while preserving their
+structure.
+
+== General
+
+Every XSD component class in Lutaml::XSD implements a
+[`to_xml()`](../../lib/lutaml/xsd/schema.rb) method that generates the XML
+representation of the object. This allows you to:
+
+* Convert parsed schemas back to XSD files
+* Modify schemas programmatically and save changes
+* Generate new schemas from Ruby objects
+* Transform schemas while maintaining XSD validity
+* Create schema documentation with modified examples
+
+The serialization preserves:
+
+* Element and type definitions
+* Attributes and their properties
+* Namespace declarations
+* Annotations and documentation
+* Schema structure and hierarchy
+* Import and include declarations
+
+== [`to_xml()`](../../lib/lutaml/xsd/schema.rb) method
+
+The primary method for serialization is [`to_xml()`](../../lib/lutaml/xsd/schema.rb:42),
+available on all schema component classes.
+
+Syntax:
+
+[source,ruby]
+----
+xml_output = schema.to_xml <1>
+----
+<1> Serialize a schema object to XML string
+
+Returns a string containing the XML representation of the schema.
+
+.Basic schema serialization
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Parse a schema
+xsd_content = File.read('schema.xsd')
+parsed_schema = Lutaml::Xsd.parse(xsd_content)
+
+# Serialize back to XML
+xml_output = parsed_schema.to_xml
+
+# Display or save
+puts xml_output
+
+# Write to file
+File.write('output.xsd', xml_output)
+----
+====
+
+=== Serializing individual components
+
+Individual schema components can also be serialized to XML independently.
+
+.Component serialization
+[example]
+====
+[source,ruby]
+----
+# Serialize a complex type
+complex_type = schema.complex_type.first
+xml = complex_type.to_xml
+
+puts xml
+# <xs:complexType name="PersonType">
+#   <xs:sequence>
+#     <xs:element name="name" type="xs:string"/>
+#     <xs:element name="age" type="xs:int"/>
+#   </xs:sequence>
+# </xs:complexType>
+
+# Serialize an element
+element = schema.element.find { |e| e.name == 'Person' }
+xml = element.to_xml
+
+# Serialize a simple type
+simple_type = schema.simple_type.first
+xml = simple_type.to_xml
+----
+====
+
+== Round-trip compatibility
+
+Lutaml::XSD is designed to support round-trip parsing and serialization,
+meaning you can parse an XSD file, serialize it back, and obtain functionally
+equivalent XML.
+
+=== Parse-serialize-parse cycle
+
+.Testing round-trip compatibility
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Original schema
+original_xsd = File.read('schema.xsd')
+
+# Parse
+schema1 = Lutaml::Xsd.parse(original_xsd)
+
+# Serialize
+xml_output = schema1.to_xml
+
+# Parse again
+schema2 = Lutaml::Xsd.parse(xml_output)
+
+# Compare structures
+puts "Element count: #{schema1.element.size} vs #{schema2.element.size}"
+puts "Complex type count: #{schema1.complex_type.size} vs #{schema2.complex_type.size}"
+puts "Target namespace: #{schema1.target_namespace} vs #{schema2.target_namespace}"
+
+# Verify consistency
+if schema1.element.size == schema2.element.size &&
+   schema1.complex_type.size == schema2.complex_type.size
+  puts "✓ Round-trip successful"
+else
+  puts "✗ Round-trip produced different structure"
+end
+----
+====
+
+=== Modifying and re-serializing
+
+The round-trip capability enables schema transformation workflows.
+
+.Schema modification workflow
+[example]
+====
+[source,ruby]
+----
+# Parse original schema
+schema = Lutaml::Xsd.parse(File.read('schema.xsd'))
+
+# Modify: Add a new element
+new_element = Lutaml::Xsd::Element.new
+new_element.name = 'ModifiedDate'
+new_element.type = 'xs:dateTime'
+new_element.min_occurs = '0'
+new_element.max_occurs = '1'
+
+schema.element << new_element
+
+# Modify: Update documentation
+schema.annotation ||= []
+doc = Lutaml::Xsd::Documentation.new
+doc.content = 'Schema modified on ' + Time.now.to_s
+annotation = Lutaml::Xsd::Annotation.new
+annotation.documentation = [doc]
+schema.annotation << annotation
+
+# Serialize modified schema
+modified_xml = schema.to_xml
+File.write('schema_modified.xsd', modified_xml)
+
+puts "✓ Modified schema saved to schema_modified.xsd"
+----
+====
+
+== Preserving schema structure
+
+Serialization maintains the structure and relationships within schemas.
+
+=== Complex type structures
+
+.Preserving nested structures
+[example]
+====
+[source,ruby]
+----
+# Original schema with nested structure
+xsd_content = <<~XSD
+  <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:element name="Library">
+      <xs:complexType>
+        <xs:sequence>
+          <xs:element name="Book" maxOccurs="unbounded">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="Title" type="xs:string"/>
+                <xs:element name="Author" type="xs:string"/>
+              </xs:sequence>
+              <xs:attribute name="isbn" type="xs:string" use="required"/>
+            </xs:complexType>
+          </xs:element>
+        </xs:sequence>
+      </xs:complexType>
+    </xs:element>
+  </xs:schema>
+XSD
+
+schema = Lutaml::Xsd.parse(xsd_content)
+
+# Serialize - nested structure is preserved
+xml_output = schema.to_xml
+
+# Verify structure preservation
+parsed_again = Lutaml::Xsd.parse(xml_output)
+library_elem = parsed_again.element.first
+
+puts "Library element: #{library_elem.name}"
+puts "Has complex type: #{!library_elem.complex_type.nil?}"
+puts "Has sequence: #{!library_elem.complex_type.sequence.nil?}"
+
+book_elem = library_elem.complex_type.sequence.element.first
+puts "Book element: #{book_elem.name}"
+puts "Book attributes: #{book_elem.complex_type.attribute.size}"
+----
+====
+
+=== Namespace preservation
+
+Namespaces and their declarations are preserved during serialization.
+
+.Namespace preservation
+[example]
+====
+[source,ruby]
+----
+xsd_content = <<~XSD
+  <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+             targetNamespace="http://example.com/library"
+             xmlns:lib="http://example.com/library"
+             elementFormDefault="qualified">
+
+    <xs:element name="Book" type="lib:BookType"/>
+
+    <xs:complexType name="BookType">
+      <xs:sequence>
+        <xs:element name="title" type="xs:string"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:schema>
+XSD
+
+schema = Lutaml::Xsd.parse(xsd_content)
+
+# Serialize
+xml_output = schema.to_xml
+
+# Check namespace is preserved
+puts "Target namespace: #{schema.target_namespace}"
+# Output: http://example.com/library
+
+# Verify in output
+if xml_output.include?('targetNamespace="http://example.com/library"')
+  puts "✓ Target namespace preserved"
+end
+----
+====
+
+=== Import and include preservation
+
+Schema imports and includes are maintained during serialization.
+
+.Import/include preservation
+[example]
+====
+[source,ruby]
+----
+xsd_content = <<~XSD
+  <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+             xmlns:gml="http://www.opengis.net/gml/3.2">
+
+    <xs:import namespace="http://www.opengis.net/gml/3.2"
+               schemaLocation="http://schemas.opengis.net/gml/3.2.1/gml.xsd"/>
+
+    <xs:include schemaLocation="common-types.xsd"/>
+
+    <xs:element name="Feature" type="gml:AbstractFeatureType"/>
+  </xs:schema>
+XSD
+
+schema = Lutaml::Xsd.parse(xsd_content)
+
+# Check imports and includes
+puts "Imports: #{schema.import.size}"
+puts "Includes: #{schema.include.size}"
+
+# Serialize
+xml_output = schema.to_xml
+
+# Verify preservation
+if xml_output.include?('xs:import') && xml_output.include?('xs:include')
+  puts "✓ Imports and includes preserved"
+end
+----
+====
+
+== Serialization for different schema types
+
+=== Simple schemas
+
+.Simple schema serialization
+[example]
+====
+[source,ruby]
+----
+xsd_content = <<~XSD
+  <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:element name="Message" type="xs:string"/>
+    <xs:element name="Count" type="xs:integer"/>
+  </xs:schema>
+XSD
+
+schema = Lutaml::Xsd.parse(xsd_content)
+xml_output = schema.to_xml
+
+puts xml_output
+----
+====
+
+=== Complex schemas with inheritance
+
+.Schema with type extensions
+[example]
+====
+[source,ruby]
+----
+xsd_content = <<~XSD
+  <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+    <xs:complexType name="PersonType">
+      <xs:sequence>
+        <xs:element name="name" type="xs:string"/>
+      </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="EmployeeType">
+      <xs:complexContent>
+        <xs:extension base="PersonType">
+          <xs:sequence>
+            <xs:element name="employeeId" type="xs:string"/>
+          </xs:sequence>
+        </xs:extension>
+      </xs:complexContent>
+    </xs:complexType>
+
+  </xs:schema>
+XSD
+
+schema = Lutaml::Xsd.parse(xsd_content)
+
+# Serialize - inheritance structure preserved
+xml_output = schema.to_xml
+
+# Verify extension preserved
+employee_type = schema.complex_type.find { |ct| ct.name == 'EmployeeType' }
+if employee_type.complex_content&.extension&.base == 'PersonType'
+  puts "✓ Extension relationship preserved"
+end
+
+File.write('inherited_schema.xsd', xml_output)
+----
+====
+
+=== Schemas with restrictions
+
+.Schema with facet restrictions
+[example]
+====
+[source,ruby]
+----
+xsd_content = <<~XSD
+  <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+    <xs:simpleType name="AgeType">
+      <xs:restriction base="xs:integer">
+        <xs:minInclusive value="0"/>
+        <xs:maxInclusive value="120"/>
+      </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="StatusType">
+      <xs:restriction base="xs:string">
+        <xs:enumeration value="active"/>
+        <xs:enumeration value="inactive"/>
+        <xs:enumeration value="pending"/>
+      </xs:restriction>
+    </xs:simpleType>
+
+  </xs:schema>
+XSD
+
+schema = Lutaml::Xsd.parse(xsd_content)
+
+# Serialize - restrictions preserved
+xml_output = schema.to_xml
+
+# Verify facets preserved
+age_type = schema.simple_type.find { |st| st.name == 'AgeType' }
+if age_type.restriction.min_inclusive&.value == '0'
+  puts "✓ Facet restrictions preserved"
+end
+----
+====
+
+== Formatting options
+
+While the basic `to_xml` method provides standard XML output, you can enhance
+formatting for readability.
+
+.Formatted XML output
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+require 'rexml/document'
+
+schema = Lutaml::Xsd.parse(File.read('schema.xsd'))
+
+# Get basic XML
+xml_output = schema.to_xml
+
+# Format with REXML for pretty printing
+doc = REXML::Document.new(xml_output)
+formatter = REXML::Formatters::Pretty.new
+formatter.compact = true
+
+formatted_xml = String.new
+formatter.write(doc, formatted_xml)
+
+# Save formatted output
+File.write('schema_formatted.xsd', formatted_xml)
+
+puts "✓ Formatted schema saved"
+----
+====
+
+== Complete serialization workflow
+
+.Comprehensive schema serialization example
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# 1. Parse original schema
+puts "Reading schema..."
+original_content = File.read('original_schema.xsd')
+schema = Lutaml::Xsd.parse(original_content)
+
+# 2. Analyze schema
+puts "\nSchema Analysis:"
+puts "  Target namespace: #{schema.target_namespace}"
+puts "  Elements: #{schema.element.size}"
+puts "  Complex types: #{schema.complex_type.size}"
+puts "  Simple types: #{schema.simple_type.size}"
+
+# 3. Make modifications
+puts "\nApplying modifications..."
+
+# Add a new global element
+new_element = Lutaml::Xsd::Element.new
+new_element.name = 'Timestamp'
+new_element.type = 'xs:dateTime'
+schema.element << new_element
+puts "  ✓ Added Timestamp element"
+
+# Modify existing element
+if person_elem = schema.element.find { |e| e.name == 'Person' }
+  if person_elem.complex_type
+    # Add new child element
+    new_child = Lutaml::Xsd::Element.new
+    new_child.name = 'Email'
+    new_child.type = 'xs:string'
+    new_child.min_occurs = '0'
+
+    if person_elem.complex_type.sequence
+      person_elem.complex_type.sequence.element << new_child
+      puts "  ✓ Added Email to Person"
+    end
+  end
+end
+
+# 4. Serialize modified schema
+puts "\nSerializing..."
+modified_xml = schema.to_xml
+
+# 5. Save output
+output_path = 'modified_schema.xsd'
+File.write(output_path, modified_xml)
+puts "  ✓ Saved to #{output_path}"
+
+# 6. Validate round-trip
+puts "\nValidating round-trip..."
+reloaded = Lutaml::Xsd.parse(modified_xml)
+
+if reloaded.element.size == schema.element.size &&
+   reloaded.complex_type.size == schema.complex_type.size
+  puts "  ✓ Round-trip validation successful"
+  puts "    Elements: #{reloaded.element.size}"
+  puts "    Complex types: #{reloaded.complex_type.size}"
+else
+  puts "  ✗ Round-trip validation failed"
+end
+
+# 7. Generate summary
+puts "\nModification Summary:"
+puts "  Original elements: #{original_content.scan(/<xs:element/).size}"
+puts "  Modified elements: #{modified_xml.scan(/<xs:element/).size}"
+puts "  Difference: #{modified_xml.scan(/<xs:element/).size - original_content.scan(/<xs:element/).size}"
+----
+====
+
+== See also
+
+* link:XSD_ELEMENTS.html[XSD elements] - Schema component structure
+* link:../guides/PARSING.html[Parsing guide] - Parsing XSD files
+* link:../reference/RUBY_API.html[Ruby API reference] - Complete API
+  documentation
+* link:../advanced/SCHEMA_TRANSFORMATION.html[Schema transformation] -
+  Advanced modification patterns

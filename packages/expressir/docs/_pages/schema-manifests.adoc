@@ -1,0 +1,431 @@
+---
+title: Schema Manifests
+nav_order: 6
+---
+
+= EXPRESS Schema Manifests
+
+== General
+
+The EXPRESS schema manifest is a file format defined by ELF at https://www.expresslang.org/docs[EXPRESS schema manifest specification].
+
+Expressir provides a `SchemaManifest` class for managing collections of EXPRESS schema files. This is particularly useful when working with multiple related schemas or when you need to organize schema files in a structured way.
+
+The `SchemaManifest` class allows you to:
+
+* Load schema file lists from YAML manifest files
+* Manage schema metadata and paths
+* Programmatically create and manipulate schema collections
+* Save manifest configurations to files
+* Validate manifests for completeness and referential integrity
+* Resolve all dependencies from root schemas
+
+
+== File format
+
+The schema manifest uses a structured YAML format:
+
+[source,yaml]
+----
+schemas:
+  action_schema:
+    path: schemas/resources/action_schema/action_schema.exp
+  approval_schema:
+    path: schemas/resources/approval_schema/approval_schema.exp
+  date_time_schema:
+    path: schemas/resources/date_time_schema/date_time_schema.exp
+----
+
+Each schema entry in the manifest can have the following attributes:
+
+`path`:: (Required) The file path to the EXPRESS schema file
+`id`:: (Optional) A unique identifier for the schema
+`container_path`:: (Optional) Container path information
+
+
+[example]
+.Example project structure with schema manifest
+====
+[source]
+----
+project/
+├── schemas.yml   # Schema manifest
+└── schemas/
+    ├── core/
+    │   ├── action_schema.exp
+    │   └── approval_schema.exp
+    └── extensions/
+        └── date_time_schema.exp
+----
+
+.schemas.yml
+[source,yaml]
+----
+schemas:
+  action_schema:
+    path: schemas/core/action_schema/action_schema.exp
+  approval_schema:
+    path: schemas/core/approval_schema/approval_schema.exp
+  date_time_schema:
+    path: schemas/extensions/date_time_schema/date_time_schema.exp
+----
+====
+
+
+== Commands for schema manifests
+
+=== Creating a manifest from a root schema
+
+The `manifest create` command generates a schema manifest YAML file by resolving all referenced schemas starting from a specified root schema file.
+
+.`manifest create` - Generate schema manifest
+[source,sh]
+----
+Usage:
+  expressir manifest create ROOT_SCHEMA [MORE_SCHEMAS...] -o, --output=OUTPUT
+
+Options:
+  -o, --output=OUTPUT                                # Output YAML file path
+      [--base-dirs=BASE_DIRS]                        # Comma-separated base directories for schema resolution
+      [--verbose], [--no-verbose], [--skip-verbose]  # Show detailed output
+                                                     # Default: false
+
+Description:
+  Generate a YAML manifest of all schemas required for packaging.
+
+  The manifest uses the existing SchemaManifest format:
+  schemas:
+    schema_id:
+      path: /path/to/schema.exp
+
+  Workflow:
+  1. Create manifest from root schema
+  2. Edit manifest to add paths for schemas with null paths
+  3. Validate manifest
+  4. Build package using manifest
+
+  Example:
+    expressir manifest create schemas/activity/mim.exp \
+      -o activity_manifest.yaml \
+      --base-dirs /path/to/schemas
+----
+
+Options:
+
+`--output, -o FILE`:: (Required) Output YAML file path
+
+`--base-dirs DIRS`:: Comma-separated search directories. It searches for the following paths when resolving schemas:
+schema files named according to schema ID::: `<SCHEMA_ID>.exp`
+schema files named in the STEP module pattern::: `<LOWERCASE_SCHEMA_WO_MIMARM>/{mim,arm}.exp`
+
+`--verbose`:: Show detailed output
+
+.Creating a manifest from a root schema
+[example]
+====
+The following command creates a manifest starting from the `schemas/modules/activity/mim.exp` root schema, searching for referenced schemas in the `schemas/` base directory.
+
+[source,sh]
+----
+expressir manifest create \
+  -o manifest.yaml \
+  --base-dirs schemas/ \
+  --verbose \
+  schemas/modules/activity/mim.exp
+
+Creating manifest from 1 root schema(s)...
+  Base directories:
+    - schemas/
+Resolving dependencies...
+  USE FROM action_schema (in Activity_mim): ✓ action_schema.exp
+  REFERENCE FROM basic_attribute_schema (in action_schema): ✓ basic_attribute_schema.exp
+  REFERENCE FROM support_resource_schema (in basic_attribute_schema): ✓ support_resource_schema.exp
+  REFERENCE FROM support_resource_schema (in action_schema): ✓ support_resource_schema.exp
+  USE FROM Activity_method_mim (in Activity_mim): ✗ not found
+  USE FROM basic_attribute_schema (in Activity_mim): ✓ basic_attribute_schema.exp
+  ...
+  REFERENCE FROM support_resource_schema (in management_resources_schema): ✓ support_resource_schema.exp
+✓ Manifest created: manifest.yaml
+  Resolved schemas: 41
+
+⚠ Unresolved schemas (1):
+  - Activity_method_mim
+
+Please edit manifest.yaml and set 'path:' for unresolved schemas
+Then validate with: expressir manifest validate manifest.yaml
+----
+====
+
+In the case of unresolved schemas, the created manifest will include entries without the `path:` field. The manifest can then be edited manually to add the correct paths.
+
+
+=== Resolving schemas from a manifest
+
+A schema manifest can be used as input to resolve and load all referenced schemas into a new manifest.
+
+[source,sh]
+----
+expressir manifest resolve MANIFEST -o, --output=OUTPUT
+----
+
+[source,sh]
+----
+Usage:
+  expressir manifest resolve MANIFEST -o, --output=OUTPUT
+
+Options:
+  -o, --output=OUTPUT                                # Output file path for resolved manifest
+      [--base-dirs=BASE_DIRS]                        # Comma-separated base directories for schema search
+      [--verbose], [--no-verbose], [--skip-verbose]  # Show detailed resolution progress
+                                                     # Default: false
+
+Description:
+  Resolve missing or incomplete schema paths in a manifest file.
+
+  This command attempts to find file paths for schemas with missing or empty
+  paths by searching in base directories using naming patterns:
+
+  Supported patterns:
+    - Resource schemas: {schema_name}.exp
+    - Module ARM/MIM: {module_name}/{arm|mim}.exp
+    Example: Activity_method_mim -> activity_method/mim.exp
+
+  The resolved manifest is written to the output file, leaving the original
+  unchanged.
+
+  Use this command after 'expressir manifest validate --check-references' fails
+  to automatically resolve missing schema paths.
+
+  Examples:
+    # Resolve paths using manifest's existing base directories
+    expressir manifest resolve manifest.yaml -o resolved_manifest.yaml
+
+    # Resolve with explicit base directories
+    expressir manifest resolve manifest.yaml -o resolved.yaml \
+      --base-dirs /path/to/schemas,/another/path
+
+    # With verbose output
+    expressir manifest resolve manifest.yaml -o resolved.yaml --verbose
+----
+
+Options:
+
+`--output, -o FILE`:: (Required) Output file path for resolved manifest
+
+`--base-dirs DIRS`:: Comma-separated search directories. It searches for the following paths when resolving schemas:
+schema files named according to schema ID::: `<SCHEMA_ID>.exp`
+schema files named in the STEP module pattern::: `<LOWERCASE_SCHEMA_WO_MIMARM>/{mim,arm}.exp`
+
+`--verbose`:: Show detailed resolution progress
+
+.Fully resolving a schema manifest
+[example]
+====
+The following command resolves all schemas in the `manifest.yaml` file and writes the fully resolved manifest to `resolved_manifest.yaml`.
+
+[source,sh]
+----
+expressir manifest resolve manifest.yaml -o resolved_manifest.yaml --verbose
+----
+
+[source,sh]
+----
+Resolving schema paths in: manifest.yaml...
+  Using base directories:
+    - /Users/mulgogi/src/mn/iso-10303/schemas/
+Attempting to resolve paths...
+Resolving dependencies from 1 root schema(s)...
+  USE FROM action_schema (in Activity_mim): ✓ action_schema.exp
+  REFERENCE FROM basic_attribute_schema (in action_schema): ✓ basic_attribute_schema.exp
+  REFERENCE FROM support_resource_schema (in basic_attribute_schema): ✓ support_resource_schema.exp
+  REFERENCE FROM support_resource_schema (in action_schema): ✓ support_resource_schema.exp
+  USE FROM Activity_method_mim (in Activity_mim): ✗ not found
+  USE FROM basic_attribute_schema (in Activity_mim): ✓ basic_attribute_schema.exp
+  USE FROM management_resources_schema (in Activity_mim): ✓ management_resources_schema.exp
+  ...
+  REFERENCE FROM support_resource_schema (in management_resources_schema): ✓ support_resource_schema.exp
+✓ Manifest resolved: resolved.yaml
+  Total schemas: 42
+  Resolved schemas: 41
+
+⚠ Unresolved schemas (1):
+  - Activity_method_mim
+
+These schemas could not be found in the search directories.
+You may need to:
+  1. Add more base directories with --base-dirs
+  2. Manually edit resolved.yaml and set their paths
+----
+====
+
+
+=== Validating a manifest
+
+A schema manifest can be validated to ensure all referenced schemas are fully resolvable and correctly defined.
+
+.`manifest validate` - Validate manifest
+[source,sh]
+----
+expressir manifest validate MANIFEST.yaml [OPTIONS]
+----
+
+[source,sh]
+----
+Usage:
+  expressir manifest validate MANIFEST
+
+Options:
+  [--verbose], [--no-verbose], [--skip-verbose]                             # Show detailed validation results
+                                                                            # Default: false
+  [--check-references], [--no-check-references], [--skip-check-references]  # Validate referential integrity using dependency resolver
+                                                                            # Default: false
+
+Description:
+  Validate a schema manifest file.
+
+  Validation types:
+    - File existence: All schema paths exist on disk
+    - Path completeness: All schemas have paths specified (warnings)
+    - Schema names: Manifest IDs match actual schema names in files
+    - Referential integrity (--check-references): All USE/REFERENCE FROM resolve
+
+  Examples:
+    # Basic validation (file existence and path completeness)
+    expressir manifest validate activity_manifest.yaml
+
+    # With referential integrity checking
+    expressir manifest validate activity_manifest.yaml --check-references
+
+    # With verbose output
+    expressir manifest validate activity_manifest.yaml --check-references --verbose
+----
+
+Options:
+
+`--verbose`:: Show detailed validation results
+
+`--check-references`:: Validate referential integrity using dependency resolver
+
+.Validating a manifest to ensure all dependencies are defined
+[example]
+====
+Checking `REFERENCE FROM` and `USE FROM` references to ensure all dependencies are defined in EXPRESS schemas included in the manifest:
+
+[source,sh]
+----
+$ expressir manifest validate manifest.yaml --check-references --verbose
+
+Validating manifest: manifest.yaml...
+Checking referential integrity...
+Validating referential integrity for 42 schemas...
+
+  USE FROM action_schema (in Activity_method_mim): ✓ action_schema.exp
+  REFERENCE FROM basic_attribute_schema (in action_schema): ✓ basic_attribute_schema.exp
+...
+  USE FROM action_schema (in Activity_mim): ✓ action_schema.exp
+...
+  REFERENCE FROM support_resource_schema (in topology_schema): ✓ support_resource_schema.exp
+✓ Manifest is valid
+  Total schemas: 42
+  Resolved schemas: 42
+----
+====
+
+
+== Ruby API for schema manifests
+
+=== Loading manifests
+
+Load an existing schema manifest from a YAML file:
+
+[source,ruby]
+----
+# Load manifest from file
+manifest = Expressir::SchemaManifest.from_file("schemas.yml")
+
+# Access schema entries
+manifest.schemas.each do |schema_entry|
+  puts "Schema path: #{schema_entry.path}"
+  puts "Schema ID: #{schema_entry.id}" if schema_entry.id
+end
+
+# Get all schema file paths
+schema_paths = manifest.schemas.map(&:path)
+----
+
+=== Creating manifests
+
+Create a new schema manifest programmatically:
+
+[source,ruby]
+----
+# Create an empty manifest
+manifest = Expressir::SchemaManifest.new
+
+# Add schema entries
+manifest.schemas << Expressir::SchemaManifestEntry.new(
+  path: "schemas/action_schema.exp",
+  id: "action_schema"
+)
+
+manifest.schemas << Expressir::SchemaManifestEntry.new(
+  path: "schemas/approval_schema.exp"
+)
+
+# Set base path for the manifest
+manifest.base_path = "/path/to/schemas"
+----
+
+=== Saving manifests
+
+Save a manifest to a file:
+
+[source,ruby]
+----
+# Save to a specific file
+manifest.to_file("output_schemas.yml")
+
+# Save to a path with automatic filename
+manifest.save_to_path("/path/to/output/")
+----
+
+=== Concatenating manifests
+
+Combine multiple manifests:
+
+[source,ruby]
+----
+manifest1 = Expressir::SchemaManifest.from_file("schemas1.yml")
+manifest2 = Expressir::SchemaManifest.from_file("schemas2.yml")
+
+# Concatenate manifests
+combined_manifest = manifest1.concat(manifest2)
+
+# Or use the + operator
+combined_manifest = manifest1 + manifest2
+----
+
+=== Using manifests with parsers
+
+Parse all schemas from a manifest:
+
+[source,ruby]
+----
+# Load manifest
+manifest = Expressir::SchemaManifest.from_file("schemas.yml")
+
+# Get schema file paths
+schema_paths = manifest.schemas.map(&:path)
+
+# Parse all schemas
+repository = Expressir::Express::Parser.from_files(schema_paths)
+
+# With progress tracking
+repository = Expressir::Express::Parser.from_files(schema_paths) do |filename, schemas, error|
+  if error
+    puts "Error loading #{filename}: #{error.message}"
+  else
+    puts "Successfully loaded #{schemas.length} schemas from #{filename}"
+  end
+end
+----

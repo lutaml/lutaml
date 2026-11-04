@@ -1,0 +1,305 @@
+---
+title: LER Packages
+nav_order: 3
+has_children: true
+---
+
+= LER Packages
+
+== Purpose
+
+LER (Lutaml EXPRESS Repository) packages provide a binary format for
+distributing EXPRESS schemas as self-contained, optimized files. LER packages
+offer faster loading times, smaller file sizes, and built-in indexes for
+efficient querying.
+
+== What is a LER package?
+
+A LER package (`.ler` file) is a ZIP archive containing:
+
+* Serialized EXPRESS schemas (in Marshal, JSON, or YAML format)
+* Pre-built indexes for fast entity and type lookups
+* Schema manifest describing all included schemas
+* Metadata about the package and its contents
+* Optional original EXPRESS source files
+
+== Benefits of LER packages
+
+=== Performance improvements
+
+Faster loading:: Parsing EXPRESS schemas is CPU-intensive. LER packages contain
+pre-parsed model objects that load instantly.
++
+.Loading time comparison
+[example]
+====
+* Parsing 100 EXPRESS files: ~45 seconds
+* Loading equivalent LER package: ~2 seconds
+* **Speed improvement: ~22x faster**
+====
+
+Pre-built indexes:: Entity and type indexes are included, eliminating the need
+to build them on load.
+
+=== Size reduction
+
+Binary serialization:: Marshal format provides compact binary serialization,
+typically 40-60% smaller than source EXPRESS files.
+
+Compressed storage:: ZIP compression further reduces file size by 60-80%.
+
+.Size comparison example
+[example]
+====
+* Source EXPRESS files: 15 MB
+* Uncompressed LER (Marshal): 6 MB
+* Compressed LER package: 1.2 MB
+* **Size reduction: 92% smaller**
+====
+
+=== Reliability improvements
+
+Single file distribution:: All schemas in one file eliminates missing
+dependencies.
+
+Resolved references:: All `USE FROM` and `REFERENCE FROM` statements are
+pre-resolved.
+
+Validated content:: Packages can be validated before distribution to ensure
+completeness.
+
+== Package structure
+
+A typical LER package contains:
+
+[source]
+----
+example.ler (ZIP archive)
+├── metadata.yaml              # Package metadata and configuration
+├── manifest.yaml              # Schema manifest with file list
+├── repository.marshal         # Serialized repository (binary)
+├── entity_index.marshal       # Pre-built entity index
+├── type_index.marshal         # Pre-built type index
+├── reference_index.marshal    # Pre-built reference index
+└── express_files/             # Optional EXPRESS source files
+    ├── schema1.exp
+    ├── schema2.exp
+    └── schema3.exp
+----
+
+== When to use LER packages
+
+=== Production deployments
+
+Use LER packages when:
+
+* Deploying applications that load schemas repeatedly
+* Distributing schema sets to end users
+* Building services that need fast startup times
+* Working with large schema collections (50+ files)
+
+=== Development workflows
+
+Continue using EXPRESS files when:
+
+* Actively developing schemas
+* Making frequent changes
+* Debugging schema content
+* Working with version control systems
+
+=== Hybrid approach
+
+Many projects use both:
+
+1. Develop with EXPRESS files under version control
+2. Build LER packages for testing and production
+3. Automate package creation in CI/CD pipelines
+
+== Package modes
+
+=== Resolution modes
+
+`resolved` (default):: All references between schemas are resolved and stored
+in the package. Recommended for most use cases.
+
+`bare`:: Schemas stored without reference resolution. Requires reference
+resolution on load. Rarely used.
+
+=== Express bundling modes
+
+`include_all` (default):: Includes original EXPRESS files in the package.
+Useful for documentation and debugging.
+
+`allow_external`:: Allows schemas to reference external EXPRESS files not
+included in the package. Requires external files at load time.
+
+=== Serialization formats
+
+`marshal` (default):: Ruby's native binary serialization. Fastest loading,
+most compact, but Ruby-specific.
+
+`yaml`:: Human-readable YAML format. Slower loading, larger files, but
+portable and debuggable.
+
+`json`:: JSON format. Similar to YAML but with wider tool support.
+
+== Common workflows
+
+=== Development to production
+
+[source]
+----
+1. Develop schemas in EXPRESS format
+2. Test changes locally
+3. Validate schemas
+4. Build LER package
+5. Deploy package to production
+----
+
+=== Continuous integration
+
+[source]
+----
+on: push
+  - Parse all schemas
+  - Run tests
+  - Validate coverage
+  - Build LER package
+  - Publish as artifact
+----
+
+=== Distribution workflow
+
+[source]
+----
+1. Build comprehensive LER package
+2. Test package integrity
+3. Generate documentation
+4. Publish to distribution channel
+5. Users download and use package
+----
+
+== Package operations
+
+The following operations are available for LER packages:
+
+Building:: link:creating-packages.html[Create packages from schemas]
+Loading:: link:loading-packages.html[Load packages into applications]
+Querying:: link:querying-packages.html[Search and filter package contents]
+Validating:: link:validating-packages.html[Verify package integrity]
+Formats:: link:package-formats.html[Choose serialization formats]
+
+== Performance considerations
+
+=== Memory usage
+
+LER packages load the entire repository into memory:
+
+* Small packages (<100 schemas): Negligible impact
+* Medium packages (100-500 schemas): 50-200 MB RAM
+* Large packages (>500 schemas): 200-500 MB RAM
+
+Consider memory constraints when building packages for resource-limited
+environments.
+
+=== Load time factors
+
+Factors affecting load time:
+
+* Serialization format (Marshal > YAML > JSON for speed)
+* Package size (number of schemas and entities)
+* Disk I/O speed
+* Whether indexes are pre-built
+
+=== Build time optimization
+
+Building packages is slower than loading them:
+
+* Parse time: Same as normal parsing
+* Serialization time: Depends on format
+* Index building time: Linear with schema count
+* Compression time: Depends on ZIP algorithm
+
+Build packages in CI/CD rather than on-demand.
+
+== CLI vs API usage
+
+=== Command-line interface
+
+Best for:
+
+* One-off operations
+* Scripts and automation
+* Interactive exploration
+* CI/CD pipelines
+
+.Example commands
+[example]
+====
+[source,bash]
+----
+# Build package
+expressir package build schemas/ output.ler
+
+# Query package
+expressir package list output.ler --type entity
+
+# Validate package
+expressir package validate output.ler --strict
+----
+====
+
+=== Ruby API
+
+Best for:
+
+* Application integration
+* Programmatic workflows
+* Custom processing
+* Building tools
+
+.Example code
+[example]
+====
+[source,ruby]
+----
+# Build package
+repository.export_to_package("output.ler")
+
+# Load package
+repository = Expressir::Model::Repository.from_package("output.ler")
+
+# Query package
+entities = repository.list_entities
+----
+====
+
+== Next steps
+
+Explore detailed guides for working with LER packages:
+
+* link:creating-packages.html[Creating Packages] - Build LER packages
+* link:loading-packages.html[Loading Packages] - Load and use packages
+* link:querying-packages.html[Querying Packages] - Search package contents
+* link:validating-packages.html[Validating Packages] - Verify package integrity
+* link:package-formats.html[Package Formats] - Choose serialization formats
+
+== Summary
+
+LER packages provide significant performance and usability benefits:
+
+* 20-30x faster loading than parsing EXPRESS files
+* 80-95% smaller than source files
+* Self-contained with resolved dependencies
+* Pre-built indexes for efficient querying
+* Multiple serialization format options
+* Suitable for production deployments
+
+Key takeaways:
+
+* Use LER packages for production and distribution
+* Develop with EXPRESS files, deploy with LER packages
+* Marshal format offers best performance
+* Include EXPRESS files for debugging capability
+* Validate packages before deployment
+* Automate package creation in CI/CD pipelines

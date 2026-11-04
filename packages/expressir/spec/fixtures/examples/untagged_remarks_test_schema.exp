@@ -1,0 +1,57 @@
+(* Top-level untagged remark at the beginning *)
+(* Another consecutive untagged remark *)
+
+SCHEMA untagged_remarks_test_schema;
+
+(* Untagged remark before constants *)
+CONSTANT
+  test_constant : STRING := 'value';
+END_CONSTANT;
+(* Untagged remark after constants *)
+
+(* Untagged remark before type definition *)
+TYPE test_enumeration = ENUMERATION OF
+  (item1,
+   (* Untagged remark within enumeration *)
+   item2,
+   item3);
+END_TYPE;
+
+--"test_enumeration" This is a tagged remark for comparison
+(* Untagged remark interleaved with tagged remark *)
+
+(* Untagged remark before entity *)
+ENTITY test_entity;
+  (* Untagged remark before attribute *)
+  attr1 : STRING;
+  (* Untagged remark between attributes *)
+  attr2 : INTEGER;
+  (* Untagged remark after attribute *)
+END_ENTITY;
+(* Untagged remark after entity *)
+
+--"test_entity" Tagged remark for the entity
+(* Another untagged remark after tagged remark *)
+
+(* Untagged remark before another entity *)
+ENTITY another_entity
+  SUBTYPE OF (test_entity);
+  (* Untagged remark within entity definition *)
+DERIVE
+  derived_attr : STRING := 'test';
+  (* Multiple consecutive untagged remarks *)
+  (* within the entity definition *)
+  (* showing preservation of all remarks *)
+END_ENTITY;
+
+(* Untagged remark before function *)
+FUNCTION test_function(param : STRING) : BOOLEAN;
+  (* Untagged remark within function *)
+  RETURN (TRUE);
+END_FUNCTION;
+(* Untagged remark after function *)
+
+(* Final untagged remark before schema end *)
+END_SCHEMA;
+(* Bottom-level untagged remark at the end *)
+(* Another consecutive untagged remark at the end *)

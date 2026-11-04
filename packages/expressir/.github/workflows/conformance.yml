@@ -1,0 +1,38 @@
+name: conformance
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+jobs:
+  conformance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: metanorma/iso-10303-stepmod
+          path: stepmod
+          sparse-checkout: data/resources
+          # the stepmod corpus is a PRIVATE metanorma repo; the default
+          # GITHUB_TOKEN is scoped to lutaml/expressir and got a 404 on
+          # every scheduled run since the workflow was added (2026-10-21)
+          token: ${{ secrets.LUTAML_CI_PAT_TOKEN }}
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+          bundler-cache: true
+      - name: Round-trip conformance over the stepmod corpus
+        run: bundle exec rake conformance
+        env:
+          STEPMOD_DIR: ${{ github.workspace }}/stepmod
+      - name: Trended property metrics
+        run: bundle exec rake conformance:trend
+        env:
+          STEPMOD_DIR: ${{ github.workspace }}/stepmod
+      - name: Upload the trend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: conformance-trend
+          path: conformance-trend.json

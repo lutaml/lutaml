@@ -1,0 +1,35 @@
+*** Written by Express Engine
+***    5.2.7 (GIT eeng-5.2.7)
+***    Steel Bank CL 2.5.8 (Unknown Bits)
+*** Express Engine Command Line:
+***   eengine --list
+***     -SCHEMA spec/fixtures/examples/cybersecurity_threat_detection_schema.exp
+*** File: spec/fixtures/examples/cybersecurity_threat_detection_schema.exp
+*** 1 Schema:
+   cybersecurity_threat_detection_schema
+
+
+SCHEMA cybersecurity_threat_detection_schema {acme standard 5000 part(130) version(1) object(1) cybersecurity-threat-detection-schema(1)};
+
+(* TYPE                   5 *)
+(* ENTITY                10 *)
+(* FUNCTION               0 *)
+(* PROCEDURE              0 *)
+(* RULE                   0 *)
+(* SUBTYPE_CONSTRAINT     0 *)
+
+  TYPE CYBERSECURITY_THREAT_DETECTION_SCHEMA.detection_method;
+  TYPE CYBERSECURITY_THREAT_DETECTION_SCHEMA.network_protocol;
+  TYPE CYBERSECURITY_THREAT_DETECTION_SCHEMA.threat_category;
+  TYPE CYBERSECURITY_THREAT_DETECTION_SCHEMA.threat_severity_level;
+  TYPE CYBERSECURITY_THREAT_DETECTION_SCHEMA.threat_status;
+  ENTITY CYBERSECURITY_THREAT_DETECTION_SCHEMA.incident_response;
+  ENTITY CYBERSECURITY_THREAT_DETECTION_SCHEMA.risk_assessment;
+  ENTITY CYBERSECURITY_THREAT_DETECTION_SCHEMA.security_alert;
+  ENTITY CYBERSECURITY_THREAT_DETECTION_SCHEMA.security_event;
+  ENTITY CYBERSECURITY_THREAT_DETECTION_SCHEMA.security_policy;
+  ENTITY CYBERSECURITY_THREAT_DETECTION_SCHEMA.security_rule;
+  ENTITY CYBERSECURITY_THREAT_DETECTION_SCHEMA.threat_detection;
+  ENTITY CYBERSECURITY_THREAT_DETECTION_SCHEMA.threat_indicator;
+  ENTITY CYBERSECURITY_THREAT_DETECTION_SCHEMA.threat_intelligence;
+  ENTITY CYBERSECURITY_THREAT_DETECTION_SCHEMA.vulnerability;

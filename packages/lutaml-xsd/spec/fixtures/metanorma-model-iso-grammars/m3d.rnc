@@ -1,0 +1,24 @@
+include "relaton-m3aawg.rnc" { }
+include "isodoc.rnc" {
+
+start = m3d-standard
+
+figure =
+  element figure {
+    attribute id { xsd:ID },
+    attribute unnumbered { xsd:boolean }?,
+    attribute number { text }?,
+    attribute subsequence { text }?,
+    attribute class { text }?,
+    attribute width { text }?,
+     source*, tname?, ( figure+ |  ( (TextElement* | pre), note*, dl? ) )
+  }
+
+}
+
+m3d-standard =
+  element m3d-standard {
+    Root-Attributes,
+    bibdata, termdocsource*, misccontainer?, boilerplate?, preface, sections+, annex*, bibliography, indexsect*
+ }
+

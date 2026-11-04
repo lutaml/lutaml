@@ -1,0 +1,43 @@
+# frozen_string_literal: true
+
+require "json"
+require_relative "../generator_options"
+require_relative "document"
+
+module Lutaml
+  module Json
+    module Adapter
+      class StandardAdapter < Document
+        FORMAT_SYMBOL = :json
+
+        def self.parse(json, _options = {})
+          JSON.parse(json)
+        end
+
+        # This adapter hands its payload to the stdlib generator, so a
+        # JSON::State carrying the outer formatting is meaningful here.
+        def accepts_generator_state?
+          true
+        end
+
+        def to_json(*args)
+          # Handle KeyValueElement input (new symmetric architecture)
+          attributes_to_serialize = @attributes
+
+          unless GeneratorOptions.lutaml_options?(args.first)
+            return JSON.generate(attributes_to_serialize, args.first)
+          end
+
+          options = args.first || {}
+          generator_options = GeneratorOptions.filter(options)
+
+          if options[:pretty]
+            JSON.pretty_generate(attributes_to_serialize, generator_options)
+          else
+            JSON.generate(attributes_to_serialize, generator_options)
+          end
+        end
+      end
+    end
+  end
+end

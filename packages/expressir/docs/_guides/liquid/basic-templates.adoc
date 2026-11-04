@@ -1,0 +1,813 @@
+---
+title: Basic Templates
+parent: Liquid
+grand_parent: Guides
+nav_order: 1
+---
+
+= Basic Liquid templates
+
+== Purpose
+
+This guide covers Liquid template fundamentals including syntax,
+variables, control flow, loops, and template organization. Master these
+basics to create effective documentation templates for EXPRESS schemas.
+
+== References
+
+* link:index.html[Liquid Overview] - Integration fundamentals
+* link:drops-reference.html[Drops Reference] - Available data objects
+* link:filters-and-tags.html[Filters and Tags] - Built-in operations
+* https://shopify.github.io/liquid/basics/introduction/[Liquid Basics] -
+  Official introduction
+
+== Concepts
+
+Object:: A piece of data that Liquid can output, accessed with `{{}}`.
+
+Tag:: Logic and control flow elements that use `{%%}` delimiters.
+
+Filter:: A function that transforms values, applied with the `|`
+operator.
+
+Variable:: A named reference to data, either from input or created with
+`assign`.
+
+Whitespace control:: Techniques to manage blank lines and spacing in
+output.
+
+== Template structure
+
+A Liquid template is a text file containing:
+
+* **Static content**: Output as-is
+* **Output tags**: `{{ }}` to display data
+* **Logic tags**: `{% %}` for control flow
+* **Filters**: Transform output values
+* **Comments**: Documentation within templates
+
+.Basic template anatomy
+[example]
+====
+[source,liquid]
+----
+# {{ schema.id }} Documentation <1>
+
+{% comment %}This is a comment{% endcomment %} <2>
+
+{% if schema.version %} <3>
+**Version**: {{ schema.version.value }} <4>
+{% endif %}
+
+Entities: {{ schema.entities | size }} <5>
+
+{% for entity in schema.entities %} <6>
+- {{ entity.id }}
+{% endfor %}
+----
+<1> Static text with output tag
+<2> Comment (not included in output)
+<3> Conditional logic tag
+<4> Nested output with data access
+<5> Output with filter
+<6> Loop tag
+====
+
+== Variables and output
+
+=== Output tags
+
+Use `{{ }}` to output data:
+
+[source,liquid]
+----
+{{ schema.id }}
+{{ entity.attributes.size }}
+{{ attr.type }}
+----
+
+=== Dot notation
+
+Access nested attributes with dots:
+
+[source,liquid]
+----
+{{ repository.schemas.first.id }}
+{{ entity.parent.id }}
+{{ schema.version.value }}
+----
+
+=== Array access
+
+Access array elements by index or use filters:
+
+[source,liquid]
+----
+{{ schema.entities[0].id }}
+{{ schema.entities.first.id }}
+{{ schema.entities.last.id }}
+{{ schema.entities | map: "id" }}
+----
+
+.Complete example accessing schema data
+[example]
+====
+[source,liquid]
+----
+Schema: {{ schema.id }}
+File: {{ schema.file }}
+
+First entity: {{ schema.entities.first.id }}
+Last entity: {{ schema.entities.last.id }}
+Total entities: {{ schema.entities.size }}
+----
+
+Given a schema with entities `person` and `company`:
+
+[source]
+----
+Schema: example_schema
+File: schemas/example_schema.exp
+
+First entity: person
+Last entity: company
+Total entities: 2
+----
+====
+
+== Variable assignment
+
+Create your own variables with `assign`:
+
+[source,liquid]
+----
+{% assign total = schema.entities.size %}
+{% assign has_types = schema.types.size > 0 %}
+{% assign first_entity = schema.entities.first %}
+
+Total entities: {{ total }}
+Has types: {{ has_types }}
+First: {{ first_entity.id }}
+----
+
+Variables persist within the template scope:
+
+[source,liquid]
+----
+{% assign count = 0 %}
+
+{% for entity in schema.entities %}
+  {% assign count = count | plus: 1 %}
+{% endfor %}
+
+Processed {{ count }} entities
+----
+
+== Control flow
+
+=== If statements
+
+Conditional logic with `if`:
+
+[source,liquid]
+----
+{% if entity.abstract %}
+**Abstract Entity** - Cannot be instantiated directly.
+{% endif %}
+
+{% if entity.attributes.size > 0 %}
+This entity has attributes.
+{% endif %}
+----
+
+=== If-else statements
+
+[source,liquid]
+----
+{% if entity.remarks.size > 0 %}
+## Description
+{{ entity.remarks | join: "\n" }}
+{% else %}
+No description available.
+{% endif %}
+----
+
+=== Elsif for multiple conditions
+
+[source,liquid]
+----
+{% if entity.attributes.size > 10 %}
+Complex entity with many attributes.
+{% elsif entity.attributes.size > 5 %}
+Medium complexity entity.
+{% elsif entity.attributes.size > 0 %}
+Simple entity.
+{% else %}
+Entity without attributes.
+{% endif %}
+----
+
+=== Unless (negative condition)
+
+`unless` is the opposite of `if`:
+
+[source,liquid]
+----
+{% unless entity.abstract %}
+Can be instantiated.
+{% endunless %}
+
+{% comment %}Equivalent to:{% endcomment %}
+{% if entity.abstract == false %}
+Can be instantiated.
+{% endif %}
+----
+
+=== Case statements
+
+Use `case` for multiple value checks:
+
+[source,liquid]
+----
+{% case entity.attributes.size %}
+{% when 0 %}
+  No attributes
+{% when 1 %}
+  One attribute
+{% when 2 %}
+  Two attributes
+{% else %}
+  {{ entity.attributes.size }} attributes
+{% endcase %}
+----
+
+.Complete example with control flow
+[example]
+====
+[source,liquid]
+----
+{% for entity in schema.entities %}
+## {{ entity.id }}
+
+{% if entity.abstract %}
+_Abstract entity_
+{% endif %}
+
+{% if entity.remarks.size > 0 %}
+{{ entity.remarks | join: " " }}
+{% else %}
+No documentation available.
+{% endif %}
+
+{% case entity.attributes.size %}
+{% when 0 %}
+No attributes defined.
+{% when 1 %}
+Has one attribute.
+{% else %}
+Has {{ entity.attributes.size }} attributes.
+{% endcase %}
+
+{% endfor %}
+----
+====
+
+== Comparison operators
+
+Use these operators in conditions:
+
+`==`:: Equal to
+`!=`:: Not equal to
+`>`:: Greater than
+`<`:: Less than
+`>=`:: Greater than or equal to
+`<=`:: Less than or equal to
+
+[source,liquid]
+----
+{% if entity.attributes.size == 0 %}
+{% if entity.attributes.size != 0 %}
+{% if entity.attributes.size > 5 %}
+{% if entity.attributes.size >= 10 %}
+----
+
+== Logical operators
+
+Combine conditions with logical operators:
+
+`and`:: Both conditions must be true
+`or`:: At least one condition must be true
+`contains`:: Check if string/array contains value
+
+[source,liquid]
+----
+{% if entity.attributes.size > 0 and entity.where_rules.size > 0 %}
+Entity has both attributes and constraints.
+{% endif %}
+
+{% if entity.abstract or entity.attributes.size == 0 %}
+Abstract or empty entity.
+{% endif %}
+
+{% if entity.id contains "person" %}
+Person-related entity.
+{% endif %}
+----
+
+== Loops
+
+=== For loops
+
+Iterate over collections with `for`:
+
+[source,liquid]
+----
+{% for entity in schema.entities %}
+- {{ entity.id }}
+{% endfor %}
+----
+
+=== Loop variables
+
+Special variables available in loops:
+
+`forloop.index`:: Current iteration (1-based)
+`forloop.index0`:: Current iteration (0-based)
+`forloop.first`:: True for first iteration
+`forloop.last`:: True for last iteration
+`forloop.length`:: Total iterations
+
+[source,liquid]
+----
+{% for entity in schema.entities %}
+{{ forloop.index }}. {{ entity.id }}
+  {% if forloop.first %}(first){% endif %}
+  {% if forloop.last %}(last){% endif %}
+{% endfor %}
+----
+
+.Output example
+[example]
+====
+[source]
+----
+1. person (first)
+2. company (last)
+----
+====
+
+=== Loop limits
+
+Control iteration with `limit` and `offset`:
+
+[source,liquid]
+----
+{% comment %}First 5 entities{% endcomment %}
+{% for entity in schema.entities limit:5 %}
+- {{ entity.id }}
+{% endfor %}
+
+{% comment %}Skip first 2, take next 3{% endcomment %}
+{% for entity in schema.entities offset:2 limit:3 %}
+- {{ entity.id }}
+{% endfor %}
+----
+
+=== Range loops
+
+Iterate over number ranges:
+
+[source,liquid]
+----
+{% for i in (1..5) %}
+  {{ i }}
+{% endfor %}
+
+{% comment %}Output: 1 2 3 4 5{% endcomment %}
+
+{% assign max = 10 %}
+{% for i in (1..max) %}
+  Item {{ i }}
+{% endfor %}
+----
+
+=== Reversed loops
+
+Iterate in reverse order:
+
+[source,liquid]
+----
+{% for entity in schema.entities reversed %}
+- {{ entity.id }}
+{% endfor %}
+----
+
+=== Break and continue
+
+Control loop flow:
+
+[source,liquid]
+----
+{% comment %}Stop after finding first abstract entity{% endcomment %}
+{% for entity in schema.entities %}
+  {% if entity.abstract %}
+    Found: {{ entity.id }}
+    {% break %}
+  {% endif %}
+{% endfor %}
+
+{% comment %}Skip non-abstract entities{% endcomment %}
+{% for entity in schema.entities %}
+  {% unless entity.abstract %}
+    {% continue %}
+  {% endunless %}
+  Abstract: {{ entity.id }}
+{% endfor %}
+----
+
+=== Nested loops
+
+Combine loops for hierarchical data:
+
+[source,liquid]
+----
+{% for schema in repository.schemas %}
+# {{ schema.id }}
+
+  {% for entity in schema.entities %}
+## {{ entity.id }}
+
+    {% for attr in entity.attributes %}
+- {{ attr.id }}: {{ attr.type }}
+    {% endfor %}
+  {% endfor %}
+{% endfor %}
+----
+
+.Complete loop example with features
+[example]
+====
+[source,liquid]
+----
+# Entity Listing
+
+{% for entity in schema.entities %}
+{{ forloop.index }}. **{{ entity.id }}**
+   {% if entity.abstract %}(Abstract){% endif %}
+
+   {% if entity.attributes.size > 0 %}
+   Attributes:
+   {% for attr in entity.attributes limit:3 %}
+   - {{ attr.id }}
+     {% if forloop.last and entity.attributes.size > 3 %}
+   - ... and {{ entity.attributes.size | minus: 3 }} more
+     {% endif %}
+   {% endfor %}
+   {% endif %}
+
+   {% unless forloop.last %}
+   ---
+   {% endunless %}
+{% endfor %}
+----
+====
+
+== Comments
+
+Add notes within templates:
+
+[source,liquid]
+----
+{% comment %}
+This template generates entity documentation.
+Author: Team Name
+Last updated: 2024-01-15
+{% endcomment %}
+
+{% comment %}TODO: Add where rules section{% endcomment %}
+
+{% for entity in schema.entities %}
+  {% comment %}Process each entity{% endcomment %}
+  {{ entity.id }}
+{% endfor %}
+----
+
+Single-line comments:
+
+[source,liquid]
+----
+{% comment %}This is a single line comment{% endcomment %}
+----
+
+Multi-line comments:
+
+[source,liquid]
+----
+{% comment %}
+This is a longer comment
+that spans multiple lines
+for detailed explanations.
+{% endcomment %}
+----
+
+== Whitespace control
+
+Control spacing and blank lines in output.
+
+=== Default behavior
+
+Liquid preserves whitespace:
+
+[source,liquid]
+----
+{% for entity in schema.entities %}
+  {{ entity.id }}
+{% endfor %}
+----
+
+Creates blank lines from the loop tags.
+
+=== Hyphen for whitespace stripping
+
+Add `-` to strip whitespace:
+
+[source,liquid]
+----
+{%- for entity in schema.entities -%}
+  {{ entity.id }}
+{%- endfor -%}
+----
+
+`{%-`:: Strip whitespace before tag
+`-%}`:: Strip whitespace after tag
+`{{-`:: Strip whitespace before output
+`-}}`:: Strip whitespace after output
+
+.Whitespace comparison
+[example]
+====
+Without stripping:
+[source,liquid]
+----
+{% for entity in schema.entities %}
+{{ entity.id }}
+{% endfor %}
+----
+
+Output (with blank lines):
+[source]
+----
+
+person
+
+company
+
+----
+
+With stripping:
+[source,liquid]
+----
+{%- for entity in schema.entities %}
+{{ entity.id }}
+{%- endfor %}
+----
+
+Output (compact):
+[source]
+----
+person
+company
+----
+====
+
+=== Strategic whitespace use
+
+[source,liquid]
+----
+# Schema: {{ schema.id }}
+{%- comment %}No blank after title{% endcomment %}
+
+## Entities
+{%- comment %}No blank after heading{% endcomment %}
+
+{%- for entity in schema.entities %}
+- {{ entity.id }}
+{%- endfor %}
+{%- comment %}Compact list{% endcomment %}
+----
+
+== Capture for complex variables
+
+Store template output in variables:
+
+[source,liquid]
+----
+{% capture entity_list %}
+  {% for entity in schema.entities %}
+    {{ entity.id }}{% unless forloop.last %}, {% endunless %}
+  {% endfor %}
+{% endcapture %}
+
+Entities: {{ entity_list }}
+----
+
+Useful for:
+
+* Reusing generated content
+* Building complex strings
+* Conditional output assembly
+
+[source,liquid]
+----
+{% capture description %}
+  {% if entity.remarks.size > 0 %}
+    {{ entity.remarks | join: " " }}
+  {% else %}
+    {{ entity.id | capitalize }} entity
+  {% endif %}
+{% endcapture %}
+
+Description: {{ description | strip }}
+----
+
+== Template organization best practices
+
+=== Use descriptive variable names
+
+[source,liquid]
+----
+{% comment %}❌ Poor{% endcomment %}
+{% assign t = schema.types.size %}
+{% assign e = schema.entities.size %}
+
+{% comment %}✅ Good{% endcomment %}
+{% assign type_count = schema.types.size %}
+{% assign entity_count = schema.entities.size %}
+----
+
+=== Group related logic
+
+[source,liquid]
+----
+{% comment %}=== Statistics Section ==={% endcomment %}
+{% assign entity_count = schema.entities.size %}
+{% assign type_count = schema.types.size %}
+{% assign total = entity_count | plus: type_count %}
+
+{% comment %}=== Output Section ==={% endcomment %}
+Entities: {{ entity_count }}
+Types: {{ type_count }}
+Total: {{ total }}
+----
+
+=== Keep conditions simple
+
+[source,liquid]
+----
+{% comment %}❌ Complex{% endcomment %}
+{% if entity.attributes.size > 0 and entity.where_rules.size > 0
+   and entity.remarks.size > 0 %}
+
+{% comment %}✅ Better - break down{% endcomment %}
+{% assign has_attributes = entity.attributes.size > 0 %}
+{% assign has_rules = entity.where_rules.size > 0 %}
+{% assign has_docs = entity.remarks.size > 0 %}
+
+{% if has_attributes and has_rules and has_docs %}
+----
+
+=== Use consistent formatting
+
+[source,liquid]
+----
+{% comment %}Consistent indentation{% endcomment %}
+{% for schema in repository.schemas %}
+  {% for entity in schema.entities %}
+    {% for attr in entity.attributes %}
+      {{ attr.id }}
+    {% endfor %}
+  {% endfor %}
+{% endfor %}
+
+{% comment %}Consistent tag spacing{% endcomment %}
+{% if condition %}
+  content
+{% endif %}
+
+{% for item in items %}
+  {{ item }}
+{% endfor %}
+----
+
+=== Comment complex logic
+
+[source,liquid]
+----
+{% comment %}
+Build entity hierarchy showing inheritance relationships.
+First pass: identify root entities (no supertypes).
+Second pass: recursively show children.
+{% endcomment %}
+
+{% assign root_entities = schema.entities
+   | where: "subtype_of", empty %}
+
+{% for entity in root_entities %}
+  {% comment %}Recursively process children{% endcomment %}
+  ...
+{% endfor %}
+----
+
+== Common patterns
+
+=== Conditional sections
+
+[source,liquid]
+----
+{% if entity.where_rules.size > 0 %}
+## Constraints
+
+{% for rule in entity.where_rules %}
+### {{ rule.id }}
+{{ rule.expression }}
+{% endfor %}
+{% endif %}
+----
+
+=== Fallback content
+
+[source,liquid]
+----
+{% if entity.remarks.size > 0 %}
+{{ entity.remarks | join: " " }}
+{% else %}
+_No documentation available._
+{% endif %}
+----
+
+=== Sorted output
+
+[source,liquid]
+----
+{% assign sorted_entities = schema.entities | sort: "id" %}
+
+{% for entity in sorted_entities %}
+- {{ entity.id }}
+{% endfor %}
+----
+
+=== Filtered lists
+
+[source,liquid]
+----
+{% comment %}Show only abstract entities{% endcomment %}
+{% for entity in schema.entities %}
+  {% if entity.abstract %}
+- {{ entity.id }} (abstract)
+  {% endif %}
+{% endfor %}
+----
+
+=== Numbered lists
+
+[source,liquid]
+----
+{% for entity in schema.entities %}
+{{ forloop.index }}. {{ entity.id }}
+   {% if entity.abstract %}
+   _Abstract entity_
+   {% endif %}
+{% endfor %}
+----
+
+== Next steps
+
+Build on these basics:
+
+* link:drops-reference.html[Drops Reference] - Explore available data
+* link:filters-and-tags.html[Filters and Tags] - Transform and operate
+  on data
+* link:documentation-generation.html[Documentation Generation] -
+  Complete workflows
+
+**Practice**:
+
+* link:../../_tutorials/liquid-templates.html[Liquid Templates
+  Tutorial] - Hands-on examples
+
+== Summary
+
+Liquid template basics include:
+
+* ✅ Output tags `{{ }}` for displaying data
+* ✅ Logic tags `{% %}` for control flow
+* ✅ Variables with `assign` and `capture`
+* ✅ Conditionals: `if`, `elsif`, `else`, `unless`, `case`
+* ✅ Loops: `for`, `break`, `continue`, `reversed`
+* ✅ Loop variables: `forloop.index`, `forloop.first`, etc.
+* ✅ Whitespace control with `-` hyphens
+* ✅ Comments for documentation
+* ✅ Organization best practices
+
+Master these fundamentals to create effective, maintainable templates
+for EXPRESS schema documentation.

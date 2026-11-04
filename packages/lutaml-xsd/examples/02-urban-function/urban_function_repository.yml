@@ -1,0 +1,116 @@
+# Schema Repository Configuration for i-UR Urban Function
+# This YAML file demonstrates how to configure a schema repository
+# for packaging and distribution.
+
+# List of schema files to include in the repository
+# Paths can be relative to this YAML file or absolute
+files:
+  - ../../spec/fixtures/i-ur/urbanFunction.xsd
+
+# Schema location mappings define how to resolve schema imports and includes
+# Each mapping has 'from' (source pattern), 'to' (target path), and optional 'pattern' flag
+schema_location_mappings:
+  # Map specific relative path to local file
+  - from: "../../uro/3.2/urbanObject.xsd"
+    to: ../../spec/fixtures/i-ur/urbanObject.xsd
+    pattern: false
+
+  # Map xlink relative paths (regex patterns auto-detected)
+  - from: "(?:\\.\\./)+xlink/(.+\\.xsd)$"
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/xlink/\1
+    pattern: true
+
+  # Map GML relative paths
+  - from: "(?:\\.\\./)+gml/(.+\\.xsd)$"
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/gml/\1
+    pattern: true
+
+  # Map ISO relative paths
+  - from: "(?:\\.\\./)+iso/(.+\\.xsd)$"
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/iso/\1
+    pattern: true
+
+  # Map simple relative paths for GMD, GSS, GTS, GSR, GCO, GMX
+  - from: "^\\.\\./gmd/(.+\\.xsd)$"
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/gmd/\1
+    pattern: true
+
+  - from: "^\\.\\./gss/(.+\\.xsd)$"
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/gss/\1
+    pattern: true
+
+  - from: "^\\.\\./gts/(.+\\.xsd)$"
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/gts/\1
+    pattern: true
+
+  - from: "^\\.\\./gsr/(.+\\.xsd)$"
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/gsr/\1
+    pattern: true
+
+  - from: "^\\.\\./gco/(.+\\.xsd)$"
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/gco/\1
+    pattern: true
+
+  - from: "^\\.\\./gmx/(.+\\.xsd)$"
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/gmx/\1
+    pattern: true
+
+  # Map bare .xsd filenames to codesynthesis directories
+  - from: "^(basicTypes|coordinateOperations|coordinateReferenceSystems|coordinateSystems|coverage|datums|defaultStyle|deprecatedTypes|dictionary|direction|dynamicFeature|feature|geometryAggregates|geometryBasic0d1d|geometryBasic2d|geometryComplexes|geometryPrimitives|gml|gmlBase|grids|measures|observation|referenceSystems|temporal|temporalReferenceSystems|temporalTopology|topology|units|valueObjects)\\.xsd$"
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/gml/3.2.1/\1.xsd
+    pattern: true
+
+  - from: "^(applicationSchema|citation|constraints|content|dataQuality|distribution|extent|freeText|gmd|identification|maintenance|metadataApplication|metadataEntity|metadataExtension|portrayalCatalogue|referenceSystem|spatialRepresentation)\\.xsd$"
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/gmd/\1.xsd
+    pattern: true
+
+  - from: "^(geometry|gss)\\.xsd$"
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/gss/\1.xsd
+    pattern: true
+
+  - from: "^(gts|temporalObjects)\\.xsd$"
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/gts/\1.xsd
+    pattern: true
+
+  - from: "^(gsr|spatialReferencing)\\.xsd$"
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/gsr/\1.xsd
+    pattern: true
+
+  - from: "^(basicTypes|gco|gcoBase)\\.xsd$"
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/gco/\1.xsd
+    pattern: true
+
+  - from: "^(catalogues|codelistItem|crsItem|extendedTypes|gmx|gmxUsage|uomItem)\\.xsd$"
+    to: ../../spec/fixtures/codesynthesis-gml-3.2.1/iso/19139/20070417/gmx/\1.xsd
+    pattern: true
+
+  - from: "^(smil20-.*|smil20|xml-mod|rdf)\\.xsd$"
+    to: ../../spec/fixtures/smil20/\1.xsd
+    pattern: true
+
+  # Map ISO TC211 HTTPS URLs to local directory structure
+  - from: "https://schemas\\.isotc211\\.org/(.+)"
+    to: ../../spec/fixtures/isotc211/\1
+    pattern: true
+
+  # Map ISO TC211 relative paths
+  - from: "(?:\\.\\./)+(\\d{5}/.+\\.xsd)$"
+    to: ../../spec/fixtures/isotc211/\1
+    pattern: true
+
+# Namespace mappings define prefix-to-URI mappings for the schemas
+namespace_mappings:
+  - prefix: xs
+    uri: "http://www.w3.org/2001/XMLSchema"
+
+  - prefix: urf
+    uri: "https://www.geospatial.jp/iur/urf/3.2"
+
+  - prefix: uro
+    uri: "https://www.geospatial.jp/iur/uro/3.2"
+
+  - prefix: gml
+    uri: "http://www.opengis.net/gml/3.2"
+
+  - prefix: xlink
+    uri: "http://www.w3.org/1999/xlink"

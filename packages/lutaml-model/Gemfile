@@ -1,0 +1,73 @@
+# frozen_string_literal: true
+
+source "https://rubygems.org"
+
+# Specify your gem's dependencies in lutaml-model.gemspec
+gemspec
+
+# Opal-compatible forks of oga and ruby-ll. The forks add pure-Ruby lexer
+# and driver fallbacks (under ext/pureruby/) plus an Opal-aware conditional
+# in lib/oga.rb / lib/ll/setup.rb that selects the pure-Ruby implementation
+# when RUBY_PLATFORM == 'opal'. Under CRuby/JRuby the forks behave
+# identically to upstream (the conditional falls through to liboga/libll).
+# The vendored forks are Opal-compatibility shims (pure-Ruby lexer)
+# used by the Opal CI leg ONLY (LUTAML_OPAL_FORKS=1 in opal.yml) —
+# #835 step 2. Every MRI leg runs against released oga/ruby-ll; the
+# forks' C extension is upstream's and adds nothing under MRI.
+if ENV["LUTAML_OPAL_FORKS"]
+  gem "oga", path: "vendor/opal-oga"
+  gem "ruby-ll", path: "vendor/opal-ruby-ll"
+else
+  gem "oga"
+  gem "ruby-ll"
+end
+
+# needed for liquid with ruby 3.4
+gem "base64"
+gem "benchmark-ips"
+gem "bigdecimal"
+gem "canon" # , path: "../canon"
+gem "json-ld"
+gem "liquid", "~> 5"
+# lutaml-store depends on lutaml-model, so it can never be a gemspec dependency.
+# 0.2.4 relaxes rubyzip to >= 2.3, < 4 (lutaml/lutaml-store#5), co-resolving
+# with lutaml-model's rubyzip ~> 3.4 CVE floor.
+gem "lutaml-store", "~> 0.2.4"
+gem "multi_json"
+gem "nokogiri"
+gem "oj"
+gem "openssl", "~> 3.0"
+gem "ox"
+gem "rake"
+gem "rdf-turtle"
+gem "rexml"
+# Native engines stay development-only: every adapter detects and
+# degrades gracefully at runtime (safe requires + prefer-if-available).
+# yeptris ships no Windows prebuilt platform gem.
+# leptris floor: the single capability line for the plan fast path
+# (see Lutaml::Xml::Leptris::MIN_LEPTRIS_VERSION) — child snapshots,
+# exact-URI attribute rows, nested-attribute capture, wildcard rows,
+# walk-side ns retention and leniency, :unqualified rows, and the
+# address-based text attach all ride it.
+gem "leptris", ">= 1.9.351.1"
+gem "teptris"
+gem "yeptris" unless Gem.win_platform?
+# TODO: revert rng branch to main when lutaml/rng#32 is merged
+gem "rng", git: "https://github.com/lutaml/rng", branch: "main"
+gem "rspec"
+gem "rubocop"
+gem "rubocop-performance", require: false
+gem "rubocop-rake", require: false
+gem "rubocop-rspec", require: false
+gem "tomlib"
+gem "toml-rb"
+
+# ruby-prof works on all platforms including Windows (unlike stackprof)
+# Provides both CPU and memory profiling
+gem "ruby-prof", group: :development
+
+group :opal do
+  gem "opal", "~> 1.8"
+  gem "opal-rspec", "~> 1.0"
+  gem "opal-sprockets"
+end

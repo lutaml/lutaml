@@ -1,0 +1,892 @@
+---
+layout: default
+title: Troubleshooting
+nav_order: 70
+---
+= Troubleshooting
+:toc:
+:toclevels: 3
+
+== Purpose
+
+This guide provides solutions to common problems encountered when using Lutaml::XSD. Each issue includes symptoms, root causes, and step-by-step solutions.
+
+== General
+
+Troubleshooting follows a systematic approach:
+
+1. **Identify the symptom**: What error or unexpected behavior are you seeing?
+2. **Determine the cause**: What is the root cause of the issue?
+3. **Apply the solution**: Follow the recommended steps to resolve the issue
+4. **Verify the fix**: Confirm the issue is resolved
+
+For issues not covered here, see link:../advanced/DEBUGGING[Debugging] for advanced troubleshooting techniques.
+
+== Schema not found errors
+
+=== Problem: "Schema file not found"
+
+**Symptom:**
+
+[source]
+----
+Error: Schema file not found: schemas/gml/gml.xsd
+----
+
+**Cause:**
+
+The specified schema file does not exist at the given path, or the path is incorrect.
+
+**Solution:**
+
+1. Verify the file exists:
++
+[source,bash]
+----
+ls -la schemas/gml/gml.xsd
+----
+
+2. Check if the path is relative to the correct directory:
++
+[source,ruby]
+----
+# In YAML config, paths should be relative to the config file
+# If config is at config/schemas.yml:
+files:
+  - ../schemas/gml/gml.xsd  # Relative to config/
+  # Or use absolute paths:
+  - /absolute/path/to/schemas/gml/gml.xsd
+----
+
+3. Ensure XSD files were downloaded:
++
+[source,bash]
+----
+# Download missing schemas
+curl -o schemas/gml/gml.xsd https://schemas.opengis.net/gml/3.2.1/gml.xsd
+----
+
+4. Check file permissions:
++
+[source,bash]
+----
+# Ensure files are readable
+chmod -R a+r schemas/
+----
+
+=== Problem: "Failed to resolve import"
+
+**Symptom:**
+
+[source]
+----
+Warning: Failed to parse schema schemas/main.xsd: Import not resolved
+Import: http://www.w3.org/1999/xlink
+----
+
+**Cause:**
+
+Schema imports reference external URLs or paths that aren't mapped to local files.
+
+**Solution:**
+
+1. Add schema location mapping in your configuration:
++
+[source,yaml]
+----
+# config/schemas.yml
+schema_location_mappings:
+  - from: "http://www.w3.org/1999/xlink"
+    to: "schemas/xlink/xlinks.xsd"
+----
+
+2. Verify the target file exists:
++
+[source,bash]
+----
+ls -la schemas/xlink/xlinks.xsd
+----
+
+3. For multiple imports, use regex patterns:
++
+[source,yaml]
+----
+schema_location_mappings:
+  - from: !ruby/regexp /^https?:\/\/www\.w3\.org\/(.+)/
+    to: "schemas/w3c/\1"
+----
+
+4. Enable verbose output to see mapping attempts:
++
+[source,bash]
+----
+lutaml-xsd pkg build config.yml --verbose
+----
+
+== Type resolution failures
+
+=== Problem: "Type not found in namespace"
+
+**Symptom:**
+
+[source]
+----
+Type 'CodeType' not found in namespace 'http://www.opengis.net/gml'
+----
+
+**Cause:**
+
+The type doesn't exist in the specified namespace, or the schema containing the type wasn't parsed.
+
+**Solution:**
+
+1. Verify the type name is correct (case-sensitive):
++
+[source,ruby]
+----
+# Correct
+repo.find_type('gml:CodeType')
+
+# Incorrect
+repo.find_type('gml:codetype')  # Wrong case
+repo.find_type('gml:Code')      # Incomplete name
+----
+
+2. Check if the schema containing the type was included:
++
+[source,ruby]
+----
+# List all parsed schemas
+repo.statistics[:total_schemas]
+
+# Check if specific schema was parsed
+# (Implementation depends on internal access)
+----
+
+3. Ensure repository was resolved:
++
+[source,ruby]
+----
+repo = Lutaml::Xsd::SchemaRepository.from_yaml_file('config.yml')
+repo.parse    # Parse schemas
+repo.resolve  # Build type index - REQUIRED!
+
+result = repo.find_type('gml:CodeType')
+----
+
+4. Use verbose output to see which types were indexed:
++
+[source,bash]
+----
+lutaml-xsd stats show --from schemas.lxr --verbose
+----
+
+=== Problem: "Namespace prefix not registered"
+
+**Symptom:**
+
+[source]
+----
+Namespace prefix 'gml' not registered
+----
+
+**Cause:**
+
+The namespace prefix hasn't been configured in the repository.
+
+**Solution:**
+
+1. Add namespace mapping in YAML configuration:
++
+[source,yaml]
+----
+# config/schemas.yml
+namespace_mappings:
+  - prefix: "gml"
+    uri: "http://www.opengis.net/gml"
+----
+
+2. Or configure programmatically:
++
+[source,ruby]
+----
+repo.configure_namespace(
+  prefix: 'gml',
+  uri: 'http://www.opengis.net/gml'
+)
+----
+
+3. Or use Clark notation (doesn't require prefix):
++
+[source,ruby]
+----
+# Instead of: repo.find_type('gml:CodeType')
+# Use:
+repo.find_type('{http://www.opengis.net/gml}CodeType')
+----
+
+4. Check registered namespaces:
++
+[source,ruby]
+----
+puts repo.all_namespaces
+# => ["http://www.opengis.net/gml", ...]
+----
+
+== Package validation errors
+
+=== Problem: "Package structure is invalid"
+
+**Symptom:**
+
+[source]
+----
+✗ Package validation failed:
+  - Missing metadata.json
+  - Invalid ZIP structure
+----
+
+**Cause:**
+
+The package file is corrupted or wasn't created properly.
+
+**Solution:**
+
+1. Rebuild the package:
++
+[source,bash]
+----
+# Remove old package
+rm schemas.lxr
+
+# Rebuild with validation
+lutaml-xsd pkg build config.yml \
+  --output schemas.lxr \
+  --validate
+----
+
+2. Check if file is a valid ZIP:
++
+[source,bash]
+----
+unzip -t schemas.lxr
+----
+
+3. Inspect package contents:
++
+[source,bash]
+----
+lutaml-xsd package info schemas.lxr
+----
+
+4. If package is corrupted, verify disk space and permissions:
++
+[source,bash]
+----
+df -h .
+ls -la schemas.lxr
+----
+
+=== Problem: "Package version mismatch"
+
+**Symptom:**
+
+[source]
+----
+Warning: Package was created with lutaml-xsd 1.0.3, current version is 1.0.4
+----
+
+**Cause:**
+
+The package was created with a different version of lutaml-xsd.
+
+**Solution:**
+
+1. This is usually safe - the warning is informational. Continue using the package.
+
+2. To eliminate the warning, rebuild the package with the current version:
++
+[source,bash]
+----
+lutaml-xsd pkg build config.yml --output schemas.lxr
+----
+
+3. For production, pin lutaml-xsd version in Gemfile:
++
+[source,ruby]
+----
+# Gemfile
+gem 'lutaml-xsd', '~> 1.0.4'
+----
+
+== Import/include resolution issues
+
+=== Problem: "Circular import detected"
+
+**Symptom:**
+
+[source]
+----
+Error: Circular import detected involving: schemas/a.xsd
+----
+
+**Cause:**
+
+Schema files have circular import dependencies (A imports B, B imports A).
+
+**Solution:**
+
+1. Review your schema structure to identify the circular dependency:
++
+[source,bash]
+----
+# Find imports in schemas
+grep -r "xs:import" schemas/
+grep -r "xs:include" schemas/
+----
+
+2. Restructure schemas to break the circular dependency:
++
+[source,xml]
+----
+<!-- BEFORE (circular): -->
+<!-- a.xsd imports b.xsd -->
+<!-- b.xsd imports a.xsd -->
+
+<!-- AFTER (fixed): -->
+<!-- common.xsd contains shared types -->
+<!-- a.xsd imports common.xsd -->
+<!-- b.xsd imports common.xsd -->
+----
+
+3. If circular imports are unavoidable in the original schemas, use lazy loading:
++
+[source,ruby]
+----
+repo.parse(lazy_load: true)  # May help with some circular dependencies
+----
+
+=== Problem: "Relative path resolution failed"
+
+**Symptom:**
+
+[source]
+----
+Failed to resolve include: ../common/types.xsd
+Current location: /path/to/schemas/module/main.xsd
+----
+
+**Cause:**
+
+Relative paths in includes don't resolve correctly from the schema's location.
+
+**Solution:**
+
+1. Add explicit mapping for the relative path:
++
+[source,yaml]
+----
+schema_location_mappings:
+  - from: "../common/types.xsd"
+    to: "schemas/common/types.xsd"
+----
+
+2. Or use a regex pattern for all relative paths:
++
+[source,yaml]
+----
+schema_location_mappings:
+  - from: !ruby/regexp /^\.\.\/common\/(.+)$/
+    to: "schemas/common/\1"
+----
+
+3. Verify the referenced file exists:
++
+[source,bash]
+----
+ls -la schemas/common/types.xsd
+----
+
+== Performance problems
+
+=== Problem: "Package loading is slow"
+
+**Symptom:**
+
+Loading a package takes several seconds instead of milliseconds.
+
+**Cause:**
+
+Package configuration isn't optimized for fast loading.
+
+**Solution:**
+
+1. Use `resolved` mode with `marshal` format for fastest loading:
++
+[source,bash]
+----
+lutaml-xsd pkg build config.yml \
+  --resolution-mode resolved \
+  --serialization-format marshal \
+  --output fast.lxr
+----
+
+2. If using `bare` mode, schemas are parsed on load. Switch to `resolved`:
++
+[source,bash]
+----
+# Slow (bare mode)
+lutaml-xsd pkg build config.yml --resolution-mode bare
+
+# Fast (resolved mode)
+lutaml-xsd pkg build config.yml --resolution-mode resolved
+----
+
+3. Check package size and consider partitioning large schema sets:
++
+[source,bash]
+----
+# If package is > 10MB, consider splitting
+ls -lh schemas.lxr
+----
+
+4. Benchmark different configurations:
++
+[source,ruby]
+----
+require 'benchmark'
+
+Benchmark.bm do |x|
+  x.report("marshal:") {
+    Lutaml::Xsd::SchemaRepository.from_package('marshal.lxr')
+  }
+  x.report("json:") {
+    Lutaml::Xsd::SchemaRepository.from_package('json.lxr')
+  }
+  x.report("yaml:") {
+    Lutaml::Xsd::SchemaRepository.from_package('yaml.lxr')
+  }
+end
+----
+
+=== Problem: "Type queries are slow"
+
+**Symptom:**
+
+Individual type queries take more than 1ms.
+
+**Cause:**
+
+Repository hasn't been resolved, or type index wasn't built.
+
+**Solution:**
+
+1. Ensure `resolve()` was called:
++
+[source,ruby]
+----
+repo = Lutaml::Xsd::SchemaRepository.from_package('schemas.lxr')
+# If package is in bare mode:
+repo.parse  # Parse schemas if needed
+repo.resolve  # Build type index - REQUIRED for fast queries!
+
+# Now queries should be fast
+result = repo.find_type('gml:CodeType')  # ~0.001ms
+----
+
+2. Use `resolved` packages for instant loading:
++
+[source,bash]
+----
+lutaml-xsd pkg build config.yml --resolution-mode resolved
+----
+
+3. Benchmark to identify bottlenecks:
++
+[source,ruby]
+----
+require 'benchmark'
+
+result = Benchmark.measure do
+  1000.times { repo.find_type('gml:CodeType') }
+end
+
+puts "Average per query: #{result.real / 1000.0}s"
+# Should be < 0.001s with type index
+----
+
+== Memory issues
+
+=== Problem: "Out of memory when creating package"
+
+**Symptom:**
+
+[source]
+----
+Killed
+(or)
+cannot allocate memory (NoMemoryError)
+----
+
+**Cause:**
+
+Large schema sets require more memory than available.
+
+**Solution:**
+
+1. Use `bare` mode to reduce memory usage:
++
+[source,bash]
+----
+lutaml-xsd pkg build config.yml \
+  --resolution-mode bare \
+  --output schemas.lxr
+----
+
+2. Process schemas in batches:
++
+[source,ruby]
+----
+# Split configuration into smaller packages
+# Instead of one large package, create multiple smaller ones
+['gml', 'citygml', 'iso'].each do |schema_set|
+  config = "config/#{schema_set}.yml"
+  output = "pkg/#{schema_set}.lxr"
+
+  repo = Lutaml::Xsd::SchemaRepository.from_yaml_file(config)
+  repo.parse.resolve
+  repo.to_package(output)
+end
+----
+
+3. Increase available memory:
++
+[source,bash]
+----
+# For Ruby processes
+export RUBY_GC_HEAP_INIT_SLOTS=1000000
+export RUBY_GC_HEAP_FREE_SLOTS=1000000
+----
+
+4. Use `parse` serialization format to avoid schema serialization:
++
+[source,bash]
+----
+lutaml-xsd pkg build config.yml \
+  --serialization-format parse \
+  --output schemas.lxr
+----
+
+=== Problem: "Memory usage grows over time"
+
+**Symptom:**
+
+Memory usage increases with repeated operations.
+
+**Cause:**
+
+Schema cache grows as more schemas are processed.
+
+**Solution:**
+
+1. Clear schema cache periodically:
++
+[source,ruby]
+----
+# Process batch of operations
+100.times do
+  repo = Lutaml::Xsd::SchemaRepository.from_yaml_file(config)
+  repo.parse.resolve
+  # ... perform operations ...
+end
+
+# Clear cache
+Schema.clear_cache
+GC.start
+----
+
+2. Use separate processes for large batches:
++
+[source,ruby]
+----
+# Instead of processing all in one process:
+files.each do |file|
+  # Process in subprocess to free memory after each
+  system("ruby -e 'require \"lutaml/xsd\"; process_file(\"#{file}\")'")
+end
+----
+
+== CLI issues
+
+=== Problem: "Command not found: lutaml-xsd"
+
+**Symptom:**
+
+[source,bash]
+----
+$ lutaml-xsd --version
+bash: lutaml-xsd: command not found
+----
+
+**Cause:**
+
+The gem isn't installed or the gem bin directory isn't in PATH.
+
+**Solution:**
+
+1. Install the gem:
++
+[source,bash]
+----
+gem install lutaml-xsd
+----
+
+2. Verify installation:
++
+[source,bash]
+----
+gem list lutaml-xsd
+----
+
+3. Check if gem bin is in PATH:
++
+[source,bash]
+----
+echo $PATH
+gem environment
+----
+
+4. Use bundle exec if using Bundler:
++
+[source,bash]
+----
+bundle exec lutaml-xsd --version
+----
+
+=== Problem: "Invalid option or argument"
+
+**Symptom:**
+
+[source,bash]
+----
+$ lutaml-xsd pkg build --invalid-option
+Error: Unknown switches '--invalid-option'
+----
+
+**Cause:**
+
+Invalid command-line option or wrong command syntax.
+
+**Solution:**
+
+1. Check command syntax:
++
+[source,bash]
+----
+lutaml-xsd help
+lutaml-xsd help package
+lutaml-xsd help package build
+----
+
+2. Verify option names (use `--` for long options):
++
+[source,bash]
+----
+# Correct:
+lutaml-xsd pkg build config.yml --output schemas.lxr
+
+# Incorrect:
+lutaml-xsd pkg build config.yml -output schemas.lxr
+----
+
+3. Quote arguments with spaces:
++
+[source,bash]
+----
+lutaml-xsd pkg build config.yml \
+  --name "My Schema Package" \
+  --description "Complete schema set"
+----
+
+== Configuration issues
+
+=== Problem: "Invalid YAML configuration"
+
+**Symptom:**
+
+[source]
+----
+Error: Invalid YAML: mapping values are not allowed in this context
+----
+
+**Cause:**
+
+YAML syntax error in configuration file.
+
+**Solution:**
+
+1. Validate YAML syntax:
++
+[source,bash]
+----
+ruby -ryaml -e "YAML.load_file('config/schemas.yml')"
+----
+
+2. Common YAML mistakes to avoid:
++
+[source,yaml]
+----
+# WRONG: Missing space after colon
+files:
+  -schemas/gml.xsd
+
+# CORRECT:
+files:
+  - schemas/gml.xsd
+
+# WRONG: Incorrect indentation
+schema_location_mappings:
+- from: "url"
+  to: "path"
+
+# CORRECT:
+schema_location_mappings:
+  - from: "url"
+    to: "path"
+----
+
+3. Use a YAML validator or linter:
++
+[source,bash]
+----
+yamllint config/schemas.yml
+----
+
+=== Problem: "Regex pattern not working"
+
+**Symptom:**
+
+Schema location mapping regex doesn't match expected paths.
+
+**Cause:**
+
+Incorrect regex pattern or YAML regex syntax.
+
+**Solution:**
+
+1. Test regex pattern separately:
++
+[source,ruby]
+----
+pattern = /(?:\.\.\/)+gml\/(.+\.xsd)$/
+test_path = "../../gml/3.2.1/gml.xsd"
+
+if test_path =~ pattern
+  puts "Match: #{test_path.gsub(pattern, 'schemas/gml/\1')}"
+else
+  puts "No match"
+end
+----
+
+2. Verify YAML regex syntax:
++
+[source,yaml]
+----
+# CORRECT: Use !ruby/regexp tag
+schema_location_mappings:
+  - from: !ruby/regexp /pattern/
+    to: "replacement"
+
+# INCORRECT: String instead of regex
+schema_location_mappings:
+  - from: "/pattern/"
+    to: "replacement"
+----
+
+3. Escape special regex characters:
++
+[source,yaml]
+----
+# CORRECT: Escape dots
+- from: !ruby/regexp /https:\/\/schemas\.example\.com/
+
+# INCORRECT: Unescaped dots (matches any character)
+- from: !ruby/regexp /https://schemas.example.com/
+----
+
+== Ruby version compatibility
+
+=== Problem: "Ruby version too old"
+
+**Symptom:**
+
+[source]
+----
+ERROR: Lutaml::XSD requires Ruby version >= 2.7.0
+----
+
+**Cause:**
+
+Using an unsupported Ruby version.
+
+**Solution:**
+
+1. Check current Ruby version:
++
+[source,bash]
+----
+ruby --version
+----
+
+2. Install a newer Ruby version:
++
+[source,bash]
+----
+# Using rbenv
+rbenv install 3.2.0
+rbenv global 3.2.0
+
+# Using rvm
+rvm install 3.2.0
+rvm use 3.2.0 --default
+----
+
+3. Use bundler with specific Ruby version:
++
+[source,ruby]
+----
+# Gemfile
+ruby '>= 2.7.0'
+gem 'lutaml-xsd'
+----
+
+== Getting help
+
+If your issue isn't covered here:
+
+1. **Enable verbose output** to get more diagnostic information:
++
+[source,bash]
+----
+lutaml-xsd pkg build config.yml --verbose
+----
+
+2. **Check the debugging guide**: link:../advanced/DEBUGGING[Debugging] has advanced troubleshooting techniques.
+
+3. **Review examples**: The link:../guides[guides] contain working examples.
+
+4. **Search existing issues**: Check the https://github.com/lutaml/lutaml-xsd/issues[GitHub issues].
+
+5. **Ask for help**: Create a new https://github.com/lutaml/lutaml-xsd/issues[GitHub issue] with:
+   - lutaml-xsd version (`lutaml-xsd --version`)
+   - Ruby version (`ruby --version`)
+   - Operating system
+   - Full error message
+   - Minimal reproducible example
+
+== See also
+
+* link:../advanced/DEBUGGING[Debugging] - Advanced debugging techniques
+* link:../FAQ[FAQ] - Frequently asked questions
+* link:../advanced/PERFORMANCE_TUNING[Performance tuning] - Optimization strategies
+* link:../guides/CREATING_PACKAGES[Creating packages] - Package creation guide

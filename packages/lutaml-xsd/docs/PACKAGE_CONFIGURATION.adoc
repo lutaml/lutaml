@@ -1,0 +1,794 @@
+---
+layout: default
+title: Package configuration
+nav_order: 3
+parent: Reference
+---
+= Package Configuration Reference
+:toc:
+:toclevels: 3
+
+== Purpose
+
+Complete reference for configuring LXR (LutaML XSD Repository) packages. This document provides detailed information about all configuration options, their trade-offs, and best practices for choosing the right settings for your use case.
+
+== General
+
+LXR packages are highly configurable through three independent axes, allowing you to optimize for specific requirements such as performance, portability, package size, or development workflow.
+
+== Configuration file structure
+
+=== Top-level fields
+
+==== `files` (required for standalone packages)
+
+Array of schema file paths to include in the package. Supports `.xsd` (XML Schema), `.rng` (RELAX NG XML syntax), and `.rnc` (RELAX NG Compact syntax) files. RNG/RNC files are automatically converted to XSD during the build process. Required when building a standalone package (not using `base_packages`).
+
+[source,yaml]
+----
+files:
+  - path/to/schema.xsd
+  - path/to/another.xsd
+  - path/to/schema.rng   # RELAX NG XML syntax
+  - path/to/schema.rnc   # RELAX NG Compact syntax
+----
+
+==== `output_package` (optional)
+
+Specifies the output path for the package file. This provides a convenient way to set the output path in the configuration file instead of using the `-o` command-line flag.
+
+[source,yaml]
+----
+output_package: my-schemas.lxr
+----
+
+**Priority order** when determining output path:
+
+1. CLI `-o` option (highest priority - overrides config)
+2. `output_package` from configuration file
+3. Default: `pkg/<name>.lxr`
+
+.Using output_package field
+[example]
+====
+[source,yaml]
+----
+# config.yaml
+output_package: urban-function.lxr
+
+files:
+  - schemas/urbanFunction.xsd
+----
+
+Build with:
+[source,bash]
+----
+# Uses output_package from config
+lutaml-xsd pkg build config.yaml
+
+# Override with -o flag
+lutaml-xsd pkg build config.yaml -o custom-name.lxr
+----
+====
+
+==== `base_packages` (optional)
+
+Array of base package configurations for package composition. Each entry can be a simple string (package path) or a full `BasePackageConfig` object with conflict resolution settings.
+
+[source,yaml]
+----
+base_packages:
+  - package: base.lxr
+    priority: 0
+    conflict_resolution: keep
+    namespace_remapping:
+      - from_uri: http://old.com/ns
+        to_uri: http://new.com/ns
+    exclude_schemas:
+      - "**/test_*.xsd"
+    include_only_schemas:
+      - "**/core/*.xsd"
+----
+
+See link:PACKAGE_COMPOSITION.adoc[Package Composition Guide] for complete documentation on composing multiple packages.
+
+**BasePackageConfig fields**:
+
+* `package` (required) - Path to LXR package file
+* `priority` (optional, default: 0) - Lower number = higher priority
+* `conflict_resolution` (optional, default: "error") - Strategy: "keep", "override", or "error"
+* `namespace_remapping` (optional) - Array of namespace URI transformations
+* `exclude_schemas` (optional) - Glob patterns for schemas to exclude
+* `include_only_schemas` (optional) - Glob patterns for schemas to include (whitelist)
+
+==== `schema_location_mappings` (optional)
+
+Array of schema location redirections for resolving imports and includes.
+
+[source,yaml]
+----
+schema_location_mappings:
+  - from: "http://schemas.example.com/schema.xsd"
+    to: "local/path/schema.xsd"
+
+  - from: !ruby/regexp /(?:\.\.\/)+gml\/(.+\.xsd)$/
+    to: "spec/fixtures/gml/\\1"
+----
+
+See link:SCHEMA_MAPPINGS.adoc[Schema Mapping Guide] for complete documentation.
+
+==== `namespace_mappings` (optional)
+
+Array of namespace prefix-to-URI mappings for qualified name resolution.
+
+[source,yaml]
+----
+namespace_mappings:
+  - prefix: "gml"
+    uri: "http://www.opengis.net/gml/3.2"
+
+  - prefix: "urf"
+    uri: "https://www.geospatial.jp/iur/urf/3.2"
+----
+
+== Configuration axes overview
+
+LXR packages support three independent configuration dimensions:
+
+.LXR Package configuration matrix
+[source]
+----
+╔═══════════════════════════════════════════════════════════╗
+║           LXR Package Configuration Matrix                ║
+╠═══════════════════════════════════════════════════════════╣
+║                                                           ║
+║  Axis 1: XSD Bundling Mode                               ║
+║  ┌────────────────────┬─────────────────────────┐        ║
+║  │   include_all      │    allow_external       │        ║
+║  ├────────────────────┼─────────────────────────┤        ║
+║  │ • Bundle all XSDs  │ • Keep URL references   │        ║
+║  │ • Rewrite paths    │ • Smaller packages      │        ║
+║  │ • Self-contained   │ • Requires network      │        ║
+║  │ • Larger file size │ • Faster packaging      │        ║
+║  └────────────────────┴─────────────────────────┘        ║
+║                                                           ║
+║  Axis 2: Resolution Mode                                 ║
+║  ┌────────────────────┬─────────────────────────┐        ║
+║  │     resolved       │         bare            │        ║
+║  ├────────────────────┼─────────────────────────┤        ║
+║  │ • Pre-serialized   │ • Parse on load         │        ║
+║  │ • Instant loading  │ • Smaller packages      │        ║
+║  │ • Larger packages  │ • Slower startup        │        ║
+║  │ • Best for queries │ • Best for editing      │        ║
+║  └────────────────────┴─────────────────────────┘        ║
+║                                                           ║
+║  Axis 3: Serialization Format                            ║
+║  ┌─────────┬─────────┬─────────┬──────────┐             ║
+║  │ marshal │  json   │  yaml   │  parse   │             ║
+║  ├─────────┼─────────┼─────────┼──────────┤             ║
+║  │ Fastest │Portable │ Human   │ No cache │             ║
+║  │ Binary  │ Slower  │readable │ Smallest │             ║
+║  │ Ruby    │ Cross   │ Debug   │ Always   │             ║
+║  │ only    │platform │friendly │ parse    │             ║
+║  └─────────┴─────────┴─────────┴──────────┘             ║
+╚═══════════════════════════════════════════════════════════╝
+----
+
+== XSD bundling mode
+
+Controls how XSD files are included in the package.
+
+=== `include_all` mode
+
+Recommended for production and distribution.
+
+==== Characteristics
+
+* Bundles all XSD files into the package
+* Rewrites schema location paths to be package-relative
+* Creates fully self-contained packages
+* No network access required
+* Larger file size but completely portable
+
+==== When to use
+
+Use [`include_all`](docs/PACKAGE_CONFIGURATION.adoc) when:
+
+* Distributing schemas to users who may not have internet access
+* Creating portable, self-contained packages
+* Ensuring consistent schema versions
+* Working with schemas from multiple sources
+* Building production packages for deployment
+
+==== Trade-offs
+
+Advantages::
+* Complete portability - works offline
+* Version consistency guaranteed
+* No external dependencies
+* Single file contains everything
+
+Disadvantages::
+* Larger package file size
+* Slower package creation process
+* Duplicates XSD content with serialized schemas
+
+==== Example
+
+.Building a package with include_all mode
+[source,bash]
+----
+lutaml-xsd pkg build config.yaml \
+  --xsd-mode include_all \
+  --output offline_schemas.lxr
+----
+
+=== `allow_external` mode
+
+Suitable for development environments.
+
+==== Characteristics
+
+* Keeps original schema location references
+* Package only contains metadata and indexes
+* Smaller file size
+* Requires network access or local schemas
+* Faster packaging process
+
+==== When to use
+
+Use [`allow_external`](docs/PACKAGE_CONFIGURATION.adoc) when:
+
+* Working in development environments
+* Schemas change frequently
+* Package size is critical
+* Network access to schemas is guaranteed
+* Quick iteration is needed
+
+==== Trade-offs
+
+Advantages::
+* Smaller package size
+* Faster package creation
+* No XSD duplication
+* Easy to update schemas
+
+Disadvantages::
+* Requires network or local schema access
+* Not portable
+* Potential version inconsistencies
+* Dependency on external resources
+
+==== Example
+
+.Building a package with allow_external mode
+[source,bash]
+----
+lutaml-xsd pkg build config.yaml \
+  --xsd-mode allow_external \
+  --output dev_schemas.lxr
+----
+
+== Resolution mode
+
+Controls whether schemas are pre-serialized or parsed on demand.
+
+=== `resolved` mode
+
+Recommended for production and query performance.
+
+==== Characteristics
+
+* Pre-serializes all parsed schema objects
+* Enables instant loading without XML parsing
+* Larger package size due to serialized data
+* Type index immediately available
+* Best for production use and queries
+
+==== When to use
+
+Use [`resolved`](docs/PACKAGE_CONFIGURATION.adoc) mode when:
+
+* Building production packages
+* Optimizing for query performance
+* Creating packages for repeated use
+* Package size is not a constraint
+* Fast startup time is critical
+
+==== Trade-offs
+
+Advantages::
+* Instant loading (milliseconds vs. seconds)
+* No XML parsing overhead
+* Immediate type index access
+* Best query performance
+
+Disadvantages::
+* Much larger package size
+* Longer package creation time
+* Not suitable for schema editing
+* Format-dependent (marshal/json/yaml)
+
+==== Example
+
+.Building a package with resolved mode
+[source,bash]
+----
+lutaml-xsd pkg build config.yaml \
+  --resolution-mode resolved \
+  --output production.lxr
+----
+
+=== `bare` mode
+
+Suitable for development and schema editing.
+
+==== Characteristics
+
+* Only includes XSD files and minimal metadata
+* Schemas parsed on first load
+* Smaller package size
+* Slower initial startup
+* Best for schema development and editing
+
+==== When to use
+
+Use [`bare`](docs/PACKAGE_CONFIGURATION.adoc) mode when:
+
+* Developing or editing schemas
+* Package size is critical
+* Schemas change frequently between builds
+* One-time use packages
+* Schema inspection is the primary goal
+
+==== Trade-offs
+
+Advantages::
+* Smallest package size
+* Fastest package creation
+* Always fresh parsing
+* Good for development workflow
+
+Disadvantages::
+* Slower loading time
+* XML parsing overhead on every load
+* Type index built on demand
+* Not optimal for repeated queries
+
+==== Example
+
+.Building a package with bare mode
+[source,bash]
+----
+lutaml-xsd pkg build config.yaml \
+  --resolution-mode bare \
+  --output development.lxr
+----
+
+== Serialization format
+
+Controls how schemas are serialized (only relevant for [`resolved`](docs/PACKAGE_CONFIGURATION.adoc) mode).
+
+=== Format comparison
+
+.Serialization format comparison
+[cols="1,2,2,2,2"]
+|===
+|Format |Speed |Size |Portability |Readability
+
+|[`marshal`](docs/PACKAGE_CONFIGURATION.adoc)
+|Fastest
+|Medium
+|Ruby only
+|Binary (none)
+
+|[`json`](docs/PACKAGE_CONFIGURATION.adoc)
+|Medium
+|Larger
+|Cross-platform
+|Good
+
+|[`yaml`](docs/PACKAGE_CONFIGURATION.adoc)
+|Slowest
+|Largest
+|Cross-platform
+|Excellent
+
+|[`parse`](docs/PACKAGE_CONFIGURATION.adoc)
+|N/A (no cache)
+|Smallest
+|Any platform
+|Source XSD
+|===
+
+=== `marshal` format
+
+Recommended for Ruby-only production applications.
+
+==== Characteristics
+
+* Ruby's native serialization format
+* Fastest serialization and deserialization
+* Binary format, not human-readable
+* Ruby version dependent
+* Best performance for Ruby applications
+
+==== When to use
+
+Use [`marshal`](docs/PACKAGE_CONFIGURATION.adoc) format when:
+
+* Building Ruby-only applications
+* Performance is critical
+* Package size and speed are both important
+* Ruby version is consistent
+* Maximum speed is required
+
+==== Trade-offs
+
+Advantages::
+* Fastest serialization/deserialization
+* Efficient binary format
+* Native Ruby support
+* Best overall performance
+
+Disadvantages::
+* Not human-readable
+* Ruby version dependent
+* Not cross-platform compatible
+* Potential compatibility issues between Ruby versions
+
+==== Example
+
+.Building a package with marshal format
+[source,bash]
+----
+lutaml-xsd pkg build config.yaml \
+  --serialization-format marshal \
+  --output ruby_app.lxr
+----
+
+=== `json` format
+
+Recommended for cross-platform compatibility.
+
+==== Characteristics
+
+* JSON serialization format
+* Cross-platform and cross-language compatible
+* Human-readable text format
+* Slower than marshal
+* Good for interoperability
+
+==== When to use
+
+Use [`json`](docs/PACKAGE_CONFIGURATION.adoc) format when:
+
+* Cross-platform compatibility needed
+* Integrating with non-Ruby tools
+* Some human readability desired
+* Moderate performance acceptable
+* Language-agnostic distribution
+
+==== Trade-offs
+
+Advantages::
+* Cross-platform compatible
+* Human-readable
+* Language-agnostic
+* Good tool support
+
+Disadvantages::
+* Slower than marshal
+* Larger file size than marshal
+* Less efficient than binary formats
+* Still not ideal for manual editing
+
+==== Example
+
+.Building a package with json format
+[source,bash]
+----
+lutaml-xsd pkg build config.yaml \
+  --serialization-format json \
+  --output cross_platform.lxr
+----
+
+=== `yaml` format
+
+Recommended for debugging and inspection.
+
+==== Characteristics
+
+* YAML serialization format
+* Most human-readable
+* Excellent for debugging
+* Slowest format
+* Best for development and inspection
+
+==== When to use
+
+Use [`yaml`](docs/PACKAGE_CONFIGURATION.adoc) format when:
+
+* Debugging packages
+* Maximum human readability needed
+* Performance is not critical
+* Inspecting package contents manually
+* Documentation or learning purposes
+
+==== Trade-offs
+
+Advantages::
+* Most human-readable format
+* Excellent for debugging
+* Easy to inspect manually
+* Cross-platform compatible
+
+Disadvantages::
+* Slowest serialization/deserialization
+* Largest file size
+* Not suitable for production
+* Poor performance
+
+==== Example
+
+.Building a package with yaml format
+[source,bash]
+----
+lutaml-xsd pkg build config.yaml \
+  --serialization-format yaml \
+  --output debug.lxr
+----
+
+=== `parse` format
+
+Recommended when schemas change frequently.
+
+==== Characteristics
+
+* No serialization, always parse XSD files
+* Smallest package size
+* Always fresh parsing
+* Slowest loading
+* Best when schemas change frequently
+
+==== When to use
+
+Use [`parse`](docs/PACKAGE_CONFIGURATION.adoc) format when:
+
+* Schemas change very frequently
+* Smallest possible package size needed
+* Always want fresh parsing
+* No serialization overhead acceptable
+* Development workflow with rapid changes
+
+==== Trade-offs
+
+Advantages::
+* Smallest package size
+* No serialization overhead
+* Always up-to-date parsing
+* No cache staleness issues
+
+Disadvantages::
+* Slowest loading time
+* XML parsing on every load
+* No performance benefits
+* Not suitable for production
+
+==== Example
+
+.Building a package with parse format
+[source,bash]
+----
+lutaml-xsd pkg build config.yaml \
+  --serialization-format parse \
+  --output minimal.lxr
+----
+
+== Configuration examples
+
+=== Use case: Production deployment
+
+For maximum performance in production:
+
+[source,bash]
+----
+lutaml-xsd pkg build config.yaml \
+  --xsd-mode include_all \
+  --resolution-mode resolved \
+  --serialization-format marshal \
+  --output production.lxr
+----
+
+Result::
+* Fastest loading (pre-serialized, marshal format)
+* Fully portable (include_all)
+* Optimal for repeated queries
+* Ruby-only limitation acceptable
+
+=== Use case: Cross-platform distribution
+
+For distributing to multiple platforms/languages:
+
+[source,bash]
+----
+lutaml-xsd pkg build config.yaml \
+  --xsd-mode include_all \
+  --resolution-mode resolved \
+  --serialization-format json \
+  --output distribution.lxr
+----
+
+Result::
+* Portable across platforms
+* Self-contained package
+* Good performance
+* Language-agnostic
+
+=== Use case: Development workflow
+
+For active schema development:
+
+[source,bash]
+----
+lutaml-xsd pkg build config.yaml \
+  --xsd-mode allow_external \
+  --resolution-mode bare \
+  --output development.lxr
+----
+
+Result::
+* Smallest package size
+* Fast package creation
+* Fresh parsing on each load
+* Easy to iterate
+
+=== Use case: Debugging and inspection
+
+For manual inspection and debugging:
+
+[source,bash]
+----
+lutaml-xsd pkg build config.yaml \
+  --xsd-mode include_all \
+  --resolution-mode resolved \
+  --serialization-format yaml \
+  --output debug.lxr
+----
+
+Result::
+* Human-readable serialization
+* Easy to inspect manually
+* Self-contained for analysis
+* Performance not critical
+
+=== Use case: Minimal offline package
+
+For smallest possible offline package:
+
+[source,bash]
+----
+lutaml-xsd pkg build config.yaml \
+  --xsd-mode include_all \
+  --resolution-mode bare \
+  --serialization-format parse \
+  --output minimal.lxr
+----
+
+Result::
+* Smallest file size
+* Completely offline-capable
+* Parse on demand
+* No serialization overhead
+
+== Best practices
+
+=== Choosing XSD bundling mode
+
+Decision matrix for XSD bundling mode:
+
+[cols="1,2,2"]
+|===
+|Requirement |Recommended Mode |Reason
+
+|Offline distribution
+|[`include_all`](docs/PACKAGE_CONFIGURATION.adoc)
+|No network dependency
+
+|Development iteration
+|[`allow_external`](docs/PACKAGE_CONFIGURATION.adoc)
+|Fast rebuilds
+
+|Version control
+|[`include_all`](docs/PACKAGE_CONFIGURATION.adoc)
+|Consistent versions
+
+|Minimal size
+|[`allow_external`](docs/PACKAGE_CONFIGURATION.adoc)
+|No XSD duplication
+|===
+
+=== Choosing resolution mode
+
+Decision matrix for resolution mode:
+
+[cols="1,2,2"]
+|===
+|Requirement |Recommended Mode |Reason
+
+|Production queries
+|[`resolved`](docs/PACKAGE_CONFIGURATION.adoc)
+|Instant loading
+
+|Schema development
+|[`bare`](docs/PACKAGE_CONFIGURATION.adoc)
+|Fresh parsing
+
+|Repeated use
+|[`resolved`](docs/PACKAGE_CONFIGURATION.adoc)
+|Performance
+
+|One-time analysis
+|[`bare`](docs/PACKAGE_CONFIGURATION.adoc)
+|Smaller size
+|===
+
+=== Choosing serialization format
+
+Decision matrix for serialization format:
+
+[cols="1,2,2"]
+|===
+|Requirement |Recommended Format |Reason
+
+|Ruby production
+|[`marshal`](docs/PACKAGE_CONFIGURATION.adoc)
+|Fastest
+
+|Cross-platform
+|[`json`](docs/PACKAGE_CONFIGURATION.adoc)
+|Language-agnostic
+
+|Debugging
+|[`yaml`](docs/PACKAGE_CONFIGURATION.adoc)
+|Most readable
+
+|Frequent changes
+|[`parse`](docs/PACKAGE_CONFIGURATION.adoc)
+|Always fresh
+|===
+
+=== Common combinations
+
+Recommended configuration combinations:
+
+**Production (Ruby):**
+[source,bash]
+----
+--xsd-mode include_all --resolution-mode resolved --serialization-format marshal
+----
+
+**Distribution (Cross-platform):**
+[source,bash]
+----
+--xsd-mode include_all --resolution-mode resolved --serialization-format json
+----
+
+**Development:**
+[source,bash]
+----
+--xsd-mode allow_external --resolution-mode bare
+----
+
+**Debugging:**
+[source,bash]
+----
+--xsd-mode include_all --resolution-mode resolved --serialization-format yaml
+----
+
+== See also
+
+* link:../guides/CREATING_PACKAGES[Creating LXR Packages Guide]
+* link:CLI[Command-Line Interface Reference]
+* link:SERIALIZATION_OPTIONS[Serialization Options Reference]
+* link:../core-concepts/index[Core Concepts]

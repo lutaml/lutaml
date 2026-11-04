@@ -1,0 +1,63 @@
+#!/bin/bash
+# Git pre-commit hook for XSD schema validation
+# Install: cp pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+
+echo "Running XSD schema validation..."
+
+# Get list of staged .xsd files
+xsd_files=$(git diff --cached --name-only --diff-filter=ACM | grep '\.xsd$')
+
+# Exit if no XSD files are staged
+if [ -z "$xsd_files" ]; then
+  echo "No XSD files to validate"
+  exit 0
+fi
+
+# Check if lutaml-xsd is installed
+if ! command -v lutaml-xsd &> /dev/null; then
+  echo "Error: lutaml-xsd is not installed"
+  echo "Install with: gem install lutaml-xsd"
+  exit 1
+fi
+
+echo "Validating staged XSD files..."
+echo ""
+
+failed=0
+total=0
+
+# Validate each staged XSD file
+while IFS= read -r file; do
+  total=$((total + 1))
+  echo "Validating: $file"
+  
+  if lutaml-xsd validate-schema "$file" 2>&1; then
+    echo "✓ Valid"
+  else
+    echo "✗ Invalid"
+    failed=$((failed + 1))
+  fi
+  echo ""
+done <<< "$xsd_files"
+
+echo "======================================"
+echo "Validation Summary:"
+echo "  Total: $total"
+echo "  Valid: $((total - failed))"
+echo "  Invalid: $failed"
+echo "======================================"
+
+# Fail the commit if any schemas are invalid
+if [ $failed -gt 0 ]; then
+  echo ""
+  echo "❌ Commit rejected: $failed schema(s) failed validation"
+  echo ""
+  echo "Fix the validation errors and try again, or use:"
+  echo "  git commit --no-verify"
+  echo "to bypass validation (not recommended)"
+  exit 1
+fi
+
+echo ""
+echo "✅ All schemas are valid"
+exit 0

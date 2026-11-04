@@ -1,0 +1,259 @@
+---
+_class: Expressir::Model::ExpFile
+path: spec/syntax/geometry_schema.exp
+schemas:
+- _class: Expressir::Model::Declarations::Schema
+  id: geometry_schema
+  remarks:
+  - geometry_schema
+  untagged_remarks:
+  - text: geometry_schema
+    format: tail
+  file: spec/syntax/geometry_schema.exp
+  version:
+    _class: Expressir::Model::Declarations::SchemaVersion
+    value: "{iso standard 10303 part(42) version(13) object(1) geometry-schema(1)}"
+    items:
+    - _class: Expressir::Model::Declarations::SchemaVersionItem
+      name: iso
+    - _class: Expressir::Model::Declarations::SchemaVersionItem
+      name: standard
+    - _class: Expressir::Model::Declarations::SchemaVersionItem
+      value: '10303'
+    - _class: Expressir::Model::Declarations::SchemaVersionItem
+      name: part
+      value: '42'
+    - _class: Expressir::Model::Declarations::SchemaVersionItem
+      name: version
+      value: '13'
+    - _class: Expressir::Model::Declarations::SchemaVersionItem
+      name: object
+      value: '1'
+    - _class: Expressir::Model::Declarations::SchemaVersionItem
+      name: geometry-schema
+      value: '1'
+  entities:
+  - _class: Expressir::Model::Declarations::Entity
+    id: point
+    supertype_expression:
+      _class: Expressir::Model::SupertypeExpressions::OneofSupertypeExpression
+      operands:
+      - _class: Expressir::Model::References::SimpleReference
+        id: cartesian_point
+        base_path: spec/syntax/geometry_schema.exp.geometry_schema.cartesian_point
+      - _class: Expressir::Model::References::SimpleReference
+        id: degenerate_pcurve
+    subtype_of:
+    - _class: Expressir::Model::References::SimpleReference
+      id: geometric_representation_item
+  - _class: Expressir::Model::Declarations::Entity
+    id: cartesian_point
+    supertype_expression:
+      _class: Expressir::Model::References::SimpleReference
+      id: spherical_point
+      base_path: spec/syntax/geometry_schema.exp.geometry_schema.spherical_point
+    subtype_of:
+    - _class: Expressir::Model::References::SimpleReference
+      id: point
+      base_path: spec/syntax/geometry_schema.exp.geometry_schema.point
+    attributes:
+    - _class: Expressir::Model::Declarations::Attribute
+      id: coordinates
+      kind: EXPLICIT
+      type:
+        _class: Expressir::Model::DataTypes::List
+        bound1:
+          _class: Expressir::Model::Literals::Integer
+          value: '1'
+        bound2:
+          _class: Expressir::Model::Literals::Integer
+          value: '3'
+        base_type:
+          _class: Expressir::Model::References::SimpleReference
+          id: length_measure
+  - _class: Expressir::Model::Declarations::Entity
+    id: spherical_point
+    remarks:
+    - A **spherical_point** is a type of <<express:geometry_schema.cartesian_point,cartesian_point>>
+      which uses a spherical polar coordinate system, centred at the origin of the
+      corresponding Cartesian coordinate system, to define its location.
+    remark_items:
+    - _class: Expressir::Model::Declarations::RemarkItem
+      id: wr
+      remarks:
+      - This is a note for WR1.
+    subtype_of:
+    - _class: Expressir::Model::References::SimpleReference
+      id: cartesian_point
+      base_path: spec/syntax/geometry_schema.exp.geometry_schema.cartesian_point
+    attributes:
+    - _class: Expressir::Model::Declarations::Attribute
+      id: r
+      remarks:
+      - the distance from the point to the z axis;
+      kind: EXPLICIT
+      type:
+        _class: Expressir::Model::References::SimpleReference
+        id: length_measure
+    - _class: Expressir::Model::Declarations::Attribute
+      id: theta
+      remarks:
+      - the angle stem:[theta] between the z axis and the line joining the origin
+        to the point;
+      kind: EXPLICIT
+      type:
+        _class: Expressir::Model::References::SimpleReference
+        id: plane_angle_measure
+    - _class: Expressir::Model::Declarations::Attribute
+      id: phi
+      remarks:
+      - the angle stem:[phi] measured from the x axis to the projection onto the xy
+        plane of the line from the origin to the point.
+      kind: EXPLICIT
+      type:
+        _class: Expressir::Model::References::SimpleReference
+        id: plane_angle_measure
+    - _class: Expressir::Model::Declarations::DerivedAttribute
+      id: coordinates
+      remarks:
+      - the rectangular cartesian coordinates of this point;
+      remark_items:
+      - _class: Expressir::Model::Declarations::RemarkItem
+        id: __figure
+        remarks:
+        - |-
+          [[figure-geometry_schema-Geomfig2]]
+          .Spherical point attributes
+          ====
+          image::Geomfig2.gif[]
+          ====
+      - _class: Expressir::Model::Declarations::RemarkItem
+        id: __note
+        remarks:
+        - See <<figure-geometry_schema-Geomfig2>> for an illustration of the attributes.
+      kind: DERIVED
+      supertype_attribute:
+        _class: Expressir::Model::References::AttributeReference
+        ref:
+          _class: Expressir::Model::References::GroupReference
+          ref:
+            _class: Expressir::Model::References::SimpleReference
+            id: SELF
+          entity:
+            _class: Expressir::Model::References::SimpleReference
+            id: cartesian_point
+            base_path: spec/syntax/geometry_schema.exp.geometry_schema.cartesian_point
+        attribute:
+          _class: Expressir::Model::References::SimpleReference
+          id: coordinates
+      type:
+        _class: Expressir::Model::DataTypes::List
+        bound1:
+          _class: Expressir::Model::Literals::Integer
+          value: '3'
+        bound2:
+          _class: Expressir::Model::Literals::Integer
+          value: '3'
+        base_type:
+          _class: Expressir::Model::References::SimpleReference
+          id: length_measure
+      expression:
+        _class: Expressir::Model::Expressions::AggregateInitializer
+        items:
+        - _class: Expressir::Model::Expressions::BinaryExpression
+          operator: MULTIPLICATION
+          operand1:
+            _class: Expressir::Model::Expressions::BinaryExpression
+            operator: MULTIPLICATION
+            operand1:
+              _class: Expressir::Model::References::SimpleReference
+              id: r
+              base_path: spec/syntax/geometry_schema.exp.geometry_schema.spherical_point.r
+            operand2:
+              _class: Expressir::Model::Expressions::FunctionCall
+              function:
+                _class: Expressir::Model::References::SimpleReference
+                id: sin
+              parameters:
+              - _class: Expressir::Model::References::SimpleReference
+                id: theta
+                base_path: spec/syntax/geometry_schema.exp.geometry_schema.spherical_point.theta
+          operand2:
+            _class: Expressir::Model::Expressions::FunctionCall
+            function:
+              _class: Expressir::Model::References::SimpleReference
+              id: cos
+            parameters:
+            - _class: Expressir::Model::References::SimpleReference
+              id: phi
+              base_path: spec/syntax/geometry_schema.exp.geometry_schema.spherical_point.phi
+        - _class: Expressir::Model::Expressions::BinaryExpression
+          operator: MULTIPLICATION
+          operand1:
+            _class: Expressir::Model::Expressions::BinaryExpression
+            operator: MULTIPLICATION
+            operand1:
+              _class: Expressir::Model::References::SimpleReference
+              id: r
+              base_path: spec/syntax/geometry_schema.exp.geometry_schema.spherical_point.r
+            operand2:
+              _class: Expressir::Model::Expressions::FunctionCall
+              function:
+                _class: Expressir::Model::References::SimpleReference
+                id: sin
+              parameters:
+              - _class: Expressir::Model::References::SimpleReference
+                id: theta
+                base_path: spec/syntax/geometry_schema.exp.geometry_schema.spherical_point.theta
+          operand2:
+            _class: Expressir::Model::Expressions::FunctionCall
+            function:
+              _class: Expressir::Model::References::SimpleReference
+              id: sin
+            parameters:
+            - _class: Expressir::Model::References::SimpleReference
+              id: phi
+              base_path: spec/syntax/geometry_schema.exp.geometry_schema.spherical_point.phi
+        - _class: Expressir::Model::Expressions::BinaryExpression
+          operator: MULTIPLICATION
+          operand1:
+            _class: Expressir::Model::References::SimpleReference
+            id: r
+            base_path: spec/syntax/geometry_schema.exp.geometry_schema.spherical_point.r
+          operand2:
+            _class: Expressir::Model::Expressions::FunctionCall
+            function:
+              _class: Expressir::Model::References::SimpleReference
+              id: cos
+            parameters:
+            - _class: Expressir::Model::References::SimpleReference
+              id: theta
+              base_path: spec/syntax/geometry_schema.exp.geometry_schema.spherical_point.theta
+    where_rules:
+    - _class: Expressir::Model::Declarations::WhereRule
+      id: WR1
+      remarks:
+      - The radius **r** shall be greater than, or equal to zero.
+      expression:
+        _class: Expressir::Model::References::SimpleReference
+        id: r
+        base_path: spec/syntax/geometry_schema.exp.geometry_schema.spherical_point.r
+    informal_propositions:
+    - _class: Expressir::Model::Declarations::InformalPropositionRule
+      id: IP1
+      remarks:
+      - The value of **theta** shall lie in the range stem:[0 le theta le 180 "P{degree}"].
+      remark_items:
+      - _class: Expressir::Model::Declarations::RemarkItem
+        id: IP1
+        remarks:
+        - This is informal proposition 1
+    - _class: Expressir::Model::Declarations::InformalPropositionRule
+      id: IP2
+      remarks:
+      - The value of **phi** shall lie in the range stem:[0 le phi < 360 "P{degree}"].
+      remark_items:
+      - _class: Expressir::Model::Declarations::RemarkItem
+        id: IP2
+        remarks:
+        - This is informal proposition 2

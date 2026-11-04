@@ -1,0 +1,126 @@
+# GitLab CI configuration for XSD schema validation
+# Copy this file to .gitlab-ci.yml in your repository or include it in your existing pipeline
+
+stages:
+  - validate
+
+# Validate all XSD schemas
+validate:xsd:
+  stage: validate
+  image: ruby:3.2
+  before_script:
+    - gem install lutaml-xsd
+  script:
+    - |
+      set -e
+      echo "Validating XSD schemas..."
+      
+      # Find all .xsd files
+      xsd_files=$(find . -name "*.xsd" -type f)
+      
+      if [ -z "$xsd_files" ]; then
+        echo "No XSD files found"
+        exit 0
+      fi
+      
+      echo "Found XSD files:"
+      echo "$xsd_files"
+      echo ""
+      
+      failed=0
+      total=0
+      
+      # Validate each schema
+      while IFS= read -r file; do
+        total=$((total + 1))
+        echo "Validating: $file"
+        
+        if lutaml-xsd validate-schema "$file"; then
+          echo "✓ Valid"
+        else
+          echo "✗ Invalid"
+          failed=$((failed + 1))
+        fi
+        echo ""
+      done <<< "$xsd_files"
+      
+      echo "======================================"
+      echo "Validation Summary:"
+      echo "  Total: $total"
+      echo "  Valid: $((total - failed))"
+      echo "  Invalid: $failed"
+      echo "======================================"
+      
+      if [ $failed -gt 0 ]; then
+        exit 1
+      fi
+  rules:
+    - changes:
+        - "**/*.xsd"
+        - ".gitlab-ci.yml"
+
+# Validate XSD 1.0 schemas specifically
+validate:xsd:1.0:
+  stage: validate
+  image: ruby:3.2
+  before_script:
+    - gem install lutaml-xsd
+  script:
+    - |
+      echo "Validating schemas for XSD 1.0 compatibility"
+      
+      # Find schemas that should be 1.0 compatible (exclude xsd11 files)
+      find . -name "*.xsd" -type f | while read file; do
+        if [[ ! "$file" =~ xsd11 ]]; then
+          echo "Validating: $file"
+          lutaml-xsd validate-schema --version 1.0 "$file"
+        fi
+      done
+  rules:
+    - changes:
+        - "**/*.xsd"
+      when: manual
+  allow_failure: true
+
+# Validate XSD 1.1 schemas specifically
+validate:xsd:1.1:
+  stage: validate
+  image: ruby:3.2
+  before_script:
+    - gem install lutaml-xsd
+  script:
+    - |
+      echo "Validating all schemas with XSD 1.1 validator"
+      
+      find . -name "*.xsd" -type f | while read file; do
+        echo "Validating: $file"
+        lutaml-xsd validate-schema --version 1.1 "$file"
+      done
+  rules:
+    - changes:
+        - "**/*.xsd"
+      when: manual
+  allow_failure: true
+
+# Verbose validation for debugging
+validate:xsd:verbose:
+  stage: validate
+  image: ruby:3.2
+  before_script:
+    - gem install lutaml-xsd
+  script:
+    - |
+      echo "Running verbose validation"
+      
+      find . -name "*.xsd" -type f | while read file; do
+        echo ""
+        echo "========================================"
+        echo "Validating: $file"
+        echo "========================================"
+        lutaml-xsd validate-schema --verbose "$file" || true
+      done
+  rules:
+    - changes:
+        - "**/*.xsd"
+      when: manual
+  allow_failure: true

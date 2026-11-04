@@ -1,0 +1,310 @@
+= XSD schema validation
+:toc:
+:toc-placement!:
+
+toc::[]
+
+== Overview
+
+Lutaml::Xsd provides pre-parsing validation of XSD schema documents to ensure they are well-formed and compliant with XML Schema standards before attempting to parse them. This helps catch errors early and provides clear, actionable error messages.
+
+The schema validator supports both W3C XML Schema 1.0 and 1.1 standards, with automatic detection of version-specific features. Validation is automatically enabled when parsing schemas via [`Lutaml::Xsd.parse()`](../lib/lutaml/xsd.rb:47) but can be disabled if needed.
+
+== Validation checks
+
+The schema validator performs these checks:
+
+* **XML syntax correctness**: Ensures the document is well-formed XML
+* **XML Schema namespace**: Verifies the schema uses the correct W3C namespace (`http://www.w3.org/2001/XMLSchema`)
+* **Version compliance**: Detects XSD 1.1 features (like `xs:assert`) and ensures they're only used with XSD 1.1 validation
+* **Root element validation**: Confirms the document root is `xs:schema`
+
+== Automatic version detection
+
+The validator can automatically detect whether a schema uses XSD 1.0 or 1.1 features:
+
+.Automatic XSD version detection
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+xsd_content = File.read('schema.xsd')
+
+# Detect version automatically
+version = Lutaml::Xsd::SchemaValidator.detect_version(xsd_content)
+puts "Detected XSD version: #{version}"  # "1.0" or "1.1"
+
+# Use detected version for validation
+validator = Lutaml::Xsd::SchemaValidator.new(version: version)
+validator.validate(xsd_content)  # Returns true or raises error
+----
+====
+
+XSD 1.1 features that trigger automatic detection:
+
+* `xs:assert` elements (CTA - Complex Type Assertions)
+* `xs:assertion` elements
+* `xs:openContent` elements
+* `xs:override` elements
+* `vc:minVersion` attributes
+
+== Using schema validation
+
+=== Automatic validation (recommended)
+
+Schema validation is automatically enabled when using `Lutaml::Xsd.parse()`:
+
+.Automatic schema validation during parsing
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+xsd_content = File.read('schema.xsd')
+
+# Schema is automatically validated before parsing
+schema = Lutaml::Xsd.parse(xsd_content)
+
+# If validation fails, SchemaValidationError is raised
+begin
+  invalid_content = '<root>Not a schema</root>'
+  schema = Lutaml::Xsd.parse(invalid_content)
+rescue Lutaml::Xsd::SchemaValidationError => e
+  puts "Invalid schema: #{e.message}"
+  # Error: Not a valid XSD schema document
+end
+----
+====
+
+=== Disabling automatic validation
+
+To skip schema validation (not recommended):
+
+.Disabling schema validation
+[example]
+====
+[source,ruby]
+----
+# Parse without schema validation
+schema = Lutaml::Xsd.parse(xsd_content, validate_schema: false)
+
+# Note: This may lead to parsing errors if the schema is malformed
+----
+====
+
+=== Manual validation
+
+For standalone schema validation without parsing:
+
+.Manual schema validation
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+xsd_content = File.read('schema.xsd')
+
+# Create validator (default XSD 1.0)
+validator = Lutaml::Xsd::SchemaValidator.new
+
+# Validate the schema
+begin
+  validator.validate(xsd_content)
+  puts "Schema is valid!"
+rescue Lutaml::Xsd::SchemaValidationError => e
+  puts "Validation failed: #{e.message}"
+end
+
+# Validate against XSD 1.1
+validator_1_1 = Lutaml::Xsd::SchemaValidator.new(version: "1.1")
+validator_1_1.validate(xsd_content)
+----
+====
+
+=== CLI validation
+
+Validate XSD schema files from the command line:
+
+.Validating schemas with CLI
+[example]
+====
+[source,bash]
+----
+# Validate a single schema
+lutaml-xsd validate-schema schema.xsd
+
+# Validate multiple schemas
+lutaml-xsd validate-schema schema1.xsd schema2.xsd schema3.xsd
+
+# Validate with glob patterns
+lutaml-xsd validate-schema schemas/*.xsd
+
+# Validate against XSD 1.1
+lutaml-xsd validate-schema schema.xsd --version 1.1
+
+# Verbose output with version detection
+lutaml-xsd validate-schema schema.xsd --verbose
+
+# JSON output for CI/CD integration
+lutaml-xsd validate-schema schema.xsd --format json
+
+# YAML output for CI/CD integration
+lutaml-xsd validate-schema schema.xsd --format yaml
+----
+
+Text output (default):
+
+[source]
+----
+✓ schema.xsd
+
+Summary:
+  Total: 1
+  Valid: 1
+  Invalid: 0
+----
+
+With verbose mode:
+
+[source]
+----
+✓ schema.xsd (XSD 1.0)
+
+Summary:
+  Total: 1
+  Valid: 1
+  Invalid: 0
+----
+
+JSON output for CI/CD:
+
+[source,json]
+----
+{
+  "summary": {
+    "total": 2,
+    "valid": 1,
+    "invalid": 1
+  },
+  "results": [
+    {
+      "file": "valid_schema.xsd",
+      "valid": true,
+      "detected_version": "1.0"
+    },
+    {
+      "file": "invalid_schema.xsd",
+      "valid": false,
+      "error": "Not a valid XSD schema: root element must be 'schema', found 'root'"
+    }
+  ]
+}
+----
+
+YAML output for CI/CD:
+
+[source,yaml]
+----
+summary:
+  total: 2
+  valid: 1
+  invalid: 1
+results:
+- file: valid_schema.xsd
+  valid: true
+  detected_version: '1.0'
+- file: invalid_schema.xsd
+  valid: false
+  error: "Not a valid XSD schema: root element must be 'schema', found 'root'"
+----
+
+The `--format` option supports three formats:
+
+* `text` (default): Human-readable output with checkmarks and summary
+* `json`: Machine-readable JSON format for CI/CD pipelines
+* `yaml`: Machine-readable YAML format for CI/CD pipelines
+
+Both JSON and YAML formats include complete validation results with file paths, validity status, error messages, and detected versions (when `--verbose` is used).
+====
+
+== Validation errors
+
+The validator provides clear error messages with context:
+
+.Common validation errors
+[example]
+====
+[source,bash]
+----
+# Missing XML Schema namespace
+$ lutaml-xsd validate-schema bad-schema.xsd
+
+✗ bad-schema.xsd
+  Error: Schema element must be in the XML Schema namespace
+  (http://www.w3.org/2001/XMLSchema)
+
+# Using XSD 1.1 features with 1.0 validator
+$ lutaml-xsd validate-schema schema-with-assert.xsd --version 1.0
+
+✗ schema-with-assert.xsd
+  Error: XSD 1.1 features detected (xs:assert) but validating as XSD 1.0
+
+# Malformed XML
+$ lutaml-xsd validate-schema malformed.xsd
+
+✗ malformed.xsd
+  Error: Invalid XML syntax: Missing closing tag
+----
+====
+
+== CI/CD integration
+
+The JSON and YAML output formats are designed for continuous integration pipelines:
+
+.GitHub Actions example
+[example]
+====
+[source,yaml]
+----
+name: Validate XSD Schemas
+
+on: [push, pull_request]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+
+      - name: Install lutaml-xsd
+        run: gem install lutaml-xsd
+
+      - name: Validate schemas
+        run: |
+          lutaml-xsd validate-schema schemas/*.xsd --format json > results.json
+
+      - name: Check results
+        run: |
+          if jq -e '.summary.invalid > 0' results.json; then
+            echo "Schema validation failed"
+            jq '.results[] | select(.valid == false)' results.json
+            exit 1
+          fi
+----
+====
+
+== See also
+
+* link:CLI.adoc[Complete CLI reference] - All command options
+* link:RUBY_API.adoc[Ruby API documentation] - Programmatic usage
+* link:QUICK_START.adoc[Quick start guide] - Getting started tutorials

@@ -1,0 +1,872 @@
+(*
+ACME 5000 No. 5952
+
+EXPRESS Source:
+ACME 5000-110 ed1 Smart grid energy management - Equations schema
+
+The following permission notice and disclaimer shall be included in all copies of this EXPRESS schema ("the Schema"),
+and derivations of the Schema:
+
+Copyright Ribose 2025  All rights reserved
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+In addition, any modified copy of the Schema shall include the following notice:
+
+THIS SCHEMA HAS BEEN MODIFIED FROM THE SCHEMA DEFINED IN
+ACME 5000-110 ed1 Smart grid energy management - Equations schema
+AND SHOULD NOT BE INTERPRETED AS COMPLYING WITH THAT STANDARD
+*)
+
+SCHEMA energy_equations_schema '{acme standard 5000 part(110) version(1) object(1) energy-equations-schema(4)}';
+  REFERENCE FROM analysis_schema               -- ACME 5000-53
+                 (model_product_domain,
+                  model_property_distribution);
+
+TYPE sg_behaviour_models = EXTENSIBLE SELECT
+  (power_flow_model,
+   load_forecasting_model,
+   renewable_generation_model,
+   storage_model);
+END_TYPE;
+
+TYPE sg_governing_equation_type = EXTENSIBLE ENUMERATION
+     BASED_ON sgem_governing_equation_type WITH
+     (power_balance,
+      voltage_regulation,
+      frequency_control,
+      optimal_power_flow,
+      economic_dispatch,
+      load_flow_analysis);
+END_TYPE;
+
+TYPE energy_balance_data_name = EXTENSIBLE ENUMERATION OF
+     (power_generation,
+      power_consumption,
+      power_storage,
+      power_transmission,
+      power_distribution,
+      voltage_magnitude,
+      voltage_angle,
+      current_magnitude,
+      current_angle,
+      frequency,
+      reactive_power,
+      apparent_power,
+      power_factor,
+      energy_efficiency,
+      carbon_emissions,
+      cost_generation,
+      cost_transmission,
+      cost_storage,
+      demand_response,
+      grid_stability_index);
+END_TYPE;
+
+TYPE power_flow_model_data_name = EXTENSIBLE ENUMERATION OF
+     (impedance_resistance,
+      impedance_reactance,
+      admittance_conductance,
+      admittance_susceptance,
+      transformer_ratio,
+      phase_shift_angle);
+END_TYPE;
+
+TYPE power_flow_model_type = EXTENSIBLE ENUMERATION OF
+     (unspecified,
+      application_defined,
+      dc_power_flow,
+      ac_power_flow,
+      optimal_power_flow);
+END_TYPE;
+
+TYPE sgem_behaviour_models = EXTENSIBLE SELECT
+  (demand_response_model);
+END_TYPE;
+
+TYPE sgem_governing_equation_type = EXTENSIBLE ENUMERATION OF
+     (unspecified,
+      application_defined);
+END_TYPE;
+
+TYPE demand_response_model_data_name = EXTENSIBLE ENUMERATION OF
+     (price_elasticity,
+      demand_baseline,
+      response_time,
+      participation_rate,
+      incentive_rate);
+END_TYPE;
+
+TYPE demand_response_model_type = EXTENSIBLE ENUMERATION OF
+     (unspecified,
+      application_defined,
+      price_based,
+      incentive_based,
+      direct_load_control,
+      time_of_use);
+END_TYPE;
+
+TYPE load_forecasting_model_data_name = EXTENSIBLE ENUMERATION OF
+     (historical_load,
+      weather_temperature,
+      weather_humidity,
+      economic_indicator,
+      seasonal_factor);
+END_TYPE;
+
+TYPE load_forecasting_model_type = EXTENSIBLE ENUMERATION OF
+     (unspecified,
+      application_defined,
+      time_series,
+      regression_analysis,
+      neural_network,
+      machine_learning);
+END_TYPE;
+
+TYPE renewable_generation_model_data_name = EXTENSIBLE ENUMERATION OF
+     (solar_irradiance,
+      wind_speed,
+      wind_direction,
+      panel_efficiency,
+      turbine_efficiency,
+      capacity_factor,
+      intermittency_factor);
+END_TYPE;
+
+TYPE renewable_generation_model_type = EXTENSIBLE ENUMERATION OF
+     (unspecified,
+      application_defined,
+      photovoltaic_solar,
+      wind_turbine,
+      hydroelectric,
+      geothermal,
+      biomass);
+END_TYPE;
+
+TYPE storage_model_data_name = EXTENSIBLE ENUMERATION OF
+     (state_of_charge,
+      charging_efficiency,
+      discharging_efficiency,
+      capacity_degradation,
+      cycle_life,
+      round_trip_efficiency);
+END_TYPE;
+
+TYPE storage_model_type = EXTENSIBLE ENUMERATION OF
+     (unspecified,
+      application_defined,
+      lithium_ion_battery,
+      pumped_hydro,
+      compressed_air,
+      flywheel,
+      supercapacitor);
+END_TYPE;
+
+ENTITY sg_optimization_equation
+  SUBTYPE OF (sg_governing_equation);
+  optimization_model : sg_optimization_model;
+END_ENTITY;
+
+ENTITY sg_optimization_model;
+  objective_functions : ARRAY [1:obj_count] OF BOOLEAN;
+  obj_count          : INTEGER;
+END_ENTITY;
+
+ENTITY sg_governing_equation
+  SUBTYPE OF (sgem_governing_equation);
+  SELF\sgem_governing_equation.equation_type
+                  : sg_governing_equation_type;
+END_ENTITY;
+
+ENTITY energy_equation_set
+  SUBTYPE OF (sgem_equation_set);
+  SELF\sgem_equation_set.equations : sg_governing_equation;
+  sg_models                        : SET OF sg_behaviour_models;
+END_ENTITY;
+
+ENTITY power_flow_model
+  SUBTYPE OF (sgem_behaviour_model);
+  model_type : power_flow_model_type;
+END_ENTITY;
+
+ENTITY sgem_behaviour_model
+  SUBTYPE OF (sgem_equation);
+INVERSE
+  data : SET OF model_property_distribution FOR domain;
+END_ENTITY;
+
+SUBTYPE_CONSTRAINT sc1_sgem_behaviour_model FOR sgem_behaviour_model;
+  ABSTRACT;
+  ONEOF(demand_response_model,
+        power_flow_model,
+        load_forecasting_model,
+        renewable_generation_model,
+        storage_model);
+END_SUBTYPE_CONSTRAINT;
+
+ENTITY sgem_equation
+  SUBTYPE OF (model_product_domain);
+END_ENTITY;
+
+SUBTYPE_CONSTRAINT sc1_sgem_equation FOR sgem_equation;
+  ONEOF(sgem_equation_set,
+        sgem_governing_equation,
+        sgem_behaviour_model);
+END_SUBTYPE_CONSTRAINT;
+
+ENTITY sgem_equation_set
+  SUBTYPE OF (sgem_equation);
+  dimension   : INTEGER;
+  equations   : sgem_governing_equation;
+  sgem_models : SET OF sgem_behaviour_models;
+END_ENTITY;
+
+ENTITY sgem_governing_equation
+  SUBTYPE OF (sgem_equation);
+  equation_type : sgem_governing_equation_type;
+END_ENTITY;
+
+ENTITY demand_response_model
+  SUBTYPE OF (sgem_behaviour_model);
+  model_type : demand_response_model_type;
+END_ENTITY;
+
+ENTITY load_forecasting_model
+  SUBTYPE OF (sgem_behaviour_model);
+  model_type : load_forecasting_model_type;
+END_ENTITY;
+
+ENTITY renewable_generation_model
+  SUBTYPE OF (sgem_behaviour_model);
+  model_type      : renewable_generation_model_type;
+  optimization_model : OPTIONAL sg_optimization_model;
+END_ENTITY;
+
+ENTITY storage_model
+  SUBTYPE OF (sgem_behaviour_model);
+  model_type : storage_model_type;
+END_ENTITY;
+
+END_SCHEMA; -- end of energy_equations_schema
+
+
+
+(*"energy_equations_schema"
+This schema defines and describes governing equation sets associated with smart grid energy management analysis.
+
+Abbreviated names are used in identifiers of elements declared in this schema. Prefixes used in these identifiers have the following meanings:
+
+sg:: smart_grid;
+sgem:: smart_grid_energy_management.
+*)
+
+(*"energy_equations_schema.__fund_cons"
+
+The description of the equation set includes the general class of governing equations and mathematical models for smart grid energy management. Included with each equation description are associated constants and parameters.
+
+The description of the energy-equation set includes the general class of governing equations, the power flow equations, the demand response models, and the renewable generation and storage models. Included with each equation description are associated constants and optimization parameters.
+
+The structure definitions attempt to balance the opposing requirements of initial ease of implementation against requirements for extensibility and future growth in smart grid technologies.
+
+The intended use of these structures is primarily for archival purposes and to provide additional documentation of the energy management solution.
+
+NOTE: As an example, one small set of data name identifiers is specified for energy balance data which may be common to both power system and energy management analyses. It is expected that this set will be extended, and other sets introduced, for specific kinds of smart grid analyses.
+
+NOTE: As an example, one small model for relating power flow properties is specified, which may cover both transmission and distribution analyses. It is expected that this model may have to be extended, and other kinds of model introduced, for specific kinds of smart grid analyses.
+*)
+
+(*"energy_equations_schema.sg_behaviour_models"
+
+An *sg_behaviour_models* is a selection among smart grid behavioral models.
+*)
+
+(*"energy_equations_schema.sg_governing_equation_type"
+
+An *sg_governing_equation_type* is an enumeration of the classes of smart grid energy equations.
+*)
+
+(*"energy_equations_schema.sg_governing_equation_type.unspecified"
+(from *governing_equations_type* ) is unspecified;
+*)
+
+(*"energy_equations_schema.sg_governing_equation_type.application_defined"
+(from *governing_equations_type* ) is specified via an external agreement between the data creator and the data user;
+*)
+
+(*"energy_equations_schema.sg_governing_equation_type.power_balance"
+is power balance equation for grid stability;
+*)
+
+(*"energy_equations_schema.sg_governing_equation_type.voltage_regulation"
+is voltage regulation control equations;
+*)
+
+(*"energy_equations_schema.sg_governing_equation_type.frequency_control"
+is frequency control and stabilization equations;
+*)
+
+(*"energy_equations_schema.sg_governing_equation_type.optimal_power_flow"
+is optimal power flow optimization equations;
+*)
+
+(*"energy_equations_schema.sg_governing_equation_type.economic_dispatch"
+is economic dispatch optimization equations;
+*)
+
+(*"energy_equations_schema.sg_governing_equation_type.load_flow_analysis"
+is load flow analysis equations for power system studies.
+*)
+
+(*"energy_equations_schema.energy_balance_data_name"
+
+An *energy_balance_data_name* is an enumeration of standardized energy balance and power system data.
+
+Conventions for data-name identifiers for energy balance and power system parameters are defined in this subclause.
+
+Given a power system with generation stem:[P_g], consumption stem:[P_l], and storage stem:[P_s], the power balance equation is:
+
+[latexmath%unnumbered]
+++++
+P_g + P_s = P_l + P_{losses}
+++++
+
+where stem:[P_{losses}] represents transmission and distribution losses.
+
+The voltage magnitude stem:[V] and angle stem:[delta] at each bus, along with current magnitude stem:[I] and angle stem:[phi], define the electrical state of the system:
+
+[latexmath%unnumbered]
+++++
+\vec{V} = V e^{j\delta} \qquad \vec{I} = I e^{j\phi}
+++++
+
+Power factor is defined as:
+
+[latexmath%unnumbered]
+++++
+PF = \cos(\phi) = \frac{P}{S}
+++++
+
+where stem:[P] is real power and stem:[S] is apparent power.
+
+Energy efficiency is calculated as:
+
+[latexmath%unnumbered]
+++++
+\eta = \frac{P_{useful}}{P_{input}} \times 100\%
+++++
+
+The following data-name identifiers and definitions are provided for energy balance and power system parameters:
+
+[[tab-ebdid]]
+.Energy balance data name identifiers
+[cols="a,a,a",options="header"]
+|===
+| Data name identifier | Description | Units
+
+| *power_generation* | Total power generation stem:[P_g] | stem:[MW]
+| *power_consumption* | Total power consumption stem:[P_l] | stem:[MW]
+| *power_storage* | Power from/to storage stem:[P_s] | stem:[MW]
+| *power_transmission* | Power transmission capacity | stem:[MW]
+| *power_distribution* | Power distribution capacity | stem:[MW]
+| *voltage_magnitude* | Voltage magnitude stem:[V] | stem:[kV]
+| *voltage_angle* | Voltage angle stem:[delta] | stem:[degrees]
+| *current_magnitude* | Current magnitude stem:[I] | stem:[A]
+| *current_angle* | Current angle stem:[phi] | stem:[degrees]
+| *frequency* | System frequency stem:[f] | stem:[Hz]
+| *reactive_power* | Reactive power stem:[Q] | stem:[MVAr]
+| *apparent_power* | Apparent power stem:[S] | stem:[MVA]
+| *power_factor* | Power factor stem:[PF] | stem:[-]
+| *energy_efficiency* | Energy efficiency stem:[eta] | stem:[%]
+| *carbon_emissions* | Carbon emissions rate | stem:[kg CO_2/MWh]
+| *cost_generation* | Generation cost | stem:[$/MWh]
+| *cost_transmission* | Transmission cost | stem:[$/MWh]
+| *cost_storage* | Storage cost | stem:[$/MWh]
+| *demand_response* | Demand response capacity | stem:[MW]
+| *grid_stability_index* | Grid stability indicator | stem:[-]
+
+|===
+
+The meanings of the enumerated items are given in the table above.
+*)
+
+(*"energy_equations_schema.power_flow_model_data_name"
+
+A *power_flow_model_data_name* is an enumeration of the standard data names that may be associated with data corresponding to different kinds of power flow models.
+*)
+
+(*"energy_equations_schema.power_flow_model_data_name.impedance_resistance"
+indicates the resistance component of impedance;
+*)
+
+(*"energy_equations_schema.power_flow_model_data_name.impedance_reactance"
+indicates the reactance component of impedance;
+*)
+
+(*"energy_equations_schema.power_flow_model_data_name.admittance_conductance"
+indicates the conductance component of admittance;
+*)
+
+(*"energy_equations_schema.power_flow_model_data_name.admittance_susceptance"
+indicates the susceptance component of admittance;
+*)
+
+(*"energy_equations_schema.power_flow_model_data_name.transformer_ratio"
+indicates the transformer turns ratio;
+*)
+
+(*"energy_equations_schema.power_flow_model_data_name.phase_shift_angle"
+indicates the phase shift angle in transformers.
+*)
+
+(*"energy_equations_schema.power_flow_model_type"
+
+A *power_flow_model_type* is an enumeration of the power flow models relating voltage, current, and power in electrical networks.
+*)
+
+(*"energy_equations_schema.power_flow_model_type.unspecified"
+is unspecified;
+*)
+
+(*"energy_equations_schema.power_flow_model_type.application_defined"
+is specified via an external agreement between the data creator and the data user;
+*)
+
+(*"energy_equations_schema.power_flow_model_type.dc_power_flow"
+the power flow model uses DC approximation. The power flow is linearized assuming:
+
+[stem%unnumbered]
+++++
+P = \frac{V_1 V_2}{X} \sin(\delta_1 - \delta_2) \approx \frac{V^2}{X} (\delta_1 - \delta_2)
+++++
+
+where stem:[V_1], stem:[V_2] are bus voltages, stem:[X] is reactance, and stem:[delta_1], stem:[delta_2] are voltage angles.
+
+The *standard_data_name* identifiers associated with DC power flow are: *impedance_reactance*, *voltage_magnitude*, and *voltage_angle*. These are described in the respective data name sections.
+*)
+
+(*"energy_equations_schema.power_flow_model_type.ac_power_flow"
+the power flow model uses full AC analysis. The power equations are:
+
+[stem%unnumbered]
+++++
+P_i = V_i \sum_{j=1}^{n} V_j (G_{ij} \cos(\delta_i - \delta_j) + B_{ij} \sin(\delta_i - \delta_j))
+++++
+
+[stem%unnumbered]
+++++
+Q_i = V_i \sum_{j=1}^{n} V_j (G_{ij} \sin(\delta_i - \delta_j) - B_{ij} \cos(\delta_i - \delta_j))
+++++
+
+where stem:[G_{ij}] and stem:[B_{ij}] are conductance and susceptance elements.
+*)
+
+(*"energy_equations_schema.power_flow_model_type.optimal_power_flow"
+the power flow model includes optimization objectives and constraints for economic operation.
+*)
+
+(*"energy_equations_schema.sgem_behaviour_models"
+
+An *sgem_behaviour_models* is a selection among smart grid energy management behavioral models.
+*)
+
+(*"energy_equations_schema.sgem_governing_equation_type"
+
+An *sgem_governing_equation_type* is an enumeration of the classes of smart grid energy management equations.
+*)
+
+(*"energy_equations_schema.sgem_governing_equation_type.unspecified"
+is unspecified;
+*)
+
+(*"energy_equations_schema.sgem_governing_equation_type.application_defined"
+is specified via an external agreement between the data creator and the data user.
+*)
+
+(*"energy_equations_schema.demand_response_model_data_name"
+
+A *demand_response_model_data_name* is an enumeration of the standard data names that may be associated with data corresponding to different kinds of demand response models. The identifiers and their units are given in the table below.
+
+[[tab-drmdid]]
+.Demand response model data name identifiers
+|===
+| Data name identifier | Description | Units
+
+| *price_elasticity*	 | Price elasticity of demand stem:[epsilon] | stem:[-]
+| *demand_baseline*	 | Baseline demand stem:[D_0] | stem:[MW]
+| *response_time*	 | Response time to price signals | stem:[minutes]
+| *participation_rate* | Customer participation rate | stem:[%]
+| *incentive_rate* | Incentive payment rate | stem:[$/MWh]
+
+|===
+*)
+
+(*"energy_equations_schema.demand_response_model_data_name.price_elasticity"
+indicates the price elasticity of demand;
+*)
+
+(*"energy_equations_schema.demand_response_model_data_name.demand_baseline"
+indicates the baseline demand level;
+*)
+
+(*"energy_equations_schema.demand_response_model_data_name.response_time"
+indicates the time to respond to price signals;
+*)
+
+(*"energy_equations_schema.demand_response_model_data_name.participation_rate"
+indicates the customer participation rate;
+*)
+
+(*"energy_equations_schema.demand_response_model_data_name.incentive_rate"
+indicates the incentive payment rate.
+*)
+
+(*"energy_equations_schema.demand_response_model_type"
+
+A *demand_response_model_type* is an enumeration of the relationships between electricity demand and price or incentive signals.
+*)
+
+(*"energy_equations_schema.demand_response_model_type.unspecified"
+is unspecified;
+*)
+
+(*"energy_equations_schema.demand_response_model_type.application_defined"
+is specified via an external agreement between the data creator and the data user;
+*)
+
+(*"energy_equations_schema.demand_response_model_type.price_based"
+identifies that demand responds to price signals according to:
+
+[latexmath%unnumbered]
+++++
+D = D_0 \left(1 + \epsilon \frac{\Delta P}{P_0}\right)
+++++
+
+where stem:[D_0] is baseline demand, stem:[epsilon] is price elasticity, and stem:[Delta P] is price change.
+
+The standard data name identifiers associated with this model are *price_elasticity* and *demand_baseline*.
+*)
+
+(*"energy_equations_schema.demand_response_model_type.incentive_based"
+the demand response is based on direct incentive payments to customers.
+*)
+
+(*"energy_equations_schema.demand_response_model_type.direct_load_control"
+the utility directly controls customer loads through automated systems.
+*)
+
+(*"energy_equations_schema.demand_response_model_type.time_of_use"
+demand response through time-of-use pricing structures.
+*)
+
+(*"energy_equations_schema.load_forecasting_model_data_name"
+
+A *load_forecasting_model_data_name* is an enumeration of standardized load forecasting model variables for smart grid systems.
+
+Load forecasting is essential for grid planning and operation. The following data-name identifiers are defined for load forecasting models:
+
+[[tab-lfmdid]]
+.Load forecasting model data name identifiers
+[cols="a,a,a",options="header"]
+|===
+| Data name identifier | Description | Units
+
+| *historical_load* | Historical load data | stem:[MW]
+| *weather_temperature* | Temperature data | stem:[°C]
+| *weather_humidity* | Humidity data | stem:[%]
+| *economic_indicator* | Economic activity indicator | stem:[-]
+| *seasonal_factor* | Seasonal adjustment factor | stem:[-]
+
+|===
+
+The required identifiers and their meanings are given in the table above.
+*)
+
+(*"energy_equations_schema.load_forecasting_model_type"
+
+A *load_forecasting_model_type* is an enumeration of the mathematical approaches for predicting electricity demand.
+*)
+
+(*"energy_equations_schema.load_forecasting_model_type.unspecified"
+is unspecified;
+*)
+
+(*"energy_equations_schema.load_forecasting_model_type.application_defined"
+is specified via an external agreement between the data creator and the data user;
+*)
+
+(*"energy_equations_schema.load_forecasting_model_type.time_series"
+uses time series analysis methods such as ARIMA;
+*)
+
+(*"energy_equations_schema.load_forecasting_model_type.regression_analysis"
+uses regression analysis with weather and economic variables;
+*)
+
+(*"energy_equations_schema.load_forecasting_model_type.neural_network"
+uses artificial neural networks for load prediction;
+*)
+
+(*"energy_equations_schema.load_forecasting_model_type.machine_learning"
+uses advanced machine learning algorithms.
+*)
+
+(*"energy_equations_schema.renewable_generation_model_data_name"
+
+A *renewable_generation_model_data_name* is an enumeration of standardized renewable energy generation model variables.
+
+Renewable energy generation depends on weather conditions and equipment characteristics. The following identifiers are defined:
+
+[[tab-rgmdid]]
+.Renewable generation model data name identifiers
+[cols="a,a,a",options="header"]
+|===
+| Data name identifier | Description | Units
+
+| *solar_irradiance* | Solar irradiance level | stem:[W/m²]
+| *wind_speed* | Wind speed | stem:[m/s]
+| *wind_direction* | Wind direction | stem:[degrees]
+| *panel_efficiency* | Solar panel efficiency | stem:[%]
+| *turbine_efficiency* | Wind turbine efficiency | stem:[%]
+| *capacity_factor* | Capacity factor | stem:[%]
+| *intermittency_factor* | Intermittency factor | stem:[-]
+
+|===
+*)
+
+(*"energy_equations_schema.renewable_generation_model_type"
+
+A *renewable_generation_model_type* is an enumeration of renewable energy generation technologies.
+*)
+
+(*"energy_equations_schema.renewable_generation_model_type.unspecified"
+is unspecified;
+*)
+
+(*"energy_equations_schema.renewable_generation_model_type.application_defined"
+is specified via an external agreement between the data creator and the data user;
+*)
+
+(*"energy_equations_schema.renewable_generation_model_type.photovoltaic_solar"
+photovoltaic solar power generation;
+*)
+
+(*"energy_equations_schema.renewable_generation_model_type.wind_turbine"
+wind turbine power generation;
+*)
+
+(*"energy_equations_schema.renewable_generation_model_type.hydroelectric"
+hydroelectric power generation;
+*)
+
+(*"energy_equations_schema.renewable_generation_model_type.geothermal"
+geothermal power generation;
+*)
+
+(*"energy_equations_schema.renewable_generation_model_type.biomass"
+biomass power generation.
+*)
+
+(*"energy_equations_schema.storage_model_data_name"
+
+A *storage_model_data_name* is an enumeration of standardized energy storage model variables.
+
+Energy storage systems are characterized by various performance parameters:
+
+[[tab-smdid]]
+.Storage model data name identifiers
+[cols="a,a,a",options="header"]
+|===
+| Data name identifier | Description | Units
+
+| *state_of_charge* | State of charge | stem:[%]
+| *charging_efficiency* | Charging efficiency | stem:[%]
+| *discharging_efficiency* | Discharging efficiency | stem:[%]
+| *capacity_degradation* | Capacity degradation rate | stem:[%/year]
+| *cycle_life* | Expected cycle life | stem:[cycles]
+| *round_trip_efficiency* | Round trip efficiency | stem:[%]
+
+|===
+*)
+
+(*"energy_equations_schema.storage_model_type"
+
+A *storage_model_type* is an enumeration of energy storage technologies.
+*)
+
+(*"energy_equations_schema.storage_model_type.unspecified"
+is unspecified;
+*)
+
+(*"energy_equations_schema.storage_model_type.application_defined"
+is specified via an external agreement between the data creator and the data user;
+*)
+
+(*"energy_equations_schema.storage_model_type.lithium_ion_battery"
+lithium-ion battery energy storage;
+*)
+
+(*"energy_equations_schema.storage_model_type.pumped_hydro"
+pumped hydroelectric energy storage;
+*)
+
+(*"energy_equations_schema.storage_model_type.compressed_air"
+compressed air energy storage;
+*)
+
+(*"energy_equations_schema.storage_model_type.flywheel"
+flywheel energy storage;
+*)
+
+(*"energy_equations_schema.storage_model_type.supercapacitor"
+supercapacitor energy storage.
+*)
+
+(*"energy_equations_schema.sg_optimization_equation"
+
+An *sg_optimization_equation* is an *sg_governing_equation* which includes optimization objectives.
+*)
+
+(*"energy_equations_schema.sg_optimization_equation.optimization_model"
+describes the optimization objectives and constraints for smart grid operation.
+*)
+
+(*"energy_equations_schema.sg_optimization_model"
+
+An *sg_optimization_model* describes the optimization objectives for smart grid energy management.
+
+Smart grid optimization typically involves multiple objectives such as cost minimization, emission reduction, and reliability maximization. The *sg_optimization_model* encodes which objectives are included in the optimization problem.
+
+[[tab-opt]]
+.Encoding of optimization objectives
+[cols="a,a",options="header"]
+|===
+| Element | Optimization objective
+
+| stem:[n = 1] | Minimize generation cost
+| stem:[n = 2] | Minimize transmission losses
+| stem:[n = 3] | Minimize carbon emissions
+| stem:[n = 4] | Maximize renewable energy utilization
+| stem:[n = 5] | Maximize grid reliability
+| stem:[n = 6] | Minimize voltage deviations
+
+|===
+
+[example]
+====
+A multi-objective optimization including cost minimization and emission reduction is indicated by:
+
+*objective_functions* = `[TRUE,FALSE,TRUE,FALSE,FALSE,FALSE]`
+====
+*)
+
+(*"energy_equations_schema.sg_optimization_model.objective_functions"
+the optimization objectives;
+*)
+
+(*"energy_equations_schema.sg_optimization_model.obj_count"
+the number of elements in the *objective_functions* array.
+*)
+
+(*"energy_equations_schema.sg_governing_equation"
+
+An *sg_governing_equation* is an *sgem_governing_equation* describing the class of governing smart grid equations associated with the solution.
+*)
+
+(*"energy_equations_schema.sg_governing_equation.equation_type"
+the kind of smart grid equation.
+*)
+
+(*"energy_equations_schema.energy_equation_set"
+
+An *energy_equation_set* is an *sgem_equation_set* providing a general description of governing smart grid energy equations. It includes the dimensionality of the governing equations.
+*)
+
+(*"energy_equations_schema.energy_equation_set.equations"
+describes the general class of smart grid energy equations;
+*)
+
+(*"energy_equations_schema.energy_equation_set.sg_models"
+describes zero or more of:
+
+* the power flow model;
+* the demand response model;
+* the load forecasting model;
+* the renewable generation model;
+* the energy storage model.
+*)
+
+(*"energy_equations_schema.power_flow_model"
+
+A *power_flow_model* is the mathematical model used in the governing equations to relate voltage, current, and power in electrical networks.
+*)
+
+(*"energy_equations_schema.power_flow_model.model_type"
+the particular power flow model type.
+*)
+
+(*"energy_equations_schema.sgem_behaviour_model"
+
+An *sgem_behaviour_model* is a model for relating physical or mathematical quantities in smart grid energy management.
+*)
+
+(*"energy_equations_schema.sgem_behaviour_model.data"
+the model data.
+*)
+
+(*"energy_equations_schema.sgem_equation"
+
+An *sgem_equation* represents the concept of a mathematical formulation of smart grid energy management phenomena.
+*)
+
+(*"energy_equations_schema.sgem_equation.description"
+(inherited) annotation;
+*)
+
+(*"energy_equations_schema.sgem_equation.name"
+(inherited) user-specified instance identifier;
+*)
+
+(*"energy_equations_schema.sgem_equation.id"
+(inherited) an identifier.
+*)
+
+(*"energy_equations_schema.sgem_equation_set"
+
+An *sgem_equation_set* is an *sgem_equation* that gives a general description of governing smart grid equations. It includes the dimensionality of the governing equations.
+*)
+
+(*"energy_equations_schema.sgem_equation_set.dimension"
+the dimensionality of the governing equations; it is the number of spatial or temporal variables describing the equation;
+*)
+
+(*"energy_equations_schema.sgem_equation_set.equations"
+describes the general class of smart grid equations.
+*)
+
+(*"energy_equations_schema.sgem_equation_set.sgem_models"
+zero or more behavioral models for smart grid energy management;
+*)
+
+(*"energy_equations_schema.sgem_governing_equation"
+
+An *sgem_governing_equation* is an *sgem_equation* describing the class of governing equations associated with the smart grid analysis solution.
+*)
+
+(*"energy_equations_schema.sgem_governing_equation.equation_type"
+the kind of smart grid equation.
+*)
+
+(*"energy_equations_schema.demand_response_model"
+
+A *demand_response_model* is the model for relating electricity demand to price signals and incentives.
+*)
+
+(*"energy_equations_schema.demand_response_model.model_type"
+the particular demand response model type.
+*)

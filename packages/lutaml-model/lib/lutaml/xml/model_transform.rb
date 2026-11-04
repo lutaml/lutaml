@@ -1,0 +1,1824 @@
+# frozen_string_literal: true
+
+module Lutaml
+  module Xml
+    # ModelTransform is the XML transform handler for the model layer.
+    # It inherits from Lutaml::Model::Transform and implements XML-specific
+    # data_to_model and model_to_data methods.
+    #
+    # This class bridges the model layer and the XML module:
+    # - Inherits from Lutaml::Model::Transform (model's format-agnostic base)
+    # - Delegates to Lutaml::Xml::Transformation for actual XML serialization
+    # - Used by model's serialization pipeline via Transform.for(:xml)
+    #
+    class ModelTransform < ::Lutaml::Model::Transform
+      require "cgi" unless Lutaml::Model.opal?
+
+      # Per (model class, register): compiled records for the mapping
+      # rules — attribute, derived/valid flags, and #765 group-skip —
+      # keyed on the mapping's finalize version so late changes rebuild.
+      # The loop body used to re-derive these per parsed instance.
+      # Concurrent::Map under threaded MRI, plain Hash under Opal
+      # (Concurrent is unavailable there); class identity keys either.
+      # Concurrent is required here (not at boot) so its first load never
+      # happens inside RubyGems' unresolved-tree resolution (see
+      # TransformationRegistry#initialize).
+      RULE_RECORDS = if Lutaml::Model.opal?
+                       {}
+                     else
+                       Lutaml::Model::RuntimeCompatibility
+                         .require_native("concurrent")
+                       Concurrent::Map.new # rubocop:disable Lint/HashCompareByIdentity
+                     end
+
+      # Namespaced rule name -> [local_name, rule_uri]. Pure string
+      # splitting, deterministic per spelling, shared across parses.
+      # Concurrent::Map under threaded MRI, plain Hash under Opal.
+      NAMESPACED_NAME_PARTS = if Lutaml::Model.opal?
+                                {}
+                              else
+                                Lutaml::Model::RuntimeCompatibility.require_native("concurrent")
+                                Concurrent::Map.new
+                              end
+
+      # Rule name -> its local suffix after the last colon. The
+      # cross-namespace fallback probes this suffix per rule name per
+      # child per element (11M substring mints on a 2M-node parse);
+      # the suffix is static per spelling, so it is shared here with
+      # the same backing as NAMESPACED_NAME_PARTS.
+      RULE_LOCAL_NAMES = if Lutaml::Model.opal?
+                           {}
+                         else
+                           Lutaml::Model::RuntimeCompatibility.require_native("concurrent")
+                           Concurrent::Map.new
+                         end
+      include NestedCollectionAttribute
+
+      # Performance: Frozen empty hash to reduce allocations
+      EMPTY_HASH = {}.freeze
+
+      # ":".getbyte(0) — getbyte comparisons avoid the per-candidate
+      # string slice in namespace-prefix checks on the lenient paths.
+      COLON_BYTE = 58
+
+      def data_to_model(data, _format, options = {})
+        # Use child's own default register if it has one
+        # This ensures versioned schemas (e.g., MML v2 with lutaml_default_register = :mml_v2)
+        # are instantiated with their native context
+        # TODO.max-perf/32: constant per (model class, register) — the
+        # transform itself is cached per that pair, so resolve once.
+        child_register = @xml_child_register ||= Lutaml::Model::Register
+          .resolve_for_child(
+            model_class, lutaml_register
+          )
+
+        instance_is_serialize = model_class.include?(::Lutaml::Model::Serialize)
+        if instance_is_serialize
+          # TODO.max-perf/17: the same child element was being re-hydrated
+          # per matching rule (593k instantiations for 12k elements on the
+          # ISO-13849 profile). Memoize one instance per (element, class)
+          # for the whole parse; the memo travels in the propagated
+          # deserialization options.
+          # Nested identity maps keyed on the element object itself —
+          # flat object_id pairs could collide after GC id reuse on
+          # long parses (#808 audit).
+          memo = options[:__lutaml_child_memo] ||= {}.compare_by_identity
+          per_class = (memo[data] ||= {}.compare_by_identity)
+          if (existing = per_class[model_class])
+            return existing
+          end
+
+          instance = model_class.allocate_for_deserialization(child_register)
+          per_class[model_class] = instance
+        else
+          instance = model_class.new
+          register_accessor_methods_for(instance, child_register)
+        end
+        # Set @__xml_namespace_prefix on root model for doubly-defined namespace support.
+        # This is read during serialization to determine if the root element should use
+        # an explicit prefix from the input XML.
+        # Check the XmlElement's namespace_prefix (not the model's):
+        # - Nil/empty: root uses default format (doubly-defined case)
+        # - Set: root has explicit prefix (mixed content case)
+        root_element = if data.is_a?(::Lutaml::Xml::XmlElement)
+                         data
+                       else
+                         data.root
+                       end
+        if root_element && instance_is_serialize
+          root_ns_prefix = if root_element.namespace_prefix_explicit && root_element.namespace_prefix
+                             root_element.namespace_prefix
+                           else
+                             root_element.xml_namespace_prefix
+                           end
+          if root_ns_prefix && !root_ns_prefix.empty?
+            instance.xml_namespace_prefix = root_ns_prefix
+          end
+          # Track original namespace URI for namespace alias support.
+          #
+          # When root element's namespace URI differs from the model's canonical URI,
+          # it's an alias that should be preserved during serialization.
+          root_ns_uri = root_element.namespace_uri
+          if root_ns_uri
+            model_ns_class = instance.class.mappings_for(:xml)&.namespace_class
+            if model_ns_class && model_ns_class.uri != root_ns_uri
+              # root_ns_uri differs from canonical - preserve it (alias or other)
+              instance.original_namespace_uri = root_ns_uri
+            end
+          end
+
+          # Namespace declaration plan for round-trip fidelity.
+          # Only needed for root elements (no lutaml_parent in options).
+          # Three modes: :lazy (default), :eager, :skip.
+          if !options.key?(:lutaml_parent)
+            # Default :eager — the plan data is tiny, but :lazy pins the
+            # adapter root element on every parsed instance, which keeps the
+            # entire native DOM (moxml wrappers + engine nodes) alive until
+            # first serialization. Models that are never serialized retain
+            # the DOM forever: a 10.5MB XMI held 578MB of wrappers this
+            # way. :lazy remains available for parse-serialize-immediately
+            # workflows that want to skip the namespace walk.
+            plan_mode = options.fetch(:import_declaration_plan, :eager)
+            case plan_mode
+            when :skip
+              # Skip plan building entirely (fastest)
+            when :eager
+              input_declaration_plan = build_input_declaration_plan(root_element)
+              instance.import_declaration_plan = input_declaration_plan if input_declaration_plan
+            when :lazy
+              # Store element reference for lazy plan building on first to_xml.
+              # No recursive walk during deserialization — plan is built on demand.
+              # Element reference is released after first serialization.
+              instance.pending_plan_root_element = root_element
+            else
+              raise ArgumentError,
+                    "import_declaration_plan must be :eager, :lazy, or :skip, got #{plan_mode.inspect}"
+            end
+          end
+        end
+        root_and_parent_assignment(instance, options)
+        apply_xml_mapping(ParseSession.new(data, instance, options,
+                                           child_register))
+      end
+
+      # Build a DeclarationPlan from the parsed element tree's namespace declarations.
+      #
+      # Walks the entire element tree to capture ALL xmlns declarations from input XML,
+      # including unused ones (like xmlns:xi for XInclude) and declarations on child elements.
+      # The plan preserves WHERE each namespace was declared and its original format/URI.
+      #
+      # @param root_element [XmlElement] The parsed root element
+      # @return [DeclarationPlan, nil] The plan or nil if no namespaces
+      def build_input_declaration_plan(root_element)
+        return nil unless root_element
+
+        # Walk the element tree collecting namespaces with their declaration locations
+        namespaces_with_locations = collect_element_namespaces(root_element)
+        return nil if namespaces_with_locations.nil? || namespaces_with_locations.empty?
+
+        # Get the mapping for namespace resolution
+        xml_mapping = mappings_for(:xml)
+
+        # Create location-aware DeclarationPlan
+        DeclarationPlan.from_input_with_locations(namespaces_with_locations,
+                                                  xml_mapping)
+      end
+
+      # Recursively collect namespace declarations from all elements in the tree.
+      #
+      # Each element may declare namespaces via xmlns attributes. The path array tracks
+      # the element names from root to current element. Root has path [], its children
+      # have path ["childName"], etc. This matches DeclarationPlan.from_input_with_locations
+      # expectations where root path is [] and child paths are built by appending.
+      #
+      # @param element [XmlElement] The element to collect from
+      # Recursively collect namespace declarations from all elements in the tree.
+      #
+      # Each element may declare namespaces via xmlns attributes. The path array tracks
+      # the element names from root to current element. Root has path [], its children
+      # have path ["childName"], etc. This matches DeclarationPlan.from_input_with_locations
+      # expectations where root path is [] and child paths are built by appending.
+      #
+      # Available as both class method (for lazy plan building from instance context)
+      # and instance method (for use within ModelTransform).
+      #
+      # @param element [XmlElement] The element to collect from
+      # @param path [Array<String>] Element path from root (empty for root element)
+      # @param result [Hash] Accumulated result { path_array => { key => { uri:, prefix:, format: } } }
+      # @param visited [Set] Set of visited element object_ids to prevent cycles
+      # @return [Hash] { [path_array] => { key => { uri:, prefix:, format: } } }
+      def self.collect_element_namespaces(element, path = [], result = nil,
+                                          visited = nil)
+        result ||= {}
+        visited ||= Set.new
+        return result unless element
+        return result if visited.include?(element.object_id)
+
+        visited.add(element.object_id)
+
+        # Collect this element's own namespace declarations
+        own_ns = element.own_namespaces
+        if own_ns&.any?
+          input_namespaces = {}
+          own_ns.each do |prefix, ns_data|
+            key = prefix.nil? ? :default : prefix
+            input_namespaces[key] = {
+              uri: ns_data.uri,
+              prefix: prefix,
+              format: prefix.nil? ? :default : :prefix,
+            }
+          end
+
+          # The path array is shared and mutated during the descent;
+          # snapshot it as a result key only where a declaration lives.
+          result[path.dup] = input_namespaces unless input_namespaces.empty?
+        end
+
+        # Recurse into children with path extended by child local name
+        # Use local name (without prefix) since serialization lookup uses
+        # xml_element.name which is the local name without namespace prefix
+        element.children.each do |child|
+          next if child.is_a?(String) # Skip text nodes
+
+          # Strip namespace prefix if present (e.g., "c:childName" -> "childName")
+          # to match the key format used during serialization lookup
+          full_name = child.name.to_s
+          child_local_name = if full_name.include?(":")
+                               full_name.split(":",
+                                               2).last
+                             else
+                               full_name
+                             end
+          path.push(child_local_name)
+          collect_element_namespaces(child, path, result, visited)
+          path.pop
+        end
+
+        result
+      end
+
+      # Instance method delegates to class method
+      def collect_element_namespaces(...)
+        self.class.collect_element_namespaces(...)
+      end
+
+      def model_to_data(model, _format, options = {})
+        # Check if model class has a pre-compiled transformation
+        model_class = model.class
+        if model_class.is_a?(Class) && model_class.include?(::Lutaml::Model::Serialize)
+          transformation = model_class.transformation_for(
+            :xml, lutaml_register, mapping: @lutaml_mapping_override
+          )
+
+          # If transformation exists and is an Xml::Transformation, use it
+          if transformation.is_a?(::Lutaml::Xml::Transformation)
+            return transformation.transform(model, options)
+          end
+        end
+
+        # Fallback to returning model for classes without transformation
+        model
+      end
+
+      private
+
+      def apply_xml_mapping(session)
+        doc = session.doc
+        instance = session.instance
+        options = session.options
+        effective_register = session.register
+        instance_is_serialize = session.instance_is_serialize
+
+        # Performance: Resolve xml_mapping once — used for both rules and metadata
+        # An explicit mapping (#176 profiles) governs the rules and the
+        # metadata alike; its own catch-all rule applies.
+        xml_mapping = options[:mappings] || mappings_for(:xml, effective_register)
+        mappings = xml_mapping.mappings(effective_register)
+        # Catch-all rule (map_any_element): iterated like any other,
+        # claiming every child no explicit rule matches. Skipped when
+        # absent — the unconditional array concat minted one fresh
+        # Array per hydrated instance against the frozen cached list.
+        catch_all = xml_mapping.any_element_rule
+        mappings = mappings + [catch_all] if catch_all
+        default_namespace = options[:default_namespace]
+        ordered_option = options[:ordered]
+        mixed_content_option = options[:mixed_content]
+        encoding = options[:encoding]
+        doctype = options[:doctype]
+
+        instance.encoding = encoding
+        instance.doctype = doctype if doctype
+
+        # Transfer XML declaration info if present (Issue #1)
+        if (xml_decl = doc.xml_declaration)
+          instance.xml_declaration = xml_decl
+        end
+
+        return instance unless doc
+
+        validate_document!(doc, options)
+
+        set_instance_ordering(instance, doc, ordered_option,
+                              mixed_content_option, xml_mapping,
+                              instance_is_serialize)
+        set_schema_location(instance, doc, xml_mapping, effective_register)
+
+        defaults_used = []
+
+        # Performance: Get namespace_uri once if needed for default_namespace
+        namespace_uri = xml_mapping&.namespace_uri
+
+        # Performance: Pre-build Set of child namespaced names for fast rule matching.
+        # This allows skipping value_for_rule for ~91% of rules that have no matching child.
+        child_names_set = nil
+        if doc.is_a?(::Lutaml::Xml::XmlElement) || doc.is_a?(::Lutaml::Xml::Document)
+          ec = doc.element_children
+          unless ec.empty?
+            child_names_set = Set.new
+            ec.each do |child|
+              child_names_set.add(child.namespaced_name)
+              child_names_set.add(child.unprefixed_name)
+            end
+          end
+        end
+
+        # lutaml-model#765: several plain element rules may target one
+        # collection attribute (spelling tolerance, e.g. editorial-group vs
+        # editorialgroup). The first rule of such a group performs matching
+        # widened to every spelling so content merges in document order;
+        # the remaining rules are no-ops so their assignment cannot
+        # silently overwrite the merged value.
+        # Grouping is cached on the mapping DSL (per register); only the
+        # collection filter runs here.
+        grouped_plain_rules = xml_mapping.plain_element_rules_by_attr(
+          effective_register,
+        )
+
+        serializable = instance.class.include?(Lutaml::Model::Serialize)
+        records = if serializable
+                    compiled_rule_records(instance.class, effective_register,
+                                          grouped_plain_rules)
+                  end
+        # Loop invariants: the entity-decode flag is a per-(class, register)
+        # fact and the attributes hash is memoized per register — both were
+        # re-asked per rule application (942k + 751k calls per ISO-13849
+        # parse).
+        decode_entities_flag = decode_html_entities_for(instance,
+                                                        effective_register)
+        deserialize_attributes = attributes
+        mappings.each do |rule|
+          record = records&.[](rule)
+
+          # #903/#922: replay-or-drop unmatched rules; never clobber
+          # a mid-parse custom-writer assignment.
+          next if replay_unmatched_rule(child_names_set, record, rule,
+                                        instance, defaults_used,
+                                        xml_mapping)
+
+          rule_to = rule.to
+
+          if record
+            attr = record.attr
+            next if record.derived
+            next if record.group_skip
+
+            raise "Attribute '#{rule_to}' not found in #{context}" unless record.valid
+          else
+            attr = attribute_for_rule(rule)
+            next if attr&.derived?
+
+            group = grouped_plain_rules[rule_to]
+            next if group && group.size > 1 && attr&.collection? &&
+              !group.first.equal?(rule)
+
+            raise "Attribute '#{rule_to}' not found in #{context}" unless valid_rule?(
+              rule, attr
+            )
+          end
+
+          # Performance: Use pre-computed frozen Hash for static namespace overrides.
+          # Falls back to per-element hash only for the dynamic namespace_uri case.
+          new_opts = rule.static_namespace_option ||
+            if default_namespace.nil? && namespace_uri
+              { default_namespace: namespace_uri }
+            else
+              options
+            end
+
+          value = if !rule.attribute? && rule.name.nil? &&
+              xml_mapping.any_element_rule.equal?(rule)
+                    # map_any_element: every child element no explicit
+                    # element rule claims, in document order (claimed
+                    # set + scalar text extraction live in
+                    # any_element_members). A name-less MappingRule is
+                    # otherwise indistinguishable from a content rule;
+                    # name-derived lookup re-finds by name, losing
+                    # order and double-picking.
+                    any_element_members(
+                      doc, xml_mapping, attr, effective_register
+                    )
+                  elsif rule.raw_mapping?
+                    scoped_raw_inner_xml(doc, xml_mapping)
+                  elsif rule.content_mapping?
+                    rule.cdata ? doc.cdata : doc.text
+                  elsif (group = grouped_plain_rules[rule_to]) &&
+                      group.size > 1 && attr&.collection?
+                    # First rule of a #765 group: match every spelling of
+                    # the group so the children merge in document order.
+                    raise "GROUPED-BODY" if ENV["CATCHDBG"] && rule.name.nil?
+
+                    if child_names_set &&
+                        group.drop(1).none? do |s|
+                          child_matches_rule?(s, child_names_set,
+                                              default_namespace)
+                        end && !child_matches_rule?(rule, child_names_set,
+                                                    default_namespace)
+                      ::Lutaml::Model::UninitializedClass.instance
+                    else
+                      extra_names = group.drop(1).flat_map do |s|
+                        resolve_rule_names_with_type(s, attr, new_opts,
+                                                     effective_register,
+                                                     attr&.type(effective_register))
+                      end
+                      value_for_rule(session, rule, new_opts, attr,
+                                     extra_names)
+                    end
+                  elsif child_names_set && !rule.attribute? && rule.name &&
+                      !child_matches_rule?(rule, child_names_set,
+                                           default_namespace)
+                    raise "FASTSKIP-BODY" if ENV["CATCHDBG"] && rule.name.nil?
+
+                    # Pre-match: no child element matches this rule.
+                    # Skip expensive value_for_rule, handle defaults inline.
+                    # NOTE: do not "read the instance" here (to_value_for) —
+                    # the compiled getters materialize lazy collections on
+                    # first read, which tripled parse allocations when tried.
+                    if writer_populated?(record, instance)
+                      instance.value_set_for(rule_to)
+                      next
+                    end
+                    if instance.using_default?(rule_to) || rule.render_default
+                      defaults_used << rule_to
+                      attr&.default(effective_register) || rule.to_value_for(instance)
+                    else
+                      # The attribute already holds an explicit value --
+                      # assigned by a matched rule or by a custom writer
+                      # mid-parse (lutaml-model#922). An unmatched rule
+                      # must not overwrite it with nil.
+                      next
+                    end
+                  else
+                    raise "ELSE-BODY" if ENV["CATCHDBG"] && rule.name.nil?
+
+                    # Performance: Pass cached attr to avoid recomputing attribute_for_rule
+                    val = value_for_rule(session, rule, new_opts, attr)
+
+                    if (val.nil? || ::Lutaml::Model::Utils.uninitialized?(val)) &&
+                        (instance.using_default?(rule_to) || rule.render_default)
+                      defaults_used << rule_to
+                      attr&.default(effective_register) || rule.to_value_for(instance)
+                    else
+                      val
+                    end
+                  end
+
+          # Performance: Skip post-processing for truly omitted rules.
+          # Only skip when value_map would keep UninitializedClass (treat_omitted == :omitted)
+          # AND no defaults are needed. Rules with treat_omitted: :nil still need processing.
+          if ::Lutaml::Model::Utils.uninitialized?(value) &&
+              !rule.treat_omitted?(new_opts) &&
+              !rule.render_default &&
+              !instance.using_default?(rule_to)
+            next
+          end
+
+          from_map = rule.value_map(:from, new_opts)
+          value = apply_value_map(value, from_map, attr)
+          value = normalize_xml_value(value, rule, attr, new_opts,
+                                      effective_register)
+          value = decode_html_entities_value(value, decode_entities_flag)
+          value = rule.transform_value(attr, value, :from, :xml)
+          # An over-count is normally left for `.validate` to report. A mapped
+          # PORO has no `.validate`, so deferring there would discard the
+          # violation entirely — check it while there is still someone to tell.
+          if !instance_is_serialize && attr && !attr.collection? &&
+              !rule.content_mapping?
+            # singular_tolerance: :first collapses an over-ingested
+            # collection to its leading value before the writer sees it
+            # (#971) — the reduced scalar then flows through
+            # deserialize and serializes as a single element.
+            value = value.first if attr.tolerates_singular_overflow?(value)
+            attr.valid_collection!(value, context)
+          end
+          rule.deserialize(instance, value, deserialize_attributes, context,
+                           options[:context])
+
+          instance.value_set_for(rule_to)
+        end
+
+        defaults_used.each do |attr_name|
+          instance.using_default_for(attr_name)
+        end
+
+        apply_processing_instruction_deserialization(doc, instance, xml_mapping,
+                                                     effective_register)
+
+        apply_all_attributes_deserialization(doc, instance, xml_mapping)
+
+        run_consolidation(instance, effective_register, instance_is_serialize)
+
+        instance
+      end
+
+      # #1031: wildcard attribute families. After the explicit attribute
+      # rules have consumed their names, every remaining unprefixed
+      # attribute matching the rule's pattern lands in the target Hash —
+      # names claimed by explicit rules never leak into it.
+      def apply_all_attributes_deserialization(doc, instance, xml_mapping)
+        rule = xml_mapping.all_attributes_rule
+        return if rule.nil?
+
+        element = doc.is_a?(::Lutaml::Xml::XmlElement) ? doc : doc.root
+        return if element.nil?
+
+        claimed = attribute_names_claimed_by_rules(xml_mapping)
+        remainder = {}
+        element.attributes.each_value do |attr|
+          name = attr.unprefixed_name.to_s
+          next if claimed.include?(name)
+          next if rule.matching && !rule.matching.match?(name)
+
+          remainder[name] = attr.value
+        end
+        return if remainder.empty?
+
+        instance.public_send(:"#{rule.to}=", remainder)
+        instance.value_set_for(rule.to) if instance.is_a?(::Lutaml::Model::Serialize)
+      end
+
+      # Attribute names claimed by explicit map_attribute rules, plus the
+      # engine-handled schemaLocation (which renders through
+      # raw_schema_location, not the remainder).
+      def attribute_names_claimed_by_rules(xml_mapping)
+        names = %w[schemaLocation]
+        xml_mapping.mapping_attributes_hash.each_value do |rule_or_array|
+          Array(rule_or_array).each { |rule| names << rule.name.to_s }
+        end
+        names
+      end
+
+      def validate_document!(doc, options)
+        return unless doc.is_a?(Array)
+
+        raise ::Lutaml::Model::CollectionTrueMissingError(
+          context,
+          options[:caller_class],
+        )
+      end
+
+      def set_instance_ordering(instance, doc, ordered_option,
+mixed_content_option, xml_mapping = nil,
+instance_is_serialize = nil)
+        # #909: read-only consumers skip the per-instance order summaries
+        # entirely — element_order stays nil and to_xml falls back to
+        # mapping-defined order for untracked instances.
+        return unless Lutaml::Model::Config.instance.element_order_tracking
+
+        # dup: XmlElement#order hands back a frozen cache shared with the
+        # DOM. The model's copy has to stay mutable so callers can maintain
+        # element_order themselves.
+        instance.element_order = doc.root.order
+        if instance_is_serialize && doc.root.is_a?(::Lutaml::Xml::XmlElement)
+          instance.attribute_order = doc.root.attribute_order
+        end
+
+        # For Serialize instances, ordered?/mixed? delegate to class mapping.
+        # For non-Serialize model classes (model Id), @ordered/@mixed are needed
+        # as the fallback in InstanceMethods#ordered?/#mixed?.
+        if instance_is_serialize.nil?
+          instance_is_serialize = instance.is_a?(Lutaml::Model::Serialize)
+        end
+        unless instance_is_serialize
+          xml_mapping ||= mappings_for(:xml)
+          instance.ordered = xml_mapping.ordered? || ordered_option
+          instance.mixed = xml_mapping.mixed_content? || mixed_content_option
+        end
+      end
+
+      def set_schema_location(instance, doc, xml_mapping, register)
+        return if xml_mapping&.schema_location_mapped?(register)
+
+        schema_location = doc.attributes.values.find do |a|
+          a.unprefixed_name == "schemaLocation"
+        end
+
+        return if schema_location.nil?
+
+        # Store raw schemaLocation string as metadata
+        # SchemaLocation class is for programmatic creation with XmlNamespace classes only
+        # When parsing XML, we just preserve the string value as-is
+        instance.raw_schema_location = schema_location.value
+      end
+
+      def apply_processing_instruction_deserialization(doc, instance, xml_mapping,
+_effective_register)
+        pi_mappings = xml_mapping.processing_instruction_mappings
+        return if pi_mappings.empty?
+
+        doc_pis = if doc.is_a?(::Lutaml::Xml::XmlElement)
+                    doc.processing_instructions
+                  elsif doc.is_a?(::Lutaml::Xml::Document)
+                    doc.root.processing_instructions
+                  else
+                    []
+                  end || []
+
+        pi_attr = Lutaml::Xml::DataModel::XmlProcessingInstruction
+
+        pi_mappings.each do |pi_mapping|
+          matching_pis = doc_pis.select { |pi| pi.target == pi_mapping.target }
+          next if matching_pis.empty?
+
+          attr_def = attributes[pi_mapping.to]
+
+          value = if attr_def&.collection?
+                    matching_pis.map(&:content)
+                  else
+                    result = {}
+                    matching_pis.each do |pi|
+                      parsed = pi_attr.parse_pseudo_attributes(pi.content)
+                      result.merge!(parsed)
+                    end
+                    result.empty? ? nil : result
+                  end
+
+          next if value.nil?
+
+          instance.public_send(:"#{pi_mapping.to}=", value)
+          instance.value_set_for(pi_mapping.to) if instance.is_a?(::Lutaml::Model::Serialize)
+        end
+      end
+
+      # Whether no OTHER attribute rule in the mapping claims the same
+      # local name. A sole claimant is namespace-flexible on the local-
+      # name fallback: real-world documents qualify such attributes in
+      # the element's namespace, a foreign extension namespace, or not
+      # at all (OOXML w:val on w15: elements — lutaml-model#790). When
+      # a sibling claims the name, matching stays strict so each rule
+      # keeps its own namespace (#744, #758).
+      def attribute_rule_sole_local_claimant?(instance, rule,
+                                              effective_register)
+        klass = instance.class
+        return true unless klass.include?(Lutaml::Model::Serialize)
+
+        mapping = klass.mappings_for(:xml, effective_register)
+        return true unless mapping
+
+        mapping.sole_local_attribute_claimant?(rule, effective_register)
+      end
+
+      def value_for_xml_attribute(doc, rule, rule_names,
+                                  flexible_local: false, session: nil)
+        # For attributes, rule_names may contain namespaced names, but find_attribute_value
+        # expects prefix:name or just name, so we need to convert namespaced names to prefix format.
+        #
+        # Namespaced name formats:
+        # - URI format: "http://.../namespace:attr" or "urn:...:attr"
+        # - Simple prefix format: "my-ns:attr" (namespace URI is a simple string, not a URI)
+        # - Unprefixed: "attr" (no namespace)
+        # Performance: most rules carry a single name — skip the map and
+        # its result array entirely on that path.
+        if rule_names.size == 1
+          rn = rule_names[0]
+          converted = convert_rule_name_to_attribute_name(doc, rn,
+                                                          session: session)
+          value = doc.root.find_attribute_value(converted || rn)
+        else
+          attribute_names = rule_names.map do |rn|
+            converted = convert_rule_name_to_attribute_name(doc, rn,
+                                                            session: session)
+            converted || rn
+          end
+
+          value = doc.root.find_attribute_value(attribute_names)
+        end
+
+        # Fallback: if value is nil, try to match by local name only.
+        # This handles the case where the namespace prefix is not declared in the document
+        # (e.g., v:ext without xmlns:v="...").
+        if value.nil? && rule_names.any? { |rn| rn.include?(":") }
+          value = find_attribute_by_local_name(doc, rule_names,
+                                               flexible_local: flexible_local,
+                                               session: session)
+        end
+
+        value = value&.split(rule.delimiter) if rule.delimiter
+
+        value = rule.as_list[:import].call(value) if rule.as_list && rule.as_list[:import]
+
+        value
+      end
+
+      # Convert a rule name (URI:localname or prefix:localname) to an attribute name
+      # that can be used to find the attribute in the document.
+      #
+      # @param doc [XmlElement] the parsed XML document root
+      # @param rule_name [String] the rule name (e.g., "urn:...:ext", "http://.../ns:val", "my-ns:val")
+      # @return [String, nil] the attribute name to look up, or nil if no conversion needed
+      def convert_rule_name_to_attribute_name(doc, rule_name, session: nil)
+        return nil unless rule_name.include?(":")
+
+        # Pure function of (element attributes, spelling) — the same
+        # conversions repeat per rule application (~450k find/slice
+        # allocations per ISO-13849 parse before this memo).
+        conversions = session&.rule_name_resolution(doc.root)
+        if conversions
+          return conversions[rule_name] if conversions.key?(rule_name)
+
+          converted = convert_rule_name_uncached(doc, rule_name, session)
+          conversions[rule_name] = converted
+        else
+          convert_rule_name_uncached(doc, rule_name, session)
+        end
+      end
+
+      def convert_rule_name_uncached(doc, rule_name, session)
+        # URI-vs-prefix detection works on the whole rule name: the
+        # namespace part is a prefix of rule_name, so "://" anywhere in
+        # the name means a URI-form namespace, and a "urn:" namespace
+        # makes the whole name start with "urn:". Slicing the parts out
+        # first would allocate two strings per call on this hot path.
+        is_uri_format = rule_name.include?("://") || rule_name.start_with?("urn:")
+
+        last_colon_index = rule_name.rindex(":")
+        if is_uri_format
+          # URI format: find the attribute whose resolved namespace and
+          # local name spell the rule name. Comparison is by namespace
+          # prefix + local suffix so prefixed attributes (whose
+          # namespaced_name is "prefix:local", never "uri:local") still
+          # match, and unprefixed_name is not called per attribute
+          # (it splits prefixed names and allocates). The split reuses
+          # match_attribute_by_local_name's per-spelling memo.
+          parts = NAMESPACED_NAME_PARTS[rule_name]
+          unless parts
+            parts = [rule_name[(last_colon_index + 1)..],
+                     rule_name[0...last_colon_index]]
+            NAMESPACED_NAME_PARTS[rule_name] = parts
+          end
+          local_name = parts[0]
+          if session
+            candidates = session.element_local_attribute_index(doc.root)[local_name]
+            # No candidate carries this local name: nothing in the
+            # element can match, the scan is skipped entirely.
+            # getbyte, not a [i] slice — the slice allocated one
+            # string per probed candidate (~380k per ISO-13849 parse).
+            matched = candidates&.find do |attr|
+              ns = attr.namespace
+              next false if ns.nil? || ns.length > last_colon_index
+              next false unless rule_name.start_with?(ns) &&
+                rule_name.getbyte(ns.length) == COLON_BYTE
+
+              attr.unprefixed_name == local_name
+            end
+          else
+            matched = doc.root.attributes.each_value.find do |attr|
+              ns = attr.namespace
+              next false if ns.nil? || ns.length > last_colon_index
+              next false unless rule_name.start_with?(ns) &&
+                rule_name.getbyte(ns.length) == COLON_BYTE
+
+              attr.unprefixed_name == local_name
+            end
+          end
+          matched&.name
+        else
+          # Simple prefix format: look up the actual prefix from document's namespace declarations
+          # The namespace_part is the namespace URI declared in the document (e.g., "my-ns").
+          # Find the corresponding prefix (e.g., "my") and build "my:val".
+          namespace_part = rule_name[0...last_colon_index]
+          local_name = rule_name[(last_colon_index + 1)..]
+
+          ns_data = doc.root.namespaces.values.find do |nd|
+            nd.uri == namespace_part
+          end
+          return nil unless ns_data&.prefix
+
+          "#{ns_data.prefix}:#{local_name}"
+        end
+      end
+
+      # Fallback: find attribute by local name only when namespace prefix is unresolved.
+      #
+      # @param doc [XmlElement] the parsed XML document root
+      # @param rule_names [Array<String>] the rule names to match
+      # @return [String, nil] the attribute value or nil
+      def find_attribute_by_local_name(doc, rule_names,
+                                       flexible_local: false, session: nil)
+        root_index = session&.element_local_attribute_index(doc.root)
+        # Matched VALUE per (element, spelling, flexible flag) — pure
+        # while the element is parse-frozen.
+        memo = if session
+                 session.lenient_local_matches(doc.root,
+                                                                      flexible_local)
+               else
+                 nil
+               end
+
+        rule_names.each do |rule_name|
+          next unless rule_name.include?(":")
+
+          resolved = if memo&.key?(rule_name)
+                       memo[rule_name]
+                     else
+                       match = match_attribute_by_local_name(
+                         doc, rule_name, root_index, flexible_local
+                       )
+                       memo[rule_name] = match if memo
+                       match
+                     end
+          return resolved if resolved
+        end
+        nil
+      end
+
+      def match_attribute_by_local_name(doc, rule_name, root_index, flexible_local)
+        # Splitting a namespaced rule name is pure string work repeated
+        # per element; memoized per spelling (bounded by the model's
+        # distinct rule names).
+        parts = NAMESPACED_NAME_PARTS[rule_name]
+        unless parts
+          last_colon_index = rule_name.rindex(":")
+          parts = [rule_name[(last_colon_index + 1)..], rule_name[0...last_colon_index]]
+          NAMESPACED_NAME_PARTS[rule_name] = parts
+        end
+        local_name, rule_uri = parts
+
+        candidates = root_index&.[](local_name)
+        # The index carries every local form of every attribute on the
+        # element — a miss means no attribute can match, so the full
+        # each_value scan below is dead whenever the index exists.
+        return nil if root_index && !candidates
+
+        matched = if candidates
+                    candidates.select do |attr|
+                      local_name_match?(attr, local_name, rule_uri,
+                                        flexible_local)
+                    end
+                  else
+                    doc.root.attributes.each_value.select do |attr|
+                      local_name_match?(attr, local_name, rule_uri,
+                                        flexible_local)
+                    end
+                  end
+        # Attribute identity is (namespace URI, local name) — #841. The
+        # lenient probe is a recovery mechanism for the single
+        # undeclared-prefix case; several distinct matches are an
+        # ambiguity the document order must not arbitrate.
+        if matched.size > 1
+          identities = matched.map(&:namespaced_name).join(", ")
+          warn "[Lutaml::Model] ambiguous attribute for rule " \
+               "#{rule_name.inspect}: #{identities} all match by local " \
+               "name on <#{doc.root.unprefixed_name}>; no value bound"
+          return nil
+        end
+        matched.first&.value
+      end
+
+      # Namespace discipline of the lenient local-name fallback
+      # (#744/#758/#790): sole claimants bind any qualification; shared
+      # names must resolve to the rule's namespace.
+      def local_name_match?(attr, local_name, rule_uri, flexible_local)
+        if flexible_local
+          attr.unprefixed_name == local_name ||
+            attr_name_local(attr) == local_name
+        elsif attr.namespace.nil?
+          return false if attr.namespace_prefix.nil? && !attr.name.include?(":")
+
+          attr.unprefixed_name == local_name ||
+            attr_name_local(attr) == local_name
+        else
+          attr.namespace == rule_uri && attr.unprefixed_name == local_name
+        end
+      end
+
+      def attr_name_local(attr)
+        (colon = attr.name.rindex(":")) ? attr.name[(colon + 1)..] : attr.name
+      end
+
+      # lutaml-model#154: decode HTML entities for mappings that opted in
+      # (`html_entities` in the xml block). Values stay untouched
+      # otherwise — XML keeps undefined entities literal by design.
+      # lutaml-model#223: with coexisting map_all, the raw capture is
+      # the verbatim subtree MINUS the children claimed by element
+      # rules (they hydrate their own attributes). Standalone map_all
+      # (no element rules) keeps the full inner_xml.
+      def scoped_raw_inner_xml(doc, xml_mapping)
+        claimed = []
+        xml_mapping&.elements&.each do |element_rule|
+          Array(element_rule.name).each { |n| claimed << n.to_s }
+        end
+        return doc.root.inner_xml if claimed.empty?
+
+        doc.root.element_children.reject do |child|
+          claimed.include?(child.unprefixed_name) ||
+            claimed.include?(child.name)
+        end.map(&:inner_xml_or_self).join
+      end
+
+      def decode_html_entities_value(value, enabled)
+        return value if value.nil? || !value.is_a?(String)
+        return value unless enabled
+        return value if Lutaml::Model.opal?
+
+        Lutaml::Xml::HtmlEntities.decode(value)
+      end
+
+      Record = Struct.new(:attr, :derived, :group_skip, :valid,
+                          :unmatched_mode, :replay_writer,
+                          :unmatched_names, :raw_reader)
+
+      def compiled_rule_records(model_class, register, grouped_plain_rules)
+        return {}.compare_by_identity unless model_class.include?(Lutaml::Model::Serialize)
+
+        mapping = model_class.mappings_for(:xml, register)
+        version = mapping&.rule_records_version.to_i
+        per_class = RULE_RECORDS[model_class.object_id] # rubocop:disable Lint/HashCompareByIdentity
+        unless per_class
+          per_class = Lutaml::Model.opal? ? {} : Concurrent::Map.new
+          RULE_RECORDS[model_class.object_id] = per_class # rubocop:disable Lint/HashCompareByIdentity
+        end
+        cached = per_class[register]
+        return cached.records if cached && cached.version == version
+
+        records = {}.compare_by_identity
+        mapping&.mappings(register)&.each do |rule| # rubocop:disable Style/SafeNavigationChain,Style/SafeNavigation
+          attr = attribute_for_rule_static(model_class, rule, register)
+          group = grouped_plain_rules[rule.to]
+          # #903: for a plain rule, what an unmatched visit writes is
+          # known statically. The fast-skip branch hands the attribute's
+          # uninitialized sentinel to the pipeline; with no value-map
+          # overrides and no transformers every step is identity except
+          # apply_value_map, which maps the :omitted key: the default
+          # map (:nil) yields nil and the visit writes nil through the
+          # setter; an explicit omitted: :omitted map treats it as
+          # treat_omitted? == false and the omission gate ends the
+          # visit untouched. Both endings replay without the walk:
+          # :write_nil (setter write + flag churn) or :drop (nothing).
+          # Everything else -- defaults, aliases, custom from:,
+          # delegates, when_attribute dispatch, transformers, value
+          # maps beyond those two -- keeps its visit.
+          unmatched_mode = nil
+          replay_writer = nil
+          if attr && !attr.derived? &&
+              !rule.render_default && !rule.multiple_mappings? &&
+              !rule.has_custom_method_for_deserialization? &&
+              !rule.delegate &&
+              !(rule.when_attribute && !rule.when_attribute.empty?)
+            rule_transform = rule.transform
+            attr_transform = attr.transform
+            no_transforms =
+              (rule_transform.nil? ||
+               (rule_transform.respond_to?(:empty?) &&
+                rule_transform.empty?)) &&
+              (attr_transform.nil? ||
+               (attr_transform.respond_to?(:empty?) &&
+                attr_transform.empty?))
+            rule_default = attr.default(register)
+            if no_transforms &&
+                (rule_default.nil? ||
+                 rule_default.is_a?(::Lutaml::Model::UninitializedClass)) &&
+                rule.class.transform_dispatch(rule, attr) == :assign
+              if group && group.size > 1 && attr.collection? &&
+                  !group.first.equal?(rule)
+                # Non-first spelling of a #765 group: the visit is a
+                # guarded next (the first member does the merged match).
+                unmatched_mode = :drop
+              else
+                omitted_val = rule.value_map(:from)[:omitted]
+                if omitted_val == :nil
+                  unmatched_mode = :write_nil
+                elsif omitted_val == :omitted
+                  unmatched_mode = :drop
+                end
+              end
+            end
+          end
+          # A first group member does the merged match for every
+          # spelling, so its name-miss test spans the whole group.
+          unmatched_names = if group && group.size > 1
+                              group.map { |r| r.name.to_s }
+                            else
+                              [rule.name.to_s]
+                            end
+          if unmatched_mode == :write_nil
+            replay_writer =
+              rule.class.parsed_assign_writer(model_class, rule.to)
+            unmatched_mode = nil unless replay_writer
+          end
+          records[rule] = Record.new(
+            attr,
+            attr&.derived? || false,
+            !!(group && group.size > 1 && attr&.collection? &&
+               !group.first.equal?(rule)),
+            !!(attr || rule.custom_methods[:from]),
+            unmatched_mode,
+            replay_writer,
+            unmatched_names,
+            # lutaml-model#922: raw-state reader for the attribute,
+            # when the compiled init seeds it (plain names -- the same
+            # set compile_state_defaults! writes). Delegated rules name
+            # an attribute on the delegate object, not on this
+            # instance, so they get no raw reader.
+            if attr && rule.delegate.nil? &&
+                rule.to.to_s.match?(/\A[a-zA-Z_][a-zA-Z0-9_]*\z/)
+              :"__lutaml_raw_#{rule.to}"
+            end,
+          )
+        end
+        entry = Struct.new(:version, :records).new(version, records)
+        per_class[register] = entry
+        records
+      end
+
+      def attribute_for_rule_static(model_class, rule, register)
+        if rule.delegate
+          delegate_attr = model_class.attributes(register)[rule.delegate]
+          delegate_type = delegate_attr&.type(register)
+          delegate_type&.attributes(register)&.[](rule.to) # rubocop:disable Style/SafeNavigationChain
+        else
+          model_class.attributes(register)[rule.to]
+        end
+      rescue StandardError
+        nil
+      end
+
+      def decode_html_entities_for(instance, register)
+        # Asked per rule application (942k per ISO-13849 parse) for a
+        # per-(class, register) fact; the transform instance itself is
+        # cached per (model class, register), so the memo lives here.
+        per_class = (@decode_html_entities_cache ||= {}.compare_by_identity)
+        per_register = (per_class[instance.class] ||= {})
+        return per_register[register] if per_register.key?(register)
+
+        klass = instance.class
+        per_register[register] = klass.is_a?(Class) &&
+          klass.include?(Lutaml::Model::Serialize) &&
+          (klass.mappings_for(:xml, register)&.decode_html_entities? || false)
+      end
+
+      # Serializable type class → its XML namespace class, asked per
+      # (rule × element) in value_for_rule / resolve_rule_names_with_type
+      # for a per-type static.
+      def type_namespace_class_of(type_class)
+        cache = (@type_ns_class_cache ||= {}.compare_by_identity)
+        return cache[type_class] if cache.key?(type_class)
+
+        cache[type_class] = type_class.mappings_for(:xml)&.namespace_class
+      end
+
+      # lutaml-model#88: fail closed for `unmatched: :raise`. An
+      # occurrence no rule on the wire name claims — no discriminator
+      # match, no plain sibling — is exactly the data the default policy
+      # silently drops.
+      def check_unmatched_discriminators!(children, rule, rule_names, session)
+        plain_names = session.plain_element_rule_names
+        return if rule_names.any? { |name| plain_names[name] }
+
+        group = rule_names.filter_map do |name|
+          session.when_attribute_siblings_by_name[name]
+        end.flatten
+        tested = group.flat_map { |sibling| sibling.when_attribute.keys }
+          .uniq.map(&:to_s)
+        children.each do |child|
+          next if group.any? { |sibling| sibling.matches_when_attribute?(child) }
+
+          values = tested.filter_map do |name|
+            value = child.find_attribute_value(name)
+            "#{name}=#{value.inspect}" if value
+          end
+          raise ::Lutaml::Model::UnknownDiscriminatorError,
+                "Element <#{rule.name}> (#{values.join(', ')}) is claimed by " \
+                "no rule: it matches no when_attribute discriminator and no " \
+                "plain rule shares the name. Cover the value, add a plain " \
+                "rule, or opt out with unmatched: :drop"
+        end
+        nil
+      end
+
+      def value_for_rule(session, rule, options, cached_attr = nil,
+                         extra_rule_names = nil)
+        doc = session.doc
+        instance = session.instance
+        instance_is_serialize = session.instance_is_serialize
+        effective_register = session.register
+
+        # Performance: Use cached attr from caller if available
+        attr = cached_attr || attribute_for_rule(rule)
+        attr_type = attr&.type(effective_register)
+
+        # Performance: Cache rule properties accessed in hot loop
+        rule_name_str = rule.name.to_s
+        rule_namespace_set = rule.namespace_set?
+        rule_namespace_param = rule_namespace_set ? rule.namespace_param : nil
+        rule_namespace = rule_namespace_set ? rule.namespace : nil
+        options[:default_namespace]
+
+        rule_names = if rule.attribute?
+                       resolve_attribute_rule_names(rule, attr, options,
+                                                    effective_register,
+                                                    instance, instance_is_serialize)
+                     else
+                       resolve_rule_names_with_type(rule, attr, options,
+                                                    effective_register, attr_type)
+                     end
+        # lutaml-model#765: widened matching for the first rule of a
+        # shared-attribute group — children of sibling spellings must be
+        # selected too, in document order. Deduped: sibling resolution can
+        # yield the same spelling twice, and the child index would then
+        # return the same children again.
+        rule_names = rule_names.concat(extra_rule_names).uniq if extra_rule_names
+
+        if rule.attribute?
+          value = value_for_xml_attribute(
+            doc, rule, rule_names,
+            flexible_local: attribute_rule_sole_local_claimant?(
+              instance, rule, effective_register
+            ),
+            session: session
+          )
+          return decode_html_entities_value(value, decode_html_entities_for(
+                                                     instance, effective_register
+                                                   ))
+        end
+
+        # Performance: Pre-compute type-related values used in the hot loop
+        attr_type_is_serializable = attr_type && attr_type <= ::Lutaml::Model::Serialize
+        attr_type_is_class = attr_type.is_a?(Class) && attr_type.include?(::Lutaml::Model::Serialize)
+
+        # Pre-compute namespace class for prefix matching (only needed if attr_type is Serializable)
+        type_ns_prefix_str = nil
+        type_ns_all_uris = nil
+        if attr_type_is_serializable
+          type_ns_class = if attr_type_is_class
+                            type_namespace_class_of(attr_type)
+                          else
+                            attr.type_namespace_class(effective_register)
+                          end
+          type_ns_prefix_str = type_ns_class&.prefix_default&.to_s
+          type_ns_all_uris = type_ns_class&.all_uris
+          # Adopt the parsed document's namespace (memoized on the session):
+          # when the whole document is out-of-namespace, treat it as an
+          # implicit alias so lenient parsing is lossless (#754).
+          adopted_uri = session.adopted_namespace_uri
+          if adopted_uri && !type_ns_all_uris&.include?(adopted_uri)
+            type_ns_all_uris = (type_ns_all_uris || []) + [adopted_uri]
+          end
+        end
+
+        # Pre-compute model's namespace class for simple-type alias matching
+        # (Third branch in select loop — memoized on the session)
+        model_ns_class = if instance_is_serialize &&
+            !rule_namespace_set && !attr_type_is_serializable
+                           session.xml_mapping&.namespace_class
+                         end
+        # Includes the adopted document namespace (#754): a prefixed child
+        # in the document's (foreign) namespace must still bind by local
+        # name, or its content is silently dropped.
+        model_ns_all_uris = model_ns_class ? session.model_namespace_uris : nil
+
+        # Performance: Use cached element children from XmlElement
+        # This avoids O(children * rules) scans by pre-filtering once per element
+        element_children = doc.element_children
+
+        # Early exit if no element children - avoid scanning for each rule
+        return ::Lutaml::Model::UninitializedClass.instance if element_children.empty?
+
+        # Performance: Use child index for O(1) exact matching when available.
+        # Profiling shows that when the index returns no match and no child has
+        # the same local name, the full select scan also returns empty 100% of the time.
+        child_index = doc.element_children_index
+        if child_index && !rule_namespace_set
+          # Performance: Build indexed list without filter_map allocation
+          indexed = []
+          rule_names.each do |rn|
+            found = child_index[rn]
+            indexed << found if found
+          end
+          if indexed.empty?
+            # Check if any child has same local name (namespace alias case)
+            rule_local = rule_name_str
+            has_local_match = child_index.keys.any? do |k|
+              k.end_with?(":#{rule_local}") || k == rule_local
+            end
+            return ::Lutaml::Model::UninitializedClass.instance unless has_local_match
+
+            children = nil # fall through to select for alias matching
+          else
+            children = indexed.flatten(1)
+            # #765 widened matching: rule_names spans several spellings, so
+            # the flatten above yields rule-name order; restore document
+            # order for the merged group.
+            if extra_rule_names
+              position = element_children.each_with_index.to_h
+              children = children.sort_by { |c| position[c] }
+            end
+          end
+        else
+          children = nil
+        end
+
+        children ||= element_children.select do |child|
+          # Handle explicit namespace: nil with prefix: nil
+          # When both namespace: nil and prefix: nil are set, this means "no namespace constraint"
+          # The child element can declare its own namespace and should still match by local name
+          if rule_namespace_set && rule_namespace.nil? &&
+              rule_namespace_param.nil?
+            # Match by unprefixed name only, regardless of child's namespace
+            next child.unprefixed_name == rule_name_str
+          end
+
+          # First try exact namespace match
+          next true if rule_names.include?(child.namespaced_name)
+
+          # Second: alias-aware matching for nested models
+          # When child's namespace URI is an alias of the rule's namespace class,
+          # match by local name. This enables parsing XML with alias URIs
+          # (e.g., "http://.../") against the canonical namespace class
+          # (e.g., "http://.../reqif.xsd").
+          child_uri = child.namespace_uri
+          if child_uri && type_ns_all_uris && attr_type_is_serializable && type_ns_all_uris.include?(child_uri) &&
+              child.unprefixed_name == rule_name_str
+            next true
+          end
+
+          # Third: alias-aware matching for simple types
+          # When rule has no explicit namespace but model's namespace class has aliases,
+          # match by local name if child's URI is an alias of the model's namespace.
+          # This handles cases like <a:item xmlns:a="http://example.com/items/">
+          # where the model has namespace with canonical URI "http://example.com/items".
+          if child_uri && model_ns_all_uris && model_ns_all_uris.include?(child_uri) &&
+              child.unprefixed_name == rule_name_str
+            next true
+          end
+
+          # Fourth: try to match by prefix when child has xmlns="" (explicit blank namespace)
+          # This handles the case where elements have prefixed names but are in blank namespace
+          # e.g., <GML:ApplicationSchema xmlns=""> should match the rule expecting GML namespace
+          child_ns_prefix = child.namespace_prefix
+          # Match by prefix AND local name to avoid matching unrelated elements
+          # with the same namespace prefix (e.g., xsd:attributeGroup should not
+          # match a rule for xsd:attribute)
+          if child_ns_prefix && attr_type_is_serializable && type_ns_prefix_str && child_ns_prefix == type_ns_prefix_str &&
+              child.unprefixed_name == rule_name_str
+            next true
+          end
+
+          # Fallback: if the child has a different namespace and attr_type is Serializable,
+          # match by unprefixed name (child declares its own namespace)
+          #
+          # CRITICAL: Only use fallback for unqualified children (no prefix).
+          # Children with explicit prefixes should NOT match via fallback, even if xmlns="" is set.
+          # This ensures that GML:ApplicationSchema doesn't match CityGML:ApplicationSchema just because
+          # they have the same unprefixed name.
+          if attr_type_is_serializable
+            # Only match by unprefixed name if child doesn't have an explicit namespace prefix
+            # This prevents cross-namespace matching when elements have the same local name
+            !child_ns_prefix && rule_names.any? do |rn|
+              (RULE_LOCAL_NAMES[rn] ||= begin
+                colon = rn.rindex(":")
+                colon ? rn[(colon + 1)..] : rn
+              end) == child.unprefixed_name
+            end
+          elsif !rule_namespace_set && (!child_ns_prefix || rule.raw == :element)
+            # For simple types (String, etc.) with no namespace constraint,
+            # match by unprefixed name. Handles elements in foreign namespaces
+            # (e.g., SVG inside <image>). raw_element rules match regardless
+            # of prefix — the intent is to capture any element with that name.
+            child.unprefixed_name == rule_name_str
+          else
+            false
+          end
+        end
+
+        # lutaml-model#88: attribute-value discriminator — among the
+        # name-matched occurrences, keep only those whose sibling
+        # attributes carry the expected values. A plain rule sharing the
+        # name with discriminator rules gets the complement — occurrences
+        # no discriminator claimed — so each occurrence is captured
+        # exactly once, mirroring ordered-serialization routing.
+        if rule.when_attribute?
+          if rule.unmatched == :raise
+            check_unmatched_discriminators!(children, rule, rule_names, session)
+          end
+          children = children.select do |child|
+            rule.matches_when_attribute?(child)
+          end
+        else
+          siblings = session.when_attribute_siblings_by_name
+          unless siblings.empty?
+            claimed = rule_names.filter_map { |n| siblings[n] }.flatten
+            unless claimed.empty?
+              children = children.reject do |child|
+                claimed.any? { |sibling| sibling.matches_when_attribute?(child) }
+              end
+            end
+          end
+        end
+
+        # Performance: Cache rule method check before loop to avoid repeated method calls
+        rule_has_custom_method = rule.has_custom_method_for_deserialization?
+        if rule_has_custom_method || attr_type == ::Lutaml::Model::Type::Hash
+          return_child = attr_type == ::Lutaml::Model::Type::Hash || !attr.collection? if attr
+          # A custom `from:` receives the over-count in the same shape a custom
+          # `to:` already gets for a collection.
+          return children if attr && !attr.collection? && children.size > 1
+
+          return return_child ? children.first : children
+        end
+
+        return handle_cdata(children) if rule.cdata
+        return ::Lutaml::Model::UninitializedClass.instance if children.empty?
+
+        values = attr.build_collection
+
+        instance.value_set_for(attr.name)
+
+        # Performance: Use pre-computed flag instead of is_a? check
+        parent_ns_prefix = instance_is_serialize ? instance.xml_namespace_prefix : nil
+
+        # Performance: Avoid options.except allocation when :mappings not present
+        base_cast_options = if options.key?(:mappings)
+                              options.except(:mappings)
+                            else
+                              options.dup
+                            end
+        base_cast_options[:polymorphic] = rule.polymorphic if rule.polymorphic
+        base_cast_options[:lutaml_parent] = instance
+        base_cast_options[:lutaml_root] = instance.lutaml_root || instance
+        base_cast_options[:resolved_type] = attr_type
+
+        nested_mapping = nested_collection_attribute_mapping(attr, attr_type, effective_register)
+
+        children.each do |child|
+          if !rule_has_custom_method &&
+              (attr_type_is_serializable ||
+                (attr&.union? && ::Lutaml::Model::Type::Union.xml_structured?(child)))
+            cast_child = if attr_type_is_serializable
+                           nested_collection_attribute_node(child, nested_mapping)
+                         else
+                           child
+                         end
+
+            # Performance: Build cast_options efficiently (dup + []= cheaper than merge)
+            cast_options = if (child_namespace_uri = cast_child.namespace_uri)
+                             ns_type = attr.type_with_namespace(effective_register,
+                                                                child_namespace_uri)
+                             cast_options = base_cast_options.dup
+                             cast_options[:namespace_uri] = child_namespace_uri
+                             cast_options[:resolved_type] = ns_type
+                             cast_options
+                           else
+                             base_cast_options
+                           end
+
+            cast_result = attr.cast(cast_child, :xml, effective_register,
+                                    cast_options)
+
+            # Track original namespace prefix for doubly-defined namespace support.
+            # When parsing <a:item> and <b:item> (same URI, different prefixes),
+            # we need to preserve which prefix was used for round-trip fidelity.
+            # Store on the PARENT model instance keyed by attribute name.
+            # Set for ALL attributes (both Serializable and non-Serializable).
+            ns_prefix = explicit_namespace_prefix(child)
+            if ns_prefix && instance_is_serialize
+              prefixes = instance.xml_ns_prefixes || {}
+              prefixes[attr.name] = ns_prefix
+              instance.xml_ns_prefixes = prefixes
+            end
+
+            # Track original alias URI for namespace alias support.
+            # When parsing XML with alias URIs (e.g., "http://.../") against a namespace
+            # class with canonical URI (e.g., "http://.../reqif.xsd"), store the original
+            # alias URI so it can be serialized back correctly.
+            child_uri = cast_child.namespace_uri
+            if child_uri && attr_type_is_serializable
+              child_mapping = cast_result.class.mappings_for(:xml)
+              child_ns_class = child_mapping&.namespace_class
+              if child_ns_class && child_ns_class.uri != child_uri
+                # Child's URI differs from canonical - it's an alias
+                cast_result.original_namespace_uri = child_uri
+              end
+            end
+
+            # Set @__xml_namespace_prefix on nested Serializable model instances
+            # for doubly-defined namespace support.
+            #
+            # Key distinction between doubly-defined and mixed content:
+            # - Doubly-defined: parent's XmlElement uses default format (no explicit prefix).
+            #   Parent's @__xml_namespace_prefix is nil. Child should use input prefix.
+            # - Mixed content: parent's XmlElement has explicit prefix (e.g., "examplecom:").
+            #   Parent's @__xml_namespace_prefix is set. Child should use its own namespace.
+            #
+            # Check if parent model has @__xml_namespace_prefix set:
+            # - Nil/empty: doubly-defined case -> set @__xml_namespace_prefix on child
+            # - Set: mixed content case -> don't set (child has its own namespace)
+            # Performance: Use cached parent_ns_prefix instead of re-fetching
+            cast_child_ns_prefix = nested_collection_attribute_prefix(child, cast_child, ns_prefix)
+            if attr_type_is_serializable && cast_child_ns_prefix &&
+                (parent_ns_prefix.nil? || parent_ns_prefix.to_s.empty?)
+              cast_result.xml_namespace_prefix = cast_child_ns_prefix
+            end
+
+            values << cast_result
+          elsif rule.raw == :element
+            values << child.to_xml
+          elsif rule.raw == :content || attr.raw?
+            values << inner_xml_of(child)
+          else
+            return nil if rule.render_nil_as_nil? && child.nil_element?
+
+            child_text = child.nil_element? ? nil : child&.text
+            child_cdata = child&.cdata
+            text = if child_text.is_a?(Array) || child_cdata.is_a?(Array)
+                     # Mixed content - child elements handle their own text aggregation
+                     nil
+                   else
+                     child_text&.+ child_cdata
+                   end
+            values << text
+
+            # Track namespace prefix for doubly-defined namespace support.
+            # Store on parent model instance keyed by attribute name.
+            ns_prefix = if child.namespace_prefix_explicit &&
+                child.namespace_prefix
+                          child.namespace_prefix
+                        else
+                          # Only set ns_prefix for @__xml_ns_prefixes lookup when child's
+                          # XmlElement is explicit. For inherited namespaces (child's XmlElement
+                          # is nil), leave ns_prefix as-is so @__xml_ns_prefixes is not set.
+                          nil
+                        end
+            if ns_prefix && instance_is_serialize
+              # Skip Serializable attribute types (already handled in Serializable branch)
+              # attr_type_is_serializable is false here, so attr_type is not Serializable
+              prefixes = instance.xml_ns_prefixes || {}
+              prefixes[attr.name] = ns_prefix
+              instance.xml_ns_prefixes = prefixes
+            end
+          end
+        end
+
+        normalized_value_for_attr(values, attr)
+      end
+
+      def handle_cdata(children)
+        values = children.map do |child|
+          child.cdata_children&.map(&:text)
+        end.flatten
+
+        children.count > 1 ? values : values.first
+      end
+
+      def normalized_value_for_attr(values, attr)
+        # for xml collection: true cases like
+        #   <store><items /></store>
+        #   <store><items xsi:nil="true"/></store>
+        #   <store><items></items></store>
+        #
+        # these are considered empty collection
+        return [] if attr&.collection? && [[nil], [""]].include?(values)
+        return values if attr&.collection?
+
+        # Keep the over-count (don't collapse via .first) so it reaches the
+        # attribute slot and `.validate` can report the cardinality violation.
+        return values if values.is_a?(Array) && values.size > 1
+
+        values.is_a?(Array) ? values.first : values
+      end
+
+      def normalize_xml_value(value, rule, attr, options = {},
+effective_register = lutaml_register)
+        # Fast path: skip when value is nil, uninitialized, or already correct type
+        return value if value.nil? || ::Lutaml::Model::Utils.uninitialized?(value)
+
+        collection_class = attr&.collection_class || Array
+        value = [value].compact if !value.nil? && attr&.collection? && !value.is_a?(collection_class)
+
+        return value unless cast_value?(attr, rule)
+
+        attr.cast(value, :xml, effective_register, options)
+      end
+
+      def cast_value?(attr, rule)
+        attr && rule.castable?
+      end
+
+      def ensure_utf8(value)
+        case value
+        when String
+          value.encode("UTF-8", invalid: :replace, undef: :replace,
+                                replace: "")
+        when Array
+          value.map { |v| ensure_utf8(v) }
+        when ::Hash
+          value.transform_keys do |k|
+            ensure_utf8(k)
+          end.transform_values do |v|
+            ensure_utf8(v)
+          end
+        else
+          value
+        end
+      end
+
+      def inner_xml_of(node)
+        case node
+        when ::Lutaml::Xml::DataModel::XmlElement
+          node.inner_xml
+        else
+          node.children.map(&:to_xml).join
+        end
+      end
+
+      # Match names for an attribute rule, mirroring how serialization
+      # qualifies the same attribute (MappingRule#attribute_match_names):
+      # a rule serialized with a prefix matches only attributes in its
+      # namespace; a rule serialized unprefixed matches only namespace-less
+      # attributes.
+      def resolve_attribute_rule_names(rule, attr, options, effective_register,
+                                       instance, instance_is_serialize)
+        return rule.namespaced_names(options[:default_namespace]) if attr.nil? ||
+          rule.multiple_mappings?
+
+        if instance_is_serialize
+          parent_ns_class, form_default = parent_attribute_context(instance)
+        else
+          parent_ns_class = nil
+          form_default = :unqualified
+        end
+        names = rule.attribute_match_names(attr, effective_register,
+                                           parent_ns_class, form_default,
+                                           options[:default_namespace])
+
+        # #786 lenient alias (["uri:name", "name"] from a type-qualified
+        # rule): the unprefixed form must not steal the value when a
+        # sibling namespace-less rule owns the bare local name (#744
+        # disjointness). No sibling — the alias keeps 0.8.19 leniency.
+        if names.size == 2 && !names[1].include?(":") &&
+            instance_is_serialize &&
+            unqualified_sibling_attribute_rule?(instance, rule,
+                                                effective_register)
+          names = names.first(1)
+        end
+        names
+      end
+
+      # Whether another attribute rule with the same local name resolves
+      # namespace-less (no rule namespace, no value-type namespace) —
+      # the #744 owner of the unprefixed source form.
+      def unqualified_sibling_attribute_rule?(instance, rule,
+                                              effective_register)
+        mapping = instance.class.mappings_for(:xml, effective_register)
+        return false unless mapping
+
+        attrs = instance.class.attributes(effective_register)
+        mapping.mappings.any? do |sib|
+          next false unless sib.attribute? && !sib.equal?(rule)
+          next false unless sib.name.to_s == rule.name.to_s
+          next false if sib.namespace_set?
+
+          sib_attr = attrs[sib.to]
+          type_ns = sib_attr&.type_namespace_class(effective_register)
+          type_ns.nil? || type_ns == :blank
+        end
+      end
+
+      # [namespace_class, attribute_form_default] for the instance's model,
+      # keyed on the model class. Attribute rules of one element share the
+      # model, so a 1-entry cache avoids a mappings_for lookup per rule.
+      def parent_attribute_context(instance)
+        klass = instance.class
+        if @parent_ns_klass == klass && @parent_ns_value
+          return @parent_ns_value
+        end
+
+        ns_class = klass.mappings_for(:xml)&.namespace_class
+        value = [ns_class,
+                 ns_class&.attribute_form_default || :unqualified]
+        @parent_ns_klass = klass
+        @parent_ns_value = value
+        value
+      end
+
+      # Resolve rule names with type namespace support
+      #
+      # @param rule [MappingRule] the mapping rule
+      # @param attr [Attribute, nil] the attribute
+      # @param options [Hash] options including default_namespace
+      # @param effective_register [Symbol] the register to use for type resolution
+      # @return [Array<String>] possible namespaced names for matching
+      def resolve_rule_names_with_type(rule, attr, options, effective_register,
+                                        precomputed_type = nil)
+        # If rule has explicit namespace or no type namespace, use standard logic
+        if rule.namespace_set? || !attr
+          return rule.namespaced_names(options[:default_namespace])
+        end
+
+        # Check if attribute type has namespace
+        type_ns_uri = attr.type_namespace_uri(effective_register)
+
+        if type_ns_uri
+          # Use type namespace URI for matching (child.namespaced_name uses URI:localname format)
+          ["#{type_ns_uri}:#{rule.name}"]
+        elsif precomputed_type.is_a?(Class) &&
+            precomputed_type.include?(::Lutaml::Model::Serialize)
+          # Use pre-computed type directly — avoids redundant attr.type() call
+          attr_type_ns_class = type_namespace_class_of(precomputed_type)
+          if attr_type_ns_class
+            return ["#{attr_type_ns_class.uri}:#{rule.name}"]
+          end
+
+          rule.namespaced_names(options[:default_namespace])
+        elsif attr_type_is_serializable(attr, effective_register)
+          # For Serializable models without pre-computed type, resolve it
+          attr_type = attr.type(effective_register)
+          attr_type_class = if attr_type.is_a?(Class) && attr_type.include?(::Lutaml::Model::Serialize)
+                              attr_type
+                            else
+                              attr.type_namespace_class(effective_register)
+                            end
+          if attr_type_class
+            attr_type_ns_class = if attr_type_class.is_a?(Class) &&
+                attr_type_class.include?(::Lutaml::Model::Serialize)
+                                   type_namespace_class_of(attr_type_class)
+                                 end
+            if attr_type_ns_class
+              return ["#{attr_type_ns_class.uri}:#{rule.name}"]
+            end
+          end
+          # Use existing logic
+          rule.namespaced_names(options[:default_namespace])
+        else
+          # Use existing logic
+          rule.namespaced_names(options[:default_namespace])
+        end
+      end
+
+      # map_any_element members: every child element no explicit
+      # element rule claims, in document order; scalar targets take
+      # the captured elements' text — the same normalize step scalar
+      # elements get (the cast pipeline receives strings, not wrappers
+      # whose to_s is their inspect); Serializable targets keep the
+      # wrappers and cast into instances.
+      def any_element_members(doc, mapping, attr, register)
+        claimed = Set.new(
+          mapping.mappings(register)
+            .select { |r| !r.attribute? && r.name }
+            .flat_map { |r| [r.name.to_s] },
+        )
+        unclaimed = doc.element_children.reject do |child|
+          claimed.include?(child.unprefixed_name)
+        end
+        return unclaimed if attr.nil? ||
+          attr_type_is_serializable(attr, register)
+
+        unclaimed.map do |child|
+          child_text = child.nil_element? ? nil : child&.text
+          child_cdata = child&.cdata
+          text = if child_text.is_a?(Array) || child_cdata.is_a?(Array)
+                   nil
+                 else
+                   child_text&.+ child_cdata
+                 end
+          text.nil? ? child : text
+        end
+      end
+
+      def attr_type_is_serializable(attr, effective_register)
+        attr&.serializable_type?(effective_register) || false
+      end
+
+      # Run consolidation on any Collection attributes that have organization.
+      # This is called as a post-processing step after all mappings are applied.
+      #
+      # @param instance [Serializable] the deserialized model instance
+      # @param register [Symbol] the register id
+      def run_consolidation(instance, register, instance_is_serialize = nil)
+        return unless instance_is_serialize || instance.is_a?(::Lutaml::Model::Serialize)
+
+        instance.class.attributes.each_value do |attr|
+          next unless attr.collection?
+          next unless attr.custom_collection?
+
+          collection = instance.public_send(attr.name)
+          next unless collection.is_a?(::Lutaml::Model::Collection)
+          next unless collection.class.organization
+
+          mappings = collection.class.mappings_for(:xml, register)
+          next unless mappings.is_a?(::Lutaml::Xml::Mapping)
+          next if mappings.consolidation_maps.empty?
+
+          mappings.consolidation_maps.each do |map|
+            org = collection.class.organization
+            resolved_map = if map.group_class
+                             map
+                           else
+                             ::Lutaml::Model::ConsolidationMap.new(
+                               by: map.by,
+                               to: map.to,
+                               group_class: org.group_class,
+                               rules: map.rules,
+                             )
+                           end
+            ::Lutaml::Model::Consolidation::Engine.run(
+              collection, resolved_map, collection.collection
+            )
+          end
+        end
+      end
+
+      # Check if any child element in the pre-built Set matches the rule.
+      # Conservative: may return true (false positive) when namespace aliasing
+      # is involved, but never returns false when value_for_rule would find a match.
+      #
+      # @param rule [MappingRule] the mapping rule to check
+      # @param child_names_set [Set] Set of child namespaced_name and unprefixed_name
+      # @param default_namespace [String, nil] the default namespace
+      # @return [Boolean] true if a matching child likely exists
+      # #903: for an unmatched named element rule whose record classed
+      # it, replay what the visit would write without the walk: :drop
+      # (the visit ended at the omission gate or was a guarded next)
+      # writes nothing; :write_nil replays the nil the default value
+      # map produces, plus the flag churn. Returns true when handled.
+      # lutaml-model#922: whether the attribute holds anything other
+      # than its initialized marker (uninitialized sentinel / lazy
+      # collection) — i.e. a custom writer populated it mid-parse.
+      def writer_populated?(record, instance)
+        return false unless record&.raw_reader
+
+        !raw_initialized?(record, instance)
+      end
+
+      # True when the attribute still holds the value the compiled init
+      # seeded (uninitialized sentinel / lazy collection) — i.e. nothing
+      # has written it since.
+      def raw_initialized?(record, instance)
+        raw = instance.public_send(record.raw_reader)
+        raw.equal?(::Lutaml::Model::UninitializedClass.instance) ||
+          raw.equal?(::Lutaml::Model::Serialize::LAZY_EMPTY_COLLECTION)
+      end
+
+      def replay_unmatched_rule(child_names_set, record, rule, instance,
+                                defaults_used, xml_mapping)
+        return false unless child_names_set && record
+
+        mode = record.unmatched_mode
+        return false unless mode
+        return false if rule.attribute? || rule.content_mapping? ||
+          rule.raw_mapping? || !rule.name ||
+          xml_mapping.any_element_rule.equal?(rule)
+
+        matched = record.unmatched_names.any? do |n|
+          child_names_set.include?(n)
+        end
+        return false if matched
+
+        return true if mode == :drop
+
+        # The visited path picks the default branch only while the
+        # attribute still reads as default-valued; once another rule
+        # or a custom writer set it mid-parse, the omission gate ends
+        # the visit with no write. Mirror that: replay writes only
+        # while unset, and drops otherwise (a custom writer may have
+        # populated the attribute — relaton's ICS Isoics-fallback
+        # pattern).
+        rule_to = rule.to
+        unless instance.using_default?(rule_to)
+          return true
+        end
+
+        # lutaml-model#922: a custom writer may have populated the
+        # attribute mid-parse without going through the tracker (the
+        # compiled setters are direct ivar writes), so the tracked
+        # flag above can lie. The raw state is the truth: still at its
+        # initialized marker (sentinel / lazy collection) means unset
+        # -- the visited path wrote the default there; anything else
+        # is a writer assignment this replay must not clobber.
+        return true unless raw_initialized?(record, instance)
+
+        defaults_used << rule_to
+        instance.public_send(record.replay_writer, nil)
+        instance.value_set_for(rule_to)
+        true
+      end
+
+      def child_matches_rule?(rule, child_names_set, default_namespace)
+        rule_names = rule.namespaced_names(default_namespace)
+        # Array#intersect? requires an Array argument; child_names_set may
+        # be a Set, so use the block form which works for any includable.
+        rule_names.any? { |rn| child_names_set.include?(rn) } ||
+          child_names_set.include?(rule.name.to_s)
+      end
+    end
+  end
+end

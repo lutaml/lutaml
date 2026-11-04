@@ -1,0 +1,55 @@
+SCHEMA example_geometry;
+
+TYPE length_measure = NUMBER;
+END_TYPE;
+
+ENTITY geometry
+SUPERTYPE OF (ONEOF(point));
+END_ENTITY;
+
+ENTITY point
+SUPERTYPE OF (ONEOF(cartesian_point))
+SUBTYPE OF (geometry);
+END_ENTITY;
+
+ENTITY cartesian_point
+SUBTYPE OF (point);
+  x_coordinate  : length_measure;
+  y_coordinate  : length_measure;
+  z_coordinate  : OPTIONAL length_measure;
+END_ENTITY;
+
+TYPE edge_or_logical = SELECT (edge, edge_logical_structure);
+END_TYPE;
+
+ENTITY topology
+SUPERTYPE OF (ONEOF(vertex, edge, loop));
+END_ENTITY;
+
+ENTITY vertex
+SUBTYPE OF (topology);
+  vertex_point : OPTIONAL point;
+END_ENTITY;
+
+ENTITY edge
+SUBTYPE OF (topology);
+  edge_start   : vertex;
+  edge_end     : vertex;
+END_ENTITY;
+
+ENTITY edge_logical_structure;
+  edge_element : edge;
+  flag : BOOLEAN;
+END_ENTITY;
+
+ENTITY loop
+SUPERTYPE OF (ONEOF(edge_loop))
+SUBTYPE OF (topology);
+END_ENTITY;
+
+ENTITY edge_loop
+SUBTYPE OF (loop);
+  loop_edges : LIST [1:?] OF edge_or_logical;
+END_ENTITY;
+
+END_SCHEMA;

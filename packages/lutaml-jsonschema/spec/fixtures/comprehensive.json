@@ -1,0 +1,165 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/comprehensive.schema.json",
+  "$comment": "A comprehensive schema exercising many JSON Schema keywords",
+  "title": "Comprehensive Test Schema",
+  "description": "Exercises all major JSON Schema features for integration testing",
+  "type": "object",
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["active", "inactive", "pending", "archived"],
+      "default": "pending"
+    },
+    "priority": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10,
+      "exclusiveMinimum": 0,
+      "multipleOf": 1
+    },
+    "score": {
+      "type": "number",
+      "exclusiveMinimum": 0.0,
+      "exclusiveMaximum": 100.0
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "maxItems": 10,
+          "uniqueItems": true
+        },
+        "label": {
+          "type": "string",
+          "const": "special"
+        },
+        "notes": {
+          "type": "string",
+          "contentMediaType": "text/markdown",
+          "contentEncoding": "utf-8"
+        }
+      }
+    },
+    "contact": {
+      "allOf": [
+        { "$ref": "#/$defs/email" },
+        {
+          "type": "object",
+          "properties": {
+            "phone": { "type": "string", "pattern": "^[0-9]{10,15}$" }
+          }
+        }
+      ]
+    },
+    "alternative_contact": {
+      "anyOf": [
+        { "$ref": "#/$defs/email" },
+        { "$ref": "#/$defs/phone" }
+      ]
+    },
+    "shipping": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "method": { "const": "standard" },
+            "days": { "type": "integer", "minimum": 5 }
+          }
+        },
+        {
+          "type": "object",
+          "properties": {
+            "method": { "const": "express" },
+            "days": { "type": "integer", "maximum": 2 }
+          }
+        }
+      ]
+    },
+    "tags_map": {
+      "type": "object",
+      "patternProperties": {
+        "^x-": { "type": "string" },
+        "^[a-z]+$": { "type": "integer" }
+      },
+      "additionalProperties": false,
+      "minProperties": 1,
+      "maxProperties": 20
+    },
+    "not_a_string": {
+      "not": { "type": "string" }
+    },
+    "deprecated_field": {
+      "type": "string",
+      "deprecated": true,
+      "readOnly": true
+    },
+    "write_only_field": {
+      "type": "string",
+      "writeOnly": true
+    },
+    "nullable_field": {
+      "type": ["string", "null"],
+      "description": "Can be a string or null"
+    },
+    "contained_array": {
+      "type": "array",
+      "contains": { "type": "integer" }
+    }
+  },
+  "required": ["status"],
+  "if": {
+    "properties": { "status": { "const": "active" } }
+  },
+  "then": {
+    "required": ["priority", "contact"]
+  },
+  "else": {
+    "properties": {
+      "priority": { "type": "integer", "maximum": 5 }
+    }
+  },
+  "$defs": {
+    "email": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "format": "email",
+          "minLength": 5,
+          "maxLength": 255
+        }
+      },
+      "required": ["email"]
+    },
+    "phone": {
+      "type": "object",
+      "properties": {
+        "phone": {
+          "type": "string",
+          "pattern": "^\\+[0-9]{1,3}-[0-9]{4,14}$"
+        }
+      },
+      "required": ["phone"]
+    },
+    "address": {
+      "$comment": "Reuse of address within $defs",
+      "type": "object",
+      "properties": {
+        "street": { "type": "string" },
+        "city": { "type": "string" },
+        "country": { "type": "string", "enum": ["US", "CA", "GB", "DE", "JP"] }
+      },
+      "required": ["street", "city", "country"]
+    }
+  },
+  "definitions": {
+    "legacy_def": {
+      "type": "string",
+      "description": "Legacy definitions keyword (draft-04 compat)"
+    }
+  }
+}

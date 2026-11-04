@@ -1,0 +1,31 @@
+<schema.changes>
+<!-- Express Engine -->
+<!--   5.2.7 (GIT eeng-5.2.7-1-g1faeefe) -->
+<!-- Reference_Schema: SUPPORT_RESOURCE_SCHEMA -->
+<!-- Path:   /path/to/support_resource_schema_2.exp -->
+<!-- Trial_schema: SUPPORT_RESOURCE_SCHEMA -->
+<!-- Path:   /path/to/support_resource_schema_1.exp -->
+
+<schema.additions>
+<modified.object type="USE_FROM" name="geometric_model_schema" interfaced.items="convex_hexahedron" />
+
+<modified.object type="USE_FROM" name="geometric_model_schema" interfaced.items="cyclide_segment_solid" />
+
+<modified.object type="ENTITY" name="shape_representation" />
+
+</schema.additions>
+
+<schema.modifications>
+<modified.object type="TYPE" name="text">
+<description>
+TYPE text: Underlying Type changed
+</description>
+</modified.object>
+
+</schema.modifications>
+
+<schema.deletions>
+<modified.object type="REFERENCE_FROM" name="old_schema" interfaced.items="removed_item" />
+
+</schema.deletions>
+</schema.changes>

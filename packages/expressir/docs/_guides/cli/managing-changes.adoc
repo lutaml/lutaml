@@ -1,0 +1,927 @@
+---
+title: Managing Changes
+parent: CLI Guides
+grand_parent: Guides
+nav_order: 6
+---
+
+== Managing Changes
+
+=== Purpose
+
+The [`changes`](../../../lib/expressir/commands/changes.rb:1) subcommands manage EXPRESS Changes files that track schema modifications across versions. These commands help validate change files and import changes from Express Engine comparison reports.
+
+=== References
+
+* link:../../pages/express-language.html[EXPRESS Language Documentation]
+* link:../../tutorials/creating-ler-package.html[Tutorial: Creating LER Package]
+* link:validate-schemas.html[Validate Schemas]
+
+=== Concepts
+
+EXPRESS Changes:: YAML format for tracking schema modifications across versions (ELF 5005)
+Schema version:: A specific iteration of a schema with tracked changes
+Change types:: Additions, modifications, deletions, and mapping changes
+Express Engine (eengine):: Legacy tool that produces XML comparison reports
+Round-trip serialization:: Loading and saving to normalize file formatting
+Version management:: Adding or updating versions in a changes file
+
+=== Available Commands
+
+==== Validate Changes File
+
+[source,bash]
+----
+expressir changes validate schema.changes.yaml
+----
+
+==== Import from Express Engine XML
+
+[source,bash]
+----
+expressir changes import-eengine comparison.xml schema_name "2"
+----
+
+=== Validate Command
+
+==== Purpose
+
+The `changes validate` command validates EXPRESS Changes YAML files and optionally normalizes them through round-trip serialization.
+
+==== Basic Usage
+
+[source,bash]
+----
+# Validate a changes file
+expressir changes validate schema.changes.yaml
+
+# With verbose output
+expressir changes validate schema.changes.yaml --verbose
+----
+
+Output on success:
+[source]
+----
+✓ File is valid
+  Schema: action_schema
+  Versions: 3
+----
+
+==== Command Options
+
+[options="header"]
+|===
+| Option | Description | Default
+
+| `--normalize`
+| Normalize file through round-trip serialization
+| false
+
+| `--in-place`
+| Update file in place (requires `--normalize`)
+| false
+
+| `--output PATH`
+| Output file path for normalized output
+| stdout
+
+| `--verbose`
+| Show verbose output with validation details
+| false
+
+| `--help`, `-h`
+| Display help message
+| -
+|===
+
+==== Validation Checks
+
+The validate command performs:
+
+1. **YAML syntax validation**: Ensures valid YAML structure
+2. **Schema structure validation**: Verifies SchemaChange model structure
+3. **Required fields check**: Ensures all mandatory fields are present
+4. **Change item validation**: Validates change types and attributes
+
+==== Normalize Option
+
+Normalize files for consistent formatting:
+
+[source,bash]
+----
+# Output to stdout
+expressir changes validate schema.changes.yaml --normalize
+
+# Save to new file
+expressir changes validate schema.changes.yaml --normalize --output normalized.yaml
+
+# Update in place
+expressir changes validate schema.changes.yaml --normalize --in-place
+----
+
+**Benefits of normalization:**
+
+* Consistent YAML formatting
+* Standardized field ordering
+* Removal of formatting inconsistencies
+* Easier version control diffs
+
+==== Validation Examples
+
+**Valid changes file:**
+
+[source,bash]
+----
+$ expressir changes validate action_schema.changes.yaml --verbose
+Validating action_schema.changes.yaml...
+✓ File is valid
+  Schema: action_schema
+  Versions: 2
+----
+
+**Invalid YAML syntax:**
+
+[source,bash]
+----
+$ expressir changes validate invalid.yaml
+Invalid YAML syntax: mapping values are not allowed in this context
+----
+
+**Missing required fields:**
+
+[source,bash]
+----
+$ expressir changes validate incomplete.yaml
+Validation failed: Schema name is required
+----
+
+=== Import-Eengine Command
+
+==== Purpose
+
+The `changes import-eengine` command converts Express Engine comparison XML files to EXPRESS Changes YAML format. This enables migration from legacy Express Engine workflows to modern Expressir-based change tracking.
+
+==== Basic Usage
+
+[source,bash]
+----
+# Import and output to stdout
+expressir changes import-eengine comparison.xml schema_name "2"
+
+# Import and save to file
+expressir changes import-eengine comparison.xml schema_name "2" -o output.yaml
+
+# With verbose output
+expressir changes import-eengine comparison.xml schema_name "2" -o output.yaml --verbose
+----
+
+==== Command Syntax
+
+[source,bash]
+----
+expressir changes import-eengine INPUT_XML SCHEMA_NAME VERSION [options]
+----
+
+Where:
+
+`INPUT_XML`:: Path to the Express Engine comparison XML file
+`SCHEMA_NAME`:: Name of the schema being tracked (e.g., `action_schema`)
+`VERSION`:: Version number for this set of changes (e.g., `"2"`, `"3"`)
+
+==== Command Options
+
+[options="header"]
+|===
+| Option | Description | Default
+
+| `-o, --output PATH`
+| Output YAML file path
+| stdout
+
+| `--verbose`
+| Show verbose output including parsed items
+| false
+
+| `--help`, `-h`
+| Display help message
+| -
+|===
+
+==== Express Engine XML Formats
+
+Expressir supports all three Express Engine comparison modes:
+
+**Schema Mode**::
+`<schema.changes>` with `<schema.additions>`, `<schema.modifications>`, `<schema.deletions>`
+
+**ARM Mode**::
+`<arm.changes>` with `<arm.additions>`, `<arm.modifications>`, `<arm.deletions>`
+
+**MIM Mode**::
+`<mim.changes>` with `<mim.additions>`, `<mim.modifications>`, `<mim.deletions>`
+
+The import command automatically detects the XML mode.
+
+==== Supported Change Types
+
+The import process recognizes all EXPRESS construct types:
+
+* `ENTITY` - Entity definitions
+* `TYPE` - Type definitions
+* `FUNCTION` - Function definitions
+* `PROCEDURE` - Procedure definitions
+* `RULE` - Rule definitions
+* `CONSTANT` - Constant definitions
+* `USE_FROM` - Interface imports
+* `REFERENCE_FROM` - Interface references
+
+==== Interface Changes
+
+Express Engine tracks interface changes with `interfaced.items`:
+
+[source,xml]
+----
+<schema.changes schema_name="aic_csg">
+  <schema.additions>
+    <modified.object type="USE_FROM" name="geometric_model_schema"
+      interfaced.items="convex_hexahedron" />
+    <modified.object type="REFERENCE_FROM" name="measure_schema"
+      interfaced.items="length_measure" />
+  </schema.additions>
+</schema.changes>
+----
+
+Converts to:
+
+[source,yaml]
+----
+schema: aic_csg
+versions:
+- version: 2
+  additions:
+  - type: USE_FROM
+    name: geometric_model_schema
+    interfaced_items: convex_hexahedron
+  - type: REFERENCE_FROM
+    name: measure_schema
+    interfaced_items: length_measure
+----
+
+==== Version Management
+
+**Appending New Versions**::
+When the output file exists, the import command intelligently manages versions:
++
+* **Same version**: Replaces the existing version
+* **New version**: Appends to the versions list
+
+[source,bash]
+----
+# Version 2 - creates file
+expressir changes import-eengine v2_comparison.xml action_schema "2" -o changes.yaml
+
+# Version 3 - appends to file
+expressir changes import-eengine v3_comparison.xml action_schema "3" -o changes.yaml
+
+# Version 2 again - replaces version 2
+expressir changes import-eengine v2_updated.xml action_schema "2" -o changes.yaml
+----
+
+=== Use Cases
+
+==== Validate Before Committing
+
+[source,bash]
+----
+#!/bin/bash
+# .git/hooks/pre-commit
+
+# Get staged changes files
+STAGED=$(git diff --cached --name-only --diff-filter=ACM | grep '\.changes\.yaml$')
+
+if [ -z "$STAGED" ]; then
+  exit 0
+fi
+
+echo "Validating changes files..."
+
+for file in $STAGED; do
+  if ! expressir changes validate "$file" --verbose; then
+    echo "❌ Validation failed for: $file"
+    exit 1
+  fi
+done
+
+echo "✓ All changes files are valid"
+----
+
+==== Normalize Changes Files
+
+Standardize formatting across a project:
+
+[source,bash]
+----
+#!/bin/bash
+# normalize-all-changes.sh
+
+echo "Normalizing all changes files..."
+
+find schemas -name "*.changes.yaml" | while read file; do
+  echo "Normalizing: $file"
+  expressir changes validate "$file" --normalize --in-place
+done
+
+echo "✓ All changes files normalized"
+----
+
+==== Import Multiple Versions
+
+Build up a complete change history:
+
+[source,bash]
+----
+#!/bin/bash
+# import-all-versions.sh
+
+SCHEMA="action_schema"
+OUTPUT="action_schema.changes.yaml"
+
+# Import each version incrementally
+for version in 2 3 4 5; do
+  XML="eengine_comparisons/v${version}_comparison.xml"
+  
+  if [ -f "$XML" ]; then
+    echo "Importing version $version..."
+    expressir changes import-eengine "$XML" "$SCHEMA" "$version" \
+      -o "$OUTPUT" --verbose
+  else
+    echo "⚠️  Missing: $XML"
+  fi
+done
+
+echo "✓ Import complete"
+----
+
+==== Validation Workflow
+
+[source,bash]
+----
+#!/bin/bash
+# validate-and-normalize.sh
+
+FILE="$1"
+
+if [ -z "$FILE" ]; then
+  echo "Usage: $0 <changes-file>"
+  exit 1
+fi
+
+echo "Step 1: Validating..."
+if ! expressir changes validate "$FILE" --verbose; then
+  echo "❌ Validation failed"
+  exit 1
+fi
+
+echo ""
+echo "Step 2: Normalizing..."
+expressir changes validate "$FILE" --normalize --in-place
+
+echo ""
+echo "Step 3: Re-validating..."
+expressir changes validate "$FILE" --verbose
+
+echo ""
+echo "✓ File is valid and normalized"
+----
+
+==== CI/CD Integration
+
+GitHub Actions workflow:
+
+[source,yaml]
+----
+name: Validate Changes Files
+
+on: [push, pull_request]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Expressir
+        run: gem install expressir
+
+      - name: Validate Changes Files
+        run: |
+          FAILED=0
+          
+          for file in schemas/**/*.changes.yaml; do
+            echo "Validating: $file"
+            if ! expressir changes validate "$file" --verbose; then
+              echo "❌ Validation failed for $file"
+              FAILED=1
+            fi
+          done
+          
+          if [ $FAILED -eq 1 ]; then
+            exit 1
+          fi
+          
+          echo "✓ All changes files valid"
+----
+
+==== Migration from Express Engine
+
+Complete migration workflow:
+
+[source,bash]
+----
+#!/bin/bash
+# migrate-from-eengine.sh
+
+EENGINE_DIR="eengine_comparisons"
+OUTPUT_DIR="changes"
+
+mkdir -p "$OUTPUT_DIR"
+
+# Process each schema's comparison files
+for xml in "$EENGINE_DIR"/*.xml; do
+  basename=$(basename "$xml" .xml)
+  
+  # Extract schema name and version from filename
+  # Expected format: schema_name_v2_comparison.xml
+  if [[ $basename =~ ^(.+)_v([0-9]+)_comparison$ ]]; then
+    schema="${BASH_REMATCH[1]}"
+    version="${BASH_REMATCH[2]}"
+    output="$OUTPUT_DIR/${schema}.changes.yaml"
+    
+    echo "Processing: $schema version $version"
+    expressir changes import-eengine "$xml" "$schema" "$version" \
+      -o "$output" --verbose
+    
+  else
+    echo "⚠️  Skipping: $basename (unexpected format)"
+  fi
+done
+
+echo ""
+echo "Migration complete. Output in: $OUTPUT_DIR"
+----
+
+==== Quality Assurance Script
+
+[source,bash]
+----
+#!/bin/bash
+# qa-changes-files.sh
+
+echo "Changes Files Quality Assurance"
+echo "==============================="
+echo ""
+
+TOTAL=0
+VALID=0
+INVALID=0
+
+for file in schemas/**/*.changes.yaml; do
+  ((TOTAL++))
+  echo "Checking: $file"
+  
+  if expressir changes validate "$file" 2>/dev/null; then
+    echo "  ✓ Valid"
+    ((VALID++))
+  else
+    echo "  ✗ Invalid"
+    ((INVALID++))
+  fi
+done
+
+echo ""
+echo "Summary:"
+echo "  Total files: $TOTAL"
+echo "  Valid: $VALID"
+echo "  Invalid: $INVALID"
+
+if [ $INVALID -gt 0 ]; then
+  exit 1
+fi
+----
+
+=== Changes File Format
+
+==== Structure
+
+[source,yaml]
+----
+schema: action_schema
+versions:
+- version: 2
+  description: |-
+    Changes in version 2
+  additions:
+  - type: ENTITY
+    name: new_entity
+  modifications:
+  - type: FUNCTION
+    name: modified_function
+  deletions:
+  - type: TYPE
+    name: removed_type
+- version: 3
+  description: Additional changes
+  additions:
+  - type: CONSTANT
+    name: new_constant
+----
+
+==== Version Fields
+
+`version`:: (Required) Version identifier (string or number)
+`description`:: (Optional) Description of changes in this version
+`additions`:: (Optional) List of items added
+`modifications`:: (Optional) List of items modified
+`deletions`:: (Optional) List of items deleted
+`mappings`:: (Optional) Mapping changes (for ARM/MIM)
+
+==== Item Fields
+
+`type`:: (Required) EXPRESS construct type (ENTITY, TYPE, FUNCTION, etc.)
+`name`:: (Required) Name of the construct
+`description`:: (Optional) Additional details about the change
+`interfaced_items`:: (Optional) For REFERENCE_FROM items
+
+=== Workflows
+
+==== Development Workflow
+
+[source,bash]
+----
+# 1. Make schema changes
+vim action_schema.exp
+
+# 2. Update changes file manually
+vim action_schema.changes.yaml
+
+# 3. Validate
+expressir changes validate action_schema.changes.yaml --verbose
+
+# 4. Normalize and commit
+expressir changes validate action_schema.changes.yaml --normalize --in-place
+git add action_schema.exp action_schema.changes.yaml
+git commit -m "Update action_schema to version 3"
+----
+
+==== Express Engine Migration Workflow
+
+[source,bash]
+----
+# 1. Run Express Engine comparison
+# (produces comparison.xml)
+
+# 2. Import to changes file
+expressir changes import-eengine comparison.xml action_schema "2" \
+  -o action_schema.changes.yaml --verbose
+
+# 3. Validate result
+expressir changes validate action_schema.changes.yaml --verbose
+
+# 4. Review and adjust if needed
+vim action_schema.changes.yaml
+
+# 5. Re-validate and commit
+expressir changes validate action_schema.changes.yaml --verbose
+git add action_schema.changes.yaml
+git commit -m "Import version 2 changes from Express Engine"
+----
+
+==== Multi-Schema Workflow
+
+[source,bash]
+----
+#!/bin/bash
+# Process multiple schemas
+
+SCHEMAS=("action_schema" "approval_schema" "date_time_schema")
+VERSION="2"
+
+for schema in "${SCHEMAS[@]}"; do
+  echo "Processing: $schema"
+  
+  # Import from Express Engine
+  expressir changes import-eengine \
+    "eengine/${schema}_v${VERSION}.xml" \
+    "$schema" \
+    "$VERSION" \
+    -o "changes/${schema}.changes.yaml"
+  
+  # Validate
+  expressir changes validate "changes/${schema}.changes.yaml" --verbose
+  
+  echo ""
+done
+----
+
+=== Best Practices
+
+**Validate Regularly**::
+Check changes files in CI/CD pipelines
++
+[source,bash]
+----
+# In CI script
+expressir changes validate *.changes.yaml || exit 1
+----
+
+**Normalize for Version Control**::
+Use consistent formatting for cleaner diffs
++
+[source,bash]
+----
+# Before committing
+expressir changes validate file.yaml --normalize --in-place
+----
+
+**Track All Versions**::
+Maintain complete change history
++
+[source,yaml]
+----
+versions:
+- version: 1
+  description: Initial version
+- version: 2
+  description: Added features
+- version: 3
+  description: Bug fixes
+----
+
+**Use Descriptive Messages**::
+Document why changes were made
++
+[source,yaml]
+----
+modifications:
+- type: ENTITY
+  name: product
+  description: Added version_id attribute to track versions
+----
+
+**Version Incrementally**::
+Import versions one at a time
++
+[source,bash]
+----
+# Import version 2
+expressir changes import-eengine v2.xml schema "2" -o changes.yaml
+
+# Then import version 3
+expressir changes import-eengine v3.xml schema "3" -o changes.yaml
+----
+
+**Keep Interface Changes**::
+Preserve interfaced_items information
++
+[source,yaml]
+----
+additions:
+- type: USE_FROM
+  name: geometric_model_schema
+  interfaced_items: solid_model
+----
+
+=== Troubleshooting
+
+==== Invalid YAML Syntax
+
+**Problem**: YAML parsing errors
+
+**Solution**: Use a YAML validator or normalize
+[source,bash]
+----
+# Check with normalize (outputs to stdout)
+expressir changes validate file.yaml --normalize
+
+# Fix and save
+expressir changes validate file.yaml --normalize --in-place
+----
+
+==== Version Conflicts
+
+**Problem**: Accidentally overwriting versions
+
+**Prevention**: Always specify unique version numbers
+[source,bash]
+----
+# Check existing versions first
+grep "^- version:" file.yaml
+
+# Then import with new version
+expressir changes import-eengine comparison.xml schema "4" -o file.yaml
+----
+
+==== Express Engine XML Not Found
+
+**Problem**: Import command cannot find XML file
+
+**Solution**: Check file path and permissions
+[source,bash]
+----
+# Verify file exists
+ls -la comparison.xml
+
+# Use absolute path if needed
+expressir changes import-eengine /full/path/to/comparison.xml schema "2"
+----
+
+==== Empty Changes Files
+
+**Problem**: Import produces no changes
+
+**Causes**:
+* Empty Express Engine comparison
+* Incorrect XML format
+* Wrong schema name
+
+**Debugging**:
+[source,bash]
+----
+# Import with verbose output
+expressir changes import-eengine comparison.xml schema "2" \
+  -o output.yaml --verbose
+
+# Check XML content
+xmllint --format comparison.xml | head -50
+----
+
+==== Character Encoding Issues
+
+**Problem**: Special characters not handled correctly
+
+**Solution**: Ensure UTF-8 encoding
+[source,bash]
+----
+# Check file encoding
+file -I comparison.xml
+
+# Convert if needed
+iconv -f ISO-8859-1 -t UTF-8 comparison.xml > comparison_utf8.xml
+----
+
+=== Integration Examples
+
+==== Makefile Integration
+
+[source,makefile]
+----
+.PHONY: validate-changes normalize-changes import-changes
+
+validate-changes:
+	@echo "Validating changes files..."
+	@find schemas -name "*.changes.yaml" -exec \
+		expressir changes validate {} \;
+
+normalize-changes:
+	@echo "Normalizing changes files..."
+	@find schemas -name "*.changes.yaml" -exec \
+		expressir changes validate {} --normalize --in-place \;
+
+import-changes:
+	@echo "Importing from Express Engine..."
+	@./scripts/import-all-changes.sh
+----
+
+==== Jenkins Pipeline
+
+[source,groovy]
+----
+pipeline {
+  agent any
+  stages {
+    stage('Validate Changes') {
+      steps {
+        sh 'gem install expressir'
+        sh '''
+          for file in schemas/**/*.changes.yaml; do
+            expressir changes validate "$file" --verbose
+          done
+        '''
+      }
+    }
+  }
+}
+----
+
+==== Pre-commit Hook
+
+[source,bash]
+----
+#!/bin/bash
+# .git/hooks/pre-commit
+
+# Validate and normalize changes files
+for file in $(git diff --cached --name-only | grep '\.changes\.yaml$'); do
+  expressir changes validate "$file" --normalize --in-place
+  git add "$file"
+done
+----
+
+=== Advanced Usage
+
+==== Batch Processing
+
+[source,bash]
+----
+#!/bin/bash
+# Process all Express Engine outputs
+
+for xml in eengine_outputs/*.xml; do
+  # Extract schema and version from filename
+  basename=$(basename "$xml" .xml)
+  schema="${basename%_v*}"
+  version="${basename##*_v}"
+  
+  echo "Processing: $schema version $version"
+  expressir changes import-eengine "$xml" "$schema" "$version" \
+    -o "changes/${schema}.changes.yaml" --verbose
+done
+----
+
+==== Programmatic Validation
+
+[source,ruby]
+----
+require 'expressir/changes'
+
+# Validate programmatically
+begin
+  schema_change = Expressir::Changes::SchemaChange.from_file('schema.changes.yaml')
+  puts "✓ Valid: #{schema_change.schema}"
+  puts "  Versions: #{schema_change.versions.size}"
+rescue StandardError => e
+  puts "✗ Invalid: #{e.message}"
+  exit 1
+end
+----
+
+==== Custom Workflows
+
+[source,bash]
+----
+#!/bin/bash
+# Custom validation with additional checks
+
+FILE="$1"
+
+# Standard validation
+expressir changes validate "$FILE" --verbose || exit 1
+
+# Additional checks
+echo "Additional checks..."
+
+# Check version ordering
+VERSIONS=$(grep "^- version:" "$FILE" | awk '{print $3}')
+SORTED=$(echo "$VERSIONS" | sort -n)
+
+if [ "$VERSIONS" != "$SORTED" ]; then
+  echo "⚠️  Versions not in ascending order"
+fi
+
+# Check for empty sections
+if grep -q "additions: \[\]" "$FILE"; then
+  echo "⚠️  Empty additions section found"
+fi
+
+echo "✓ All checks complete"
+----
+
+=== Next Steps
+
+**Related Commands**::
+* link:validate-schemas.html[Validate Schemas] - Schema validation
+* link:format-schemas.html[Format Schemas] - Schema formatting
+
+**Advanced Topics**::
+* link:../ruby-api/[Ruby API Guides] - Programmatic change management
+* link:../changes/[Changes Guides] - In-depth changes documentation
+
+**Integration**::
+* link:../deployment/ci-cd-setup.html[CI/CD Setup] - Automated workflows
+* Version control integration
+* Change tracking automation
+
+=== Summary
+
+The changes commands:
+
+* ✅ Validate EXPRESS Changes YAML files
+* ✅ Normalize files for consistent formatting
+* ✅ Import from Express Engine XML
+* ✅ Support version appending and replacement
+* ✅ Handle interface changes (USE_FROM, REFERENCE_FROM)
+* ✅ Detect all three Express Engine modes
+* ✅ Integrate with CI/CD pipelines
+* ✅ Enable change history tracking
+
+Use these commands to maintain accurate schema change records and migrate from legacy Express Engine workflows to modern Expressir-based change tracking.

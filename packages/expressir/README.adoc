@@ -1,0 +1,2783 @@
+= Expressir: EXPRESS in Ruby
+
+image:https://img.shields.io/gem/v/expressir.svg["Gem Version", link="https://rubygems.org/gems/expressir"]
+// image:https://codeclimate.com/github/lutaml/expressir/badges/gpa.svg["Code Climate", link="https://codeclimate.com/github/lutaml/expressir"]
+image:https://github.com/lutaml/expressir/workflows/rake/badge.svg["Build Status", link="https://github.com/lutaml/expressir/actions?workflow=rake"]
+
+== Purpose
+
+Expressir ("`EXPRESS in Ruby`") is a Ruby parser for EXPRESS and
+a set of Ruby tools for accessing ISO EXPRESS data models.
+
+== Architecture
+
+Expressir consists of 3 parts:
+
+. Parsers. A parser allows Expressir to read EXPRESS files, including:
+
+** EXPRESS data modelling language (ISO 10303-11:2007)
+** EXPRESS data modelling language in XML (STEPmod)
+** EXPRESS XML (ISO 10303-28:2007)
+"`Industrial automation systems and integration — Product data representation and exchange — Part 28: Implementation methods: XML representations of EXPRESS schemas and data, using XML schemas`"
+
+. Data model. The data model (`lib/expressir/express`) is the Ruby data model that fully represents an EXPRESS data model.
+
+. Converters. A converter transforms the EXPRESS Ruby data model into an interoperable export format, including:
+** EXPRESS data modelling language (ISO 10303-11:2007)
+// ** W3C OWL
+// ** OMG SysML (XMI 2.1, XMI 2.5)
+// ** OMG UML 2 (XMI 2.1)
+// ** OMG UML 2 for Eclipse (XMI 2.1)
+
+
+== Features
+
+=== Remark preservation
+
+Expressir fully preserves EXPRESS remarks (comments) during parsing and formatting, maintaining them in their original positions:
+
+==== Preamble remarks
+
+Remarks between a scope declaration and its first child are preserved as preamble remarks:
+
+[source,express]
+----
+SCHEMA example;
+  -- This is a preamble remark
+  -- It appears after SCHEMA but before declarations
+
+  ENTITY person;
+    -- Entity preamble remark
+    name : STRING;
+  END_ENTITY;
+
+END_SCHEMA;
+----
+
+==== Inline tail remarks
+
+Remarks on the same line as attribute or enumeration item declarations:
+
+[source,express]
+----
+ENTITY person;
+  name : STRING; -- Inline remark for name attribute
+  age : INTEGER; -- Inline remark for age attribute
+END_ENTITY;
+
+TYPE status = ENUMERATION OF
+  (active,   -- Active status
+   inactive, -- Inactive status
+   pending); -- Pending status
+END_TYPE;
+----
+
+==== END_* scope remarks
+
+Remarks on END_TYPE, END_ENTITY, END_SCHEMA, etc. lines:
+
+[source,express]
+----
+TYPE status = ENUMERATION OF
+  (active,
+   inactive);
+END_TYPE; -- Status enumeration type
+
+ENTITY person;
+  name : STRING;
+END_ENTITY; -- Person entity
+
+END_SCHEMA; -- schema_name
+----
+
+==== Unicode support
+
+All remark types support full Unicode content:
+
+[source,express]
+----
+SCHEMA test;
+  -- 日本語、中文、한글 in remarks
+
+  ENTITY person;
+    name : STRING; -- Name in Japanese: 名前
+  END_ENTITY;
+
+END_SCHEMA; -- test
+----
+
+For implementation details, see link:docs/ARCHITECTURE.md#remark-attachment-system[Remark Attachment System].
+
+
+== Performance: Parsanol Integration
+
+Expressir uses the link:https://github.com/parsanol/parsanol-ruby[Parsanol] gem for high-performance parsing when available.
+
+=== Performance Comparison
+
+[cols="3,2,2,3"]
+|===
+| Mode | Time (179K lines) | Speedup | Notes
+
+| Ruby (Parslet) | 507 s | 1x (baseline) | Pure Ruby parsing
+| Native (Parsanol) | 29 s | 17x faster | Rust parser with AST transformation
+|===
+
+=== Features
+
+When Parsanol is installed:
+
+* **17x faster parsing** - Rust native backend
+* **Lazy line/column** - Zero overhead for position info
+* **Batch FFI** - Efficient u64 array transfer across language boundary
+
+=== Usage
+
+Expressir automatically uses Parsanol (Rust parser) when available for better performance:
+
+[source,ruby]
+----
+# Parse a single file - returns ExpFile
+exp_file = Expressir::Express::Parser.from_file("geometry.exp")
+schema = exp_file.schemas.first
+puts "Schema: #{schema.id}"
+
+# Check if native parser is being used
+if Parsanol::Native.available?
+  puts "Using Parsanol (Rust parser)"
+end
+
+# Parse multiple files - returns Repository
+files = ["schema1.exp", "schema2.exp"]
+repo = Expressir::Express::Parser.from_files(files)
+repo.schemas.each do |s|
+  puts "Schema: #{s.id}"
+end
+----
+
+For maximum performance, ensure the Parsanol gem is installed:
+
+[source,sh]
+----
+gem install parsanol
+----
+
+
+== Installation
+
+Add this line to your application's `Gemfile`:
+
+[source, sh]
+----
+gem "expressir"
+----
+
+And then execute:
+
+[source, sh]
+----
+$ bundle install
+----
+
+Or install it yourself as:
+
+[source, sh]
+----
+$ gem install expressir
+----
+
+
+== Testing
+
+Run the test suite:
+
+[source, sh]
+----
+bundle exec rake
+----
+
+
+== Usage: CLI
+
+This gem ships with a CLI tool. To check what's available you can simply run
+`expressir`, by default it will display some usage instructions.
+
+[source, sh]
+----
+$ expressir
+
+Commands:
+  expressir benchmark FILE_OR_YAML             # Benchmark schema loading performance for a file or list of files from YAML
+  expressir benchmark-cache FILE_OR_YAML       # Benchmark schema loading with caching
+  expressir changes SUBCOMMAND                 # Commands for EXPRESS Changes files
+  expressir clean PATH                         # Strip remarks and prettify EXPRESS schema at PATH
+  expressir expand PATH                        # Concatenate the interface closure into one .exp
+  expressir flatten PATH                       # Flatten the interface closure into an ISO 10303-11:1994 longform schema
+  expressir fix PATH                           # Rewrite self-schema-qualified references (#125)
+  expressir format PATH                        # pretty print EXPRESS schema located at PATH
+  expressir mapping_validate PATH              # Validate <<express:...>> links in a module mapping.yaml against its ARM/MIM closure
+  expressir xsd PATH -o OUT.xsd                # Write an XML Schema rendering of the EXPRESS schema at PATH
+  expressir help [COMMAND]                     # Describe available commands or one specific command
+  expressir validate load *PATH                # validate EXPRESS schema located at PATH
+  expressir validate ascii PATH                # Validate EXPRESS files for ASCII-only content (excluding remarks)
+  expressir validate check *PATHS              # eeng check-p11 semantic checks
+  expressir coverage *PATH                     # List EXPRESS entities and check documentation coverage
+  expressir version                            # Expressir Version
+----
+
+=== Format schema
+
+The `format` command pretty prints an EXPRESS schema, making it more readable
+while preserving its structure.
+
+[source, sh]
+----
+# Pretty print a schema to stdout
+expressir format schemas/resources/action_schema/action_schema.exp
+----
+
+This command:
+
+. Parses the EXPRESS schema
+. Formats it with consistent indentation and spacing
+. Outputs the formatted schema to stdout
+
+=== Pretty print with ELF compliance
+
+The `PrettyFormatter` class provides ELF (EXPRESS Language Foundation) compliant
+pretty printing with configurable formatting options. This formatter follows the
+https://www.express-language-foundation.org/pretty-print-spec/[ELF Pretty Print specification].
+
+==== Using PrettyFormatter in Ruby
+
+[source,ruby]
+----
+# Basic usage - formats with default settings
+# Parser.from_file returns an ExpFile
+exp_file = Expressir::Express::Parser.from_file("schema.exp")
+formatter = Expressir::Express::PrettyFormatter.new
+formatted = formatter.format(exp_file)
+puts formatted
+
+# The formatter also accepts Repository objects
+repo = Expressir::Express::Parser.from_files(["schema1.exp", "schema2.exp"])
+formatted = formatter.format(repo)
+puts formatted
+----
+
+==== Configuration options
+
+The PrettyFormatter supports several configuration options to customize the output.
+
+[source,ruby]
+----
+formatter = Expressir::Express::PrettyFormatter.new(
+  indent: 4,                    # Spaces per indentation level (default: 4)
+  line_length: 80,              # Maximum line length (default: nil)
+  provenance: true,             # Include provenance info (default: true)
+  provenance_name: "MyTool",    # Tool name (default: "Expressir")
+  provenance_version: "1.0.0",  # Tool version (default: Expressir::VERSION)
+  no_remarks: false             # Suppress remarks (default: false)
+)
+----
+
+[options="header"]
+|===
+| Option | Type | Default | Description
+
+| `indent`
+| Integer
+| `4`
+| Number of spaces per indentation level
+
+| `line_length`
+| Integer or nil
+| `nil`
+| Maximum line length (not yet enforced)
+
+| `provenance`
+| Boolean
+| `true`
+| Include provenance information in output
+
+| `provenance_name`
+| String
+| `"Expressir"`
+| Tool name for provenance
+
+| `provenance_version`
+| String
+| `Expressir::VERSION`
+| Tool version for provenance
+
+| `no_remarks`
+| Boolean
+| `false`
+| Suppress remarks from source schema
+|===
+
+==== Environment variable configuration
+
+Configuration can be overridden using environment variables. Environment variables
+take precedence over defaults but are overridden by explicit options:
+
+[source,sh]
+----
+# Set environment variables
+export EXPRESSIR_INDENT=2
+export EXPRESSIR_LINE_LENGTH=100
+export EXPRESSIR_PROVENANCE=false
+export EXPRESSIR_PROVENANCE_NAME="CustomTool"
+export EXPRESSIR_PROVENANCE_VERSION="2.0.0"
+
+# These will be used unless overridden by options
+ruby my_formatter.rb
+----
+
+[options="header"]
+|===
+| Environment Variable | Description
+
+| `EXPRESSIR_INDENT`
+| Indentation width (spaces)
+
+| `EXPRESSIR_LINE_LENGTH`
+| Maximum line length
+
+| `EXPRESSIR_PROVENANCE`
+| Enable/disable provenance (`true`/`false`)
+
+| `EXPRESSIR_PROVENANCE_NAME`
+| Tool name for provenance
+
+| `EXPRESSIR_PROVENANCE_VERSION`
+| Tool version for provenance
+|===
+
+The configuration follows a MECE (Mutually Exclusive, Collectively Exhaustive)
+hierarchy: **Options > ENV > Defaults**
+
+==== Key features
+
+The PrettyFormatter provides several enhancements over the standard formatter:
+
+CONSTANT alignment:: Constants in CONSTANT blocks are aligned at both the colon
+and assignment operator positions for improved readability.
++
+[example]
+====
+[source]
+----
+CONSTANT
+  short_name   : INTEGER := 1;
+  longer_name  : STRING  := 'test';
+  x            : REAL    := 3.14;
+END_CONSTANT;
+----
+====
+
+Provenance information:: Automatically includes metadata about the formatting
+tool and parameters used, aiding in reproducibility.
++
+[example]
+====
+[source]
+----
+(*
+  Generated by: Expressir version 2.1.31
+  Format parameters: indent: 4
+*)
+----
+====
+
+Configurable indentation:: Supports custom indentation width (2, 4, 8 spaces, etc.)
+to match project coding standards.
+
+Preamble support:: Preserves and formats source-level remarks that appear before
+the first SCHEMA declaration.
+
+==== Comparison with standard Formatter
+
+[options="header"]
+|===
+| Feature | Formatter | PrettyFormatter
+
+| Indentation
+| 2 spaces (fixed)
+| Configurable (default: 4)
+
+| CONSTANT alignment
+| No
+| Yes (colons and assignments)
+
+| Provenance
+| No
+| Yes (configurable)
+
+| Preamble formatting
+| No
+| Yes
+
+| Line length enforcement
+| No
+| Planned (not yet implemented)
+
+| ELF compliant
+| No
+| Yes
+
+| Configuration via ENV
+| No
+| Yes
+|===
+
+==== Example usage
+
+.Formatting with custom settings
+[example]
+====
+[source,ruby]
+----
+# Parse schema
+repository = Expressir::Express::Parser.from_file("examples/ler/simple_schema.exp")
+
+# Format with custom indentation and provenance
+formatter = Expressir::Express::PrettyFormatter.new(
+  indent: 2,
+  provenance_name: "MyFormatter",
+  provenance_version: "1.0.0"
+)
+
+formatted = formatter.format(repository)
+
+# Save to file
+File.write("formatted_schema.exp", formatted)
+----
+====
+
+.Formatting without provenance
+[example]
+====
+[source,ruby]
+----
+# Format without provenance information
+formatter = Expressir::Express::PrettyFormatter.new(provenance: false)
+repository = Expressir::Express::Parser.from_file("schema.exp")
+formatted = formatter.format(repository)
+
+# Output is clean without metadata comments
+puts formatted
+----
+====
+
+.Round-trip formatting verification
+[example]
+====
+[source,ruby]
+----
+# Format a schema
+original = Expressir::Express::Parser.from_file("schema.exp")
+formatter = Expressir::Express::PrettyFormatter.new
+
+# Format once
+formatted1 = formatter.format(original)
+
+# Parse the formatted output
+File.write("temp.exp", formatted1)
+reparsed = Expressir::Express::Parser.from_file("temp.exp")
+
+# Format again - should be identical (stable formatting)
+formatted2 = formatter.format(reparsed)
+
+puts "Formatting is stable" if formatted1 == formatted2
+----
+====
+
+=== Clean schema
+
+The `clean` command strips remarks and prettifies EXPRESS schemas. This is
+useful for removing all documentation comments while maintaining the schema's
+functional definition. You can optionally save the result to a file.
+
+[source, sh]
+----
+# Output to stdout
+expressir clean schemas/resources/action_schema/action_schema.exp
+
+# Save to file
+expressir clean schemas/resources/action_schema/action_schema.exp --output clean_schema.exp
+----
+
+[options="header"]
+|===
+| Option | Description
+| `--output PATH` | Path to save the cleaned schema (optional, defaults to stdout)
+|===
+
+=== Expand schema (concatenated artifact)
+
+The `expand` command flattens the interface closure of a root EXPRESS schema
+into a single concatenated artifact (one section per source schema, ordered
+alphabetically — the same shape eeng emits for `--concat_schema`).
+
+[source, sh]
+----
+expressir expand schemas/resources/action_schema/action_schema.exp \
+  --output action-concatenated.exp
+----
+
+[options="header"]
+|===
+| Option | Description
+| `--output PATH`, `-o PATH` | Write the artifact to PATH (defaults to stdout)
+| `--manifest PATH` | ELF schema manifest YAML defining where schemas live (primary
+  resolution mode)
+| `--stepmod DIR` | STEPmod checkout root — explicit opt-in to directory-convention
+  resolution as the fallback
+|===
+
+The closure is resolved by scanning `USE FROM` / `REFERENCE FROM` names in the
+root source. Schema resolution order: `--manifest PATH` (an ELF schema
+manifest — explicit, layout-independent) first; `--stepmod DIR` (the STEPmod
+directory convention) as an explicit fallback; otherwise the file's own
+directory, with a failed lookup warning and pointing at the two explicit
+modes.
+
+=== Flatten schema (SHTOLO longform)
+
+The `flatten` command converts a STEPmod-style multi-schema root into a single
+ISO 10303-11:1994 "longform" schema (expressir#32). It runs the Annex G
+conversion locally: interface-closure copy with rename resolution and name
+munging, then extensible enum/select resolution, subtype-constraint
+elimination, RENAMED→DERIVE, GENERIC_ENTITY→GENERIC.
+
+[source, sh]
+----
+expressir flatten schemas/resources/action_schema/action_schema.exp \
+  --output action_lf.exp --longform_name action_schema_lf
+----
+
+[options="header"]
+|===
+| Option | Description
+| `--output PATH`, `-o PATH` | Write the longform schema to PATH (defaults to stdout)
+| `--longform_name ID` | Identifier for the resulting SCHEMA (default: `<root>_lf`)
+| `--extenders all|none` | `all` (default, the WG12 requirement): fold every extensible
+  SELECT/ENUMERATION extension in the closure into its base type — for
+  `EXTENSIBLE GENERIC_ENTITY SELECT` that means every entity the closure
+  carries. `none`: leave extensible types exactly as declared.
+| `--manifest PATH` | ELF schema manifest YAML defining where schemas live (primary
+  resolution mode)
+| `--stepmod DIR` | STEPmod checkout root — explicit opt-in to directory-convention
+  resolution as the fallback
+|===
+
+The longform output is verified against Express Engine: for
+`description_assignment`, `eengine --compare` of our longform against
+eengine's own reference artifact reports *No differences detected*
+(`spec/expressir/express/shtolo_eengine_oracle_differential_spec.rb`).
+
+=== Fix schema (self-schema references)
+
+The `fix` command rewrites string literals that qualify an item with the
+CURRENT schema's name — `'THIS_SCHEMA.ITEM'` inside THIS_SCHEMA is
+technically incorrect: the item usually comes from another schema,
+imported implicitly through a USEd supertype. Local items drop the
+prefix; foreign items gain their true defining schema
+(`'GEOMETRY_SCHEMA.B_SPLINE_SURFACE'`); unknown items are left untouched.
+
+[source, sh]
+----
+expressir fix schemas/aic_topologically_bounded_surface.exp   --output fixed.exp
+----
+
+=== Validate schema
+
+The `validate load` command performs validation checks on EXPRESS schema files.
+
+It verifies:
+
+. That the schema can be parsed correctly into the EXPRESS data model
+. That the schema includes a version string
+
+[source, sh]
+----
+# Validate a single schema
+expressir validate load schemas/resources/action_schema/action_schema.exp
+
+# Validate multiple schemas
+expressir validate load schemas/resources/action_schema/action_schema.exp schemas/resources/approval_schema/approval_schema.exp
+
+# Validate schemas from a schema manifest YAML
+expressir validate load schemas.yml
+----
+
+The command reports any schemas that:
+
+* Failed to parse into the EXPRESS data model
+* Are missing a version string
+
+If all validations pass, it will display "Validation passed for all EXPRESS schemas."
+
+=== Validate semantic checks (eeng check-p11)
+
+The `validate check` command runs the eeng `check-p11` note subset
+implemented in `Expressir::Express::Checker`: redundant interfaces,
+duplicate interface resources, unresolved interface schema/resource
+refs, SUBTYPE OF targets, SELECT/ENUM BASED_ON targets, and WHERE/UNIQUE
+label patterns.
+
+[source, sh]
+----
+# Check a single file
+expressir validate check schemas/resources/action_schema/action_schema.exp
+
+# Check all .exp files under a directory
+expressir validate check schemas/resources/
+
+# Resolve the closure through an ELF schema manifest (or --stepmod DIR)
+expressir validate check modules/description_assignment/mim.exp \
+  --manifest schemas-srl.yaml
+
+# Exit 1 when any :error note fires
+expressir validate check schemas/resources/action_schema/action_schema.exp
+----
+
+=== Validate ASCII content
+
+The `validate ascii` command validates that EXPRESS schema files contain only
+ASCII characters outside of remarks. This ensures compatibility with systems
+that don't support Unicode, while allowing Unicode in documentation comments.
+
+[source, sh]
+----
+# Validate a single file
+expressir validate ascii schema.exp
+
+# Validate schema manifest YAML
+expressir validate ascii schemas.yml
+
+# Validate directory (non-recursive)
+expressir validate ascii schemas/
+
+# Validate directory recursively
+expressir validate ascii schemas/ --recursive
+
+# Output in YAML format
+expressir validate ascii schemas/ --yaml
+
+# Check remarks as well (include remarks in validation)
+expressir validate ascii schema.exp --check-remarks
+----
+
+The command checks that all EXPRESS code (excluding remarks) contains only
+7-bit ASCII characters. Tagged remarks (both embedded `(* ... *)` and tail
+`-- ...` comments) are excluded from validation, allowing documentation to
+contain Unicode without triggering errors.
+
+[options="header"]
+|===
+| Option | Description
+
+| `--recursive`, `-r`
+| Validate EXPRESS files under the specified path recursively
+
+| `--yaml`, `-y`
+| Output results in YAML format for programmatic processing
+
+| `--check-remarks`
+| Include remarks in ASCII validation (default: false, remarks are excluded)
+|===
+
+The validator provides:
+
+* Detailed violation reports with line and column numbers
+* Replacement suggestions (AsciiMath for math symbols, ISO 10303-11 encoding for others)
+* Summary statistics
+* Visual indicators for non-ASCII sequences
+
+This command is particularly useful before exporting schemas to formats that
+don't support Unicode, such as EEP (Express Engine Parser) and eengine (Express
+Engine).
+
+
+[example]
+====
+[source, sh]
+----
+$ expressir validate ascii spec/fixtures/validate_ascii/non_ascii_in_code.exp
+
+spec/fixtures/validate_ascii/non_ascii_in_code.exp:
+  Line 3, Column 9:
+      ENTITY 製品;
+             ^^ Non-ASCII sequence
+      "製" - Hex: 0x88fd, UTF-8 bytes: 0xe8 0xa3 0xbd
+      Replacement: ISO 10303-11: "000088FD"
+      "品" - Hex: 0x54c1, UTF-8 bytes: 0xe5 0x93 0x81
+      Replacement: ISO 10303-11: "000054C1"
+
+  ...
+  Line 10, Column 24:
+        symbol : STRING := 'μ';
+                            ^ Non-ASCII sequence
+      "μ" - Hex: 0x3bc, UTF-8 bytes: 0xce 0xbc
+      Replacement: AsciiMath: mu
+
+  ...
+
+  Found 7 non-ASCII sequence(s) in non_ascii_in_code.exp
+
+Summary:
+  Scanned 1 EXPRESS file(s)
+  Found 7 non-ASCII sequence(s) in 1 file(s)
+
+╭──────────────────────────────────────────────────────────────────────────╮
+│                       Non-ASCII Characters Summary                       │
+├──────────────────────────┬─────────────┬────────────────────┬────────────┤
+│ File                     │ Symbol      │ Replacement        │ Occurrenc… │
+├──────────────────────────┼─────────────┼────────────────────┼────────────┤
+│ validate_ascii/non_asci… │ "製" (0x88… │ ISO 10303-11: "00… │          1 │
+│ validate_ascii/non_asci… │ "品" (0x54… │ ISO 10303-11: "00… │          1 │
+│ ...                      │             │                    │            │
+│ validate_ascii/non_asci… │ "μ" (0x3bc) │ AsciiMath: mu      │          1 │
+│ ...                      │             │                    │            │
+│ TOTAL                    │ 10 unique   │ —                  │         11 │
+╰──────────────────────────┴─────────────┴────────────────────┴────────────╯
+----
+====
+
+
+=== Version
+
+The `version` command displays the current version of the Expressir gem.
+
+[source, sh]
+----
+expressir version
+----
+
+=== Benchmarking
+
+Expressir includes powerful benchmarking capabilities for measuring schema
+loading performance. You can benchmark individual files or multiple files listed
+in a YAML configuration.
+
+==== Benchmark a single file
+
+[source, sh]
+----
+# Basic benchmarking
+expressir benchmark schemas/resources/action_schema/action_schema.exp
+
+# With detailed output
+expressir benchmark schemas/resources/action_schema/action_schema.exp --verbose
+
+# Using benchmark-ips for more detailed statistics
+expressir benchmark schemas/resources/action_schema/action_schema.exp --ips
+
+# With specific output format
+expressir benchmark schemas/resources/action_schema/action_schema.exp --format json
+----
+
+==== Benchmark multiple files from schema manifest
+
+Create a schema manifest YAML file with a list of schema paths:
+
+.schemas.yml
+[source, yaml]
+----
+schemas:
+  - path: schemas/resources/action_schema/action_schema.exp
+  - path: schemas/resources/approval_schema/approval_schema.exp
+  - path: schemas/resources/date_time_schema/date_time_schema.exp
+----
+
+Then benchmark all schemas at once:
+
+[source, sh]
+----
+expressir benchmark schemas.yml --verbose
+----
+
+==== Benchmark with caching
+
+You can also benchmark schema loading with caching to measure parsing time,
+cache writing time, and cache reading time:
+
+[source, sh]
+----
+# Benchmark a single file with caching
+expressir benchmark-cache schemas/resources/action_schema/action_schema.exp
+
+# With custom cache location
+expressir benchmark-cache schemas/resources/action_schema/action_schema.exp --cache_path /tmp/schema_cache.bin
+
+# Benchmark multiple files from YAML with caching
+expressir benchmark-cache schemas.yml --verbose
+----
+
+==== Benchmark options
+
+The benchmark commands support several options:
+
+[options="header"]
+|===
+| Option | Description
+| `--ips` | Use benchmark-ips for detailed statistics
+| `--verbose` | Show detailed output
+| `--save` | Save benchmark results to file
+| `--format FORMAT` | Output format: json, csv, or default
+| `--cache_path PATH` | (benchmark-cache only) Path to store the cache file
+|===
+
+When using the `--format json` option, results will be output in JSON format,
+making it easy to parse for further analysis or visualization.
+
+=== Documentation coverage
+
+Expressir can analyze EXPRESS schemas to check for documentation coverage. This helps
+identify which entities are properly documented with remarks and which ones require
+documentation.
+
+==== Analyzing documentation coverage
+
+Use the `coverage` command to check documentation coverage of EXPRESS schemas:
+
+[source, sh]
+----
+# Analyze a single EXPRESS file
+expressir coverage schemas/resources/action_schema/action_schema.exp
+
+# Analyze multiple EXPRESS files
+expressir coverage schemas/resources/action_schema/action_schema.exp schemas/resources/approval_schema/approval_schema.exp
+
+# Analyze all EXPRESS files in a directory (recursively)
+expressir coverage schemas/resources/
+
+# Analyze files specified in a YAML file
+expressir coverage schemas.yml
+----
+
+The output shows which entities are missing documentation, calculates coverage percentages,
+and provides an overall documentation coverage summary.
+
+==== Coverage options
+
+The coverage command supports different output formats and exclusion options:
+
+[options="header"]
+|===
+| Option | Description
+| `--format text` | (Default) Display a human-readable table with coverage information
+| `--format json` | Output in JSON format for programmatic processing
+| `--format yaml` | Output in YAML format for programmatic processing
+| `--exclude TYPES` | Comma-separated list of EXPRESS entity types to exclude from coverage analysis
+| `--ignore-files PATH` | Path to YAML file containing array of files to ignore from overall coverage calculation
+|===
+
+==== Excluding entity types from coverage
+
+You can exclude specific EXPRESS entity types from coverage analysis using the
+`--exclude` option.
+
+This is useful when certain entity types don't require documentation coverage,
+such as TYPE entities whose descriptions are generated by template strings.
+
+[source, sh]
+----
+# Exclude TYPE entities from coverage analysis
+expressir coverage --exclude=TYPE schemas/resources/action_schema/action_schema.exp
+
+# Exclude only SELECT type definitions (useful since TYPE descriptions are often template-generated)
+expressir coverage --exclude=TYPE:SELECT schemas/resources/action_schema/action_schema.exp
+
+# Exclude multiple entity types
+expressir coverage --exclude=TYPE,CONSTANT,FUNCTION schemas/resources/action_schema/action_schema.exp
+
+# Exclude parameters and variables (often don't require individual documentation)
+expressir coverage --exclude=PARAMETER,VARIABLE schemas/resources/action_schema/action_schema.exp
+
+# Combine with output format options
+expressir coverage --exclude=TYPE:SELECT --format=json schemas/resources/action_schema/action_schema.exp
+----
+
+==== Elements checked in documentation coverage
+
+Expressir checks documentation coverage for all EXPRESS elements (ModelElement
+subclasses), including:
+
+Schema-level entities:
+
+`TYPE`:: Type definitions (supports subtype exclusion, see below)
+`ENTITY`:: Entity definitions
+`CONSTANT`:: Constant definitions
+`FUNCTION`:: Function definitions
+`RULE`:: Rule definitions
+`PROCEDURE`:: Procedure definitions
+`SUBTYPE_CONSTRAINT`:: Subtype constraint definitions
+`INTERFACE`:: Interface definitions
+
+Nested entities within other constructs:
+
+`PARAMETER`:: Function and procedure parameters
+`VARIABLE`:: Variables within functions, rules, and procedures
+`ATTRIBUTE`:: Entity attributes
+`DERIVED_ATTRIBUTE`:: Derived attributes in entities
+`INVERSE_ATTRIBUTE`:: Inverse attributes in entities
+`UNIQUE_RULE`:: Unique rules within entities
+`WHERE_RULE`:: Where rules within entities and types
+`ENUMERATION_ITEM`:: Items within enumeration types
+`INTERFACE_ITEM`:: Items within interfaces
+`INTERFACED_ITEM`:: Interfaced items
+`SCHEMA_VERSION`:: Schema version information
+`SCHEMA_VERSION_ITEM`:: Schema version items
+
+==== TYPE subtype exclusion
+
+For TYPE elements, you can exclude specific subtypes using the `TYPE:SUBTYPE`
+syntax:
+
+[source, sh]
+----
+# Exclude only SELECT types
+expressir coverage --exclude=TYPE:SELECT schemas/resources/action_schema/action_schema.exp
+
+# Exclude multiple TYPE subtypes
+expressir coverage --exclude=TYPE:SELECT,TYPE:ENUMERATION schemas/resources/action_schema/action_schema.exp
+----
+
+==== FUNCTION subtype exclusion
+
+For FUNCTION elements, you can exclude inner functions (functions nested within
+other functions, rules, or procedures) using the `FUNCTION:INNER` syntax:
+
+[source, sh]
+----
+# Exclude inner functions from coverage analysis
+expressir coverage --exclude=FUNCTION:INNER schemas/resources/action_schema/action_schema.exp
+
+# Combine with other exclusions
+expressir coverage --exclude=TYPE:SELECT,FUNCTION:INNER schemas/resources/action_schema/action_schema.exp
+----
+
+This is useful when you want to focus documentation coverage on top-level
+functions while excluding nested helper functions that may not require
+individual documentation. The exclusion works recursively, excluding functions
+at any nesting level within other constructs.
+
+Valid FUNCTION subtypes that can be excluded:
+
+`INNER`:: Inner functions nested within other functions, rules, or procedures (at any depth)
++
+[example]
+====
+----
+FUNCTION outer_function : BOOLEAN;
+  -- This inner function would be excluded with FUNCTION:INNER
+  FUNCTION inner_helper_function : BOOLEAN;
+    -- Even deeply nested functions are excluded
+    FUNCTION deeply_nested_function : BOOLEAN;
+      RETURN (TRUE);
+    END_FUNCTION;
+    RETURN (TRUE);
+  END_FUNCTION;
+
+  RETURN (TRUE);
+END_FUNCTION;
+
+RULE example_rule FOR (some_entity);
+  -- Inner functions in rules are also excluded
+  FUNCTION inner_function_in_rule : BOOLEAN;
+    RETURN (TRUE);
+  END_FUNCTION;
+WHERE
+  WR1: inner_function_in_rule();
+END_RULE;
+
+PROCEDURE example_procedure;
+  -- Inner functions in procedures are also excluded
+  FUNCTION inner_function_in_procedure : BOOLEAN;
+    RETURN (TRUE);
+  END_FUNCTION;
+END_PROCEDURE;
+----
+====
+
+The `FUNCTION:INNER` exclusion helps maintain focus on documenting the primary
+API functions while ignoring implementation details of nested helper functions.
+
+==== Ignoring files from coverage calculation
+
+You can exclude entire files from the overall coverage calculation using the
+`--ignore-files` option. This is useful when you have files that should not
+contribute to the overall documentation coverage statistics, such as test
+schemas, example files, or legacy schemas.
+
+[source, sh]
+----
+# Use ignore files to exclude specific files from coverage calculation
+expressir coverage --ignore-files ignore_list.yaml schemas/resources/
+
+# Combine with other options
+expressir coverage --ignore-files ignore_list.yaml --exclude=TYPE:SELECT --format=json schemas/resources/
+----
+
+===== Ignore files YAML format
+
+The ignore files YAML should contain an array of file patterns. Each pattern
+can be either an exact file path or use glob patterns for matching multiple files.
+
+.ignore_list.yaml
+[source, yaml]
+----
+# Array of file patterns to ignore
+- examples/test_schema.exp                    # Exact file path
+- examples/*_test_*.exp                       # Glob pattern for test files
+- legacy/old_*.exp                           # Glob pattern for legacy files
+- temp/temporary_schema.exp                   # Another exact path
+----
+
+===== Pattern matching behavior
+
+File patterns in the ignore files YAML support:
+
+* **Exact paths**: Match specific files exactly
+* **Glob patterns**: Use `*` for wildcard matching
+* **Relative paths**: Patterns are resolved relative to the YAML file's directory
+* **Absolute paths**: Full system paths are also supported
+
+[source, yaml]
+----
+# Examples of different pattern types
+- schemas/action_schema/action_schema.exp     # Exact relative path
+- /full/path/to/schema.exp                   # Absolute path
+- schemas/**/test_*.exp                      # Recursive glob pattern
+- temp/*.exp                                 # All .exp files in temp directory
+----
+
+===== Behavior of ignored files
+
+When files are ignored using the `--ignore-files` option:
+
+. **Excluded from overall statistics**: Ignored files do not contribute to the
+   overall coverage percentage calculation
+
+. **Still processed and reported**: Ignored files are still analyzed and appear
+   in the output, but marked with an `ignored: true` flag
+
+. **Separate reporting section**: In JSON/YAML output formats, ignored files
+   appear in both the main `files` section (with the ignored flag) and in a
+   separate `ignored_files` section
+
+. **Overall statistics updated**: The overall statistics include additional
+   fields showing the count of ignored files and entities
+
+.Example JSON output with ignored files:
+[source, json]
+----
+{
+  "overall": {
+    "coverage_percentage": 75.0,
+    "total_entities": 100,
+    "documented_entities": 75,
+    "undocumented_entities": 25,
+    "ignored_files_count": 2,
+    "ignored_entities_count": 15
+  },
+  "files": [
+    {
+      "file": "schemas/main_schema.exp",
+      "ignored": false,
+      "coverage": 80.0,
+      "total": 50,
+      "documented": 40,
+      "undocumented": ["entity1", "entity2"]
+    },
+    {
+      "file": "examples/test_schema.exp",
+      "ignored": true,
+      "matched_pattern": "examples/*_test_*.exp",
+      "coverage": 20.0,
+      "total": 10,
+      "documented": 2,
+      "undocumented": ["test_entity1", "test_entity2"]
+    }
+  ],
+  "ignored_files": [
+    {
+      "file": "examples/test_schema.exp",
+      "matched_pattern": "examples/*_test_*.exp",
+      "coverage": 20.0,
+      "total": 10,
+      "documented": 2,
+      "undocumented": ["test_entity1", "test_entity2"]
+    }
+  ]
+}
+----
+
+===== Error handling
+
+The ignore files functionality handles various error conditions gracefully:
+
+* **Missing YAML file**: If the specified ignore files YAML doesn't exist, a
+  warning is displayed and coverage analysis continues normally
+
+* **Invalid YAML format**: If the YAML file is malformed or doesn't contain an
+  array, a warning is displayed and the file is ignored
+
+* **Non-matching patterns**: Patterns that don't match any files are silently
+  ignored (no error or warning)
+
+* **Permission errors**: File access errors are reported as warnings
+
+===== Use cases for ignore files
+
+Common scenarios where ignore files are useful:
+
+* **Test schemas**: Exclude test or example schemas from production coverage metrics
+* **Legacy files**: Ignore old schemas that are being phased out
+* **Generated files**: Exclude automatically generated schemas
+* **Work-in-progress**: Temporarily ignore files under development
+* **Different coverage standards**: Apply different documentation standards to different file sets
+
+Valid TYPE subtypes that can be excluded:
+
+`AGGREGATE`:: Aggregate type
+`ARRAY`:: Array type
+`BAG`:: Bag type
+`BINARY`:: Binary type
+`BOOLEAN`:: Boolean type
+`ENUMERATION`:: Enumeration type
++
+[example]
+====
+----
+TYPE uuid_relationship_role = ENUMERATION OF
+  (supersedes,
+    merge,
+    split,
+    derive_from,
+    same_as,
+    similar_to);
+END_TYPE;
+----
+====
+
+`GENERIC`:: Generic type
+`GENERIC_ENTITY`:: Generic entity type
++
+[example]
+====
+----
+TYPE uuid_attribute_select = EXTENSIBLE GENERIC_ENTITY SELECT;
+END_TYPE;
+----
+====
+
+`INTEGER`:: Integer type
+`LIST`:: List type
++
+[example]
+====
+----
+TYPE uuid_list_item = LIST [1:?] OF UNIQUE LIST [1:?] OF UNIQUE uuid_attribute_select;
+END_TYPE;
+----
+====
+
+`LOGICAL`:: Logical type
+`NUMBER`:: Number type
+`REAL`:: Real type
+`SELECT`:: Select type
++
+[example]
+====
+----
+TYPE uuid_set_or_list_attribute_select = SELECT
+  (uuid_list_item,
+    uuid_set_item);
+END_TYPE;
+----
+====
+
+`SET`:: Set type
++
+[example]
+====
+----
+TYPE uuid_set_item = SET [1:?] OF uuid_attribute_select;
+END_TYPE;
+----
+====
+
+`STRING`::
+String type
++
+[example]
+====
+----
+TYPE uuid = STRING (36) FIXED;
+END_TYPE;
+----
+====
+
+This is particularly useful since TYPE entities with certain subtypes (like
+SELECT) often have descriptions generated by template strings and may not
+require individual remark item coverage.
+
+NOTE: ISO 10303 excludes documentation coverage for TYPE:SELECT and
+TYPE:ENUMERATION.
+
+If you specify an invalid entity type or subtype, the command will display an
+error message with the list of valid options.
+
+.Example with JSON output:
+[example]
+====
+[source, sh]
+----
+expressir coverage schemas/resources/ --format json
+----
+====
+
+When using JSON or YAML output formats, all file and directory paths are
+displayed relative to the current working directory:
+
+[source, yaml]
+----
+- file: "schemas/resources/action_schema/action_schema.exp"
+  file_basename: action_schema.exp
+  directory: "schemas/resources/action_schema"
+  # ... other fields
+----
+
+==== Coverage output
+
+The default text output displays:
+
+. Directory coverage (when analyzing multiple directories)
+
+. File coverage, showing:
+** File path
+** List of undocumented entities
+** Coverage percentage
+
+. Overall documentation coverage statistics
+
+This helps identify areas of your EXPRESS schemas that need documentation
+improvement.
+
+=== Schema hyperlinked source faces
+
+`Schema#source`, `Schema#source_hyperlinked`, and
+`Schema#formatted_hyperlinked(_adoc)` render a schema head or the full
+schema with cross-references either verbatim or as links (the adoc
+variant emits `<<schema.item,item>>` xref macros — render inside a
+`[source,subs="+macros"]` block for live links; see the
+`Expressir::Express::SmrlXml` and `Expressir::Express::Xsd` writers
+for the XML faces).
+
+== MIM mapping validation (mapping.yaml)
+
+`expressir mapping_validate PATH` loads a module `mapping.yaml`
+(lutaml-model typed: `Expressir::Mapping::Document`) and resolves every
+`<<express:SCHEMA.ITEM,ITEM>>` link against the ARM/MIM interface
+closure, reporting links whose schema or item is unknown.
+
+== XML faces
+
+- `Expressir::Express::SmrlXml.format(repository)` — the SMRL index
+  block per schema (eeng wo-smrl-xml shape).
+- `Expressir::Express::Xsd.format(schema)` — an XML Schema rendering
+  (entities as element/complexType, substitutionGroup for subtypes,
+  enumeration facets).
+
+== Lazy compiled-set access
+
+`Expressir::Express::Core.lazy_set(artifact)` lists a compiled set's
+wire paths without hydrating and hydrates individual files on demand —
+renderers that touch one schema per page hydrate one schema per page.
+
+== EXPRESS Changes files
+
+Expressir provides commands for working with EXPRESS Changes files that track
+schema modifications across versions.
+
+==== Validating change files
+
+The `changes validate` command validates EXPRESS Changes YAML files and
+optionally normalizes them through round-trip serialization.
+
+[source, sh]
+----
+# Validate a changes file
+expressir changes validate schema.changes.yaml
+
+# Validate with verbose output
+expressir changes validate schema.changes.yaml --verbose
+
+# Validate and normalize (outputs to stdout)
+expressir changes validate schema.changes.yaml --normalize
+
+# Validate and normalize in-place
+expressir changes validate schema.changes.yaml --normalize --in-place
+
+# Validate and save normalized output to a new file
+expressir changes validate schema.changes.yaml --normalize --output normalized.yaml
+----
+
+[options="header"]
+|===
+| Option | Description
+| `--normalize` | Normalize file through round-trip serialization
+| `--in-place` | Update file in place (requires `--normalize`)
+| `--output PATH` | Output file path for normalized output
+| `--verbose` | Show verbose output with validation details
+|===
+
+The validate command performs the following checks:
+
+. Verifies the YAML file can be parsed
+. Validates against the SchemaChange model structure
+. Ensures all required fields are present
+. Checks that change items have valid types
+
+When using `--normalize`, the command:
+
+. Loads the file and validates it
+. Serializes it back to YAML with consistent formatting
+. Either outputs to stdout, saves in-place, or writes to a new file
+
+This is useful for:
+
+* **Standardizing formatting**: Ensures consistent YAML structure
+* **Catching errors early**: Validates before committing changes
+* **Cleaning up files**: Removes inconsistencies in formatting
+
+==== Importing from Express Engine comparison report XML
+
+The `changes import-eengine` command converts Express Engine (eengine) comparison
+XML files to EXPRESS Changes YAML format.
+
+The eengine compare XML format is created through
+`exp-engine-engine/kernel/compare.lisp` in the Express Engine code. Expressir is
+compatible with v5.2.7 of eengine output.
+
+The import command:
+
+. Parses the eengine XML comparison file
+. Automatically detects the XML mode (Schema/ARM/MIM)
+. Extracts additions, modifications, and deletions
+. Converts modified objects to EXPRESS Changes item format
+. Preserves interface change information (`interfaced.items`)
+. Creates or updates an EXPRESS Changes YAML file
+. Supports appending new versions to existing files
+
+When the output file already exists:
+
+* **Same version**: Replaces the existing version with that version
+* **New version**: Adds a new version to the file
+
+This allows you to build up a complete change history incrementally across
+multiple schema versions.
+
+Syntax:
+
+[source, sh]
+----
+# Basic syntax
+expressir changes import-eengine INPUT_XML SCHEMA_NAME VERSION [options]
+
+# Import and output to stdout
+expressir changes import-eengine comparison.xml schema_name "2"
+
+# Import and save to file
+expressir changes import-eengine comparison.xml schema_name "2" -o output.yaml
+
+# Import with verbose output
+expressir changes import-eengine comparison.xml schema_name "2" -o output.yaml --verbose
+
+# Append to existing changes file
+expressir changes import-eengine comparison.xml schema_name "3" -o existing.yaml
+----
+
+Where:
+
+`INPUT_XML`:: Path to the eengine comparison XML file
+`SCHEMA_NAME`:: Name of the schema being tracked (e.g., `aic_csg`, `action_schema`)
+`VERSION`:: Version number for this set of changes (e.g., `"2"`, `"3"`)
+
+Options:
+
+`-o, --output PATH`:: Output YAML file path (stdout if not specified)
+`--verbose`:: Show verbose output including parsed items
+
+The command automatically detects and handles all three eengine XML comparison
+formats:
+
+Schema mode:: `<schema.changes>` root element with `<schema.additions>`,
+`<schema.modifications>`, and `<schema.deletions>` sections. See API docs for
+details.
+
+Example workflow for importing changes from multiple versions:
+
+.Importing multiple versions incrementally
+[example]
+[source, sh]
+----
+# Import version 2 changes
+expressir changes import-eengine v2_comparison.xml action_schema "2" \
+  -o action_schema.changes.yaml
+
+# Import version 3 changes (appends to existing file)
+expressir changes import-eengine v3_comparison.xml action_schema "3" \
+  -o action_schema.changes.yaml
+
+# Import version 4 changes (appends to existing file)
+expressir changes import-eengine v4_comparison.xml action_schema "4" \
+  -o action_schema.changes.yaml
+
+# Verify the result
+cat action_schema.changes.yaml
+----
+
+This creates a single YAML file tracking changes across all three versions:
+
+[source,yaml]
+----
+schema: action_schema
+versions:
+- version: 2
+  description: Changes from eengine comparison
+  additions: [...]
+- version: 3
+  description: Changes from eengine comparison
+  additions: [...]
+- version: 4
+  description: Changes from eengine comparison
+  additions: [...]
+----
+
+
+== Usage: Ruby
+
+=== Parsing EXPRESS schema files
+
+==== General
+
+The library provides two main methods for parsing EXPRESS files.
+
+==== Parsing a single file
+
+Use the `from_file` method to parse a single EXPRESS schema file.
+This returns an `ExpFile` object containing the parsed schemas:
+
+[source,ruby]
+----
+# Parse a single file - returns ExpFile
+exp_file = Expressir::Express::Parser.from_file("path/to/schema.exp")
+
+# Access schemas from the file
+schema = exp_file.schemas.first
+
+# With options
+exp_file = Expressir::Express::Parser.from_file(
+  "path/to/schema.exp",
+  skip_references: false,  # Set to true to skip resolving references
+  include_source: true,    # Set to true to include original source in the model
+  root_path: "/base/path"  # Optional base path for relative paths
+)
+----
+
+The `from_file` method will raise a `SchemaParseFailure` exception if the schema
+fails to parse, providing information about the specific file and the parsing
+error:
+
+[source,ruby]
+----
+begin
+  exp_file = Expressir::Express::Parser.from_file("path/to/schema.exp")
+rescue Expressir::Express::Error::SchemaParseFailure => e
+  puts "Failed to parse schema: #{e.message}"
+  puts "Filename: #{e.filename}"
+  puts "Error details: #{e.parse_failure_cause.ascii_tree}"
+end
+----
+
+==== Parsing multiple files
+
+Use the `from_files` method to parse multiple EXPRESS schema files.
+This returns a `Repository` object containing all parsed files:
+
+[source,ruby]
+----
+# Parse multiple files - returns Repository
+files = ["schema1.exp", "schema2.exp", "schema3.exp"]
+repository = Expressir::Express::Parser.from_files(files)
+
+# Access all schemas across all files
+repository.schemas.each do |schema|
+  puts "Schema: #{schema.id}"
+end
+----
+
+You can provide a block to track loading progress and handle errors:
+
+[source,ruby]
+----
+files = ["schema1.exp", "schema2.exp", "schema3.exp"]
+repository = Expressir::Express::Parser.from_files(files) do |filename, schemas, error|
+  if error
+    puts "Error loading #{filename}: #{error.message}"
+    # Skip the file with an error or take other action
+  else
+    puts "Successfully loaded #{schemas.length} schemas from #{filename}"
+  end
+end
+----
+
+=== Filtering out schemas
+
+You can filter out specific schemas from the repository easily since
+`Expressir::Model::Repository` implements `Enumerable`.
+
+[source,ruby]
+----
+schema_yaml = YAML.load_file('documents/iso-10303-41/schemas.yaml')
+schema_paths = schema_yaml['schemas'].map {|x,y| y['path'].gsub("../../", "")}
+
+repo = Expressir::Express::Parser.from_files(schema_paths)
+
+filtered_schemas = ["action_schema", "date_time_schema"]
+repo.select do |schema|
+  filtered_schemas.include?(schema.name)
+end.each do |schema|
+  puts "Schema name: #{schema.name}"
+  puts "Schema file: #{schema.file}"
+  puts "Schema version: #{schema.version}"
+end
+----
+
+=== Convert models to Liquid
+
+Use `to_liquid` method to convert the models of `Expressir::Model::*` to liquid
+drop models (`Expressir::Liquid::*`).
+
+Example:
+
+[source,ruby]
+----
+# Single file (ExpFile)
+exp_file = Expressir::Express::Parser.from_file("path/to/file.exp")
+file_drop = exp_file.to_liquid
+
+# Multiple files (Repository)
+repo = Expressir::Express::Parser.from_files(["file1.exp", "file2.exp"])
+repo_drop = repo.to_liquid
+----
+
+where `repo` is an instance of `Expressir::Model::Repository` and
+`repo_drop` is an instance of `Expressir::Liquid::RepositoryDrop`.
+
+The Liquid drop models of `Expressir::Liquid::*` have the same attributes
+(`model_attr`) as the models of `Expressir::Model::*`.
+
+For example, `Expressir::Model::Repository` has the following attributes:
+
+* `schemas`
+
+and each `Expressir::Model::Declarations::Schema` has the following attributes:
+
+* `file`
+* `version`
+* `interfaces`
+* `constants`
+* `entities`
+* `subtype_constraints`
+* `functions`
+* `rules`
+* `procedures`
+
+Thus, `Expressir::Liquid::Repository` has the same attribute `schemas`
+and `Expressir::Liquid::Declarations::SchemaDrop` has same attribute `file`.
+
+[source,ruby]
+----
+# Parse file (returns ExpFile)
+exp_file = Expressir::Express::Parser.from_file("path/to/file.exp")
+file_drop = exp_file.to_liquid
+schema = file_drop.schemas.first
+schema.file = "path/to/file.exp"
+
+# Or parse multiple files (returns Repository)
+repo = Expressir::Express::Parser.from_files(["file1.exp", "file2.exp"])
+repo_drop = repo.to_liquid
+----
+
+=== Documentation coverage analysis
+
+Expressir's documentation coverage feature can be used programmatically to
+analyze and report on documentation coverage of EXPRESS schemas.
+
+[source,ruby]
+----
+# Create a coverage report from a file
+report = Expressir::Coverage::Report.from_file("path/to/schema.exp")
+
+# Or create a report from an ExpFile
+exp_file = Expressir::Express::Parser.from_file("path/to/schema.exp")
+report = Expressir::Coverage::Report.from_exp_file(exp_file)
+
+# Or create a report from a repository
+repo = Expressir::Express::Parser.from_files(["schema1.exp", "schema2.exp"])
+report = Expressir::Coverage::Report.from_repository(repo)
+
+# Access overall statistics
+puts "Overall coverage: #{report.coverage_percentage}%"
+puts "Total entities: #{report.total_entities.size}"
+puts "Documented entities: #{report.documented_entities.size}"
+puts "Undocumented entities: #{report.undocumented_entities.size}"
+
+# Access file-level reports
+report.file_reports.each do |file_report|
+  puts "File: #{file_report[:file]}"
+  puts "  Coverage: #{file_report[:coverage]}%"
+  puts "  Total entities: #{file_report[:total]}"
+  puts "  Documented entities: #{file_report[:documented]}"
+  puts "  Undocumented entities: #{file_report[:undocumented].join(', ')}"
+end
+
+# Access directory-level reports
+report.directory_reports.each do |dir_report|
+  puts "Directory: #{dir_report[:directory]}"
+  puts "  Coverage: #{dir_report[:coverage]}%"
+  puts "  Total entities: #{dir_report[:total]}"
+  puts "  Documented entities: #{dir_report[:documented]}"
+  puts "  Undocumented entities: #{dir_report[:undocumented]}"
+  puts "  Number of files: #{dir_report[:files]}"
+end
+
+# Generate a structured hash representation
+report_hash = report.to_h  # Contains overall, directories and files sections
+----
+
+You can also use the core methods directly to check documentation status:
+
+[source,ruby]
+----
+# Check if an entity has documentation
+schema = repository.schemas.first
+entity = schema.entities.first
+
+if Expressir::Coverage.entity_documented?(entity)
+  puts "Entity #{entity.id} is documented"
+else
+  puts "Entity #{entity.id} is not documented"
+end
+
+# Find all entities in a schema
+all_entities = Expressir::Coverage.find_entities(schema)
+puts "Found #{all_entities.size} entities in schema #{schema.id}"
+----
+
+
+== EXPRESS schema manifests
+
+=== General
+
+The EXPRESS schema manifest is a file format defined by ELF at
+https://www.expresslang.org/docs[EXPRESS schema manifest specification].
+
+Expressir provides a `SchemaManifest` class for managing collections of EXPRESS
+schema files. This is particularly useful when working with multiple related
+schemas or when you need to organize schema files in a structured way.
+
+The `SchemaManifest` class allows you to:
+
+* Load schema file lists from YAML manifest files
+* Manage schema metadata and paths
+* Programmatically create and manipulate schema collections
+* Save manifest configurations to files
+
+
+=== File format
+
+The schema manifest uses a structured YAML format:
+
+[source,yaml]
+----
+schemas:
+  - path: schemas/resources/action_schema/action_schema.exp
+    id: action_schema
+  - path: schemas/resources/approval_schema/approval_schema.exp
+    id: approval_schema
+  - path: schemas/resources/date_time_schema/date_time_schema.exp
+    id: date_time_schema
+----
+
+Each schema entry in the manifest can have the following attributes:
+
+`path`:: (Required) The file path to the EXPRESS schema file
+`id`:: (Optional) A unique identifier for the schema
+`container_path`:: (Optional) Container path information
+
+
+[example]
+.Example project structure with schema manifest
+====
+[source]
+----
+project/
+├── schemas.yml   # Schema manifest
+└── schemas/
+    ├── core/
+    │   ├── action_schema.exp
+    │   └── approval_schema.exp
+    └── extensions/
+        └── date_time_schema.exp
+----
+
+.schemas.yml
+[source,yaml]
+----
+schemas:
+  - path: schemas/core/action_schema.exp
+    id: action_schema
+  - path: schemas/core/approval_schema.exp
+    id: approval_schema
+  - path: schemas/extensions/date_time_schema.exp
+    id: date_time_schema
+----
+====
+
+
+=== Commands for schema manifests
+
+==== Creating a manifest from a root schema
+
+The `manifest create` command generates a schema manifest YAML file by
+resolving all referenced schemas starting from a specified root schema file.
+
+.`manifest create` - Generate schema manifest
+[source,sh]
+----
+Usage:
+  expressir manifest create ROOT_SCHEMA [MORE_SCHEMAS...] -o, --output=OUTPUT
+
+Options:
+  -o, --output=OUTPUT                                # Output YAML file path
+      [--base-dirs=BASE_DIRS]                        # Comma-separated base directories for schema resolution
+      [--verbose], [--no-verbose], [--skip-verbose]  # Show detailed output
+                                                     # Default: false
+
+Description:
+  Generate a YAML manifest of all schemas required for packaging.
+
+  The manifest uses the existing SchemaManifest format: schemas: schema_id: path:
+  /path/to/schema.exp
+
+  Workflow: 1. Create manifest from root schema 2. Edit manifest to add paths for
+  schemas with null paths 3. Validate manifest 4. Build package using manifest
+
+  Example: expressir manifest create schemas/activity/mim.exp \ -o
+  activity_manifest.yaml \ --base-dirs /path/to/schemas
+----
+
+Options:
+
+`--output, -o FILE`:: (Required) Output YAML file path
+
+`--base-dirs DIRS`:: Base directories for schema resolution (space-separated). Also supports comma-separated for backward compatibility.
++
+Searches for schema files using these patterns:
+schema files named according to schema ID::: `<SCHEMA_ID>.exp`
+schema files named in the STEP module pattern::: `<LOWERCASE_SCHEMA_WO_MIMARM>/{mim,arm}.exp`
++
+[source,sh]
+----
+# Space-separated (preferred)
+--base-dirs /path/to/schemas /another/path
+
+# Comma-separated (backward compatible)
+--base-dirs /path/to/schemas,/another/path
+----
+
+`--verbose`:: Show detailed output
+
+Base directories can be provided to help locate schema files:
+
+* During the resolving process, Expressir will search these directories for
+schema files matching known naming patterns.
+* Once a referenced schema is found, it will indicate from which source they
+were resolved.
+* If multiple matches are found, the first one encountered will be used, and a
+warning will be displayed for the user to manually edit the manifest if a
+different path is desired.
+
+In the case of unresolved schemas, the created manifest will include entries
+without the `path:` field. The manifest can then be edited manually to add the
+correct paths.
+
+
+.Creating a manifest from a root schema
+[example]
+====
+The following command creates a manifest starting from the
+`schemas/modules/activity/mim.exp` root schema, searching for referenced schemas
+in the `schemas/resources` and `schemas/modules` base directories.
+
+[source,sh]
+----
+$ expressir manifest create \
+  schemas/modules/activity/mim.exp \
+  -o new.yaml \
+  --base-dirs schemas/modules schemas/resources/ \
+  --verbose
+
+Creating manifest from 1 root schema(s)...
+  Base directories:
+    - [source 1]: ~/src/mn/iso-10303/schemas/modules
+    - [source 2]: ~/src/mn/iso-10303/schemas/resources/
+Resolving dependencies...
+  USE FROM action_schema (in mim): ✓ [source 2] action_schema/action_schema.exp
+  REFERENCE FROM basic_attribute_schema (in action_schema): ✓ [source 2] basic_attribute_schema/basic_attribute_schema.exp
+  REFERENCE FROM support_resource_schema (in basic_attribute_schema): ✓ [source 2] support_resource_schema/support_resource_schema.exp
+  REFERENCE FROM support_resource_schema (in action_schema): ✓ [source 2] support_resource_schema/support_resource_schema.exp
+  USE FROM Activity_method_mim (in mim): ✓ [source 1] activity_method/mim.exp
+  ...
+  REFERENCE FROM support_resource_schema (in management_resources_schema): ✓ [source 2] support_resource_schema/support_resource_schema.exp
+✓ Manifest created: new.yaml
+  Resolved schemas: 42
+  All schemas resolved successfully!
+----
+====
+
+.Creating a manifest from a root schema with unresolved schemas
+[example]
+====
+The following command creates a manifest starting from the
+`schemas/modules/activity/mim.exp` root schema, searching for referenced schemas
+in the `schemas/resources` base directory only (i.e. it will miss schemas
+in `schemas/modules`).
+
+[source,sh]
+----
+$ expressir manifest create \
+  -o manifest.yaml \
+  --base-dirs schemas/resources \
+  --verbose \
+  schemas/modules/activity/mim.exp
+
+Creating manifest from 1 root schema(s)...
+  Base directories:
+    - [source 1]: ~/src/mn/iso-10303/schemas/resources
+Resolving dependencies...
+  USE FROM action_schema (in mim): ✓ [source 1] action_schema/action_schema.exp
+  REFERENCE FROM basic_attribute_schema (in action_schema): ✓ [source 1] basic_attribute_schema/basic_attribute_schema.exp
+  REFERENCE FROM support_resource_schema (in basic_attribute_schema): ✓ [source 1] support_resource_schema/support_resource_schema.exp
+  REFERENCE FROM support_resource_schema (in action_schema): ✓ [source 1] support_resource_schema/support_resource_schema.exp
+  USE FROM Activity_method_mim (in mim): ✗ not found
+  ...
+  REFERENCE FROM support_resource_schema (in management_resources_schema): ✓ [source 2] support_resource_schema/support_resource_schema.exp
+✓ Manifest created: manifest.yaml
+  Resolved schemas: 41
+
+⚠ Unresolved schemas (1):
+  - Activity_method_mim
+
+Please edit manifest.yaml and set 'path:' for unresolved schemas
+Then validate with: expressir manifest validate manifest.yaml
+----
+====
+
+
+
+==== Resolving schemas from a manifest
+
+A schema manifest can be used as input to resolve and load all referenced
+schemas into a new manifest.
+
+
+[source,sh]
+----
+expressir manifest resolve MANIFEST -o, --output=OUTPUT
+----
+
+[source,sh]
+----
+Usage:
+  expressir manifest resolve MANIFEST -o, --output=OUTPUT
+
+Options:
+  -o, --output=OUTPUT                                # Output file path for resolved manifest
+      [--base-dirs=one two three]                    # Base directories for schema search (can be specified multiple times)
+      [--verbose], [--no-verbose], [--skip-verbose]  # Show detailed resolution progress
+                                                     # Default: false
+
+Description:
+  Resolve missing or incomplete schema paths in a manifest file.
+
+  This command attempts to find file paths for schemas with missing or empty
+  paths by searching in base directories using naming patterns:
+
+  Supported patterns:
+    - Resource schemas: {schema_name}.exp
+    - Module ARM/MIM: {module_name}/{arm|mim}.exp
+    Example: Activity_method_mim -> activity_method/mim.exp
+
+  The resolved manifest is written to the output file, leaving the original
+  unchanged.
+
+  Use this command after 'expressir manifest validate --check-references' fails
+  to automatically resolve missing schema paths.
+
+  Examples: # Resolve paths using manifest's existing base directories expressir
+  manifest resolve manifest.yaml -o resolved_manifest.yaml
+  # Resolve with explicit base directories
+  expressir manifest resolve manifest.yaml -o resolved.yaml \
+    --base-dirs /path/to/schemas,/another/path
+  # With verbose output
+  expressir manifest resolve manifest.yaml -o resolved.yaml --verbose
+----
+
+Options:
+
+`--output, -o FILE`:: (Required) Output file path for resolved manifest
+
+`--base-dirs DIRS`:: Base directories for schema search (space-separated). Also
+supports comma-separated for backward compatibility.
++
+Searches for schema files using these patterns:
+schema files named according to schema ID::: `<SCHEMA_ID>.exp`
+schema files named in the STEP module pattern::: `<LOWERCASE_SCHEMA_WO_MIMARM>/{mim,arm}.exp`
++
+[source,sh]
+----
+# Space-separated (preferred)
+--base-dirs /path/to/schemas /another/path
+
+# Comma-separated (backward compatible)
+--base-dirs /path/to/schemas,/another/path
+----
+
+`--verbose`:: Show detailed resolution progress
+
+.Fully resolving a schema manifest
+[example]
+====
+The following command resolves all schemas in the `manifest.yaml` file and writes the
+fully resolved manifest to `resolved_manifest.yaml`.
+
+[source,sh]
+----
+$ expressir manifest resolve manifest.yaml -o resolved.yaml --verbose
+
+Resolving schema paths in: manifest.yaml...
+  Using base directories:
+    - [source 1] ~/src/mn/iso-10303/schemas/
+Attempting to resolve paths...
+Resolving dependencies from 1 root schema(s)...
+  USE FROM action_schema (in mim): ✓ [source 1] resources/action_schema/action_schema.exp
+  REFERENCE FROM basic_attribute_schema (in action_schema): ✓ [source 1] resources/basic_attribute_schema/basic_attribute_schema.exp
+  REFERENCE FROM support_resource_schema (in basic_attribute_schema): ✓ [source 1] resources/support_resource_schema/support_resource_schema.exp
+  REFERENCE FROM support_resource_schema (in action_schema): ✓ [source 1] resources/support_resource_schema/support_resource_schema.exp
+  USE FROM Activity_method_mim (in mim): ✗ not found
+  USE FROM basic_attribute_schema (in mim): ✓ [source 1] resources/basic_attribute_schema/basic_attribute_schema.exp
+  USE FROM management_resources_schema (in mim): ✓ [source 1] resources/management_resources_schema/management_resources_schema.exp
+  ...
+  REFERENCE FROM support_resource_schema (in management_resources_schema): ✓ [source 1] resources/support_resource_schema/support_resource_schema.exp
+✓ Manifest resolved: resolved.yaml
+  Total schemas: 42
+  Resolved schemas: 41
+
+⚠ Unresolved schemas (1):
+  - Activity_method_mim
+
+These schemas could not be found in the search directories.
+You may need to:
+  1. Add more base directories with --base-dirs
+  2. Manually edit resolved.yaml and set their paths
+----
+====
+
+.Resolving a manifest with multiple base directories
+[example]
+====
+[source,sh]
+----
+$ expressir manifest resolve manifest.yaml \
+  -o resolved.yaml \
+  --base-dirs ~/src/mn/iso-10303/schemas/modules \
+              ~/src/mn/iso-10303/schemas/resources/ --verbose
+
+Resolving schema paths in: manifest.yaml...
+  Using base directories:
+    - [source 1]: ~/src/mn/iso-10303/schemas/modules
+    - [source 2]: ~/src/mn/iso-10303/schemas/resources/
+Attempting to resolve paths...
+Resolving dependencies from 1 root schema(s)...
+  Using base directories:
+    - [source 1]: ~/src/mn/iso-10303/schemas/modules
+    - [source 2]: ~/src/mn/iso-10303/schemas/resources
+  USE FROM action_schema (in mim): ✓ [source 2] action_schema/action_schema.exp
+  REFERENCE FROM basic_attribute_schema (in action_schema): ✓ [source 2] basic_attribute_schema/basic_attribute_schema.exp
+  REFERENCE FROM support_resource_schema (in basic_attribute_schema): ✓ [source 2] support_resource_schema/support_resource_schema.exp
+  REFERENCE FROM support_resource_schema (in action_schema): ✓ [source 2] support_resource_schema/support_resource_schema.exp
+  USE FROM Activity_method_mim (in mim): ✓ [source 1] activity_method/mim.exp
+  ...
+  REFERENCE FROM support_resource_schema (in management_resources_schema): ✓ [source 2] support_resource_schema/support_resource_schema.exp
+✓ Manifest resolved: resolved.yaml
+  Total schemas: 42
+  Resolved schemas: 42
+  All schema paths resolved successfully!
+----
+====
+
+
+==== Validating a manifest
+
+A schema manifest can be validated to ensure all referenced schemas are fully
+resolvable and correctly defined.
+
+.`manifest validate` - Validate manifest
+[source,sh]
+----
+expressir manifest validate MANIFEST.yaml [OPTIONS]
+----
+
+[source,sh]
+----
+Usage:
+  expressir manifest validate MANIFEST
+
+Options:
+  [--verbose], [--no-verbose], [--skip-verbose]                             # Show detailed validation results
+                                                                            # Default: false
+  [--check-references], [--no-check-references], [--skip-check-references]  # Validate referential integrity using dependency resolver
+                                                                            # Default: false
+
+Description:
+  Validate a schema manifest file.
+
+  Validation types: - File existence: All schema paths exist on disk - Path
+  completeness: All schemas have paths specified (warnings) - Referential integrity
+  (--check-references): All USE/REFERENCE FROM resolve
+
+  Examples: # Basic validation (file existence and path completeness) expressir manifest
+  validate activity_manifest.yaml # With referential integrity checking expressir
+  manifest validate activity_manifest.yaml --check-references # With verbose output
+  expressir manifest validate activity_manifest.yaml --check-references --verbose
+----
+
+Options:
+
+`--verbose`:: Show detailed validation results
+
+`--check-references`:: Validate referential integrity using dependency resolver
+
+.Validating a manifest to ensure all dependencies are defined
+[example]
+====
+Checking `REFERENCE FROM` and `USE FROM` references to ensure all dependencies
+are defined in EXPRESS schemas included in the manifest:
+
+[source,sh]
+----
+$ expressir manifest validate manifest.yaml --check-references --verbose
+
+Validating manifest: manifest.yaml...
+Checking referential integrity...
+Validating referential integrity for 42 schemas...
+
+  USE FROM action_schema (in Activity_method_mim): ✓ action_schema.exp
+  REFERENCE FROM basic_attribute_schema (in action_schema): ✓ basic_attribute_schema.exp
+...
+  USE FROM action_schema (in mim): ✓ action_schema.exp
+...
+  REFERENCE FROM support_resource_schema (in topology_schema): ✓ support_resource_schema.exp
+✓ Manifest is valid
+  Total schemas: 42
+  Resolved schemas: 42
+----
+====
+
+
+
+=== Ruby API for schema manifests
+
+==== Loading manifests
+
+Load an existing schema manifest from a YAML file:
+
+[source,ruby]
+----
+# Load manifest from file
+manifest = Expressir::SchemaManifest.from_file("schemas.yml")
+
+# Access schema entries
+manifest.schemas.each do |schema_entry|
+  puts "Schema path: #{schema_entry.path}"
+  puts "Schema ID: #{schema_entry.id}" if schema_entry.id
+end
+
+# Get all schema file paths
+schema_paths = manifest.schemas.map(&:path)
+----
+
+==== Creating manifests
+
+Create a new schema manifest programmatically:
+
+[source,ruby]
+----
+# Create an empty manifest
+manifest = Expressir::SchemaManifest.new
+
+# Add schema entries
+manifest.schemas << Expressir::SchemaManifestEntry.new(
+  path: "schemas/action_schema.exp",
+  id: "action_schema"
+)
+
+manifest.schemas << Expressir::SchemaManifestEntry.new(
+  path: "schemas/approval_schema.exp"
+)
+
+# Set base path for the manifest
+manifest.base_path = "/path/to/schemas"
+----
+
+==== Saving manifests
+
+Save a manifest to a file:
+
+[source,ruby]
+----
+# Save to a specific file
+manifest.to_file("output_schemas.yml")
+
+# Save to a path with automatic filename
+manifest.save_to_path("/path/to/output/")
+----
+
+==== Concatenating manifests
+
+Combine multiple manifests:
+
+[source,ruby]
+----
+manifest1 = Expressir::SchemaManifest.from_file("schemas1.yml")
+manifest2 = Expressir::SchemaManifest.from_file("schemas2.yml")
+
+# Concatenate manifests
+combined_manifest = manifest1.concat(manifest2)
+
+# Or use the + operator
+combined_manifest = manifest1 + manifest2
+----
+
+==== Using manifests with parsers
+
+Parse all schemas from a manifest:
+
+[source,ruby]
+----
+# Load manifest
+manifest = Expressir::SchemaManifest.from_file("schemas.yml")
+
+# Get schema file paths
+schema_paths = manifest.schemas.map(&:path)
+
+# Parse all schemas
+repository = Expressir::Express::Parser.from_files(schema_paths)
+
+# With progress tracking
+repository = Expressir::Express::Parser.from_files(schema_paths) do |filename, schemas, error|
+  if error
+    puts "Error loading #{filename}: #{error.message}"
+  else
+    puts "Successfully loaded #{schemas.length} schemas from #{filename}"
+  end
+end
+----
+
+
+
+== LER packages
+
+=== General
+
+LER (LutaML EXPRESS Repository) is a package format for distributing EXPRESS
+schemas and related resources in a single binary file.
+
+EXPRESS schemas often utilize `REFERENCE FROM` or `USE FROM` statements to
+import definitions from other schemas, and those referenced schemas
+can deviate across different versions. Managing these dependencies
+is crucial for maintaining compatibility.
+
+The LER package format helps encapsulate these dependencies, ensuring that all
+required schemas are included and versioned correctly, allowing the package
+to be used reliably in different environments.
+
+LER packages have the `.ler` file extension and are essentially ZIP archives
+containing:
+
+* EXPRESS schema files (`.exp`)
+* Metadata files (`metadata.yaml`)
+* pre-parsed model cache (serialized Ruby objects)
+
+
+=== Creating a package
+
+Expressir provides a command-line interface for creating LER packages from
+an EXPRESS manifest.
+
+Expressir supports building LER packages from EXPRESS schemas using a
+manifest-based workflow.
+
+**Using a manifest (recommended for production)**::
+
+[source,sh]
+----
+# Build from validated manifest
+expressir package build --manifest activity_manifest.yaml activity.ler \
+  --name "Activity Module" \
+  --validate
+----
+
+**Using auto-resolution (quick prototyping)**:
+
+[source,sh]
+----
+# Build from root schema with auto-resolution
+expressir package build schemas/activity/mim.exp activity.ler \
+  --base-dirs ~/schemas/resources ~/schemas/modules \
+  --name "Activity Module" \
+  --validate
+----
+
+Complete manifest workflow:
+
+[source,sh]
+----
+# 1. Create manifest from root schema
+expressir manifest create schemas/activity/mim.exp \
+  -o activity_manifest.yaml \
+  --base-dirs ~/iso-10303/schemas \
+  --name "Activity Module"
+
+# 2. Edit manifest to add missing schema paths
+
+# 3. Validate manifest
+expressir manifest validate activity_manifest.yaml
+
+# 4. Build package from manifest
+expressir package build --manifest activity_manifest.yaml activity.ler
+----
+
+
+Unresolved schemas appear without `path:` field. Edit the manifest to add missing paths.
+
+[source,yaml]
+----
+schemas:
+  - name: action_schema
+    path: /path/to/action_schema.exp
+  - name: Activity_method_mim  # Unresolved - no path
+----
+
+
+.`package build --manifest` - Build from manifest
+[source,sh]
+----
+expressir package build --manifest MANIFEST.yaml OUTPUT.ler [OPTIONS]
+----
+
+See link:docs/_pages/ler-packages#manifest-workflow[LER Packages documentation] for complete details.
+
+
+
+== Benchmarking
+
+=== General
+
+Expressir includes benchmarking tools to measure the performance of parsing and
+processing EXPRESS schemas.
+
+=== Benchmarking with manifests
+
+[source,sh]
+----
+# Benchmark all schemas in a manifest
+expressir benchmark schemas.yml --verbose
+
+# Benchmark with caching
+expressir benchmark-cache schemas.yml --cache_path /tmp/cache.bin
+----
+
+
+== Coverage reporting
+
+=== General
+
+Expressir provides coverage analysis tools to evaluate the documentation
+coverage of EXPRESS schemas.
+
+=== Coverage analysis with manifests
+
+[source,sh]
+----
+# Analyze coverage for all schemas in manifest
+expressir coverage schemas.yml
+
+# With output format and exclusions
+expressir coverage schemas.yml --format json --exclude=TYPE:SELECT
+----
+
+
+
+== EXPRESS Changes
+
+=== General
+
+Expressir provides the `Changes` module for managing and tracking changes to
+EXPRESS schemas across versions. This module implements the EXPRESS Changes YAML
+format defined by ELF (Express Language Foundation) (ELF 5005).
+
+The Changes module enables:
+
+* Loading and saving schema change records from/to YAML files
+* Programmatic creation and manipulation of change records
+* Smart version handling (replace same version, add new version)
+* Support for all change types: additions, modifications, deletions
+* Support for mapping changes in ARM/MIM schemas
+* Programmatic import from Express Engine comparison XML files
+
+
+=== Importing from Express Engine XML programmatically
+
+==== General
+
+Expressir provides programmatic API access for parsing Express Engine comparison XML
+and converting it to EXPRESS Changes format.
+
+Parse Eengine XML into a structured object model:
+
+[source,ruby]
+----
+require "expressir/eengine/compare_report"
+
+# Parse from XML string
+xml_content = File.read("comparison.xml")
+report = Expressir::Eengine::CompareReport.from_xml(xml_content)
+
+# Or parse from file
+report = Expressir::Eengine::CompareReport.from_file("comparison.xml")
+----
+
+Convert Eengine XML directly to EXPRESS Changes format:
+
+[source,ruby]
+----
+require "expressir/commands/changes_import_eengine"
+
+# Parse XML and convert to SchemaChange in one step
+xml_content = File.read("comparison.xml")
+change_schema = Expressir::Commands::ChangesImportEengine.from_xml(
+  xml_content,
+  "aic_csg",      # schema name
+  "1.0"           # version
+)
+
+# Use the SchemaChange object
+change_schema.versions.first.additions.each do |item|
+  puts "#{item.type}: #{item.name}"
+  puts "  interfaced_items: #{item.interfaced_items}" if item.interfaced_items
+end
+
+# Save to file
+change_schema.to_file("output.changes.yaml")
+----
+
+=== Compare modes
+
+==== General
+
+Expressir automatically detects and parses all three Eengine XML modes.
+
+[source,ruby]
+----
+# All modes are handled automatically
+arm_report = Expressir::Eengine::CompareReport.from_file("arm_comparison.xml")
+mim_report = Expressir::Eengine::CompareReport.from_file("mim_comparison.xml")
+schema_report = Expressir::Eengine::CompareReport.from_file("schema_comparison.xml")
+
+puts arm_report.mode     # => "arm"
+puts mim_report.mode     # => "mim"
+puts schema_report.mode  # => "schema"
+----
+
+==== Schema mode
+
+`<schema.changes>` with `<schema.additions>`, `<schema.modifications>`, `<schema.deletions>`
+
+[example]
+====
+[source,xml]
+----
+<schema.changes schema_name="aic_csg">
+  <schema.additions>
+    <modified.object type="ENTITY" name="new_entity" />
+  </schema.additions>
+  <schema.modifications>
+    <modified.object type="TYPE" name="modified_type" />
+  </schema.modifications>
+  <schema.deletions>
+    <modified.object type="FUNCTION" name="removed_function" />
+  </schema.deletions>
+</schema.changes>
+----
+====
+
+==== ARM mode
+
+`<arm.changes>` root element with `<arm.additions>`,
+`<arm.modifications>`, and `<arm.deletions>` sections
+
+[example]
+====
+[source,xml]
+----
+<arm.changes schema_name="example_arm">
+  <arm.additions>
+    <modified.object type="ENTITY" name="new_arm_entity" />
+  </arm.additions>
+</arm.changes>
+----
+====
+
+
+==== MIM mode
+
+`<mim.changes>` root element with `<mim.additions>`,
+`<mim.modifications>`, and `<mim.deletions>` sections
+
+[example]
+====
+[source,xml]
+----
+<mim.changes schema_name="example_mim">
+  <mim.additions>
+    <modified.object type="ENTITY" name="new_mim_entity" />
+  </mim.additions>
+</mim.changes>
+----
+====
+
+=== Interface changes
+
+The eengine XML format tracks interface changes (USE_FROM, REFERENCE_FROM) with
+the `interfaced.items` attribute. This attribute lists the specific items being
+imported or referenced from another schema.
+
+.Example XML with interface changes
+[example]
+====
+[source,xml]
+----
+<schema.changes schema_name="aic_csg">
+  <schema.additions>
+    <modified.object type="USE_FROM" name="geometric_model_schema"
+      interfaced.items="convex_hexahedron" />
+
+    <modified.object type="USE_FROM" name="geometric_model_schema"
+      interfaced.items="cyclide_segment_solid" />
+
+    <modified.object type="REFERENCE_FROM" name="measure_schema"
+      interfaced.items="length_measure" />
+  </schema.additions>
+</schema.changes>
+----
+
+This will be converted to EXPRESS Changes YAML as:
+
+[source,yaml]
+----
+schema: aic_csg
+versions:
+- version: 2
+  description: Changes from eengine comparison
+  additions:
+  - type: USE_FROM
+    name: geometric_model_schema
+    interfaced_items: convex_hexahedron
+  - type: USE_FROM
+    name: geometric_model_schema
+    interfaced_items: cyclide_segment_solid
+  - type: REFERENCE_FROM
+    name: measure_schema
+    interfaced_items: length_measure
+----
+====
+
+Eengine XML files track interface changes (USE_FROM, REFERENCE_FROM) with the
+`interfaced.items` attribute:
+
+[source,ruby]
+----
+report = Expressir::Eengine::CompareReport.from_file("comparison.xml")
+
+# Find interface changes
+report.additions&.modified_objects&.each do |obj|
+  if obj.type == "USE_FROM" || obj.type == "REFERENCE_FROM"
+    puts "#{obj.type} #{obj.name}"
+    puts "  Items: #{obj.interfaced_items}" if obj.interfaced_items
+  end
+end
+----
+
+
+=== Supported change types
+
+The import command recognizes all standard EXPRESS construct types:
+
+* `ENTITY` - Entity definitions
+* `TYPE` - Type definitions
+* `FUNCTION` - Function definitions
+* `PROCEDURE` - Procedure definitions
+* `RULE` - Rule definitions
+* `CONSTANT` - Constant definitions
+* `USE_FROM` - Interface imports (preserves `interfaced.items`)
+* `REFERENCE_FROM` - Interface references (preserves `interfaced.items`)
+
+
+=== Reading change files
+
+Load an existing schema change file:
+
+[source,ruby]
+----
+require "expressir/changes"
+
+# Load from file
+change_schema = Expressir::Changes::SchemaChange.from_file("schema.changes.yaml")
+
+# Access schema name
+puts "Schema: #{change_schema.schema}"
+
+# Iterate through change versions
+change_schema.versions.each do |version|
+  puts "Version #{version.version}: #{version.description}"
+
+  # Access changes by type
+  puts "  Additions: #{version.additions.size}" if version.additions
+  puts "  Modifications: #{version.modifications.size}" if version.modifications
+  puts "  Deletions: #{version.deletions.size}" if version.deletions
+end
+----
+
+=== Creating change records
+
+Create a new change schema programmatically:
+
+[source,ruby]
+----
+# Create a new empty change schema
+change_schema = Expressir::Changes::SchemaChange.new(schema: "my_schema")
+
+# Create change items
+new_entity = Expressir::Changes::ItemChange.new(
+  type: "ENTITY",
+  name: "new_entity_name"
+)
+
+modified_function = Expressir::Changes::ItemChange.new(
+  type: "FUNCTION",
+  name: "modified_function",
+  description: "Updated parameters"
+)
+
+# Add a change version
+changes = {
+  additions: [new_entity],
+  modifications: [modified_function],
+  deletions: []
+}
+
+change_schema.add_or_update_version(
+  "2",
+  "Added new entity and modified function",
+  changes
+)
+
+# Save to file
+change_schema.to_file("my_schema.changes.yaml")
+----
+
+=== Updating existing change files
+
+The `add_or_update_version` method provides smart handling:
+
+* **Same version**: Replaces the existing version
+* **Different version**: Adds a new version
+
+[source,ruby]
+----
+# Load existing change file
+change_schema = Expressir::Changes::SchemaChange.from_file("schema.changes.yaml")
+
+# Add a new version
+changes = {
+  modifications: [
+    Expressir::Changes::ItemChange.new(type: "TYPE", name: "updated_type")
+  ]
+}
+change_schema.add_or_update_version("3", "Modified type definition", changes)
+
+# Or replace existing version
+change_schema.add_or_update_version("2", "Revised description", changes)
+
+# Save changes
+change_schema.to_file("schema.changes.yaml")
+----
+
+=== Change item fields
+
+Change items support the following fields:
+
+`type`:: (Required) The EXPRESS construct type (ENTITY, TYPE, FUNCTION, etc.)
+`name`:: (Required) The name of the construct
+`description`:: (Optional) Additional details about the change
+`interfaced_items`:: (Optional) For REFERENCE_FROM items
+
+[source,ruby]
+----
+item = Expressir::Changes::ItemChange.new(
+  type: "REFERENCE_FROM",
+  name: "measure_schema",
+  interfaced_items: "length_measure"
+)
+----
+
+=== Change version fields
+
+Change versions support categorizing changes into:
+
+`additions`:: New elements added to the schema
+`modifications`:: Existing elements that were modified
+`deletions`:: Elements removed from the schema
+`mappings`:: Mapping-related changes (for ARM/MIM modules)
+`changes`:: General changes (alternative to mapping)
+
+[source,ruby]
+----
+version = Expressir::Changes::VersionChange.new(
+  version: "2",
+  description: "Added support for new functionality",
+  additions: [item1, item2],
+  modifications: [item3],
+  deletions: [item4],
+  mappings: [mapping_change]
+)
+----
+
+=== Mapping changes
+
+For ARM/MIM schema mappings, use `MappingChange`:
+
+[source,ruby]
+----
+mapping_change = Expressir::Changes::MappingChange.new(
+  change: "Entity_name ENTITY mapping updated"
+)
+----
+
+=== Example change file format
+
+[source,yaml]
+----
+---
+schema: support_resource_schema
+versions:
+- version: 2
+  description: |-
+    The definitions of the following EXPRESS entity data types were modified:
+
+    * action;
+    * action_directive;
+    * action_method.
+  additions:
+  - type: FUNCTION
+    name: type_check_function
+  modifications:
+  - type: FUNCTION
+    name: bag_to_set
+- version: 4
+  description: |-
+    Added support for external element references.
+  additions:
+  - type: ENTITY
+    name: component_path_shape_aspect
+  modifications:
+  - type: FUNCTION
+    name: type_check_function
+----
+
+== Contributing
+
+First, thank you for contributing! We love pull requests from everyone. By
+participating in this project, you hereby grant
+https://www.ribose.com[Ribose Inc.] the right to grant or transfer an unlimited
+number of non exclusive licenses or sub-licenses to third parties, under the
+copyright covering the contribution to use the contribution by all means.
+
+Here are a few technical guidelines to follow:
+
+* Open an https://github.com/lutaml/expressir/issues[issues] to discuss a new
+  feature.
+* Write tests to support your new feature.
+* Make sure the entire test suite passes locally and on CI.
+* Open a Pull Request.
+* https://github.com/thoughtbot/guides/tree/master/protocol/git#write-a-feature[Squash your commits] after receiving feedback.
+* Party!
+
+
+== Documentation
+
+Expressir provides detailed documentation on various aspects of its functionality:
+
+* link:docs/benchmarking.adoc[Benchmarking]: Learn about Expressir's built-in
+capabilities for measuring schema loading performance, particularly useful for
+large schemas or when optimizing performance.
+
+* link:docs/liquid_drops.adoc[Liquid Integration]: Documentation on how to use
+Expressir models with Liquid templates for flexible document generation.
+
+== License
+
+Expressir is distributed under the BSD 2-clause license.
+
+NOTE: Expressir originally contained some code from the NIST Reeper project but no
+longer contains them.
+
+The https://www.nist.gov/services-resources/software/reeper[NIST Reeper license]
+is reproduced below:
+
+[quote]
+____
+This software was funded by NIST and developed by EuroSTEP.
+Pursuant to title 17 Section 105 of the United States Code this
+software is not subject to copyright protection and is in the public
+domain.
+
+We would appreciate acknowledgment if the software is used. Links to
+non-Federal Government Web sites do not imply NIST endorsement of any
+particular product, service, organization, company, information
+provider, or content.
+____
+
+
+== Credits
+
+Copyright Ribose Inc.

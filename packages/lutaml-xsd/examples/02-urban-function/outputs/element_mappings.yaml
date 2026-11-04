@@ -1,0 +1,413 @@
+---
+elements:
+  gen:
+  - source: dateAttribute
+    target: gen:dateAttribute
+  - source: doubleAttribute
+    target: gen:doubleAttribute
+  - source: genericAttributeSet
+    target: gen:genericAttributeSet
+  - source: intAttribute
+    target: gen:intAttribute
+  - source: measureAttribute
+    target: gen:measureAttribute
+  - source: stringAttribute
+    target: gen:stringAttribute
+  - source: uriAttribute
+    target: gen:uriAttribute
+  uro:
+  - source: bldgDataQualityAttribute
+    source_package: bldg
+    source_class: AbstractBuilding
+    target: uro:DataQualityAttribute
+  - source: bldgDisasterRiskAttribute
+    source_package: bldg
+    source_class: AbstractBuilding
+    target: uro:DisasterRiskAttribute
+  - source: bldgDmAttribute
+    source_package: bldg
+    source_class: AbstractBuilding
+    target: uro:DmAttribute
+  - source: bldgFacilityAttribute
+    source_package: bldg
+    source_class: AbstractBuilding
+    target: uro:FacilityAttribute
+  - source: bldgFacilityIdAttribute
+    source_package: bldg
+    source_class: AbstractBuilding
+    target: uro:FacilityIdAttribute
+  - source: bldgFacilityTypeAttribute
+    source_package: bldg
+    source_class: AbstractBuilding
+    target: uro:FacilityTypeAttribute
+  - source: bldgKeyValuePairAttribute
+    source_package: bldg
+    source_class: AbstractBuilding
+    target: uro:KeyValuePairAttribute
+  - source: bldgRealEstateIDAttribute
+    source_package: bldg
+    source_class: AbstractBuilding
+    target: uro:RealEstateIDAttribute
+  - source: bldgUsecaseAttribute
+    source_package: bldg
+    source_class: AbstractBuilding
+    target: uro:BuildingUsecaseAttribute
+  - source: bridBaseAttribute
+    source_package: brid
+    source_class: AbstractBridge
+    target: uro:ConstructionBaseAttribute
+  - source: bridDataQualityAttribute
+    source_package: brid
+    source_class: AbstractBridge
+    target: uro:DataQualityAttribute
+  - source: bridDisasterRiskAttribute
+    source_package: brid
+    source_class: AbstractBridge
+    target: uro:DisasterRiskAttribute
+  - source: bridDmAttribute
+    source_package: brid
+    source_class: AbstractBridge
+    target: uro:DmAttribute
+  - source: bridFacilityAttribute
+    source_package: brid
+    source_class: AbstractBridge
+    target: uro:FacilityAttribute
+  - source: bridFacilityIdAttribute
+    source_package: brid
+    source_class: AbstractBridge
+    target: uro:FacilityIdAttribute
+  - source: bridFacilityTypeAttribute
+    source_package: brid
+    source_class: AbstractBridge
+    target: uro:FacilityTypeAttribute
+  - source: bridFunctionalAttribute
+    source_package: brid
+    source_class: AbstractBridge
+    target: uro:BridgeFunctionalAttribute
+  - source: bridKeyValuePairAttribute
+    source_package: brid
+    source_class: AbstractBridge
+    target: uro:KeyValuePairAttribute
+  - source: bridRiskAssessmentAttribute
+    source_package: brid
+    source_class: AbstractBridge
+    target: uro:ConstructionRiskAssessmentAttribute
+  - source: bridStructureAttribute
+    source_package: brid
+    source_class: AbstractBridge
+    target: uro:BridgeStructureAttribute
+  - source: buildingDetailAttribute
+    source_package: bldg
+    source_class: AbstractBuilding
+    target: uro:BuildingDetailAttribute
+  - source: buildingIDAttribute
+    source_package: bldg
+    source_class: AbstractBuilding
+    target: uro:BuildingIDAttribute
+  - source: cityFurnitureDetailAttribute
+    source_package: frn
+    source_class: CityFurniture
+    target: uro:CityFurnitureDetailAttribute
+  - source: demDataQualityAttribute
+    source_package: dem
+    source_class: ReliefFeature
+    target: uro:DataQualityAttribute
+  - source: demDmAttribute
+    source_package: dem
+    source_class: ReliefComponent
+    target: uro:DmAttribute
+  - source: demKeyValuePairAttribute
+    source_package: dem
+    source_class: ReliefFeature
+    target: uro:KeyValuePairAttribute
+  - source: floodingRiskAttribute
+    source_package: wtr
+    source_class: WaterBody
+    target: uro:FloodingRiskAttribute
+  - source: frnDataQualityAttribute
+    source_package: frn
+    source_class: CityFurniture
+    target: uro:DataQualityAttribute
+  - source: frnDmAttribute
+    source_package: frn
+    source_class: CityFurniture
+    target: uro:DmAttribute
+  - source: frnFacilityAttribute
+    source_package: frn
+    source_class: CityFurniture
+    target: uro:FacilityAttribute
+  - source: frnFacilityIdAttribute
+    source_package: frn
+    source_class: CityFurniture
+    target: uro:FacilityIdAttribute
+  - source: frnFacilityTypeAttribute
+    source_package: frn
+    source_class: CityFurniture
+    target: uro:FacilityTypeAttribute
+  - source: frnKeyValuePairAttribute
+    source_package: frn
+    source_class: CityFurniture
+    target: uro:KeyValuePairAttribute
+  - source: ifcBoundarySurfaceAttribute
+    source_package: bldg
+    source_class: BoundarySurface
+    target: uro:IfcAttribute
+  - source: ifcBuildingAttribute
+    source_package: bldg
+    source_class: AbstractBuilding
+    target: uro:IfcAttribute
+  - source: ifcBuildingFurnitureAttribute
+    source_package: bldg
+    source_class: BuildingFurniture
+    target: uro:IfcAttribute
+  - source: ifcBuildingInstallationAttribute
+    source_package: bldg
+    source_class: BuildingInstallation
+    target: uro:IfcAttribute
+  - source: ifcBuildingStoreyAttribute
+    source_package: grp
+    source_class: CityObjectGroup
+    target: uro:IfcAttribute
+  - source: ifcIntBuildingInstallationAttribute
+    source_package: bldg
+    source_class: IntBuildingInstallation
+    target: uro:IfcAttribute
+  - source: ifcLandUseAttribute
+    source_package: luse
+    source_class: LandUse
+    target: uro:IfcAttribute
+  - source: ifcOpeningAttribute
+    source_package: bldg
+    source_class: Opening
+    target: uro:IfcAttribute
+  - source: ifcRoomAttribute
+    source_package: bldg
+    source_class: Room
+    target: uro:IfcAttribute
+  - source: indoorBoundarySurfaceAttribute
+    source_package: bldg
+    source_class: BoundarySurface
+    target: uro:IndoorAttribute
+  - source: indoorBuildingAttribute
+    source_package: bldg
+    source_class: AbstractBuilding
+    target: uro:IndoorAttribute
+  - source: indoorFurnitureAttribute
+    source_package: bldg
+    source_class: BuildingFurniture
+    target: uro:IndoorAttribute
+  - source: indoorIntInstallationAttribute
+    source_package: bldg
+    source_class: IntBuildingInstallation
+    target: uro:IndoorAttribute
+  - source: indoorOpeningAttribute
+    source_package: bldg
+    source_class: Opening
+    target: uro:IndoorAttribute
+  - source: indoorRoomAttribute
+    source_package: bldg
+    source_class: Room
+    target: uro:IndoorAttribute
+  - source: indoorStoreyAttribute
+    source_package: grp
+    source_class: CityObjectGroup
+    target: uro:IndoorAttribute
+  - source: landUseDetailAttribute
+    source_package: luse
+    source_class: LandUse
+    target: uro:LandUseDetailAttribute
+  - source: largeCustomerFacilityAttribute
+    source_package: bldg
+    source_class: AbstractBuilding
+    target: uro:LargeCustomerFacilityAttribute
+  - source: luseDataQualityAttribute
+    source_package: luse
+    source_class: LandUse
+    target: uro:DataQualityAttribute
+  - source: luseDmAttribute
+    source_package: luse
+    source_class: LandUse
+    target: uro:DmAttribute
+  - source: luseFacilityAttribute
+    source_package: luse
+    source_class: LandUse
+    target: uro:FacilityAttribute
+  - source: luseFacilityIdAttribute
+    source_package: luse
+    source_class: LandUse
+    target: uro:FacilityIdAttribute
+  - source: luseFacilityTypeAttribute
+    source_package: luse
+    source_class: LandUse
+    target: uro:FacilityTypeAttribute
+  - source: luseKeyValuePairAttribute
+    source_package: luse
+    source_class: LandUse
+    target: uro:KeyValuePairAttribute
+  - source: pointCloud
+    source_package: core
+    source_class: CityObject
+    target: uro:AbstractPointCloud
+  - source: railwayRouteAttribute
+    source_package: tran
+    source_class: Railway
+    target: uro:RailwayRouteAttribute
+  - source: railwayTrackAttribute
+    source_package: tran
+    source_class: TrafficArea
+    target: uro:RailwayTrackAttribute
+  - source: roadStatus
+    source_package: tran
+    source_class: Road
+    target: uro:RoadType
+  - source: roadStructureAttribute
+    source_package: tran
+    source_class: Road
+    target: uro:RoadStructureAttribute
+  - source: squareUrbanPlanAttribute
+    source_package: tran
+    source_class: Square
+    target: uro:SquareUrbanPlanAttribute
+  - source: trackAttribute
+    source_package: tran
+    source_class: Track
+    target: uro:TrackAttribute
+  - source: trafficAreaStructureAttribute
+    source_package: tran
+    source_class: TrafficArea
+    target: uro:TrafficAreaStructureAttribute
+  - source: trafficVolumeAttribute
+    source_package: tran
+    source_class: Road
+    target: uro:TrafficVolumeAttribute
+  - source: tranDataQualityAttribute
+    source_package: tran
+    source_class: TransportationComplex
+    target: uro:DataQualityAttribute
+  - source: tranDmAttribute
+    source_package: tran
+    source_class: TransportationComplex
+    target: uro:DmAttribute
+  - source: tranFacilityAttribute
+    source_package: tran
+    source_class: TransportationComplex
+    target: uro:FacilityAttribute
+  - source: tranFacilityIdAttribute
+    source_package: tran
+    source_class: TransportationComplex
+    target: uro:FacilityIdAttribute
+  - source: tranFacilityTypeAttribute
+    source_package: tran
+    source_class: TransportationComplex
+    target: uro:FacilityTypeAttribute
+  - source: tranKeyValuePairAttribute
+    source_package: tran
+    source_class: TransportationComplex
+    target: uro:KeyValuePairAttribute
+  - source: tranUsecaseAttribute
+    source_package: tran
+    source_class: TransportationComplex
+    target: uro:TrafficObjectUsecaseAttribute
+  - source: tunBaseAttribute
+    source_package: tun
+    source_class: AbstractTunnel
+    target: uro:ConstructionBaseAttribute
+  - source: tunDataQualityAttribute
+    source_package: tun
+    source_class: AbstractTunnel
+    target: uro:DataQualityAttribute
+  - source: tunDisasterRiskAttribute
+    source_package: tun
+    source_class: AbstractTunnel
+    target: uro:DisasterRiskAttribute
+  - source: tunDmAttribute
+    source_package: tun
+    source_class: AbstractTunnel
+    target: uro:DmAttribute
+  - source: tunFacilityAttribute
+    source_package: tun
+    source_class: AbstractTunnel
+    target: uro:FacilityAttribute
+  - source: tunFacilityIdAttribute
+    source_package: tun
+    source_class: AbstractTunnel
+    target: uro:FacilityIdAttribute
+  - source: tunFacilityTypeAttribute
+    source_package: tun
+    source_class: AbstractTunnel
+    target: uro:FacilityTypeAttribute
+  - source: tunFunctionalAttribute
+    source_package: tun
+    source_class: AbstractTunnel
+    target: uro:TunnelFunctionalAttribute
+  - source: tunKeyValuePairAttribute
+    source_package: tun
+    source_class: AbstractTunnel
+    target: uro:KeyValuePairAttribute
+  - source: tunRiskAssessmentAttribute
+    source_package: tun
+    source_class: AbstractTunnel
+    target: uro:ConstructionRiskAssessmentAttribute
+  - source: tunStructureAttribute
+    source_package: tun
+    source_class: AbstractTunnel
+    target: uro:TunnelStructureAttribute
+  - source: vegDataQualityAttribute
+    source_package: veg
+    source_class: VegetationObject
+    target: uro:DataQualityAttribute
+  - source: vegDmAttribute
+    source_package: veg
+    source_class: VegetationObject
+    target: uro:DmAttribute
+  - source: vegFacilityAttribute
+    source_package: veg
+    source_class: VegetationObject
+    target: uro:FacilityAttribute
+  - source: vegFacilityIdAttribute
+    source_package: veg
+    source_class: VegetationObject
+    target: uro:FacilityIdAttribute
+  - source: vegFacilityTypeAttribute
+    source_package: veg
+    source_class: VegetationObject
+    target: uro:FacilityTypeAttribute
+  - source: vegKeyValuePairAttribute
+    source_package: veg
+    source_class: VegetationObject
+    target: uro:KeyValuePairAttribute
+  - source: waterBodyDetailAttribute
+    source_package: wtr
+    source_class: WaterBody
+    target: uro:WaterBodyDetailAttribute
+  - source: wtrDataQualityAttribute
+    source_package: wtr
+    source_class: WaterBody
+    target: uro:DataQualityAttribute
+  - source: wtrDmAttribute
+    source_package: wtr
+    source_class: WaterBody
+    target: uro:DmAttribute
+  - source: wtrFacilityAttribute
+    source_package: wtr
+    source_class: WaterBody
+    target: uro:FacilityAttribute
+  - source: wtrFacilityIdAttribute
+    source_package: wtr
+    source_class: WaterBody
+    target: uro:FacilityIdAttribute
+  - source: wtrFacilityTypeAttribute
+    source_package: wtr
+    source_class: WaterBody
+    target: uro:FacilityTypeAttribute
+  - source: wtrKeyValuePairAttribute
+    source_package: wtr
+    source_class: WaterBody
+    target: uro:KeyValuePairAttribute
+  urf:
+  - source: dataQualityAttribute
+    target: uro:DataQualityAttribute
+  - source: keyValuePairAttribute
+    target: uro:KeyValuePairAttribute
+  - source: urfDmAttribute
+    target: uro:DmAttribute

@@ -1,0 +1,1040 @@
+---
+layout: default
+title: Testing strategies
+parent: Advanced topics
+nav_order: 3
+---
+= Testing strategies
+:toc:
+:toclevels: 3
+
+== Purpose
+
+This document provides comprehensive guidance on testing strategies when working
+with lutaml-xsd, including unit testing XSD parsing, testing schema mappings,
+validating type resolution, testing package creation, RSpec integration
+patterns, and best practices for test fixtures.
+
+== General
+
+Testing XSD-based applications presents unique challenges: schemas are complex,
+dependencies can be intricate, and type resolution needs careful validation.
+lutaml-xsd provides multiple testing strategies to ensure your schema
+processing code works correctly.
+
+This guide covers:
+
+* Unit testing individual schema parsing
+* Testing schema location mappings
+* Validating type resolution across namespaces
+* Testing package creation and loading
+* RSpec integration patterns
+* Test fixture organization
+* Performance testing strategies
+* Continuous integration setup
+
+== Unit testing XSD parsing
+
+=== General
+
+Unit testing focuses on parsing individual XSD files and validating the parsed
+structure matches expectations.
+
+=== Testing basic schema parsing
+
+.Basic schema parsing test
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+require 'rspec'
+
+RSpec.describe 'XSD Schema Parsing' do
+  describe 'simple schema' do
+    let(:xsd_content) do
+      <<~XSD
+        <?xml version="1.0" encoding="UTF-8"?>
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                   targetNamespace="http://example.org/test">
+          <xs:element name="TestElement" type="xs:string"/>
+          <xs:simpleType name="TestType">
+            <xs:restriction base="xs:integer">
+              <xs:minInclusive value="1"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:schema>
+      XSD
+    end
+
+    subject(:schema) { Lutaml::Xsd.parse(xsd_content) }
+
+    it 'parses the schema successfully' do
+      expect(schema).to be_a(Lutaml::Xsd::Schema)
+    end
+
+    it 'extracts the target namespace' do
+      expect(schema.target_namespace).to eq('http://example.org/test')
+    end
+
+    it 'finds the element definition' do
+      expect(schema.element.size).to eq(1)
+      expect(schema.element.first.name).to eq('TestElement')
+      expect(schema.element.first.type).to eq('xs:string')
+    end
+
+    it 'finds the simple type definition' do
+      expect(schema.simple_type.size).to eq(1)
+      expect(schema.simple_type.first.name).to eq('TestType')
+    end
+  end
+end
+----
+====
+
+=== Testing complex type structures
+
+.Testing complex types with sequences
+[example]
+====
+[source,ruby]
+----
+RSpec.describe 'Complex Type Parsing' do
+  let(:xsd_content) do
+    <<~XSD
+      <?xml version="1.0" encoding="UTF-8"?>
+      <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+        <xs:complexType name="PersonType">
+          <xs:sequence>
+            <xs:element name="firstName" type="xs:string"/>
+            <xs:element name="lastName" type="xs:string"/>
+            <xs:element name="age" type="xs:integer" minOccurs="0"/>
+          </xs:sequence>
+          <xs:attribute name="id" type="xs:string" use="required"/>
+        </xs:complexType>
+      </xs:schema>
+    XSD
+  end
+
+  subject(:schema) { Lutaml::Xsd.parse(xsd_content) }
+
+  describe 'PersonType complex type' do
+    let(:person_type) { schema.complex_type.first }
+
+    it 'has correct name' do
+      expect(person_type.name).to eq('PersonType')
+    end
+
+    it 'has a sequence compositor' do
+      expect(person_type.sequence).to be_a(Lutaml::Xsd::Sequence)
+    end
+
+    it 'contains three elements in sequence' do
+      elements = person_type.sequence.element
+      expect(elements.size).to eq(3)
+
+      expect(elements[0].name).to eq('firstName')
+      expect(elements[1].name).to eq('lastName')
+      expect(elements[2].name).to eq('age')
+    end
+
+    it 'handles optional elements correctly' do
+      age_element = person_type.sequence.element[2]
+      expect(age_element.min_occurs).to eq('0')
+    end
+
+    it 'has required attribute' do
+      attributes = person_type.attribute
+      expect(attributes.size).to eq(1)
+      expect(attributes.first.name).to eq('id')
+      expect(attributes.first.use).to eq('required')
+    end
+  end
+end
+----
+====
+
+=== Testing schema imports and includes
+
+.Testing import/include handling
+[example]
+====
+[source,ruby]
+----
+RSpec.describe 'Schema Imports' do
+  let(:base_dir) { File.join(__dir__, 'fixtures') }
+
+  let(:base_schema_path) { File.join(base_dir, 'base.xsd') }
+  let(:importing_schema_path) { File.join(base_dir, 'importing.xsd') }
+
+  before do
+    # Create fixture files
+    FileUtils.mkdir_p(base_dir)
+
+    File.write(base_schema_path, <<~XSD)
+      <?xml version="1.0" encoding="UTF-8"?>
+      <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                 targetNamespace="http://example.org/base">
+        <xs:complexType name="BaseType">
+          <xs:sequence>
+            <xs:element name="id" type="xs:string"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:schema>
+    XSD
+
+    File.write(importing_schema_path, <<~XSD)
+      <?xml version="1.0" encoding="UTF-8"?>
+      <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                 xmlns:base="http://example.org/base"
+                 targetNamespace="http://example.org/extended">
+        <xs:import namespace="http://example.org/base"
+                   schemaLocation="base.xsd"/>
+
+        <xs:complexType name="ExtendedType">
+          <xs:complexContent>
+            <xs:extension base="base:BaseType">
+              <xs:sequence>
+                <xs:element name="name" type="xs:string"/>
+              </xs:sequence>
+            </xs:extension>
+          </xs:complexContent>
+        </xs:complexType>
+      </xs:schema>
+    XSD
+  end
+
+  after do
+    FileUtils.rm_rf(base_dir)
+  end
+
+  it 'parses schema with imports' do
+    content = File.read(importing_schema_path)
+    schema = Lutaml::Xsd.parse(
+      content,
+      location: base_dir
+    )
+
+    expect(schema.imports.size).to eq(1)
+    expect(schema.imports.first.namespace).to eq('http://example.org/base')
+  end
+end
+----
+====
+
+== Testing schema mappings
+
+=== General
+
+Schema location mappings are critical for resolving imports and includes.
+Testing ensures mappings work correctly under various scenarios.
+
+=== Testing basic mappings
+
+.Testing schema location mappings
+[example]
+====
+[source,ruby]
+----
+RSpec.describe 'Schema Location Mappings' do
+  let(:config) do
+    {
+      'files' => ['main.xsd'],
+      'schema_location_mappings' => [
+        {
+          'from' => 'http://example.org/remote.xsd',
+          'to' => 'fixtures/local.xsd'
+        }
+      ]
+    }
+  end
+
+  subject(:repository) do
+    repo = Lutaml::Xsd::SchemaRepository.new
+    repo.instance_variable_set(:@files, config['files'])
+
+    mappings = config['schema_location_mappings'].map do |m|
+      Lutaml::Xsd::SchemaLocationMapping.new(
+        from: m['from'],
+        to: m['to']
+      )
+    end
+    repo.instance_variable_set(:@schema_location_mappings, mappings)
+
+    repo
+  end
+
+  it 'has correct mappings configured' do
+    expect(repository.schema_location_mappings.size).to eq(1)
+
+    mapping = repository.schema_location_mappings.first
+    expect(mapping.from).to eq('http://example.org/remote.xsd')
+    expect(mapping.to).to eq('fixtures/local.xsd')
+  end
+
+  it 'converts mappings to glob format' do
+    glob_mappings = repository.schema_location_mappings.map(&:to_glob_format)
+
+    expect(glob_mappings).to be_an(Array)
+    expect(glob_mappings.first[:from]).to eq('http://example.org/remote.xsd')
+    expect(glob_mappings.first[:to]).to eq('fixtures/local.xsd')
+  end
+end
+----
+====
+
+=== Testing regex pattern mappings
+
+.Testing pattern-based mappings
+[example]
+====
+[source,ruby]
+----
+RSpec.describe 'Pattern Mappings' do
+  let(:mapping) do
+    Lutaml::Xsd::SchemaLocationMapping.new(
+      from: '/^http:\/\/schemas\.opengis\.net\/(.+)$/',
+      to: 'vendor/ogc/\1'
+    )
+  end
+
+  describe 'regex pattern conversion' do
+    let(:glob_format) { mapping.to_glob_format }
+
+    it 'converts from string to regex' do
+      expect(glob_format[:from]).to be_a(Regexp)
+      expect(glob_format[:from].source).to eq('^http://schemas\.opengis\.net/(.+)$')
+    end
+
+    it 'preserves to pattern' do
+      expect(glob_format[:to]).to eq('vendor/ogc/\1')
+    end
+
+    it 'matches expected URLs' do
+      test_url = 'http://schemas.opengis.net/gml/3.2.1/gml.xsd'
+      expect(test_url).to match(glob_format[:from])
+    end
+
+    it 'replaces with correct path' do
+      test_url = 'http://schemas.opengis.net/gml/3.2.1/gml.xsd'
+      result = test_url.gsub(glob_format[:from], glob_format[:to])
+
+      expect(result).to eq('vendor/ogc/gml/3.2.1/gml.xsd')
+    end
+  end
+end
+----
+====
+
+== Testing type resolution
+
+=== General
+
+Type resolution is a core feature requiring thorough testing to ensure types
+are found correctly across namespaces.
+
+=== Testing qualified name resolution
+
+.Testing type resolution
+[example]
+====
+[source,ruby]
+----
+RSpec.describe 'Type Resolution' do
+  let(:repository) do
+    repo = Lutaml::Xsd::SchemaRepository.from_yaml_file(
+      'spec/fixtures/config.yml'
+    )
+    repo.parse.resolve
+  end
+
+  describe 'finding types by qualified name' do
+    it 'resolves prefixed qualified name' do
+      result = repository.find_type('gml:AbstractFeatureType')
+
+      expect(result).to be_a(Lutaml::Xsd::TypeResolutionResult)
+      expect(result.resolved?).to be true
+      expect(result.local_name).to eq('AbstractFeatureType')
+      expect(result.namespace).to match(/opengis\.net\/gml/)
+    end
+
+    it 'resolves Clark notation' do
+      result = repository.find_type(
+        '{http://www.opengis.net/gml/3.2}AbstractFeatureType'
+      )
+
+      expect(result.resolved?).to be true
+      expect(result.qname).to include('AbstractFeatureType')
+    end
+
+    it 'provides resolution path' do
+      result = repository.find_type('gml:CodeType')
+
+      expect(result.resolution_path).to be_an(Array)
+      expect(result.resolution_path).not_to be_empty
+      expect(result.resolution_path.first).to eq('gml:CodeType')
+    end
+  end
+
+  describe 'handling resolution failures' do
+    it 'returns failure result for unknown type' do
+      result = repository.find_type('unknown:NonExistentType')
+
+      expect(result.resolved?).to be false
+      expect(result.error_message).not_to be_nil
+    end
+
+    it 'provides helpful error message' do
+      result = repository.find_type('gml:NonExistent')
+
+      expect(result.error_message).to include('not found')
+      expect(result.error_message).to include('gml')
+    end
+
+    it 'suggests similar types' do
+      result = repository.find_type('gml:AbstractFeatre') # typo
+
+      # Implementation may provide suggestions
+      expect(result.error_message).to be_a(String)
+    end
+  end
+end
+----
+====
+
+=== Testing namespace registry
+
+.Testing namespace resolution
+[example]
+====
+[source,ruby]
+----
+RSpec.describe 'Namespace Registry' do
+  let(:repository) do
+    repo = Lutaml::Xsd::SchemaRepository.new(
+      namespace_mappings: [
+        Lutaml::Xsd::NamespaceMapping.new(
+          prefix: 'gml',
+          uri: 'http://www.opengis.net/gml/3.2'
+        ),
+        Lutaml::Xsd::NamespaceMapping.new(
+          prefix: 'ex',
+          uri: 'http://example.org/schema'
+        )
+      ]
+    )
+    repo
+  end
+
+  it 'registers namespace prefixes' do
+    expect(repository.all_namespaces).to include(
+      'http://www.opengis.net/gml/3.2',
+      'http://example.org/schema'
+    )
+  end
+
+  it 'resolves prefix to URI' do
+    registry = repository.instance_variable_get(:@namespace_registry)
+
+    uri = registry.uri_for_prefix('gml')
+    expect(uri).to eq('http://www.opengis.net/gml/3.2')
+  end
+end
+----
+====
+
+== Testing package creation
+
+=== General
+
+Testing package creation ensures packages are built correctly with proper
+structure and metadata.
+
+=== Testing basic package creation
+
+.Testing package build
+[example]
+====
+[source,ruby]
+----
+RSpec.describe 'Package Creation' do
+  let(:config_path) { 'spec/fixtures/test_config.yml' }
+  let(:output_path) { 'spec/tmp/test_package.lxr' }
+
+  before do
+    FileUtils.mkdir_p('spec/tmp')
+  end
+
+  after do
+    FileUtils.rm_f(output_path)
+  end
+
+  describe 'building package from configuration' do
+    it 'creates package file' do
+      repo = Lutaml::Xsd::SchemaRepository.from_yaml_file(config_path)
+      repo.parse.resolve
+
+      package = repo.to_package(
+        output_path,
+        serialization_format: :marshal,
+        metadata: { name: 'Test Package' }
+      )
+
+      expect(File.exist?(output_path)).to be true
+      expect(File.size(output_path)).to be > 0
+    end
+
+    it 'includes metadata in package' do
+      repo = Lutaml::Xsd::SchemaRepository.from_yaml_file(config_path)
+      repo.parse.resolve
+
+      repo.to_package(
+        output_path,
+        metadata: { name: 'Test', version: '1.0' }
+      )
+
+      # Validate package
+      validation = Lutaml::Xsd::SchemaRepository.validate_package(output_path)
+
+      expect(validation.valid?).to be true
+      expect(validation.metadata['name']).to eq('Test')
+      expect(validation.metadata['version']).to eq('1.0')
+    end
+  end
+
+  describe 'package serialization formats' do
+    [:marshal, :json, :yaml].each do |format|
+      it "creates package with #{format} format" do
+        repo = Lutaml::Xsd::SchemaRepository.from_yaml_file(config_path)
+        repo.parse.resolve
+
+        output = "spec/tmp/test_#{format}.lxr"
+
+        repo.to_package(
+          output,
+          serialization_format: format
+        )
+
+        expect(File.exist?(output)).to be true
+
+        # Validate can be loaded
+        loaded_repo = Lutaml::Xsd::SchemaRepository.from_package(output)
+        expect(loaded_repo).to be_a(Lutaml::Xsd::SchemaRepository)
+
+        FileUtils.rm_f(output)
+      end
+    end
+  end
+end
+----
+====
+
+=== Testing package validation
+
+.Testing package validation
+[example]
+====
+[source,ruby]
+----
+RSpec.describe 'Package Validation' do
+  let(:valid_package) { 'spec/fixtures/valid_package.lxr' }
+
+  describe 'validating package structure' do
+    subject(:validation) do
+      Lutaml::Xsd::SchemaRepository.validate_package(valid_package)
+    end
+
+    it 'returns validation result' do
+      expect(validation).to be_a(
+        Lutaml::Xsd::SchemaRepositoryPackage::ValidationResult
+      )
+    end
+
+    it 'validates successfully' do
+      expect(validation.valid?).to be true
+      expect(validation.errors).to be_empty
+    end
+
+    it 'includes metadata' do
+      expect(validation.metadata).not_to be_nil
+      expect(validation.metadata).to have_key('files')
+      expect(validation.metadata).to have_key('namespace_mappings')
+    end
+  end
+
+  describe 'detecting invalid packages' do
+    let(:invalid_package) { 'spec/tmp/invalid.lxr' }
+
+    before do
+      # Create invalid package (just a ZIP with wrong structure)
+      require 'zip'
+
+      Zip::File.open(invalid_package, create: true) do |zipfile|
+        zipfile.get_output_stream('invalid.txt') do |f|
+          f.write('Not a valid package')
+        end
+      end
+    end
+
+    after do
+      FileUtils.rm_f(invalid_package)
+    end
+
+    it 'detects missing metadata' do
+      validation = Lutaml::Xsd::SchemaRepository.validate_package(
+        invalid_package
+      )
+
+      expect(validation.valid?).to be false
+      expect(validation.errors).to include(
+        match(/missing metadata/i)
+      )
+    end
+  end
+end
+----
+====
+
+== RSpec integration examples
+
+=== General
+
+Best practices for integrating lutaml-xsd testing into RSpec test suites.
+
+=== RSpec configuration
+
+.spec/spec_helper.rb setup
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+require 'fileutils'
+
+RSpec.configure do |config|
+  # Setup fixtures directory
+  config.before(:suite) do
+    FileUtils.mkdir_p('spec/fixtures')
+    FileUtils.mkdir_p('spec/tmp')
+  end
+
+  # Clean up temporary files
+  config.after(:suite) do
+    FileUtils.rm_rf('spec/tmp')
+  end
+
+  # Helper methods available in all examples
+  config.include Module.new {
+    def fixture_path(filename)
+      File.join('spec/fixtures', filename)
+    end
+
+    def create_test_schema(content, filename = 'test.xsd')
+      path = File.join('spec/tmp', filename)
+      File.write(path, content)
+      path
+    end
+
+    def parse_test_schema(content)
+      Lutaml::Xsd.parse(content)
+    end
+  }
+end
+----
+====
+
+=== Shared examples for common tests
+
+.Shared examples for schema tests
+[example]
+====
+[source,ruby]
+----
+# spec/support/shared_examples/schema_examples.rb
+RSpec.shared_examples 'a valid XSD schema' do
+  it 'parses successfully' do
+    expect(schema).to be_a(Lutaml::Xsd::Schema)
+  end
+
+  it 'has a target namespace' do
+    expect(schema.target_namespace).not_to be_nil
+    expect(schema.target_namespace).to be_a(String)
+  end
+
+  it 'has at least one type definition' do
+    total_types = schema.simple_type.size + schema.complex_type.size
+    expect(total_types).to be > 0
+  end
+end
+
+RSpec.shared_examples 'a resolvable type' do |qname|
+  let(:result) { repository.find_type(qname) }
+
+  it 'resolves successfully' do
+    expect(result.resolved?).to be true
+  end
+
+  it 'provides type definition' do
+    expect(result.definition).not_to be_nil
+  end
+
+  it 'includes schema file reference' do
+    expect(result.schema_file).not_to be_nil
+  end
+end
+
+# Usage:
+RSpec.describe 'GML Schema' do
+  let(:schema) { Lutaml::Xsd.parse(File.read('spec/fixtures/gml.xsd')) }
+
+  it_behaves_like 'a valid XSD schema'
+end
+
+RSpec.describe 'Type Resolution' do
+  let(:repository) { load_test_repository }
+
+  it_behaves_like 'a resolvable type', 'gml:AbstractFeatureType'
+  it_behaves_like 'a resolvable type', 'gml:CodeType'
+end
+----
+====
+
+== Test fixtures best practices
+
+=== General
+
+Organizing test fixtures properly ensures tests are maintainable and reliable.
+
+=== Fixture directory structure
+
+.Recommended fixture organization
+[example]
+====
+[source]
+----
+spec/
+├── fixtures/
+│   ├── schemas/
+│   │   ├── simple/
+│   │   │   ├── basic.xsd
+│   │   │   ├── with_imports.xsd
+│   │   │   └── with_namespaces.xsd
+│   │   ├── complex/
+│   │   │   ├── gml_subset.xsd
+│   │   │   ├── citygml_subset.xsd
+│   │   │   └── dependencies/
+│   │   │       └── common.xsd
+│   │   └── invalid/
+│   │       ├── malformed.xsd
+│   │       └── circular_import.xsd
+│   ├── configs/
+│   │   ├── basic_config.yml
+│   │   ├── with_mappings.yml
+│   │   └── multi_namespace.yml
+│   ├── packages/
+│   │   ├── valid_package.lxr
+│   │   └── legacy_format.lxr
+│   └── expected/
+│       ├── parsed_basic.yml
+│       └── resolved_types.yml
+├── support/
+│   ├── shared_examples/
+│   │   └── schema_examples.rb
+│   └── helpers/
+│       └── schema_helpers.rb
+└── spec_helper.rb
+----
+====
+
+=== Creating minimal test fixtures
+
+.Minimal fixture schemas
+[example]
+====
+[source,ruby]
+----
+# spec/support/fixtures/minimal_schemas.rb
+module MinimalSchemas
+  # Simplest valid schema
+  def self.minimal
+    <<~XSD
+      <?xml version="1.0" encoding="UTF-8"?>
+      <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+        <xs:element name="root" type="xs:string"/>
+      </xs:schema>
+    XSD
+  end
+
+  # Schema with namespace
+  def self.with_namespace(namespace = 'http://example.org/test')
+    <<~XSD
+      <?xml version="1.0" encoding="UTF-8"?>
+      <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                 targetNamespace="#{namespace}">
+        <xs:element name="TestElement" type="xs:string"/>
+      </xs:schema>
+    XSD
+  end
+
+  # Schema with simple type
+  def self.with_simple_type(type_name = 'TestType')
+    <<~XSD
+      <?xml version="1.0" encoding="UTF-8"?>
+      <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+        <xs:simpleType name="#{type_name}">
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="100"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:schema>
+    XSD
+  end
+
+  # Schema with complex type
+  def self.with_complex_type(type_name = 'PersonType')
+    <<~XSD
+      <?xml version="1.0" encoding="UTF-8"?>
+      <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+        <xs:complexType name="#{type_name}">
+          <xs:sequence>
+            <xs:element name="name" type="xs:string"/>
+            <xs:element name="age" type="xs:integer"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:schema>
+    XSD
+  end
+end
+
+# Usage in tests:
+RSpec.describe 'Minimal Schema Parsing' do
+  it 'parses minimal schema' do
+    schema = Lutaml::Xsd.parse(MinimalSchemas.minimal)
+    expect(schema.element.size).to eq(1)
+  end
+end
+----
+====
+
+=== Fixture helper methods
+
+.Helper methods for fixtures
+[example]
+====
+[source,ruby]
+----
+# spec/support/helpers/fixture_helpers.rb
+module FixtureHelpers
+  def fixture_file(path)
+    File.join('spec/fixtures', path)
+  end
+
+  def load_fixture_schema(filename)
+    content = File.read(fixture_file("schemas/#{filename}"))
+    Lutaml::Xsd.parse(content)
+  end
+
+  def load_fixture_config(filename)
+    Lutaml::Xsd::SchemaRepository.from_yaml_file(
+      fixture_file("configs/#{filename}")
+    )
+  end
+
+  def create_temp_schema(content, basename = 'temp.xsd')
+    path = File.join('spec/tmp', basename)
+    File.write(path, content)
+    path
+  end
+
+  def expect_schema_valid(schema)
+    expect(schema).to be_a(Lutaml::Xsd::Schema)
+    expect(schema.target_namespace).to be_a(String).or be_nil
+  end
+end
+
+RSpec.configure do |config|
+  config.include FixtureHelpers
+end
+----
+====
+
+== Complete test suite example
+
+=== General
+
+A complete example showing how to structure a comprehensive test suite.
+
+=== Full test suite structure
+
+.Complete test suite
+[example]
+====
+[source,ruby]
+----
+# spec/lutaml/xsd_spec.rb
+require 'spec_helper'
+
+RSpec.describe Lutaml::Xsd do
+  describe '.parse' do
+    context 'with valid XSD' do
+      it 'returns Schema object' do
+        schema = described_class.parse(MinimalSchemas.minimal)
+        expect(schema).to be_a(Lutaml::Xsd::Schema)
+      end
+    end
+
+    context 'with invalid XSD' do
+      it 'raises error for malformed XML' do
+        expect {
+          described_class.parse('<invalid')
+        }.to raise_error(Lutaml::Xsd::Error)
+      end
+    end
+  end
+end
+
+# spec/lutaml/xsd/schema_repository_spec.rb
+RSpec.describe Lutaml::Xsd::SchemaRepository do
+  describe '#parse' do
+    let(:repository) do
+      described_class.new(
+        files: [fixture_file('schemas/simple/basic.xsd')]
+      )
+    end
+
+    it 'parses configured schemas' do
+      expect { repository.parse }.not_to raise_error
+    end
+
+    it 'populates parsed schemas' do
+      repository.parse
+      expect(repository.statistics[:total_schemas]).to be > 0
+    end
+  end
+
+  describe '#resolve' do
+    let(:repository) do
+      repo = described_class.from_yaml_file(
+        fixture_file('configs/basic_config.yml')
+      )
+      repo.parse
+    end
+
+    it 'builds type index' do
+      repository.resolve
+      expect(repository.statistics[:total_types]).to be > 0
+    end
+  end
+
+  describe '#find_type' do
+    let(:repository) do
+      repo = described_class.from_yaml_file(
+        fixture_file('configs/with_mappings.yml')
+      )
+      repo.parse.resolve
+    end
+
+    it 'finds types by qualified name' do
+      result = repository.find_type('ex:TestType')
+      expect(result.resolved?).to be true
+    end
+
+    it 'returns failure for unknown types' do
+      result = repository.find_type('ex:NonExistent')
+      expect(result.resolved?).to be false
+    end
+  end
+
+  describe '#to_package' do
+    let(:repository) do
+      repo = described_class.from_yaml_file(
+        fixture_file('configs/basic_config.yml')
+      )
+      repo.parse.resolve
+    end
+
+    let(:output_path) { 'spec/tmp/test_package.lxr' }
+
+    after do
+      FileUtils.rm_f(output_path)
+    end
+
+    it 'creates package file' do
+      repository.to_package(output_path)
+      expect(File.exist?(output_path)).to be true
+    end
+
+    it 'creates valid package' do
+      repository.to_package(output_path)
+
+      validation = described_class.validate_package(output_path)
+      expect(validation.valid?).to be true
+    end
+  end
+
+  describe '.from_package' do
+    let(:package_path) { fixture_file('packages/valid_package.lxr') }
+
+    it 'loads repository from package' do
+      repo = described_class.from_package(package_path)
+      expect(repo).to be_a(described_class)
+    end
+
+    it 'loaded repository can resolve types' do
+      repo = described_class.from_package(package_path)
+      expect(repo.statistics[:total_types]).to be > 0
+    end
+  end
+end
+
+# spec/lutaml/xsd/type_resolution_result_spec.rb
+RSpec.describe Lutaml::Xsd::TypeResolutionResult do
+  describe '.success' do
+    subject(:result) do
+      described_class.success(
+        qname: 'ex:TestType',
+        namespace: 'http://example.org',
+        local_name: 'TestType',
+        definition: double('definition'),
+        schema_file: 'test.xsd',
+        resolution_path: ['ex:TestType']
+      )
+    end
+
+    it 'is resolved' do
+      expect(result.resolved?).to be true
+    end
+
+    it 'has no error' do
+      expect(result.error_message).to be_nil
+    end
+  end
+
+  describe '.failure' do
+    subject(:result) do
+      described_class.failure(
+        qname: 'ex:Unknown',
+        error_message: 'Type not found',
+        resolution_path: ['ex:Unknown']
+      )
+    end
+
+    it 'is not resolved' do
+      expect(result.resolved?).to be false
+    end
+
+    it 'has error message' do
+      expect(result.error_message).to eq('Type not found')
+    end
+  end
+end
+----
+====
+
+== See also
+
+* link:RUBY_API[Ruby API] - Programmatic interface
+* link:TROUBLESHOOTING[Troubleshooting] - Common issues
+* link:DEBUGGING[Debugging] - Debugging strategies
+* link:PACKAGE_CONFIGURATION[Package configuration] - Package options
+* link:INDEX[Documentation index] - All documentation

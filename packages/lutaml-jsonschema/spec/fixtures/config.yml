@@ -1,0 +1,14 @@
+title: Test API Docs
+version: "2.0.0"
+description: Configuration for e2e testing
+base_url: https://api.example.com
+theme: dark
+output_path: /tmp/test-output
+appearance:
+  logos:
+    square:
+      light:
+        url: https://example.com/light-logo.png
+      dark:
+        url: https://example.com/dark-logo.png
+  subtitle: API Reference v2

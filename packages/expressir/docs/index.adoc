@@ -1,0 +1,242 @@
+---
+layout: home
+title: Home
+nav_order: 1
+---
+
+= Expressir
+:toc: macro
+:toclevels: 2
+
+[.lead]
+*EXPRESS parser and toolkit for Ruby.* Parse, analyze, and transform EXPRESS data models with a comprehensive Ruby API.
+
+image:https://img.shields.io/gem/v/expressir.svg[RubyGems Version,link="https://rubygems.org/gems/expressir"]
+image:https://github.com/lutaml/expressir/workflows/rake/badge.svg[Build Status,link="https://github.com/lutaml/expressir/actions?workflow=rake"]
+
+'''
+
+toc::[]
+
+== What is Expressir?
+
+Expressir ("EXPRESS in Ruby") is a comprehensive Ruby parser and toolkit for working with EXPRESS data models, the data modeling language defined in ISO 10303-11. It enables you to:
+
+* *Parse* EXPRESS schemas from multiple formats
+* *Analyze* complex data models and their relationships
+* *Transform* schemas using a rich Ruby API
+* *Generate* documentation using Liquid templates
+* *Package* schemas into efficient LER (LutaML EXPRESS Repository) bundles
+* *Track* schema changes across versions
+
+=== Key Features
+
+[cols="1,3",options="header"]
+|===
+|Feature
+|Description
+
+|*Multiple Format Support*
+|Parse EXPRESS (ISO 10303-11), STEPmod XML, and EXPRESS XML formats
+
+|*Rich Data Model*
+|Complete Ruby representation of EXPRESS schemas with full type information
+
+|*LER Packages*
+|Pre-indexed, fast-loading schema bundles with 20x+ performance improvement
+
+|*Schema Analysis*
+|Built-in tools for documentation coverage, validation, and dependency analysis
+
+|*Liquid Integration*
+|Generate documentation and reports using flexible Liquid templates
+
+|*CLI Tools*
+|Command-line interface for formatting, validation, benchmarking, and more
+
+|*Changes Tracking*
+|Track and manage schema modifications across versions
+
+|*Ruby-First Design*
+|Idiomatic Ruby API with comprehensive test coverage
+|===
+
+== Quick Start
+
+=== Installation
+
+Add Expressir to your Gemfile:
+
+[source,ruby]
+----
+gem 'expressir'
+----
+
+Or install directly:
+
+[source,bash]
+----
+gem install expressir
+----
+
+=== Parse Your First Schema
+
+[source,ruby]
+----
+require 'expressir'
+
+# Parse an EXPRESS file
+repository = Expressir::Express::Parser.from_file('schema.exp')
+
+# Access schemas
+repository.schemas.each do |schema|
+  puts "Schema: #{schema.id}"
+  puts "Entities: #{schema.entities.size}"
+  puts "Types: #{schema.types.size}"
+end
+----
+
+=== Use the CLI
+
+[source,bash]
+----
+# Format a schema
+expressir format schema.exp
+
+# Validate schemas
+expressir validate schema.exp
+
+# Check documentation coverage
+expressir coverage schema.exp
+
+# Create an LER package
+expressir package build schema.exp output.ler
+----
+
+== Documentation Structure
+
+This documentation is organized into four main sections:
+
+=== Core Topics
+
+Fundamental concepts and essential information:
+
+* link:introduction.html[Introduction] - What is Expressir and when to use it
+* link:getting-started.html[Getting Started] - Installation and first steps
+* link:express-language.html[EXPRESS Language] - Understanding EXPRESS data modeling
+* link:data-model.html[Data Model] - Expressir's Ruby data model
+* link:parsers.html[Parsers] - Parsing EXPRESS files
+* link:schema-manifests.html[Schema Manifests] - Managing collections of EXPRESS schemas
+* link:ler-packages.html[LER Packages] - High-performance schema packages
+
+=== link:tutorials/[Tutorials]
+
+Step-by-step guides for common workflows:
+
+* link:tutorials/parsing-your-first-schema.html[Parsing Your First Schema]
+* link:tutorials/working-with-multiple-schemas.html[Working with Multiple Schemas]
+* link:tutorials/creating-ler-package.html[Creating LER Packages]
+* link:tutorials/querying-schemas.html[Querying Schemas]
+* link:tutorials/liquid-templates.html[Liquid Templates]
+* link:tutorials/documentation-coverage.html[Documentation Coverage]
+
+=== link:guides/[Guides]
+
+Task-oriented how-to documentation:
+
+* link:guides/cli/[CLI Commands] - Command-line interface usage
+* link:guides/ruby-api/[Ruby API] - Programmatic usage
+* link:guides/ler/[LER] - Working with LER packages
+* link:guides/manifests/[Manifests] - Managing schema collections
+* link:guides/changes/[Changes] - Tracking schema changes
+* link:guides/liquid/[Liquid] - Template integration
+
+=== link:references/[References]
+
+Detailed technical specifications:
+
+* link:references/cli-commands.html[CLI Commands Reference]
+* link:references/ruby-api.html[Ruby API Reference]
+* link:references/data-model/[Data Model Reference]
+* link:references/liquid-drops/[Liquid Drops Reference]
+* link:references/ler-format.html[LER Format Specification]
+* link:references/changes-format.html[Changes Format Specification]
+
+== Common Use Cases
+
+=== For Data Modelers
+
+* Parse and validate EXPRESS schemas
+* Check documentation coverage
+* Format and clean schemas
+* Track changes between versions
+
+=== For Developers
+
+* Integrate EXPRESS parsing into Ruby applications
+* Build schema analysis tools
+* Generate documentation from schemas
+* Create custom schema transformations
+
+=== For Organizations
+
+* Package large schema collections for distribution
+* Maintain schema version history
+* Automate schema validation in CI/CD
+* Generate standardized documentation
+
+== Performance
+
+Expressir is designed for performance:
+
+[cols="2,1,1",options="header"]
+|===
+|Operation
+|Traditional
+|With LER
+
+|Parse 40+ schemas
+|10-15 seconds
+|<500ms (20x+ faster)
+
+|Entity lookup
+|O(n) scan
+|O(1) indexed (<1ms)
+
+|Type resolution
+|Multiple passes
+|Pre-resolved
+|===
+
+== Architecture
+
+Expressir consists of three main components:
+
+[source]
+----
+┌─────────────────────────────────────┐
+│          Ruby API / CLI             │  ← Your Application
+├─────────────────────────────────────┤
+│         Expressir Model             │  ← Rich Data Model
+│  (Entities, Types, Schemas, etc.)   │
+├─────────────────────────────────────┤
+│          EXPRESS Parser             │  ← Multiple Formats
+│  (EXPRESS, STEPmod, EXPRESS XML)    │
+└─────────────────────────────────────┘
+----
+
+== Support
+
+* *Issues*: https://github.com/lutaml/expressir/issues[GitHub Issues]
+* *Discussions*: https://github.com/lutaml/expressir/discussions[GitHub Discussions]
+* *Contributing*: link:https://github.com/lutaml/expressir/blob/main/CONTRIBUTING.md[Contributing Guide]
+
+== License
+
+Expressir is distributed under the BSD-2-Clause license. See the link:https://github.com/lutaml/expressir/blob/main/LICENSE[LICENSE] file for details.
+
+== Credits
+
+Copyright © 2025 Ribose Inc.
+
+Expressir is developed and maintained by https://www.ribose.com[Ribose Inc.] as part of the https://www.lutaml.org[LutaML] project family.

@@ -1,0 +1,78 @@
+# Schema Filtering Example
+#
+# This example demonstrates how to include or exclude specific schemas
+# from packages using glob patterns.
+
+base_packages:
+  # Include all schemas from first package
+  - package: ../01-simple/simple.lxr
+    priority: 0
+    conflict_resolution: keep
+    # No filtering - include all schemas
+
+  # Include only specific schemas from second package
+  - package: ../03-unitsml/unitsml.lxr
+    priority: 10
+    conflict_resolution: override
+    
+    # Option 1: Exclude specific schemas
+    exclude_schemas:
+      # Exclude test files
+      - "**/test_*.xsd"
+      - "**/*_test.xsd"
+      
+      # Exclude deprecated schemas
+      - "**/deprecated_*.xsd"
+      - "legacy/**"
+      
+      # Exclude specific directories
+      - "examples/**"
+      - "internal/**"
+    
+    # Option 2: Include only specific schemas (commented out)
+    # When include_only_schemas is set, ONLY matching schemas are included
+    # include_only_schemas:
+    #   - "**/core/*.xsd"
+    #   - "**/essential/*.xsd"
+    #   - "schemas/main.xsd"
+
+# Glob pattern syntax:
+# - * matches any characters within a path component
+# - ** matches across directory boundaries  
+# - ? matches a single character
+# - [abc] matches any character in the set
+# - {a,b} matches either pattern a or b
+#
+# Filter precedence:
+# 1. If exclude_schemas matches → exclude
+# 2. If include_only_schemas is set and doesn't match → exclude
+# 3. Otherwise → include
+#
+# Common filtering patterns:
+#
+# Exclude test files:
+#   - "**/test_*.xsd"
+#   - "**/*_test.xsd"  
+#   - "tests/**"
+#
+# Exclude deprecated/legacy:
+#   - "**/deprecated_*.xsd"
+#   - "**/*.old.xsd"
+#   - "legacy/**"
+#
+# Exclude by directory:
+#   - "internal/**"
+#   - "examples/**"
+#   - "drafts/**"
+#
+# Include only production schemas:
+#   include_only_schemas:
+#     - "production/**"
+#     - "release/**"
+#     - "**/v[0-9]*/*.xsd"  # Version directories
+#
+# Include only specific namespaces:
+#   include_only_schemas:
+#     - "schemas/gml/**"
+#     - "schemas/iso/**"
+#     - "schemas/core/**"

@@ -1,0 +1,208 @@
+---
+_class: Expressir::Model::ExpFile
+path: spec/syntax/derived_attribute.exp
+schemas:
+- _class: Expressir::Model::Declarations::Schema
+  id: geometry_schema
+  file: spec/syntax/derived_attribute.exp
+  version:
+    _class: Expressir::Model::Declarations::SchemaVersion
+    value: version
+  entities:
+  - _class: Expressir::Model::Declarations::Entity
+    id: point
+    supertype_expression:
+      _class: Expressir::Model::SupertypeExpressions::OneofSupertypeExpression
+      operands:
+      - _class: Expressir::Model::References::SimpleReference
+        id: cartesian_point
+        base_path: spec/syntax/derived_attribute.exp.geometry_schema.cartesian_point
+      - _class: Expressir::Model::References::SimpleReference
+        id: degenerate_pcurve
+    subtype_of:
+    - _class: Expressir::Model::References::SimpleReference
+      id: geometric_representation_item
+  - _class: Expressir::Model::Declarations::Entity
+    id: cartesian_point
+    supertype_expression:
+      _class: Expressir::Model::References::SimpleReference
+      id: spherical_point
+      base_path: spec/syntax/derived_attribute.exp.geometry_schema.spherical_point
+    subtype_of:
+    - _class: Expressir::Model::References::SimpleReference
+      id: point
+      base_path: spec/syntax/derived_attribute.exp.geometry_schema.point
+    attributes:
+    - _class: Expressir::Model::Declarations::Attribute
+      id: coordinates
+      kind: EXPLICIT
+      type:
+        _class: Expressir::Model::DataTypes::List
+        bound1:
+          _class: Expressir::Model::Literals::Integer
+          value: '1'
+        bound2:
+          _class: Expressir::Model::Literals::Integer
+          value: '3'
+        base_type:
+          _class: Expressir::Model::References::SimpleReference
+          id: length_measure
+  - _class: Expressir::Model::Declarations::Entity
+    id: spherical_point
+    subtype_of:
+    - _class: Expressir::Model::References::SimpleReference
+      id: cartesian_point
+      base_path: spec/syntax/derived_attribute.exp.geometry_schema.cartesian_point
+    attributes:
+    - _class: Expressir::Model::Declarations::Attribute
+      id: r
+      kind: EXPLICIT
+      type:
+        _class: Expressir::Model::References::SimpleReference
+        id: length_measure
+    - _class: Expressir::Model::Declarations::Attribute
+      id: theta
+      kind: EXPLICIT
+      type:
+        _class: Expressir::Model::References::SimpleReference
+        id: plane_angle_measure
+    - _class: Expressir::Model::Declarations::Attribute
+      id: phi
+      kind: EXPLICIT
+      type:
+        _class: Expressir::Model::References::SimpleReference
+        id: plane_angle_measure
+    - _class: Expressir::Model::Declarations::DerivedAttribute
+      id: coordinates
+      remarks:
+      - the rectangular cartesian coordinates of this point;
+      remark_items:
+      - _class: Expressir::Model::Declarations::RemarkItem
+        id: __figure
+        remarks:
+        - |-
+          [[figure-geometry_schema-Geomfig2]]
+          .Spherical point attributes
+          ====
+          image::Geomfig2.gif[]
+          ====
+      kind: DERIVED
+      supertype_attribute:
+        _class: Expressir::Model::References::AttributeReference
+        ref:
+          _class: Expressir::Model::References::GroupReference
+          ref:
+            _class: Expressir::Model::References::SimpleReference
+            id: SELF
+          entity:
+            _class: Expressir::Model::References::SimpleReference
+            id: cartesian_point
+            base_path: spec/syntax/derived_attribute.exp.geometry_schema.cartesian_point
+        attribute:
+          _class: Expressir::Model::References::SimpleReference
+          id: coordinates
+      type:
+        _class: Expressir::Model::DataTypes::List
+        bound1:
+          _class: Expressir::Model::Literals::Integer
+          value: '3'
+        bound2:
+          _class: Expressir::Model::Literals::Integer
+          value: '3'
+        base_type:
+          _class: Expressir::Model::References::SimpleReference
+          id: length_measure
+      expression:
+        _class: Expressir::Model::Expressions::AggregateInitializer
+        items:
+        - _class: Expressir::Model::Expressions::BinaryExpression
+          operator: MULTIPLICATION
+          operand1:
+            _class: Expressir::Model::Expressions::BinaryExpression
+            operator: MULTIPLICATION
+            operand1:
+              _class: Expressir::Model::References::SimpleReference
+              id: r
+              base_path: spec/syntax/derived_attribute.exp.geometry_schema.spherical_point.r
+            operand2:
+              _class: Expressir::Model::Expressions::FunctionCall
+              function:
+                _class: Expressir::Model::References::SimpleReference
+                id: sin
+              parameters:
+              - _class: Expressir::Model::References::SimpleReference
+                id: theta
+                base_path: spec/syntax/derived_attribute.exp.geometry_schema.spherical_point.theta
+          operand2:
+            _class: Expressir::Model::Expressions::FunctionCall
+            function:
+              _class: Expressir::Model::References::SimpleReference
+              id: cos
+            parameters:
+            - _class: Expressir::Model::References::SimpleReference
+              id: phi
+              base_path: spec/syntax/derived_attribute.exp.geometry_schema.spherical_point.phi
+        - _class: Expressir::Model::Expressions::BinaryExpression
+          operator: MULTIPLICATION
+          operand1:
+            _class: Expressir::Model::Expressions::BinaryExpression
+            operator: MULTIPLICATION
+            operand1:
+              _class: Expressir::Model::References::SimpleReference
+              id: r
+              base_path: spec/syntax/derived_attribute.exp.geometry_schema.spherical_point.r
+            operand2:
+              _class: Expressir::Model::Expressions::FunctionCall
+              function:
+                _class: Expressir::Model::References::SimpleReference
+                id: sin
+              parameters:
+              - _class: Expressir::Model::References::SimpleReference
+                id: theta
+                base_path: spec/syntax/derived_attribute.exp.geometry_schema.spherical_point.theta
+          operand2:
+            _class: Expressir::Model::Expressions::FunctionCall
+            function:
+              _class: Expressir::Model::References::SimpleReference
+              id: sin
+            parameters:
+            - _class: Expressir::Model::References::SimpleReference
+              id: phi
+              base_path: spec/syntax/derived_attribute.exp.geometry_schema.spherical_point.phi
+        - _class: Expressir::Model::Expressions::BinaryExpression
+          operator: MULTIPLICATION
+          operand1:
+            _class: Expressir::Model::References::SimpleReference
+            id: r
+            base_path: spec/syntax/derived_attribute.exp.geometry_schema.spherical_point.r
+          operand2:
+            _class: Expressir::Model::Expressions::FunctionCall
+            function:
+              _class: Expressir::Model::References::SimpleReference
+              id: cos
+            parameters:
+            - _class: Expressir::Model::References::SimpleReference
+              id: theta
+              base_path: spec/syntax/derived_attribute.exp.geometry_schema.spherical_point.theta
+    where_rules:
+    - _class: Expressir::Model::Declarations::WhereRule
+      id: WR1
+      expression:
+        _class: Expressir::Model::References::SimpleReference
+        id: r
+        base_path: spec/syntax/derived_attribute.exp.geometry_schema.spherical_point.r
+    informal_propositions:
+    - _class: Expressir::Model::Declarations::InformalPropositionRule
+      id: IP1
+      remark_items:
+      - _class: Expressir::Model::Declarations::RemarkItem
+        id: IP1
+        remarks:
+        - ''
+    - _class: Expressir::Model::Declarations::InformalPropositionRule
+      id: IP2
+      remark_items:
+      - _class: Expressir::Model::Declarations::RemarkItem
+        id: IP2
+        remarks:
+        - ''

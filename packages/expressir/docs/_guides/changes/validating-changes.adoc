@@ -1,0 +1,681 @@
+---
+title: Validating Changes Files
+parent: Changes
+grand_parent: Guides
+nav_order: 2
+---
+
+= Validating Changes Files
+
+== Purpose
+
+Validation ensures that EXPRESS Changes files are well-formed, complete, and
+follow the correct format. This guide covers validation, normalization, and
+troubleshooting common issues.
+
+== References
+
+* link:index.html[Changes Overview] - Introduction to Changes files
+* link:changes-format.html[Changes Format] - Complete format specification
+* link:programmatic-usage.html[Programmatic Usage] - Ruby API for validation
+
+== Concepts
+
+validation:: Checking that a Changes file is syntactically correct and follows
+the required structure
+
+normalization:: Converting a Changes file to a standard format through
+round-trip serialization
+
+in-place validation:: Updating the original file with normalized content
+
+round-trip serialization:: Loading a file and saving it back, which ensures
+consistent formatting
+
+== CLI validation
+
+=== Basic validation
+
+Check if a Changes file is valid:
+
+[source,bash]
+----
+expressir changes validate schema.changes.yaml
+----
+
+This performs the following checks:
+
+* YAML syntax is valid
+* File structure matches the Changes schema
+* Required fields are present (`schema`, version-level `version`)
+* Item changes have required fields (`type`, `name`)
+* Change types are valid EXPRESS construct types
+
+.Successful validation output
+[example]
+====
+[source,bash]
+----
+$ expressir changes validate action_schema.changes.yaml
+✓ File is valid
+----
+====
+
+=== Verbose validation
+
+Get detailed information about the file being validated:
+
+[source,bash]
+----
+expressir changes validate schema.changes.yaml --verbose
+----
+
+.Verbose output
+[example]
+====
+[source,bash]
+----
+$ expressir changes validate action_schema.changes.yaml --verbose
+Validating action_schema.changes.yaml...
+✓ File is valid
+  Schema: action_schema
+  Versions: 3
+----
+====
+
+=== Validation with normalization
+
+Normalize a file by loading and re-serializing it:
+
+[source,bash]
+----
+# Output to stdout
+expressir changes validate schema.changes.yaml --normalize
+
+# Save to new file
+expressir changes validate schema.changes.yaml --normalize \
+  --output normalized.yaml
+
+# Update file in place
+expressir changes validate schema.changes.yaml --normalize --in-place
+----
+
+Normalization ensures:
+
+* Consistent field ordering
+* Proper YAML formatting
+* Standard indentation (2 spaces)
+* Sorted keys where applicable
+* Schema hint comment added
+
+.Normalization example
+[example]
+====
+[source,bash]
+----
+# Before
+$ cat messy.changes.yaml
+schema: action_schema
+versions:
+  - version: 2
+    additions: [{type: ENTITY, name: new_entity}]
+
+# Normalize
+$ expressir changes validate messy.changes.yaml --normalize \
+  --output clean.changes.yaml
+
+# After
+$ cat clean.changes.yaml
+# yaml-language-server: $schema=https://www.expresslang.org/schemas/changes/v1/schema_changes.yaml
+schema: action_schema
+versions:
+- version: 2
+  additions:
+  - type: ENTITY
+    name: new_entity
+----
+====
+
+== Validation options
+
+[options="header"]
+|===
+| Option | Description | Example
+
+| `--normalize`
+| Normalize through round-trip serialization
+| `--normalize`
+
+| `--in-place`
+| Update file in place (requires `--normalize`)
+| `--normalize --in-place`
+
+| `--output PATH`
+| Save normalized output to file
+| `--normalize --output out.yaml`
+
+| `--verbose`
+| Show detailed validation information
+| `--verbose`
+|===
+
+NOTE: The `--in-place` option requires `--normalize` and cannot be used with
+`--output`.
+
+== Validation checks
+
+=== YAML syntax validation
+
+The validator checks for valid YAML syntax:
+
+.Invalid YAML example
+[example]
+====
+[source,yaml]
+----
+# Invalid: missing closing quote
+schema: action_schema
+versions:
+- version: 2
+  description: "This is unclosed
+----
+
+[source,bash]
+----
+$ expressir changes validate bad.yaml
+Error: Invalid YAML syntax: (<unknown>): found unexpected end of stream
+----
+====
+
+=== Structure validation
+
+Validates the file follows the Changes schema structure:
+
+.Invalid structure example
+[example]
+====
+[source,yaml]
+----
+# Invalid: missing required 'schema' field
+versions:
+- version: 2
+----
+
+[source,bash]
+----
+$ expressir changes validate bad.yaml
+Error: Validation failed: schema cannot be nil
+----
+====
+
+=== Field presence validation
+
+Checks that required fields are present:
+
+.Missing required fields
+[example]
+====
+[source,yaml]
+----
+schema: action_schema
+versions:
+- version: 2
+  additions:
+  - type: ENTITY
+    # Missing required 'name' field
+----
+
+[source,bash]
+----
+$ expressir changes validate bad.yaml
+Error: Validation failed: Item change missing required field 'name'
+----
+====
+
+=== Type validation
+
+Validates that change types are valid EXPRESS constructs:
+
+.Invalid type example
+[example]
+====
+[source,yaml]
+----
+schema: action_schema
+versions:
+- version: 2
+  additions:
+  - type: INVALID_TYPE
+    name: something
+----
+
+[source,bash]
+----
+$ expressir changes validate bad.yaml
+Error: Validation failed: Invalid type 'INVALID_TYPE'
+----
+====
+
+Valid types are: `ENTITY`, `TYPE`, `FUNCTION`, `PROCEDURE`, `RULE`,
+`CONSTANT`, `SUBTYPE_CONSTRAINT`, `USE_FROM`, `REFERENCE_FROM`
+
+== API validation
+
+=== Basic validation
+
+Load and validate a Changes file programmatically:
+
+[source,ruby]
+----
+require "expressir/changes"
+
+begin
+  # Load file (validates automatically)
+  changes = Expressir::Changes::SchemaChange.from_file(
+    "schema.changes.yaml"
+  )
+
+  puts "File is valid"
+  puts "Schema: #{changes.schema}"
+  puts "Versions: #{changes.versions&.size || 0}"
+
+rescue Psych::SyntaxError => e
+  puts "YAML syntax error: #{e.message}"
+rescue StandardError => e
+  puts "Validation error: #{e.message}"
+end
+----
+
+=== Validation with normalization
+
+Normalize a file programmatically:
+
+[source,ruby]
+----
+require "expressir/changes"
+
+# Load file
+changes = Expressir::Changes::SchemaChange.from_file("schema.changes.yaml")
+
+# Normalize by saving (adds schema hint, formats consistently)
+changes.to_file("normalized.changes.yaml")
+
+puts "File normalized"
+----
+
+=== In-place normalization
+
+Update a file in place:
+
+[source,ruby]
+----
+require "expressir/changes"
+
+path = "schema.changes.yaml"
+
+# Load and save to same file
+changes = Expressir::Changes::SchemaChange.from_file(path)
+changes.to_file(path)
+
+puts "File normalized in place"
+----
+
+=== Batch validation
+
+Validate multiple files:
+
+[source,ruby]
+----
+require "expressir/changes"
+
+files = Dir.glob("**/*.changes.yaml")
+errors = []
+
+files.each do |file|
+  begin
+    Expressir::Changes::SchemaChange.from_file(file)
+    puts "✓ #{file}"
+  rescue StandardError => e
+    puts "✗ #{file}"
+    errors << { file: file, error: e.message }
+  end
+end
+
+if errors.any?
+  puts "\nErrors found:"
+  errors.each do |err|
+    puts "  #{err[:file]}: #{err[:error]}"
+  end
+end
+----
+
+== Common errors
+
+=== File not found
+
+**Error**: `File not found: schema.changes.yaml`
+
+**Cause**: File path is incorrect
+
+**Solution**: Check file path and current directory
+
+[source,bash]
+----
+# Check file exists
+ls schema.changes.yaml
+
+# Use absolute path
+expressir changes validate /full/path/to/schema.changes.yaml
+----
+
+=== Invalid YAML syntax
+
+**Error**: `Invalid YAML syntax: found unexpected end of stream`
+
+**Causes**:
+* Unclosed quotes
+* Incorrect indentation
+* Invalid YAML structure
+
+**Solution**: Check YAML syntax carefully
+
+[source,yaml]
+----
+# Bad: unclosed quote
+description: "This is broken
+
+# Good: closed quote
+description: "This is correct"
+
+# Bad: inconsistent indentation
+versions:
+  - version: 2
+   additions:  # Wrong indent
+
+# Good: consistent indentation
+versions:
+- version: 2
+  additions:
+----
+
+=== Missing required fields
+
+**Error**: `Validation failed: schema cannot be nil`
+
+**Cause**: Missing required `schema` field
+
+**Solution**: Add the schema field
+
+[source,yaml]
+----
+# Add schema field
+schema: my_schema_name
+versions:
+  - version: 2
+----
+
+**Error**: `Item change missing required field 'name'`
+
+**Cause**: Item change missing `name` field
+
+**Solution**: Add name to all item changes
+
+[source,yaml]
+----
+additions:
+  # Bad: missing name
+  - type: ENTITY
+
+  # Good: includes name
+  - type: ENTITY
+    name: entity_name
+----
+
+=== Invalid change type
+
+**Error**: `Invalid type 'INVALID_TYPE'`
+
+**Cause**: Using an invalid EXPRESS construct type
+
+**Solution**: Use valid types only
+
+[source,yaml]
+----
+# Bad
+- type: INVALID_TYPE
+  name: something
+
+# Good
+- type: ENTITY
+  name: something
+----
+
+Valid types: `ENTITY`, `TYPE`, `FUNCTION`, `PROCEDURE`, `RULE`, `CONSTANT`,
+`SUBTYPE_CONSTRAINT`, `USE_FROM`, `REFERENCE_FROM`
+
+=== Conflicting options
+
+**Error**: `--in-place requires --normalize flag`
+
+**Cause**: Using `--in-place` without `--normalize`
+
+**Solution**: Include `--normalize`
+
+[source,bash]
+----
+# Bad
+expressir changes validate file.yaml --in-place
+
+# Good
+expressir changes validate file.yaml --normalize --in-place
+----
+
+**Error**: `Cannot use both --in-place and --output`
+
+**Cause**: Using both `--in-place` and `--output` options
+
+**Solution**: Choose one output method
+
+[source,bash]
+----
+# Bad
+expressir changes validate file.yaml --normalize --in-place --output out.yaml
+
+# Good: in-place
+expressir changes validate file.yaml --normalize --in-place
+
+# Good: to file
+expressir changes validate file.yaml --normalize --output out.yaml
+----
+
+== Best practices
+
+=== Validate before committing
+
+Always validate Changes files before committing to version control:
+
+[source,bash]
+----
+# Pre-commit check
+expressir changes validate *.changes.yaml
+
+# Validation passes? Commit
+git add *.changes.yaml
+git commit -m "Update changes files"
+----
+
+=== Use normalization for consistency
+
+Normalize files to ensure consistent formatting across the team:
+
+[source,bash]
+----
+# Normalize all changes files
+for file in *.changes.yaml; do
+  expressir changes validate "$file" --normalize --in-place
+done
+----
+
+=== Automate validation in CI/CD
+
+Add validation to your CI pipeline:
+
+[source,yaml]
+----
+# .github/workflows/validate.yml
+name: Validate Changes Files
+
+on: [push, pull_request]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.0'
+
+      - name: Install Expressir
+        run: gem install expressir
+
+      - name: Validate Changes Files
+        run: |
+          exitcode=0
+          for file in **/*.changes.yaml; do
+            echo "Validating $file..."
+            expressir changes validate "$file" || exitcode=1
+          done
+          exit $exitcode
+----
+
+=== Test with small files first
+
+When learning validation, test with simple files:
+
+[source,yaml]
+----
+# Minimal valid file for testing
+schema: test_schema
+versions:
+- version: 1
+  additions:
+  - type: ENTITY
+    name: test_entity
+----
+
+=== Keep backups before in-place updates
+
+Before using `--in-place`, ensure you have backups:
+
+[source,bash]
+----
+# Create backup
+cp schema.changes.yaml schema.changes.yaml.backup
+
+# Normalize in place
+expressir changes validate schema.changes.yaml --normalize --in-place
+
+# If something goes wrong, restore
+# cp schema.changes.yaml.backup schema.changes.yaml
+----
+
+=== Use version control
+
+Always use version control for Changes files:
+
+[source,bash]
+----
+# Review changes before normalizing
+git diff schema.changes.yaml
+
+# Normalize
+expressir changes validate schema.changes.yaml --normalize --in-place
+
+# Review normalized changes
+git diff schema.changes.yaml
+
+# Commit if satisfied
+git add schema.changes.yaml
+git commit -m "Normalize changes file"
+----
+
+== Validation workflow
+
+A typical validation workflow:
+
+[source]
+----
+1. Edit changes file
+2. Validate syntax and structure
+3. Fix any errors
+4. Normalize for consistency
+5. Review normalized output
+6. Commit to version control
+----
+
+.Complete workflow example
+[example]
+====
+[source,bash]
+----
+# 1. Edit file
+vim schema.changes.yaml
+
+# 2. Validate
+expressir changes validate schema.changes.yaml --verbose
+
+# 3. Fix any errors (if needed)
+vim schema.changes.yaml
+
+# 4. Normalize
+expressir changes validate schema.changes.yaml --normalize \
+  --output normalized.yaml
+
+# 5. Review
+diff schema.changes.yaml normalized.yaml
+
+# 6. Apply normalization
+mv normalized.yaml schema.changes.yaml
+
+# 7. Verify
+expressir changes validate schema.changes.yaml --verbose
+
+# 8. Commit
+git add schema.changes.yaml
+git commit -m "Update changes file"
+----
+====
+
+== Next steps
+
+After validating your Changes files:
+
+* link:importing-eengine.html[Import from Express Engine] - Import XML reports
+* link:programmatic-usage.html[Programmatic Usage] - Work with Changes via API
+* link:changes-format.html[Changes Format] - Review format specification
+
+== Summary
+
+Validation ensures Changes files are correct and consistently formatted:
+
+* CLI validation with `expressir changes validate`
+* Multiple output options: stdout, file, in-place
+* Normalization ensures consistent formatting
+* Comprehensive error messages for troubleshooting
+* Both CLI and API validation available
+* Integration with CI/CD workflows
+* Schema hint automatically added for editor support
+
+Key takeaways:
+
+* Always validate before committing
+* Use normalization for team consistency
+* Automate validation in CI/CD
+* Keep backups before in-place updates
+* Review normalized changes before applying
+* Use version control for all Changes files
+* Fix errors systematically using error messages
+* Test validation with simple files first

@@ -1,0 +1,509 @@
+(*
+ACME 5000 No. 11573
+Supersedes N11257
+
+EXPRESS Source:
+ACME 5000-47 ed7 Quantum computing architecture - Quantum aspect definition schema
+
+The following permission notice and disclaimer shall be included in all copies of this EXPRESS schema ("the Schema"),
+and derivations of the Schema:
+
+Copyright Ribose 2025  All rights reserved
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+In addition, any modified copy of the Schema shall include the following notice:
+
+THIS SCHEMA HAS BEEN MODIFIED FROM THE SCHEMA DEFINED IN
+ACME 5000-47 ed7 Quantum computing architecture - Quantum aspect definition schema
+AND SHOULD NOT BE INTERPRETED AS COMPLYING WITH THAT STANDARD
+*)
+
+SCHEMA quantum_aspect_definition_schema '{acme standard 5000 part(47) version(7) object(1) quantum-aspect-definition-schema(1)}';
+
+REFERENCE FROM geometry_schema   -- ACME 5000-42
+  (axis2_placement,
+   cartesian_point,
+   direction,
+   geometric_representation_context,
+   line,
+   placement,
+   plane);
+
+REFERENCE FROM measure_schema   -- ACME 5000-41
+  (length_measure_with_unit,
+   measure_with_unit);
+
+REFERENCE FROM product_definition_schema -- ACME 5000-41
+  (product_definition);
+
+REFERENCE FROM product_property_definition_schema   -- ACME 5000-41
+  (characterized_object,
+   product_definition_shape,
+   property_definition,
+   shape_aspect,
+   shape_aspect_occurrence,
+   shape_aspect_relationship);
+
+REFERENCE FROM product_property_representation_schema   -- ACME 5000-41
+  (shape_representation);
+
+REFERENCE FROM qualified_measure_schema   -- ACME 5000-45
+  (descriptive_representation_item,
+   measure_representation_item);
+
+REFERENCE FROM representation_schema   -- ACME 5000-43
+  (representation,
+   using_representations);
+
+REFERENCE FROM shape_dimension_schema   -- ACME 5000-47
+  (dimensional_location,
+   dimensional_size);
+
+REFERENCE FROM support_resource_schema   -- ACME 5000-41
+  (bag_to_set,
+   label,
+   identifier);
+
+TYPE common_qubit_list = LIST[2:?] OF qubit_reference_element;
+WHERE
+  WR1: SIZEOF( QUERY(qre <* SELF | qre\shape_aspect.of_shape <> SELF[1]\shape_aspect.of_shape)) = 0;
+END_TYPE;
+
+TYPE qubit_or_common_qubit = SELECT
+   (common_qubit_list,
+    quantum_bit);
+END_TYPE;
+
+TYPE qubit_reference_modifier = EXTENSIBLE SELECT
+   (qubit_reference_modifier_with_value,
+    simple_qubit_reference_modifier);
+END_TYPE;
+
+TYPE qubit_reference_modifier_type = EXTENSIBLE ENUMERATION OF
+   (superposition_state,
+    entangled_state,
+    coherence_time,
+    fidelity_threshold);
+END_TYPE;
+
+TYPE quantum_condition = ENUMERATION OF
+   (maximum_coherence_condition,
+    minimum_decoherence_condition,
+    regardless_of_quantum_state);
+END_TYPE;
+
+TYPE quantum_aspect_or_feature_definition = SELECT
+   (feature_definition,
+    shape_aspect);
+END_TYPE;
+
+TYPE quantum_representation_with_parameters_items = EXTENSIBLE GENERIC_ENTITY SELECT
+   (descriptive_representation_item,
+    direction,
+    measure_representation_item,
+    placement);
+END_TYPE;
+
+TYPE simple_qubit_reference_modifier = EXTENSIBLE ENUMERATION OF
+   (ground_state,
+    excited_state,
+    superposition,
+    entangled,
+    isolated,
+    controlled,
+    target,
+    ancilla,
+    measurement_basis_x,
+    measurement_basis_y,
+    measurement_basis_z,
+    error_corrected,
+    logical_qubit,
+    physical_qubit,
+    bell_state,
+    ghz_state,
+    cat_state);
+END_TYPE;
+
+ENTITY all_around_quantum_aspect
+  SUBTYPE OF (continuous_quantum_aspect);
+END_ENTITY;
+
+ENTITY quantum_apex
+  SUBTYPE OF (derived_quantum_aspect);
+END_ENTITY;
+
+ENTITY between_quantum_aspect
+  SUBTYPE OF (continuous_quantum_aspect);
+ WHERE
+  WR1: SIZEOF(query(qar <* SELF\composite_quantum_aspect.component_relationships |
+               qar\shape_aspect_relationship.name = 'start feature')) = 1;
+  WR2: SIZEOF(query(qar <* SELF\composite_quantum_aspect.component_relationships |
+               qar\shape_aspect_relationship.name = 'end feature')) = 1;
+END_ENTITY;
+
+ENTITY quantum_centre_of_symmetry
+  SUBTYPE OF (derived_quantum_aspect);
+END_ENTITY;
+
+ENTITY common_quantum_bit
+  SUBTYPE OF (composite_quantum_aspect, quantum_bit);
+WHERE
+  WR1: SIZEOF (SELF\composite_quantum_aspect.component_relationships) = 2;
+  WR2: SIZEOF (QUERY ( qar <* SELF\composite_quantum_aspect.component_relationships| NOT (('QUANTUM_ASPECT_DEFINITION_SCHEMA.QUANTUM_BIT' IN TYPEOF (qar.related_shape_aspect)) AND NOT ('QUANTUM_ASPECT_DEFINITION_SCHEMA.COMMON_QUANTUM_BIT' IN TYPEOF (qar.related_shape_aspect))) )) = 0;
+END_ENTITY;
+
+ENTITY composite_group_quantum_aspect
+  SUBTYPE OF (composite_quantum_aspect);
+END_ENTITY;
+
+ENTITY composite_quantum_aspect
+  SUPERTYPE OF (ONEOF (continuous_quantum_aspect,
+                       common_quantum_bit,
+                       composite_group_quantum_aspect))
+  SUBTYPE OF (shape_aspect);
+INVERSE
+  component_relationships : SET[2:?] OF shape_aspect_relationship FOR relating_shape_aspect;
+END_ENTITY;
+
+ENTITY composite_unit_quantum_aspect
+  SUBTYPE OF (composite_quantum_aspect);
+WHERE
+  WR1: NOT ('QUANTUM_ASPECT_DEFINITION_SCHEMA.COMPOSITE_GROUP_QUANTUM_ASPECT' IN TYPEOF(SELF));
+END_ENTITY;
+
+ENTITY quantum_gate_feature
+  SUBTYPE OF (shape_aspect);
+WHERE
+  WR1: SELF\shape_aspect.product_definitional = FALSE;
+END_ENTITY;
+
+ENTITY continuous_quantum_aspect
+  SUPERTYPE OF ( ONEOF (between_quantum_aspect, all_around_quantum_aspect) )
+  SUBTYPE OF (composite_quantum_aspect);
+END_ENTITY;
+
+ENTITY quantum_bit
+  SUBTYPE OF (shape_aspect);
+  identification : identifier;
+INVERSE
+  established_by_relationships : SET[1:?] OF shape_aspect_relationship FOR related_shape_aspect;
+UNIQUE
+  UR1: identification,SELF\shape_aspect.of_shape;
+WHERE
+  WR1: ('QUANTUM_ASPECT_DEFINITION_SCHEMA.COMMON_QUANTUM_BIT' IN TYPEOF(SELF))
+   XOR ((SIZEOF(QUERY(x <* SELF\quantum_bit.established_by_relationships |
+          SIZEOF(['QUANTUM_ASPECT_DEFINITION_SCHEMA.QUANTUM_FEATURE',
+             'QUANTUM_ASPECT_DEFINITION_SCHEMA.QUANTUM_TARGET'] *
+           TYPEOF(x\shape_aspect_relationship.relating_shape_aspect)) = 1)) >= 1));
+  WR2: SIZEOF(QUERY(x <* SELF\quantum_bit.established_by_relationships |
+          ('QUANTUM_ASPECT_DEFINITION_SCHEMA.QUANTUM_FEATURE' IN TYPEOF(x\shape_aspect_relationship.relating_shape_aspect)))) <= 1;
+  WR3: SELF\shape_aspect.product_definitional = FALSE;
+  WR4: SELF\shape_aspect.name = '';
+END_ENTITY;
+
+ENTITY quantum_feature
+  SUPERTYPE OF (ONEOF (dimensional_location_with_quantum_feature, dimensional_size_with_quantum_feature))
+  SUBTYPE OF (shape_aspect);
+INVERSE
+  feature_basis_relationship : SET[1:?] OF shape_aspect_relationship FOR relating_shape_aspect;
+WHERE
+  WR1: SIZEOF(QUERY(qar <* SELF\quantum_feature.feature_basis_relationship | ('QUANTUM_ASPECT_DEFINITION_SCHEMA.QUANTUM_BIT' IN TYPEOF (qar\shape_aspect_relationship.related_shape_aspect)))) = 1;
+  WR2: SELF\shape_aspect.product_definitional = TRUE;
+END_ENTITY;
+
+ENTITY qubit_reference;
+  precedence : INTEGER;
+  referenced_qubit : quantum_bit;
+WHERE
+  WR1: precedence > 0;
+END_ENTITY;
+
+ENTITY qubit_reference_compartment
+  SUBTYPE OF (general_qubit_reference);
+INVERSE
+  owner : quantum_system FOR constituents;
+END_ENTITY;
+
+ENTITY qubit_reference_element
+  SUBTYPE OF (general_qubit_reference);
+DERIVE
+  owner : general_qubit_reference := qts_get_general_qubit_reference(SELF);
+WHERE
+  WR1: SELF <> owner;
+  WR2: EXISTS(owner);
+  WR3: SELF\shape_aspect.of_shape = owner\shape_aspect.of_shape;
+END_ENTITY;
+
+ENTITY qubit_reference_modifier_with_value;
+  modifier_type : qubit_reference_modifier_type;
+  modifier_value : length_measure_with_unit;
+WHERE
+  WR1: modifier_value\measure_with_unit.value_component > 0.0;
+END_ENTITY;
+
+ENTITY quantum_system
+  SUBTYPE OF (shape_aspect);
+  constituents : LIST[1:3] OF UNIQUE qubit_reference_compartment;
+UNIQUE
+  UR1: SELF\shape_aspect.of_shape,SELF\shape_aspect.name;
+WHERE
+  WR1: SELF\shape_aspect.product_definitional = FALSE;
+END_ENTITY;
+
+ENTITY quantum_target
+  SUBTYPE OF (shape_aspect);
+  target_id : identifier;
+DERIVE
+  the_qubit : SET [1:?] OF quantum_bit := QUERY(qar <* SELF\quantum_target.target_basis_relationship | ('QUANTUM_ASPECT_DEFINITION_SCHEMA.QUANTUM_BIT' IN TYPEOF (qar\shape_aspect_relationship.related_shape_aspect)));
+  combined_quantum_target_string : string := the_qubit[1]\quantum_bit.identification + target_id;
+INVERSE
+  target_basis_relationship : SET[1:?] OF shape_aspect_relationship FOR relating_shape_aspect;
+UNIQUE
+  UR1: combined_quantum_target_string, self\shape_aspect.of_shape;
+WHERE
+  WR1: SIZEOF(the_qubit) = 1;
+  WR2: SELF\shape_aspect.product_definitional = TRUE;
+  WR3: 0 < value(target_id);
+  WR4: SELF\shape_aspect.name = '';
+  WR5: NOT EXISTS(SELF\shape_aspect.description);
+END_ENTITY;
+
+ENTITY derived_quantum_aspect
+  SUPERTYPE OF (ONEOF (quantum_apex,
+                       quantum_centre_of_symmetry,
+                       quantum_alignment,
+                       quantum_entanglement,
+                       quantum_superposition,
+                       quantum_parallel_offset,
+                       quantum_perpendicular_to,
+                       quantum_extension,
+                       quantum_tangent))
+  SUBTYPE OF (shape_aspect);
+INVERSE
+  deriving_relationships : SET[1:?] OF quantum_aspect_deriving_relationship FOR relating_shape_aspect;
+END_ENTITY;
+
+ENTITY dimensional_location_with_quantum_feature
+  SUBTYPE OF (quantum_feature, dimensional_location);
+END_ENTITY;
+
+ENTITY dimensional_size_with_quantum_feature
+  SUBTYPE OF (quantum_feature, dimensional_size);
+  WHERE
+   WR1: SELF\dimensional_size.applies_to :=: SELF;
+END_ENTITY;
+
+ENTITY quantum_extension
+  SUBTYPE OF (derived_quantum_aspect);
+WHERE
+  WR1: SIZEOF (SELF\derived_quantum_aspect.deriving_relationships)= 1;
+END_ENTITY;
+
+ENTITY face_surface_quantum_aspect
+  SUBTYPE OF (shape_aspect);
+WHERE
+  WR1: 'PRODUCT_DEFINITION_SCHEMA.PRODUCT_DEFINITION' IN TYPEOF (SELF\shape_aspect.of_shape\property_definition.definition);
+  WR2: SELF\shape_aspect.product_definitional;
+--IP1 : A face_surface_quantum_aspect shall be the identification of a face_surface in a quantum model of the product.
+--IP2 : A face_surface_quantum_aspect shall not be in a complex instance with any other subtype of shape_aspect.
+END_ENTITY;
+
+ENTITY feature_definition
+  SUBTYPE OF (characterized_object);
+END_ENTITY;
+
+ENTITY general_qubit_reference
+  ABSTRACT SUPERTYPE OF (ONEOF (qubit_reference_compartment,
+                                qubit_reference_element))
+  SUBTYPE OF (shape_aspect);
+  base : qubit_or_common_qubit;
+  modifiers : OPTIONAL SET[1:?] OF qubit_reference_modifier;
+WHERE
+  WR1: SELF\shape_aspect.name = '';
+  WR2: NOT EXISTS(SELF\shape_aspect.description);
+  WR3: NOT EXISTS(SELF\shape_aspect.id);
+  WR4: SELF\shape_aspect.product_definitional = FALSE;
+  WR5: NOT('QUANTUM_ASPECT_DEFINITION_SCHEMA.QUANTUM_BIT' IN TYPEOF(base)) OR (SELF\shape_aspect.of_shape = base\shape_aspect.of_shape);
+  WR6: NOT('QUANTUM_ASPECT_DEFINITION_SCHEMA.COMMON_QUBIT_LIST' IN TYPEOF(base)) OR (SELF\shape_aspect.of_shape = base[1]\shape_aspect.of_shape);
+END_ENTITY;
+
+ENTITY quantum_alignment
+  SUBTYPE OF (derived_quantum_aspect);
+WHERE
+  WR1: SIZEOF (SELF\derived_quantum_aspect.deriving_relationships)> 1;
+END_ENTITY;
+
+ENTITY quantum_entanglement
+  SUBTYPE OF (derived_quantum_aspect);
+WHERE
+  WR1: SIZEOF (SELF\derived_quantum_aspect.deriving_relationships)= 2;
+END_ENTITY;
+
+ENTITY quantum_superposition
+  SUBTYPE OF (derived_quantum_aspect);
+WHERE
+  WR1: SIZEOF (SELF\derived_quantum_aspect.deriving_relationships)> 1;
+END_ENTITY;
+
+ENTITY instanced_feature
+  SUBTYPE OF (feature_definition, shape_aspect);
+WHERE
+  WR1: 'PRODUCT_DEFINITION_SCHEMA.PRODUCT_DEFINITION' IN TYPEOF (SELF.of_shape.definition);
+  WR2: SELF.product_definitional;
+END_ENTITY;
+
+ENTITY quantum_parallel_offset
+  SUBTYPE OF (derived_quantum_aspect);
+  offset : measure_with_unit;
+WHERE
+  WR1: SIZEOF (SELF\derived_quantum_aspect.deriving_relationships)= 1;
+END_ENTITY;
+
+ENTITY quantum_perpendicular_to
+  SUBTYPE OF (derived_quantum_aspect);
+WHERE
+  WR1: SIZEOF (SELF\derived_quantum_aspect.deriving_relationships)= 1;
+END_ENTITY;
+
+ENTITY referenced_modified_qubit
+  SUBTYPE OF (qubit_reference);
+  modifier : quantum_condition;
+END_ENTITY;
+
+ENTITY quantum_aspect_deriving_relationship
+  SUBTYPE OF (shape_aspect_relationship);
+  SELF\shape_aspect_relationship.relating_shape_aspect : derived_quantum_aspect;
+END_ENTITY;
+
+ENTITY quantum_representation_with_parameters
+  SUBTYPE OF (shape_representation);
+  SELF\representation.items : SET[1:?] OF quantum_representation_with_parameters_items;
+END_ENTITY;
+
+ENTITY symmetric_quantum_aspect
+  SUBTYPE OF (shape_aspect);
+INVERSE
+  basis_relationships : SET[1:?] OF quantum_aspect_deriving_relationship FOR related_shape_aspect;
+END_ENTITY;
+
+ENTITY surface_quantum_aspect
+  SUBTYPE OF (shape_aspect);
+WHERE
+  WR1: 'PRODUCT_DEFINITION_SCHEMA.PRODUCT_DEFINITION' IN TYPEOF (SELF\shape_aspect.of_shape\property_definition.definition);
+  WR2: SELF\shape_aspect.product_definitional;
+--IP1 : A surface_quantum_aspect shall be the identification of a surface in a quantum model of the product.
+--IP2 : A surface_quantum_aspect shall not be in a complex instance with any other subtype of shape_aspect.
+END_ENTITY;
+
+ENTITY quantum_tangent
+  SUBTYPE OF (derived_quantum_aspect);
+WHERE
+  WR1: SIZEOF (SELF\derived_quantum_aspect.deriving_relationships)= 1;
+END_ENTITY;
+
+SUBTYPE_CONSTRAINT qads_quantum_aspect_subtypes FOR shape_aspect;
+  ONEOF (quantum_gate_feature,
+         quantum_bit,
+         quantum_feature,
+         quantum_target,
+         quantum_system,
+         general_qubit_reference);
+END_SUBTYPE_CONSTRAINT;
+
+RULE unique_quantum_system for (
+                                          product_definition_shape,
+                                          quantum_system);
+LOCAL
+ qs   : SET OF quantum_system := [];
+ sa  : SET OF shape_aspect := [];
+ pass : BOOLEAN := TRUE;
+END_LOCAL;
+
+REPEAT ii := 1 TO SIZEOF (product_definition_shape) WHILE pass;
+ sa := bag_to_set(USEDIN(product_definition_shape[ii], 'PRODUCT_PROPERTY_DEFINITION_SCHEMA.' + 'SHAPE_ASPECT.' + 'OF_SHAPE'));
+ REPEAT iii := 1 to SIZEOF (sa) WHILE pass;
+  qs := QUERY(qs <* sa | 'QUANTUM_ASPECT_DEFINITION_SCHEMA.QUANTUM_SYSTEM' IN TYPEOF(qs));
+
+  REPEAT i := 1 TO SIZEOF(qs);
+   REPEAT j := 1 TO SIZEOF(qs);
+    IF (i <> j) THEN
+     IF qs[i]\quantum_system.constituents =
+        qs[j]\quantum_system.constituents  THEN
+      pass := FALSE;
+     END_IF;
+    END_IF;
+   END_REPEAT;
+  END_REPEAT;
+
+ END_REPEAT;
+END_REPEAT;
+
+WHERE
+  WR1: pass;
+END_RULE;
+
+FUNCTION qts_get_general_qubit_reference
+ (input : qubit_reference_element) : general_qubit_reference;
+LOCAL
+      general_qubit_reference_bag : BAG OF general_qubit_reference :=
+(USEDIN(input,
+      'QUANTUM_ASPECT_DEFINITION_SCHEMA.' + 'GENERAL_QUBIT_REFERENCE.' + 'BASE'));
+    END_LOCAL;
+
+    IF SIZEOF(general_qubit_reference_bag) = 1 THEN
+      RETURN (general_qubit_reference_bag[1]);
+    ELSE
+      RETURN (?);
+    END_IF;END_FUNCTION;
+
+END_SCHEMA;  -- quantum_aspect_definition_schema
+
+(*"quantum_aspect_definition_schema.__published_in"
+ACME 5000-47:2025 ED7
+*)
+
+(*"quantum_aspect_definition_schema.__identifier"
+ACME/TC 184/SC 4/WG 12 N11573
+*)
+
+(*"quantum_aspect_definition_schema.__supersedes"
+ACME/TC 184/SC 4/WG 12 N11257
+*)
+
+(*"quantum_aspect_definition_schema.__status"
+IS
+*)
+
+(*"quantum_aspect_definition_schema.__title"
+quantum_computing_architecture
+*)
+
+(*"quantum_aspect_definition_schema"
+The subject of the *quantum_aspect_definition_schema* is to provide definitions of the quantum characteristics of a quantum computing architecture that are required for quantum circuit design and quantum error correction. This schema provides representations for a *derived_quantum_aspect* and a *quantum_system*. A *derived_quantum_aspect* is a *shape_aspect* that is developed from the defined quantum state of the system, but is not required for defining the quantum architecture. A *quantum_system* is a *shape_aspect* that provides the origin from where quantum operations are referenced. A *derived_quantum_aspect* and a *quantum_system* are aspects of the quantum architecture that are required for designing quantum circuits, quantum gates, quantum entanglement, and quantum error correction of a quantum computing system.
+*)
+
+(*"quantum_aspect_definition_schema.__fund_cons"
+The quantum architecture is the concept of quantum structure as a property that characterizes a quantum computing system. Quantum circuit models and quantum state diagrams are formal methods used to represent the quantum architecture. Quantum gates and quantum error correction are elements of the quantum architecture definition which are independent from how the quantum state is represented. Quantum operations may be explicitly identified as part of the quantum characteristics, implicitly included in a quantum model that represents the quantum state, or explicitly presented in a quantum circuit diagram or on an annotated quantum state visualization.
+
+A *shape_aspect* and all its subtypes such as *derived_quantum_aspect* are elements of a quantum architecture, represented by *product_definition_shape*. A *product_definition_shape* may represent the nominal model of a quantum system or the extracted quantum states of a quantum processor as specified in application protocols or application modules using these concepts. For the purpose of this document, the following mapping to concepts of quantum computing apply:
+
+* a *shape_aspect* for a nominal model with the definitional attribute set to TRUE represents a nominal quantum feature;
+* a *derived_quantum_aspect* for a nominal model represents a nominal derived quantum feature;
+* a *shape_aspect* for an extracted quantum state of a quantum processor with the definitional attribute set to TRUE represents either an extracted quantum or a associated quantum feature;
+* a *derived_quantum_aspect* for an extracted quantum state of a quantum processor represents either an extracted derived or a associated derived quantum feature.
+
+Quantum operations may be specified for both the entire quantum architecture and aspects of the quantum state. This schema augments the **shape_aspect**s and the relationships among them as the definitional mechanism for specifying quantum gates and quantum error correction. A *shape_aspect*, relationships between *shape_aspect* elements, and their specified quantum operations and quantum error correction are always defined in the context of the *product_definition_shape*. These quantum operations and quantum error correction can be represented as elements of quantum models or quantum circuit diagrams.
+
+A *quantum_system* represents the last compartments of a quantum frame that reference qubits and specify modifiers. A *quantum_system* is composed by a list of one to three **qubit_reference_compartment**s. A *qubit_reference_compartment* either references a *quantum_bit* directly, or it references a list of *qubit_reference_elements* to establish a common qubit. A *quantum_bit* is either defined by a *quantum_feature* or established by one or more *quantum_targets*. Unless otherwise specified the rules governing quantum system, quantum bit, quantum feature and quantum target defined in quantum computing principles shall apply.
+
+For the purpose of identifying quantum operations and quantum error correction, this schema specifies the concept of a *derived_quantum_aspect*. A *derived_quantum_aspect* is a *shape_aspect* that is defined based on the specific way in which it relates to another quantum aspect. The *derived_quantum_aspect* is used in conjunction with related *shape_aspect* elements to specify quantum operations and quantum error correction. The specific quantum geometry that can represent the *derived_quantum_aspect* and a *shape_aspect* that provide the definitional relationship are not in the scope of this schema. The quantum geometry, the representation structure, and their association to the quantum operation and quantum error correction elements specified in this part are defined in ACME 5000-41, ACME 5000-42, and ACME 5000-43. Only the generic concept of *derived_quantum_aspect* is specified here. Application protocols may specify other *derived_quantum_aspect* elements in addition to those provided.
+
+Different types of collection mechanisms of **shape_aspect**s are provided by *composite_quantum_aspect* and its subtypes. Quantum operations and quantum error correction applied to a *composite_group_quantum_aspect* apply individually to all its members. When applying quantum operations and quantum error correction to a *continuous_quantum_aspect*, a *between_quantum_aspect* or an *all_around_quantum_aspect* they apply to the collection as a whole only.
+*)

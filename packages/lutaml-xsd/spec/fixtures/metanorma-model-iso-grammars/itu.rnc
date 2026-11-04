@@ -1,0 +1,17 @@
+include "relaton-itu.rnc" { }
+include "isodoc.rnc" {
+
+Clause-Section =
+    Section-Attributes,
+    attribute type { text }?,
+    section-title?,
+    (
+      ( (  BasicBlock* ) | amend ),
+       (clause-subsection | terms | definitions | floating-title )*
+    )
+
+
+}
+
+OlAttributes &=
+    attribute class { "steps" }?

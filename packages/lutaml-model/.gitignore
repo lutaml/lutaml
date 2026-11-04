@@ -1,0 +1,44 @@
+.DS_Store
+.rubocop-https---*
+
+/.yardoc
+/_yardoc/
+/coverage/
+/doc/
+/pkg/
+/spec/reports/
+/tmp/
+
+# rspec failure tracking
+.rspec_status
+
+# Direnv
+.direnv/
+
+# Bundler
+.bundle/
+
+Gemfile.lock
+*_BACKUP_*
+*_BASE_*
+*_LOCAL_*
+*_REMOTE_*
+.vscode
+.rubocop-https*
+
+# Artifacts from static site generators
+/_site
+/docs/_site
+/docs/.jekyll-cache
+
+*.md
+old-docs/
+.kilocode/
+old/
+
+.orig
+.rubocop-*
+.DS_Store
+.ruby-lsp
+TODO*
+

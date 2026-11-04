@@ -1,0 +1,87 @@
+---
+title: OWL/RDF Export
+parent: Interop Exports
+grand_parent: Guides
+nav_order: 2
+---
+
+= OWL/RDF Export
+
+== Purpose
+
+`Expressir::Interop::Owl` renders one EXPRESS schema as OWL 2 in Turtle.
+The approach generalizes the ifcOWL lineage from IFC to arbitrary
+EXPRESS. This guide records the decisions and the literature the
+approach follows.
+
+== Lineage
+
+The mapping follows the published EXPRESS-to-OWL work:
+
+* J. Beetz, J. van Leeuwen, B. de Vries, "IfcOWL: A case of transforming
+  EXPRESS schemas into ontologies", _Artificial Intelligence for
+  Engineering Design, Analysis and Manufacturing_ 23(1), 2009, 89-101.
+* P. Pauwels, W. Terkaj, "EXPRESS to OWL for construction industry:
+  Towards a recommendable and usable ifcOWL ontology", _Automation in
+  Construction_ 63, 2016, 100-133.
+* W. Terkaj, A. Sojic, "Ontology-based representation of IFC EXPRESS
+  rules: An enhancement of the ifcOWL ontology", _Automation in
+  Construction_ 57, 2015, 188-201.
+
+The last reference is the source of our scope decision on WHERE rules:
+this exporter does not translate rule bodies (see below).
+
+== Mapping decisions
+
+Entities::
+Each entity becomes an `owl:Class` with one `rdfs:subClassOf` per
+`SUBTYPE OF` parent. Abstract entities carry an `rdfs:comment
+"EXPRESS ABSTRACT SUPERTYPE"`; they are not made equivalent to their
+subtype union.
+
+Explicit attributes::
+Each explicit attribute becomes a property with `rdfs:domain` on its
+entity and `rdfs:range` from the attribute type. Entity, select and
+enumeration ranges are object properties; primitive ranges are
+datatype properties. `OPTIONAL` is recorded as an `rdfs:comment`
+rather than an OWL cardinality restriction, because cardinalities
+belong to the entity class and would multiply restrictions per
+attribute.
+
+Primitive types::
+`INTEGER` → `xsd:integer`; `REAL`/`NUMBER` → `xsd:double`; `STRING` →
+`xsd:string`; `BOOLEAN` → `xsd:boolean`; `BINARY` → `xsd:hexBinary`.
+`LOGICAL` maps to `xsd:boolean`; EXPRESS `UNKNOWN` has no XSD
+counterpart and is a documented loss. Defined types over primitives are
+emitted as `rdfs:Datatype` with `owl:equivalentClass` to the XSD type.
+
+Aggregates::
+`LIST`, `ARRAY`, `SET` and `BAG` attributes are object properties with
+range `rdf:List`; element type and ordering live in the RDF collection.
+
+SELECT::
+A named select becomes an `owl:Class` with an `owl:equivalentClass`
+restriction whose `owl:unionOf` lists the item classes (union
+semantics). `BASED_ON` chains are folded into the item list.
+
+Enumerations::
+An enumeration becomes an `owl:Class`; each item becomes an
+`owl:NamedIndividual` of that class. `BASED_ON` chains are folded.
+
+Not exported::
+`WHERE` and `UNIQUE` rule bodies, subtype constraint expressions,
+derived and inverse attributes, and aggregate bounds. Rule translation
+is a research problem in its own right (see Terkaj & Sojic); consumers
+that need rule semantics should consume the EXPRESS model directly.
+
+== Programmatic use
+
+[source,ruby]
+----
+schema = Expressir::Express::Parser.from_file("example.exp").schemas.first
+turtle = Expressir::Interop::Owl.new(
+  schema,
+  base_iri: "https://example.org/my-schema#",
+).export
+File.write("example.ttl", turtle)
+----

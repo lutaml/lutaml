@@ -1,0 +1,52 @@
+# Component Rendering Rules
+# Defines how each component type is rendered
+
+components:
+  element:
+    icon: "E"
+    show_cardinality: true
+    show_namespace: true
+    clickable: true
+    filter: "dropShadow"
+
+  type:
+    icon: "T"
+    show_base_type: true
+    show_derivation: true
+    clickable: true
+    filter: "dropShadow"
+
+  attribute:
+    icon: "@"
+    show_type: true
+    show_default: true
+    clickable: false
+    filter: null
+
+  group:
+    icon: null
+    show_type: true
+    clickable: false
+    filter: null
+
+indicators:
+  abstract:
+    text: "«abstract»"
+    position: "top_right"
+    style: "italic"
+    offset_x: -5
+    offset_y: 12
+
+  optional:
+    text: "?"
+    position: "top_right"
+    style: "normal"
+    offset_x: -5
+    offset_y: 12
+
+  required:
+    text: "*"
+    position: "top_right"
+    style: "bold"
+    offset_x: -5
+    offset_y: 12

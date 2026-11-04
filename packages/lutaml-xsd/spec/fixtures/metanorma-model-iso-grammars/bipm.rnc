@@ -1,0 +1,24 @@
+include "relaton-bipm.rnc" {}
+include "isodoc.rnc" {
+
+Clause-Section =
+    Section-Attributes,
+    attribute type { text }?,
+    section-title?,
+    (
+      ( (  BasicBlock* ) | amend ),
+       (clause-subsection | terms | definitions | floating-title )*
+    )
+
+}
+
+XrefAttributes &=
+     attribute pagenumber { xsd:boolean }?,
+     attribute nosee { xsd:boolean }?,
+     attribute nopage { xsd:boolean }?
+
+Annex-Section-Attributes &=
+    attribute unnumbered  { xsd:boolean }?
+
+OlAttributes &=
+    attribute start { text }?

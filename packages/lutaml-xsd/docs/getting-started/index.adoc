@@ -1,0 +1,12 @@
+---
+layout: default
+title: Getting started
+nav_order: 10
+has_children: true
+---
+
+== Getting started
+
+This section helps you get started with Lutaml::XSD.
+
+Follow the installation guide and quick start tutorial to begin working with XSD schemas.

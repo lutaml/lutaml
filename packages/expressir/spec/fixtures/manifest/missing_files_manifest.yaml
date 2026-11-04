@@ -1,0 +1,5 @@
+schemas:
+  valid_schema:
+    path: ../schemas/test_schema.exp
+  missing_schema:
+    path: ../schemas/nonexistent.exp

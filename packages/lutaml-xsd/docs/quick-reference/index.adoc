@@ -1,0 +1,42 @@
+---
+layout: default
+title: Quick Reference
+nav_order: 10
+has_children: true
+---
+= Quick Reference
+:toc:
+:toclevels: 2
+
+== Purpose
+
+This section provides concise, visual one-page cheat sheets for common lutaml-xsd
+tasks and configurations.
+
+== Available cheat sheets
+
+* link:package-configuration-cheatsheet[Package Configuration Cheatsheet] -
+  Decision matrices and configuration patterns
+* link:cli-commands-cheatsheet[CLI Commands Cheatsheet] - All command-line
+  operations on one page
+* link:schema-mapping-cheatsheet[Schema Mapping Cheatsheet] - Common regex
+  patterns and mapping examples
+
+== When to use cheat sheets
+
+Use these cheat sheets when you:
+
+* Need a quick reference without reading full documentation
+* Want to compare different configuration options
+* Are looking for common patterns and examples
+* Need to remember command syntax
+* Want visual decision guides
+
+For comprehensive information, refer to the full documentation sections.
+
+== See also
+
+* link:..[Documentation index] - Complete documentation map
+* link:../QUICK_START[Quick start] - Get started tutorial
+* link:../CLI[CLI documentation] - Detailed command reference
+* link:../PACKAGE_CONFIGURATION[Package configuration] - Full configuration guide

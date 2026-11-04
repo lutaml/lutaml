@@ -1,0 +1,825 @@
+---
+layout: default
+title: Type resolution
+parent: Core concepts
+nav_order: 1
+---
+
+== Type resolution
+:toc:
+:toclevels: 3
+
+== Purpose
+
+This document explains the type resolution system in Lutaml::XSD, which enables
+namespace-aware type lookups across multiple XSD schemas using qualified names
+in various formats.
+
+Type resolution is essential when working with complex schema sets like
+CityGML, GML, or ISO/TC 211 standards where types need to be found across
+namespace boundaries.
+
+== General
+
+The [`SchemaRepository`](../../lib/lutaml/xsd/schema_repository.rb) provides
+comprehensive type resolution capabilities by building an index of all types,
+elements, and schema components. This index enables efficient lookups using
+three different name formats:
+
+* **Prefixed names**: `gml:CodeType`
+* **Clark notation**: `{http://www.opengis.net/gml/3.2}CodeType`
+* **Unprefixed names**: `CodeType` (searches all namespaces)
+
+The repository automatically processes all imports and includes when parsing
+schemas, creating a complete cross-schema index for type resolution.
+
+== Three name formats
+
+=== Prefixed names
+
+Prefixed names use a namespace prefix followed by a colon and the local name.
+
+Syntax:
+
+NOTE: This is a syntax template. Replace `{prefix}` and `{local_name}` with actual values.
+
+[source,ruby]
+----
+result = repo.resolve_type(qualified_name: '{prefix}:{local_name}') <1>
+----
+<1> Resolve using namespace prefix
+
+Where,
+
+`prefix`:: The namespace prefix (e.g., `gml`, `xlink`, `uro`)
+`local_name`:: The type's local name (e.g., `CodeType`, `BuildingType`)
+
+.Resolving types with prefixed names
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+repo = Lutaml::Xsd::SchemaRepository.new
+
+# Configure namespace mapping first
+repo.add_namespace_mapping(
+  prefix: 'gml',
+  uri: 'http://www.opengis.net/gml/3.2'
+)
+
+# Parse schema
+xsd_content = File.read('schema.xsd')
+repo.parse_schema(content: xsd_content)
+
+# Resolve using prefixed name
+result = repo.resolve_type(qualified_name: 'gml:CodeType')
+
+if result.found?
+  puts "Found: #{result.type.name}"
+  puts "Namespace: #{result.namespace}"
+  puts "Local name: #{result.local_name}"
+end
+----
+
+Output:
+
+----
+Found: CodeType
+Namespace: http://www.opengis.net/gml/3.2
+Local name: CodeType
+----
+====
+
+=== Clark notation
+
+Clark notation uses curly braces around the full namespace URI followed by the
+local name, providing an unambiguous reference without requiring prefix
+configuration.
+
+Syntax:
+
+NOTE: This is a syntax template. Replace `{namespace_uri}` with the full namespace URI and `local_name` with the actual type name.
+
+[source,ruby]
+----
+result = repo.resolve_type(qualified_name: '{namespace_uri}local_name') <1>
+----
+<1> Resolve using full namespace URI in Clark notation
+
+Where,
+
+`namespace_uri`:: The complete namespace URI
+`local_name`:: The type's local name
+
+.Resolving types with Clark notation
+[example]
+====
+[source,ruby]
+----
+# No namespace mapping needed - URI is explicit
+result = repo.resolve_type(
+  qualified_name: '{http://www.opengis.net/gml/3.2}CodeType'
+)
+
+if result.found?
+  puts "Resolved to: #{result.type.name}"
+  puts "From namespace: #{result.namespace}"
+end
+----
+
+Clark notation is particularly useful when:
+
+* Working across multiple schema sets with potential prefix conflicts
+* Integrating with tools that use Clark notation
+* Avoiding the need to configure namespace mappings
+====
+
+=== Unprefixed names
+
+Unprefixed names search across all registered namespaces to find matching
+types. This is useful for quick lookups but may return the first match if
+multiple namespaces contain types with the same name.
+
+Syntax:
+
+NOTE: This is a syntax template. Replace `local_name` with the actual type name.
+
+[source,ruby]
+----
+result = repo.resolve_type(qualified_name: 'local_name') <1>
+----
+<1> Resolve by searching all namespaces
+
+.Resolving types with unprefixed names
+[example]
+====
+[source,ruby]
+----
+# Search all namespaces for 'CodeType'
+result = repo.resolve_type(qualified_name: 'CodeType')
+
+if result.found?
+  puts "Found in namespace: #{result.namespace}"
+  puts "Type: #{result.type.name}"
+end
+----
+
+WARNING: If multiple namespaces contain types with the same local name, this
+method returns the first match. Use prefixed names or Clark notation for
+unambiguous resolution.
+====
+
+== [`find_type()`](../../lib/lutaml/xsd/schema_repository.rb) method
+
+The [`find_type()`](../../lib/lutaml/xsd/schema_repository.rb:153) method
+provides direct type lookup by name and optional namespace.
+
+Syntax:
+
+NOTE: This is a syntax template. Replace `{name}` and `{namespace}` with actual values.
+
+[source,ruby]
+----
+type = repo.find_type(name: {name}, namespace: {namespace}) <1>
+----
+<1> Find a type by name and optional namespace
+
+Where,
+
+`name`:: The local name of the type (required)
+`namespace`:: The namespace URI to search in (optional)
+
+.Using find_type for direct lookups
+[example]
+====
+[source,ruby]
+----
+# Find in specific namespace
+type = repo.find_type(
+  name: 'CodeType',
+  namespace: 'http://www.opengis.net/gml/3.2'
+)
+
+if type
+  puts "Found: #{type.name}"
+  puts "Type class: #{type.class.name}"
+
+  # Access type properties
+  if type.is_a?(Lutaml::Xsd::ComplexType)
+    puts "Complex type with #{type.attribute.size} attributes"
+  end
+end
+
+# Search across all namespaces (returns first match)
+type = repo.find_type(name: 'CodeType')
+----
+====
+
+== [`resolve_type()`](../../lib/lutaml/xsd/schema_repository.rb) method
+
+The [`resolve_type()`](../../lib/lutaml/xsd/schema_repository.rb:217) method
+provides a higher-level interface that returns a
+[`TypeResolutionResult`](../../lib/lutaml/xsd/schema_repository.rb:15) with
+detailed resolution information.
+
+Syntax:
+
+NOTE: This is a syntax template. Replace `{name}` with the actual qualified type name.
+
+[source,ruby]
+----
+result = repo.resolve_type(qualified_name: {name}) <1>
+----
+<1> Resolve a type and get detailed result
+
+Returns a `TypeResolutionResult` with:
+
+`found?`:: Boolean indicating if type was found
+`type`:: The resolved type object (if found)
+`namespace`:: The namespace URI of the type
+`local_name`:: The local name portion of the type
+`qname`:: The qualified name used for lookup
+
+.Using resolve_type with result checking
+[example]
+====
+[source,ruby]
+----
+result = repo.resolve_type(qualified_name: 'gml:CodeType')
+
+# Check if found
+if result.found?
+  puts "✓ Type resolved successfully"
+  puts "  Qualified name: #{result.qname}"
+  puts "  Namespace: #{result.namespace}"
+  puts "  Local name: #{result.local_name}"
+  puts "  Type class: #{result.type.class.name}"
+
+  # Access the type object
+  type = result.type
+  if type.respond_to?(:documentation)
+    type.documentation.each do |doc|
+      puts "  Documentation: #{doc.content}"
+    end
+  end
+else
+  puts "✗ Type not found"
+  puts "  Attempted to resolve: #{result.local_name}"
+end
+----
+====
+
+== Working with qualified names
+
+=== Parsing qualified names
+
+The repository automatically parses qualified names to extract namespace and
+local name components.
+
+.Type resolution workflow diagram
+[source]
+----
+┌─────────────────────────────────────────────────────────────────┐
+│                   Type Resolution Workflow                      │
+└─────────────────────────────────────────────────────────────────┘
+
+User Query → Parse QName → Resolve Namespace → Lookup in Index → Return Result
+
+1. PREFIXED NAME (gml:CodeType)
+   ┌──────────────┐
+   │ gml:CodeType │
+   └──────┬───────┘
+          │
+          ▼
+   ┌─────────────────────┐
+   │ QualifiedNameParser │
+   │ Split on ':'        │
+   │ prefix: "gml"       │
+   │ local: "CodeType"   │
+   └──────┬──────────────┘
+          │
+          ▼
+   ┌──────────────────────────┐
+   │ NamespaceRegistry        │
+   │ Lookup prefix → URI      │
+   │ "gml" →                  │
+   │ "http://.../gml/3.2"     │
+   └──────┬───────────────────┘
+          │
+          ▼
+   ┌──────────────────────────┐
+   │ TypeIndex                │
+   │ Find by namespace + name │
+   └──────┬───────────────────┘
+          │
+          ▼
+   ┌──────────────────────────┐
+   │ TypeResolutionResult     │
+   │ found?: true             │
+   │ type: ComplexType        │
+   └──────────────────────────┘
+
+2. CLARK NOTATION ({http://www.opengis.net/gml/3.2}CodeType)
+   ┌────────────────────────────────────────┐
+   │ {http://www.opengis.net/gml/3.2}CodeType│
+   └──────┬─────────────────────────────────┘
+          │
+          ▼
+   ┌─────────────────────┐
+   │ QualifiedNameParser │
+   │ Extract from {}     │
+   │ namespace: "http..."│
+   │ local: "CodeType"   │
+   └──────┬──────────────┘
+          │
+          ▼
+   ┌──────────────────────────┐
+   │ TypeIndex                │
+   │ Direct lookup            │
+   │ (no prefix resolution)   │
+   └──────┬───────────────────┘
+          │
+          ▼
+   ┌──────────────────────────┐
+   │ TypeResolutionResult     │
+   │ found?: true             │
+   └──────────────────────────┘
+
+3. UNPREFIXED NAME (CodeType)
+   ┌──────────┐
+   │ CodeType │
+   └────┬─────┘
+        │
+        ▼
+   ┌─────────────────────┐
+   │ QualifiedNameParser │
+   │ No prefix/namespace │
+   │ local: "CodeType"   │
+   └──────┬──────────────┘
+          │
+          ▼
+   ┌──────────────────────────┐
+   │ TypeIndex                │
+   │ Search all namespaces    │
+   │ Return first match       │
+   └──────┬───────────────────┘
+          │
+          ▼
+   ┌──────────────────────────┐
+   │ TypeResolutionResult     │
+   │ found?: true/false       │
+   └──────────────────────────┘
+----
+
+.Name format comparison table
+[source]
+----
+╔═══════════════════════════════════════════════════════════════════╗
+║              Qualified Name Format Comparison                     ║
+╠═══════════════════════════════════════════════════════════════════╣
+║                                                                   ║
+║  Format          Example                    Requires Config?     ║
+║  ──────────────  ─────────────────────────  ──────────────────   ║
+║  Prefixed        gml:CodeType               ✓ Namespace mapping  ║
+║                  uro:BuildingType                                ║
+║                  xlink:href                                      ║
+║                                                                   ║
+║  Clark Notation  {http://.../gml/3.2}       ✗ Self-contained    ║
+║                  CodeType                                        ║
+║                  {http://.../uro/3.2}                           ║
+║                  BuildingType                                    ║
+║                                                                   ║
+║  Unprefixed      CodeType                   ✗ Searches all      ║
+║                  BuildingType               ⚠ May be ambiguous   ║
+║                  href                                            ║
+╠═══════════════════════════════════════════════════════════════════╣
+║  Characteristics:                                                 ║
+║                                                                   ║
+║  Prefixed:       • Readable and concise                          ║
+║                  • Requires namespace configuration              ║
+║                  • Standard in XML/XSD                           ║
+║                  • Best for interactive use                      ║
+║                                                                   ║
+║  Clark Notation: • Unambiguous                                   ║
+║                  • No configuration needed                       ║
+║                  • Verbose                                       ║
+║                  • Best for programmatic use                     ║
+║                                                                   ║
+║  Unprefixed:     • Simplest format                               ║
+║                  • May match multiple types                      ║
+║                  • Returns first match                           ║
+║                  • Best for unique type names                    ║
+╚═══════════════════════════════════════════════════════════════════╝
+----
+
+=== Namespace mapping configuration
+
+Prefixed names require namespace mappings to be configured before resolution.
+
+.Configuring multiple namespace mappings
+[example]
+====
+[source,ruby]
+----
+repo = Lutaml::Xsd::SchemaRepository.new
+
+# Add common namespace mappings
+[
+  { prefix: 'gml', uri: 'http://www.opengis.net/gml/3.2' },
+  { prefix: 'xlink', uri: 'http://www.w3.org/1999/xlink' },
+  { prefix: 'gco', uri: 'http://www.isotc211.org/2005/gco' },
+  { prefix: 'uro', uri: 'https://www.geospatial.jp/iur/uro/3.2' }
+].each do |mapping|
+  repo.add_namespace_mapping(
+    prefix: mapping[:prefix],
+    uri: mapping[:uri]
+  )
+end
+
+# Now prefixed names can be resolved
+result = repo.resolve_type(qualified_name: 'gml:CodeType')
+----
+====
+
+== Type resolution results
+
+The [`TypeResolutionResult`](../../lib/lutaml/xsd/schema_repository.rb:15)
+object provides comprehensive information about the resolution attempt.
+
+=== Result properties
+
+.TypeResolutionResult properties
+[source,ruby]
+----
+result.found?       # Boolean: was type found?
+result.type         # Type object (if found)
+result.namespace    # String: namespace URI
+result.local_name   # String: local type name
+result.qname        # String: qualified name used
+result.resolved?    # Alias for found?
+----
+
+=== Checking resolution status
+
+.Handling resolution results
+[example]
+====
+[source,ruby]
+----
+def display_type_info(repo, qname)
+  result = repo.resolve_type(qualified_name: qname)
+
+  if result.found?
+    puts "Type Resolution: #{qname}"
+    puts "✓ Type found"
+    puts
+    puts "Qualified Name: #{result.qname}"
+    puts "Namespace: #{result.namespace}"
+    puts "Local Name: #{result.local_name}"
+    puts "Type Class: #{result.type.class.name}"
+
+    # Display documentation if available
+    if result.type.respond_to?(:annotation)
+      result.type.annotation&.documentation&.each do |doc|
+        puts
+        puts "Documentation:"
+        puts "  #{doc.content}"
+      end
+    end
+  else
+    puts "Type Resolution: #{qname}"
+    puts "✗ Type not found"
+    puts
+    puts "Searched for: #{result.local_name}"
+    if result.namespace
+      puts "In namespace: #{result.namespace}"
+    else
+      puts "Across all namespaces"
+    end
+  end
+end
+
+# Use the helper
+display_type_info(repo, 'gml:CodeType')
+display_type_info(repo, 'UnknownType')
+----
+
+Output:
+
+----
+Type Resolution: gml:CodeType
+✓ Type found
+
+Qualified Name: gml:CodeType
+Namespace: http://www.opengis.net/gml/3.2
+Local Name: CodeType
+Type Class: Lutaml::Xsd::ComplexType
+
+Documentation:
+  gml:CodeType is a generalized type to be used for a term, keyword or name.
+
+Type Resolution: UnknownType
+✗ Type not found
+
+Searched for: UnknownType
+Across all namespaces
+----
+====
+
+== Complete type resolution workflow
+
+.Comprehensive type resolution example
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# 1. Create repository
+repo = Lutaml::Xsd::SchemaRepository.new(
+  base_dir: File.expand_path('spec/fixtures')
+)
+
+# 2. Configure namespace mappings
+repo.add_namespace_mapping(
+  prefix: 'gml',
+  uri: 'http://www.opengis.net/gml/3.2'
+)
+repo.add_namespace_mapping(
+  prefix: 'uro',
+  uri: 'https://www.geospatial.jp/iur/uro/3.2'
+)
+
+# 3. Parse schemas
+xsd_content = File.read('spec/fixtures/i-ur/urbanFunction.xsd')
+schema_mappings = [
+  {
+    from: '../../uro/3.2/urbanObject.xsd',
+    to: File.expand_path('spec/fixtures/i-ur/urbanObject.xsd')
+  },
+  {
+    from: %r{(?:\.\./)+gml/(.+\.xsd)$},
+    to: File.expand_path('spec/fixtures/gml/\1')
+  }
+]
+
+repo.parse_schema(
+  content: xsd_content,
+  location: 'spec/fixtures/i-ur',
+  schema_mappings: schema_mappings
+)
+
+# 4. Resolve types using different formats
+puts "Type Resolution Examples:"
+puts "=" * 60
+
+# Prefixed name
+result = repo.resolve_type(qualified_name: 'gml:CodeType')
+puts "\n1. Prefixed name (gml:CodeType):"
+puts "   Found: #{result.found?}"
+puts "   Namespace: #{result.namespace}" if result.found?
+
+# Clark notation
+result = repo.resolve_type(
+  qualified_name: '{http://www.opengis.net/gml/3.2}MeasureType'
+)
+puts "\n2. Clark notation ({...}MeasureType):"
+puts "   Found: #{result.found?}"
+puts "   Local name: #{result.local_name}" if result.found?
+
+# Unprefixed (searches all)
+result = repo.resolve_type(qualified_name: 'BuildingType')
+puts "\n3. Unprefixed (BuildingType):"
+puts "   Found: #{result.found?}"
+puts "   Namespace: #{result.namespace}" if result.found?
+
+# 5. Use find_type for direct access
+type = repo.find_type(
+  name: 'CodeType',
+  namespace: 'http://www.opengis.net/gml/3.2'
+)
+
+if type
+  puts "\n4. Direct find_type:"
+  puts "   Type: #{type.name}"
+  puts "   Class: #{type.class.name}"
+end
+----
+====
+
+== Resolution algorithm decision tree
+
+The following decision tree shows how the resolution system processes different qualified name formats:
+
+.Type resolution algorithm
+[source]
+----
+                    ┌─────────────────────┐
+                    │  Qualified Name     │
+                    │  Input              │
+                    └──────────┬──────────┘
+                               │
+                    ┌──────────▼──────────┐
+                    │ Contains '{' ?      │
+                    └──────┬──────┬───────┘
+                           │      │
+                     YES ◄─┘      └─► NO
+                      │               │
+          ┌───────────▼──────────┐   │
+          │ CLARK NOTATION       │   │
+          │ Format               │   │
+          └───────────┬──────────┘   │
+                      │               │
+          ┌───────────▼──────────┐   │
+          │ Extract namespace    │   │
+          │ from {...}           │   │
+          │ Extract local_name   │   │
+          └───────────┬──────────┘   │
+                      │               │
+          ┌───────────▼──────────┐   │
+          │ TypeIndex.find(      │   │
+          │   namespace,         │   │
+          │   local_name         │   │
+          │ )                    │   │
+          └───────────┬──────────┘   │
+                      │               │
+                      │          ┌────▼────────┐
+                      │          │ Contains    │
+                      │          │ ':' ?       │
+                      │          └────┬────┬───┘
+                      │               │    │
+                      │         YES ◄─┘    └─► NO
+                      │          │            │
+                      │  ┌───────▼────────┐  │
+                      │  │ PREFIXED NAME  │  │
+                      │  │ Format         │  │
+                      │  └───────┬────────┘  │
+                      │          │            │
+                      │  ┌───────▼────────┐  │
+                      │  │ Split on ':'   │  │
+                      │  │ prefix = left  │  │
+                      │  │ local = right  │  │
+                      │  └───────┬────────┘  │
+                      │          │            │
+                      │  ┌───────▼────────┐  │
+                      │  │ NamespaceReg   │  │
+                      │  │ .resolve(      │  │
+                      │  │   prefix       │  │
+                      │  │ )              │  │
+                      │  └───────┬────────┘  │
+                      │          │            │
+                      │    ┌─────▼─────┐     │
+                      │    │ Found?    │     │
+                      │    └─┬───────┬─┘     │
+                      │      │       │       │
+                      │ YES◄─┘       └─►NO   │
+                      │  │              │    │
+                      │  │         ┌────▼───────┐
+                      │  │         │ RETURN     │
+                      │  │         │ not_found  │
+                      │  │         │ (unknown   │
+                      │  │         │  prefix)   │
+                      │  │         └────────────┘
+                      │  │                    │
+                      │  │              ┌─────▼────────┐
+                      │  │              │ UNPREFIXED   │
+                      │  │              │ NAME Format  │
+                      │  │              └─────┬────────┘
+                      │  │                    │
+                      │  │              ┌─────▼────────┐
+                      │  │              │ local_name = │
+                      │  │              │ input        │
+                      │  │              │ namespace =  │
+                      │  │              │ nil          │
+                      │  │              └─────┬────────┘
+                      │  │                    │
+          ┌───────────▼──▼────────────────────▼──────┐
+          │ TypeIndex.find_by_namespace_and_name(   │
+          │   namespace, local_name                  │
+          │ )                                        │
+          └───────────────────┬──────────────────────┘
+                              │
+                    ┌─────────▼─────────┐
+                    │ Type found?       │
+                    └─────┬─────────┬───┘
+                          │         │
+                    YES ◄─┘         └─► NO
+                     │                 │
+         ┌───────────▼──────────┐  ┌──▼────────────┐
+         │ TypeResolutionResult │  │ TypeResolution│
+         │ found?: true         │  │ Result        │
+         │ type: <object>       │  │ found?: false │
+         │ namespace: <uri>     │  │               │
+         │ local_name: <name>   │  │               │
+         └──────────────────────┘  └───────────────┘
+----
+
+== Troubleshooting resolution failures
+
+=== Type not found
+
+If a type cannot be resolved, check these common issues:
+
+.Diagnosing resolution failures
+[example]
+====
+[source,ruby]
+----
+result = repo.resolve_type(qualified_name: 'gml:UnknownType')
+
+unless result.found?
+  # 1. Check namespace mapping exists
+  unless repo.namespace?('http://www.opengis.net/gml/3.2')
+    puts "⚠ GML namespace not loaded"
+    puts "  Parse a schema that imports GML"
+  end
+
+  # 2. List available namespaces
+  puts "\nAvailable namespaces:"
+  repo.namespaces.each do |uri|
+    type_count = repo.types_in_namespace(uri).size
+    puts "  #{uri} (#{type_count} types)"
+  end
+
+  # 3. Search for similar type names
+  puts "\nSearching for similar names..."
+  repo.namespaces.each do |ns|
+    repo.types_in_namespace(ns).each do |type|
+      if type.name&.include?('Unknown')
+        puts "  Found: #{type.name} in #{ns}"
+      end
+    end
+  end
+end
+----
+====
+
+=== Namespace mapping issues
+
+.Debugging namespace mappings
+[example]
+====
+[source,ruby]
+----
+# Verify namespace mappings
+repo.namespace_mappings.each do |mapping|
+  puts "#{mapping[:prefix]} => #{mapping[:uri]}"
+end
+
+# Check if namespace is registered
+if repo.namespace?('http://www.opengis.net/gml/3.2')
+  puts "✓ GML namespace registered"
+else
+  puts "✗ GML namespace not found"
+  puts "  Add mapping:"
+  puts "  repo.add_namespace_mapping("
+  puts "    prefix: 'gml',"
+  puts "    uri: 'http://www.opengis.net/gml/3.2'"
+  puts "  )"
+end
+----
+====
+
+=== Schema parsing issues
+
+.Verifying schema loading
+[example]
+====
+[source,ruby]
+----
+# Check repository statistics
+stats = repo.statistics
+
+puts "Repository Statistics:"
+puts "  Schemas loaded: #{stats[:total_schemas]}"
+puts "  Total types: #{stats[:total_types]}"
+puts "  Namespaces: #{stats[:total_namespaces]}"
+
+if stats[:total_types].zero?
+  puts
+  puts "⚠ No types indexed - schema parsing may have failed"
+  puts "  Check parse_schema return value and logs"
+end
+
+# Validate schemas
+validation = repo.validate
+
+unless validation[:valid?]
+  puts "\nValidation Errors:"
+  validation[:errors].each do |error|
+    puts "  - #{error}"
+  end
+end
+----
+====
+
+== See also
+
+* link:NAMESPACES.html[Namespaces] - Namespace configuration and handling
+* link:../guides/SCHEMA_REPOSITORY.html[SchemaRepository guide] - Complete
+  repository usage
+* link:../guides/LXR_PACKAGES.html[LXR packages] - Pre-indexed schema packages
+* link:../reference/RUBY_API.html[Ruby API reference] - Complete API
+  documentation

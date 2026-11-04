@@ -1,0 +1,138 @@
+# frozen_string_literal: true
+
+module Lutaml
+  module Model
+    # Single source of truth for Lutaml::Model configuration.
+    #
+    # Adapter methods delegate to AdapterResolver. This class retains
+    # the configure block API, register, and non-adapter settings.
+    #
+    # @example Basic configuration
+    #   Lutaml::Model::Configuration.configure do |config|
+    #     config.xml_adapter = :nokogiri
+    #     config.json_adapter = :standard
+    #   end
+    #
+    class Configuration
+      attr_reader :default_register
+      # Experimental: whole-document native materialization for plan-
+      # compilable XML models (Leptris::XML::Descriptor walk). Opt-in
+      # while the full semantics audit completes.
+      attr_accessor :xml_plan_fast_path
+      # Ordered/mixed-content models on the plan path: opt-in. The
+      # per-node ordered hydration is FASTER than the interpretive
+      # lane on time but allocates above the downstream budget gates
+      # (niso pnas ratio 1.25); it ships dark until the allocation
+      # diet lands.
+      attr_accessor :xml_plan_ordered_path
+      # #909: when false, XML deserialization skips the per-instance
+      # element_order/attribute_order summaries — read-only consumers of
+      # large documents never serialize back and should not pay for
+      # hundreds of thousands of pinned order records.
+      attr_accessor :element_order_tracking
+      attr_writer :conversion_cache
+
+      def initialize
+        @default_register = :default
+        @conversion_cache = nil
+        @configured = false
+        @xml_plan_fast_path = true
+        # On by default since the engine fix: leptris#1743 (the
+        # exponential flatten on diamond-shared plan graphs) shipped in
+        # 1.9.366.2's identity-memo flatten_plan — the ISO_13849 corpus
+        # that hung for 28+ CPU-min now parses in ~8s warm. The floor
+        # bump (MIN_LEPTRIS_VERSION = 1.9.366.2) keeps consumers on
+        # memo-less engines off this lane.
+        @xml_plan_ordered_path = true
+        @element_order_tracking = true
+      end
+
+      def configure
+        yield self if block_given?
+        @configured = true
+        self
+      end
+
+      # Store consulted by classes that declare `cache_conversions`.
+      # Defaults to a memory-backed Lutaml::Store::BasicStore when the
+      # lutaml-store gem is loaded (the application opts in by adding it
+      # to its Gemfile and requiring "lutaml/store"). Assign any object
+      # responding to #get/#set to override, false to disable caching
+      # entirely, or nil to return to auto-detection.
+      def conversion_cache
+        return if @conversion_cache == false
+
+        @conversion_cache ||= default_conversion_cache
+      end
+
+      def configured?
+        @configured
+      end
+
+      # Dynamic accessor for adapter types — delegates to AdapterResolver
+      def adapter_for(format)
+        AdapterResolver.configured_type(format)
+      end
+
+      # Dynamic setter for adapter types — delegates to AdapterResolver
+      def set_adapter(format, adapter_type)
+        AdapterResolver.set_adapter_type(format, adapter_type)
+      end
+
+      # Get adapter class for a format
+      def get_adapter(format)
+        AdapterResolver.adapter_for(format)
+      end
+
+      def default_register=(value)
+        @default_register = case value
+                            when Symbol then value
+                            when Lutaml::Model::Register then value.id
+                            else
+                              raise ArgumentError,
+                                    "Unknown register: #{value.inspect}. " \
+                                    "Expected a Symbol or a Lutaml::Model::Register instance."
+                            end
+      end
+
+      alias default_context_id default_register
+      alias default_context_id= default_register=
+
+      # Reset configuration to defaults
+      def reset!
+        @default_register = :default
+        @conversion_cache = nil
+        @configured = false
+        AdapterResolver.reset!
+        AdapterScope.reset!
+      end
+
+      def to_h
+        {
+          default_register: @default_register,
+          configured: @configured,
+        }
+      end
+
+      def mappings_class_for(format)
+        Lutaml::Model::FormatRegistry.mappings_class_for(format)
+      end
+
+      def transformer_for(format)
+        Lutaml::Model::FormatRegistry.transformer_for(format)
+      end
+
+      # Adapter accessors are defined dynamically by FormatRegistry.register
+      # via define_method. These forward to AdapterResolver.
+      # The generic set_adapter/get_adapter handle any format.
+
+      private
+
+      def default_conversion_cache
+        return unless defined?(::Lutaml::Store::BasicStore)
+
+        ::Lutaml::Store::BasicStore.new(adapter: { type: :memory })
+      end
+    end
+  end
+end

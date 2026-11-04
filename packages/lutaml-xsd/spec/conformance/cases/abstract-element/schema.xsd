@@ -1,0 +1,13 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://example.com/ab"
+           elementFormDefault="qualified">
+  <xs:element name="shape" type="xs:string" abstract="true"/>
+  <xs:element name="circle" type="xs:string" substitutionGroup="shape"/>
+  <xs:element name="canvas">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="shape"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

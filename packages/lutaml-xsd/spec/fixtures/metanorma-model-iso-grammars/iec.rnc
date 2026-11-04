@@ -1,0 +1,13 @@
+include "relaton-iec.rnc" { }
+include "isostandard.rnc" {
+
+term = 
+  element term { 
+    TermAttributes,
+    preferred+, admitted*, deprecates*,
+    termdomain?, termdefinition, termnote*, termexample*, termsource*,
+    term*
+  }
+
+}
+# end overrides

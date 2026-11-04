@@ -1,0 +1,2178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+*******************************************************************
+	 	JMP2.0 XML Schema implementation
+		*** JMP2.0 Metadata Classes ***
+			*** jmp20.xsd ***
+*******************************************************************
+-->
+<xs:schema
+	targetNamespace="http://zgate.gsi.go.jp/ch/jmp/"
+	xmlns:jmp20="http://zgate.gsi.go.jp/ch/jmp/"
+	xmlns:xlink="http://www.w3.org/1999/xlink"
+	xmlns:xs="http://www.w3.org/2001/XMLSchema"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	elementFormDefault="qualified" version="1.0">
+<!--
+===========================================================================
+	Japan Metadata Profile Classes
+===========================================================================
+-->
+	<!-- ================== MD_Metadata  ================== -->
+	<xs:complexType name="MD_Metadata">
+		<xs:sequence>
+			<xs:element name="identificationInfo">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element ref="jmp20:_MD_Identification"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="dataQualityInfo" minOccurs="0">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element ref="jmp20:DQ_DataQuality" maxOccurs="unbounded"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="distributionInfo" minOccurs="0">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element ref="jmp20:MD_Distribution"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="referenceSystemInfo" minOccurs="0">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element ref="jmp20:MD_ReferenceSystem" maxOccurs="unbounded"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="fileIdentifier" type="jmp20:CharacterString" minOccurs="0"/>
+			<xs:element name="language" type="jmp20:LanguageType"/>
+			<xs:element name="characterSet" type="jmp20:MD_CharacterSetCode"/>
+			<xs:element name="parentIdentifier" type="jmp20:CharacterString" minOccurs="0"/>
+			<xs:element name="hierarchyLevel" type="jmp20:MD_ScopeCode" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:element name="hierarchyLevelName" type="jmp20:CharacterString" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:element name="contact" type="jmp20:CI_ResponsibleParty"/>
+			<xs:element name="dateStamp" type="jmp20:Date"/>
+			<xs:element name="metadataStandardName" type="jmp20:CharacterString" default="JMP" minOccurs="0"/>
+			<xs:element name="metadataStandardVersion" type="jmp20:CharacterString" default="2.0" minOccurs="0"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="MD_Metadata" type="jmp20:MD_Metadata"/>
+	<!-- ================== _MD_Identification  ================== -->
+	<xs:complexType name="_MD_Identification" abstract="true">
+		<xs:sequence>
+			<xs:element name="citation" type="jmp20:CI_Citation"/>
+			<xs:element name="abstract" type="jmp20:nonNullString"/>
+			<xs:element name="purpose" type="jmp20:CharacterString" minOccurs="0"/>
+			<xs:element name="status" type="jmp20:MD_ProgressCode" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:element name="pointOfContact" type="jmp20:CI_ResponsibleParty" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:element name="resourceConstraints" minOccurs="0">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element ref="jmp20:MD_Constraints" maxOccurs="unbounded"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="descriptiveKeywords" minOccurs="0">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element ref="jmp20:MD_Keywords" maxOccurs="unbounded"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="graphicOverview" minOccurs="0">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element ref="jmp20:MD_BrowseGraphic" maxOccurs="unbounded"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="_MD_Identification" type="jmp20:_MD_Identification" abstract="true"/>
+	<!-- ================== MD_BrowseGraphic  ================== -->
+	<xs:complexType name="MD_BrowseGraphic">
+		<xs:sequence>
+			<xs:element name="fileName" type="jmp20:nonNullString"/>
+			<xs:element name="fileDescription" type="jmp20:CharacterString" minOccurs="0"/>
+			<xs:element name="fileType" type="jmp20:CharacterString" minOccurs="0"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="MD_BrowseGraphic" type="jmp20:MD_BrowseGraphic"/>
+	<!-- ================== MD_DataIdentification  ================== -->
+	<xs:complexType name="MD_DataIdentification">
+		<xs:complexContent>
+			<xs:extension base="jmp20:_MD_Identification">
+				<xs:sequence>
+					<xs:element name="spatialRepresentationType" type="jmp20:MD_SpatialRepresentationTypeCode" minOccurs="0" maxOccurs="unbounded"/>
+					<xs:element name="spatialResolution" type="jmp20:MD_Resolution" minOccurs="0" maxOccurs="unbounded"/>
+					<xs:element name="language" type="jmp20:LanguageType" maxOccurs="unbounded"/>
+					<xs:element name="characterSet" type="jmp20:MD_CharacterSetCode" maxOccurs="unbounded"/>
+					<xs:element name="topicCategory" type="jmp20:MD_TopicCategoryCode" minOccurs="0" maxOccurs="unbounded"/>
+					<xs:element name="extent" type="jmp20:EX_Extent" minOccurs="0" maxOccurs="unbounded"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:element name="MD_DataIdentification" type="jmp20:MD_DataIdentification" substitutionGroup="jmp20:_MD_Identification">
+		<xs:annotation>
+			<xs:documentation>
+	   ***   -- if MD_Metadata.hierarchyLevel isn't "dataset" (005), then topicCategory is not mandatory
+	   ***   -- if MD_Metadata.hierarchyLevel equals "dataset" (005), then
+	   			(count (extent.geographicElement.EX_GeographicBoundingBox)
+	   			 + count (extent.geographicElement.EX_CoordinateBoundingBox)
+	   			 + count (extent.geographicElement.EX_GeographicDescription) &gt;= 1)
+	   ***   let level : String = MD_Metadata::hierarchyLevel
+	   ***   let isDataSet (t : String) : Boolean = ( t = 'dataset' or t = '005')
+	   ***   if (isDataSet(level)) then (
+	   ***   self.extent-&gt;count(EX_GeographicDescription) + self.extent-&gt;count(EX_GeographicBoundingBox) &gt; 0
+	   ***   ) else (
+	   ***   self.topicCategory-&gt;size() &gt;= 0
+	   ***   )
+				</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<!-- ================== MD_RepresentativeFraction  ================== -->
+	<xs:complexType name="MD_RepresentativeFraction">
+		<xs:sequence>
+			<xs:element name="denominator" type="jmp20:positiveInteger"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="MD_RepresentativeFraction" type="jmp20:MD_RepresentativeFraction"/>
+	<!-- ================== MD_Resolution  ================== -->
+	<xs:complexType name="MD_Resolution">
+		<xs:choice>
+			<xs:element name="equivalentScale" type="jmp20:MD_RepresentativeFraction"/>
+			<xs:element name="distance" type="jmp20:Distance"/>
+		</xs:choice>
+	</xs:complexType>
+	<xs:element name="MD_Resolution" type="jmp20:MD_Resolution"/>
+	<!-- ================== MD_Keywords  ================== -->
+	<xs:complexType name="MD_Keywords">
+		<xs:sequence>
+			<xs:element name="keyword" type="jmp20:nonNullString" maxOccurs="unbounded"/>
+			<xs:element name="type" type="jmp20:MD_KeywordTypeCode" minOccurs="0"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="MD_Keywords" type="jmp20:MD_Keywords"/>
+	<!-- ================== MD_Constraints  ================== -->
+	<xs:complexType name="MD_Constraints">
+		<xs:sequence>
+			<xs:element name="useLimitation" type="jmp20:CharacterString" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="MD_Constraints" type="jmp20:MD_Constraints"/>
+	<!-- ================== LI_Lineage  ================== -->
+	<xs:complexType name="LI_Lineage">
+		<xs:sequence>
+			<xs:element name="statement" type="jmp20:CharacterString"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="LI_Lineage" type="jmp20:LI_Lineage"/>
+	<!-- ================== DQ_ConformanceResult ================== -->
+	<xs:complexType name="DQ_ConformanceResult">
+		<xs:complexContent>
+			<xs:extension base="jmp20:_DQ_Result">
+				<xs:sequence>
+					<xs:element name="specification" type="jmp20:CI_Citation"/>
+					<xs:element name="explanation" type="jmp20:nonNullString"/>
+					<xs:element name="pass" type="jmp20:DQ_PassCode"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:element name="DQ_ConformanceResult" type="jmp20:DQ_ConformanceResult" substitutionGroup="jmp20:_DQ_Result"/>
+	<!-- ================== DQ_QuantitativeResult  ================== -->
+	<xs:complexType name="DQ_QuantitativeResult">
+		<xs:complexContent>
+			<xs:extension base="jmp20:_DQ_Result">
+				<xs:sequence>
+					<xs:element name="valueUnit" type="jmp20:UnitOfMeasure"/>
+					<xs:element name="errorStatistic" type="jmp20:CharacterString" minOccurs="0"/>
+					<xs:element name="value" type="jmp20:Value" maxOccurs="unbounded"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:element name="DQ_QuantitativeResult" type="jmp20:DQ_QuantitativeResult" substitutionGroup="jmp20:_DQ_Result"/>
+	<!-- ================== _DQ_Result  ================== -->
+	<xs:complexType name="_DQ_Result" abstract="true"/>
+	<xs:element name="_DQ_Result" type="jmp20:_DQ_Result" abstract="true"/>
+	<!-- ================== DQ_Element  ================== -->
+	<xs:complexType name="DQ_Element">
+		<xs:sequence>
+			<xs:element name="evaluationMethodDescription" type="jmp20:CharacterString" minOccurs="0"/>
+			<xs:element name="typeOfQualityEvaluation" type="jmp20:DQ_TypeOfQualityEvaluationCode"/>
+			<xs:element name="result">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element ref="jmp20:_DQ_Result" maxOccurs="2"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="DQ_Element" type="jmp20:DQ_Element"/>
+	<!-- ================== DQ_DataQuality  ================== -->
+	<xs:complexType name="DQ_DataQuality">
+		<xs:sequence>
+			<xs:element name="scope" type="jmp20:DQ_Scope"/>
+			<xs:element name="lineage" minOccurs="0">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element ref="jmp20:LI_Lineage"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="report" minOccurs="0">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element ref="jmp20:DQ_Element" maxOccurs="unbounded"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="DQ_DataQuality" type="jmp20:DQ_DataQuality">
+		<xs:annotation>
+			<xs:documentation>
+			   ***   -- "report" or "lineage" role is mandatory if scope.DQ_Scope.level = 'dataset' (005)
+			   ***   if (self.scope.level = 'dataset' or self.scope.level = '005') then
+			   			(self.lineage-&gt;size() + self.report-&gt;size() &gt; 0)
+			</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<!-- ================== DQ_Scope  ================== -->
+	<xs:complexType name="DQ_Scope">
+		<xs:sequence>
+			<xs:element name="level" type="jmp20:MD_ScopeCode"/>
+			<xs:element name="extent" type="jmp20:EX_Extent" minOccurs="0"/>
+			<xs:element name="levelDescription" type="jmp20:CharacterString" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="DQ_Scope" type="jmp20:DQ_Scope">
+		<xs:annotation>
+			<xs:documentation>
+			   ***   -- "levelDescription" is mandatory if "level" not equal "dataset" (005) or "series" (006)
+			   ***   if (self.level &lt;&gt; 'dataset' and self.level &lt;&gt; '005' and self.level &lt;&gt; 'series' and self.level &lt;&gt; '006') then self.levelDescription-&gt;notEmpty()
+			</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<!-- ================== RS_Identifier  ================== -->
+	<xs:complexType name="RS_Identifier">
+		<xs:complexContent>
+			<xs:extension base="jmp20:MD_Identifier"/>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:element name="RS_Identifier" type="jmp20:RS_Identifier" substitutionGroup="jmp20:MD_Identifier"/>
+	<!-- ================== MD_ReferenceSystem  ================== -->
+	<xs:complexType name="MD_ReferenceSystem">
+		<xs:sequence>
+			<xs:element name="referenceSystemIdentifier" type="jmp20:RS_Identifier"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="MD_ReferenceSystem" type="jmp20:MD_ReferenceSystem"/>
+	<!-- ================== MD_Identifier  ================== -->
+	<xs:complexType name="MD_Identifier">
+		<xs:sequence>
+			<xs:element name="authority" type="jmp20:CI_Citation" minOccurs="0"/>
+			<xs:element name="code" type="jmp20:nonNullString"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="MD_Identifier" type="jmp20:MD_Identifier"/>
+	<!-- ================== MD_Medium  ================== -->
+	<xs:complexType name="MD_Medium">
+		<xs:sequence>
+			<xs:element name="name" type="jmp20:MD_MediumNameCode" minOccurs="0"/>
+			<xs:element name="mediumNote" type="jmp20:CharacterString" minOccurs="0"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="MD_Medium" type="jmp20:MD_Medium"/>
+	<!-- ==================  MD_DigitalTransferOptions ================== -->
+	<xs:complexType name="MD_DigitalTransferOptions">
+		<xs:sequence>
+			<xs:element name="onLine" type="jmp20:CI_OnlineResource" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:element name="offLine" type="jmp20:MD_Medium" minOccurs="0"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="MD_DigitalTransferOptions" type="jmp20:MD_DigitalTransferOptions"/>
+	<!-- ================== MD_Distribution  ================== -->
+	<xs:complexType name="MD_Distribution">
+		<xs:sequence>
+			<xs:element name="distributionFormat">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element ref="jmp20:MD_Format" maxOccurs="unbounded"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="transferOptions" minOccurs="0">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element ref="jmp20:MD_DigitalTransferOptions" maxOccurs="unbounded"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="MD_Distribution" type="jmp20:MD_Distribution"/>
+	<!-- ================== MD_Format  ================== -->
+	<xs:complexType name="MD_Format">
+		<xs:sequence>
+			<xs:element name="name" type="jmp20:nonNullString"/>
+			<xs:element name="version" type="jmp20:nonNullString"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="MD_Format" type="jmp20:MD_Format"/>
+	<!--
+===========================================================================
+	JMP2.0 Data Type Classes
+===========================================================================
+-->
+	<!-- Type EX_Extent Classes -->
+	<!-- ================== EX_TemporalExtent  ================== -->
+	<xs:complexType name="EX_TemporalExtent">
+		<xs:sequence>
+			<xs:element name="extent" type="jmp20:TimeDuration"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="EX_TemporalExtent" type="jmp20:EX_TemporalExtent"/>
+	<!-- ================== EX_VerticalExtent  ================== -->
+	<xs:complexType name="EX_VerticalExtent">
+		<xs:sequence>
+			<xs:element name="minimumValue" type="jmp20:Real"/>
+			<xs:element name="maximumValue" type="jmp20:Real"/>
+			<xs:element name="unitOfMeasure" type="jmp20:UomLength"/>
+			<xs:element name="verticalDatum">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element ref="jmp20:SC_VerticalDatum"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="EX_VerticalExtent" type="jmp20:EX_VerticalExtent"/>
+	<!-- Class SC_VerticalDatum -->
+	<xs:complexType name="SC_VerticalDatum">
+		<xs:sequence>
+			<xs:element name="datumID" type="jmp20:RS_Identifier"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="SC_VerticalDatum" type="jmp20:SC_VerticalDatum"/>
+	<!-- ================== EX_BoundingPolygon  ================== -->
+	<xs:complexType name="EX_BoundingPolygon">
+		<xs:complexContent>
+			<xs:extension base="jmp20:_EX_GeographicExtent">
+				<xs:sequence>
+					<xs:element name="polygon" type="jmp20:Surface" maxOccurs="unbounded"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:element name="EX_BoundingPolygon" type="jmp20:EX_BoundingPolygon" substitutionGroup="jmp20:_EX_GeographicExtent"/>
+	<!-- ================== EX_Extent  ================== -->
+	<xs:complexType name="EX_Extent">
+		<xs:sequence>
+			<xs:element name="description" type="jmp20:CharacterString" minOccurs="0"/>
+			<xs:element name="verticalElement" minOccurs="0">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element ref="jmp20:EX_VerticalExtent" maxOccurs="unbounded"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="temporalElement" minOccurs="0">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element ref="jmp20:EX_TemporalExtent" maxOccurs="unbounded"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="geographicElement" minOccurs="0">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element ref="jmp20:_EX_GeographicExtent" maxOccurs="unbounded"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="EX_Extent" type="jmp20:EX_Extent">
+		<xs:annotation>
+			<xs:documentation>
+			   ***   self.description-&gt;size() +
+			   		 self.geographicElement-&gt;size() +
+			   		 self.temporalElement-&gt;size() +
+			   		 self.verticalElement-&gt;size() &gt; 0
+			</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<!-- ================== _EX_GeographicExtent  ================== -->
+	<xs:complexType name="_EX_GeographicExtent" abstract="true">
+		<xs:sequence>
+			<xs:element name="extentTypeCode" type="jmp20:EX_ExTypeCode" default="1" minOccurs="0"/>
+			<xs:element name="extentReferenceSystem" type="jmp20:RS_Identifier" minOccurs="0"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="_EX_GeographicExtent" type="jmp20:_EX_GeographicExtent" abstract="true"/>
+	<!-- ==================  EX_GeographicBoundingBox ================== -->
+	<xs:complexType name="EX_GeographicBoundingBox">
+		<xs:complexContent>
+			<xs:extension base="jmp20:_EX_GeographicExtent">
+				<xs:sequence>
+					<xs:element name="westBoundLongitude" type="jmp20:approximateLongitude"/>
+					<xs:element name="eastBoundLongitude" type="jmp20:approximateLongitude"/>
+					<xs:element name="southBoundLatitude" type="jmp20:approximateLatitude"/>
+					<xs:element name="northBoundLatitude" type="jmp20:approximateLatitude"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:element name="EX_GeographicBoundingBox" type="jmp20:EX_GeographicBoundingBox" substitutionGroup="jmp20:_EX_GeographicExtent"/>
+	<!-- ==================  EX_CoordinateBoundingBox ================== -->
+	<xs:complexType name="EX_CoordinateBoundingBox">
+		<xs:complexContent>
+			<xs:extension base="jmp20:_EX_GeographicExtent">
+				<xs:sequence>
+					<xs:element name="westBoundCoordinate" type="jmp20:Real"/>
+					<xs:element name="eastBoundCoordinate" type="jmp20:Real"/>
+					<xs:element name="southBoundCoordinate" type="jmp20:Real"/>
+					<xs:element name="northBoundCoordinate" type="jmp20:Real"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:element name="EX_CoordinateBoundingBox" type="jmp20:EX_CoordinateBoundingBox" substitutionGroup="jmp20:_EX_GeographicExtent"/>
+	<!-- ==================  EX_GeographicDescription ================== -->
+	<xs:complexType name="EX_GeographicDescription">
+		<xs:complexContent>
+			<xs:extension base="jmp20:_EX_GeographicExtent">
+				<xs:sequence>
+					<xs:element name="geographicIdentifier" type="jmp20:MD_Identifier"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:element name="EX_GeographicDescription" type="jmp20:EX_GeographicDescription" substitutionGroup="jmp20:_EX_GeographicExtent"/>
+	<!-- Type CI_Citation Classes -->
+	<!-- ================== CI_Citation  ================== -->
+	<xs:complexType name="CI_Citation">
+		<xs:sequence>
+			<xs:element name="title" type="jmp20:nonNullString"/>
+			<xs:element name="date" type="jmp20:CI_Date" maxOccurs="unbounded"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="CI_Citation" type="jmp20:CI_Citation"/>
+	<!-- ================== CI_Date  ================== -->
+	<xs:complexType name="CI_Date">
+		<xs:sequence>
+			<xs:element name="date" type="jmp20:Date"/>
+			<xs:element name="dateType" type="jmp20:CI_DateTypeCode"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="CI_Date" type="jmp20:CI_Date"/>
+	<!-- Type CI_ResponsibleParty Classes -->
+	<!-- ==================  CI_ResponsibleParty ================== -->
+	<xs:complexType name="CI_ResponsibleParty">
+		<xs:sequence>
+			<xs:element name="individualName" type="jmp20:CharacterString" minOccurs="0"/>
+			<xs:element name="organisationName" type="jmp20:CharacterString" minOccurs="0"/>
+			<xs:element name="positionName" type="jmp20:CharacterString" minOccurs="0"/>
+			<xs:element name="contactInfo" type="jmp20:CI_Contact" minOccurs="0"/>
+			<xs:element name="role" type="jmp20:CI_RoleCode"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="CI_ResponsibleParty" type="jmp20:CI_ResponsibleParty">
+		<xs:annotation>
+			<xs:documentation>
+			   ***   -- Either "individualName", "organisationName" or "positionName" must be documented
+			   ***   self.individualName-&gt;size() + self.organisationName-&gt;size() + self.positionName-&gt;size() &gt; 0
+			</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<!-- ================== CI_Address  ================== -->
+	<xs:complexType name="CI_Address">
+		<xs:sequence>
+			<xs:element name="deliveryPoint" type="jmp20:CharacterString" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:element name="city" type="jmp20:CharacterString" minOccurs="0"/>
+			<xs:element name="administrativeArea" type="jmp20:CharacterString" minOccurs="0"/>
+			<xs:element name="postalCode" type="jmp20:CharacterString" minOccurs="0"/>
+			<xs:element name="country" type="jmp20:CI_CountryCode" default="jpn" minOccurs="0"/>
+			<xs:element name="electronicMailAddress" type="jmp20:CharacterString" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="CI_Address" type="jmp20:CI_Address"/>
+	<!-- ================== CI_OnlineResource  ================== -->
+	<xs:complexType name="CI_OnlineResource">
+		<xs:sequence>
+			<xs:element name="linkage" type="jmp20:URI"/>
+			<xs:element name="description" type="jmp20:CharacterString" minOccurs="0"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="CI_OnlineResource" type="jmp20:CI_OnlineResource"/>
+	<!-- ================== CI_Contact  ================== -->
+	<xs:complexType name="CI_Contact">
+		<xs:sequence>
+			<xs:element name="phone" type="jmp20:CI_Telephone" minOccurs="0"/>
+			<xs:element name="address" type="jmp20:CI_Address" minOccurs="0"/>
+			<xs:element name="onlineResource" type="jmp20:CI_OnlineResource" minOccurs="0"/>
+			<xs:element name="hoursOfService" type="jmp20:CharacterString" minOccurs="0"/>
+			<xs:element name="contactInstructions" type="jmp20:CharacterString" minOccurs="0"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="CI_Contact" type="jmp20:CI_Contact"/>
+	<!-- ================== CI_Telephone  ================== -->
+	<xs:complexType name="CI_Telephone">
+		<xs:sequence>
+			<xs:element name="voice" type="jmp20:CharacterString" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:element name="facsimile" type="jmp20:CharacterString" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="CI_Telephone" type="jmp20:CI_Telephone"/>
+	<!--
+===========================================================================
+	JMP2.0 Constraint types Classes
+===========================================================================
+-->
+	<!-- ================== Classes  ================== -->
+	<xs:complexType name="endTimeRange">
+		<xs:sequence>
+			<xs:element name="end" type="jmp20:DateTime"/>
+			<xs:element name="duration" type="xs:duration"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="endTimeRange" type="jmp20:endTimeRange"/>
+	<xs:complexType name="startEndTime">
+		<xs:sequence>
+			<xs:element name="begin" type="jmp20:Date"/>
+			<xs:element name="end" type="jmp20:Date"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="startEndTime" type="jmp20:startEndTime"/>
+	<xs:complexType name="startTimeRange">
+		<xs:sequence>
+			<xs:element name="begin" type="jmp20:DateTime"/>
+			<xs:element name="duration" type="xs:duration"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="startTimeRange" type="jmp20:startTimeRange"/>
+	<xs:simpleType name="URI">
+		<xs:restriction base="xs:anyURI"/>
+	</xs:simpleType>
+	<xs:element name="URI" type="jmp20:URI"/>
+	<xs:complexType name="Surface">
+		<xs:choice>
+			<xs:element name="polygon" type="jmp20:polygon"/>
+		</xs:choice>
+	</xs:complexType>
+	<xs:element name="Surface" type="jmp20:Surface"/>
+	<xs:complexType name="TimeDuration">
+		<xs:choice>
+			<xs:element name="beginEnd" type="jmp20:startEndTime"/>
+		</xs:choice>
+	</xs:complexType>
+	<xs:element name="TimeDuration" type="jmp20:TimeDuration"/>
+	<xs:complexType name="Value">
+		<xs:choice>
+			<xs:element name="otherValue" type="jmp20:nonNullString"/>
+		</xs:choice>
+	</xs:complexType>
+	<xs:element name="Value" type="jmp20:Value"/>
+	<xs:simpleType name="approximateLatitude">
+		<xs:restriction base="jmp20:Real">
+			<xs:minInclusive value="-90.0"/>
+			<xs:maxInclusive value="90.0"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="approximateLatitude" type="jmp20:approximateLatitude"/>
+	<xs:simpleType name="approximateLongitude">
+		<xs:restriction base="jmp20:Real">
+			<xs:minInclusive value="-180.0"/>
+			<xs:maxInclusive value="180.0"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="approximateLongitude" type="jmp20:approximateLongitude"/>
+	<xs:simpleType name="decimalLatitude">
+		<xs:restriction base="jmp20:Decimal">
+			<xs:minInclusive value="-90.0"/>
+			<xs:maxInclusive value="90.0"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="decimalLatitude" type="jmp20:decimalLatitude"/>
+	<xs:simpleType name="decimalLongitude">
+		<xs:restriction base="jmp20:Decimal">
+			<xs:minInclusive value="-180.0"/>
+			<xs:maxInclusive value="360.0"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="decimalLongitude" type="jmp20:decimalLongitude"/>
+	<xs:simpleType name="nonNegativeDecimal">
+		<xs:restriction base="jmp20:Decimal">
+			<xs:minInclusive value="0.0"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="nonNegativeDecimal" type="jmp20:nonNegativeDecimal"/>
+	<xs:simpleType name="nonNegativeInteger">
+		<xs:restriction base="jmp20:Integer">
+			<xs:minInclusive value="0"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="nonNegativeInteger" type="jmp20:nonNegativeInteger"/>
+	<xs:simpleType name="nonNullString">
+		<xs:restriction base="jmp20:CharacterString">
+			<xs:minLength value="1"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="nonNullString" type="jmp20:nonNullString"/>
+	<xs:simpleType name="positiveDecimal">
+		<xs:restriction base="jmp20:Decimal">
+			<xs:minExclusive value="0.0"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="positiveDecimal" type="jmp20:positiveDecimal"/>
+	<xs:simpleType name="positiveInteger">
+		<xs:restriction base="jmp20:Integer">
+			<xs:minExclusive value="0"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="positiveInteger" type="jmp20:positiveInteger"/>
+<!--
+===========================================================================
+	JMP2.0 Conceptual Schema Language Classes
+===========================================================================
+-->
+	<!-- Basic datatypes -->
+	<!-- Number -->
+	<xs:simpleType name="Number">
+		<xs:restriction base="xs:decimal"/>
+	</xs:simpleType>
+	<!-- Integer -->
+	<xs:simpleType name="Integer">
+		<xs:restriction base="xs:integer"/>
+	</xs:simpleType>
+	<!-- Decimal -->
+	<xs:simpleType name="Decimal">
+		<xs:restriction base="xs:decimal"/>
+	</xs:simpleType>
+	<!-- Real -->
+	<xs:simpleType name="Real">
+		<xs:restriction base="xs:decimal"/>
+	</xs:simpleType>
+	<!-- Vector -->
+	<xs:simpleType name="Vector">
+		<xs:list itemType="xs:decimal"/>
+	</xs:simpleType>
+	<!-- Character -->
+	<xs:simpleType name="Character">
+		<xs:restriction base="xs:string">
+			<xs:length value="1" fixed="true"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<!-- CharacterString -->
+	<xs:simpleType name="CharacterString">
+		<xs:restriction base="xs:string"/>
+	</xs:simpleType>
+	<!-- Date -->
+	<xs:simpleType name="Date">
+		<xs:restriction base="xs:date"/>
+	</xs:simpleType>
+	<!-- Time -->
+	<xs:simpleType name="Time">
+		<xs:restriction base="xs:time"/>
+	</xs:simpleType>
+	<!-- DateTime -->
+	<xs:simpleType name="DateTime">
+		<xs:restriction base="xs:dateTime"/>
+	</xs:simpleType>
+	<!-- Boolean -->
+	<xs:simpleType name="Boolean">
+		<xs:restriction base="xs:boolean"/>
+	</xs:simpleType>
+	<!-- Logical -->
+	<xs:simpleType name="Logical">
+		<xs:union memberTypes="xs:boolean">
+			<xs:simpleType>
+				<xs:restriction base="xs:NMTOKEN">
+					<xs:enumeration value="maybe"/>
+					<xs:enumeration value="0.5"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:union>
+	</xs:simpleType>
+	<!-- Probability -->
+	<xs:simpleType name="Probability">
+		<xs:restriction base="xs:decimal">
+			<xs:minInclusive value="0.0"/>
+			<xs:maxInclusive value="1.0"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<!-- Binary -->
+	<xs:simpleType name="BinaryBase64">
+		<xs:restriction base="xs:base64Binary"/>
+	</xs:simpleType>
+	<xs:simpleType name="BinaryHex">
+		<xs:restriction base="xs:hexBinary"/>
+	</xs:simpleType>
+	<!-- UnlimitedInteger -->
+	<xs:simpleType name="UnlimitedInteger">
+		<xs:union memberTypes="xs:nonNegativeInteger">
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:enumeration value="*"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:union>
+	</xs:simpleType>
+	<!-- Sign -->
+	<xs:simpleType name="Sign">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="+"/>
+			<xs:enumeration value="-"/>
+			<xs:enumeration value="positive"/>
+			<xs:enumeration value="negative"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<!-- Multiplicity -->
+	<xs:complexType name="Multiplicity">
+		<xs:sequence>
+			<xs:element name="range" type="jmp20:MultiplicityRange" maxOccurs="unbounded"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="MultiplicityRange">
+		<xs:sequence>
+			<xs:element name="lower" type="xs:nonNegativeInteger"/>
+			<xs:element name="upper" type="jmp20:UnlimitedInteger"/>
+		</xs:sequence>
+	</xs:complexType>
+	<!-- URI Diverse -->
+	<xs:simpleType name="CodeListValue">
+		<xs:restriction base="xs:string"/>
+	</xs:simpleType>
+	<xs:complexType name="Binary">
+		<xs:choice>
+			<xs:element name="BinaryBase64" type="jmp20:BinaryBase64"/>
+			<xs:element name="BinaryHex" type="jmp20:BinaryHex"/>
+		</xs:choice>
+	</xs:complexType>
+	<xs:simpleType name="Sequence_Number_">
+		<xs:list itemType="xs:decimal"/>
+	</xs:simpleType>
+	<xs:simpleType name="Sequence_Real_">
+		<xs:list itemType="xs:decimal"/>
+	</xs:simpleType>
+	<xs:simpleType name="Sequence_Integer_">
+		<xs:list itemType="xs:integer"/>
+	</xs:simpleType>
+	<!-- Units of Measure-->
+	<xs:complexType name="UnitOfMeasure">
+		<xs:sequence>
+			<xs:element name="name" type="jmp20:CharacterString"/>
+			<xs:element name="measurementType" type="jmp20:CharacterString" minOccurs="0"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="UomLength">
+		<xs:complexContent>
+			<xs:extension base="jmp20:UnitOfMeasure"/>
+		</xs:complexContent>
+	</xs:complexType>
+	<!-- Measure Classes -->
+	<xs:complexType name="Measure">
+		<xs:sequence>
+			<xs:element name="value" type="jmp20:Real"/>
+			<xs:element name="uom">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="UnitOfMeasure" type="jmp20:UnitOfMeasure"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="Length">
+		<xs:complexContent>
+			<xs:extension base="jmp20:Measure"/>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="Angle">
+		<xs:simpleContent>
+			<xs:extension base="jmp20:Decimal"/>
+		</xs:simpleContent>
+	</xs:complexType>
+	<xs:complexType name="Scale">
+		<xs:complexContent>
+			<xs:extension base="jmp20:Measure"/>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="Area">
+		<xs:complexContent>
+			<xs:extension base="jmp20:Measure"/>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="Velocity">
+		<xs:complexContent>
+			<xs:extension base="jmp20:Measure"/>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="MTime">
+		<xs:complexContent>
+			<xs:extension base="jmp20:Measure"/>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="Distance">
+		<xs:complexContent>
+			<xs:extension base="jmp20:Measure"/>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="Volume">
+		<xs:complexContent>
+			<xs:extension base="jmp20:Measure"/>
+		</xs:complexContent>
+	</xs:complexType>
+	<!-- Record types -->
+	<xs:complexType name="RecordSchema">
+		<xs:sequence>
+			<xs:element name="schemaName" type="jmp20:CharacterString"/>
+			<xs:element name="element" type="jmp20:RecordType" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="RecordType">
+		<xs:sequence>
+			<xs:element name="typeName" type="jmp20:CharacterString"/>
+			<xs:element name="attributeTypes" type="jmp20:Dictionary_AttributeName_TypeName_"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="Record">
+		<xs:sequence>
+			<xs:element name="attributes" type="jmp20:Dictionary_AttributeName_Any_"/>
+			<xs:element name="recordType" type="jmp20:RecordType"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="Dictionary_AttributeName_Any_">
+		<xs:sequence maxOccurs="unbounded">
+			<xs:element name="AttributeName" type="jmp20:CharacterString"/>
+			<xs:element name="Any"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="Dictionary_AttributeName_TypeName_">
+		<xs:sequence maxOccurs="unbounded">
+			<xs:element name="AttributeName" type="jmp20:CharacterString"/>
+			<xs:element name="TypeName" type="jmp20:CharacterString"/>
+		</xs:sequence>
+	</xs:complexType>
+	<!-- Namespace -->
+	<xs:complexType name="NameSpace">
+		<xs:sequence>
+			<xs:element name="isGlobal" type="jmp20:Boolean"/>
+			<xs:element name="acceptableClassList" type="jmp20:Set_TypeName_"/>
+			<xs:element name="name" type="jmp20:GenericName" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="Set_TypeName_">
+		<xs:sequence maxOccurs="unbounded">
+			<xs:element name="TypeName" type="jmp20:TypeName"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="LocalName">
+		<xs:sequence>
+			<xs:element name="scope" type="jmp20:NameSpace"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="TypeName">
+		<xs:sequence>
+			<xs:element name="scope" type="jmp20:NameSpace"/>
+			<xs:element name="aName" type="jmp20:CharacterString"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ScopedName">
+		<xs:sequence>
+			<xs:element name="scope" type="jmp20:NameSpace"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="MemberName">
+		<xs:sequence>
+			<xs:element name="scope" type="jmp20:NameSpace"/>
+			<xs:element name="aName" type="jmp20:CharacterString"/>
+			<xs:element name="attributeType" type="jmp20:TypeName"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="GenericName">
+		<xs:choice>
+			<xs:element name="LocalName" type="jmp20:LocalName"/>
+			<xs:element name="TypeName" type="jmp20:TypeName"/>
+			<xs:element name="ScopedName" type="jmp20:ScopedName"/>
+			<xs:element name="MemberName" type="jmp20:MemberName"/>
+		</xs:choice>
+	</xs:complexType>
+<!--
+===========================================================================
+	JMP2.0 Spatial Schema Classes
+===========================================================================
+-->
+	<!-- ============================================================== -->
+	<!-- positions -->
+	<!-- =========================================================== -->
+	<xs:element name="pos" type="jmp20:DirectPositionType"/>
+	<!-- ============================================================== -->
+	<xs:complexType name="DirectPositionType">
+		<xs:simpleContent>
+			<xs:extension base="jmp20:doubleList"/>
+		</xs:simpleContent>
+	</xs:complexType>
+	<!-- =========================================================== -->
+	<xs:simpleType name="doubleList">
+		<xs:list itemType="xs:double"/>
+	</xs:simpleType>
+	<!-- ============================================================== -->
+	<xs:element name="coord" type="jmp20:coord"/>
+	<!-- ============================================================== -->
+	<xs:complexType name="coord">
+		<xs:sequence>
+			<xs:element name="X" type="jmp20:Decimal"/>
+			<xs:element name="Y" type="jmp20:Decimal" minOccurs="0"/>
+			<xs:element name="Z" type="jmp20:Decimal" minOccurs="0"/>
+		</xs:sequence>
+	</xs:complexType>
+	<!-- ============================================================== -->
+	<xs:element name="coordinates" type="jmp20:coordinates"/>
+	<!-- =========================================================== -->
+	<xs:complexType name="coordinates">
+		<xs:simpleContent>
+			<xs:extension base="jmp20:CharacterString">
+				<xs:attribute name="decimal" type="jmp20:CharacterString" default="."/>
+				<xs:attribute name="cs" type="jmp20:CharacterString" default=","/>
+				<xs:attribute name="ts" type="jmp20:CharacterString" default="&#x20;"/>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+
+	<!-- =========================================================== -->
+	<!-- Polygon -->
+	<!-- =========================================================== -->
+	<xs:element name="LinearRing" type="jmp20:LinearRing" substitutionGroup="jmp20:Ring"/>
+	<!-- =========================================================== -->
+	<xs:complexType name="LinearRing">
+		<xs:sequence>
+			<xs:choice>
+				<xs:element ref="jmp20:coordinates"/>
+				<xs:element ref="jmp20:coord" minOccurs="4" maxOccurs="unbounded"/>
+				<xs:element ref="jmp20:pos" minOccurs="4" maxOccurs="unbounded"/>
+			</xs:choice>
+		</xs:sequence>
+	</xs:complexType>
+	<!-- =========================================================== -->
+	<xs:element name="polygon" type="jmp20:polygon"/>
+	<!-- =========================================================== -->
+	<xs:complexType name="polygon">
+		<xs:sequence>
+			<xs:element ref="jmp20:exterior" minOccurs="0"/>
+			<xs:element ref="jmp20:interior" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="exterior" type="jmp20:AbstractRingPropertyType"/>
+	<xs:element name="interior" type="jmp20:AbstractRingPropertyType"/>
+	<!-- =========================================================== -->
+	<xs:complexType name="AbstractRingPropertyType">
+		<xs:sequence>
+			<xs:element ref="jmp20:Ring"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="Ring" abstract="true"/>
+	<!-- =========================================================== -->
+
+<!--
+===========================================================================
+	JMP2.0 Code Lists
+===========================================================================
+-->
+	<!-- CodeList MD_CharacterSetCode -->
+	<xs:simpleType name="MD_CharacterSetCode">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="001"/>
+			<xs:enumeration value="002"/>
+			<xs:enumeration value="003"/>
+			<xs:enumeration value="004"/>
+			<xs:enumeration value="005"/>
+			<xs:enumeration value="006"/>
+			<xs:enumeration value="007"/>
+			<xs:enumeration value="008"/>
+			<xs:enumeration value="009"/>
+			<xs:enumeration value="010"/>
+			<xs:enumeration value="011"/>
+			<xs:enumeration value="012"/>
+			<xs:enumeration value="013"/>
+			<xs:enumeration value="014"/>
+			<xs:enumeration value="015"/>
+			<xs:enumeration value="016"/>
+			<xs:enumeration value="017"/>
+			<xs:enumeration value="018"/>
+			<xs:enumeration value="019"/>
+			<xs:enumeration value="020"/>
+			<xs:enumeration value="021"/>
+			<xs:enumeration value="022"/>
+			<xs:enumeration value="023"/>
+			<xs:enumeration value="024"/>
+			<xs:enumeration value="025"/>
+			<xs:enumeration value="026"/>
+			<xs:enumeration value="027"/>
+			<xs:enumeration value="028"/>
+			<xs:enumeration value="029"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="MD_CharacterSetCode" type="jmp20:MD_CharacterSetCode"/>
+
+	<!-- CodeList MD_SpatialRepresentationTypeCode -->
+	<xs:simpleType name="MD_SpatialRepresentationTypeCode">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="001"/>
+			<xs:enumeration value="002"/>
+			<xs:enumeration value="003"/>
+			<xs:enumeration value="004"/>
+			<xs:enumeration value="005"/>
+			<xs:enumeration value="006"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="MD_SpatialRepresentationTypeCode" type="jmp20:MD_SpatialRepresentationTypeCode"/>
+
+	<!-- Enumeration MD_TopicCategoryCode -->
+	<xs:simpleType name="MD_TopicCategoryCode">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="001"/>
+			<xs:enumeration value="002"/>
+			<xs:enumeration value="003"/>
+			<xs:enumeration value="004"/>
+			<xs:enumeration value="005"/>
+			<xs:enumeration value="006"/>
+			<xs:enumeration value="007"/>
+			<xs:enumeration value="008"/>
+			<xs:enumeration value="009"/>
+			<xs:enumeration value="010"/>
+			<xs:enumeration value="011"/>
+			<xs:enumeration value="012"/>
+			<xs:enumeration value="013"/>
+			<xs:enumeration value="014"/>
+			<xs:enumeration value="015"/>
+			<xs:enumeration value="016"/>
+			<xs:enumeration value="017"/>
+			<xs:enumeration value="018"/>
+			<xs:enumeration value="019"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="MD_TopicCategoryCode" type="jmp20:MD_TopicCategoryCode"/>
+
+	<!-- CodeList MD_ProgressCode -->
+	<xs:simpleType name="MD_ProgressCode">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="001"/>
+			<xs:enumeration value="002"/>
+			<xs:enumeration value="003"/>
+			<xs:enumeration value="004"/>
+			<xs:enumeration value="005"/>
+			<xs:enumeration value="006"/>
+			<xs:enumeration value="007"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="MD_ProgressCode" type="jmp20:MD_ProgressCode"/>
+
+	<!-- CodeList  MD_KeywordTypeCode -->
+	<xs:simpleType name="MD_KeywordTypeCode">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="001"/>
+			<xs:enumeration value="002"/>
+			<xs:enumeration value="003"/>
+			<xs:enumeration value="004"/>
+			<xs:enumeration value="005"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="MD_KeywordTypeCode" type="jmp20:MD_KeywordTypeCode"/>
+
+	<!-- CodeList DQ_TypeOfQualityEvaluationCode -->
+	<xs:simpleType name="DQ_TypeOfQualityEvaluationCode">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="001"/>
+			<xs:enumeration value="002"/>
+			<xs:enumeration value="003"/>
+			<xs:enumeration value="004"/>
+			<xs:enumeration value="005"/>
+			<xs:enumeration value="006"/>
+			<xs:enumeration value="007"/>
+			<xs:enumeration value="008"/>
+			<xs:enumeration value="009"/>
+			<xs:enumeration value="010"/>
+			<xs:enumeration value="011"/>
+			<xs:enumeration value="012"/>
+			<xs:enumeration value="013"/>
+			<xs:enumeration value="014"/>
+			<xs:enumeration value="015"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="DQ_TypeOfQualityEvaluationCode" type="jmp20:DQ_TypeOfQualityEvaluationCode"/>
+
+	<!-- CodeList  MD_ScopeCode -->
+	<xs:simpleType name="MD_ScopeCode">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="001"/>
+			<xs:enumeration value="002"/>
+			<xs:enumeration value="003"/>
+			<xs:enumeration value="004"/>
+			<xs:enumeration value="005"/>
+			<xs:enumeration value="006"/>
+			<xs:enumeration value="007"/>
+			<xs:enumeration value="008"/>
+			<xs:enumeration value="009"/>
+			<xs:enumeration value="010"/>
+			<xs:enumeration value="011"/>
+			<xs:enumeration value="012"/>
+			<xs:enumeration value="013"/>
+			<xs:enumeration value="014"/>
+			<xs:enumeration value="015"/>
+			<xs:enumeration value="016"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="MD_ScopeCode" type="jmp20:MD_ScopeCode"/>
+
+	<!-- CodeList  MD_MediumNameCode -->
+	<xs:simpleType name="MD_MediumNameCode">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="001"/>
+			<xs:enumeration value="002"/>
+			<xs:enumeration value="003"/>
+			<xs:enumeration value="004"/>
+			<xs:enumeration value="005"/>
+			<xs:enumeration value="006"/>
+			<xs:enumeration value="007"/>
+			<xs:enumeration value="008"/>
+			<xs:enumeration value="009"/>
+			<xs:enumeration value="010"/>
+			<xs:enumeration value="011"/>
+			<xs:enumeration value="012"/>
+			<xs:enumeration value="013"/>
+			<xs:enumeration value="014"/>
+			<xs:enumeration value="015"/>
+			<xs:enumeration value="016"/>
+			<xs:enumeration value="017"/>
+			<xs:enumeration value="018"/>
+			<xs:enumeration value="019"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="MD_MediumNameCode" type="jmp20:MD_MediumNameCode"/>
+
+	<!-- CodeList CI_RoleCode -->
+	<xs:simpleType name="CI_RoleCode">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="001"/>
+			<xs:enumeration value="002"/>
+			<xs:enumeration value="003"/>
+			<xs:enumeration value="004"/>
+			<xs:enumeration value="005"/>
+			<xs:enumeration value="006"/>
+			<xs:enumeration value="007"/>
+			<xs:enumeration value="008"/>
+			<xs:enumeration value="009"/>
+			<xs:enumeration value="010"/>
+			<xs:enumeration value="011"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="CI_RoleCode" type="jmp20:CI_RoleCode"/>
+
+	<!-- CodeList  CI_PresentationFormCode -->
+	<xs:simpleType name="CI_PresentationFormCode">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="001"/>
+			<xs:enumeration value="002"/>
+			<xs:enumeration value="003"/>
+			<xs:enumeration value="004"/>
+			<xs:enumeration value="005"/>
+			<xs:enumeration value="006"/>
+			<xs:enumeration value="007"/>
+			<xs:enumeration value="008"/>
+			<xs:enumeration value="009"/>
+			<xs:enumeration value="010"/>
+			<xs:enumeration value="011"/>
+			<xs:enumeration value="012"/>
+			<xs:enumeration value="013"/>
+			<xs:enumeration value="014"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="CI_PresentationFormCode" type="jmp20:CI_PresentationFormCode"/>
+
+	<!-- CodeList  CI_DateTypeCode -->
+	<xs:simpleType name="CI_DateTypeCode">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="001"/>
+			<xs:enumeration value="002"/>
+			<xs:enumeration value="003"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="CI_DateTypeCode" type="jmp20:CI_DateTypeCode"/>
+
+	<!-- CodeList CI_CountryCode -->
+	<xs:simpleType name="CI_CountryCode">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="jpn"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="CI_CountryCode" type="jmp20:CI_CountryCode"/>
+
+	<!-- CodeList MD_LanguageCode -->
+	<xs:simpleType name="MD_LanguageCode">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="jpn"/>
+			<xs:enumeration value="eng"/>
+			<xs:enumeration value="fre"/>
+			<xs:enumeration value="ger"/>
+			<xs:enumeration value="chi"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="MD_LanguageCode" type="jmp20:MD_LanguageCode"/>
+
+	<!-- CodeList EX_ExTypeCode -->
+	<xs:simpleType name="EX_ExTypeCode">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="0"/>
+			<xs:enumeration value="1"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="EX_ExTypeCode" type="jmp20:EX_ExTypeCode"/>
+
+	<!-- CodeList DQ_PassCode -->
+	<xs:simpleType name="DQ_PassCode">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="0"/>
+			<xs:enumeration value="1"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="DQ_PassCode" type="jmp20:DQ_PassCode"/>
+
+	<!-- CodeList UoMNameCode -->
+	<xs:simpleType name="UoMNameCode">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="centimeter"/>
+			<xs:enumeration value="meter"/>
+			<xs:enumeration value="kilometer"/>
+			<xs:enumeration value="radian"/>
+			<xs:enumeration value="degree"/>
+			<xs:enumeration value="squaremeter"/>
+			<xs:enumeration value="cubicmeter"/>
+			<xs:enumeration value="second"/>
+			<xs:enumeration value="minute"/>
+			<xs:enumeration value="hour"/>
+			<xs:enumeration value="count"/>
+			<xs:enumeration value="percent"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="UoMNameCode" type="jmp20:UoMNameCode"/>
+
+<!--
+===========================================================================
+	JMP2.0 LanguageCode Classes
+===========================================================================
+-->
+	<!-- Object -->
+	<xs:element name="Language" type="jmp20:LanguageType">
+		<xs:annotation>
+			<xs:documentation>
+				"otherLang" should be used only if language isn't yet defined in the  ISO 639-2 codelists
+				(LanguageCode and LanguageName)
+			</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<!-- Type Definitions  -->
+	<xs:complexType name="LanguageType">
+		<xs:choice>
+			<xs:element name="isoCode" type="jmp20:LanguageCodeType"/>
+			<xs:element name="isoName" type="jmp20:LanguageNameType"/>
+			<xs:element name="otherLang" type="jmp20:nonNullString"/>
+		</xs:choice>
+	</xs:complexType>
+	<xs:simpleType name="LanguageCodeType">
+		<xs:restriction base="jmp20:CharacterString">
+			<xs:enumeration value="aar"/>
+			<xs:enumeration value="abk"/>
+			<xs:enumeration value="ace"/>
+			<xs:enumeration value="ach"/>
+			<xs:enumeration value="ada"/>
+			<xs:enumeration value="afa"/>
+			<xs:enumeration value="afh"/>
+			<xs:enumeration value="afr"/>
+			<xs:enumeration value="aka"/>
+			<xs:enumeration value="akk"/>
+			<xs:enumeration value="alb"/>
+			<xs:enumeration value="ale"/>
+			<xs:enumeration value="alg"/>
+			<xs:enumeration value="amh"/>
+			<xs:enumeration value="ang"/>
+			<xs:enumeration value="apa"/>
+			<xs:enumeration value="ara"/>
+			<xs:enumeration value="arc"/>
+			<xs:enumeration value="arm"/>
+			<xs:enumeration value="arn"/>
+			<xs:enumeration value="arp"/>
+			<xs:enumeration value="art"/>
+			<xs:enumeration value="arw"/>
+			<xs:enumeration value="asm"/>
+			<xs:enumeration value="ast"/>
+			<xs:enumeration value="ath"/>
+			<xs:enumeration value="aus"/>
+			<xs:enumeration value="ava"/>
+			<xs:enumeration value="ave"/>
+			<xs:enumeration value="awa"/>
+			<xs:enumeration value="aym"/>
+			<xs:enumeration value="aze"/>
+			<xs:enumeration value="bad"/>
+			<xs:enumeration value="bai"/>
+			<xs:enumeration value="bak"/>
+			<xs:enumeration value="bal"/>
+			<xs:enumeration value="bam"/>
+			<xs:enumeration value="ban"/>
+			<xs:enumeration value="baq"/>
+			<xs:enumeration value="bat"/>
+			<xs:enumeration value="bej"/>
+			<xs:enumeration value="bel"/>
+			<xs:enumeration value="bem"/>
+			<xs:enumeration value="ben"/>
+			<xs:enumeration value="ber"/>
+			<xs:enumeration value="bho"/>
+			<xs:enumeration value="bih"/>
+			<xs:enumeration value="bik"/>
+			<xs:enumeration value="bin"/>
+			<xs:enumeration value="bis"/>
+			<xs:enumeration value="bla"/>
+			<xs:enumeration value="bnt"/>
+			<xs:enumeration value="bos"/>
+			<xs:enumeration value="bra"/>
+			<xs:enumeration value="bre"/>
+			<xs:enumeration value="btk"/>
+			<xs:enumeration value="bua"/>
+			<xs:enumeration value="bug"/>
+			<xs:enumeration value="bul"/>
+			<xs:enumeration value="bur"/>
+			<xs:enumeration value="cad"/>
+			<xs:enumeration value="cai"/>
+			<xs:enumeration value="car"/>
+			<xs:enumeration value="cat"/>
+			<xs:enumeration value="cau"/>
+			<xs:enumeration value="ceb"/>
+			<xs:enumeration value="cha"/>
+			<xs:enumeration value="chb"/>
+			<xs:enumeration value="che"/>
+			<xs:enumeration value="chg"/>
+			<xs:enumeration value="chi"/>
+			<xs:enumeration value="chk"/>
+			<xs:enumeration value="chm"/>
+			<xs:enumeration value="chn"/>
+			<xs:enumeration value="cho"/>
+			<xs:enumeration value="chp"/>
+			<xs:enumeration value="chr"/>
+			<xs:enumeration value="chu"/>
+			<xs:enumeration value="chv"/>
+			<xs:enumeration value="chy"/>
+			<xs:enumeration value="cmc"/>
+			<xs:enumeration value="cop"/>
+			<xs:enumeration value="cor"/>
+			<xs:enumeration value="cos"/>
+			<xs:enumeration value="cpe"/>
+			<xs:enumeration value="cpf"/>
+			<xs:enumeration value="cpp"/>
+			<xs:enumeration value="cre"/>
+			<xs:enumeration value="crp"/>
+			<xs:enumeration value="cus"/>
+			<xs:enumeration value="cze"/>
+			<xs:enumeration value="dak"/>
+			<xs:enumeration value="dan"/>
+			<xs:enumeration value="day"/>
+			<xs:enumeration value="del"/>
+			<xs:enumeration value="den"/>
+			<xs:enumeration value="dgr"/>
+			<xs:enumeration value="din"/>
+			<xs:enumeration value="div"/>
+			<xs:enumeration value="doi"/>
+			<xs:enumeration value="dra"/>
+			<xs:enumeration value="dua"/>
+			<xs:enumeration value="dum"/>
+			<xs:enumeration value="dut"/>
+			<xs:enumeration value="dyu"/>
+			<xs:enumeration value="dzo"/>
+			<xs:enumeration value="efi"/>
+			<xs:enumeration value="egy"/>
+			<xs:enumeration value="eka"/>
+			<xs:enumeration value="elx"/>
+			<xs:enumeration value="eng"/>
+			<xs:enumeration value="enm"/>
+			<xs:enumeration value="epo"/>
+			<xs:enumeration value="est"/>
+			<xs:enumeration value="ewe"/>
+			<xs:enumeration value="ewo"/>
+			<xs:enumeration value="fan"/>
+			<xs:enumeration value="fao"/>
+			<xs:enumeration value="fat"/>
+			<xs:enumeration value="fin"/>
+			<xs:enumeration value="fiu"/>
+			<xs:enumeration value="fon"/>
+			<xs:enumeration value="fre"/>
+			<xs:enumeration value="frm"/>
+			<xs:enumeration value="fro"/>
+			<xs:enumeration value="fry"/>
+			<xs:enumeration value="ful"/>
+			<xs:enumeration value="fur"/>
+			<xs:enumeration value="gaa"/>
+			<xs:enumeration value="gay"/>
+			<xs:enumeration value="gba"/>
+			<xs:enumeration value="gem"/>
+			<xs:enumeration value="geo"/>
+			<xs:enumeration value="ger"/>
+			<xs:enumeration value="gez"/>
+			<xs:enumeration value="gil"/>
+			<xs:enumeration value="gla"/>
+			<xs:enumeration value="gle"/>
+			<xs:enumeration value="glg"/>
+			<xs:enumeration value="glv"/>
+			<xs:enumeration value="gmh"/>
+			<xs:enumeration value="goh"/>
+			<xs:enumeration value="gon"/>
+			<xs:enumeration value="gor"/>
+			<xs:enumeration value="got"/>
+			<xs:enumeration value="grb"/>
+			<xs:enumeration value="grc"/>
+			<xs:enumeration value="gre"/>
+			<xs:enumeration value="grn"/>
+			<xs:enumeration value="guj"/>
+			<xs:enumeration value="gwi"/>
+			<xs:enumeration value="hai"/>
+			<xs:enumeration value="hau"/>
+			<xs:enumeration value="haw"/>
+			<xs:enumeration value="heb"/>
+			<xs:enumeration value="her"/>
+			<xs:enumeration value="hil"/>
+			<xs:enumeration value="him"/>
+			<xs:enumeration value="hin"/>
+			<xs:enumeration value="hit"/>
+			<xs:enumeration value="hmn"/>
+			<xs:enumeration value="hmo"/>
+			<xs:enumeration value="hun"/>
+			<xs:enumeration value="hup"/>
+			<xs:enumeration value="iba"/>
+			<xs:enumeration value="ibo"/>
+			<xs:enumeration value="ice"/>
+			<xs:enumeration value="ido"/>
+			<xs:enumeration value="ijo"/>
+			<xs:enumeration value="iku"/>
+			<xs:enumeration value="ile"/>
+			<xs:enumeration value="ilo"/>
+			<xs:enumeration value="ina"/>
+			<xs:enumeration value="inc"/>
+			<xs:enumeration value="ind"/>
+			<xs:enumeration value="ine"/>
+			<xs:enumeration value="ipk"/>
+			<xs:enumeration value="ira"/>
+			<xs:enumeration value="iro"/>
+			<xs:enumeration value="ita"/>
+			<xs:enumeration value="jav"/>
+			<xs:enumeration value="jpn"/>
+			<xs:enumeration value="jpr"/>
+			<xs:enumeration value="jrb"/>
+			<xs:enumeration value="kaa"/>
+			<xs:enumeration value="kab"/>
+			<xs:enumeration value="kac"/>
+			<xs:enumeration value="kal"/>
+			<xs:enumeration value="kam"/>
+			<xs:enumeration value="kan"/>
+			<xs:enumeration value="kar"/>
+			<xs:enumeration value="kas"/>
+			<xs:enumeration value="kau"/>
+			<xs:enumeration value="kaw"/>
+			<xs:enumeration value="kaz"/>
+			<xs:enumeration value="kha"/>
+			<xs:enumeration value="khi"/>
+			<xs:enumeration value="khm"/>
+			<xs:enumeration value="kho"/>
+			<xs:enumeration value="kik"/>
+			<xs:enumeration value="kin"/>
+			<xs:enumeration value="kir"/>
+			<xs:enumeration value="kmb"/>
+			<xs:enumeration value="kok"/>
+			<xs:enumeration value="kom"/>
+			<xs:enumeration value="kon"/>
+			<xs:enumeration value="kor"/>
+			<xs:enumeration value="kos"/>
+			<xs:enumeration value="kpe"/>
+			<xs:enumeration value="kro"/>
+			<xs:enumeration value="kru"/>
+			<xs:enumeration value="kua"/>
+			<xs:enumeration value="kum"/>
+			<xs:enumeration value="kur"/>
+			<xs:enumeration value="kut"/>
+			<xs:enumeration value="lad"/>
+			<xs:enumeration value="lah"/>
+			<xs:enumeration value="lam"/>
+			<xs:enumeration value="lao"/>
+			<xs:enumeration value="lat"/>
+			<xs:enumeration value="lav"/>
+			<xs:enumeration value="lez"/>
+			<xs:enumeration value="lin"/>
+			<xs:enumeration value="lit"/>
+			<xs:enumeration value="lol"/>
+			<xs:enumeration value="loz"/>
+			<xs:enumeration value="ltz"/>
+			<xs:enumeration value="lua"/>
+			<xs:enumeration value="lub"/>
+			<xs:enumeration value="lug"/>
+			<xs:enumeration value="lui"/>
+			<xs:enumeration value="lun"/>
+			<xs:enumeration value="lus"/>
+			<xs:enumeration value="mac"/>
+			<xs:enumeration value="mad"/>
+			<xs:enumeration value="mag"/>
+			<xs:enumeration value="mah"/>
+			<xs:enumeration value="mai"/>
+			<xs:enumeration value="mak"/>
+			<xs:enumeration value="mal"/>
+			<xs:enumeration value="man"/>
+			<xs:enumeration value="mao"/>
+			<xs:enumeration value="map"/>
+			<xs:enumeration value="mar"/>
+			<xs:enumeration value="mas"/>
+			<xs:enumeration value="may"/>
+			<xs:enumeration value="mdr"/>
+			<xs:enumeration value="men"/>
+			<xs:enumeration value="mga"/>
+			<xs:enumeration value="mic"/>
+			<xs:enumeration value="min"/>
+			<xs:enumeration value="mis"/>
+			<xs:enumeration value="mkh"/>
+			<xs:enumeration value="mlg"/>
+			<xs:enumeration value="mlt"/>
+			<xs:enumeration value="mnc"/>
+			<xs:enumeration value="mni"/>
+			<xs:enumeration value="mno"/>
+			<xs:enumeration value="moh"/>
+			<xs:enumeration value="mon"/>
+			<xs:enumeration value="mos"/>
+			<xs:enumeration value="mul"/>
+			<xs:enumeration value="mun"/>
+			<xs:enumeration value="mus"/>
+			<xs:enumeration value="mwr"/>
+			<xs:enumeration value="myn"/>
+			<xs:enumeration value="nah"/>
+			<xs:enumeration value="nai"/>
+			<xs:enumeration value="nau"/>
+			<xs:enumeration value="nav"/>
+			<xs:enumeration value="nbl"/>
+			<xs:enumeration value="nde"/>
+			<xs:enumeration value="ndo"/>
+			<xs:enumeration value="nds"/>
+			<xs:enumeration value="nep"/>
+			<xs:enumeration value="new"/>
+			<xs:enumeration value="nia"/>
+			<xs:enumeration value="nic"/>
+			<xs:enumeration value="niu"/>
+			<xs:enumeration value="non"/>
+			<xs:enumeration value="nor"/>
+			<xs:enumeration value="nno"/>
+			<xs:enumeration value="nob"/>
+			<xs:enumeration value="nso"/>
+			<xs:enumeration value="nub"/>
+			<xs:enumeration value="nya"/>
+			<xs:enumeration value="nym"/>
+			<xs:enumeration value="nyn"/>
+			<xs:enumeration value="nyo"/>
+			<xs:enumeration value="nzi"/>
+			<xs:enumeration value="oci"/>
+			<xs:enumeration value="oji"/>
+			<xs:enumeration value="ori"/>
+			<xs:enumeration value="orm"/>
+			<xs:enumeration value="osa"/>
+			<xs:enumeration value="oss"/>
+			<xs:enumeration value="ota"/>
+			<xs:enumeration value="oto"/>
+			<xs:enumeration value="paa"/>
+			<xs:enumeration value="pag"/>
+			<xs:enumeration value="pal"/>
+			<xs:enumeration value="pam"/>
+			<xs:enumeration value="pan"/>
+			<xs:enumeration value="pap"/>
+			<xs:enumeration value="pau"/>
+			<xs:enumeration value="peo"/>
+			<xs:enumeration value="per"/>
+			<xs:enumeration value="phi"/>
+			<xs:enumeration value="phn"/>
+			<xs:enumeration value="pli"/>
+			<xs:enumeration value="pol"/>
+			<xs:enumeration value="pon"/>
+			<xs:enumeration value="por"/>
+			<xs:enumeration value="pra"/>
+			<xs:enumeration value="pro"/>
+			<xs:enumeration value="pus"/>
+			<xs:enumeration value="que"/>
+			<xs:enumeration value="raj"/>
+			<xs:enumeration value="rap"/>
+			<xs:enumeration value="rar"/>
+			<xs:enumeration value="roa"/>
+			<xs:enumeration value="roh"/>
+			<xs:enumeration value="rom"/>
+			<xs:enumeration value="rum"/>
+			<xs:enumeration value="run"/>
+			<xs:enumeration value="rus"/>
+			<xs:enumeration value="sad"/>
+			<xs:enumeration value="sag"/>
+			<xs:enumeration value="sah"/>
+			<xs:enumeration value="sai"/>
+			<xs:enumeration value="sal"/>
+			<xs:enumeration value="sam"/>
+			<xs:enumeration value="san"/>
+			<xs:enumeration value="sas"/>
+			<xs:enumeration value="sat"/>
+			<xs:enumeration value="scc"/>
+			<xs:enumeration value="sco"/>
+			<xs:enumeration value="scr"/>
+			<xs:enumeration value="sel"/>
+			<xs:enumeration value="sem"/>
+			<xs:enumeration value="sga"/>
+			<xs:enumeration value="sgn"/>
+			<xs:enumeration value="shn"/>
+			<xs:enumeration value="sid"/>
+			<xs:enumeration value="sin"/>
+			<xs:enumeration value="sio"/>
+			<xs:enumeration value="sit"/>
+			<xs:enumeration value="sla"/>
+			<xs:enumeration value="slo"/>
+			<xs:enumeration value="slv"/>
+			<xs:enumeration value="sma"/>
+			<xs:enumeration value="sme"/>
+			<xs:enumeration value="smi"/>
+			<xs:enumeration value="smj"/>
+			<xs:enumeration value="smn"/>
+			<xs:enumeration value="smo"/>
+			<xs:enumeration value="sms"/>
+			<xs:enumeration value="sna"/>
+			<xs:enumeration value="snd"/>
+			<xs:enumeration value="snk"/>
+			<xs:enumeration value="sog"/>
+			<xs:enumeration value="som"/>
+			<xs:enumeration value="son"/>
+			<xs:enumeration value="sot"/>
+			<xs:enumeration value="spa"/>
+			<xs:enumeration value="srd"/>
+			<xs:enumeration value="srr"/>
+			<xs:enumeration value="ssa"/>
+			<xs:enumeration value="ssw"/>
+			<xs:enumeration value="suk"/>
+			<xs:enumeration value="sun"/>
+			<xs:enumeration value="sus"/>
+			<xs:enumeration value="sux"/>
+			<xs:enumeration value="swa"/>
+			<xs:enumeration value="swe"/>
+			<xs:enumeration value="syr"/>
+			<xs:enumeration value="tah"/>
+			<xs:enumeration value="tai"/>
+			<xs:enumeration value="tam"/>
+			<xs:enumeration value="tat"/>
+			<xs:enumeration value="tel"/>
+			<xs:enumeration value="tem"/>
+			<xs:enumeration value="ter"/>
+			<xs:enumeration value="tet"/>
+			<xs:enumeration value="tgk"/>
+			<xs:enumeration value="tgl"/>
+			<xs:enumeration value="tha"/>
+			<xs:enumeration value="tib"/>
+			<xs:enumeration value="tig"/>
+			<xs:enumeration value="tir"/>
+			<xs:enumeration value="tiv"/>
+			<xs:enumeration value="tkl"/>
+			<xs:enumeration value="tli"/>
+			<xs:enumeration value="tmh"/>
+			<xs:enumeration value="tog"/>
+			<xs:enumeration value="ton"/>
+			<xs:enumeration value="tpi"/>
+			<xs:enumeration value="tsi"/>
+			<xs:enumeration value="tsn"/>
+			<xs:enumeration value="tso"/>
+			<xs:enumeration value="tuk"/>
+			<xs:enumeration value="tup"/>
+			<xs:enumeration value="tur"/>
+			<xs:enumeration value="tut"/>
+			<xs:enumeration value="tvl"/>
+			<xs:enumeration value="twi"/>
+			<xs:enumeration value="tyv"/>
+			<xs:enumeration value="uga"/>
+			<xs:enumeration value="uig"/>
+			<xs:enumeration value="ukr"/>
+			<xs:enumeration value="umb"/>
+			<xs:enumeration value="und"/>
+			<xs:enumeration value="urd"/>
+			<xs:enumeration value="uzb"/>
+			<xs:enumeration value="vai"/>
+			<xs:enumeration value="ven"/>
+			<xs:enumeration value="vie"/>
+			<xs:enumeration value="vol"/>
+			<xs:enumeration value="vot"/>
+			<xs:enumeration value="wak"/>
+			<xs:enumeration value="wal"/>
+			<xs:enumeration value="war"/>
+			<xs:enumeration value="was"/>
+			<xs:enumeration value="wel"/>
+			<xs:enumeration value="wen"/>
+			<xs:enumeration value="wln"/>
+			<xs:enumeration value="wol"/>
+			<xs:enumeration value="xho"/>
+			<xs:enumeration value="yao"/>
+			<xs:enumeration value="yap"/>
+			<xs:enumeration value="yid"/>
+			<xs:enumeration value="yor"/>
+			<xs:enumeration value="ypk"/>
+			<xs:enumeration value="zap"/>
+			<xs:enumeration value="zen"/>
+			<xs:enumeration value="zha"/>
+			<xs:enumeration value="znd"/>
+			<xs:enumeration value="zul"/>
+			<xs:enumeration value="zun"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="LanguageNameType">
+		<xs:restriction base="jmp20:CharacterString">
+			<xs:enumeration value="Afar"/>
+			<xs:enumeration value="Abkhazian"/>
+			<xs:enumeration value="Achinese"/>
+			<xs:enumeration value="Acoli"/>
+			<xs:enumeration value="Adangme"/>
+			<xs:enumeration value="Afro-Asiatic"/>
+			<xs:enumeration value="Afrihili"/>
+			<xs:enumeration value="Afrikaans"/>
+			<xs:enumeration value="Akan"/>
+			<xs:enumeration value="Akkadian"/>
+			<xs:enumeration value="Albanian"/>
+			<xs:enumeration value="Aleut"/>
+			<xs:enumeration value="Algonquian languages"/>
+			<xs:enumeration value="Amharic"/>
+			<xs:enumeration value="English, Old"/>
+			<xs:enumeration value="Apache languages"/>
+			<xs:enumeration value="Arabic"/>
+			<xs:enumeration value="Aramaic"/>
+			<xs:enumeration value="Armenian"/>
+			<xs:enumeration value="Araucanian"/>
+			<xs:enumeration value="Arapaho"/>
+			<xs:enumeration value="Artificial (Other)"/>
+			<xs:enumeration value="Arawak"/>
+			<xs:enumeration value="Assamese"/>
+			<xs:enumeration value="Astrurian"/>
+			<xs:enumeration value="Athapascan languages"/>
+			<xs:enumeration value="Australian languages"/>
+			<xs:enumeration value="Avaric"/>
+			<xs:enumeration value="Avestan"/>
+			<xs:enumeration value="Awadhi"/>
+			<xs:enumeration value="Aymara"/>
+			<xs:enumeration value="Azerbaijani"/>
+			<xs:enumeration value="Banda"/>
+			<xs:enumeration value="Bamileke languages"/>
+			<xs:enumeration value="Bashkir"/>
+			<xs:enumeration value="Baluchi"/>
+			<xs:enumeration value="Bambara"/>
+			<xs:enumeration value="Balinese"/>
+			<xs:enumeration value="Basque"/>
+			<xs:enumeration value="Baltic (Other)"/>
+			<xs:enumeration value="Beja"/>
+			<xs:enumeration value="Belarusian"/>
+			<xs:enumeration value="Bemba"/>
+			<xs:enumeration value="Bengali"/>
+			<xs:enumeration value="Berber (Other)"/>
+			<xs:enumeration value="Bhojpuri"/>
+			<xs:enumeration value="Bihari"/>
+			<xs:enumeration value="Bikol"/>
+			<xs:enumeration value="Bini"/>
+			<xs:enumeration value="Bislama"/>
+			<xs:enumeration value="Siksika"/>
+			<xs:enumeration value="Bantu (Other)"/>
+			<xs:enumeration value="Bosnian"/>
+			<xs:enumeration value="Braj"/>
+			<xs:enumeration value="Breton"/>
+			<xs:enumeration value="Batak (Indonesia)"/>
+			<xs:enumeration value="Buriat"/>
+			<xs:enumeration value="Buginese"/>
+			<xs:enumeration value="Bulgarian"/>
+			<xs:enumeration value="Burmese"/>
+			<xs:enumeration value="Caddo"/>
+			<xs:enumeration value="Central American Indian (Other)"/>
+			<xs:enumeration value="Carib"/>
+			<xs:enumeration value="Catalan"/>
+			<xs:enumeration value="Caucasian (Other)"/>
+			<xs:enumeration value="Cebuano"/>
+			<xs:enumeration value="Chamorro"/>
+			<xs:enumeration value="Chibcha"/>
+			<xs:enumeration value="Chechen"/>
+			<xs:enumeration value="Chagatai"/>
+			<xs:enumeration value="Chinese"/>
+			<xs:enumeration value="Chuukese"/>
+			<xs:enumeration value="Mari"/>
+			<xs:enumeration value="Chinook jargon"/>
+			<xs:enumeration value="Choctaw"/>
+			<xs:enumeration value="Chipewyan"/>
+			<xs:enumeration value="Cherokee"/>
+			<xs:enumeration value="Church Slavic"/>
+			<xs:enumeration value="Chuvash"/>
+			<xs:enumeration value="Cheyenne"/>
+			<xs:enumeration value="Chamic languages"/>
+			<xs:enumeration value="Coptic"/>
+			<xs:enumeration value="Cornish"/>
+			<xs:enumeration value="Corsican"/>
+			<xs:enumeration value="Creoles and pidgins, English-based"/>
+			<xs:enumeration value="Creoles and pidgins, French-based"/>
+			<xs:enumeration value="Creoles and pidgins, Portuguese-based"/>
+			<xs:enumeration value="Cree"/>
+			<xs:enumeration value="Creoles and pidgins (Other)"/>
+			<xs:enumeration value="Cushitic (Other)"/>
+			<xs:enumeration value="Czech"/>
+			<xs:enumeration value="Dakota"/>
+			<xs:enumeration value="Danish"/>
+			<xs:enumeration value="Dayak"/>
+			<xs:enumeration value="Delaware"/>
+			<xs:enumeration value="Slav (Athapascan)"/>
+			<xs:enumeration value="Dogrib"/>
+			<xs:enumeration value="Dinka"/>
+			<xs:enumeration value="Divehi"/>
+			<xs:enumeration value="Dogri"/>
+			<xs:enumeration value="Dravidian (Other)"/>
+			<xs:enumeration value="Duala"/>
+			<xs:enumeration value="Dutch, Middle"/>
+			<xs:enumeration value="Dutch"/>
+			<xs:enumeration value="Dyula"/>
+			<xs:enumeration value="Dzongkha"/>
+			<xs:enumeration value="Efik"/>
+			<xs:enumeration value="Egyptian (Ancient)"/>
+			<xs:enumeration value="Ekajuk"/>
+			<xs:enumeration value="Elamite"/>
+			<xs:enumeration value="English"/>
+			<xs:enumeration value="English, Middle"/>
+			<xs:enumeration value="Esperanto"/>
+			<xs:enumeration value="Estonian"/>
+			<xs:enumeration value="Ewe"/>
+			<xs:enumeration value="Ewondo"/>
+			<xs:enumeration value="Fang"/>
+			<xs:enumeration value="Faeroese"/>
+			<xs:enumeration value="Fanti"/>
+			<xs:enumeration value="Finnish"/>
+			<xs:enumeration value="Fino-Ugrian (Other)"/>
+			<xs:enumeration value="Fon"/>
+			<xs:enumeration value="French"/>
+			<xs:enumeration value="French, Middle"/>
+			<xs:enumeration value="French, Old"/>
+			<xs:enumeration value="Frisian"/>
+			<xs:enumeration value="Fulah"/>
+			<xs:enumeration value="Friulian"/>
+			<xs:enumeration value="Ga"/>
+			<xs:enumeration value="Gayo"/>
+			<xs:enumeration value="Gbaya"/>
+			<xs:enumeration value="Germanic (Other)"/>
+			<xs:enumeration value="Georgian"/>
+			<xs:enumeration value="German"/>
+			<xs:enumeration value="Geez"/>
+			<xs:enumeration value="Gilbertese"/>
+			<xs:enumeration value="Gaelic"/>
+			<xs:enumeration value="Irish"/>
+			<xs:enumeration value="Gallegan"/>
+			<xs:enumeration value="Manx"/>
+			<xs:enumeration value="German, Middle High"/>
+			<xs:enumeration value="German, Old High"/>
+			<xs:enumeration value="Gondi"/>
+			<xs:enumeration value="Gorontalo"/>
+			<xs:enumeration value="Gothic"/>
+			<xs:enumeration value="Grebo"/>
+			<xs:enumeration value="Greek, Ancient"/>
+			<xs:enumeration value="Greek, Modern"/>
+			<xs:enumeration value="Guarani"/>
+			<xs:enumeration value="Gujarati"/>
+			<xs:enumeration value="Gwich'in"/>
+			<xs:enumeration value="Haida"/>
+			<xs:enumeration value="Hausa"/>
+			<xs:enumeration value="Hawaiian"/>
+			<xs:enumeration value="Hebrew"/>
+			<xs:enumeration value="Herero"/>
+			<xs:enumeration value="Hiligaynon"/>
+			<xs:enumeration value="Himachali"/>
+			<xs:enumeration value="Hindi"/>
+			<xs:enumeration value="Hittite"/>
+			<xs:enumeration value="Hmong"/>
+			<xs:enumeration value="Hiri Motu"/>
+			<xs:enumeration value="Hungarian"/>
+			<xs:enumeration value="Hupa"/>
+			<xs:enumeration value="Iban"/>
+			<xs:enumeration value="Igbo"/>
+			<xs:enumeration value="Icelandic"/>
+			<xs:enumeration value="Ido"/>
+			<xs:enumeration value="Ijo"/>
+			<xs:enumeration value="Inuktitut"/>
+			<xs:enumeration value="Interlingue"/>
+			<xs:enumeration value="Iloko"/>
+			<xs:enumeration value="Interlingua"/>
+			<xs:enumeration value="Indic (Other)"/>
+			<xs:enumeration value="Indonesian"/>
+			<xs:enumeration value="Indo-European (Other)"/>
+			<xs:enumeration value="Inupiaq"/>
+			<xs:enumeration value="Iranian (Other)"/>
+			<xs:enumeration value="Iroquoian languages"/>
+			<xs:enumeration value="Italian"/>
+			<xs:enumeration value="Javanese"/>
+			<xs:enumeration value="Japanese"/>
+			<xs:enumeration value="Judeo-Persian"/>
+			<xs:enumeration value="Judeo-Arabic"/>
+			<xs:enumeration value="Kara-Kalpak"/>
+			<xs:enumeration value="Kabyle"/>
+			<xs:enumeration value="Kachin"/>
+			<xs:enumeration value="Kalaallisut"/>
+			<xs:enumeration value="Kamba"/>
+			<xs:enumeration value="Kannada"/>
+			<xs:enumeration value="Karen"/>
+			<xs:enumeration value="Kashmiri"/>
+			<xs:enumeration value="Kanuri"/>
+			<xs:enumeration value="Kawi"/>
+			<xs:enumeration value="Kazakh"/>
+			<xs:enumeration value="Khasi"/>
+			<xs:enumeration value="Khoisan (Other)"/>
+			<xs:enumeration value="Khmer"/>
+			<xs:enumeration value="Khotanese"/>
+			<xs:enumeration value="Kikuyu"/>
+			<xs:enumeration value="Kinyarwanda"/>
+			<xs:enumeration value="Kirghiz"/>
+			<xs:enumeration value="Kimbundu"/>
+			<xs:enumeration value="Konkani"/>
+			<xs:enumeration value="Komi"/>
+			<xs:enumeration value="Kongo"/>
+			<xs:enumeration value="Korean"/>
+			<xs:enumeration value="Kosraean"/>
+			<xs:enumeration value="Kpelle"/>
+			<xs:enumeration value="Kru"/>
+			<xs:enumeration value="Kurukh"/>
+			<xs:enumeration value="Kuanyama"/>
+			<xs:enumeration value="Kumyk"/>
+			<xs:enumeration value="Kurdish"/>
+			<xs:enumeration value="Kutenai"/>
+			<xs:enumeration value="Ladino"/>
+			<xs:enumeration value="Lahnda"/>
+			<xs:enumeration value="Lamba"/>
+			<xs:enumeration value="Lao"/>
+			<xs:enumeration value="Latin"/>
+			<xs:enumeration value="Latvian"/>
+			<xs:enumeration value="Lezghian"/>
+			<xs:enumeration value="Lingala"/>
+			<xs:enumeration value="Lithuanian"/>
+			<xs:enumeration value="Mongo"/>
+			<xs:enumeration value="Lozi"/>
+			<xs:enumeration value="Luxembourgish"/>
+			<xs:enumeration value="Luba-Lulua"/>
+			<xs:enumeration value="Luba-Katanga"/>
+			<xs:enumeration value="Ganda"/>
+			<xs:enumeration value="Luiseno"/>
+			<xs:enumeration value="Lunda"/>
+			<xs:enumeration value="Lushai"/>
+			<xs:enumeration value="Macedonian"/>
+			<xs:enumeration value="Madurese"/>
+			<xs:enumeration value="Magahi"/>
+			<xs:enumeration value="Marshallese"/>
+			<xs:enumeration value="Maithili"/>
+			<xs:enumeration value="Makasar"/>
+			<xs:enumeration value="Malayalam"/>
+			<xs:enumeration value="Mandingo"/>
+			<xs:enumeration value="Maori"/>
+			<xs:enumeration value="Austroneasian"/>
+			<xs:enumeration value="Marathi"/>
+			<xs:enumeration value="Masai"/>
+			<xs:enumeration value="Malay"/>
+			<xs:enumeration value="Mandar"/>
+			<xs:enumeration value="Mende"/>
+			<xs:enumeration value="Irish, Middle"/>
+			<xs:enumeration value="Micmac"/>
+			<xs:enumeration value="Minangkabau"/>
+			<xs:enumeration value="Miscellaneous languages"/>
+			<xs:enumeration value="Mon-Khmer (Other)"/>
+			<xs:enumeration value="Malagasy"/>
+			<xs:enumeration value="Maltese"/>
+			<xs:enumeration value="Manchu"/>
+			<xs:enumeration value="Manipuri"/>
+			<xs:enumeration value="Manobo languages"/>
+			<xs:enumeration value="Mohawk"/>
+			<xs:enumeration value="Mongolian"/>
+			<xs:enumeration value="Mossi"/>
+			<xs:enumeration value="Multiple languages"/>
+			<xs:enumeration value="Munda languages"/>
+			<xs:enumeration value="Creek"/>
+			<xs:enumeration value="Marwari"/>
+			<xs:enumeration value="Mayan languages"/>
+			<xs:enumeration value="Nahuatl"/>
+			<xs:enumeration value="North American Indian"/>
+			<xs:enumeration value="Nauru"/>
+			<xs:enumeration value="Navajo"/>
+			<xs:enumeration value="Ndebele, South"/>
+			<xs:enumeration value="Ndebele, North"/>
+			<xs:enumeration value="Ndonga"/>
+			<xs:enumeration value="Low German"/>
+			<xs:enumeration value="Nepali"/>
+			<xs:enumeration value="Newari"/>
+			<xs:enumeration value="Nias"/>
+			<xs:enumeration value="Niger-Kordofanian (Other)"/>
+			<xs:enumeration value="Niuean"/>
+			<xs:enumeration value="Norse, Old"/>
+			<xs:enumeration value="Norwegian"/>
+			<xs:enumeration value="Norwegian Nynorsk"/>
+			<xs:enumeration value="Norwewgian Bokmal"/>
+			<xs:enumeration value="Sotho, Northern"/>
+			<xs:enumeration value="Nubian languages"/>
+			<xs:enumeration value="Chichewa"/>
+			<xs:enumeration value="Nyamwezi"/>
+			<xs:enumeration value="Nyankole"/>
+			<xs:enumeration value="Nyoro"/>
+			<xs:enumeration value="Nzima"/>
+			<xs:enumeration value="Occitan"/>
+			<xs:enumeration value="Ojibwa"/>
+			<xs:enumeration value="Oriya"/>
+			<xs:enumeration value="Oromo"/>
+			<xs:enumeration value="Osage"/>
+			<xs:enumeration value="Ossetian"/>
+			<xs:enumeration value="Turkish, Ottoman"/>
+			<xs:enumeration value="Otomian languages"/>
+			<xs:enumeration value="Papuan (Other)"/>
+			<xs:enumeration value="Pangasinan"/>
+			<xs:enumeration value="Pahlavi"/>
+			<xs:enumeration value="Pampanga"/>
+			<xs:enumeration value="Panjabi"/>
+			<xs:enumeration value="Papiamento"/>
+			<xs:enumeration value="Palauan"/>
+			<xs:enumeration value="Persian, Old"/>
+			<xs:enumeration value="Persian"/>
+			<xs:enumeration value="Philippine (Other)"/>
+			<xs:enumeration value="Phoenician"/>
+			<xs:enumeration value="Pali"/>
+			<xs:enumeration value="Polish"/>
+			<xs:enumeration value="Pohnpeian"/>
+			<xs:enumeration value="Portuguese"/>
+			<xs:enumeration value="Prakrit languages"/>
+			<xs:enumeration value="Provencal, Old"/>
+			<xs:enumeration value="Pushto"/>
+			<xs:enumeration value="Quechua"/>
+			<xs:enumeration value="Rajasthani"/>
+			<xs:enumeration value="Rapanui"/>
+			<xs:enumeration value="Rarotongan"/>
+			<xs:enumeration value="Romance (Other)"/>
+			<xs:enumeration value="Raeto-Romance"/>
+			<xs:enumeration value="Romany"/>
+			<xs:enumeration value="Romanian"/>
+			<xs:enumeration value="Rundi"/>
+			<xs:enumeration value="Russian"/>
+			<xs:enumeration value="Sandawe"/>
+			<xs:enumeration value="Sango"/>
+			<xs:enumeration value="Yakut"/>
+			<xs:enumeration value="South American Indian (Other)"/>
+			<xs:enumeration value="Salishan languages"/>
+			<xs:enumeration value="Samaritan Aramaic"/>
+			<xs:enumeration value="Sanskrit"/>
+			<xs:enumeration value="Sasak"/>
+			<xs:enumeration value="Santali"/>
+			<xs:enumeration value="Serbian"/>
+			<xs:enumeration value="Scots"/>
+			<xs:enumeration value="Croatian"/>
+			<xs:enumeration value="Selkup"/>
+			<xs:enumeration value="Semitic (Other)"/>
+			<xs:enumeration value="Irish, Old"/>
+			<xs:enumeration value="Sign Languages"/>
+			<xs:enumeration value="Shan"/>
+			<xs:enumeration value="Sidamo"/>
+			<xs:enumeration value="Sinhalese"/>
+			<xs:enumeration value="Siouan languages"/>
+			<xs:enumeration value="Sino-Tibetan (Other)"/>
+			<xs:enumeration value="Slavic (Other)"/>
+			<xs:enumeration value="Slovak"/>
+			<xs:enumeration value="Slovenian"/>
+			<xs:enumeration value="Southern Sami"/>
+			<xs:enumeration value="Northern Sami"/>
+			<xs:enumeration value="Sami languages (Other)"/>
+			<xs:enumeration value="Lule Sami"/>
+			<xs:enumeration value="Inari Sami"/>
+			<xs:enumeration value="Samoan"/>
+			<xs:enumeration value="Skolt Sami"/>
+			<xs:enumeration value="Shona"/>
+			<xs:enumeration value="Sindhi"/>
+			<xs:enumeration value="Soninke"/>
+			<xs:enumeration value="Sogdian"/>
+			<xs:enumeration value="Somali"/>
+			<xs:enumeration value="Songhai"/>
+			<xs:enumeration value="Sotho, Southern"/>
+			<xs:enumeration value="Spanish"/>
+			<xs:enumeration value="Sardinian"/>
+			<xs:enumeration value="Serer"/>
+			<xs:enumeration value="Nilo-Saharan (Other)"/>
+			<xs:enumeration value="Swati"/>
+			<xs:enumeration value="Sukuma"/>
+			<xs:enumeration value="Sundanese"/>
+			<xs:enumeration value="Susu"/>
+			<xs:enumeration value="Sumerian"/>
+			<xs:enumeration value="Swahili"/>
+			<xs:enumeration value="Swedish"/>
+			<xs:enumeration value="Syriac"/>
+			<xs:enumeration value="Tahitian"/>
+			<xs:enumeration value="Tai (Other)"/>
+			<xs:enumeration value="Tamil"/>
+			<xs:enumeration value="Tatar"/>
+			<xs:enumeration value="Telugu"/>
+			<xs:enumeration value="Timne"/>
+			<xs:enumeration value="Tereno"/>
+			<xs:enumeration value="Tetum"/>
+			<xs:enumeration value="Tajik"/>
+			<xs:enumeration value="Tagalog"/>
+			<xs:enumeration value="Thai"/>
+			<xs:enumeration value="Tibetan"/>
+			<xs:enumeration value="Tigre"/>
+			<xs:enumeration value="Tigrinya"/>
+			<xs:enumeration value="Tiv"/>
+			<xs:enumeration value="Tokelau"/>
+			<xs:enumeration value="Tlingit"/>
+			<xs:enumeration value="Tamashek"/>
+			<xs:enumeration value="Tonga (Nyasa)"/>
+			<xs:enumeration value="Tonga (Tonga Islands)"/>
+			<xs:enumeration value="Tok Pisin"/>
+			<xs:enumeration value="Tsimshian"/>
+			<xs:enumeration value="Tswana"/>
+			<xs:enumeration value="Tsonga"/>
+			<xs:enumeration value="Turkmen"/>
+			<xs:enumeration value="Tupi languages"/>
+			<xs:enumeration value="Turkish"/>
+			<xs:enumeration value="Altaic (Other)"/>
+			<xs:enumeration value="Tuvalu"/>
+			<xs:enumeration value="Twi"/>
+			<xs:enumeration value="Tuvinian"/>
+			<xs:enumeration value="Ugaritic"/>
+			<xs:enumeration value="Uighur"/>
+			<xs:enumeration value="Ukranian"/>
+			<xs:enumeration value="Umbundu"/>
+			<xs:enumeration value="Undetermined"/>
+			<xs:enumeration value="Urdu"/>
+			<xs:enumeration value="Uzbek"/>
+			<xs:enumeration value="Vai"/>
+			<xs:enumeration value="Venda"/>
+			<xs:enumeration value="Vietnamese"/>
+			<xs:enumeration value="Volapuk"/>
+			<xs:enumeration value="Votic"/>
+			<xs:enumeration value="Wakashan languages"/>
+			<xs:enumeration value="Walamo"/>
+			<xs:enumeration value="Waray"/>
+			<xs:enumeration value="Washo"/>
+			<xs:enumeration value="Welsh"/>
+			<xs:enumeration value="Sorbian languages"/>
+			<xs:enumeration value="Wallon"/>
+			<xs:enumeration value="Wolof"/>
+			<xs:enumeration value="Xhosa"/>
+			<xs:enumeration value="Yao"/>
+			<xs:enumeration value="Yapese"/>
+			<xs:enumeration value="Yiddish"/>
+			<xs:enumeration value="Yoruba"/>
+			<xs:enumeration value="Yupik languages"/>
+			<xs:enumeration value="Zapotec"/>
+			<xs:enumeration value="Zenaga"/>
+			<xs:enumeration value="Zhuang"/>
+			<xs:enumeration value="Zande"/>
+			<xs:enumeration value="Zulu"/>
+			<xs:enumeration value="Zuni"/>
+		</xs:restriction>
+	</xs:simpleType>
+</xs:schema>

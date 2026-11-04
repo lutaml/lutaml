@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JSON Schema Documentation (Dev)</title>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+    // Real data from person.json fixture — includes $ref for nested address
+    window.SCHEMA_DATA = {
+      metadata: { title: "Person" },
+      schemas: [
+        {
+          name: "person",
+          title: "Person",
+          description: "A person object",
+          type: "object",
+          properties: [
+            { name: "firstName", description: "The person's first name.", type: "string", required: true, minLength: 1, maxLength: 100 },
+            { name: "lastName", description: "The person's last name.", type: "string", required: true, minLength: 1, maxLength: 100 },
+            { name: "age", description: "Age in years.", type: "integer", required: false, minimum: 0 },
+            { name: "email", type: "string", format: "email", required: false },
+            { name: "tags", type: "array", required: false, itemsType: "string" },
+            { name: "address", title: "Address", description: "A physical address", type: "object", required: false, "$ref": "#/definitions/address" }
+          ],
+          definitions: [
+            {
+              name: "address",
+              title: "Address",
+              description: "A physical address",
+              type: "object",
+              properties: [
+                { name: "street", type: "string", required: true },
+                { name: "city", type: "string", required: true },
+                { name: "state", type: "string", required: true },
+                { name: "zip", type: "string", required: true, pattern: "[0-9]{5}" }
+              ],
+              required: ["street", "city", "state", "zip"]
+            }
+          ],
+          required: ["firstName", "lastName"]
+        }
+      ],
+      searchIndex: [
+        { name: "person", title: "Person", type: "schema", schemaName: "person" },
+        { name: "firstName", type: "property", schemaName: "person" },
+        { name: "lastName", type: "property", schemaName: "person" },
+        { name: "age", type: "property", schemaName: "person" },
+        { name: "email", type: "property", schemaName: "person" },
+        { name: "tags", type: "property", schemaName: "person" },
+        { name: "address", title: "Address", type: "property", schemaName: "person" },
+        { name: "address", title: "Address", type: "definition", schemaName: "person" }
+      ]
+    };
+  </script>
+  <script type="module" src="/src/app.ts"></script>
+</body>
+</html>

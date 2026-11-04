@@ -1,0 +1,84 @@
+---
+_class: Expressir::Model::ExpFile
+path: spec/syntax/derived_attribute_deep.exp
+schemas:
+- _class: Expressir::Model::Declarations::Schema
+  id: geometry_schema
+  file: spec/syntax/derived_attribute_deep.exp
+  version:
+    _class: Expressir::Model::Declarations::SchemaVersion
+    value: version
+  entities:
+  - _class: Expressir::Model::Declarations::Entity
+    id: person
+    attributes:
+    - _class: Expressir::Model::Declarations::Attribute
+      id: name
+      kind: EXPLICIT
+      type:
+        _class: Expressir::Model::DataTypes::String
+    - _class: Expressir::Model::Declarations::Attribute
+      id: address
+      kind: EXPLICIT
+      type:
+        _class: Expressir::Model::References::SimpleReference
+        id: address
+        base_path: spec/syntax/derived_attribute_deep.exp.geometry_schema.person.address
+  - _class: Expressir::Model::Declarations::Entity
+    id: address
+    attributes:
+    - _class: Expressir::Model::Declarations::Attribute
+      id: street
+      kind: EXPLICIT
+      type:
+        _class: Expressir::Model::DataTypes::String
+    - _class: Expressir::Model::Declarations::Attribute
+      id: city
+      kind: EXPLICIT
+      type:
+        _class: Expressir::Model::References::SimpleReference
+        id: city
+        base_path: spec/syntax/derived_attribute_deep.exp.geometry_schema.address.city
+  - _class: Expressir::Model::Declarations::Entity
+    id: city
+    attributes:
+    - _class: Expressir::Model::Declarations::Attribute
+      id: name
+      kind: EXPLICIT
+      type:
+        _class: Expressir::Model::DataTypes::String
+    - _class: Expressir::Model::Declarations::Attribute
+      id: country
+      kind: EXPLICIT
+      type:
+        _class: Expressir::Model::References::SimpleReference
+        id: country
+        base_path: spec/syntax/derived_attribute_deep.exp.geometry_schema.city.country
+  - _class: Expressir::Model::Declarations::Entity
+    id: country
+    attributes:
+    - _class: Expressir::Model::Declarations::Attribute
+      id: name
+      kind: EXPLICIT
+      type:
+        _class: Expressir::Model::DataTypes::String
+    - _class: Expressir::Model::Declarations::Attribute
+      id: population
+      kind: EXPLICIT
+      type:
+        _class: Expressir::Model::DataTypes::Integer
+  - _class: Expressir::Model::Declarations::Entity
+    id: person_with_country_population
+    subtype_of:
+    - _class: Expressir::Model::References::SimpleReference
+      id: person
+      base_path: spec/syntax/derived_attribute_deep.exp.geometry_schema.person
+    attributes:
+    - _class: Expressir::Model::Declarations::DerivedAttribute
+      id: country_population
+      kind: DERIVED
+      type:
+        _class: Expressir::Model::DataTypes::Integer
+      expression:
+        _class: Expressir::Model::References::SimpleReference
+        id: SELF

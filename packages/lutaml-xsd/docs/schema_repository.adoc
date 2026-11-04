@@ -1,0 +1,609 @@
+= Schema repository
+:toc:
+:toclevels: 3
+
+== General
+
+The Schema Repository is a core component of lutaml-xsd that manages collections
+of XSD schemas, resolves type definitions, and creates self-contained packages
+for distribution. This document explains the concepts, architecture, and
+workflows for working with schema repositories.
+
+== Concepts
+
+=== What is a schema repository
+
+A schema repository is a managed collection of XSD schema files that:
+
+* Maintains references to multiple schema files
+* Resolves schema location mappings for imports and includes
+* Provides namespace-aware type lookup across all schemas
+* Validates schema completeness and consistency
+* Enables packaging for distribution
+
+Unlike working with individual XSD files, a repository treats schemas as an
+integrated collection, automatically handling dependencies and cross-references.
+
+=== Why use a schema repository
+
+Schema repositories solve several common problems:
+
+*Dependency management*:: XSD schemas reference other schemas through import
+and include statements. A repository automatically discovers and resolves
+these dependencies.
+
+*Location mapping*:: Schema references use relative paths or URLs that may not
+match your local file structure. The repository maps these references to
+actual file locations.
+
+*Type resolution*:: When schemas reference types from other namespaces, the
+repository can locate the definition across multiple schema files.
+
+*Distribution*:: Creating self-contained packages ensures all dependencies
+are included, making schemas portable and shareable.
+
+=== Schema location mappings
+
+Schema location mappings define how to resolve schema import and include
+references to actual files.
+
+==== Purpose
+
+XSD schemas reference other schemas using schemaLocation attributes:
+
+[source,xml]
+----
+<xs:import namespace="http://www.opengis.net/gml/3.2"
+           schemaLocation="../../../gml/3.2.1/gml.xsd"/>
+----
+
+The path `../../../gml/3.2.1/gml.xsd` is relative to the importing schema,
+but may not match your local directory structure. Schema location mappings
+resolve these references to actual file paths.
+
+==== Mapping types
+
+*Exact path mapping*:: Maps a specific path to a file.
+
+[source,yaml]
+----
+schema_location_mappings:
+  - from: "../../uro/3.2/urbanObject.xsd"
+    to: /path/to/schemas/i-ur/urbanObject.xsd
+----
+
+*Pattern mapping*:: Uses regular expressions to map multiple files.
+
+[source,yaml]
+----
+schema_location_mappings:
+  - from: "(?:\\.\\./)+gml/(.+\\.xsd)$"
+    to: /path/to/gml/\1
+    pattern: true
+----
+
+*URL mapping*:: Maps remote URLs to local files.
+
+[source,yaml]
+----
+schema_location_mappings:
+  - from: "http://www.w3.org/1999/xlink"
+    to: /path/to/w3c/xlink.xsd
+----
+
+=== Namespace mappings
+
+Namespace mappings define prefix-to-URI associations for convenient type
+references.
+
+==== Purpose
+
+XML namespaces use full URIs which are verbose:
+
+[source]
+----
+{http://www.opengis.net/gml/3.2}CodeType
+----
+
+Namespace mappings allow using short prefixes:
+
+[source]
+----
+gml:CodeType
+----
+
+==== Configuration
+
+Namespace mappings are defined in YAML configuration:
+
+[source,yaml]
+----
+namespace_mappings:
+  - prefix: gml
+    uri: "http://www.opengis.net/gml/3.2"
+  - prefix: urf
+    uri: "https://www.geospatial.jp/iur/urf/3.2"
+----
+
+If not provided, namespaces are automatically extracted from parsed schemas.
+
+=== Schema packages
+
+A schema package is a self-contained ZIP file containing:
+
+* All schema files (.xsd)
+* Metadata describing the package
+* Schema location mappings
+* Namespace mappings
+* Statistics about the schemas
+
+==== Why create packages
+
+*Self-containment*:: Packages include all dependencies, eliminating external
+references.
+
+*Portability*:: A single ZIP file contains everything needed to use the
+schemas.
+
+*Version control*:: Packages snapshot a specific version of schemas with all
+dependencies.
+
+*Distribution*:: Easy to share, archive, or deploy to other systems.
+
+*Validation*:: Packages can be validated for completeness and consistency.
+
+==== Package structure
+
+A package ZIP file contains:
+
+[source]
+----
+package.zip
+├── metadata.yaml          # Package metadata
+└── schemas/               # All schema files
+    ├── schema1.xsd
+    ├── schema2.xsd
+    └── ...
+----
+
+The `metadata.yaml` includes:
+
+* Package name, version, description
+* Entry point schemas
+* Schema location mappings
+* Namespace mappings
+* Creation timestamp
+* Statistics (total schemas, types, namespaces)
+
+== Repository lifecycle
+
+=== General
+
+A schema repository goes through several phases from creation to use.
+
+=== Creating a repository
+
+==== From YAML configuration
+
+The recommended approach is to define a repository in YAML:
+
+.Creating repository from YAML configuration
+[example]
+====
+
+[source,yaml]
+----
+# repository.yml
+files:
+  - schemas/main.xsd
+  - schemas/types.xsd
+
+schema_location_mappings:
+  - from: "../common/base.xsd"
+    to: schemas/common/base.xsd
+
+namespace_mappings:
+  - prefix: app
+    uri: "http://example.org/app"
+----
+
+[source,ruby]
+----
+repository = Lutaml::Xsd::SchemaRepository.from_yaml_file("repository.yml")
+----
+
+====
+
+==== Programmatic creation
+
+Repositories can also be created programmatically:
+
+.Creating repository programmatically
+[example]
+====
+
+[source,ruby]
+----
+repository = Lutaml::Xsd::SchemaRepository.new(
+  files: ["schemas/main.xsd"],
+  schema_location_mappings: [
+    Lutaml::Xsd::SchemaLocationMapping.new(
+      from: "../common/base.xsd",
+      to: "schemas/common/base.xsd"
+    )
+  ],
+  namespace_mappings: [
+    Lutaml::Xsd::NamespaceMapping.new(
+      prefix: "app",
+      uri: "http://example.org/app"
+    )
+  ]
+)
+----
+
+====
+
+=== Parsing schemas
+
+After creating a repository, parse the schemas to load their content:
+
+.Parsing schemas in repository
+[example]
+====
+
+[source,ruby]
+----
+repository.parse
+----
+
+This reads each file in `files`, parses the XSD content, and stores the
+parsed schema objects.
+
+====
+
+=== Resolving dependencies
+
+Resolve all imports and includes to build complete type indexes:
+
+.Resolving schema dependencies
+[example]
+====
+
+[source,ruby]
+----
+repository.resolve
+----
+
+This:
+
+* Follows all import and include statements
+* Applies schema location mappings
+* Builds a complete dependency tree
+* Indexes all types across all schemas
+* Extracts namespace information
+
+====
+
+=== Using the repository
+
+==== Type resolution
+
+Look up type definitions by qualified name:
+
+.Resolving type definitions
+[example]
+====
+
+[source,ruby]
+----
+result = repository.find_type("gml:CodeType")
+
+if result.success?
+  puts "Type found: #{result.local_name}"
+  puts "Namespace: #{result.namespace}"
+  puts "Defined in: #{result.schema_file}"
+  puts "Definition: #{result.definition.inspect}"
+else
+  puts "Error: #{result.error_message}"
+end
+----
+
+====
+
+==== Statistics
+
+Get repository statistics:
+
+.Getting repository statistics
+[example]
+====
+
+[source,ruby]
+----
+stats = repository.statistics
+# => {
+#   total_schemas: 15,
+#   total_types: 523,
+#   types_by_category: {
+#     simple_type: 45,
+#     complex_type: 312,
+#     element: 156,
+#     attribute_group: 10
+#   },
+#   total_namespaces: 8,
+#   namespace_prefixes: 8,
+#   resolved: true,
+#   validated: false
+# }
+----
+
+====
+
+==== Validation
+
+Validate repository completeness:
+
+.Validating repository
+[example]
+====
+
+[source,ruby]
+----
+errors = repository.validate
+
+if errors.empty?
+  puts "Repository is valid"
+else
+  errors.each { |error| puts "Error: #{error}" }
+end
+----
+
+====
+
+=== Creating packages
+
+Export repository as a self-contained ZIP package:
+
+.Creating schema package
+[example]
+====
+
+[source,ruby]
+----
+package = repository.to_package(
+  "output.zip",
+  metadata: {
+    name: "My Schema Package",
+    version: "1.0",
+    description: "Application schemas with dependencies"
+  }
+)
+----
+
+====
+
+=== Loading packages
+
+Load a repository from a package:
+
+.Loading repository from package
+[example]
+====
+
+[source,ruby]
+----
+repository = Lutaml::Xsd::SchemaRepository.from_package("package.zip")
+repository.parse.resolve
+
+# Use repository
+result = repository.find_type("app:MyType")
+----
+
+====
+
+== Configuration reference
+
+=== General
+
+Repository configuration is defined in YAML format with three main sections.
+
+=== Configuration structure
+
+[source,yaml]
+----
+# Entry point schema files
+files:
+  - path/to/schema1.xsd
+  - path/to/schema2.xsd
+
+# Schema location mappings
+schema_location_mappings:
+  - from: "reference"
+    to: "actual/path"
+    pattern: false
+
+# Namespace mappings
+namespace_mappings:
+  - prefix: "ns"
+    uri: "http://example.org/ns"
+----
+
+=== files section
+
+The `files` section lists entry point schemas for the repository.
+
+[source,yaml]
+----
+files:
+  - schemas/main.xsd
+  - schemas/types.xsd
+  - /absolute/path/to/external.xsd
+----
+
+Where,
+
+* Paths can be relative to the YAML file or absolute
+* Order does not matter
+* All referenced schemas should be accessible
+
+=== schema_location_mappings section
+
+The `schema_location_mappings` section defines how to resolve schema
+references.
+
+Each mapping has:
+
+`from`:: The schema location reference (from import/include)
+`to`:: The actual file path
+`pattern`:: Whether `from` is a regular expression (default: false)
+
+.Exact path mapping
+[example]
+====
+
+[source,yaml]
+----
+schema_location_mappings:
+  - from: "../../common/base.xsd"
+    to: /path/to/common/base.xsd
+----
+
+====
+
+.Pattern mapping
+[example]
+====
+
+[source,yaml]
+----
+schema_location_mappings:
+  - from: "(?:\\.\\./)+gml/(.+\\.xsd)$"
+    to: /path/to/gml/\1
+    pattern: true
+----
+
+This maps any reference like `../../../gml/feature.xsd` to
+`/path/to/gml/feature.xsd`.
+
+====
+
+=== namespace_mappings section
+
+The `namespace_mappings` section defines prefix-to-URI associations.
+
+Each mapping has:
+
+`prefix`:: The namespace prefix
+`uri`:: The namespace URI
+
+.Namespace mappings
+[example]
+====
+
+[source,yaml]
+----
+namespace_mappings:
+  - prefix: gml
+    uri: "http://www.opengis.net/gml/3.2"
+
+  - prefix: app
+    uri: "http://example.org/app/1.0"
+----
+
+====
+
+== Best practices
+
+=== Use YAML configuration files
+
+Define repositories in YAML rather than programmatically. This makes
+configuration:
+
+* Easier to read and maintain
+* Versionable in source control
+* Shareable across projects
+* Independent of code
+
+=== Organize schema files
+
+Keep schema files organized by namespace or purpose:
+
+[source]
+----
+schemas/
+├── app/           # Application schemas
+├── common/        # Shared types
+└── external/      # Third-party schemas
+----
+
+=== Use pattern mappings
+
+When multiple files follow the same pattern, use pattern mappings instead
+of individual exact mappings:
+
+.Bad: Individual mappings
+[example]
+====
+
+[source,yaml]
+----
+schema_location_mappings:
+  - from: "../gml/feature.xsd"
+    to: /path/to/gml/feature.xsd
+  - from: "../gml/geometry.xsd"
+    to: /path/to/gml/geometry.xsd
+  - from: "../gml/topology.xsd"
+    to: /path/to/gml/topology.xsd
+  # ... 50 more
+----
+
+====
+
+.Good: Pattern mapping
+[example]
+====
+
+[source,yaml]
+----
+schema_location_mappings:
+  - from: "^\\.\\./gml/(.+\\.xsd)$"
+    to: /path/to/gml/\1
+    pattern: true
+----
+
+====
+
+=== Validate after changes
+
+Always validate after modifying configuration:
+
+[source,ruby]
+----
+repository = Lutaml::Xsd::SchemaRepository.from_yaml_file("config.yml")
+repository.parse.resolve
+
+errors = repository.validate
+raise "Invalid repository" unless errors.empty?
+----
+
+=== Create packages for distribution
+
+When sharing schemas, create packages to ensure completeness:
+
+[source,ruby]
+----
+repository.to_package(
+  "schemas-v1.0.zip",
+  metadata: {
+    name: "Application Schemas",
+    version: "1.0",
+    description: "Complete schema set with dependencies"
+  }
+)
+----
+
+== See also
+
+* link:package_builder.adoc[Package Builder] - Interactive package creation
+* link:package_validation.adoc[Package Validation] - Validating packages
+* link:type_resolution.adoc[Type Resolution] - Finding type definitions

@@ -1,0 +1,51 @@
+# frozen_string_literal: true
+
+module Lutaml
+  module Model
+    module Schema
+      module XmlCompiler
+        # XSD registry generator. Extends the shared base with an extra
+        # phase for resolving model imports — XSD-generated classes use
+        # ensure_imports! hooks that need to run after every model is
+        # registered.
+        class RegistryGenerator < Lutaml::Model::Schema::RegistryGenerator
+          private
+
+          # Override the shared `registration_body` hook with three phases.
+          def registration_body
+            [
+              "#{body_indent}# Phase 1: Register all models (no imports)",
+              registration_calls,
+              "",
+              "#{body_indent}# Phase 2: Resolve model, choice, and restrict imports",
+              model_import_resolution_calls,
+              "",
+              "#{body_indent}# Phase 3: Resolve serialization mapping imports (sequence imports)",
+              mapping_import_resolution_calls,
+            ].join("\n")
+          end
+
+          def model_import_resolution_calls
+            @classes.map do |entry|
+              class_name = Utils.camel_case(entry.name)
+              "#{body_indent}#{class_name}.ensure_imports!(:#{@register_id}) " \
+                "if #{class_name}.respond_to?(:ensure_imports!)"
+            end.join("\n")
+          end
+
+          # Only Serializable subclasses have mappings; simple-type and
+          # union-type subclasses (Lutaml::Model::Type::Value) do not.
+          # The emitted code guards with respond_to? so it works
+          # uniformly across both kinds of generated class.
+          def mapping_import_resolution_calls
+            @classes.map do |entry|
+              class_name = Utils.camel_case(entry.name)
+              "#{body_indent}#{class_name}.mappings[:xml].ensure_mappings_imported!(:#{@register_id}) " \
+                "if #{class_name}.respond_to?(:mappings) && #{class_name}.mappings[:xml]&.respond_to?(:ensure_mappings_imported!)"
+            end.join("\n")
+          end
+        end
+      end
+    end
+  end
+end

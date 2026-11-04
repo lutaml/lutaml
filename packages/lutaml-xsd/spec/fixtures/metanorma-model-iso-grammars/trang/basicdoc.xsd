@@ -1,0 +1,2376 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:element name="document">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="bibdata">
+          <xs:annotation>
+            <xs:documentation>A bibliographic description, capturing bibliographic metadata about the document itself, including authors, title, and date of production</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element ref="sections">
+          <xs:annotation>
+            <xs:documentation>Hierarchically arranged units of textual content within the document</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:group minOccurs="0" maxOccurs="unbounded" ref="references">
+          <xs:annotation>
+            <xs:documentation>Bibliographic content</xs:documentation>
+          </xs:annotation>
+        </xs:group>
+      </xs:sequence>
+      <xs:attribute name="identifier">
+        <xs:annotation>
+          <xs:documentation>A globally unique identifier for the document in an agreed identifier schema. The identifier is to be used for tracking interactions with the document without depending on formal document registries; it would be exemplified by a GUID, rather than a document registry identifier such as "`ISO 639`", which belongs to `bibdata`</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="bibdata" type="BibData"/>
+  <xs:element name="section">
+    <xs:complexType>
+      <xs:complexContent>
+        <xs:extension base="Basic-Section">
+          <xs:sequence>
+            <xs:element minOccurs="0" maxOccurs="unbounded" ref="section">
+              <xs:annotation>
+                <xs:documentation>Sections contained within the current section. The relation is recursive,
+so the hierarchical arrangement of sections can be arbitrarily deep</xs:documentation>
+              </xs:annotation>
+            </xs:element>
+          </xs:sequence>
+        </xs:extension>
+      </xs:complexContent>
+    </xs:complexType>
+  </xs:element>
+  <xs:attributeGroup name="Basic-Section-Attributes">
+    <xs:attributeGroup ref="OptionalId"/>
+    <xs:attributeGroup ref="LocalizedStringAttributes"/>
+    <xs:attribute name="obligation" type="ObligationType"/>
+  </xs:attributeGroup>
+  <xs:group name="BasicBlock">
+    <xs:annotation>
+      <xs:documentation>Block of textual content</xs:documentation>
+    </xs:annotation>
+    <xs:choice>
+      <xs:choice>
+        <xs:group ref="paragraph-with-footnote"/>
+        <xs:group ref="table"/>
+        <xs:group ref="formula"/>
+        <xs:group ref="admonition"/>
+        <xs:group ref="ol"/>
+        <xs:group ref="ul"/>
+        <xs:group ref="dl"/>
+        <xs:group ref="figure"/>
+        <xs:group ref="quote"/>
+        <xs:group ref="sourcecode"/>
+        <xs:group ref="example"/>
+        <xs:element ref="annotation"/>
+        <xs:group ref="pre"/>
+        <xs:group ref="note"/>
+        <xs:element ref="pagebreak"/>
+        <xs:element ref="hr"/>
+        <xs:element ref="bookmark"/>
+        <xs:element ref="amend"/>
+      </xs:choice>
+      <xs:element ref="columnbreak"/>
+      <xs:choice>
+        <xs:element ref="requirement"/>
+        <xs:element ref="recommendation"/>
+        <xs:element ref="permission"/>
+        <xs:element ref="imagemap"/>
+        <xs:element ref="svgmap"/>
+        <xs:group ref="inputform"/>
+        <xs:element ref="toc"/>
+        <xs:group ref="passthrough"/>
+      </xs:choice>
+    </xs:choice>
+  </xs:group>
+  <xs:group name="BasicBlockNoId">
+    <xs:annotation>
+      <xs:documentation>Block of textual content: optional ID attributes (for use in Relaton, metadata)</xs:documentation>
+    </xs:annotation>
+    <xs:choice>
+      <xs:group ref="paragraph-with-footnote-no-id"/>
+      <xs:group ref="table-no-id"/>
+      <xs:group ref="formula-no-id"/>
+      <xs:group ref="admonition-no-id"/>
+      <xs:group ref="ol-no-id"/>
+      <xs:group ref="ul-no-id"/>
+      <xs:group ref="dl-no-id"/>
+      <xs:group ref="figure-no-id"/>
+      <xs:group ref="quote-no-id"/>
+      <xs:group ref="sourcecode-no-id"/>
+      <xs:group ref="example-no-id"/>
+      <xs:element ref="annotation"/>
+      <xs:group ref="pre-no-id"/>
+      <xs:group ref="note-no-id"/>
+      <xs:element ref="pagebreak"/>
+      <xs:element ref="hr"/>
+      <xs:element ref="bookmark"/>
+      <xs:element ref="amend"/>
+    </xs:choice>
+  </xs:group>
+  <xs:complexType name="AmendType">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="location">
+        <xs:annotation>
+          <xs:documentation>The location(s) in the original document which have undergone the change described in this block</xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:choice minOccurs="0" maxOccurs="unbounded">
+            <xs:element ref="locality"/>
+            <xs:element ref="localityStack"/>
+          </xs:choice>
+        </xs:complexType>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="description">
+        <xs:annotation>
+          <xs:documentation>Description(s) of the change described in this block</xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:group maxOccurs="unbounded" ref="BasicBlock"/>
+        </xs:complexType>
+      </xs:element>
+      <xs:element minOccurs="0" ref="newcontent"/>
+      <xs:group minOccurs="0" maxOccurs="unbounded" ref="classification">
+        <xs:annotation>
+          <xs:documentation>Classification of the change</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="contributor">
+        <xs:annotation>
+          <xs:documentation>Contributor responsible for the change</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+    <xs:attributeGroup ref="OptionalId"/>
+    <xs:attribute name="change" use="required">
+      <xs:annotation>
+        <xs:documentation>The type of change described in this block</xs:documentation>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="add"/>
+          <xs:enumeration value="modify"/>
+          <xs:enumeration value="delete"/>
+          <xs:enumeration value="replace"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="path">
+      <xs:annotation>
+        <xs:documentation>The span within location where the change applies to,
+if location defines a container larger than the scope of the change</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="path_end">
+      <xs:annotation>
+        <xs:documentation>The end of the span within location where the change applies to,
+if location defines a container larger than the scope of the change.
+Applicable to modify and delete</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="title">
+      <xs:annotation>
+        <xs:documentation>Optional caption of this block</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="position">
+      <xs:annotation>
+        <xs:documentation>For an "add" change, whether the change is added before or after the location</xs:documentation>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="before"/>
+          <xs:enumeration value="after"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:element name="newcontent">
+    <xs:annotation>
+      <xs:documentation>New content to be added to the document; applicable to add and modify.
+Can be blocks and/or sections</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:group minOccurs="0" maxOccurs="unbounded" ref="BasicBlock"/>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="section"/>
+      </xs:sequence>
+      <xs:attributeGroup ref="OptionalId"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:group name="classification">
+    <xs:annotation>
+      <xs:documentation>Key-value classification of an entity</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="classification">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element ref="tag">
+              <xs:annotation>
+                <xs:documentation>Key for the classification</xs:documentation>
+              </xs:annotation>
+            </xs:element>
+            <xs:group ref="classification_value">
+              <xs:annotation>
+                <xs:documentation>Value for the classification</xs:documentation>
+              </xs:annotation>
+            </xs:group>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:element name="tag" type="xs:string"/>
+  <xs:group name="classification_value">
+    <xs:sequence>
+      <xs:element name="value" type="xs:string"/>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="paragraph">
+    <xs:annotation>
+      <xs:documentation>Default block of textual content. 
+Unlike the case for other document models, paragraphs _cannot_
+contain other blocks, such as lists, tables, or figures: they are modelled as a basic building block of text
+Does not contain foonotes. While most paragraphs in a document can contain footnotes (paragraph-with-footnote),
+the distinction is necessary, as footnotes are not appropriate for all instances of paragraph content 
+in a document (e.g. sourcecode annotations)</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="p" type="ParagraphType"/>
+    </xs:sequence>
+  </xs:group>
+  <xs:simpleType name="Alignments">
+    <xs:annotation>
+      <xs:documentation>The alignment of the paragraph against the margins of the document</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="left"/>
+      <xs:enumeration value="right"/>
+      <xs:enumeration value="center"/>
+      <xs:enumeration value="justified"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:attributeGroup name="RequiredId">
+    <xs:annotation>
+      <xs:documentation>Mandatory anchor of element, to be used for cross-references within the document</xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="id" use="required" type="xs:ID"/>
+    <xs:attribute name="anchor">
+      <xs:annotation>
+        <xs:documentation>User-supplied anchor of element; replaced by content-based id, with all references to the anchor updated accordingly</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="source">
+      <xs:annotation>
+        <xs:documentation>Sourcing of the current element in an external data model</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <xs:attributeGroup name="OptionalId">
+    <xs:annotation>
+      <xs:documentation>Optional anchor of element</xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="id" type="xs:ID"/>
+    <xs:attribute name="anchor">
+      <xs:annotation>
+        <xs:documentation> User-supplied anchor of element; replaced by content-based id, with all references to the anchor updated accordingly</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="source">
+      <xs:annotation>
+        <xs:documentation>Sourcing of the current element in an external data model</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <xs:attributeGroup name="ParagraphAttributes">
+    <xs:attribute name="align" type="Alignments">
+      <xs:annotation>
+        <xs:documentation>The alignment of the paragraph against the margins of the document</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="type">
+      <xs:annotation>
+        <xs:documentation>Semantic classification of paragraph</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attributeGroup ref="BlockAttributes"/>
+  </xs:attributeGroup>
+  <xs:complexType name="ParagraphType">
+    <xs:complexContent>
+      <xs:extension base="ParagraphBody">
+        <xs:attributeGroup ref="RequiredId"/>
+        <xs:attributeGroup ref="ParagraphAttributes"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  <xs:complexType name="ParagraphBody" mixed="true">
+    <xs:annotation>
+      <xs:documentation>Inline elements constituting the content of the paragraph, excluding footnotes</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:group minOccurs="0" maxOccurs="unbounded" ref="TextElement">
+        <xs:annotation>
+          <xs:documentation>Inline elements constituting the content of the paragraph</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+      <xs:group minOccurs="0" maxOccurs="unbounded" ref="note">
+        <xs:annotation>
+          <xs:documentation>Notes whose scope is the current block</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ParagraphFnBody" mixed="true">
+    <xs:annotation>
+      <xs:documentation>Inline elements constituting the content of the paragraph, including footnotes</xs:documentation>
+    </xs:annotation>
+    <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <xs:choice>
+        <xs:choice>
+          <xs:group ref="TextElement">
+            <xs:annotation>
+              <xs:documentation>Inline elements constituting the content of the paragraph</xs:documentation>
+            </xs:annotation>
+          </xs:group>
+          <xs:element ref="fn">
+            <xs:annotation>
+              <xs:documentation>Footnotes interspersed with paragraph content</xs:documentation>
+            </xs:annotation>
+          </xs:element>
+        </xs:choice>
+        <xs:group ref="note">
+          <xs:annotation>
+            <xs:documentation>Notes whose scope is the current block</xs:documentation>
+          </xs:annotation>
+        </xs:group>
+      </xs:choice>
+      <xs:group ref="BlockSource">
+        <xs:annotation>
+          <xs:documentation>Bibliographic source for the information in the paragraph
+parargaph sources are currently only rendered in metanorma-plateau</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+    </xs:choice>
+  </xs:complexType>
+  <xs:group name="paragraph-no-id">
+    <xs:annotation>
+      <xs:documentation>Paragraph containing no footnotes: optional ID attributes (for use in Relaton, metadata) </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="p">
+        <xs:complexType>
+          <xs:complexContent>
+            <xs:extension base="ParagraphBody">
+              <xs:attributeGroup ref="OptionalId"/>
+              <xs:attributeGroup ref="ParagraphAttributes"/>
+            </xs:extension>
+          </xs:complexContent>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="paragraph-with-footnote">
+    <xs:annotation>
+      <xs:documentation>A paragraph which may contain footnotes.</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="p">
+        <xs:complexType>
+          <xs:complexContent>
+            <xs:extension base="ParagraphFnBody">
+              <xs:attributeGroup ref="RequiredId"/>
+              <xs:attributeGroup ref="ParagraphAttributes"/>
+            </xs:extension>
+          </xs:complexContent>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="paragraph-with-footnote-no-id">
+    <xs:annotation>
+      <xs:documentation>A paragraph which may contain footnotes: optional ID attributes (for use in Relaton, metadata)</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="p">
+        <xs:complexType>
+          <xs:complexContent>
+            <xs:extension base="ParagraphFnBody">
+              <xs:attributeGroup ref="OptionalId"/>
+              <xs:attributeGroup ref="ParagraphAttributes"/>
+            </xs:extension>
+          </xs:complexContent>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="note">
+    <xs:annotation>
+      <xs:documentation>Note block</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="note">
+        <xs:complexType>
+          <xs:complexContent>
+            <xs:extension base="NoteBody">
+              <xs:attributeGroup ref="RequiredId"/>
+              <xs:attributeGroup ref="NoteAttributes"/>
+            </xs:extension>
+          </xs:complexContent>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="note-no-id">
+    <xs:annotation>
+      <xs:documentation>Note block: optional ID attributes (for use in Relaton, metadata)</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="note">
+        <xs:complexType>
+          <xs:complexContent>
+            <xs:extension base="NoteNoIdBody">
+              <xs:attributeGroup ref="OptionalId"/>
+              <xs:attributeGroup ref="NoteAttributes"/>
+            </xs:extension>
+          </xs:complexContent>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:attributeGroup name="NoteAttributes">
+    <xs:attributeGroup ref="NumberingAttributes"/>
+    <xs:attribute name="type">
+      <xs:annotation>
+        <xs:documentation>Semantic classification of note</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="coverpage" type="xs:boolean">
+      <xs:annotation>
+        <xs:documentation>Display the note on the document cover page</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="notag" type="xs:boolean">
+      <xs:annotation>
+        <xs:documentation>Do not insert text labelling the note as a note in rendering</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attributeGroup ref="BlockAttributes"/>
+  </xs:attributeGroup>
+  <xs:complexType name="NoteNoIdBody">
+    <xs:group maxOccurs="unbounded" ref="paragraph-no-id"/>
+  </xs:complexType>
+  <xs:attributeGroup name="ReviewAttributes">
+    <xs:attribute name="reviewer" use="required">
+      <xs:annotation>
+        <xs:documentation>The party who has offered the comment</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="type">
+      <xs:annotation>
+        <xs:documentation>The type of reviewer comment</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="date" type="xs:dateTime">
+      <xs:annotation>
+        <xs:documentation>The date when the comment was made</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="from">
+      <xs:annotation>
+        <xs:documentation>Identifier for the start of the text or point in the text to which the comment applies.
+If not provided, the comment applies in the vicinity of the place it has been inserted into the text</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="to">
+      <xs:annotation>
+        <xs:documentation>Identifier for the end of the text to which the comment applies</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <xs:attributeGroup name="NumberingAttributes">
+    <xs:attribute name="unnumbered" type="xs:boolean">
+      <xs:annotation>
+        <xs:documentation>Do not number this block in rendering</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="subsequence">
+      <xs:annotation>
+        <xs:documentation>Define a subsequence for numbering of this block; e.g. if this block would be numbered
+as 7, but it has a subsequence value of XYZ, this block, and all consecutive blocks
+of the same class and with the same subsequence value, will be numbered consecutively
+with the same number and in a subsequence: 7a, 7b, 7c etc</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="number">
+      <xs:annotation>
+        <xs:documentation>Override the numbering of this block in numbering</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <xs:group name="formula">
+    <xs:annotation>
+      <xs:documentation>Block containing a mathematical expression or other formulas</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="formula">
+        <xs:complexType>
+          <xs:complexContent>
+            <xs:extension base="FormulaBody">
+              <xs:attributeGroup ref="RequiredId"/>
+              <xs:attributeGroup ref="FormulaAttributes"/>
+            </xs:extension>
+          </xs:complexContent>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="formula-no-id">
+    <xs:annotation>
+      <xs:documentation>Block containing a mathematical expression or other formulas: optional ID attributes (for use in Relaton, metadata)</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="formula">
+        <xs:complexType>
+          <xs:complexContent>
+            <xs:extension base="FormulaNoIdBody">
+              <xs:attributeGroup ref="OptionalId"/>
+              <xs:attributeGroup ref="FormulaAttributes"/>
+            </xs:extension>
+          </xs:complexContent>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:attributeGroup name="FormulaAttributes">
+    <xs:attributeGroup ref="NumberingAttributes"/>
+    <xs:attribute name="inequality" type="xs:boolean">
+      <xs:annotation>
+        <xs:documentation>Indication that the formula is to be labelled as an Inequality, if inequalities are differentiated from equations</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attributeGroup ref="BlockAttributes"/>
+  </xs:attributeGroup>
+  <xs:complexType name="FormulaNoIdBody">
+    <xs:sequence>
+      <xs:element ref="stem">
+        <xs:annotation>
+          <xs:documentation>The content of the formula, as a mathematical expression</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:group minOccurs="0" ref="dl-no-id">
+        <xs:annotation>
+          <xs:documentation>A definitions list defining any symbols used in the formula</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+      <xs:group minOccurs="0" maxOccurs="unbounded" ref="note-no-id">
+        <xs:annotation>
+          <xs:documentation>Notes whose scope is the current block</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:group name="quote">
+    <xs:annotation>
+      <xs:documentation>Block quotation, containing extensive textual content originally authored outside of the current document</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="quote">
+        <xs:complexType>
+          <xs:complexContent>
+            <xs:extension base="QuoteBody">
+              <xs:attributeGroup ref="RequiredId"/>
+              <xs:attributeGroup ref="QuoteAttributes"/>
+            </xs:extension>
+          </xs:complexContent>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="quote-no-id">
+    <xs:annotation>
+      <xs:documentation>Block quotation: optional ID attributes (for use in Relaton, metadata)</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="quote">
+        <xs:complexType>
+          <xs:complexContent>
+            <xs:extension base="QuoteNoIdBody">
+              <xs:attributeGroup ref="OptionalId"/>
+              <xs:attributeGroup ref="QuoteAttributes"/>
+            </xs:extension>
+          </xs:complexContent>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:attributeGroup name="QuoteAttributes">
+    <xs:attribute name="alignment" type="Alignments">
+      <xs:annotation>
+        <xs:documentation>The alignment of the quote against the margins of the document</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attributeGroup ref="BlockAttributes"/>
+  </xs:attributeGroup>
+  <xs:complexType name="QuoteBody">
+    <xs:sequence>
+      <xs:group minOccurs="0" ref="quote-source">
+        <xs:annotation>
+          <xs:documentation>Bibliographic citation for the quotation</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+      <xs:element minOccurs="0" ref="author">
+        <xs:annotation>
+          <xs:documentation>Author of the quotation. The `author` attribute of the quotation is redundant with `source`,
+since it restates information about the author that should be recoverable from the `source` citation.
+It is included for convenience, in case processing the citation to extract the author is prohibitive for rendering tools</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:group maxOccurs="unbounded" ref="paragraph-with-footnote">
+        <xs:annotation>
+          <xs:documentation>Content of quote</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+      <xs:group minOccurs="0" maxOccurs="unbounded" ref="note">
+        <xs:annotation>
+          <xs:documentation>Notes whose scope is the current block</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="QuoteNoIdBody">
+    <xs:sequence>
+      <xs:group minOccurs="0" ref="quote-source">
+        <xs:annotation>
+          <xs:documentation>Bibliographic citation for the quotation</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+      <xs:element minOccurs="0" ref="author">
+        <xs:annotation>
+          <xs:documentation>Author of the quotation. The `author` attribute of the quotation is redundant with `source`,
+since it restates information about the author that should be recoverable from the `source` citation.
+It is included for convenience, in case processing the citation to extract the author is prohibitive for rendering tools</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:group maxOccurs="unbounded" ref="paragraph-with-footnote-no-id">
+        <xs:annotation>
+          <xs:documentation>Content of quote</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+      <xs:group minOccurs="0" maxOccurs="unbounded" ref="note-no-id">
+        <xs:annotation>
+          <xs:documentation>Notes whose scope is the current block</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:group name="quote-source">
+    <xs:sequence>
+      <xs:element name="source">
+        <xs:complexType>
+          <xs:group ref="erefType"/>
+          <xs:attributeGroup ref="erefType"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:element name="author" type="xs:string"/>
+  <xs:group name="sourcecode">
+    <xs:annotation>
+      <xs:documentation>Block containing computer code or comparable text</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="sourcecode">
+        <xs:complexType>
+          <xs:complexContent>
+            <xs:extension base="SourceBody">
+              <xs:attributeGroup ref="RequiredId"/>
+              <xs:attributeGroup ref="SourceAttributes"/>
+            </xs:extension>
+          </xs:complexContent>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="sourcecode-no-id">
+    <xs:annotation>
+      <xs:documentation>Block containing computer code or comparable text: optional ID attributes (for use in Relaton, metadata)</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="sourcecode">
+        <xs:complexType>
+          <xs:complexContent>
+            <xs:extension base="SourceNoIdBody">
+              <xs:attributeGroup ref="OptionalId"/>
+              <xs:attributeGroup ref="SourceAttributes"/>
+            </xs:extension>
+          </xs:complexContent>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:attributeGroup name="SourceAttributes">
+    <xs:attributeGroup ref="NumberingAttributes"/>
+    <xs:attribute name="lang">
+      <xs:annotation>
+        <xs:documentation>The computer language or other notational convention that the source code is expressed in</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attributeGroup ref="BlockAttributes"/>
+    <xs:attribute name="linenums" type="xs:boolean">
+      <xs:annotation>
+        <xs:documentation>Render the sourcecode block with line numbering. Default value is false</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <xs:complexType name="SourceNoIdBody">
+    <xs:sequence>
+      <xs:group minOccurs="0" ref="tname">
+        <xs:annotation>
+          <xs:documentation>The caption of the block</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+      <xs:element ref="body">
+        <xs:annotation>
+          <xs:documentation>The sourcecode content</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="callout-annotation">
+        <xs:annotation>
+          <xs:documentation>Annotations to the source code; each annotation consists of zero or more paragraphs,
+and is intended to be referenced by a callout within the source code</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:group minOccurs="0" maxOccurs="unbounded" ref="note-no-id">
+        <xs:annotation>
+          <xs:documentation>Notes whose scope is the current block</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:group name="pre">
+    <xs:annotation>
+      <xs:documentation>Pre-formatted block. Wrapper for text to be rendered with fixed-width typeface, and preserving spaces including line breaks. 
+They are intended for a restricted number of functions, most typically ASCII Art (which is still in prominent use in some 
+standards documents), and computer output. In most cases, sourcecode blocks are more appropriate in markup, 
+as it is more clearly motivated semantically</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="pre">
+        <xs:complexType>
+          <xs:complexContent>
+            <xs:extension base="PreBody">
+              <xs:attributeGroup ref="RequiredId"/>
+              <xs:attributeGroup ref="PreAttributes"/>
+            </xs:extension>
+          </xs:complexContent>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="pre-no-id">
+    <xs:annotation>
+      <xs:documentation>Pre-formatted block: optional ID attributes (for use in Relaton, metadata)</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="pre">
+        <xs:complexType>
+          <xs:complexContent>
+            <xs:extension base="PreNoIdBody">
+              <xs:attributeGroup ref="OptionalId"/>
+              <xs:attributeGroup ref="PreAttributes"/>
+            </xs:extension>
+          </xs:complexContent>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:attributeGroup name="PreAttributes">
+    <xs:attribute name="alt">
+      <xs:annotation>
+        <xs:documentation>Accessible description of the preformatted text</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <xs:complexType name="PreBody" mixed="true">
+    <xs:sequence>
+      <xs:group minOccurs="0" ref="tname">
+        <xs:annotation>
+          <xs:documentation>The caption of the block</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+      <xs:group minOccurs="0" maxOccurs="unbounded" ref="note">
+        <xs:annotation>
+          <xs:documentation>Notes whose scope is the current block</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="PreNoIdBody" mixed="true">
+    <xs:sequence>
+      <xs:group minOccurs="0" ref="tname">
+        <xs:annotation>
+          <xs:documentation>The caption of the block</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+      <xs:group minOccurs="0" maxOccurs="unbounded" ref="note-no-id">
+        <xs:annotation>
+          <xs:documentation>Notes whose scope is the current block</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:group name="table">
+    <xs:annotation>
+      <xs:documentation>Tabular arrangement of text</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="table">
+        <xs:complexType>
+          <xs:complexContent>
+            <xs:extension base="TableBody">
+              <xs:attributeGroup ref="RequiredId"/>
+              <xs:attributeGroup ref="TableAttributes"/>
+            </xs:extension>
+          </xs:complexContent>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="table-no-id">
+    <xs:annotation>
+      <xs:documentation>Tabular arrangement of text: optional ID attributes recursively (for use in Relaton, metadata)</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="table">
+        <xs:complexType>
+          <xs:complexContent>
+            <xs:extension base="TableNoIdBody">
+              <xs:attributeGroup ref="OptionalId"/>
+              <xs:attributeGroup ref="TableAttributes"/>
+            </xs:extension>
+          </xs:complexContent>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:attributeGroup name="TableAttributes">
+    <xs:attributeGroup ref="NumberingAttributes"/>
+    <xs:attribute name="alt">
+      <xs:annotation>
+        <xs:documentation>Accessible description of the tabular text, in case the table cannot be rendered accessibly (HTML 5)</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="summary">
+      <xs:annotation>
+        <xs:documentation>Alternative more extensive summary of table to be provided for accessibility purposes, 
+in case the table cannot be rendered accessibly (HTML 5)</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="uri" type="xs:anyURI">
+      <xs:annotation>
+        <xs:documentation>Online location of content of table (in case the table is available as a separate external document) (HTML 5)</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="plain" type="xs:boolean">
+      <xs:annotation>
+        <xs:documentation>Render as a plain attribute, with no shading or borders</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="width">
+      <xs:annotation>
+        <xs:documentation>Width of the table block in rendering</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="style">
+      <xs:annotation>
+        <xs:documentation>CSS style: only background-color, color, border supported</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attributeGroup ref="BlockAttributes"/>
+  </xs:attributeGroup>
+  <xs:complexType name="TableNoIdBody">
+    <xs:annotation>
+      <xs:documentation>Elements of table: optional ID attributes recursively (for use in Relaton, metadata)</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:group minOccurs="0" ref="tname">
+        <xs:annotation>
+          <xs:documentation>Caption for the table</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+      <xs:group minOccurs="0" ref="thead-no-id">
+        <xs:annotation>
+          <xs:documentation>Table rows constituting the table header</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+      <xs:group ref="tbody-no-id">
+        <xs:annotation>
+          <xs:documentation>Table rows constituting the table body</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+      <xs:group minOccurs="0" ref="tfoot-no-id">
+        <xs:annotation>
+          <xs:documentation>Table rows constituting the table footer</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+      <xs:group minOccurs="0" ref="dl-no-id">
+        <xs:annotation>
+          <xs:documentation>Definitions list defining any symbols used in the table</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+      <xs:group minOccurs="0" maxOccurs="unbounded" ref="table-note-no-id">
+        <xs:annotation>
+          <xs:documentation>Notes specific to this block</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:group name="thead-no-id">
+    <xs:sequence>
+      <xs:element name="thead">
+        <xs:complexType>
+          <xs:group ref="tr-no-id"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="tfoot">
+    <xs:sequence>
+      <xs:element name="tfoot">
+        <xs:complexType>
+          <xs:group ref="tr"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="tfoot-no-id">
+    <xs:sequence>
+      <xs:element name="tfoot">
+        <xs:complexType>
+          <xs:group ref="tr-no-id"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="tbody">
+    <xs:sequence>
+      <xs:element name="tbody">
+        <xs:complexType>
+          <xs:group maxOccurs="unbounded" ref="tr"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="tbody-no-id">
+    <xs:sequence>
+      <xs:element name="tbody">
+        <xs:complexType>
+          <xs:group maxOccurs="unbounded" ref="tr-no-id"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="table-note-no-id">
+    <xs:sequence>
+      <xs:element name="note">
+        <xs:complexType>
+          <xs:group ref="paragraph-no-id"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="tr">
+    <xs:annotation>
+      <xs:documentation>Sequence of cells to be displayed as a row in a table</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="tr">
+        <xs:complexType>
+          <xs:choice maxOccurs="unbounded">
+            <xs:group ref="td">
+              <xs:annotation>
+                <xs:documentation>Data cells in a table row</xs:documentation>
+              </xs:annotation>
+            </xs:group>
+            <xs:group ref="th">
+              <xs:annotation>
+                <xs:documentation>Header cells in a table row</xs:documentation>
+              </xs:annotation>
+            </xs:group>
+          </xs:choice>
+          <xs:attributeGroup ref="TrAttributes"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="tr-no-id">
+    <xs:annotation>
+      <xs:documentation>Sequence of cells to be displayed as a row in a table: optional ID attributes recursively (for use in Relaton, metadata)</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="tr">
+        <xs:complexType>
+          <xs:choice maxOccurs="unbounded">
+            <xs:group ref="td-no-id"/>
+            <xs:group ref="th-no-id"/>
+          </xs:choice>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="td">
+    <xs:annotation>
+      <xs:documentation>Textual content constituting a basic building block of a table: data cell</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="td">
+        <xs:complexType>
+          <xs:complexContent>
+            <xs:extension base="TdBody">
+              <xs:attributeGroup ref="TdAttributes"/>
+            </xs:extension>
+          </xs:complexContent>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="td-no-id">
+    <xs:annotation>
+      <xs:documentation>Data cell: optional ID attributes recursively (for use in Relaton, metadata)</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="td">
+        <xs:complexType>
+          <xs:complexContent>
+            <xs:extension base="TdNoIdBody">
+              <xs:attributeGroup ref="TdAttributes"/>
+            </xs:extension>
+          </xs:complexContent>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:attributeGroup name="TdAttributes">
+    <xs:attribute name="colspan">
+      <xs:annotation>
+        <xs:documentation>Number of columns in the underlying table grid which the cell spans</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="rowspan">
+      <xs:annotation>
+        <xs:documentation>Number of rows in the underlying table grid which the cell spans</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="align">
+      <xs:annotation>
+        <xs:documentation>Horizontal textual alignment of the cell against the underlying table grid</xs:documentation>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="left"/>
+          <xs:enumeration value="right"/>
+          <xs:enumeration value="center"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="valign">
+      <xs:annotation>
+        <xs:documentation>Vertical alignment of the cell against the underlying table grid</xs:documentation>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="top"/>
+          <xs:enumeration value="middle"/>
+          <xs:enumeration value="bottom"/>
+          <xs:enumeration value="baseline"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attributeGroup ref="RequiredId"/>
+    <xs:attribute name="style">
+      <xs:annotation>
+        <xs:documentation>CSS style: only background-color, color, border supported</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <xs:complexType name="TdNoIdBody" mixed="true">
+    <xs:choice>
+      <xs:sequence minOccurs="0" maxOccurs="unbounded">
+        <xs:annotation>
+          <xs:documentation>Table cell is a block</xs:documentation>
+        </xs:annotation>
+        <xs:group ref="TextElement"/>
+      </xs:sequence>
+      <xs:group maxOccurs="unbounded" ref="paragraph-with-footnote-no-id">
+        <xs:annotation>
+          <xs:documentation>Table cell contains a block</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+    </xs:choice>
+  </xs:complexType>
+  <xs:group name="th">
+    <xs:annotation>
+      <xs:documentation>Textual content constituting a basic building block of a table, treated as a header: header cell</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="th">
+        <xs:complexType>
+          <xs:complexContent>
+            <xs:extension base="ThBody">
+              <xs:attributeGroup ref="ThAttributes"/>
+            </xs:extension>
+          </xs:complexContent>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="th-no-id">
+    <xs:annotation>
+      <xs:documentation>Header cell: optional ID attributes recursively (for use in Relaton, metadata)</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="th">
+        <xs:complexType>
+          <xs:complexContent>
+            <xs:extension base="ThNoIdBody">
+              <xs:attributeGroup ref="ThAttributes"/>
+            </xs:extension>
+          </xs:complexContent>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:attributeGroup name="ThAttributes">
+    <xs:attributeGroup ref="TdAttributes"/>
+  </xs:attributeGroup>
+  <xs:complexType name="ThNoIdBody">
+    <xs:complexContent>
+      <xs:extension base="TdNoIdBody"/>
+    </xs:complexContent>
+  </xs:complexType>
+  <xs:group name="example">
+    <xs:annotation>
+      <xs:documentation>Block containing an example illustrating a claim made in the main flow of text</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="example">
+        <xs:complexType>
+          <xs:complexContent>
+            <xs:extension base="ExampleBody">
+              <xs:attributeGroup ref="RequiredId"/>
+              <xs:attributeGroup ref="ExampleAttributes"/>
+            </xs:extension>
+          </xs:complexContent>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="example-no-id">
+    <xs:annotation>
+      <xs:documentation>Example block: optional ID attributes recursively (for use in Relaton, metadata)</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="example">
+        <xs:complexType>
+          <xs:complexContent>
+            <xs:extension base="ExampleNoIdBody">
+              <xs:attributeGroup ref="OptionalId"/>
+              <xs:attributeGroup ref="ExampleAttributes"/>
+            </xs:extension>
+          </xs:complexContent>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:complexType name="ExampleNoIdBody">
+    <xs:sequence>
+      <xs:group minOccurs="0" ref="tname">
+        <xs:annotation>
+          <xs:documentation>The caption of the example</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+      <xs:choice maxOccurs="unbounded">
+        <xs:annotation>
+          <xs:documentation>Content of the example</xs:documentation>
+        </xs:annotation>
+        <xs:group ref="formula-no-id"/>
+        <xs:group ref="ul-no-id"/>
+        <xs:group ref="ol-no-id"/>
+        <xs:group ref="dl-no-id"/>
+        <xs:group ref="quote-no-id"/>
+        <xs:group ref="sourcecode-no-id"/>
+        <xs:group ref="paragraph-with-footnote-no-id"/>
+      </xs:choice>
+      <xs:group minOccurs="0" maxOccurs="unbounded" ref="note-no-id">
+        <xs:annotation>
+          <xs:documentation>Notes whose scope is the current block</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:group name="admonition">
+    <xs:annotation>
+      <xs:documentation>A sidebar block outside of the main flow of text, conveying particular warnings or supplementary text to the reader</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="admonition">
+        <xs:complexType>
+          <xs:complexContent>
+            <xs:extension base="AdmonitionBody">
+              <xs:attributeGroup ref="RequiredId"/>
+              <xs:attributeGroup ref="AdmonitionAttributes"/>
+            </xs:extension>
+          </xs:complexContent>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="admonition-no-id">
+    <xs:annotation>
+      <xs:documentation>A sidebar block outside of the main flow of text: optional ID attributes recursively (for use in Relaton, metadata)</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="admonition">
+        <xs:complexType>
+          <xs:complexContent>
+            <xs:extension base="AdmonitionNoIdBody">
+              <xs:attributeGroup ref="OptionalId"/>
+              <xs:attributeGroup ref="AdmonitionAttributes"/>
+            </xs:extension>
+          </xs:complexContent>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:attributeGroup name="AdmonitionAttributes">
+    <xs:attribute name="type" use="required" type="AdmonitionType">
+      <xs:annotation>
+        <xs:documentation>Subclass of admonition determining how it is to be rendered. 
+Distinct admonition types are often associated with distinct icons or rendering</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="class">
+      <xs:annotation>
+        <xs:documentation>Subclass of admonition, allowing different runs of admonitions to be labelled
+and auto-numbered differently, even if they are of the same type.
+Typically is a subclass of an admonition type</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="uri" type="xs:anyURI">
+      <xs:annotation>
+        <xs:documentation>Location where the content of the admonition is accessible as an external document</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="coverpage" type="xs:boolean">
+      <xs:annotation>
+        <xs:documentation>Display the admonition on the document cover page</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="notag" type="xs:boolean">
+      <xs:annotation>
+        <xs:documentation>Do not insert text labelling the type of admonition in rendering</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <xs:complexType name="AdmonitionBody">
+    <xs:sequence>
+      <xs:group minOccurs="0" ref="tname">
+        <xs:annotation>
+          <xs:documentation>Caption of admonition</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+      <xs:group minOccurs="0" maxOccurs="unbounded" ref="paragraph-with-footnote">
+        <xs:annotation>
+          <xs:documentation>Admonition content</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+      <xs:group minOccurs="0" maxOccurs="unbounded" ref="note">
+        <xs:annotation>
+          <xs:documentation>Notes whose scope is the current block</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="AdmonitionNoIdBody">
+    <xs:sequence>
+      <xs:group minOccurs="0" ref="tname">
+        <xs:annotation>
+          <xs:documentation>Caption of admonition</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+      <xs:group minOccurs="0" maxOccurs="unbounded" ref="paragraph-with-footnote-no-id">
+        <xs:annotation>
+          <xs:documentation>Admonition content</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+      <xs:group minOccurs="0" maxOccurs="unbounded" ref="note-no-id">
+        <xs:annotation>
+          <xs:documentation>Notes whose scope is the current block</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:group name="figure">
+    <xs:annotation>
+      <xs:documentation>Block containing a figure: a visual rather than textual asset, possibly with accompanying text</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="figure">
+        <xs:complexType>
+          <xs:complexContent>
+            <xs:extension base="FigureBody">
+              <xs:attributeGroup ref="RequiredId"/>
+              <xs:attributeGroup ref="FigureAttributes"/>
+            </xs:extension>
+          </xs:complexContent>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="figure-no-id">
+    <xs:annotation>
+      <xs:documentation>Block containing a figure: optional ID attributes recursively (for use in Relaton, metadata)</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="figure">
+        <xs:complexType>
+          <xs:complexContent>
+            <xs:extension base="FigureNoIdBody">
+              <xs:attributeGroup ref="OptionalId"/>
+              <xs:attributeGroup ref="FigureAttributes"/>
+            </xs:extension>
+          </xs:complexContent>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:attributeGroup name="FigureAttributes">
+    <xs:attributeGroup ref="NumberingAttributes"/>
+    <xs:attribute name="class">
+      <xs:annotation>
+        <xs:documentation>The semantic category of the figure. This is to allow different classes of figure (e.g. _Plate_, _Chart_, _Diagram_) 
+to be auto-numbered and captioned differently</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="width">
+      <xs:annotation>
+        <xs:documentation>Width of the figure block in rendering</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attributeGroup ref="BlockAttributes"/>
+  </xs:attributeGroup>
+  <xs:group name="TextElement">
+    <xs:annotation>
+      <xs:documentation>Any inline element containing text and associated formatting information.
+Includes inline elements that are identifiers or references to identifiers</xs:documentation>
+    </xs:annotation>
+    <xs:choice>
+      <xs:choice minOccurs="0">
+        <xs:group ref="em"/>
+        <xs:element ref="eref"/>
+        <xs:group ref="strong"/>
+        <xs:element ref="stem"/>
+        <xs:element ref="sub"/>
+        <xs:element ref="sup"/>
+        <xs:group ref="tt"/>
+        <xs:group ref="underline"/>
+        <xs:group ref="keyword"/>
+        <xs:element ref="ruby"/>
+        <xs:group ref="strike"/>
+        <xs:group ref="smallcap"/>
+        <xs:element ref="xref"/>
+        <xs:element ref="br"/>
+        <xs:element ref="link"/>
+        <xs:element ref="hr"/>
+        <xs:element ref="pagebreak"/>
+        <xs:element ref="bookmark"/>
+        <xs:group ref="image"/>
+        <xs:element ref="index"/>
+        <xs:element ref="index-xref"/>
+      </xs:choice>
+      <xs:choice>
+        <xs:element ref="concept"/>
+        <xs:element ref="add"/>
+        <xs:element ref="del"/>
+        <xs:element ref="span"/>
+        <xs:element ref="erefstack"/>
+        <xs:group ref="date_inline"/>
+      </xs:choice>
+    </xs:choice>
+  </xs:group>
+  <xs:group name="PureTextElement">
+    <xs:annotation>
+      <xs:documentation>Inline element containing text and associated formatting information,
+but which does not contain any associated identifiers or references to identifiers.
+Restricted recursively to contain only other such inline elements with no identifiers or references to identifiers</xs:documentation>
+    </xs:annotation>
+    <xs:choice>
+      <xs:choice minOccurs="0">
+        <xs:group ref="pure_em"/>
+        <xs:group ref="pure_strong"/>
+        <xs:element ref="sub"/>
+        <xs:element ref="sup"/>
+        <xs:group ref="pure_tt"/>
+        <xs:group ref="pure_underline"/>
+        <xs:group ref="pure_strike"/>
+        <xs:group ref="pure_smallcap"/>
+        <xs:element ref="br"/>
+        <xs:element ref="stem"/>
+      </xs:choice>
+      <xs:group ref="passthrough_inline"/>
+    </xs:choice>
+  </xs:group>
+  <xs:group name="NestedTextElement">
+    <xs:annotation>
+      <xs:documentation>Contents of TextElement tags: leaves out tags that should occur only at top level of block: bookmark image hr pagebreak</xs:documentation>
+    </xs:annotation>
+    <xs:choice>
+      <xs:choice>
+        <xs:group ref="PureTextElement"/>
+        <xs:element ref="eref"/>
+        <xs:element ref="xref"/>
+        <xs:element ref="link"/>
+        <xs:element ref="index"/>
+        <xs:element ref="index-xref"/>
+        <xs:element ref="ruby"/>
+        <xs:group ref="keyword"/>
+      </xs:choice>
+      <xs:element ref="erefstack"/>
+    </xs:choice>
+  </xs:group>
+  <xs:group name="em">
+    <xs:annotation>
+      <xs:documentation>Emphasised text. Corresponds to HTML `em`, `i`</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="em">
+        <xs:complexType mixed="true">
+          <xs:group minOccurs="0" maxOccurs="unbounded" ref="NestedTextElement"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="pure_em">
+    <xs:annotation>
+      <xs:documentation>Emphasised text for PureTextElement</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="em">
+        <xs:complexType mixed="true">
+          <xs:group minOccurs="0" maxOccurs="unbounded" ref="PureTextElement"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="strong">
+    <xs:annotation>
+      <xs:documentation>Strong text. Corresponds to HTML `strong`, `b`</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="strong">
+        <xs:complexType mixed="true">
+          <xs:group minOccurs="0" maxOccurs="unbounded" ref="NestedTextElement"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="pure_strong">
+    <xs:annotation>
+      <xs:documentation>Strong text for PureTextElement</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="strong">
+        <xs:complexType mixed="true">
+          <xs:group minOccurs="0" maxOccurs="unbounded" ref="PureTextElement"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="tt">
+    <xs:annotation>
+      <xs:documentation>Monospace text. Corresponds to HTML `tt`, `code`</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="tt">
+        <xs:complexType mixed="true">
+          <xs:group minOccurs="0" maxOccurs="unbounded" ref="NestedTextElement"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="pure_tt">
+    <xs:annotation>
+      <xs:documentation>Monospace text for PureTextElement</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="tt">
+        <xs:complexType mixed="true">
+          <xs:group minOccurs="0" maxOccurs="unbounded" ref="PureTextElement"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="keyword">
+    <xs:annotation>
+      <xs:documentation>Keyword text</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="keyword">
+        <xs:complexType mixed="true">
+          <xs:choice minOccurs="0" maxOccurs="unbounded">
+            <xs:group ref="PureTextElement"/>
+            <xs:element ref="index"/>
+            <xs:element ref="index-xref"/>
+          </xs:choice>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:element name="sub">
+    <xs:complexType mixed="true">
+      <xs:group minOccurs="0" maxOccurs="unbounded" ref="PureTextElement"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="sup">
+    <xs:complexType mixed="true">
+      <xs:group minOccurs="0" maxOccurs="unbounded" ref="PureTextElement"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:group name="strike">
+    <xs:annotation>
+      <xs:documentation>Strikethrough text. Corresponds to HTML 4 `s`</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="strike">
+        <xs:complexType mixed="true">
+          <xs:group minOccurs="0" maxOccurs="unbounded" ref="NestedTextElement"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="pure_strike">
+    <xs:annotation>
+      <xs:documentation>Strikethrough for PureTextElement</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="strike">
+        <xs:complexType mixed="true">
+          <xs:group minOccurs="0" maxOccurs="unbounded" ref="PureTextElement"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="underline">
+    <xs:annotation>
+      <xs:documentation>Underlined text. Corresponds to HTML 4 `u`</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="underline">
+        <xs:complexType mixed="true">
+          <xs:group minOccurs="0" maxOccurs="unbounded" ref="NestedTextElement"/>
+          <xs:attribute name="style">
+            <xs:annotation>
+              <xs:documentation>CSS style to apply to underline (intended for text-decoration-style attribute keyword values: solid double dotted dashed wavy)</xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="pure_underline">
+    <xs:annotation>
+      <xs:documentation>Underlined text for PureTextElement</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="underline">
+        <xs:complexType mixed="true">
+          <xs:group minOccurs="0" maxOccurs="unbounded" ref="PureTextElement"/>
+          <xs:attribute name="style"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="smallcap">
+    <xs:annotation>
+      <xs:documentation>Small caps text</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="smallcap">
+        <xs:complexType mixed="true">
+          <xs:group minOccurs="0" maxOccurs="unbounded" ref="NestedTextElement"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="pure_smallcap">
+    <xs:annotation>
+      <xs:documentation>Small caps text for PureTextElement</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="smallcap">
+        <xs:complexType mixed="true">
+          <xs:group minOccurs="0" maxOccurs="unbounded" ref="PureTextElement"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:element name="ruby">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:choice>
+          <xs:element ref="ruby-pronunciation">
+            <xs:annotation>
+              <xs:documentation>Ruby annotation giving pronunciation</xs:documentation>
+            </xs:annotation>
+          </xs:element>
+          <xs:element ref="ruby-annotation">
+            <xs:annotation>
+              <xs:documentation>Ruby annotation giving other (semantic) information</xs:documentation>
+            </xs:annotation>
+          </xs:element>
+        </xs:choice>
+        <xs:element minOccurs="0" ref="ruby">
+          <xs:annotation>
+            <xs:documentation>Ruby annotated text which itself contains other Ruby annotations</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="br">
+    <xs:complexType/>
+  </xs:element>
+  <xs:element name="hr">
+    <xs:complexType/>
+  </xs:element>
+  <xs:element name="index">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="primary">
+          <xs:annotation>
+            <xs:documentation>Primary index term to be recorded at the current location</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element ref="secondary">
+          <xs:annotation>
+            <xs:documentation>Secondary index term to be recorded at the current location</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element ref="tertiary">
+          <xs:annotation>
+            <xs:documentation>Tertiary index term to be recorded at the current </xs:documentation>
+          </xs:annotation>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="to">
+        <xs:annotation>
+          <xs:documentation>A reference to an anchor element (typically a bookmark), 
+to indicate that the index range covers a range of locations between the current index element and the `to` anchor</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="index-xref">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="primary">
+          <xs:annotation>
+            <xs:documentation>The primary index term to be cross-referenced</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element ref="secondary">
+          <xs:annotation>
+            <xs:documentation>The secondary index term to be cross-referenced</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element ref="tertiary">
+          <xs:annotation>
+            <xs:documentation>The tertiary index term to be cross-referenced</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element name="target">
+          <xs:annotation>
+            <xs:documentation>The index term to be cross-referenced to</xs:documentation>
+          </xs:annotation>
+          <xs:complexType mixed="true">
+            <xs:group maxOccurs="unbounded" ref="PureTextElement"/>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="also" use="required" type="xs:boolean">
+        <xs:annotation>
+          <xs:documentation>The cross-reference is to be treated as "see also" rather than as "see"</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="primary">
+    <xs:complexType mixed="true">
+      <xs:group maxOccurs="unbounded" ref="PureTextElement"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="secondary">
+    <xs:complexType mixed="true">
+      <xs:group maxOccurs="unbounded" ref="PureTextElement"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="tertiary">
+    <xs:complexType mixed="true">
+      <xs:group maxOccurs="unbounded" ref="PureTextElement"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="bookmark">
+    <xs:complexType>
+      <xs:attributeGroup ref="RequiredId"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:simpleType name="ReferenceFormat">
+    <xs:annotation>
+      <xs:documentation>The type of Reference Element, prescribing how it is to be rendered</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="external">
+        <xs:annotation>
+          <xs:documentation>Reference to an external document</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="inline">
+        <xs:annotation>
+          <xs:documentation>Reference to another element in the same document</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="footnote">
+        <xs:annotation>
+          <xs:documentation>Inline reference to a block to be rendered as a footnote</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="callout">
+        <xs:annotation>
+          <xs:documentation>Inline reference to a block to be referenced as a sourcecode callout</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:element name="eref">
+    <xs:complexType>
+      <xs:group ref="erefType"/>
+      <xs:attributeGroup ref="erefType"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:group name="erefType">
+    <xs:sequence>
+      <xs:group ref="CitationType">
+        <xs:annotation>
+          <xs:documentation>Reference cross-reference: modelled as cross-reference to the corresponding bibliographical item in a References section</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+      <xs:group ref="ErefBody">
+        <xs:annotation>
+          <xs:documentation>The textual content of the element. The `text` is what we wish to show the link as (e.g., the "content" of `&lt;xx&gt;my link text&lt;/xx&gt;`)</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+    </xs:sequence>
+  </xs:group>
+  <xs:attributeGroup name="erefType">
+    <xs:attributeGroup ref="erefAttributes"/>
+    <xs:attributeGroup ref="CitationType"/>
+  </xs:attributeGroup>
+  <xs:attributeGroup name="erefAttributes">
+    <xs:attribute name="normative" type="xs:boolean">
+      <xs:annotation>
+        <xs:documentation>Whether the reference is to be treated as normative or informative, particularly in the context of normative documents such as standards</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="citeas" use="required">
+      <xs:annotation>
+        <xs:documentation>Form that the bibliographic citation should take when it is rendered</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="type" type="ReferenceFormat">
+      <xs:annotation>
+        <xs:documentation>The type of Reference Element, prescribing how it is to be rendered</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="alt">
+      <xs:annotation>
+        <xs:documentation>Alternate text, used for accessibility</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="case">
+      <xs:annotation>
+        <xs:documentation>Casing of the autogenerated label of the cross-reference (typically the name of the class of element referenced):
+titlecase, or lowercase</xs:documentation>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="capital"/>
+          <xs:enumeration value="lowercase"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="droploc" type="xs:boolean">
+      <xs:annotation>
+        <xs:documentation>Do not include the autogenerated label of the cross-reference in rendering</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="style">
+      <xs:annotation>
+        <xs:documentation>Style of how a citation is to be rendered</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <xs:element name="link">
+    <xs:complexType mixed="true">
+      <xs:group maxOccurs="unbounded" ref="PureTextElement">
+        <xs:annotation>
+          <xs:documentation>The textual content of the element. The `text` is what we wish to show the link as (e.g., the "content" of `&lt;xx&gt;my link text&lt;/xx&gt;`)</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+      <xs:attributeGroup ref="HyperlinkAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:attributeGroup name="HyperlinkAttributes">
+    <xs:attribute name="target" use="required" type="xs:anyURI">
+      <xs:annotation>
+        <xs:documentation>The location or online identifier of the external document or resource</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="type" type="ReferenceFormat">
+      <xs:annotation>
+        <xs:documentation>The type of Reference Element, prescribing how it is to be rendered</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="alt">
+      <xs:annotation>
+        <xs:documentation>Alternate text, used for accessibility</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="update-type" type="xs:boolean">
+      <xs:annotation>
+        <xs:documentation>Update link file suffix to match rendered file output (HTML &gt; HTML, PDF &gt; PDF)</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="style">
+      <xs:annotation>
+        <xs:documentation>Style of hyperlink rendering</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <xs:element name="xref">
+    <xs:complexType>
+      <xs:complexContent>
+        <xs:extension base="XrefBody">
+          <xs:attributeGroup ref="XrefAttributes"/>
+        </xs:extension>
+      </xs:complexContent>
+    </xs:complexType>
+  </xs:element>
+  <xs:attributeGroup name="XrefAttributes">
+    <xs:attribute name="target" use="required">
+      <xs:annotation>
+        <xs:documentation>The identifier of a section, block or inlined element being referenced</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="type" type="ReferenceFormat">
+      <xs:annotation>
+        <xs:documentation>The type of Reference Element, prescribing how it is to be rendered</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="alt">
+      <xs:annotation>
+        <xs:documentation>Alternate text, used for accessibility</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="to">
+      <xs:annotation>
+        <xs:documentation>If the cross-reference is to a range of text defined as a span between two identified elements,
+provide the identifier of the end element of the span</xs:documentation>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:pattern value="\i\c*|\c+#\c+"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="case">
+      <xs:annotation>
+        <xs:documentation>Casing of the autogenerated label of the cross-reference (typically the name of the class of element referenced):
+titlecase, or lowercase</xs:documentation>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="capital"/>
+          <xs:enumeration value="lowercase"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="droploc" type="xs:boolean">
+      <xs:annotation>
+        <xs:documentation>Do not include the autogenerated label of the cross-reference in rendering</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="style">
+      <xs:annotation>
+        <xs:documentation>Style of cross-reference rendering (title vs numbering)</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="label">
+      <xs:annotation>
+        <xs:documentation>Substitute the expected label of the item being cross-referenced with a custom label (e.g. "subclause" instead of "clause")</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <xs:group name="ErefBody">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="display-text">
+        <xs:complexType mixed="true">
+          <xs:group maxOccurs="unbounded" ref="PureTextElement">
+            <xs:annotation>
+              <xs:documentation>The textual content of the element. The `text` is what we wish to show the link as (e.g., the "content" of `&lt;xx&gt;my link text&lt;/xx&gt;`)</xs:documentation>
+            </xs:annotation>
+          </xs:group>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:element name="fn">
+    <xs:complexType>
+      <xs:complexContent>
+        <xs:extension base="FnBody">
+          <xs:attributeGroup ref="FnAttributes"/>
+        </xs:extension>
+      </xs:complexContent>
+    </xs:complexType>
+  </xs:element>
+  <xs:complexType name="FnBody">
+    <xs:group maxOccurs="unbounded" ref="paragraph">
+      <xs:annotation>
+        <xs:documentation>The content of the footnote</xs:documentation>
+      </xs:annotation>
+    </xs:group>
+  </xs:complexType>
+  <xs:element name="callout">
+    <xs:complexType mixed="true">
+      <xs:attribute name="target" use="required">
+        <xs:annotation>
+          <xs:documentation>The target of the callout is understood to be the location of the callout within the source code; 
+the extent of the target is not expressed overtly</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+  <xs:group name="image-no-id">
+    <xs:annotation>
+      <xs:documentation>Container for image content: optional ID attributes recursively (for use in Relaton, metadata)</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="image">
+        <xs:complexType>
+          <xs:attributeGroup ref="OptionalId"/>
+          <xs:attributeGroup ref="ImageAttributes"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:simpleType name="ImageSize">
+    <xs:annotation>
+      <xs:documentation>Legal values for image height and width.
+Attributes are realised as a real number, with optional percent sign,
+or as the string "auto"</xs:documentation>
+    </xs:annotation>
+    <xs:union>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:pattern value="\d+([.]\d+)?(%?)"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="auto"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:union>
+  </xs:simpleType>
+  <xs:group name="video">
+    <xs:annotation>
+      <xs:documentation>Container for video content</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="video">
+        <xs:complexType>
+          <xs:complexContent>
+            <xs:extension base="VideoBody">
+              <xs:attributeGroup ref="RequiredId"/>
+              <xs:attributeGroup ref="VideoAttributes"/>
+            </xs:extension>
+          </xs:complexContent>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="video-no-id">
+    <xs:annotation>
+      <xs:documentation>Container for video content: optional ID attributes recursively (for use in Relaton, metadata)</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="video">
+        <xs:complexType>
+          <xs:complexContent>
+            <xs:extension base="VideoBody">
+              <xs:attributeGroup ref="OptionalId"/>
+              <xs:attributeGroup ref="VideoAttributes"/>
+            </xs:extension>
+          </xs:complexContent>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:attributeGroup name="VideoAttributes">
+    <xs:attributeGroup ref="MediaAttributes"/>
+    <xs:attributeGroup ref="MediaAccessibilityAttributes"/>
+    <xs:attribute name="width" type="ImageSize">
+      <xs:annotation>
+        <xs:documentation>Width of video</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="height" type="ImageSize">
+      <xs:annotation>
+        <xs:documentation>Height of video</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <xs:complexType name="VideoBody">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="altsource">
+        <xs:annotation>
+          <xs:documentation>Alternative files to use as media</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:group name="audio">
+    <xs:annotation>
+      <xs:documentation>Container for audio content</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="audio">
+        <xs:complexType>
+          <xs:complexContent>
+            <xs:extension base="AudioBody">
+              <xs:attributeGroup ref="RequiredId"/>
+              <xs:attributeGroup ref="AudioAttributes"/>
+            </xs:extension>
+          </xs:complexContent>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="audio-no-id">
+    <xs:annotation>
+      <xs:documentation>Container for audio content: optional ID attributes recursively (for use in Relaton, metadata)</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="audio">
+        <xs:complexType>
+          <xs:complexContent>
+            <xs:extension base="AudioBody">
+              <xs:attributeGroup ref="OptionalId"/>
+              <xs:attributeGroup ref="AudioAttributes"/>
+            </xs:extension>
+          </xs:complexContent>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:attributeGroup name="AudioAttributes">
+    <xs:attributeGroup ref="MediaAttributes"/>
+    <xs:attributeGroup ref="MediaAccessibilityAttributes"/>
+  </xs:attributeGroup>
+  <xs:complexType name="AudioBody">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" ref="altsource">
+        <xs:annotation>
+          <xs:documentation>Alternative files to use as media</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:attributeGroup name="MediaAttributes">
+    <xs:attribute name="src" use="required" type="xs:anyURI">
+      <xs:annotation>
+        <xs:documentation>URI of the media file</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="mimetype" use="required">
+      <xs:annotation>
+        <xs:documentation>Type of the media file, in MIME</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="filename">
+      <xs:annotation>
+        <xs:documentation>File name corresponding to the media, to which the media can be extracted if it is represented inline
+(e.g. in Base64 encoding in the URI)</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <xs:attributeGroup name="MediaAccessibilityAttributes">
+    <xs:attribute name="alt">
+      <xs:annotation>
+        <xs:documentation>Alternate text, supplied for accessibility</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="title">
+      <xs:annotation>
+        <xs:documentation>Title, supplied for accessibility</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="longdesc" type="xs:anyURI">
+      <xs:annotation>
+        <xs:documentation>URI pointing to more extensive alternate text description, supplied for accessibility</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <xs:element name="stem">
+    <xs:complexType mixed="true">
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:annotation>
+          <xs:documentation>The content of the mathematically formatted text</xs:documentation>
+        </xs:annotation>
+        <xs:group ref="AnyElement"/>
+      </xs:choice>
+      <xs:attributeGroup ref="StemAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:attributeGroup name="StemAttributes">
+    <xs:attribute name="type" use="required">
+      <xs:annotation>
+        <xs:documentation>The notation used to mathematically format the text</xs:documentation>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="MathML"/>
+          <xs:enumeration value="AsciiMath"/>
+          <xs:enumeration value="LaTeX"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="number-format">
+      <xs:annotation>
+        <xs:documentation>Numeric formatting directives to apply to mathematically formatted text</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="block" use="required" type="xs:boolean">
+      <xs:annotation>
+        <xs:documentation>Whether to treat the expression as a block or as an inline element, for display purposes</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <xs:group name="ul">
+    <xs:annotation>
+      <xs:documentation>Unordered list block</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="ul">
+        <xs:complexType>
+          <xs:complexContent>
+            <xs:extension base="UlBody">
+              <xs:attributeGroup ref="RequiredId"/>
+              <xs:attributeGroup ref="UlAttributes"/>
+            </xs:extension>
+          </xs:complexContent>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="ul-no-id">
+    <xs:annotation>
+      <xs:documentation>Unordered list block: optional ID attributes recursively (for use in Relaton, metadata)</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="ul">
+        <xs:complexType>
+          <xs:complexContent>
+            <xs:extension base="UlNoIdBody">
+              <xs:attributeGroup ref="OptionalId"/>
+              <xs:attributeGroup ref="UlAttributes"/>
+            </xs:extension>
+          </xs:complexContent>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:attributeGroup name="UlAttributes">
+    <xs:attributeGroup ref="BlockAttributes"/>
+    <xs:attributeGroup ref="DisplayDirective"/>
+  </xs:attributeGroup>
+  <xs:complexType name="UlNoIdBody">
+    <xs:sequence>
+      <xs:group maxOccurs="unbounded" ref="li-no-id">
+        <xs:annotation>
+          <xs:documentation>List items</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+      <xs:group minOccurs="0" maxOccurs="unbounded" ref="note-no-id">
+        <xs:annotation>
+          <xs:documentation>Notes whose scope is the current block</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:group name="li">
+    <xs:annotation>
+      <xs:documentation>Item in a list block</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="li">
+        <xs:complexType>
+          <xs:complexContent>
+            <xs:extension base="LiBody">
+              <xs:attributeGroup ref="OptionalId"/>
+            </xs:extension>
+          </xs:complexContent>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="li-no-id">
+    <xs:annotation>
+      <xs:documentation>Item in a list block: optional ID attributes recursively (for use in Relaton, metadata)</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="li">
+        <xs:complexType>
+          <xs:complexContent>
+            <xs:extension base="LiNoIdBody">
+              <xs:attributeGroup ref="OptionalId"/>
+            </xs:extension>
+          </xs:complexContent>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:complexType name="LiNoIdBody">
+    <xs:group maxOccurs="unbounded" ref="paragraph-with-footnote-no-id"/>
+  </xs:complexType>
+  <xs:group name="ol">
+    <xs:annotation>
+      <xs:documentation>Ordered list, with numbering applied to the list items</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="ol">
+        <xs:complexType>
+          <xs:complexContent>
+            <xs:extension base="OlBody">
+              <xs:attributeGroup ref="RequiredId"/>
+              <xs:attributeGroup ref="OlAttributes"/>
+            </xs:extension>
+          </xs:complexContent>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="ol-no-id">
+    <xs:annotation>
+      <xs:documentation>Ordered list: optional ID attributes recursively (for use in Relaton, metadata)</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="ol">
+        <xs:complexType>
+          <xs:complexContent>
+            <xs:extension base="OlNoIdBody">
+              <xs:attributeGroup ref="OptionalId"/>
+              <xs:attributeGroup ref="OlAttributes"/>
+            </xs:extension>
+          </xs:complexContent>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:complexType name="OlNoIdBody">
+    <xs:sequence>
+      <xs:group maxOccurs="unbounded" ref="li-no-id">
+        <xs:annotation>
+          <xs:documentation>List item</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+      <xs:group minOccurs="0" maxOccurs="unbounded" ref="note-no-id">
+        <xs:annotation>
+          <xs:documentation>Notes whose scope is the current block</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:group name="dl">
+    <xs:annotation>
+      <xs:documentation>Definition list, composed of definitions rather than list items</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="dl">
+        <xs:complexType>
+          <xs:complexContent>
+            <xs:extension base="DlBody">
+              <xs:attributeGroup ref="RequiredId"/>
+              <xs:attributeGroup ref="DlAttributes"/>
+            </xs:extension>
+          </xs:complexContent>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:group name="dl-no-id">
+    <xs:annotation>
+      <xs:documentation>Definition list: optional ID attributes recursively (for use in Relaton, metadata)</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="dl">
+        <xs:complexType>
+          <xs:complexContent>
+            <xs:extension base="DlNoIdBody">
+              <xs:attributeGroup ref="OptionalId"/>
+            </xs:extension>
+          </xs:complexContent>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+  <xs:complexType name="DlNoIdBody">
+    <xs:sequence>
+      <xs:sequence maxOccurs="unbounded">
+        <xs:annotation>
+          <xs:documentation>Entry-Definition pair used to constitute a definition list</xs:documentation>
+        </xs:annotation>
+        <xs:element ref="dt">
+          <xs:annotation>
+            <xs:documentation>Entry being defined in the definition</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:group ref="dd-no-id">
+          <xs:annotation>
+            <xs:documentation>Definition of the entry</xs:documentation>
+          </xs:annotation>
+        </xs:group>
+      </xs:sequence>
+      <xs:group minOccurs="0" maxOccurs="unbounded" ref="note-no-id">
+        <xs:annotation>
+          <xs:documentation>Notes whose scope is the current block</xs:documentation>
+        </xs:annotation>
+      </xs:group>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:group name="dd-no-id">
+    <xs:annotation>
+      <xs:documentation>Definition in a definition list: optional ID attributes recursively (for use in Relaton, metadata)</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="dd">
+        <xs:complexType>
+          <xs:group minOccurs="0" maxOccurs="unbounded" ref="paragraph-with-footnote-no-id"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:group>
+</xs:schema>

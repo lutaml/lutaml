@@ -1,0 +1,41 @@
+SCHEMA test_schema;
+  -- Schema with Unicode in both remarks and code
+  -- Japanese: 日本語
+
+  (*
+    This demonstrates mixed Unicode usage
+    Greek: α β γ
+  *)
+
+  ENTITY product;  -- 製品
+    name : STRING;
+    価格 : REAL;  (* Price in Japanese: 価格 *)
+  END_ENTITY;
+
+  ENTITY measurement;
+    value : REAL;
+    unit : STRING := 'μm';  -- Micrometers: μm
+  END_ENTITY;
+
+  TYPE status = ENUMERATION OF
+    (active,
+     inactive,
+     pending);
+  END_TYPE;  -- Status with Korean: 상태
+
+  FUNCTION calculate (x : REAL) : REAL;
+    (* Formula uses π *)
+    LOCAL
+      π : REAL := 3.14159;
+    END_LOCAL;
+    RETURN (π * x);
+  END_FUNCTION;
+
+END_SCHEMA; -- test_schema
+
+(*"test_schema.product"
+  This is a product entity with remarks containing Unicode characters:
+  - Japanese: 製品
+  - Korean: 제품
+  - Chinese: 产品
+*)

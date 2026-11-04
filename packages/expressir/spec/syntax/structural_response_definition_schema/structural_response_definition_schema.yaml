@@ -1,0 +1,156 @@
+---
+_class: Expressir::Model::ExpFile
+path: spec/syntax/structural_response_definition_schema/structural_response_definition_schema.exp
+schemas:
+- _class: Expressir::Model::Declarations::Schema
+  id: structural_response_definition_schema
+  remarks:
+  - The subject of the *structural_response_definition_schema* is the definitional
+    aspects of a finite element analysis model that describe the structural response
+    of a product.
+  - structural_response_definition_schema
+  remark_items:
+  - _class: Expressir::Model::Declarations::RemarkItem
+    id: __fund_cons
+    remarks:
+    - |-
+      The definitional aspects of a finite element model are related to the representational aspects that they describe by a *property_definition_representation* association to a <<express:structural_response_definition_schema.structural_response_property,structural_response_property>>. This relationship is enforced by the rules in the *structural_response_property_definition_representation* entity in the *structural_response_representation_schema*.
+
+      NOTE: The relationships of the definitional and representational aspects of the FEA information model, which are established by the property_definition_representation and <<express:structural_response_definition_schema.structural_response_property,structural_response_property>> entities, are shown in <<fig-fea-information-model-high-level>>.
+  - _class: Expressir::Model::Declarations::RemarkItem
+    id: __expressg
+    remarks:
+    - |-
+      [[structural_response_definition_schemaexpg1]]
+      [.svgmap]
+      ====
+      image::images/structural_response_definition_schemaexpg1.svg[]
+      ====
+  - _class: Expressir::Model::Declarations::RemarkItem
+    id: __published_in
+    remarks:
+    - ISO 10303-104:2000 ED1
+  - _class: Expressir::Model::Declarations::RemarkItem
+    id: __status
+    remarks:
+    - IS
+  - _class: Expressir::Model::Declarations::RemarkItem
+    id: __title
+    remarks:
+    - finite_element_analysis
+  - _class: Expressir::Model::Declarations::RemarkItem
+    id: __schema_file
+    remarks:
+    - data/resource_docs/finite_element_analysis/resource.xml
+  untagged_remarks:
+  - text: structural_response_definition_schema
+    format: tail
+  file: spec/syntax/structural_response_definition_schema/structural_response_definition_schema.exp
+  header: |-
+    ISO 10303 TC184/SC4/WG12 Ntbd
+    Supersedes ISO 10303 TC184/SC4/WG12 N0550
+
+    EXPRESS Source:
+    ISO 10303-104 ed2 Finite element analysis - Structural response definition schema
+
+    The following permission notice and disclaimer shall be included in all copies of this EXPRESS schema ("the Schema"),
+    and derivations of the Schema:
+
+    Copyright ISO 2025  All rights reserved
+    Permission is hereby granted, free of charge in perpetuity, to any person obtaining a copy of the Schema,
+    to use, copy, modify, merge and distribute free of charge, copies of the Schema for the purposes of developing,
+    implementing, installing and using software based on the Schema, and to permit persons to whom the Schema is furnished to do so,
+    subject to the following conditions:
+
+    THE SCHEMA IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+    INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+    IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+    DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+    ARISING FROM, OUT OF OR IN CONNECTION WITH THE SCHEMA OR THE
+    USE OR OTHER DEALINGS IN THE SCHEMA.
+
+    In addition, any modified copy of the Schema shall include the following notice:
+
+    THIS SCHEMA HAS BEEN MODIFIED FROM THE SCHEMA DEFINED IN
+    ISO 10303-104 ed2 Finite element analysis - Structural response definition schema
+    AND SHOULD NOT BE INTERPRETED AS COMPLYING WITH THAT STANDARD
+  version:
+    _class: Expressir::Model::Declarations::SchemaVersion
+    value: "{ iso standard 10303 part(104) version(3) object(1) structural-response-definition-schema(1)
+      }"
+    items:
+    - _class: Expressir::Model::Declarations::SchemaVersionItem
+      name: iso
+    - _class: Expressir::Model::Declarations::SchemaVersionItem
+      name: standard
+    - _class: Expressir::Model::Declarations::SchemaVersionItem
+      value: '10303'
+    - _class: Expressir::Model::Declarations::SchemaVersionItem
+      name: part
+      value: '104'
+    - _class: Expressir::Model::Declarations::SchemaVersionItem
+      name: version
+      value: '3'
+    - _class: Expressir::Model::Declarations::SchemaVersionItem
+      name: object
+      value: '1'
+    - _class: Expressir::Model::Declarations::SchemaVersionItem
+      name: structural-response-definition-schema
+      value: '1'
+  interfaces:
+  - _class: Expressir::Model::Declarations::Interface
+    kind: REFERENCE
+    schema:
+      _class: Expressir::Model::References::SimpleReference
+      id: product_property_definition_schema
+    items:
+    - _class: Expressir::Model::Declarations::InterfaceItem
+      ref:
+        _class: Expressir::Model::References::SimpleReference
+        id: property_definition
+    - _class: Expressir::Model::Declarations::InterfaceItem
+      ref:
+        _class: Expressir::Model::References::SimpleReference
+        id: shape_aspect
+  entities:
+  - _class: Expressir::Model::Declarations::Entity
+    id: structural_response_property
+    remarks:
+    - |-
+      A <<express:structural_response_definition_schema.structural_response_property,structural_response_property>> relates the response of a finite element model representation of a product to the properties characterizing the product.
+
+      [[fig-fea-information-model-high-level]]
+      .FEA information model high level relationships EXPRESS-G partial model
+      image::images/fig-2.svg[]
+    subtype_of:
+    - _class: Expressir::Model::References::SimpleReference
+      id: property_definition
+  - _class: Expressir::Model::Declarations::Entity
+    id: fea_model_definition
+    remarks:
+    - An <<express:structural_response_definition_schema.fea_model_definition,fea_model_definition>>
+      describes a specific finite element analysis model. A finite element analysis
+      model is a collection of information associated with the definition of a finite
+      element analysis of a product.
+    subtype_of:
+    - _class: Expressir::Model::References::SimpleReference
+      id: shape_aspect
+  - _class: Expressir::Model::Declarations::Entity
+    id: node_definition
+    remarks:
+    - |-
+      A <<express:structural_response_definition_schema.node_definition,node_definition>> is a description of the shape aspect of a product that a node represents. Nodes are the
+      discretized points in the continuum being modelled that are connected with elements.
+    subtype_of:
+    - _class: Expressir::Model::References::SimpleReference
+      id: shape_aspect
+  - _class: Expressir::Model::Declarations::Entity
+    id: element_definition
+    remarks:
+    - An <<express:structural_response_definition_schema.element_definition,element_definition>>
+      is a description of the shape aspect of a product that a finite element represents.
+      A finite element is an analytical subdivision of a continuum connected to nodes
+      to model the continuum being analyzed.
+    subtype_of:
+    - _class: Expressir::Model::References::SimpleReference
+      id: shape_aspect

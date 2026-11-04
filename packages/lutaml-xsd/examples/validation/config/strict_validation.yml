@@ -1,0 +1,28 @@
+---
+# Strict validation configuration
+# Enables all validation rules and fails fast on first error
+
+strict_mode: true
+fail_fast: true
+max_errors: 1
+
+# Validation rules to enable
+rules:
+  - element_structure
+  - type_validation
+  - occurrence_validation
+  - attribute_validation
+  - content_model_validation
+
+# Error handling
+error_handling:
+  enhance_errors: true
+  provide_suggestions: true
+  show_context: true
+  context_lines: 3
+
+# Output formatting
+output:
+  verbose: true
+  show_location: true
+  show_line_numbers: true

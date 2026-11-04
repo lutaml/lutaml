@@ -1,0 +1,165 @@
+---
+title: Overview
+has_children: true
+nav_order: 1
+---
+
+= Overview
+
+Task-oriented guides that show you how to accomplish specific goals with Expressir. Each guide focuses on a particular aspect or workflow.
+
+== About These Guides
+
+The guides are organized by topic area:
+
+* *CLI* - Command-line interface usage and commands
+* *Ruby API* - Programmatic usage from Ruby code
+* *LER* - Working with LER packages
+* *Manifests* - Managing schema collections with manifests
+* *Changes* - Tracking and managing schema changes
+* *Liquid* - Template integration and documentation generation
+* *Deployment* - Production deployment patterns
+
+== Guide Categories
+
+=== link:../cli/[CLI Guides]
+
+Learn to use Expressir's command-line tools effectively.
+
+*Available guides:*
+
+* link:../cli/format-schemas.html[Formatting Schemas] - Pretty-print and clean schemas
+* link:../cli/validate-schemas.html[Validating Schemas] - Ensure schema correctness
+* link:../cli/benchmark-performance.html[Benchmarking Performance] - Measure and optimize
+* link:../cli/coverage-analysis.html[Coverage Analysis] - Check documentation coverage
+* link:../cli/managing-changes.html[Managing Changes] - Work with change files
+
+---
+
+=== link:../ruby-api/[Ruby API Guides]
+
+Integrate Expressir into your Ruby applications.
+
+*Available guides:*
+
+* link:../ruby-api/parsing-files.html[Parsing Files] - Load EXPRESS schemas
+* link:../ruby-api/working-with-repository.html[Working with Repository] - Navigate schema collections
+* link:../ruby-api/formatting-schemas.html[Formatting Schemas] - Format schemas programmatically
+* link:../ruby-api/search-engine.html[Search Engine] - Use the search API
+
+---
+
+=== link:../ler/[LER Guides]
+
+Work with high-performance LER packages.
+
+*Available guides:*
+
+* link:../ler/creating-packages.html[Creating Packages] - Build LER files
+* link:../ler/loading-packages.html[Loading Packages] - Use pre-built packages
+* link:../ler/querying-packages.html[Querying Packages] - Search and filter
+* link:../ler/validating-packages.html[Validating Packages] - Ensure package integrity
+* link:../ler/package-formats.html[Package Formats] - Choose serialization formats
+
+---
+
+=== link:../manifests/[Manifest Guides]
+
+Manage schema collections with manifests for reproducible builds.
+
+*Available guides:*
+
+* link:../manifests/creating-manifests.html[Creating Manifests] - Generate manifests from root schemas
+* link:../manifests/resolving-manifests.html[Resolving Manifests] - Auto-resolve missing schema paths
+* link:../manifests/validating-manifests.html[Validating Manifests] - Ensure manifest completeness and integrity
+
+---
+
+=== link:../changes/[Changes Guides]
+
+Track and manage schema modifications across versions.
+
+*Available guides:*
+
+* link:../changes/changes-format.html[Changes Format] - Understanding the format
+* link:../changes/validating-changes.html[Validating Changes] - Verify change files
+* link:../changes/importing-eengine.html[Importing from eengine] - Convert eengine XML
+* link:../changes/programmatic-usage.html[Programmatic Usage] - Use changes API
+
+---
+
+=== link:../liquid/[Liquid Guides]
+
+Generate documentation using Liquid templates.
+
+*Available guides:*
+
+* link:../liquid/basic-templates.html[Basic Templates] - Create simple templates
+* link:../liquid/filters-and-tags.html[Filters and Tags] - Use Liquid features
+* link:../liquid/drops-reference.html[Drops Reference] - Access model data
+* link:../liquid/documentation-generation.html[Documentation Generation] - Generate docs
+
+---
+
+=== link:../deployment/[Deployment Guides]
+
+Deploy Expressir in production environments.
+
+*Available guides:*
+
+* link:../deployment/integrating-rails.html[Integrating with Rails] - Use in Rails apps
+* link:../deployment/gem-configuration.html[Gem Configuration] - Configure for production
+* link:../deployment/performance-tuning.html[Performance Tuning] - Optimize for scale
+
+== Using These Guides
+
+=== Guide Format
+
+Each guide follows a structured format:
+
+. *Purpose* - What the guide covers
+. *References* - Related documentation
+. *Concepts* - Key terminology
+. *Instructions* - Step-by-step procedures with examples
+. *Best practices* - Recommended approaches
+. *Troubleshooting* - Common issues and solutions
+
+=== Finding the Right Guide
+
+*If you want to...*
+
+* Use the command-line tools → Start with link:../cli/[CLI Guides]
+* Write Ruby code → Begin with link:../ruby-api/[Ruby API Guides]
+* Work with packages → Explore link:../ler/[LER Guides]
+* Manage schema collections → See link:../manifests/[Manifest Guides]
+* Track changes → Check link:../changes/[Changes Guides]
+* Generate docs → See link:../liquid/[Liquid Guides]
+* Deploy to production → Review link:../deployment/[Deployment Guides]
+
+=== Quick Reference
+
+For quick answers, use the link:../references/[References] section:
+
+* link:../references/cli-commands.html[CLI Commands Reference]
+* link:../references/ruby-api.html[Ruby API Reference]
+* link:../references/data-model/[Data Model Reference]
+
+== Getting Help
+
+If a guide doesn't cover your specific use case:
+
+* Check the link:../tutorials/[Tutorials] for learning-focused content
+* Review the link:../references/[References] for detailed specifications
+* Search https://github.com/lutaml/expressir/issues[GitHub Issues] for similar questions
+* Ask in https://github.com/lutaml/expressir/discussions[GitHub Discussions]
+
+== Contributing
+
+Help improve these guides:
+
+* Report unclear or missing information
+* Suggest new guides for common tasks
+* Share your own usage patterns
+* Submit pull requests with improvements
+
+See the https://github.com/lutaml/expressir/blob/main/CONTRIBUTING.md[Contributing Guide] for details.

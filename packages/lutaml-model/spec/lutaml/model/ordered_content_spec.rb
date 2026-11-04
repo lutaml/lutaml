@@ -1,0 +1,215 @@
+# spec/lutaml/model/ordered_content_spec.rb
+
+require "spec_helper"
+require_relative "../../../lib/lutaml/model"
+require "lutaml/xml/adapter/nokogiri_adapter"
+require "lutaml/xml/adapter/ox_adapter"
+require "lutaml/xml/adapter/oga_adapter"
+require "lutaml/xml/adapter/rexml_adapter"
+require_relative "../../fixtures/sample_model"
+require_relative "../../support/xml_mapping_namespaces"
+
+module OrderedContentSpec
+  class RootOrderedContent < Lutaml::Model::Serializable
+    attribute :id, :string
+    attribute :bold, :string, collection: true
+    attribute :italic, :string, collection: true
+    attribute :underline, :string
+    attribute :content, :string, collection: true
+
+    xml do
+      element "RootOrderedContent"
+      mixed_content
+
+      map_attribute :id, to: :id
+      map_element :bold, to: :bold
+      map_element :italic, to: :italic
+      map_element :underline, to: :underline
+      map_content to: :content
+    end
+  end
+
+  module PrefixedElements
+    class Annotation < Lutaml::Model::Serializable
+      attribute :content, :string
+
+      xml do
+        element "annotation"
+        namespace ExampleSchemaNamespace
+
+        map_content to: :content
+      end
+    end
+
+    class Element < Lutaml::Model::Serializable
+      attribute :name, :string
+      attribute :status, :string
+      attribute :annotation, Annotation
+
+      xml do
+        element "element"
+        ordered
+
+        namespace ExampleSchemaNamespace
+
+        map_attribute :name, to: :name
+        map_attribute :status, to: :status
+        map_element :annotation, to: :annotation
+      end
+    end
+
+    class Schema < Lutaml::Model::Serializable
+      attribute :element, Element, collection: true
+
+      xml do
+        element "schema"
+        ordered
+        namespace ExampleSchemaNamespace
+
+        map_element :element, to: :element
+      end
+    end
+  end
+end
+
+RSpec.describe "OrderedContent" do
+  shared_examples "ordered content behavior" do |adapter_class|
+    around do |example|
+      old_adapter = Lutaml::Model::Config.xml_adapter
+      Lutaml::Model::Config.xml_adapter = adapter_class
+      example.run
+    ensure
+      Lutaml::Model::Config.xml_adapter = old_adapter
+    end
+
+    context "when ordered is set at root" do
+      let(:xml) do
+        <<~XML
+          <RootOrderedContent id="123">
+            The Earth's Moon rings like a <bold>bell</bold> when struck by
+            meteroids. Distanced from the Earth by <italic>384,400 km</italic>,
+            its surface is covered in <underline>craters</underline>.
+            Ain't that <bold>cool</bold>?
+          </RootOrderedContent>
+        XML
+      end
+
+      it "deserializes and serializes ordered content correctly" do
+        obj = OrderedContentSpec::RootOrderedContent.from_xml(xml)
+
+        # Verify correct parsing
+        expect(obj.id).to eq("123")
+        expect(obj.bold).to eq(["bell", "cool"])
+        expect(obj.italic).to eq(["384,400 km"])
+        expect(obj.underline).to eq("craters")
+        expect(obj.content.first.to_s).to include("The Earth's Moon rings like a")
+        expect(obj.content.join).to include("Ain't that")
+
+        # Verify round-trip preserves data
+        # (Note: exact XML format differs between adapters in ordered mode)
+        round_trip = OrderedContentSpec::RootOrderedContent.from_xml(obj.to_xml)
+        expect(round_trip.id).to eq(obj.id)
+        expect(round_trip.bold).to eq(obj.bold)
+        expect(round_trip.italic).to eq(obj.italic)
+        expect(round_trip.underline).to eq(obj.underline)
+        expect(round_trip.content.first.to_s).to include("The Earth's Moon rings like a")
+      end
+    end
+
+    context "when ordered is set for prefixed elements" do
+      let(:xml) do
+        <<~XML
+          <xsd:schema xmlns:xsd="http://example.com/schema">
+            <xsd:element>
+              <xsd:annotation>Testing annotation</xsd:annotation>
+            </xsd:element>
+          </xsd:schema>
+        XML
+      end
+
+      let(:serialized) do
+        OrderedContentSpec::PrefixedElements::Schema.from_xml(xml,
+                                                              import_declaration_plan: :eager).to_xml
+      end
+
+      it "deserializes and serializes ordered prefixed elements correctly for prefixed elements" do
+        # Format preservation: Output maintains prefix format from input (semantically equivalent)
+        expected_xml = <<~XML
+          <xsd:schema xmlns:xsd="http://example.com/schema">
+            <xsd:element>
+              <xsd:annotation>Testing annotation</xsd:annotation>
+            </xsd:element>
+          </xsd:schema>
+        XML
+
+        expect(serialized).to be_xml_equivalent_to(expected_xml)
+      end
+    end
+
+    # Regression for issue #735: `ordered` builder must honour setter
+    # call order, not declaration order. The @__order_tracking__ flag
+    # was gated on mixed_content? instead of ordered?. Comprehensive
+    # coverage of the setter/appender equivalence lives in
+    # spec/lutaml/model/serialize/builder_spec.rb.
+    context "ordered builder honours setter call order" do
+      it "emits elements in builder-call order, not declaration order" do
+        klass = Class.new(Lutaml::Model::Serializable) do
+          attribute :a, :string
+          attribute :b, :string
+
+          xml do
+            element "item"
+            ordered
+            map_element "a", to: :a
+            map_element "b", to: :b
+          end
+        end
+
+        # Both the appender syntax and the direct setter syntax MUST
+        # honour call order and MUST NOT silently drop the other.
+        item_appender = klass.new do |i|
+          i.b "first"
+          i.a "second"
+        end
+
+        item_setter = klass.new do |i|
+          i.b = "first"
+          i.a = "second"
+        end
+
+        [item_appender, item_setter].each do |item|
+          xml = item.to_xml
+          b_pos = xml.index("<b>first</b>")
+          a_pos = xml.index("<a>second</a>")
+          expect(b_pos).to be < a_pos
+          expect(item.element_order.map(&:name)).to eq(%w[b a])
+        end
+      end
+    end
+  end
+
+  describe Lutaml::Xml::Adapter::NokogiriAdapter do
+    it_behaves_like "ordered content behavior", described_class
+  end
+
+  describe Lutaml::Xml::Adapter::OxAdapter do
+    if TestAdapterConfig.adapter_enabled?(:ox)
+      it_behaves_like "ordered content behavior",
+                      described_class
+    end
+  end
+
+  describe Lutaml::Xml::Adapter::OgaAdapter do
+    if TestAdapterConfig.adapter_enabled?(:oga)
+      it_behaves_like "ordered content behavior",
+                      described_class
+    end
+  end
+
+  describe Lutaml::Xml::Adapter::RexmlAdapter do
+    if TestAdapterConfig.adapter_enabled?(:rexml)
+      it_behaves_like "ordered content behavior",
+                      described_class
+    end
+  end
+end

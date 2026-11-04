@@ -1,0 +1,882 @@
+---
+layout: default
+title: Serialization format options
+parent: Core concepts
+nav_order: 5
+---
+= Serialization format options
+:toc:
+:toclevels: 3
+
+== Purpose
+
+This document provides comprehensive coverage of all available serialization
+formats in lutaml-xsd, their characteristics, performance trade-offs, and
+guidance on choosing the right format for your use case.
+
+== General
+
+lutaml-xsd supports multiple serialization formats for storing parsed schema
+information in LXR packages. Each format has distinct characteristics,
+performance profiles, and use cases. The serialization format determines how
+parsed schema data is stored in the package's `schemas_data/` directory and
+affects package creation time, package size, loading speed, and portability.
+
+The four available formats are:
+
+* **Marshal** - Ruby's native binary serialization (fastest, Ruby-only)
+* **JSON** - Cross-platform JSON format (portable, human-readable)
+* **YAML** - Human-friendly YAML format (portable, debugging)
+* **Parse** - No serialization, parse XSD files on load (smallest, slowest)
+
+== Available serialization formats
+
+=== Overview
+
+.Serialization format comparison
+[cols="1,2,2,2,2",options="header"]
+|===
+| Format | Speed | Size | Portability | Best For
+
+| Marshal
+| Fastest
+| Medium
+| Ruby only
+| Production Ruby apps
+
+| JSON
+| Fast
+| Medium
+| Cross-platform
+| Multi-language systems
+
+| YAML
+| Medium
+| Largest
+| Cross-platform
+| Development, debugging
+
+| Parse
+| Slowest
+| Smallest
+| Universal
+| Simple deployments
+|===
+
+Each format is controlled via the `serialization_format` parameter when
+creating packages.
+
+== Marshal format
+
+=== General
+
+The Marshal format uses Ruby's built-in binary serialization to store parsed
+schema objects. This provides the fastest loading time and good space
+efficiency, but packages can only be loaded by Ruby applications.
+
+=== Characteristics
+
+* **Performance**: Fastest deserialization
+* **Package size**: Compact binary format
+* **Portability**: Ruby-only
+* **Human-readable**: No (binary format)
+* **Debugging**: Difficult
+* **Version compatibility**: Ruby version dependent
+
+=== When to use Marshal
+
+Use Marshal format when:
+
+* Deploying to Ruby-only environments
+* Maximum performance is critical
+* Package size needs optimization
+* Cross-language support is not needed
+* Using compatible Ruby versions
+
+=== Creating Marshal packages
+
+.Creating package with Marshal serialization
+[example]
+====
+[source,bash]
+----
+lutaml-xsd pkg build config.yml \
+  --output myschemas.lxr \
+  --serialization-format marshal  # <1>
+----
+<1> Explicitly specify Marshal format (also the default)
+
+Via Ruby API:
+
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Load configuration
+repo = Lutaml::Xsd::SchemaRepository.from_yaml_file('config.yml')
+
+# Parse and resolve schemas
+repo.parse.resolve
+
+# Create package with Marshal serialization
+repo.to_package(
+  'myschemas.lxr',
+  serialization_format: :marshal  # <1>
+)
+----
+<1> Specify Marshal format
+====
+
+=== Loading Marshal packages
+
+Loading is automatic when using [`from_package()`](lib/lutaml/xsd/schema_repository.rb:300):
+
+.Loading Marshal package
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Load package (format detected automatically)
+repo = Lutaml::Xsd::SchemaRepository.from_package('myschemas.lxr')
+
+# Schemas are instantly available (pre-deserialized)
+result = repo.find_type('gml:AbstractFeatureType')
+puts "Type found: #{result.qname}" if result.resolved?
+----
+
+Loading time: ~50-100ms for typical packages (instant compared to parsing).
+====
+
+=== Marshal format internals
+
+Marshal packages store serialized schemas in `schemas_data/`:
+
+.Marshal package structure
+[example]
+====
+[source]
+----
+myschemas.lxr (ZIP archive)
+├── metadata.yaml
+├── schemas/
+│   ├── gml.xsd
+│   └── citygml.xsd
+└── schemas_data/
+    ├── gml_gml.marshal      # <1>
+    └── citygml_core.marshal # <2>
+----
+<1> Serialized GML schema (binary format)
+<2> Serialized CityGML schema (binary format)
+
+Each `.marshal` file contains the complete parsed schema object serialized
+using [`Marshal.dump()`](lib/lutaml/xsd/package_builder.rb).
+====
+
+== JSON format
+
+=== General
+
+The JSON format stores parsed schemas as JSON, providing cross-platform
+portability and human-readable output. This is ideal for systems that need to
+access schema information from multiple programming languages.
+
+=== Characteristics
+
+* **Performance**: Fast (slower than Marshal, faster than Parse)
+* **Package size**: Medium (larger than Marshal)
+* **Portability**: Cross-platform (any language)
+* **Human-readable**: Yes (JSON text)
+* **Debugging**: Easy (can inspect with text editor)
+* **Version compatibility**: Excellent
+
+=== When to use JSON
+
+Use JSON format when:
+
+* Supporting multiple programming languages
+* Needing human-readable schema data
+* Requiring maximum portability
+* Debugging schema parsing issues
+* Sharing packages across teams/organizations
+* Version compatibility is important
+
+=== Creating JSON packages
+
+.Creating package with JSON serialization
+[example]
+====
+[source,bash]
+----
+lutaml-xsd pkg build config.yml \
+  --output myschemas.lxr \
+  --serialization-format json  # <1>
+----
+<1> Specify JSON format
+
+Via Ruby API:
+
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+repo = Lutaml::Xsd::SchemaRepository.from_yaml_file('config.yml')
+repo.parse.resolve
+
+# Create package with JSON serialization
+repo.to_package(
+  'myschemas.lxr',
+  serialization_format: :json  # <1>
+)
+----
+<1> Specify JSON format
+====
+
+=== Loading JSON packages
+
+Loading is automatic, just like Marshal:
+
+.Loading JSON package
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Load package (format auto-detected from metadata)
+repo = Lutaml::Xsd::SchemaRepository.from_package('myschemas.lxr')
+
+# Use exactly the same as Marshal packages
+result = repo.find_type('ex:MyType')
+----
+
+Loading time: ~100-200ms for typical packages (still much faster than parsing).
+====
+
+=== JSON format internals
+
+JSON packages store schemas as JSON files:
+
+.JSON package structure
+[example]
+====
+[source]
+----
+myschemas.lxr
+├── metadata.yaml
+├── schemas/
+│   └── example.xsd
+└── schemas_data/
+    └── example_ex.json  # <1>
+----
+<1> JSON-serialized schema (text format)
+
+Example JSON content:
+
+[source,json]
+----
+{
+  "target_namespace": "http://example.org/schema",
+  "element_form_default": "qualified",
+  "complex_type": [
+    {
+      "name": "PersonType",
+      "sequence": {
+        "element": [
+          {"name": "firstName", "type": "xs:string"},
+          {"name": "lastName", "type": "xs:string"}
+        ]
+      }
+    }
+  ]
+}
+----
+====
+
+=== Accessing JSON data externally
+
+JSON packages can be accessed from other languages:
+
+.Python example accessing JSON schema data
+[example]
+====
+[source,python]
+----
+import zipfile
+import json
+
+# Open LXR package
+with zipfile.ZipFile('myschemas.lxr', 'r') as pkg:
+    # Read metadata
+    metadata = json.loads(pkg.read('metadata.yaml'))
+
+    # Read schema data
+    schema_json = pkg.read('schemas_data/example_ex.json')
+    schema = json.loads(schema_json)
+
+    # Access schema information
+    print(f"Target namespace: {schema['target_namespace']}")
+    for ct in schema.get('complex_type', []):
+        print(f"Complex type: {ct['name']}")
+----
+====
+
+== YAML format
+
+=== General
+
+The YAML format stores parsed schemas as YAML, providing the most human-readable
+and human-editable output. This is ideal for development, debugging, and
+documentation purposes.
+
+=== Characteristics
+
+* **Performance**: Medium (slower than JSON, faster than Parse)
+* **Package size**: Largest (YAML is verbose)
+* **Portability**: Cross-platform
+* **Human-readable**: Highly readable
+* **Debugging**: Excellent (easiest to inspect/edit)
+* **Version compatibility**: Excellent
+
+=== When to use YAML
+
+Use YAML format when:
+
+* Developing and debugging schemas
+* Needing maximum readability
+* Manually inspecting/editing schema data
+* Creating documentation
+* Training/educational purposes
+* Human review of schema structure is needed
+
+=== Creating YAML packages
+
+.Creating package with YAML serialization
+[example]
+====
+[source,bash]
+----
+lutaml-xsd pkg build config.yml \
+  --output myschemas.lxr \
+  --serialization-format yaml  # <1>
+----
+<1> Specify YAML format
+
+Via Ruby API:
+
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+repo = Lutaml::Xsd::SchemaRepository.from_yaml_file('config.yml')
+repo.parse.resolve
+
+# Create package with YAML serialization
+repo.to_package(
+  'myschemas.lxr',
+  serialization_format: :yaml  # <1>
+)
+----
+<1> Specify YAML format
+====
+
+=== Loading YAML packages
+
+.Loading YAML package
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Load package (same as other formats)
+repo = Lutaml::Xsd::SchemaRepository.from_package('myschemas.lxr')
+
+# Ready to use
+result = repo.find_type('ex:MyType')
+----
+
+Loading time: ~150-300ms for typical packages.
+====
+
+=== YAML format internals
+
+YAML packages store schemas as `.yaml` files:
+
+.YAML package structure
+[example]
+====
+[source]
+----
+myschemas.lxr
+├── metadata.yaml
+├── schemas/
+│   └── example.xsd
+└── schemas_data/
+    └── example_ex.yaml  # <1>
+----
+<1> YAML-serialized schema (highly readable text)
+
+Example YAML content:
+
+[source,yaml]
+----
+target_namespace: http://example.org/schema
+element_form_default: qualified
+complex_type:
+  - name: PersonType
+    sequence:
+      element:
+        - name: firstName
+          type: xs:string
+          min_occurs: "1"
+        - name: lastName
+          type: xs:string
+          min_occurs: "1"
+        - name: email
+          type: xs:string
+          min_occurs: "0"
+----
+====
+
+=== Inspecting YAML schemas
+
+YAML format is perfect for manual inspection:
+
+.Extracting and viewing YAML schema
+[example]
+====
+[source,bash]
+----
+# Extract YAML schema from package
+unzip myschemas.lxr schemas_data/example_ex.yaml
+
+# View with syntax highlighting
+bat schemas_data/example_ex.yaml
+
+# Or edit with your favorite editor
+vim schemas_data/example_ex.yaml
+----
+====
+
+== Parse format
+
+=== General
+
+The Parse format does not serialize schemas at all. Instead, it includes only
+the XSD files in the package, and schemas are parsed from XML on each load.
+This creates the smallest packages but with the slowest loading time.
+
+=== Characteristics
+
+* **Performance**: Slowest (full XML parsing on load)
+* **Package size**: Smallest (no serialized data)
+* **Portability**: Universal (just XSD files)
+* **Human-readable**: Yes (original XSD files)
+* **Debugging**: Excellent (original source)
+* **Version compatibility**: Perfect (no serialization)
+
+=== When to use Parse
+
+Use Parse format when:
+
+* Package size is critical
+* XSD files are small/simple
+* Loading time is not critical
+* Maximum compatibility is needed
+* You want to preserve original XSD files exactly
+* Debugging requires original XSD source
+
+=== Creating Parse packages
+
+.Creating package with Parse format
+[example]
+====
+[source,bash]
+----
+lutaml-xsd pkg build config.yml \
+  --output myschemas.lxr \
+  --serialization-format parse  # <1>
+----
+<1> Specify Parse format (no serialization)
+
+Via Ruby API:
+
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+repo = Lutaml::Xsd::SchemaRepository.from_yaml_file('config.yml')
+# Note: No need to call .parse or .resolve for Parse packages
+
+# Create package with Parse format
+repo.to_package(
+  'myschemas.lxr',
+  serialization_format: :parse  # <1>
+)
+----
+<1> Specify Parse format
+====
+
+=== Loading Parse packages
+
+Parse packages require full parsing on load:
+
+.Loading Parse package
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Load package - this will parse XSD files
+repo = Lutaml::Xsd::SchemaRepository.from_package('myschemas.lxr')
+
+# Must parse (Parse packages don't have pre-parsed data)
+repo.parse.resolve  # <1>
+
+# Now ready to use
+result = repo.find_type('ex:MyType')
+----
+<1> Parse format requires calling parse() and resolve()
+
+Loading time: Variable, depends on schema complexity (typically 1-10 seconds).
+====
+
+=== Parse format internals
+
+Parse packages contain only XSD files:
+
+.Parse package structure
+[example]
+====
+[source]
+----
+myschemas.lxr
+├── metadata.yaml      # <1>
+└── schemas/           # <2>
+    ├── example.xsd
+    ├── common.xsd
+    └── types.xsd
+----
+<1> Metadata only (no serialized_schemas)
+<2> Only XSD files included
+
+No `schemas_data/` directory exists - schemas are parsed fresh each time.
+====
+
+== Format comparison
+
+=== Performance comparison
+
+.Serialization format performance characteristics
+[cols="1,2,2,2,2",options="header"]
+|===
+| Operation | Marshal | JSON | YAML | Parse
+
+| Package creation
+| Fast
+| Medium
+| Medium
+| Fastest
+
+| Package size
+| 5-8 MB
+| 6-10 MB
+| 8-15 MB
+| 2-3 MB
+
+| Load time (small)
+| 50-100ms
+| 100-200ms
+| 150-300ms
+| 1-3s
+
+| Load time (large)
+| 100-200ms
+| 200-500ms
+| 300-800ms
+| 5-30s
+
+| Memory usage
+| Low
+| Low
+| Low
+| Medium
+
+| CPU during load
+| Very low
+| Low
+| Low
+| High
+|===
+
+Performance measured with typical GML/CityGML schema packages.
+
+=== Size comparison
+
+.Package size for same schema set
+[example]
+====
+[source]
+----
+Example schema set: GML 3.2.1 + CityGML 2.0
+
+Format    Package Size    schemas_data/    Compression
+-------   ------------    -------------    -----------
+Marshal   6.2 MB          5.8 MB           Good
+JSON      7.8 MB          7.4 MB           Medium
+YAML      12.1 MB         11.7 MB          Poor
+Parse     2.1 MB          -                Best
+----
+
+Parse packages are smallest (no serialization overhead).
+YAML packages are largest (verbose text format).
+====
+
+=== Compatibility comparison
+
+.Format compatibility matrix
+[cols="1,2,2,2",options="header"]
+|===
+| Format | Ruby Version | Language Support | Version Stability
+
+| Marshal
+| Same major version
+| Ruby only
+| Breaking changes possible
+
+| JSON
+| Any
+| Universal
+| Highly stable
+
+| YAML
+| Any
+| Universal
+| Highly stable
+
+| Parse
+| Any
+| Universal (via XSD)
+| Perfect (XSD standard)
+|===
+
+== Choosing the right format
+
+=== Decision matrix
+
+Use this guide to select the appropriate serialization format:
+
+.Format selection decision tree
+[example]
+====
+[source]
+----
+Start here:
+│
+├─ Need cross-language support?
+│  ├─ Yes → JSON or YAML
+│  │  ├─ Need maximum readability? → YAML
+│  │  └─ Need good performance? → JSON
+│  └─ No → Continue
+│
+├─ Package size critical?
+│  ├─ Yes → Parse
+│  └─ No → Continue
+│
+├─ Loading speed critical?
+│  ├─ Yes → Marshal
+│  └─ No → Continue
+│
+├─ Need to debug/inspect schemas?
+│  ├─ Yes → YAML or Parse
+│  └─ No → Continue
+│
+└─ General production use → Marshal
+----
+====
+
+=== Use case recommendations
+
+**Production Ruby application**::
+Use **Marshal** format for fastest loading and good size.
+
+**Multi-language system**::
+Use **JSON** format for portability with good performance.
+
+**Development and debugging**::
+Use **YAML** format for maximum readability and ease of inspection.
+
+**Simple schema, size-critical**::
+Use **Parse** format for smallest package size.
+
+**Documentation generation**::
+Use **YAML** or **Parse** format for human-readable schema data.
+
+**High-traffic web application**::
+Use **Marshal** format for minimum latency on repeated loads.
+
+**Schema distribution**::
+Use **JSON** or **Parse** format for maximum compatibility.
+
+== Converting between formats
+
+=== General
+
+You can convert packages between formats by loading and re-creating:
+
+.Converting package format
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Load existing package (any format)
+repo = Lutaml::Xsd::SchemaRepository.from_package('original.lxr')
+
+# For Parse packages, must parse first
+if repo.needs_parsing?
+  repo.parse.resolve
+end
+
+# Create new package with different format
+repo.to_package(
+  'converted.lxr',
+  serialization_format: :json  # <1>
+)
+----
+<1> Convert to JSON format
+====
+
+=== Batch conversion
+
+Convert multiple packages:
+
+.Batch format conversion script
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+def convert_package(input_path, output_path, format)
+  puts "Converting #{input_path} to #{format}..."
+
+  # Load source package
+  repo = Lutaml::Xsd::SchemaRepository.from_package(input_path)
+
+  # Parse if needed
+  repo.parse.resolve if repo.needs_parsing?
+
+  # Create with new format
+  repo.to_package(output_path, serialization_format: format)
+
+  puts "  ✓ Created #{output_path}"
+end
+
+# Convert directory of packages
+Dir.glob('packages/*.lxr').each do |lxr_file|
+  basename = File.basename(lxr_file, '.lxr')
+
+  # Create JSON version
+  convert_package(lxr_file, "packages/json/#{basename}.lxr", :json)
+
+  # Create YAML version for documentation
+  convert_package(lxr_file, "packages/yaml/#{basename}.lxr", :yaml)
+end
+----
+====
+
+=== Format migration workflow
+
+When migrating existing packages to a new format:
+
+.Package migration workflow
+[example]
+====
+[source,bash]
+----
+# 1. Validate current packages
+lutaml-xsd package validate old_package.lxr
+
+# 2. Convert to new format
+lutaml-xsd pkg build config.yml \
+  --output new_package.lxr \
+  --serialization-format json
+
+# 3. Validate new package
+lutaml-xsd package validate new_package.lxr
+
+# 4. Test functionality
+lutaml-xsd type find "gml:AbstractFeatureType" \
+  --from new_package.lxr
+
+# 5. Compare statistics
+lutaml-xsd stats --from old_package.lxr
+lutaml-xsd stats --from new_package.lxr
+----
+====
+
+== Advanced format options
+
+=== Custom serialization
+
+For specialized needs, implement custom serialization:
+
+.Custom serialization format
+[example]
+====
+[source,ruby]
+----
+module CustomFormat
+  # Serialize using MessagePack for compact binary
+  def self.serialize(schema)
+    require 'msgpack'
+    MessagePack.pack(schema.to_h)
+  end
+
+  # Deserialize from MessagePack
+  def self.deserialize(data)
+    require 'msgpack'
+    hash = MessagePack.unpack(data)
+    Lutaml::Xsd::Schema.new(**hash)
+  end
+end
+
+# Use custom format (requires modifying PackageBuilder)
+----
+====
+
+=== Compressed formats
+
+All formats are already compressed in ZIP packages, but you can add additional
+compression:
+
+.Double compression for large packages
+[example]
+====
+[source,ruby]
+----
+require 'zlib'
+
+# Add GZip compression to serialized data
+def compress_schema_data(data)
+  Zlib::Deflate.deflate(data, Zlib::BEST_COMPRESSION)
+end
+
+def decompress_schema_data(compressed)
+  Zlib::Inflate.inflate(compressed)
+end
+----
+====
+
+== See also
+
+* link:SERIALIZATION[Serialization overview] - Core concepts
+* link:PACKAGE_CONFIGURATION[Package configuration] - Package creation options
+* link:LXR_PACKAGES[LXR packages] - Package structure and usage
+* link:PERFORMANCE_TUNING[Performance tuning] - Optimization strategies
+* link:INDEX[Documentation index] - All documentation

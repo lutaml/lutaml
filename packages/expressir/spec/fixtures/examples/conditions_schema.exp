@@ -1,0 +1,729 @@
+(*
+ACME 5000 No. 5952
+
+EXPRESS Source:
+ACME 5000-110 ed1 Smart building environmental control - Conditions schema
+
+The following permission notice and disclaimer shall be included in all copies of this EXPRESS schema ("the Schema"),
+and derivations of the Schema:
+
+Copyright Ribose 2025  All rights reserved
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+In addition, any modified copy of the Schema shall include the following notice:
+
+THIS SCHEMA HAS BEEN MODIFIED FROM THE SCHEMA DEFINED IN
+ACME 5000-110 ed1 Smart building environmental control - Conditions schema
+AND SHOULD NOT BE INTERPRETED AS COMPLYING WITH THAT STANDARD
+*)
+
+SCHEMA environmental_conditions_schema '{ acme standard 5000 part(110) version(1) schema(1) environmental-conditions-schema(1) }';
+  REFERENCE FROM analysis_schema               -- ACME 5000-53
+                 (model_property_distribution,
+                  model_state_domain);
+  REFERENCE FROM smart_home_basis_schema       -- ACME 5000-110
+                 (geometry_reference);
+  REFERENCE FROM mesh_topology_schema          -- ACME 5000-52
+                 (indices_group,
+                  indices_list,
+                  mesh_location,
+                  vertex_defined_cell);
+  REFERENCE FROM support_resource_schema       -- ACME 5000-41
+                 (label,
+                  text);
+
+TYPE env_control_type_compound = EXTENSIBLE ENUMERATION
+     BASED_ON sbec_control_type_compound WITH
+     (control_hvac_intake,
+      control_hvac_exhaust,
+      control_ambient_zone);
+END_TYPE;
+
+TYPE env_control_type_simple = EXTENSIBLE ENUMERATION
+     BASED_ON sbec_control_type_simple WITH
+     (control_temperature_setpoint,
+      control_humidity_setpoint,
+      control_air_quality_monitor,
+      control_lighting_dimmer,
+      control_lighting_switch,
+      control_hvac_heating,
+      control_hvac_cooling,
+      control_hvac_ventilation,
+      control_security_motion,
+      control_security_door,
+      control_energy_monitor,
+      control_occupancy_sensor,
+      control_window_blind,
+      control_smart_thermostat);
+END_TYPE;
+
+TYPE zone_boundary = ENUMERATION OF
+     (north_wall,
+      south_wall,
+      east_wall,
+      west_wall,
+      ceiling,
+      floor);
+END_TYPE;
+
+TYPE sbec_control_type = EXTENSIBLE SELECT
+     (sbec_control_type_simple,
+      sbec_control_type_compound);
+END_TYPE;
+
+TYPE sbec_control_type_compound = EXTENSIBLE ENUMERATION OF
+     (unspecified,
+      application_defined);
+END_TYPE;
+
+TYPE sbec_control_type_simple = EXTENSIBLE ENUMERATION OF
+     (unspecified,
+      application_defined,
+      control_general,
+      control_setpoint,
+      control_feedback,
+      control_override,
+      control_schedule);
+END_TYPE;
+
+TYPE environmental_sensor_data_name = EXTENSIBLE ENUMERATION OF
+     (temperature_indoor,
+      temperature_outdoor,
+      humidity_relative,
+      humidity_absolute,
+      air_quality_co2,
+      air_quality_voc,
+      air_quality_pm25,
+      light_level_lux,
+      occupancy_count,
+      energy_consumption_kwh,
+      energy_demand_kw);
+END_TYPE;
+
+ENTITY room_control
+  SUBTYPE OF (sbec_control);
+  controlled_rooms : LIST OF vertex_defined_cell;
+END_ENTITY;
+
+ENTITY env_control
+  SUBTYPE OF (sbec_control);
+  SELF\sbec_control.control_datasets : SET OF env_control_dataset;
+END_ENTITY;
+
+ENTITY env_control_dataset
+  SUBTYPE OF (sbec_control_dataset);
+  SELF\sbec_control_dataset.the_type : env_control_type_simple;
+END_ENTITY;
+
+ENTITY env_zone_control
+  SUBTYPE OF (sbec_zone_control);
+  SELF\sbec_zone_control.control_conditions : SET OF env_control;
+END_ENTITY;
+
+ENTITY indexed_room_control
+  SUBTYPE OF (sbec_control);
+  room_indices : indices_group;
+END_ENTITY;
+
+ENTITY indexed_sensor_control
+  SUBTYPE OF (sbec_control);
+  sensor_indices : indices_group;
+END_ENTITY;
+
+ENTITY sbec_control
+  SUPERTYPE OF(ONEOF(room_control,
+        indexed_room_control,
+        indexed_sensor_control))
+  SUBTYPE OF (sbec_condition);
+  control_datasets        : SET OF sbec_control_dataset;
+  sensor_location         : mesh_location;
+  zone_boundary_index     : OPTIONAL zone_boundary;
+  zone_boundary_list      : OPTIONAL indices_list;
+  reference_state         : SET OF sbec_reference_state;
+  the_type                : sbec_control_type;
+END_ENTITY;
+
+ENTITY sbec_control_data
+  SUBTYPE OF (sbec_condition);
+END_ENTITY;
+
+SUBTYPE_CONSTRAINT sc1_sbec_control_data FOR sbec_control_data;
+  ABSTRACT;
+END_SUBTYPE_CONSTRAINT;
+
+ENTITY sbec_control_data_global
+  SUBTYPE OF (sbec_control_data);
+INVERSE
+  data_global : SET OF model_property_distribution FOR domain;
+END_ENTITY;
+
+ENTITY sbec_control_data_local
+  SUBTYPE OF (sbec_control_data);
+INVERSE
+  data_local : SET OF model_property_distribution FOR domain;
+END_ENTITY;
+
+ENTITY sbec_control_dataset
+  SUPERTYPE OF (ONEOF(sbec_setpoint_control_dataset,
+               sbec_feedback_control_dataset))
+  SUBTYPE OF (sbec_condition);
+  sensor_location : mesh_location;
+  reference_state : SET OF sbec_reference_state;
+  the_type        : sbec_control_type_simple;
+END_ENTITY;
+
+ENTITY sbec_condition
+  ABSTRACT SUPERTYPE OF(ONEOF(
+        sbec_zone_control,
+        sbec_control,
+        sbec_control_dataset,
+        sbec_control_data,
+        sbec_reference_state))
+   SUBTYPE OF (model_state_domain);
+END_ENTITY;
+
+ENTITY sbec_setpoint_control_dataset
+  SUBTYPE OF (sbec_control_dataset);
+  setpoint_data : sbec_control_data;
+END_ENTITY;
+
+ENTITY sbec_feedback_control_dataset
+  SUBTYPE OF (sbec_control_dataset);
+  feedback_data : sbec_control_data;
+END_ENTITY;
+
+ENTITY sbec_reference_state
+  SUBTYPE OF (sbec_condition);
+INVERSE
+  data : SET OF model_property_distribution FOR domain;
+END_ENTITY;
+
+ENTITY sbec_zone_control
+  SUBTYPE OF (sbec_condition);
+  control_conditions : SET OF sbec_control;
+  reference_state    : SET OF sbec_reference_state;
+END_ENTITY;
+
+END_SCHEMA;  -- end of environmental_conditions_schema
+
+
+
+(*"environmental_conditions_schema"
+This schema defines and describes the environmental control specifications for smart building automation systems.
+
+Abbreviated names are used in identifiers of elements declared in this schema. Abbreviations used in these identifiers have the following meanings:
+
+control:: environmental_control;
+env:: environmental;
+sbec:: smart_building_environmental_control.
+*)
+
+(*"environmental_conditions_schema.__fund_cons"
+
+This model is an attempt to unify environmental control specifications within smart building automation systems. The structures and conventions presented are a compromise between simplicity and generality.
+
+The difficulty with environmental controls is that there is such a wide variety used, and even a single control algorithm is often implemented differently in different systems. Some controls, such as a temperature setpoint, are fairly well defined. Other controls are much looser in their definition and implementation.
+
+[example]
+In smart building systems an HVAC control is an example of a loosely defined condition. It is generally accepted how many environmental parameters should be monitored at an HVAC control point (from energy efficiency arguments), but what those parameters are will change with the class of building systems (e.g., residential _vs._ commercial buildings), and they will also change from system to system.
+
+[example]
+An additional difficulty for smart building control is that in some situations different control algorithms are applied depending on local environmental conditions. Any control point where the environment can change from heating to cooling or occupied to unoccupied is a candidate for condition-dependent control algorithms.
+
+These difficulties have moulded the design of the environmental control structures and conventions. Control types are defined
+( *control_type_simple*, *control_type_compound*, and *control_type* ) that establish the algorithms to be enforced. However, for those more loosely defined controls, such as HVAC intake/exhaust, the control type merely establishes general guidelines on the algorithms to be imposed. Augmenting (and superseding) the information provided by the control type is precisely defined environmental control data. Data-name conventions are used to identify the exact quantities involved in the controls.
+
+One flexibility that is provided by this approach is that environmental control information can easily be built during the course of system design. For example, during building design phases minimal information (e.g., only the control type) may be given. Then, prior to system commissioning, more specific control information, such as setpoint or feedback data, may be added.
+
+Environmental controls are classified as either fixed or adaptive. Fixed controls enforce a given set of control algorithms regardless of conditions; adaptive controls enforce different sets of control algorithms depending on local conditions. Both fixed and adaptive controls are incorporated into a uniform framework, which allows all controls to be described in a similar manner.
+
+NOTE: The hierarchy used for prescribing a single environmental control includes a type that describes the general algorithms to enforce, a zone specification, and a collection of data sets. The minimum required information for any control is the zone specification and the control type. This minimum information is similar to that used in many existing building automation systems.
+
+Generality in prescribing algorithms to enforce and their associated control data is provided in the optional data sets. Each data set contains all control data required for a given fixed or simple control. Each data set is also tagged with a control type.
+
+NOTE: For fixed controls, the hierarchical tree contains a single data set, and the two control types are identical.
+
+Adaptive or compound controls contain multiple data sets, each to be applied separately depending on local conditions. The compound control type describes the general adaptive controls, and each data set contains associated simple control types.
+
+[examples]
+In smart building systems an ambient zone control would contain multiple data sets, where each applies to the different combinations of heating and cooling modes with occupied and unoccupied states.
+
+Within a single data set, control data is grouped by algorithm type into setpoint and feedback data. The data shows setpoint values for environmental parameters and feedback data for sensor readings to be applied in control conditions. *data_array* entities are employed to store these data and to identify the specific variables they are associated with.
+
+In situations where the data sets (or any information contained therein) are absent from a given control hierarchy, building automation systems are free to impose any appropriate controls.
+
+NOTE: Although not pictured, it is also possible to specify the reference state from which the system should extract the control data.
+*)
+
+(*"environmental_conditions_schema.env_control_type_compound"
+
+An *env_control_type_compound* is an enumeration type that identifies the smart building compound environmental control at a control location.
+*)
+
+(*"environmental_conditions_schema.env_control_type_compound.unspecified"
+(from *sbec_control_type_compound* ) control is unspecified;
+*)
+
+(*"environmental_conditions_schema.env_control_type_compound.application_defined"
+(from *sbec_control_type_compound* ) control is specified via an external agreement between the data creator and the data user;
+*)
+
+(*"environmental_conditions_schema.env_control_type_compound.control_hvac_intake"
+HVAC intake control, test on air quality and occupancy, then perform one of: *control_hvac_heating*, *control_hvac_cooling*, *control_hvac_ventilation*;
+*)
+
+(*"environmental_conditions_schema.env_control_type_compound.control_hvac_exhaust"
+HVAC exhaust control, test on air quality and temperature, then perform one of: *control_hvac_heating*, *control_hvac_cooling*, *control_hvac_ventilation*;
+*)
+
+(*"environmental_conditions_schema.env_control_type_compound.control_ambient_zone"
+ambient zone control, test on occupancy and time schedule, then perform one of: *control_temperature_setpoint*, *control_humidity_setpoint*, *control_lighting_dimmer*, *control_hvac_heating*, *control_hvac_cooling*.
+*)
+
+(*"environmental_conditions_schema.env_control_type_simple"
+
+An *env_control_type_simple* is an enumeration type that identifies the simple smart building environmental control at a control location.
+
+In the descriptions below, stem:[T] is the temperature value, stem:[H] is the humidity value, stem:[L] is the light level, stem:[O] is the occupancy state, and stem:[E] is the energy consumption.
+
+For HVAC control descriptions, typical residential and commercial building systems are assumed. These same controls are typically used for advanced building automation systems also.
+*)
+
+(*"environmental_conditions_schema.env_control_type_simple.unspecified"
+(from *sbec_control_type_simple* ) control is unspecified;
+*)
+
+(*"environmental_conditions_schema.env_control_type_simple.application_defined"
+(from *sbec_control_type_simple* ) control is specified via an external agreement between the data creator and the data user;
+*)
+
+(*"environmental_conditions_schema.env_control_type_simple.control_general"
+(from *sbec_control_type_simple* ) arbitrary controls on environmental parameters;
+*)
+
+(*"environmental_conditions_schema.env_control_type_simple.control_setpoint"
+(from *sbec_control_type_simple* ) setpoint control on environmental parameters;
+*)
+
+(*"environmental_conditions_schema.env_control_type_simple.control_feedback"
+(from *sbec_control_type_simple* ) feedback control based on sensor readings;
+*)
+
+(*"environmental_conditions_schema.env_control_type_simple.control_override"
+(from *sbec_control_type_simple* ) override control from building management system;
+*)
+
+(*"environmental_conditions_schema.env_control_type_simple.control_schedule"
+(from *sbec_control_type_simple* ) scheduled control based on time and occupancy;
+*)
+
+(*"environmental_conditions_schema.env_control_type_simple.control_temperature_setpoint"
+temperature setpoint control
+
+* target temperature specified (default: stem:[T = 22°C])
+*)
+
+(*"environmental_conditions_schema.env_control_type_simple.control_humidity_setpoint"
+humidity setpoint control
+
+* target humidity specified (default: stem:[H = 45%])
+*)
+
+(*"environmental_conditions_schema.env_control_type_simple.control_air_quality_monitor"
+air quality monitoring control
+
+* CO2, VOC, PM2.5 levels monitored
+*)
+
+(*"environmental_conditions_schema.env_control_type_simple.control_lighting_dimmer"
+lighting dimmer control
+
+* light level setpoint (default: stem:[L = 300] lux)
+*)
+
+(*"environmental_conditions_schema.env_control_type_simple.control_lighting_switch"
+lighting on/off switch control
+
+* binary state control
+*)
+
+(*"environmental_conditions_schema.env_control_type_simple.control_hvac_heating"
+HVAC heating control
+
+* heating system activation based on temperature setpoint
+*)
+
+(*"environmental_conditions_schema.env_control_type_simple.control_hvac_cooling"
+HVAC cooling control
+
+* cooling system activation based on temperature setpoint
+*)
+
+(*"environmental_conditions_schema.env_control_type_simple.control_hvac_ventilation"
+HVAC ventilation control
+
+* ventilation system control based on air quality and occupancy
+*)
+
+(*"environmental_conditions_schema.env_control_type_simple.control_security_motion"
+security motion sensor control
+
+* motion detection and alert system
+*)
+
+(*"environmental_conditions_schema.env_control_type_simple.control_security_door"
+security door control
+
+* door lock/unlock and access control
+*)
+
+(*"environmental_conditions_schema.env_control_type_simple.control_energy_monitor"
+energy consumption monitoring
+
+* real-time energy usage tracking
+*)
+
+(*"environmental_conditions_schema.env_control_type_simple.control_occupancy_sensor"
+occupancy sensor control
+
+* room occupancy detection and counting
+*)
+
+(*"environmental_conditions_schema.env_control_type_simple.control_window_blind"
+automated window blind control
+
+* blind position control based on light levels and time
+*)
+
+(*"environmental_conditions_schema.env_control_type_simple.control_smart_thermostat"
+smart thermostat control
+
+* advanced temperature control with learning algorithms
+*)
+
+(*"environmental_conditions_schema.zone_boundary"
+
+A *zone_boundary* is an enumeration of building zone boundaries from north wall through floor.
+
+NOTE: See one use of this type for building zone control specifications.
+*)
+
+(*"environmental_conditions_schema.sbec_control_type"
+
+An *sbec_control_type* is a superset of at least two kinds of environmental control types.
+
+Control types identify the algorithms that should be enforced at a given control location. The control types are described by *sbec_control_type*. Some members of *sbec_control_type* completely identify the algorithms to impose, while others identify a general description of the class of control algorithms to impose.
+
+The subdivision of *sbec_control_type* is based on function. For simple controls, the algorithms and data are fixed; whereas, for compound controls different sets of algorithms are imposed depending on local conditions at the control point.
+
+*sbec_control_type* is a superset of *sbec_control_type_simple* and *sbec_control_type_compound*. It identifies the environmental control (simple or compound) at a control location.
+*)
+
+(*"environmental_conditions_schema.sbec_control_type_compound"
+
+An *sbec_control_type_compound* is an enumeration type that identifies the compound environmental control at a control location.
+*)
+
+(*"environmental_conditions_schema.sbec_control_type_compound.unspecified"
+control is unspecified;
+*)
+
+(*"environmental_conditions_schema.sbec_control_type_compound.application_defined"
+control is specified via an external agreement between the data creator and the data user.
+*)
+
+(*"environmental_conditions_schema.sbec_control_type_simple"
+
+An *sbec_control_type_simple* is an enumeration type that identifies the simple environmental control at a control location.
+
+In the descriptions below, stem:[P] is the environmental parameter vector, and stem:[S] is the sensor reading vector.
+*)
+
+(*"environmental_conditions_schema.sbec_control_type_simple.unspecified"
+control is unspecified;
+*)
+
+(*"environmental_conditions_schema.sbec_control_type_simple.application_defined"
+control is specified via an external agreement between the data creator and the data user;
+*)
+
+(*"environmental_conditions_schema.sbec_control_type_simple.control_general"
+arbitrary controls on stem:[P] or sensor feedback stem:[S];
+*)
+
+(*"environmental_conditions_schema.sbec_control_type_simple.control_setpoint"
+setpoint control on stem:[P] vector;
+*)
+
+(*"environmental_conditions_schema.sbec_control_type_simple.control_feedback"
+feedback control based on stem:[S];
+*)
+
+(*"environmental_conditions_schema.sbec_control_type_simple.control_override"
+override control from building management system;
+*)
+
+(*"environmental_conditions_schema.sbec_control_type_simple.control_schedule"
+scheduled control based on time and occupancy patterns.
+*)
+
+(*"environmental_conditions_schema.environmental_sensor_data_name"
+
+An *environmental_sensor_data_name* is an enumeration of standardized environmental sensor data for smart building systems.
+
+Environmental control specification for HVAC or lighting systems often involves sensor readings and environmental parameters. For a typical smart building system, these are defined as follows:
+
+Temperature sensors provide indoor and outdoor temperature readings for HVAC control. Humidity sensors monitor relative and absolute humidity levels. Air quality sensors measure CO2, VOC, and PM2.5 concentrations. Light sensors provide illuminance readings for lighting control. Occupancy sensors detect presence and count occupants. Energy monitors track power consumption and demand.
+
+The following data-name identifiers are defined for environmental sensors:
+
+[[tab-esid]]
+.Environmental sensor data name identifiers
+[cols="3",options="header"]
+|===
+| Data name identifier | Description | Units
+
+| *temperature_indoor* | Indoor temperature | stem:[°C]
+| *temperature_outdoor* | Outdoor temperature | stem:[°C]
+| *humidity_relative* | Relative humidity | stem:[%]
+| *humidity_absolute* | Absolute humidity | stem:[g/m³]
+| *air_quality_co2* | CO2 concentration | stem:[ppm]
+| *air_quality_voc* | VOC concentration | stem:[ppb]
+| *air_quality_pm25* | PM2.5 concentration | stem:[μg/m³]
+| *light_level_lux* | Illuminance level | stem:[lux]
+| *occupancy_count* | Number of occupants | stem:[count]
+| *energy_consumption_kwh* | Energy consumption | stem:[kWh]
+| *energy_demand_kw* | Power demand | stem:[kW]
+|===
+
+The required identifiers and their meanings are given in the table above.
+*)
+
+(*"environmental_conditions_schema.room_control"
+
+A *room_control* is an *sbec_control* containing environmental control information for a group of rooms in a building.
+*)
+
+(*"environmental_conditions_schema.room_control.controlled_rooms"
+the rooms (in a building) under environmental control.
+*)
+
+(*"environmental_conditions_schema.env_control"
+
+An *env_control* is an *sbec_control* containing environmental control information for a single control zone of a smart building system.
+*)
+
+(*"environmental_conditions_schema.env_control.control_datasets"
+(inherited) a list of environmental control data sets. In general, the proper *env_control_dataset* instance(s) to impose on the control zone is determined by the value of *the_type*.
+*)
+
+(*"environmental_conditions_schema.env_control_dataset"
+
+An *env_control_dataset* is an *sbec_control_dataset* for smart building environmental control. Its intended use is for simple control types, where the algorithms imposed do not depend on local environmental conditions.
+
+Environmental control data is separated by algorithm type into setpoint and feedback controls. Setpoint controls impose the target value of the given environmental parameters, whereas feedback controls impose sensor-based adjustments of the given parameters.
+
+The *control* structure allows for an arbitrary list of environmental control data sets, described by the *control_dataset* structure. For simple controls, a single data set must be chosen from a list that may contain more than one element. Likewise, for a compound control, a limited number of data sets must be chosen and applied appropriately. The mechanism for proper choice of data sets is controlled by the *the_type* attribute of the *control* structure, the *the_type* attribute of the *control_dataset* structure, and the environmental control type association table.
+*)
+
+(*"environmental_conditions_schema.env_control_dataset.the_type"
+the environmental control type, which gives general information on the control algorithms to be enforced.
+*)
+
+(*"environmental_conditions_schema.env_zone_control"
+
+An *env_zone_control* is the environmental control information pertaining to a building zone.
+*)
+
+(*"environmental_conditions_schema.env_zone_control.control_conditions"
+(inherited) the environmental controls for a zone, on a room by room basis.
+*)
+
+(*"environmental_conditions_schema.indexed_room_control"
+
+An *indexed_room_control* is an *sbec_control* containing environmental control information for rooms in a structured building layout.
+*)
+
+(*"environmental_conditions_schema.indexed_room_control.room_indices"
+the room indices.
+*)
+
+(*"environmental_conditions_schema.indexed_sensor_control"
+
+An *indexed_sensor_control* is an *sbec_control* containing environmental control information for sensors in a structured building layout.
+*)
+
+(*"environmental_conditions_schema.indexed_sensor_control.sensor_indices"
+a group of indices; by convention the indices refer to environmental sensors.
+*)
+
+(*"environmental_conditions_schema.sbec_control"
+
+An *sbec_control* is environmental control information for a single control zone of a building. A control zone is the subarea of a building floor where a given environmental control is applied.
+
+The structure contains an environmental control type, as well as one or more sets of control data that are used to define the control algorithms to be enforced on the control zone. For most controls, a single data set is all that is needed. The structure also contains information describing the sensor location within the control zone.
+*)
+
+(*"environmental_conditions_schema.sbec_control.control_datasets"
+a list of environmental control data sets. In general, the proper *control_dataset* instance(s) to impose on the control zone is determined by the value of *the_type*.
+
+For a few controls, such as a scheduled control or occupancy override, the value of *the_type* completely describes the algorithms to impose, and no instances of *control_dataset* are needed. For 'simple' controls, where a single set of setpoint and/or feedback data is applied a single *control_dataset* will likely be used (although this is not a requirement). For 'compound' controls, where the algorithms to impose are dependent on local conditions, several instances of *control_dataset* will likely be used.
+*)
+
+(*"environmental_conditions_schema.sbec_control.sensor_location"
+the location of the sensors, which are normally either at room centers or on zone boundaries.
+
+Some environmental controls require a zone boundary direction to be specified in order to be properly imposed. A building-coordinate boundary can be derived from *room_range* or *room_list* by examining redundant index components. Alternatively, this information can be provided directly by
+*zone_boundary_index*. For exterior boundaries of a zone in a building, *zone_boundary_index* takes one of the values: north_wall, south_wall, east_wall, west_wall, ceiling, floor.
+*)
+
+(*"environmental_conditions_schema.sbec_control.zone_boundary_list"
+a list of vectors normal to the control zone pointing into the interior of the building; the vectors are not required to be unit vectors. By convention the vectors are located at the boundaries of the control zone.
+
+The physical-space boundary vectors of the control zone may be described by *zone_boundary_list*; these are located at boundaries, consistent with *room_range* and *room_list*. *zone_boundary_list* is specified as an optional attribute because it is not always needed to enforce environmental controls, and the physical-space boundaries of a control zone can usually be constructed from the building layout. However, there are some situations, such as irregular room shapes, where *zone_boundary_list* becomes a required attribute because the boundaries cannot be generated from other information.
+*)
+
+(*"environmental_conditions_schema.sbec_control.reference_state"
+reference data applicable to the controls of the control zone;
+*)
+
+(*"environmental_conditions_schema.sbec_control.the_type"
+the type of the environmental control.
+*)
+
+(*"environmental_conditions_schema.sbec_control_data"
+
+An *sbec_control_data* is environmental control data.
+
+By convention all data specified in a given instance of *sbec_control_data* is to be used in the same _type_ of control algorithm.
+
+[example]
+The setpoint and feedback controls in *sbec_control_dataset* use separate *sbec_control_data* structures.
+*)
+
+(*"environmental_conditions_schema.sbec_control_data_global"
+
+An *sbec_control_data_global* is global environmental control data.
+
+[example]
+If a setpoint control consists of a uniform temperature setpoint but with a non-uniform humidity profile, then the temperature setpoint can be described by *sbec_control_data_global*.
+*)
+
+(*"environmental_conditions_schema.sbec_control_data_global.data_global"
+global control data.
+*)
+
+(*"environmental_conditions_schema.sbec_control_data_local"
+
+An *sbec_control_data_local* is local environmental control data.
+
+[example]
+If a setpoint control consists of a uniform temperature setpoint but with a non-uniform humidity profile, then the humidity profile can be described by *sbec_control_data_local*.
+*)
+
+(*"environmental_conditions_schema.sbec_control_data_local.data_local"
+local control data.
+*)
+
+(*"environmental_conditions_schema.sbec_control_dataset"
+
+An *sbec_control_dataset* is setpoint or feedback data for a single set of environmental control algorithms. Its intended use is for simple control types, where the algorithms imposed do not depend on local conditions.
+
+Environmental control data is separated by algorithm type into setpoint and feedback controls. Setpoint controls impose the target value of the given environmental parameters, whereas feedback controls impose sensor-based adjustments of the given parameters.
+
+The *sbec_control* structure allows for an arbitrary list of environmental control data sets, described by the *sbec_control_dataset* structure. For simple controls, a single data set must be chosen from a list that may contain more than one element. Likewise, for a compound control, a limited number of data sets must be chosen and applied appropriately. The mechanism for proper choice of data sets can be controlled by the *the_type* attribute of the
+*sbec_control* structure together with the *the_type* attribute of the *sbec_control_dataset* structure.
+
+*sbec_control* is used for both simple and compound controls; hence, its attribute *the_type* is of type *sbec_control_type*. Conversely, the structure *sbec_control_dataset* is intended to enforce a single set of control algorithms independent of local environmental conditions (i.e., it is appropriate only for simple controls). That is why its attribute *the_type* is of type *sbec_control_type_simple* and not *sbec_control_type*.
+
+NOTE: The appropriate choice of data sets may be specified by listing appropriate pairings of the values of *sbec_control.the_type* and
+*sbec_control_dataset.the_type*.
+
+Although the model has a strict division between the two categories of control types, in practice some overlap may exist. These complications require further guidelines on appropriate definition and use of control types. The real distinctions between *sbec_control_type_simple* and *sbec_control_type_compound* are as follows:
+
+* *sbec_control_type_simple* identifiers always match themselves; *sbec_control_type_compound* never match themselves.
+
+* *sbec_control_type_simple* identifiers always produce a single match; *sbec_control_type_compound* produce multiple matches.
+
+* The usage rule for *sbec_control_type_simple* identifiers is always trivial -- apply the single matching data set regardless of local conditions.
+
+Therefore, any environmental control that involves application of different data sets depending on local conditions should be classified as *sbec_control_type_compound*.
+
+For a given simple environmental control the database provides a set of control algorithms to be enforced through the definitions of *sbec_control_dataset* and *sbec_control_data*. Apart from the control type, the precise algorithms to be enforced are described by environmental control data. These specified control data are arranged by 'algorithm type':
+
+Setpoint:: stem:[P = (P)_{"setpoint"}]
+
+Feedback:: stem:[P = f(S, P_{"setpoint"})]
+
+The *setpoint_data* and *feedback_data* attributes (of type *sbec_control_data* ) list both the environmental parameters involved in the algorithms (through data-name conventions) and the specified control data.
+
+Two issues need to be addressed for specifying setpoint or feedback environmental control data. The first is whether the data is global or local.
+
+The global versus local issue can easily be handled by storing a scalar for the global control data case, and storing an array for the local control data case.
+
+By convention, if the *setpoint_data* and *feedback_data* are not present in an instance of *sbec_control_dataset*, then building automation systems are free to enforce appropriate control algorithms based on the control type.
+*)
+
+(*"environmental_conditions_schema.sbec_control_dataset.sensor_location"
+the location of the sensors within the control zone.
+*)
+
+(*"environmental_conditions_schema.sbec_control_dataset.reference_state"
+reference data applicable to the control data set.
+*)
+
+(*"environmental_conditions_schema.sbec_control_dataset.the_type"
+the environmental control type, which gives general information on the control algorithms to be enforced.
+*)
+
+(*"environmental_conditions_schema.sbec_condition"
+
+An *sbec_condition* is the supertype for all environmental condition entities in smart building systems.
+*)
+
+(*"environmental_conditions_schema.sbec_setpoint_control_dataset"
+
+An *sbec_setpoint_control_dataset* is an *sbec_control_dataset* that contains setpoint control data.
+*)
+
+(*"environmental_conditions_schema.sbec_setpoint_control_dataset.setpoint_data"
+the setpoint control data for environmental parameters.
+*)
+
+(*"environmental_conditions_schema.sbec_feedback_control_dataset"
+
+An *sbec_feedback_control_dataset* is an *sbec_control_dataset* that contains feedback control data.
+*)
+
+(*"environmental_conditions_schema.sbec_feedback_control_dataset.feedback_data"
+the feedback control data based on sensor readings.
+*)
+
+(*"environmental_conditions_schema.sbec_reference_state"
+
+An *sbec_reference_state* is reference environmental data for control algorithms.
+*)
+
+(*"environmental_conditions_schema.sbec_reference_state.data"
+reference environmental data.
+*)
+
+(*"environmental_conditions_schema.sbec_zone_control"
+
+An *sbec_zone_control* is the environmental control information pertaining to a building zone.
+*)
+
+(*"environmental_conditions_schema.sbec_zone_control.control_conditions"
+the environmental controls for a zone.
+*)
+
+(*"environmental_conditions_schema.sbec_zone_control.reference_state"
+reference data applicable to the zone controls.
+*)

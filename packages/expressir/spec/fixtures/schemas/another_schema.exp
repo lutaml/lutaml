@@ -1,0 +1,5 @@
+SCHEMA another_schema;
+  ENTITY another_entity;
+    value : INTEGER;
+  END_ENTITY;
+END_SCHEMA;

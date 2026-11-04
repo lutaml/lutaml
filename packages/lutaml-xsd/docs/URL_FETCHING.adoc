@@ -1,0 +1,704 @@
+---
+layout: default
+title: Remote schema handling
+parent: Advanced topics
+nav_order: 1
+---
+= Remote schema handling
+:toc:
+:toclevels: 3
+
+== Purpose
+
+This document explains how lutaml-xsd handles remote XSD schemas accessed via
+HTTP/HTTPS URLs, including automatic URL detection, local caching strategies,
+offline modes, and security considerations for fetching external schemas.
+
+== General
+
+XSD schemas often reference external schemas via URLs (HTTP/HTTPS locations).
+lutaml-xsd provides robust support for fetching and resolving remote schemas
+while maintaining security and performance. The URL fetching system integrates
+seamlessly with the schema location mapping system, allowing flexible control
+over how remote schemas are accessed and cached.
+
+The system automatically detects URL references in:
+
+* Schema import statements (`xs:import/@schemaLocation`)
+* Schema include statements (`xs:include/@schemaLocation`)
+* Schema redefine statements (`xs:redefine/@schemaLocation`)
+* External type references
+
+== Automatic URL detection
+
+=== General
+
+lutaml-xsd automatically detects URL-based schema locations and handles them
+appropriately without requiring explicit configuration.
+
+=== HTTP/HTTPS schema locations
+
+When a schema references another schema via URL, the system automatically
+identifies and processes it:
+
+.Schema with URL-based imports
+[example]
+====
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://example.org/myapp">
+
+  <!-- Automatic URL detection -->
+  <xs:import namespace="http://www.opengis.net/gml/3.2"
+             schemaLocation="http://schemas.opengis.net/gml/3.2.1/gml.xsd"/> <!--1-->
+
+  <xs:include schemaLocation="https://example.org/schemas/common.xsd"/> <!--2-->
+</xs:schema>
+----
+<1> HTTP URL automatically detected and fetched
+<2> HTTPS URL automatically detected and fetched
+====
+
+The URL detection is based on the schema location starting with `http://` or
+`https://`.
+
+=== Mixed local and remote references
+
+Schemas can freely mix local file references with remote URLs:
+
+.Schema with mixed references
+[example]
+====
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <!-- Local file reference -->
+  <xs:include schemaLocation="local/common.xsd"/>
+
+  <!-- Remote URL reference -->
+  <xs:import namespace="http://www.w3.org/2001/XMLSchema"
+             schemaLocation="http://www.w3.org/2001/XMLSchema.xsd"/>
+</xs:schema>
+----
+====
+
+== Schema location mapping for URLs
+
+=== General
+
+Schema location mappings allow you to redirect URL-based schema locations to
+local files or different URLs, providing control over where schemas are
+fetched from.
+
+=== Mapping URLs to local files
+
+The most common use case is mapping remote URLs to local cached copies:
+
+.Mapping URLs to local files
+[example]
+====
+[source,yaml]
+----
+files:
+  - myschema.xsd
+
+schema_location_mappings:
+  # Map remote GML schema to local copy
+  - from: "http://schemas.opengis.net/gml/3.2.1/gml.xsd"
+    to: "local/schemas/gml/3.2.1/gml.xsd"
+
+  # Map entire schema server to local directory
+  - from: !ruby/regexp '/^http:\/\/schemas\.opengis\.net\/(.+)$/'
+    to: 'local/schemas/\1'
+----
+
+This configuration redirects all URL fetches to local files, enabling:
+
+* Offline development
+* Faster parsing (no network latency)
+* Version control of dependencies
+* Reproducible builds
+====
+
+Where,
+
+`from`:: The original URL pattern to match. Can be an exact string or regex.
+`to`:: The local file path or URL to redirect to. Supports regex capture groups.
+
+=== Mapping between different URLs
+
+You can also redirect from one URL to another:
+
+.URL-to-URL mapping
+[example]
+====
+[source,yaml]
+----
+schema_location_mappings:
+  # Redirect to mirror server
+  - from: "http://schemas.opengis.net/gml/3.2.1/gml.xsd"
+    to: "https://mirror.example.org/schemas/gml/3.2.1/gml.xsd"
+
+  # Upgrade HTTP to HTTPS automatically
+  - from: !ruby/regexp '/^http:\/\/schemas\.opengis\.net\/(.+)$/'
+    to: 'https://schemas.opengis.net/\1'
+----
+====
+
+== Local caching strategies
+
+=== General
+
+For production use, it's strongly recommended to cache remote schemas locally
+to avoid network dependencies and improve performance.
+
+=== Manual caching approach
+
+Download and organize remote schemas in your project:
+
+.Manual caching directory structure
+[example]
+====
+[source]
+----
+project/
+├── schemas/
+│   ├── cache/
+│   │   ├── opengis/
+│   │   │   └── gml/
+│   │   │       └── 3.2.1/
+│   │   │           ├── gml.xsd
+│   │   │           ├── basicTypes.xsd
+│   │   │           └── ...
+│   │   └── w3c/
+│   │       └── xlink.xsd
+│   └── myapp.xsd
+└── config.yml
+----
+
+Configuration using cached schemas:
+
+[source,yaml]
+----
+files:
+  - schemas/myapp.xsd
+
+schema_location_mappings:
+  - from: !ruby/regexp '/^http:\/\/schemas\.opengis\.net\/gml\/3\.2\.1\/(.+)$/'
+    to: 'schemas/cache/opengis/gml/3.2.1/\1'
+  - from: "http://www.w3.org/1999/xlink.xsd"
+    to: "schemas/cache/w3c/xlink.xsd"
+----
+====
+
+=== Package-based caching with LXR
+
+LXR packages provide automatic caching through bundling:
+
+.Creating package with cached schemas
+[example]
+====
+[source,bash]
+----
+# Build package with include_all mode
+lutaml-xsd pkg build config.yml \
+  --output myschemas.lxr \
+  --xsd-mode include_all
+----
+
+The `include_all` mode automatically:
+
+* Downloads all remote schemas referenced
+* Bundles them into the package
+* Rewrites schema locations to package-relative paths
+* Creates a self-contained, portable package
+====
+
+=== Cache validation
+
+Validate your cached schemas match the remote versions:
+
+.Validating cached schemas
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+require 'digest'
+
+# Compare local cache to remote
+def validate_cache(remote_url, local_path)
+  remote_content = Net::HTTP.get(URI.parse(remote_url))
+  local_content = File.read(local_path)
+
+  remote_hash = Digest::SHA256.hexdigest(remote_content)
+  local_hash = Digest::SHA256.hexdigest(local_content)
+
+  if remote_hash == local_hash
+    puts "✓ Cache valid: #{local_path}"
+  else
+    puts "✗ Cache outdated: #{local_path}"
+    puts "  Consider updating from #{remote_url}"
+  end
+end
+
+validate_cache(
+  "http://schemas.opengis.net/gml/3.2.1/gml.xsd",
+  "schemas/cache/opengis/gml/3.2.1/gml.xsd"
+)
+----
+====
+
+== Timeout and retry configuration
+
+=== General
+
+Network operations require timeout and retry handling to deal with temporary
+failures and slow connections.
+
+=== Setting HTTP timeouts
+
+Configure timeouts for HTTP requests:
+
+.Configuring HTTP timeouts
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+require 'net/http'
+
+# Configure global HTTP timeout
+class Lutaml::Xsd::Glob
+  class << self
+    # Override http_get to add timeout configuration
+    alias_method :original_http_get, :http_get
+
+    def http_get(url)
+      uri = URI.parse(url)
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.use_ssl = true if uri.scheme == 'https'
+
+      # Set timeouts
+      http.open_timeout = 10  # seconds to establish connection
+      http.read_timeout = 30  # seconds to read response
+
+      request = Net::HTTP::Get.new(uri.request_uri)
+      response = http.request(request)
+      response.body
+    end
+  end
+end
+----
+====
+
+=== Implementing retry logic
+
+Add retry capability for transient failures:
+
+.Adding retry logic to URL fetching
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+require 'net/http'
+
+module SchemaFetchWithRetry
+  MAX_RETRIES = 3
+  RETRY_DELAY = 2 # seconds
+
+  def fetch_schema_with_retry(url)
+    retries = 0
+
+    begin
+      uri = URI.parse(url)
+      response = Net::HTTP.get_response(uri)
+
+      case response
+      when Net::HTTPSuccess
+        response.body
+      when Net::HTTPRedirection
+        fetch_schema_with_retry(response['location'])
+      else
+        raise "HTTP error: #{response.code} #{response.message}"
+      end
+    rescue StandardError => e
+      retries += 1
+
+      if retries <= MAX_RETRIES
+        warn "Retry #{retries}/#{MAX_RETRIES} for #{url}: #{e.message}"
+        sleep RETRY_DELAY * retries # Exponential backoff
+        retry
+      else
+        raise "Failed to fetch #{url} after #{MAX_RETRIES} retries: #{e.message}"
+      end
+    end
+  end
+end
+
+# Usage
+include SchemaFetchWithRetry
+content = fetch_schema_with_retry("http://schemas.opengis.net/gml/3.2.1/gml.xsd")
+----
+====
+
+== Offline mode vs online mode
+
+=== General
+
+lutaml-xsd supports both offline and online modes of operation, allowing
+flexible development and deployment strategies.
+
+=== Offline mode with local schemas
+
+Use schema location mappings to work completely offline:
+
+.Complete offline configuration
+[example]
+====
+[source,yaml]
+----
+# config.yml - Offline mode
+files:
+  - schemas/myapp.xsd
+
+schema_location_mappings:
+  # All external URLs mapped to local files
+  - from: !ruby/regexp '/^http:\/\/schemas\.opengis\.net\/(.+)$/'
+    to: 'schemas/cache/opengis/\1'
+  - from: !ruby/regexp '/^http:\/\/www\.w3\.org\/(.+)$/'
+    to: 'schemas/cache/w3c/\1'
+  - from: !ruby/regexp '/^https?:\/\/(.+)$/'
+    to: 'schemas/cache/\1'
+
+namespace_mappings:
+  - prefix: "gml"
+    uri: "http://www.opengis.net/gml/3.2"
+----
+
+No network requests will be made during parsing.
+====
+
+=== Online mode with fallback
+
+Allow online fetching with local fallback:
+
+.Hybrid online/offline mode
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+class SmartSchemaFetcher
+  def initialize(cache_dir: 'schemas/cache')
+    @cache_dir = cache_dir
+  end
+
+  def fetch_schema(url)
+    # Try local cache first
+    cached_path = url_to_cache_path(url)
+
+    if File.exist?(cached_path)
+      puts "Using cached: #{cached_path}"
+      return File.read(cached_path)
+    end
+
+    # Fetch from network if cache miss
+    begin
+      puts "Fetching from network: #{url}"
+      content = Net::HTTP.get(URI.parse(url))
+
+      # Save to cache for next time
+      save_to_cache(cached_path, content)
+      content
+    rescue StandardError => e
+      raise "Failed to fetch #{url} and no cache available: #{e.message}"
+    end
+  end
+
+  private
+
+  def url_to_cache_path(url)
+    # Convert URL to filesystem path
+    path = url.gsub(%r{^https?://}, '').gsub(/[?&]/, '_')
+    File.join(@cache_dir, path)
+  end
+
+  def save_to_cache(path, content)
+    FileUtils.mkdir_p(File.dirname(path))
+    File.write(path, content)
+  end
+end
+----
+====
+
+=== Using LXR packages for offline deployment
+
+LXR packages with `include_all` mode provide true offline capability:
+
+.Building offline package
+[example]
+====
+[source,bash]
+----
+# Create package while online (downloads all dependencies)
+lutaml-xsd pkg build config.yml \
+  --output myschemas.lxr \
+  --xsd-mode include_all \
+  --resolution-mode resolved \
+  --serialization-format marshal
+
+# Deploy package to offline environment
+# No network access needed - all schemas bundled
+----
+
+Using the offline package:
+
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Load pre-built package (no network access required)
+repo = Lutaml::Xsd::SchemaRepository.from_package('myschemas.lxr')
+
+# All schemas instantly available
+result = repo.find_type('gml:AbstractFeatureType')
+puts "✓ Type resolved: #{result.qname}" if result.resolved?
+----
+====
+
+== Security considerations
+
+=== General
+
+Fetching remote schemas introduces security considerations that should be
+addressed in production deployments.
+
+=== HTTPS vs HTTP
+
+Always prefer HTTPS over HTTP for remote schemas:
+
+.Enforcing HTTPS
+[example]
+====
+[source,yaml]
+----
+schema_location_mappings:
+  # Upgrade all HTTP to HTTPS
+  - from: !ruby/regexp '/^http:\/\/(.+)$/'
+    to: 'https://\1'
+----
+
+Or validate in code:
+
+[source,ruby]
+----
+def validate_schema_url(url)
+  uri = URI.parse(url)
+
+  unless uri.scheme == 'https'
+    raise SecurityError, "Insecure schema URL (use HTTPS): #{url}"
+  end
+
+  # Additional validation
+  allowed_hosts = ['schemas.opengis.net', 'www.w3.org']
+  unless allowed_hosts.include?(uri.host)
+    raise SecurityError, "Untrusted schema host: #{uri.host}"
+  end
+end
+----
+====
+
+=== Validating remote schemas
+
+Implement checksum validation for downloaded schemas:
+
+.Schema checksum validation
+[example]
+====
+[source,ruby]
+----
+require 'digest'
+require 'yaml'
+
+class SecureSchemaFetcher
+  def initialize(checksums_file: 'schema_checksums.yml')
+    @checksums = YAML.load_file(checksums_file)
+  end
+
+  def fetch_and_validate(url)
+    content = Net::HTTP.get(URI.parse(url))
+    actual_hash = Digest::SHA256.hexdigest(content)
+
+    expected_hash = @checksums[url]
+    if expected_hash && actual_hash != expected_hash
+      raise SecurityError,
+        "Schema checksum mismatch for #{url}\n" \
+        "Expected: #{expected_hash}\n" \
+        "Actual: #{actual_hash}"
+    end
+
+    content
+  end
+end
+
+# schema_checksums.yml
+# http://schemas.opengis.net/gml/3.2.1/gml.xsd: "abc123..."
+# http://www.w3.org/1999/xlink.xsd: "def456..."
+----
+====
+
+=== Restricting allowed hosts
+
+Limit which remote hosts can be accessed:
+
+.Host whitelist implementation
+[example]
+====
+[source,ruby]
+----
+module Lutaml
+  module Xsd
+    module Glob
+      # Override http_get with host validation
+      class << self
+        alias_method :original_http_get, :http_get
+
+        ALLOWED_HOSTS = [
+          'schemas.opengis.net',
+          'www.w3.org',
+          'www.isotc211.org'
+        ].freeze
+
+        def http_get(url)
+          uri = URI.parse(url)
+
+          unless ALLOWED_HOSTS.include?(uri.host)
+            raise SecurityError,
+              "Schema host not in whitelist: #{uri.host}\n" \
+              "Allowed hosts: #{ALLOWED_HOSTS.join(', ')}"
+          end
+
+          original_http_get(url)
+        end
+      end
+    end
+  end
+end
+----
+====
+
+=== Preventing schema injection attacks
+
+Validate schema content after fetching:
+
+.Schema content validation
+[example]
+====
+[source,ruby]
+----
+require 'moxml'
+
+def validate_schema_content(content)
+  ctx = Moxml::Context.new
+  doc = ctx.parse(content)
+
+  # Validate it's actually an XSD schema
+  unless doc.root&.name == 'schema' &&
+         doc.root.namespace&.href == 'http://www.w3.org/2001/XMLSchema'
+    raise SecurityError, "Invalid XSD schema document"
+  end
+
+  # Check for suspicious patterns
+  if doc.to_xml.match?(/<!ENTITY|<!DOCTYPE/)
+    raise SecurityError, "Schema contains potentially dangerous XML entities"
+  end
+
+  content
+rescue StandardError => e
+  raise SecurityError, "Schema failed XML validation: #{e.message}"
+end
+----
+====
+
+=== Production deployment recommendations
+
+For production systems:
+
+. **Always use HTTPS** for remote schema references
+. **Cache all remote schemas locally** and version control them
+. **Use LXR packages** with `include_all` mode for deployment
+. **Implement checksum validation** for remote schemas
+. **Restrict allowed hosts** to known, trusted sources
+. **Disable network access** in production parsing when using packages
+. **Monitor and log** all remote schema fetches
+. **Set appropriate timeouts** to prevent hanging requests
+. **Implement retry logic** with exponential backoff for transient failures
+
+== Common URL patterns
+
+=== General
+
+Common patterns for working with remote schemas in real-world scenarios.
+
+=== OGC schemas from schemas.opengis.net
+
+.Working with OpenGIS schemas
+[example]
+====
+[source,yaml]
+----
+schema_location_mappings:
+  # Map OGC schemas to local cache
+  - from: !ruby/regexp '/^http:\/\/schemas\.opengis\.net\/gml\/(.+)$/'
+    to: 'vendor/ogc/gml/\1'
+  - from: !ruby/regexp '/^http:\/\/schemas\.opengis\.net\/citygml\/(.+)$/'
+    to: 'vendor/ogc/citygml/\1'
+----
+====
+
+=== ISO/TC 211 schemas
+
+.Working with ISO schemas
+[example]
+====
+[source,yaml]
+----
+schema_location_mappings:
+  # ISO TC 211 schemas
+  - from: !ruby/regexp '/^https?:\/\/standards\.iso\.org\/iso\/19115\/(.+)$/'
+    to: 'vendor/iso/19115/\1'
+  - from: !ruby/regexp '/^https?:\/\/standards\.iso\.org\/iso\/19139\/(.+)$/'
+    to: 'vendor/iso/19139/\1'
+----
+====
+
+=== W3C standard schemas
+
+.Working with W3C schemas
+[example]
+====
+[source,yaml]
+----
+schema_location_mappings:
+  # W3C schemas
+  - from: "http://www.w3.org/1999/xlink.xsd"
+    to: "vendor/w3c/xlink.xsd"
+  - from: "http://www.w3.org/2001/xml.xsd"
+    to: "vendor/w3c/xml.xsd"
+----
+====
+
+== See also
+
+* link:SCHEMA_MAPPINGS[Schema location mappings] - Detailed mapping configuration
+* link:PACKAGE_CONFIGURATION[Package configuration] - LXR package options
+* link:PERFORMANCE_TUNING[Performance tuning] - Optimization strategies
+* link:TROUBLESHOOTING[Troubleshooting] - Common issues and solutions
+* link:INDEX[Documentation index] - All documentation

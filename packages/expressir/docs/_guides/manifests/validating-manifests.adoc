@@ -1,0 +1,713 @@
+---
+title: Validating Manifests
+parent: Manifest Workflows
+grand_parent: Guides
+nav_order: 3
+---
+
+= Validating Schema Manifests
+
+== Purpose
+
+This guide explains how to validate schema manifests at different levels, from basic file existence checks to complete referential integrity validation.
+
+== What You'll Learn
+
+* Using the `manifest validate` command
+* Understanding validation levels
+* Interpreting validation errors and warnings
+* Using the `--check-references` flag
+* Fixing common validation issues
+
+== Prerequisites
+
+* Expressir installed
+* An existing manifest file
+* Understanding of link:creating-manifests.html[Creating Manifests]
+
+== The `manifest validate` Command
+
+=== Basic Syntax
+
+[source,bash]
+----
+expressir manifest validate MANIFEST.yaml [OPTIONS]
+----
+
+=== Required Parameters
+
+`MANIFEST.yaml`::
+The manifest file to validate
+
+=== Optional Parameters
+
+`--verbose`::
+Show detailed validation results including all checks performed
+
+`--check-references`::
+Enable referential integrity checking (validates all USE FROM and REFERENCE FROM declarations)
+
+== Validation Levels
+
+=== Level 1: Basic Validation (Always Performed)
+
+This is the default validation level, performed even without any flags.
+
+**Checks performed:**
+
+File existence::
+All schemas with `path:` fields must have files that exist on disk
+
+Path completeness::
+Warns about schemas without `path:` fields (unresolved schemas)
+
+YAML syntax::
+Manifest file must be valid YAML
+
+[example]
+.Example: Basic validation
+====
+[source,bash]
+----
+$ expressir manifest validate activity_manifest.yaml
+
+Validating manifest: activity_manifest.yaml...
+✓ Manifest is valid
+  Total schemas: 42
+  Resolved schemas: 41
+  Unresolved schemas: 1
+
+Warnings (1):
+  - Schema 'Activity_method_mim' has no path specified - please provide path
+----
+====
+
+=== Level 2: Referential Integrity (--check-references)
+
+When you add the `--check-references` flag, validation also verifies that all schema dependencies can be resolved.
+
+**Additional checks:**
+
+USE FROM references::
+Every `USE FROM schema_name` declaration must reference a schema in the manifest
+
+REFERENCE FROM references::
+Every `REFERENCE FROM schema_name` declaration must reference a schema in the manifest
+
+Schema name matching::
+Schema names in the manifest must match actual SCHEMA declarations in files
+
+Dependency completeness::
+All transitive dependencies must be included
+
+[example]
+.Example: Referential integrity validation
+====
+[source,bash]
+----
+$ expressir manifest validate activity_manifest.yaml --check-references
+
+Validating manifest: activity_manifest.yaml...
+Checking referential integrity...
+Validating referential integrity for 42 schemas...
+
+  USE FROM action_schema (in Activity_mim): ✓ action_schema.exp
+  REFERENCE FROM basic_attribute_schema (in action_schema): ✓ basic_attribute_schema.exp
+  ...
+  REFERENCE FROM support_resource_schema (in topology_schema): ✓ support_resource_schema.exp
+✓ Manifest is valid
+  Total schemas: 42
+  Resolved schemas: 42
+
+All references resolved successfully!
+----
+====
+
+== Understanding Validation Output
+
+=== Success Output
+
+When validation passes completely:
+
+[source]
+----
+✓ Manifest is valid
+  Total schemas: 42
+  Resolved schemas: 42
+----
+
+**Meaning:**
+
+* All file paths exist
+* All schemas have paths (if basic validation)
+* All references resolve (if `--check-references`)
+
+=== Warning Output
+
+Warnings don't fail validation but indicate potential issues:
+
+[source]
+----
+✓ Manifest is valid
+  Total schemas: 42
+  Resolved schemas: 41
+  Unresolved schemas: 1
+
+Warnings (1):
+  - Schema 'Activity_method_mim' has no path specified - please provide path
+----
+
+**Common warnings:**
+
+* Unresolved schemas (missing `path:`)
+* Schemas in manifest but not referenced (orphaned schemas)
+
+=== Error Output
+
+Errors cause validation to fail:
+
+[source]
+----
+✗ Manifest validation failed
+
+Errors (3):
+  - File not found: /path/to/missing_schema.exp
+  - Cannot resolve USE FROM geometric_model_schema in action_schema
+  - Schema name mismatch: manifest has 'old_name', file contains 'new_name'
+----
+
+**Common errors:**
+
+* Missing files
+* Unresolvable references
+* Schema name mismatches
+
+== Step-by-Step: Validating a Manifest
+
+=== Step 1: Basic Validation
+
+Always start with basic validation:
+
+[source,bash]
+----
+expressir manifest validate activity_manifest.yaml --verbose
+----
+
+**Expected output (success):**
+[source]
+----
+Validating manifest: activity_manifest.yaml...
+Checking file existence for 41 schemas...
+  ✓ All schema files exist
+✓ Manifest is valid
+  Total schemas: 42
+  Resolved schemas: 41
+  Unresolved schemas: 1
+
+Warnings (1):
+  - Schema 'Activity_method_mim' has no path specified
+----
+
+=== Step 2: Fix Any Warnings
+
+If you see unresolved schema warnings:
+
+**Option 1: Use manifest resolve**
+[source,bash]
+----
+expressir manifest resolve activity_manifest.yaml -o resolved.yaml
+----
+
+**Option 2: Manually add paths**
+[source,bash]
+----
+vim activity_manifest.yaml
+# Add: path: /path/to/Activity_method_mim.exp
+----
+
+=== Step 3: Validate with Reference Checking
+
+Once basic validation passes, check references:
+
+[source,bash]
+----
+expressir manifest validate activity_manifest.yaml --check-references --verbose
+----
+
+**Expected output (success):**
+[source]
+----
+Validating manifest: activity_manifest.yaml...
+Checking referential integrity...
+Validating referential integrity for 42 schemas...
+
+  Parsing schema files...
+    [1/42] Activity_mim.exp ✓
+    [2/42] action_schema.exp ✓
+    ...
+    [42/42] topology_schema.exp ✓
+
+  Checking references...
+    USE FROM action_schema (in Activity_mim): ✓
+    REFERENCE FROM basic_attribute_schema (in action_schema): ✓
+    ...
+    
+✓ Manifest is valid
+  Total schemas: 42
+  Resolved schemas: 42
+
+All references resolved successfully!
+----
+
+=== Step 4: Address Any Reference Errors
+
+If reference checking fails:
+
+[source]
+----
+✗ Manifest validation failed
+
+Errors (2):
+  - Cannot resolve USE FROM geometric_model_schema in action_schema
+  - Cannot resolve REFERENCE FROM measure_schema in activity_schema
+----
+
+**Solutions:**
+
+1. Add missing schemas to manifest
+2. Check if schema names match file contents
+3. Verify all dependencies are included
+
+== Common Validation Scenarios
+
+=== Scenario 1: Missing File
+
+**Error:**
+[source]
+----
+Errors (1):
+  - File not found: /path/to/schemas/action_schema.exp
+----
+
+**Causes:**
+
+* Incorrect path in manifest
+* File was moved or deleted
+* Typo in path
+
+**Solutions:**
+
+1. **Verify file exists:**
+   ```bash
+   ls -l /path/to/schemas/action_schema.exp
+   ```
+
+2. **Find correct location:**
+   ```bash
+   find ~/schemas -name "action_schema.exp"
+   ```
+
+3. **Update manifest:**
+   ```yaml
+   action_schema:
+     path: /correct/path/to/action_schema.exp
+   ```
+
+4. **Re-validate:**
+   ```bash
+   expressir manifest validate manifest.yaml
+   ```
+
+=== Scenario 2: Unresolved Reference
+
+**Error (with --check-references):**
+[source]
+----
+Errors (1):
+  - Cannot resolve USE FROM geometric_model_schema in action_schema
+----
+
+**Meaning:** The file `action_schema.exp` contains `USE FROM geometric_model_schema;` but `geometric_model_schema` is not in the manifest.
+
+**Solutions:**
+
+1. **Add to manifest manually:**
+   ```yaml
+   geometric_model_schema:
+     path: /path/to/geometric_model_schema.exp
+   ```
+
+2. **Or recreate manifest with better base directories:**
+   ```bash
+   expressir manifest create action_schema.exp -o manifest.yaml \
+     --base-dirs /comprehensive/schema/directory
+   ```
+
+3. **Or use resolve command:**
+   ```bash
+   expressir manifest resolve manifest.yaml -o resolved.yaml \
+     --base-dirs /additional/directory
+   ```
+
+=== Scenario 3: Schema Name Mismatch
+
+**Error:**
+[source]
+----
+Errors (1):
+  - Schema name mismatch: manifest has 'action_schema', file contains 'Action_Schema'
+----
+
+**Cause:** The SCHEMA declaration in the file doesn't match the manifest key.
+
+**Solutions:**
+
+1. **Check actual schema name:**
+   ```bash
+   grep "^SCHEMA " /path/to/action_schema.exp
+   ```
+
+2. **Update manifest to match:**
+   ```yaml
+   # Change from:
+   action_schema:
+     path: /path/to/action_schema.exp
+   
+   # To:
+   Action_Schema:
+     path: /path/to/action_schema.exp
+   ```
+
+=== Scenario 4: Circular Dependencies
+
+**Output (with --verbose):**
+[source]
+----
+Validating referential integrity for 42 schemas...
+  ...
+  Circular reference detected: measure_schema (valid schema-level circular dependency)
+  ...
+✓ Manifest is valid
+----
+
+**Meaning:** Circular dependencies are **valid** in EXPRESS at the schema level. This is not an error.
+
+**No action needed** - the validation passes correctly.
+
+== Verbose Mode Details
+
+With `--verbose`, you see every step:
+
+[source,bash]
+----
+$ expressir manifest validate manifest.yaml --check-references --verbose
+
+Validating manifest: manifest.yaml...
+
+Step 1: Checking YAML syntax
+  ✓ Valid YAML format
+
+Step 2: Checking file existence
+  Checking 42 schema files...
+    [1/42] /path/to/Activity_mim.exp ✓
+    [2/42] /path/to/action_schema.exp ✓
+    ...
+  ✓ All files exist
+
+Step 3: Checking referential integrity
+  Parsing schema files...
+    [1/42] Parsing Activity_mim.exp... ✓
+    [2/42] Parsing action_schema.exp... ✓
+    ...
+  
+  Validating references...
+    Checking Activity_mim:
+      ✓ USE FROM action_schema
+      ✓ USE FROM basic_attribute_schema
+      ...
+    Checking action_schema:
+      ✓ REFERENCE FROM basic_attribute_schema
+      ✓ REFERENCE FROM support_resource_schema
+      ...
+
+✓ Manifest is valid
+  Total schemas: 42
+  Resolved schemas: 42
+  
+All references resolved successfully!
+----
+
+== Pre-Package Validation Workflow
+
+Before building a package, always validate:
+
+[source,bash]
+----
+# Step 1: Basic validation
+expressir manifest validate manifest.yaml
+# Fix any errors
+
+# Step 2: Reference validation
+expressir manifest validate manifest.yaml --check-references
+# Fix any errors
+
+# Step 3: Build package
+expressir package build --manifest manifest.yaml output.ler --validate
+----
+
+This ensures:
+
+* All files exist
+* All references resolve
+* Package will build successfully
+
+== Automating Validation
+
+=== In Shell Scripts
+
+[source,bash]
+----
+#!/bin/bash
+set -e  # Exit on error
+
+echo "Validating manifest..."
+expressir manifest validate manifest.yaml --check-references --verbose
+
+if [ $? -eq 0 ]; then
+    echo "Validation passed! Building package..."
+    expressir package build --manifest manifest.yaml output.ler
+else
+    echo "Validation failed! Fix errors before building."
+    exit 1
+fi
+----
+
+=== In CI/CD Pipelines
+
+[source,yaml]
+----
+# GitHub Actions example
+- name: Validate manifest
+  run: |
+    expressir manifest validate schema_manifest.yaml \
+      --check-references \
+      --verbose
+
+- name: Build package
+  if: success()
+  run: |
+    expressir package build \
+      --manifest schema_manifest.yaml \
+      release.ler
+----
+
+=== In Rake Tasks
+
+[source,ruby]
+----
+# Rakefile
+task :validate_manifest do
+  sh "expressir manifest validate manifest.yaml --check-references"
+end
+
+task :build_package => :validate_manifest do
+  sh "expressir package build --manifest manifest.yaml output.ler"
+end
+----
+
+== Troubleshooting
+
+=== Validation Hangs or is Very Slow
+
+**Problem:** Validation with `--check-references` takes very long or appears to hang
+
+**Causes:**
+
+* Very large manifest (100+ schemas)
+* Schemas with syntax errors
+* Circular dependency loops (rare)
+
+**Solutions:**
+
+1. **Start without `--check-references`:**
+   ```bash
+   expressir manifest validate manifest.yaml --verbose
+   ```
+
+2. **Check for syntax errors in schemas:**
+   ```bash
+   expressir validate /path/to/suspect_schema.exp
+   ```
+
+3. **Validate incrementally** (comment out schemas in manifest to narrow down the issue)
+
+=== False Positive: "Cannot resolve" Error
+
+**Problem:** Validation claims a schema isn't in the manifest, but it is
+
+**Causes:**
+
+* Case sensitivity - `Action_Schema` vs `action_schema`
+* Schema name in file differs from manifest key
+
+**Solutions:**
+
+1. **Check exact schema name in file:**
+   ```bash
+   grep "^SCHEMA " /path/to/schema.exp
+   ```
+
+2. **Ensure manifest key matches exactly:**
+   ```yaml
+   Action_Schema:  # Must match case exactly
+     path: /path/to/schema.exp
+   ```
+
+=== Warnings Won't Go Away
+
+**Problem:** Unresolved schema warnings persist after adding paths
+
+**Cause:** Manifest file wasn't saved or wrong file edited
+
+**Solutions:**
+
+1. **Verify file was saved:**
+   ```bash
+   grep "Activity_method_mim" manifest.yaml -A2
+   ```
+   Should show the path you added.
+
+2. **Check you're validating the right file:**
+   ```bash
+   expressir manifest validate /full/path/to/manifest.yaml
+   ```
+
+== Best Practices
+
+=== Always Validate Before Building
+
+Never skip validation:
+
+[source,bash]
+----
+# Good workflow
+expressir manifest validate manifest.yaml --check-references
+expressir package build --manifest manifest.yaml output.ler
+
+# Bad workflow (skipping validation)
+expressir package build --manifest manifest.yaml output.ler  # May fail!
+----
+
+=== Use --verbose During Development
+
+See what's happening:
+
+[source,bash]
+----
+expressir manifest validate manifest.yaml --check-references --verbose > validation.log 2>&1
+----
+
+=== Validate After Every Change
+
+After modifying manifest:
+
+[source,bash]
+----
+vim manifest.yaml
+expressir manifest validate manifest.yaml --check-references
+----
+
+=== Store Validation Results
+
+Keep logs for troubleshooting:
+
+[source,bash]
+----
+expressir manifest validate manifest.yaml --check-references --verbose \
+  | tee validation_$(date +%Y%m%d_%H%M%S).log
+----
+
+== Complete Validation Example
+
+Here's a complete validation workflow with all error types:
+
+[source,bash]
+----
+# Initial validation
+$ expressir manifest validate manifest.yaml
+
+✗ Manifest validation failed
+
+Errors (2):
+  - File not found: /old/path/action_schema.exp
+  - File not found: /old/path/approval_schema.exp
+
+# Fix file paths
+$ vim manifest.yaml
+# Update paths to correct locations
+
+# Validate again
+$ expressir manifest validate manifest.yaml
+
+✓ Manifest is valid
+  Total schemas: 42
+  Resolved schemas: 40
+  Unresolved schemas: 2
+
+Warnings (2):
+  - Schema 'Activity_method_mim' has no path specified
+  - Schema 'geometric_model_schema' has no path specified
+
+# Resolve missing schemas
+$ expressir manifest resolve manifest.yaml -o resolved.yaml --verbose
+
+Resolving schema paths in: manifest.yaml...
+  Activity_method_mim: ✓ found at activity_method/mim.exp
+  geometric_model_schema: ✓ found at geometric_model_schema.exp
+✓ Manifest resolved: resolved.yaml
+
+# Validate resolved manifest
+$ expressir manifest validate resolved.yaml
+
+✓ Manifest is valid
+  Total schemas: 42
+  Resolved schemas: 42
+
+# Check referential integrity
+$ expressir manifest validate resolved.yaml --check-references --verbose
+
+Validating manifest: resolved.yaml...
+Checking referential integrity...
+Validating referential integrity for 42 schemas...
+  ...
+✓ Manifest is valid
+  Total schemas: 42
+  Resolved schemas: 42
+
+All references resolved successfully!
+
+# Build package
+$ expressir package build --manifest resolved.yaml output.ler --validate
+✓ Package created: output.ler
+----
+
+== Next Steps
+
+Now that you can validate manifests:
+
+**Build your package**::
+See link:../../pages/ler-packages.html#building-from-manifests[Building from Manifests]
+
+**Understand the complete workflow**::
+Review link:index.html[Manifest Workflows] for best practices
+
+**Troubleshoot issues**::
+Return to link:creating-manifests.html[Creating Manifests] or link:resolving-manifests.html[Resolving Manifests] as needed
+
+== Bibliography
+
+* link:../../pages/schema-manifests.html#validating-a-manifest[Manifest Validation Reference]
+* link:creating-manifests.html[Creating Manifests]
+* link:resolving-manifests.html[Resolving Manifests]
+* link:index.html[Manifest Workflows Overview]
+* link:../../pages/ler-packages.html[LER Packages]

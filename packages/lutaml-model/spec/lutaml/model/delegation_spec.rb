@@ -1,0 +1,409 @@
+require "spec_helper"
+require_relative "../../../lib/lutaml/model"
+
+module Delegation
+  # Namespace classes
+  class DelegationNamespace12 < Lutaml::Xml::W3c::XmlNamespace
+    uri "https://example.com/delegation/1.2"
+    prefix_default "del"
+  end
+
+  class DelegationNamespace11 < Lutaml::Xml::W3c::XmlNamespace
+    uri "https://example.com/delegation/1.1"
+    prefix_default "del1"
+  end
+
+  class TypeNamespace12 < Lutaml::Xml::W3c::XmlNamespace
+    uri "https://example.com/type/1.2"
+    element_form_default :qualified
+  end
+
+  class Glaze < Lutaml::Model::Serializable
+    attribute :color, Lutaml::Model::Type::String
+    attribute :finish, Lutaml::Model::Type::String
+  end
+
+  class Ceramic < Lutaml::Model::Serializable
+    attribute :type, Lutaml::Model::Type::String
+    attribute :glaze, Glaze
+
+    json do
+      map "type", to: :type
+      map "color", to: :color, delegate: :glaze
+      map "finish", to: :finish, delegate: :glaze
+    end
+
+    yaml do
+      map "type", to: :type
+      map "color", to: :color, delegate: :glaze
+      map "finish", to: :finish, delegate: :glaze
+    end
+
+    toml do
+      map "type", to: :type
+      map "color", to: :color, delegate: :glaze
+      map "finish", to: :finish, delegate: :glaze
+    end
+
+    xml do
+      element "delegation"
+      namespace DelegationNamespace12
+      map_element "type", to: :type
+      map_element "color", to: :color, delegate: :glaze
+      map_element "finish", to: :finish, delegate: :glaze
+    end
+  end
+
+  # Create custom types for namespace support using xml do block syntax
+  class DelegationType12String < Lutaml::Model::Type::String
+    xml do
+      namespace TypeNamespace12
+    end
+  end
+
+  class DelegationDateType < Lutaml::Model::Type::Date
+    xml do
+      namespace DelegationNamespace12
+    end
+  end
+
+  class NamespacedTypeCeramic < Lutaml::Model::Serializable
+    attribute :type, DelegationType12String
+    attribute :glaze, Glaze
+
+    yaml do
+      map "type", to: :type
+      map "color", to: :color, delegate: :glaze
+      map "finish", to: :finish, delegate: :glaze
+    end
+
+    xml do
+      element "delegation"
+      namespace TypeNamespace12
+      map_element "type", to: :type
+      map_element "color", to: :color, delegate: :glaze
+      map_element "finish", to: :finish, delegate: :glaze
+    end
+  end
+
+  # Separate test class for attribute namespace testing
+  class CeramicWithDateAttribute < Lutaml::Model::Serializable
+    attribute :type, Lutaml::Model::Type::String
+    attribute :glaze, Glaze
+    attribute :date, DelegationDateType
+
+    yaml do
+      map "type", to: :type
+      map "color", to: :color, delegate: :glaze
+      map "finish", to: :finish, delegate: :glaze
+    end
+
+    xml do
+      element "delegation"
+      map_attribute "date", to: :date
+      map_element "type", to: :type
+      map_element "color", to: :color, delegate: :glaze
+      map_element "finish", to: :finish, delegate: :glaze
+    end
+  end
+
+  # Separate test class for default namespace testing
+  class CeramicWithDefaultNamespace < Lutaml::Model::Serializable
+    attribute :type, Lutaml::Model::Type::String
+    attribute :glaze, Glaze
+
+    yaml do
+      map "type", to: :type
+      map "color", to: :color, delegate: :glaze
+      map "finish", to: :finish, delegate: :glaze
+    end
+
+    xml do
+      element "delegation"
+      namespace DelegationNamespace12
+      map_element "type", to: :type
+      map_element "color", to: :color, delegate: :glaze
+      map_element "finish", to: :finish, delegate: :glaze
+    end
+  end
+
+  # Separate test class for prefixed namespace testing
+  class CeramicWithPrefixedNamespace < Lutaml::Model::Serializable
+    attribute :type, Lutaml::Model::Type::String
+    attribute :glaze, Glaze
+
+    yaml do
+      map "type", to: :type
+      map "color", to: :color, delegate: :glaze
+      map "finish", to: :finish, delegate: :glaze
+    end
+
+    xml do
+      element "delegation"
+      namespace DelegationNamespace12
+      map_element "type", to: :type
+      map_element "color", to: :color, delegate: :glaze
+      map_element "finish", to: :finish, delegate: :glaze
+    end
+  end
+
+  # Separate test class for inherited element namespace testing
+  # Note: :inherit was never a supported API feature, this tests that elements
+  # in the same namespace as parent inherit naturally, not through :inherit
+  class CeramicWithInheritedElementNamespace < Lutaml::Model::Serializable
+    attribute :type, Lutaml::Model::Type::String
+    attribute :glaze, Glaze
+
+    yaml do
+      map "type", to: :type
+      map "color", to: :color, delegate: :glaze
+      map "finish", to: :finish, delegate: :glaze
+    end
+
+    xml do
+      element "delegation"
+      namespace DelegationNamespace12
+      map_element "type", to: :type # Inherits parent namespace naturally
+      map_element "color", to: :color, delegate: :glaze
+      map_element "finish", to: :finish, delegate: :glaze
+    end
+  end
+
+  # Separate test class for multiple namespace testing
+  class CeramicWithMultipleNamespaces < Lutaml::Model::Serializable
+    attribute :type, Lutaml::Model::Type::String
+    attribute :glaze, Glaze
+    attribute :date, DelegationDateType
+
+    yaml do
+      map "type", to: :type
+      map "color", to: :color, delegate: :glaze
+      map "finish", to: :finish, delegate: :glaze
+    end
+
+    xml do
+      element "delegation"
+      namespace DelegationNamespace11
+      map_attribute "date", to: :date
+      map_element "type", to: :type # Inherits parent namespace naturally
+      map_element "color", to: :color, delegate: :glaze
+      map_element "finish", to: :finish, delegate: :glaze
+    end
+  end
+end
+
+RSpec.describe Delegation do
+  let(:yaml_data) do
+    <<~YAML
+      type: Vase
+      color: Blue
+      finish: Glossy
+    YAML
+  end
+
+  let(:delegation1) { Delegation::NamespacedTypeCeramic.from_yaml(yaml_data) }
+  let(:delegation) { Delegation::Ceramic.from_yaml(yaml_data) }
+
+  it "deserializes from YAML with delegation" do
+    expect(delegation.type).to eq("Vase")
+    expect(delegation.glaze.color).to eq("Blue")
+    expect(delegation.glaze.finish).to eq("Glossy")
+  end
+
+  it "serializes to YAML with delegation" do
+    expected_yaml = <<~YAML
+      ---
+      type: Vase
+      color: Blue
+      finish: Glossy
+    YAML
+    expect(delegation.to_yaml.strip).to eq(expected_yaml.strip)
+  end
+
+  it "serializes to JSON with delegation and filtering" do
+    expected_json = {
+      type: "Vase",
+      color: "Blue",
+    }.to_json
+
+    generated_json = delegation.to_json(only: %i[type color])
+
+    expect(JSON.parse(generated_json)).to eq(JSON.parse(expected_json))
+  end
+
+  it "serializes to JSON with pretty formatting" do
+    expected_pretty_json = <<~JSON.chomp
+      {
+        "type": "Vase",
+        "color": "Blue"
+      }
+    JSON
+
+    generated_json = delegation.to_json(only: %i[type color], pretty: true)
+
+    expect(generated_json).to eq(expected_pretty_json)
+  end
+
+  it "serializes to XML with pretty formatting" do
+    # W3C Rule: When parent has default namespace (xmlns="..."),
+    # child elements in blank namespace need xmlns="" to opt out.
+    # Optimization: Only FIRST child needs xmlns="", siblings inherit blank namespace
+    expected_pretty_xml = <<~XML
+      <delegation xmlns="https://example.com/delegation/1.2">
+        <type xmlns="">Vase</type>
+        <color>Blue</color>
+        <finish>Glossy</finish>
+      </delegation>
+    XML
+
+    generated_xml = delegation.to_xml(pretty: true).strip
+
+    expect(generated_xml).to be_xml_equivalent_to(expected_pretty_xml.strip)
+  end
+
+  it "does not provide XML declaration if no declaration option provided" do
+    xml_data = delegation.to_xml(pretty: true)
+    expect(xml_data).not_to include("<?xml")
+  end
+
+  it "provides XML declaration with default version and encoding" \
+     "if declaration: true option provided" do
+    xml_data = delegation.to_xml(pretty: true, declaration: true)
+    expect(xml_data).to include('<?xml version="1.0" encoding="UTF-8"?>')
+  end
+
+  it "provides XML declaration with specified version" \
+     "if declaration: '1.1' option provided" do
+    xml_data = delegation.to_xml(pretty: true, declaration: "1.1")
+    expect(xml_data).to include('<?xml version="1.1" encoding="UTF-8"?>')
+  end
+
+  it "provides XML declaration with UTF-8 encoding" \
+     "if encoding: 'UTF-8' option provided" do
+    xml_data = delegation.to_xml(
+      pretty: true,
+      declaration: true,
+      encoding: "UTF-8",
+    )
+    expect(xml_data).to include('<?xml version="1.0" encoding="UTF-8"?>')
+  end
+
+  it "provides XML declaration with specified encoding" \
+     "if encoding: 'ASCII' option provided" do
+    xml_data = delegation.to_xml(
+      pretty: true,
+      declaration: true,
+      encoding: "ASCII",
+    )
+    expect(xml_data).to include('<?xml version="1.0" encoding="ASCII"?>')
+  end
+
+  it "sets the namespace of a particular attribute inside <delegation>" do
+    delegation = Delegation::CeramicWithDateAttribute.new(
+      type: "Vase",
+      glaze: Delegation::Glaze.new(
+        color: "Blue",
+        finish: "Glossy",
+      ),
+      date: "2024-06-08",
+    )
+
+    xml_data = delegation.to_xml(
+      pretty: true,
+      declaration: true,
+      encoding: "UTF-8",
+    )
+
+    # Check that the namespace is present (string namespaces use auto-generated prefixes)
+    expect(xml_data).to include("xmlns")
+    expect(xml_data).to include("https://example.com/delegation/1.2")
+    expect(xml_data).to include('date="2024-06-08"')
+  end
+
+  it "sets the default namespace of <delegation>" do
+    delegation = Delegation::CeramicWithDefaultNamespace.from_yaml(yaml_data)
+    xml_data = delegation.to_xml(
+      pretty: true,
+      declaration: true,
+      encoding: "UTF-8",
+    )
+    # Should have default namespace declaration
+    expect(xml_data).to include('xmlns="https://example.com/delegation/1.2"')
+    # Root element should be <delegation> (not prefixed)
+    expect(xml_data).to match(/<delegation[^>]*>/)
+  end
+
+  it "sets the namespace of <delegation> with a prefix" do
+    delegation = Delegation::CeramicWithPrefixedNamespace.from_yaml(yaml_data)
+    xml_data = delegation.to_xml(
+      pretty: true,
+      declaration: true,
+      encoding: "UTF-8",
+      prefix: true, # Use prefix: true to get prefixed namespace
+    )
+
+    # With prefix: true, ONLY prefixed xmlns is declared (never declare twice)
+    expect(xml_data).not_to include('xmlns="https://example.com/delegation/1.2"')
+    expect(xml_data).to include('xmlns:del="https://example.com/delegation/1.2"')
+    expect(xml_data).to include("<del:delegation")
+  end
+
+  it "sets the namespace of <delegation> and also" \
+     "a particular element inside using :inherit" do
+    delegation = Delegation::CeramicWithInheritedElementNamespace.from_yaml(yaml_data)
+    xml_data = delegation.to_xml(
+      pretty: true,
+      declaration: true,
+      encoding: "UTF-8",
+      prefix: true, # Use prefix: true to get prefixed namespace
+    )
+
+    # W3C-compliant: With element_form_default: :unqualified (default),
+    # child elements without explicit namespace are in blank namespace
+    expect(xml_data).to include('xmlns:del="https://example.com/delegation/1.2"')
+    expect(xml_data).to include("<del:delegation")
+    # Child element with no explicit namespace is in blank namespace
+    expect(xml_data).to include("<type>Vase</type>")
+  end
+
+  it "sets the namespace of <delegation> and also" \
+     "a particular attribute inside using :inherit" do
+    delegation = Delegation::CeramicWithMultipleNamespaces.new(
+      type: "Vase",
+      glaze: Delegation::Glaze.new(
+        color: "Blue",
+        finish: "Glossy",
+      ),
+      date: "2024-06-08",
+    )
+
+    xml_data = delegation.to_xml(
+      pretty: true,
+      declaration: true,
+      encoding: "UTF-8",
+      prefix: true, # Use prefix: true to get prefixed namespace
+    )
+
+    # W3C-compliant: With element_form_default: :unqualified (default),
+    # child elements without explicit namespace are in blank namespace
+    expect(xml_data).to include('xmlns:del1="https://example.com/delegation/1.1"')
+    expect(xml_data).to include('xmlns:del="https://example.com/delegation/1.2"')
+    expect(xml_data).to include('del:date="2024-06-08"')
+    expect(xml_data).to include("<del1:delegation")
+    # Child element with no explicit namespace is in blank namespace
+    expect(xml_data).to include("<type>Vase</type>")
+  end
+
+  it "sets the namespace of a particular element inside Ceramic" do
+    delegation1 = Delegation::NamespacedTypeCeramic.from_yaml(yaml_data)
+    xml_data = delegation1.to_xml(
+      pretty: true,
+      declaration: true,
+      encoding: "UTF-8",
+    )
+    # TypeNamespace12 has no prefix_default, so uses default format
+    expect(xml_data).to include('xmlns="https://example.com/type/1.2"')
+    # The type element inherits the parent's namespace (W3C-compliant)
+    expect(xml_data).to include("<type>Vase</type>")
+  end
+end

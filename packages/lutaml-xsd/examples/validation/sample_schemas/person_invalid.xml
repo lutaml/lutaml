@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<p:person xmlns:p="http://example.com/person" id="P002">
+  <p:name>Jane Smith</p:name>
+  <!-- Age is out of range (>150) -->
+  <p:age>200</p:age>
+  <!-- Email has invalid format -->
+  <p:email>invalid-email</p:email>
+  <!-- Missing required country element in address -->
+  <p:address>
+    <p:street>456 Oak Avenue</p:street>
+    <p:city>Metropolis</p:city>
+    <p:postalCode>54321</p:postalCode>
+  </p:address>
+</p:person>

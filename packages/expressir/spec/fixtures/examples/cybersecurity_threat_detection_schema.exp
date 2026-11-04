@@ -1,0 +1,195 @@
+(*
+ACME 5000 No. 10080
+
+EXPRESS Source:
+ACME 5000-130 ed1 Cybersecurity threat detection - Threat detection schema
+
+The following permission notice and disclaimer shall be included in all copies of this EXPRESS schema ("the Schema"),
+and derivations of the Schema:
+
+Copyright Ribose 2025  All rights reserved
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+In addition, any modified copy of the Schema shall include the following notice:
+
+THIS SCHEMA HAS BEEN MODIFIED FROM THE SCHEMA DEFINED IN
+ACME 5000-130 ed1 Cybersecurity threat detection - Threat detection schema
+AND SHOULD NOT BE INTERPRETED AS COMPLYING WITH THAT STANDARD
+*)
+
+SCHEMA cybersecurity_threat_detection_schema '{acme standard 5000 part(130) version(1) object(1) cybersecurity-threat-detection-schema(1)}';
+
+TYPE threat_severity_level = ENUMERATION OF
+     (low,
+      medium,
+      high,
+      critical);
+END_TYPE;
+
+TYPE threat_category = ENUMERATION OF
+     (malware,
+      phishing,
+      ddos_attack,
+      data_breach,
+      insider_threat,
+      ransomware,
+      social_engineering,
+      zero_day_exploit,
+      brute_force_attack,
+      man_in_the_middle);
+END_TYPE;
+
+TYPE detection_method = ENUMERATION OF
+     (signature_based,
+      anomaly_based,
+      behavioral_analysis,
+      machine_learning,
+      heuristic_analysis,
+      reputation_based);
+END_TYPE;
+
+TYPE threat_status = ENUMERATION OF
+     (detected,
+      investigating,
+      confirmed,
+      mitigated,
+      resolved,
+      false_positive);
+END_TYPE;
+
+TYPE network_protocol = ENUMERATION OF
+     (tcp,
+      udp,
+      icmp,
+      http,
+      https,
+      ftp,
+      smtp,
+      dns);
+END_TYPE;
+
+ENTITY security_event;
+  event_id : STRING;
+  timestamp : STRING;
+  source_ip : OPTIONAL STRING;
+  destination_ip : OPTIONAL STRING;
+  protocol : OPTIONAL network_protocol;
+  port : OPTIONAL INTEGER;
+  event_description : STRING;
+WHERE
+  WR1: (NOT EXISTS(port)) OR ((port > 0) AND (port <= 65535));
+END_ENTITY;
+
+ENTITY threat_indicator;
+  indicator_id : STRING;
+  indicator_type : STRING;
+  indicator_value : STRING;
+  confidence_score : REAL;
+  first_seen : STRING;
+  last_seen : STRING;
+WHERE
+  WR1: (confidence_score >= 0.0) AND (confidence_score <= 1.0);
+END_ENTITY;
+
+ENTITY threat_detection;
+  detection_id : STRING;
+  threat_name : STRING;
+  category : threat_category;
+  severity : threat_severity_level;
+  detection_time : STRING;
+  method : detection_method;
+  status : threat_status;
+  affected_assets : LIST [0:?] OF STRING;
+  indicators : LIST [1:?] OF threat_indicator;
+  events : LIST [1:?] OF security_event;
+  description : OPTIONAL STRING;
+END_ENTITY;
+
+ENTITY vulnerability;
+  vulnerability_id : STRING;
+  cve_id : OPTIONAL STRING;
+  severity_score : REAL;
+  affected_system : STRING;
+  description : STRING;
+  patch_available : BOOLEAN;
+  discovery_date : STRING;
+WHERE
+  WR1: (severity_score >= 0.0) AND (severity_score <= 10.0);
+END_ENTITY;
+
+ENTITY security_alert;
+  alert_id : STRING;
+  alert_type : STRING;
+  priority : threat_severity_level;
+  message : STRING;
+  timestamp : STRING;
+  source_system : STRING;
+  acknowledged : BOOLEAN;
+  assigned_to : OPTIONAL STRING;
+END_ENTITY;
+
+ENTITY incident_response;
+  incident_id : STRING;
+  related_detection : threat_detection;
+  response_team : STRING;
+  start_time : STRING;
+  end_time : OPTIONAL STRING;
+  actions_taken : LIST [0:?] OF STRING;
+  outcome : OPTIONAL STRING;
+  lessons_learned : OPTIONAL STRING;
+END_ENTITY;
+
+ENTITY threat_intelligence;
+  intelligence_id : STRING;
+  source : STRING;
+  threat_actor : OPTIONAL STRING;
+  campaign_name : OPTIONAL STRING;
+  tactics : LIST [0:?] OF STRING;
+  techniques : LIST [0:?] OF STRING;
+  procedures : LIST [0:?] OF STRING;
+  iocs : LIST [0:?] OF threat_indicator;
+  publication_date : STRING;
+END_ENTITY;
+
+ENTITY security_policy;
+  policy_id : STRING;
+  policy_name : STRING;
+  description : STRING;
+  rules : LIST [1:?] OF security_rule;
+  effective_date : STRING;
+  expiry_date : OPTIONAL STRING;
+  compliance_framework : OPTIONAL STRING;
+END_ENTITY;
+
+ENTITY security_rule;
+  rule_id : STRING;
+  rule_name : STRING;
+  condition : STRING;
+  action : STRING;
+  enabled : BOOLEAN;
+  priority : INTEGER;
+WHERE
+  WR1: priority > 0;
+END_ENTITY;
+
+ENTITY risk_assessment;
+  assessment_id : STRING;
+  asset : STRING;
+  threats : LIST [1:?] OF threat_detection;
+  vulnerabilities : LIST [0:?] OF vulnerability;
+  risk_score : REAL;
+  risk_level : threat_severity_level;
+  mitigation_recommendations : LIST [0:?] OF STRING;
+  assessment_date : STRING;
+WHERE
+  WR1: (risk_score >= 0.0) AND (risk_score <= 100.0);
+END_ENTITY;
+
+END_SCHEMA; -- cybersecurity_threat_detection_schema

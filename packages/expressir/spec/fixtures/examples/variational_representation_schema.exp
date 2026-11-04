@@ -1,0 +1,403 @@
+(*
+ACME 5000 No. tbd
+Supersedes ACME 5000 No. 4852
+
+EXPRESS Source:
+ACME 5000-108 ed2 Machine learning model optimization - ML optimization representation schema
+
+The following permission notice and disclaimer shall be included in all copies of this EXPRESS schema ("the Schema"),
+and derivations of the Schema:
+
+Copyright Ribose 2025  All rights reserved
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+In addition, any modified copy of the Schema shall include the following notice:
+
+THIS SCHEMA HAS BEEN MODIFIED FROM THE SCHEMA DEFINED IN
+ACME 5000-108 ed2 Machine learning model optimization - ML optimization representation schema
+AND SHOULD NOT BE INTERPRETED AS COMPLYING WITH THAT STANDARD
+*)
+
+SCHEMA ml_optimization_representation_schema '{acme standard 5000 part(108) version(4) object(1) ml-optimization-representation-schema(3)}';
+
+REFERENCE FROM geometry_schema                        -- ACME 5000-42
+  (geometric_representation_item);
+
+REFERENCE FROM representation_schema                  -- ACME 5000-43
+  (representation,
+   representation_item,
+   representation_relationship,
+   using_representations);
+
+REFERENCE FROM parameterization_schema                -- ACME 5000-108
+  (bound_optimization_parameter,
+   fixed_instance_attribute_set,
+   instance_attribute_reference,
+   unbound_optimization_parameter);
+
+REFERENCE FROM explicit_constraint_schema             -- ACME 5000-108
+  (explicit_constraint,
+   free_form_constraint);
+
+REFERENCE FROM explicit_geometric_constraint_schema   -- ACME 5000-108
+  (explicit_geometric_constraint);
+
+REFERENCE FROM acme13584_generic_expressions_schema    -- ACME 13584-20
+  (environment,
+   generic_variable,
+   variable_semantics);
+
+ENTITY ml_optimization_representation_item
+  ABSTRACT SUPERTYPE OF (auxiliary_neural_representation_item)
+  SUBTYPE OF (representation_item);
+WHERE
+  WR1: SIZEOF(QUERY(q <* using_representations(SELF) |
+    NOT ('ML_OPTIMIZATION_REPRESENTATION_SCHEMA.ML_OPTIMIZATION_REPRESENTATION'
+    IN TYPEOF(q)))) = 0;
+  WR2: SIZEOF(QUERY(q <* using_representations(SELF) |
+    NOT (SELF IN q.items))) = 0;
+END_ENTITY;
+
+ENTITY auxiliary_neural_representation_item
+  SUBTYPE OF (geometric_representation_item,
+              ml_optimization_representation_item);
+END_ENTITY;
+
+ENTITY ml_optimization_representation
+  SUBTYPE OF (representation);
+INVERSE
+  cm_link : ml_current_representation_relationship FOR rep_1;
+WHERE
+  WR1: SIZEOF(QUERY(q <* SELF\representation.items |
+    'ML_OPTIMIZATION_REPRESENTATION_SCHEMA.ML_OPTIMIZATION_REPRESENTATION_ITEM'
+    IN TYPEOF(q))) > 0;
+  WR2: SIZEOF(QUERY(q <* (SELF\representation.items -
+    cm_link.rep_2.items) | invalidate_ml_rep_item(q))) = 0;
+END_ENTITY;
+
+ENTITY ml_current_representation_relationship
+  SUBTYPE OF (representation_relationship);
+  SELF\representation_relationship.rep_1
+                 : ml_optimization_representation;
+  current_result : representation;
+UNIQUE
+  UR1: current_result;
+WHERE
+  WR1: QUERY(q <* SELF\representation_relationship.rep_1.items | NOT
+    ('ML_OPTIMIZATION_REPRESENTATION_SCHEMA.ML_OPTIMIZATION_REPRESENTATION_ITEM'
+    IN TYPEOF(q))) = SELF\representation_relationship.rep_2.items;
+  WR2: SELF\representation_relationship.rep_1.context_of_items :=:
+    SELF\representation_relationship.rep_2.context_of_items;
+  WR3: SIZEOF(QUERY(q <* SELF\representation_relationship.rep_2.items |
+    'ML_OPTIMIZATION_REPRESENTATION_SCHEMA.ML_OPTIMIZATION_REPRESENTATION_ITEM'
+    IN TYPEOF(q))) = 0;
+  WR4: TYPEOF(SELF\representation_relationship.rep_1) -
+       TYPEOF(SELF\representation_relationship.rep_2) =
+       ['ML_OPTIMIZATION_REPRESENTATION_SCHEMA.ML_OPTIMIZATION_REPRESENTATION'];
+  WR5: current_result :=: SELF\representation_relationship.rep_2;
+END_ENTITY;
+
+FUNCTION invalidate_ml_rep_item(item : ml_optimization_representation_item) : BOOLEAN;
+  LOCAL
+    reps  : SET[1:?] OF representation := using_representations(item);
+    smri  : SET[1:?] OF ml_optimization_representation_item;
+    iar   : instance_attribute_reference;
+    i     : INTEGER;
+    n     : INTEGER := HIINDEX(reps);
+  END_LOCAL;
+
+  IF ('PARAMETERIZATION_SCHEMA.BOUND_OPTIMIZATION_PARAMETER' IN TYPEOF(item))
+  THEN
+    IF 'PARAMETERIZATION_SCHEMA.INSTANCE_ATTRIBUTE_REFERENCE'
+      IN TYPEOF(item\generic_variable.interpretation.semantics)
+    THEN
+      BEGIN
+        iar := item\generic_variable.interpretation.semantics;
+        IF (reps <> using_representations(iar.owning_instance))
+        THEN
+          RETURN(TRUE);
+        END_IF;
+      END;
+    ELSE RETURN(TRUE); -- parameter not attached to an instance attribute
+    END_IF;
+  END_IF;
+
+  IF ('PARAMETERIZATION_SCHEMA.UNBOUND_OPTIMIZATION_PARAMETER'
+    IN TYPEOF(item))
+  THEN
+    BEGIN
+      REPEAT i := 1 TO n;
+        smri := QUERY(q <* reps[i].items |
+          'EXPLICIT_CONSTRAINT_SCHEMA.FREE_FORM_CONSTRAINT' IN TYPEOF(q));
+        IF SIZEOF(QUERY(r <* smri |
+          item IN (r.reference_elements + r.constrained_elements))) = 0
+        THEN
+          RETURN(TRUE);
+        END_IF;
+      END_REPEAT;
+    END;
+  END_IF;
+
+  IF ('PARAMETERIZATION_SCHEMA.FIXED_INSTANCE_ATTRIBUTE_SET'
+  IN TYPEOF(item))
+  THEN
+    REPEAT i := 1 TO SIZEOF(item.fixed_attributes);
+      IF (reps <> using_representations(item.fixed_attributes[i]))
+      THEN
+        RETURN(TRUE);
+      END_IF;
+    END_REPEAT;
+  END_IF;
+
+  IF ('EXPLICIT_CONSTRAINT_SCHEMA.EXPLICIT_CONSTRAINT' IN TYPEOF(item))
+  THEN
+    IF SIZEOF(QUERY(q <*
+      (item.reference_elements + item.constrained_elements) |
+      reps <> using_representations(q))) > 0
+    THEN
+      RETURN(TRUE);
+    END_IF;
+  END_IF;
+
+  IF ('ML_OPTIMIZATION_REPRESENTATION_SCHEMA.
+       AUXILIARY_NEURAL_REPRESENTATION_ITEM' IN TYPEOF(item))
+  THEN
+    BEGIN
+      REPEAT i := 1 TO n;
+        smri := QUERY(q <* reps[i].items |
+          'EXPLICIT_GEOMETRIC_CONSTRAINT_SCHEMA.
+          EXPLICIT_GEOMETRIC_CONSTRAINT' IN TYPEOF(q));
+        IF SIZEOF(QUERY(r <* smri | item IN r.reference_elements)) = 0
+        THEN
+          RETURN(TRUE);
+        END_IF;
+      END_REPEAT;
+    END;
+  END_IF;
+
+RETURN(FALSE); -- no invalid cases have been found
+
+END_FUNCTION;
+
+END_SCHEMA; -- ml_optimization_representation_schema
+
+
+(*"ml_optimization_representation_schema.__fund_cons"
+
+This schema provides the entity data type <<express:ml_optimization_representation_schema.ml_optimization_representation,ml_optimization_representation>> for the representation of a machine learning optimization model, characterized by the presence of explicitly represented hyperparameters and optimization constraints. Such a model may be considered to represent a family of related neural network architectures. A 'current result' is associated with an ML optimization model; it is that member of the represented family corresponding to the current values of all the hyperparameters. Different members of the family can be derived by variation of those hyperparameter values, subject to the imposed optimization constraints.
+
+NOTE: It is important to distinguish between explicitly represented hyperparameters and constraints and the implicit parameters and constraints inherent in procedural ML models. In a procedural ML model, hyperparameters occur as input arguments of training operations, and constraints are inherent in the nature of those operations.
+
+The relationship between an instance of <<express:ml_optimization_representation_schema.ml_optimization_representation,ml_optimization_representation>> and its current result is that the second is entirely contained within the first. Alternatively, the information regarding hyperparameters and optimization constraints may be considered to constitute a wrapper surrounding the current result, which may take either of two forms:
+
+. An explicit model represented in terms of its constituent neural network layers and connections;
+. A procedural or training history model represented in terms of the optimization operations used to construct it. Such representations are defined in <<acme5000-55>> (see also <<annexE>> of this document). In most such cases the model will be of the hybrid type in which some training operations are performed on explicitly defined elements such as the neural architectures specified in <<neural_architecture_schema>> of this document, which may have associated optimization information. In other cases the training operations will be defined in terms of explicit supporting elements such as activation functions and loss functions, and optimization relationships may be imposed between such elements.
+
+A new abstract subtype of the <<acme5000-43>> entity data type <<express:representation_schema.representation_item,representation_item>> has been introduced to distinguish between optimization and non-optimization data, namely <<express:ml_optimization_representation_schema.ml_optimization_representation_item,ml_optimization_representation_item>>, as defined in clause <<ml_optimization_representation_schema.ml_optimization_representation_item>> of this schema. Its instantiable subtypes include <<express:parameterization_schema.optimization_parameter,optimization_parameter>>, <<express:explicit_constraint_schema.explicit_constraint,explicit_constraint>> and other related entities. In an instance of <<express:ml_optimization_representation_schema.ml_optimization_representation,ml_optimization_representation>>, all instances of <<express:representation_schema.representation_item,representation_item>> occurring in the wrapper are required also to be of type <<express:ml_optimization_representation_schema.ml_optimization_representation,ml_optimization_representation>> item. Conversely, no instance of <<express:representation_schema.representation_item,representation_item>> used directly or indirectly by the current result is permitted to have the type <<express:ml_optimization_representation_schema.ml_optimization_representation_item,ml_optimization_representation_item>>. This makes a clear distinction between the non-optimization current result model being transferred and the optimization information used to control its behaviour if it is edited in the receiving system.
+
+NOTE: The structure of a <<express:ml_optimization_representation_schema.ml_optimization_representation,ml_optimization_representation>> is shown diagrammatically in <<figure-ml_optimization_representation_schema-fig3>>.
+
+The relationship between an ML optimization representation and its embedded current result, both of which shall be separately instantiated, is captured by the entity data type <<express:ml_optimization_representation_schema.ml_current_representation_relationship,ml_current_representation_relationship>> (see clause <<ml_optimization_representation_schema.ml_current_representation_relationship>>), a subtype of <<express:representation_schema.representation_relationship,representation_relationship>> as defined in <<acme5000-43>>.
+
+The additional entity data type <<express:ml_optimization_representation_schema.auxiliary_neural_representation_item,auxiliary_neural_representation_item>> is defined in clause <<ml_optimization_representation_schema.auxiliary_neural_representation_item>> for the representation of neural network elements that are used as reference elements in optimization constraints in the ML optimization representation but that do not belong to the current result.
+
+[[figure-ml_optimization_representation_schema-fig3]]
+.Embedding of a current result representation in an ml_optimization_representation
+image::images/image-03.svg[]
+
+*)
+
+(*"ml_optimization_representation_schema.ml_optimization_representation_item"
+
+The abstract entity data type <<express:ml_optimization_representation_schema.ml_optimization_representation_item,ml_optimization_representation_item>> is a type of <<express:representation_schema.representation_item,representation_item>>. It defines an element of a representation that does not affect the static characteristics of a transferred ML model at the time of transfer, but that has the potential to control its behaviour when the model is optimized in a receiving system following a transfer.
+
+[EXAMPLE]
+====
+Instantiable subtypes of <<express:parameterization_schema.optimization_parameter,optimization_parameter>> as defined in <<express:parameterization_schema>> and <<express:explicit_constraint_schema.explicit_constraint,explicit_constraint>> as defined in <<explicit_constraint_schema>> are examples of <<express:ml_optimization_representation_schema.ml_optimization_representation_item,ml_optimization_representation_item>>.
+====
+
+No instance of <<express:ml_optimization_representation_schema.ml_optimization_representation_item,ml_optimization_representation_item>> shall occur in any representation that is not of type <<express:ml_optimization_representation_schema.ml_optimization_representation,ml_optimization_representation>>. Every instance of <<express:ml_optimization_representation_schema.ml_optimization_representation_item,ml_optimization_representation_item>> used by an instance of <<express:ml_optimization_representation_schema.ml_optimization_representation,ml_optimization_representation>> shall be a member of the set of items of that representation.
+
+*)
+
+(*"ml_optimization_representation_schema.ml_optimization_representation_item.wr:WR1"
+
+No instance of <<express:ml_optimization_representation_schema.ml_optimization_representation_item,ml_optimization_representation_item>> shall occur in any representation that is not of type <<express:ml_optimization_representation_schema.ml_optimization_representation,ml_optimization_representation>>.
+
+*)
+
+(*"ml_optimization_representation_schema.ml_optimization_representation_item.wr:WR2"
+
+Every instance of <<express:representation_schema.representation,representation>> that uses a given instance of <<express:ml_optimization_representation_schema.ml_optimization_representation_item,ml_optimization_representation_item>> shall reference it directly, i.e., shall include it as a member of its *items* attribute.
+
+*)
+
+(*"ml_optimization_representation_schema.auxiliary_neural_representation_item"
+
+The entity data type <<express:ml_optimization_representation_schema.auxiliary_neural_representation_item,auxiliary_neural_representation_item>> is a type of <<express:geometry_schema.geometric_representation_item,geometric_representation_item>> and also a type of <<express:ml_optimization_representation_schema.ml_optimization_representation_item,ml_optimization_representation_item>>. It provides a representation for neural network elements that exist in a <<express:ml_optimization_representation_schema.ml_optimization_representation,ml_optimization_representation>> for use as reference elements in optimization constraints but are not part of the current representation.
+
+[EXAMPLE]
+====
+A regularization constraint may specify the L2 norm of weights in a neural layer as the distance from a reference weight distribution. In this case the reference distribution is not part of the trained model weights, but is used as a reference element in the regularization constraint. The current result contains details of the trained model, but not the specification of the reference distribution. That is provided in the optimization wrapper as an instance of <<express:ml_optimization_representation_schema.auxiliary_neural_representation_item,auxiliary_neural_representation_item>>, together with the regularization constraint using it as a reference element.
+====
+
+NOTE: The imported activation functions and loss functions defined in <<neural_architecture_schema>> of this document provide further examples of <<express:ml_optimization_representation_schema.auxiliary_neural_representation_item,auxiliary_neural_representation_item>>.
+
+*)
+
+(*"ml_optimization_representation_schema.ml_optimization_representation"
+
+The <<express:ml_optimization_representation_schema.ml_optimization_representation,ml_optimization_representation>> entity data type defines a type of representation containing hyperparameter and optimization constraint information that may be used to optimize the model, following a transfer, in a manner consistent with the designer's original intent.
+
+[EXAMPLE]
+====
+A neural network model has a hyperparameter named stem:[lr] associated with its learning rate. It is required that the maximum gradient norm during training is 1.0. Thus the optimization algorithm and convergence behavior will depend upon the value of stem:[lr]. A model is transferred for which stem:[lr] has the value 0.001 and the network has converged to 95% accuracy - this is the 'current result'. Associated with the current result is the definition of the hyperparameter stem:[lr] and the mathematical relation involving stem:[lr] that is used to determine the gradient clipping threshold. The model as received following a transfer is that of the current result. However, the associated information allows this model to be optimized in the receiving system by varying stem:[lr], in which case the training dynamics should adjust automatically, and the current result will change accordingly. In both the initial and the final state the <<express:ml_optimization_representation_schema.ml_optimization_representation,ml_optimization_representation>> includes the current result model together with optimization information permitting it to be trained intelligently.
+====
+
+*)
+
+(*"ml_optimization_representation_schema.ml_optimization_representation.cm_link"
+
+The instance of <<express:ml_optimization_representation_schema.ml_current_representation_relationship,ml_current_representation_relationship>> linking a *ml_optimization_representation_instance* with its associated current result.
+
+*)
+
+(*"ml_optimization_representation_schema.ml_optimization_representation.wr:WR1"
+
+At least one instance of <<express:representation_schema.representation_item,representation_item>> referenced by a <<express:ml_optimization_representation_schema.ml_optimization_representation,ml_optimization_representation>> shall be of type <<express:ml_optimization_representation_schema.ml_optimization_representation_item,ml_optimization_representation_item>>.
+
+*)
+
+(*"ml_optimization_representation_schema.ml_optimization_representation.wr:WR2"
+
+Every instance of <<express:ml_optimization_representation_schema.ml_optimization_representation_item,ml_optimization_representation_item>> occurring in an ML optimization representation shall be valid in the sense specified in clause <<ml_optimization_representation_schema.invalidate_ml_rep_item>>, where the function *invalidate_ml_rep_item* is defined.
+
+NOTE: A `WHERE` rule of the entity <<express:ml_optimization_representation_schema.ml_optimization_representation_item,ml_optimization_representation_item>> (see clause <<ml_optimization_representation_schema.ml_optimization_representation_item>>) requires that any instance of <<express:ml_optimization_representation_schema.ml_optimization_representation_item,ml_optimization_representation_item>> occurring in an instance of ML optimization representation is directly referenced as a member of the *items* attribute of that representation.
+
+NOTE: In the case of a neural network model the current result may include instances of <<express:geometry_schema.geometric_representation_item,geometric_representation_item>>. In that case a `WHERE` rule of <<express:geometry_schema.geometric_representation_item,geometric_representation_item>> requires the associated *representation_context* shared by the <<express:ml_optimization_representation_schema.ml_optimization_representation,ml_optimization_representation>> and its embedded current result to be of type *geometric_representation_context*. These entity data types are defined in <<acme5000-42>>.
+
+[EXAMPLE]
+====
+An instance of *neural_architecture_representation* (see clause <<express:neural_architecture_schema.neural_architecture_representation>>) defines a convolutional neural network with 3 layers and ReLU activation functions, in terms of low-level neural elements. This is the 'current result'. Associated with the network are instances of *regularization_constraint* (see clause <<express:explicit_geometric_constraint_schema.regularization_constraint>>) enforcing L2 regularization on the weights, and *dropout_constraint* (see clause <<express:explicit_geometric_constraint_schema.dropout_constraint>>) relating to overfitting prevention. Further, instances of <<express:parameterization_schema.bound_optimization_parameter,bound_optimization_parameter>> (see clause <<express:parameterization_schema.bound_optimization_parameter>>) are bound to the *learning_rate* attributes of the optimization constraints. These hyperparameter and constraint instances constitute the optimization information associated with the neural architecture. The network as received after a transfer corresponds to the current result. However, the associated optimization information ensures that if the network is retrained following the transfer, by variation of the values of the optimization hyperparameters, it retains its architectural form and optimization properties. The current result and the optimization information together comprise an instance of *ml_optimization_representation*. Because the current result contains explicit neural elements and is multi-dimensional, both it and its containing <<express:ml_optimization_representation_schema.ml_optimization_representation,ml_optimization_representation>> share a *geometric_representation_context* whose *coordinate_space_dimension* attribute reflects the network topology.
+====
+
+*)
+
+(*"ml_optimization_representation_schema.ml_current_representation_relationship"
+
+The <<express:ml_optimization_representation_schema.ml_current_representation_relationship,ml_current_representation_relationship>> entity data type is a type of <<express:representation_schema.representation_relationship,representation_relationship>> that defines the relationship between a <<express:ml_optimization_representation_schema.ml_optimization_representation,ml_optimization_representation>> and its embedded non-optimization 'current result' representation.
+
+*)
+
+(*"ml_optimization_representation_schema.ml_current_representation_relationship.SELF\representation_relationship.rep_1"
+
+The <<express:ml_optimization_representation_schema.ml_optimization_representation,ml_optimization_representation>>.
+
+*)
+
+(*"ml_optimization_representation_schema.ml_current_representation_relationship.SELF\representation_relationship.rep_2"
+
+The embedded current result representation.
+
+*)
+
+(*"ml_optimization_representation_schema.ml_current_representation_relationship.current_result"
+
+The representation defining the current result model.
+
+*)
+
+(*"ml_optimization_representation_schema.ml_current_representation_relationship.UR1"
+
+The <<express:representation_schema.representation,representation>> instance referenced by the attribute *current_result* shall not occur as the current result of any other instance of <<express:ml_optimization_representation_schema.ml_current_representation_relationship,ml_current_representation_relationship>>.
+
+*)
+
+(*"ml_optimization_representation_schema.ml_current_representation_relationship.wr:WR1"
+
+The set of instances of <<express:representation_schema.representation_item,representation_item>> that are directly referenced by the current result representation shall be identical with the set of non-optimization instances of <<express:representation_schema.representation_item,representation_item>> that are directly referenced by the containing <<express:ml_optimization_representation_schema.ml_optimization_representation,ml_optimization_representation>>.
+
+*)
+
+(*"ml_optimization_representation_schema.ml_current_representation_relationship.wr:WR2"
+
+The related representations shall share the same *representation_context*.
+
+*)
+
+(*"ml_optimization_representation_schema.ml_current_representation_relationship.wr:WR3"
+
+The instances of <<express:representation_schema.representation_item,representation_item>> that are directly referenced by the current result <<express:representation_schema.representation,representation>> shall contain no instances of <<express:ml_optimization_representation_schema.ml_optimization_representation_item,ml_optimization_representation_item>>.
+
+*)
+
+(*"ml_optimization_representation_schema.ml_current_representation_relationship.wr:WR4"
+
+The type list of the ML optimization representation shall be identical to that of the related current result except that it shall also include <<express:ml_optimization_representation_schema.ml_optimization_representation,ml_optimization_representation>>.
+
+*)
+
+(*"ml_optimization_representation_schema.ml_current_representation_relationship.wr:WR5"
+
+The unique <<express:representation_schema.representation,representation>> instance referenced by the attribute *current_result* shall be identical with the representation referenced by the attribute *rep_2* of the supertype <<express:representation_schema.representation_relationship,representation_relationship>>.
+
+NOTE: The combination of UR1 and WR5 ensure that no two ML optimization representations share the same current result model. This is appropriate because the current result is a representative example of the class of models defined by the <<express:ml_optimization_representation_schema.ml_optimization_representation,ml_optimization_representation>>, and in particular it is determined by the current values of all hyperparameters in that representation. It is unlikely that any two different instances of <<express:ml_optimization_representation_schema.ml_optimization_representation,ml_optimization_representation>> will yield identical current results, and even if this were to happen it would probably be by chance rather than by design.
+
+[NOTE]
+====
+This document makes no provision for the specification of relationships between
+
+* different instances of <<express:ml_optimization_representation_schema.ml_optimization_representation,ml_optimization_representation>> derived from an original instance of <<express:ml_optimization_representation_schema.ml_optimization_representation,ml_optimization_representation>> by modification of hyperparameter values, i.e., between different members of the same model family;
+* instances of <<express:ml_optimization_representation_schema.ml_optimization_representation,ml_optimization_representation>> in which different current results have resulted from identical optimization information but different choices of optimization solutions.
+
+Such relationships may be defined in other parts of ACME 5000 that use or specialize entities from this schema.
+====
+
+*)
+
+(*"ml_optimization_representation_schema.invalidate_ml_rep_item"
+
+The *invalidate_ml_rep_item* function determines whether an instance of <<express:ml_optimization_representation_schema.ml_optimization_representation_item,ml_optimization_representation_item>> participating in a <<express:ml_optimization_representation_schema.ml_optimization_representation,ml_optimization_representation>> is invalid. Valid cases are defined as follows:
+
+. A valid instance of <<express:parameterization_schema.bound_optimization_parameter,bound_optimization_parameter>> shall be bound to an attribute of some instance used by all the representations in which the optimization parameter participates.
+. A valid instance of <<express:parameterization_schema.unbound_optimization_parameter,unbound_optimization_parameter>> shall participate as a reference element or a constrained element in at least one instance of <<express:explicit_constraint_schema.free_form_constraint,free_form_constraint>> occurring in all the representations in which the optimization parameter participates.
+. A valid instance of <<express:parameterization_schema.fixed_instance_attribute_set,fixed_instance_attribute_set>> shall reference no attribute of any instance that is not used by all the representations in which the fixed instance attribute set participates.
+. A valid instance of <<express:explicit_constraint_schema.explicit_constraint,explicit_constraint>> shall specify no reference element or constrained element that is not an instance used by all the representations in which the explicit constraint participates.
+. A valid instance of <<express:ml_optimization_representation_schema.auxiliary_neural_representation_item,auxiliary_neural_representation_item>> shall participate as a reference element in at least one instance of <<express:explicit_geometric_constraint_schema.explicit_geometric_constraint,explicit_geometric_constraint>>, for every representation in which the auxiliary neural representation item participates.
+
+NOTE: An instance of <<express:ml_optimization_representation_schema.auxiliary_neural_representation_item,auxiliary_neural_representation_item>> may also participate as a _constrained_ element in an instance of <<express:explicit_geometric_constraint_schema.explicit_geometric_constraint,explicit_geometric_constraint>> in a case where, for example, it is positioned with respect to another instance of <<express:ml_optimization_representation_schema.auxiliary_neural_representation_item,auxiliary_neural_representation_item>>. It is therefore possible to define chains of auxiliary neural elements in which each member except the first is constrained with respect to its predecessor.
+
+The function tests for all the above conditions in the order given, and returns `TRUE` as soon as one of them is found not to be satisfied. If all are satisfied the function returns `FALSE` and the tested instance of <<express:ml_optimization_representation_schema.ml_optimization_representation_item,ml_optimization_representation_item>> is accepted as valid.
+
+*)
+
+(*"ml_optimization_representation_schema.__expressg"
+[[ml_optimization_representation_schemaexpg1]]
+[.svgmap]
+====
+image::images/ml_optimization_representation_schemaexpg1.svg[]
+====
+*)
+
+(*"ml_optimization_representation_schema.__published_in"
+ACME 5000-108:2025 ED2
+*)
+
+(*"ml_optimization_representation_schema.__status"
+IS
+*)
+
+(*"ml_optimization_representation_schema.__title"
+machine_learning_model_optimization
+*)
+
+(*"ml_optimization_representation_schema.__schema_file"
+data/resource_docs/machine_learning_model_optimization/resource.xml
+*)

@@ -1,0 +1,24 @@
+# Simple Package Composition Example
+#
+# This example demonstrates the basic composition of two packages
+# without any conflicts or advanced features.
+
+base_packages:
+  # First package - simple person/company schemas
+  - package: ../01-simple/simple.lxr
+    priority: 0
+    conflict_resolution: keep
+
+  # Second package - UnitsML measurement schemas
+  - package: ../03-unitsml/unitsml.lxr
+    priority: 10
+    conflict_resolution: keep
+
+# Optional: Define namespace prefixes for querying
+namespace_mappings:
+  - prefix: "person"
+    uri: "http://example.com/person"
+  - prefix: "company"
+    uri: "http://example.com/company"
+  - prefix: "units"
+    uri: "urn:oasis:names:tc:unitsml:schema:xsd:UnitsMLSchema-1.0"

@@ -1,0 +1,52 @@
+require "spec_helper"
+require "multi_json"
+require "lutaml/key_value/adapter/json/standard_adapter"
+require "lutaml/key_value/adapter/json/multi_json_adapter"
+require "lutaml/key_value/adapter/json/oj_adapter"
+require_relative "../../fixtures/sample_model"
+
+RSpec.describe "JsonAdapter" do
+  shared_examples "a JSON adapter" do |adapter_class|
+    let(:attributes) { { name: "John Doe", age: 30 } }
+    let(:model) { SampleModel.new(attributes) }
+
+    let(:expected_json) do
+      if adapter_class == Lutaml::KeyValue::Adapter::Json::StandardAdapter
+        JSON.generate(attributes)
+      elsif adapter_class == Lutaml::KeyValue::Adapter::Json::MultiJsonAdapter
+        MultiJson.dump(attributes)
+      elsif adapter_class == Lutaml::KeyValue::Adapter::Json::OjAdapter
+        Oj.dump(attributes)
+      end
+    end
+
+    it "serializes to JSON" do
+      json = adapter_class.new(attributes).to_json
+      expect(json).to eq(expected_json)
+    end
+
+    it "deserializes from JSON" do
+      doc = adapter_class.parse(expected_json)
+      new_model = SampleModel.new(doc.to_h)
+      expect(new_model.name).to eq("John Doe")
+      expect(new_model.age).to eq(30)
+    end
+  end
+
+  describe Lutaml::KeyValue::Adapter::Json::StandardAdapter do
+    it_behaves_like "a JSON adapter", described_class
+  end
+
+  describe Lutaml::KeyValue::Adapter::Json::MultiJsonAdapter do
+    # multi_json 1.21's json_gem adapter passes options positionally to
+    # JSON.parse, which json >= 3 removed (intridea/multi_json#227).
+    if Gem::Version.new(JSON::VERSION) >= Gem::Version.new("3")
+      before { skip "multi_json is incompatible with json #{JSON::VERSION} (intridea/multi_json#227)" }
+    end
+    it_behaves_like "a JSON adapter", described_class
+  end
+
+  describe Lutaml::KeyValue::Adapter::Json::OjAdapter do
+    it_behaves_like "a JSON adapter", described_class
+  end
+end

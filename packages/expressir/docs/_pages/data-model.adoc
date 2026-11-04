@@ -1,0 +1,665 @@
+---
+title: Data Model
+nav_order: 5
+---
+
+== Expressir Data Model
+
+=== Purpose
+
+This page explains Expressir's Ruby data model that represents EXPRESS schemas. Understanding this model is essential for programmatic manipulation of EXPRESS data, writing custom tools, and generating documentation.
+
+=== References
+
+* link:express-language.html[EXPRESS Language] - Understanding EXPRESS concepts
+* link:parsers.html[Parsers] - How EXPRESS becomes the data model
+* link:../guides/ruby-api/model-traversal.html[Guide: Model Traversal] - Navigating the model
+* link:../references/data-model/[Data Model Reference] - Complete API documentation
+
+=== Concepts
+
+Model Element:: Base class for all EXPRESS constructs in Expressir's object model
+Repository:: Top-level container holding multiple schemas
+Declaration:: Named definition (entity, type, function, etc.) within a schema
+Data Type:: Type specification (primitives, aggregates, constructed types)
+Expression:: Algorithmic calculation or value reference
+Statement:: Procedural operation (assignment, if/then, loop, etc.)
+Reference:: Link to another model element by name
+
+=== Model Hierarchy
+
+Expressir's data model follows an object-oriented design with clear class hierarchies:
+
+[source]
+----
+ModelElement (base class)
+├── Repository
+│   └── Schema
+│       ├── Entity
+│       ├── Type
+│       ├── Function
+│       ├── Procedure
+│       ├── Rule
+│       ├── Constant
+│       ├── SubtypeConstraint
+│       └── Interface
+├── DataTypes
+│   ├── Primitives (String, Integer, Real, Boolean, Logical, Binary, Number)
+│   ├── Aggregates (Array, List, Set, Bag)
+│   ├── Enumeration
+│   ├── Select
+│   ├── Generic
+│   └── GenericEntity
+├── Declarations
+│   ├── Attribute
+│   ├── DerivedAttribute
+│   ├── InverseAttribute
+│   ├── Parameter
+│   ├── Variable
+│   ├── UniqueRule
+│   ├── WhereRule
+│   └── ...
+├── Expressions
+│   ├── BinaryExpression
+│   ├── UnaryExpression
+│   ├── FunctionCall
+│   ├── QueryExpression
+│   ├── AggregateInitializer
+│   └── ...
+├── Statements
+│   ├── Assignment
+│   ├── If
+│   ├── Repeat
+│   ├── Case
+│   ├── Return
+│   └── ...
+├── References
+│   ├── SimpleReference
+│   ├── AttributeReference
+│   ├── GroupReference
+│   └── IndexReference
+└── Literals
+    ├── String
+    ├── Integer
+    ├── Real
+    ├── Logical
+    └── Binary
+----
+
+=== Key Classes
+
+==== ModelElement
+
+The base class for all EXPRESS constructs:
+
+[source,ruby]
+----
+module Expressir::Model
+  class ModelElement
+    attr_accessor :parent        # Parent element in tree
+    attribute :source, :string   # Original EXPRESS text
+    attribute :untagged_remarks, :string, collection: true
+
+    # Navigate to parent and ancestors
+    def path  # Full qualified path (e.g., "schema.entity.attribute")
+    def find(path)  # Find child by path
+    def children  # Direct children
+    def children_by_id  # Children indexed by ID
+  end
+end
+----
+
+**Key features**:
+
+* **Parent linkage**: Every element knows its parent
+* **Path navigation**: Full qualified paths for reference resolution
+* **Child access**: Easy traversal of the tree structure
+* **Source tracking**: Original EXPRESS text available
+
+==== Repository
+
+Top-level container for schemas:
+
+[source,ruby]
+----
+repository = Expressir::Model::Repository.new
+repository.schemas << schema1
+repository.schemas << schema2
+
+# Access schemas
+repository.schemas.each { |schema| puts schema.id }
+
+# Find elements across schemas
+entity = repository.find_entity(qualified_name: "action_schema.action")
+type = repository.find_type(qualified_name: "geometry_schema.point")
+
+# Statistics
+stats = repository.statistics
+# => { total_schemas: 10, total_entities: 150, ... }
+
+# Build indexes for fast lookup
+repository.build_indexes
+----
+
+**Capabilities**:
+
+* **Multi-schema management**: Holds multiple schemas
+* **Global search**: Find entities/types across all schemas
+* **Statistics**: Aggregate counts and metrics
+* **Indexing**: Fast lookup with automatic index building
+* **Validation**: Schema consistency checking
+
+==== Schema
+
+A named collection of EXPRESS declarations:
+
+[source,ruby]
+----
+schema = Expressir::Model::Declarations::Schema.new(id: "example_schema")
+
+# Access declarations
+schema.entities       # Array of Entity objects
+schema.types          # Array of Type objects
+schema.functions      # Array of Function objects
+schema.procedures     # Array of Procedure objects
+schema.rules          # Array of Rule objects
+schema.constants      # Array of Constant objects
+schema.interfaces     # Array of Interface objects
+
+# Metadata
+schema.file           # Source file path
+schema.version        # Schema version info
+schema.remarks        # Documentation comments
+
+# Find child element
+entity = schema.find("person")
+----
+
+**Key attributes**:
+
+* **id**: Schema name
+* **file**: Source file path
+* **version**: SchemaVersion object
+* **interfaces**: USE FROM / REFERENCE FROM declarations
+* **entities, types, functions, etc.**: Collections of declarations
+
+==== Entity
+
+Represents an EXPRESS ENTITY:
+
+[source,ruby]
+----
+entity = Expressir::Model::Declarations::Entity.new(
+  id: "person",
+  abstract: false
+)
+
+# Attributes
+entity.attributes             # Explicit attributes
+entity.derived_attributes     # DERIVE attributes
+entity.inverse_attributes     # INVERSE attributes
+
+# Inheritance
+entity.subtype_of            # Array of supertypes
+entity.supertype_expression  # Supertype expression
+
+# Constraints
+entity.unique_rules          # UNIQUE rules
+entity.where_rules           # WHERE rules
+entity.informal_propositions # Informal propositions
+
+# Navigation
+entity.children              # All child elements
+entity.parent                # Parent schema
+----
+
+**Key features**:
+
+* **Inheritance support**: Subtypes and supertypes
+* **Three attribute types**: Explicit, derived, inverse
+* **Constraint modeling**: WHERE and UNIQUE rules
+* **Documentation**: Remarks and informal propositions
+
+==== Type
+
+Represents an EXPRESS TYPE:
+
+[source,ruby]
+----
+type = Expressir::Model::Declarations::Type.new(id: "length_measure")
+
+# Underlying type definition
+type.underlying_type  # DataType object (Select, Enumeration, etc.)
+
+# Constraints
+type.where_rules      # WHERE constraints
+
+# For enumeration types
+if type.underlying_type.is_a?(Expressir::Model::DataTypes::Enumeration)
+  type.enumeration_items  # Array of EnumerationItem objects
+end
+----
+
+**Type categories**:
+
+* **Simple types**: Constrained primitives
+* **Enumeration**: Named values
+* **Select**: Union types
+* **Aggregate**: Arrays, lists, sets, bags
+* **Generic**: Generic and GenericEntity
+
+==== Attribute
+
+Entity attributes come in three varieties:
+
+**Explicit attributes** (stored data):
+
+[source,ruby]
+----
+attr = Expressir::Model::Declarations::Attribute.new(
+  id: "name",
+  optional: false
+)
+attr.type = String_type  # Type reference
+----
+
+**Derived attributes** (computed):
+
+[source,ruby]
+----
+derived = Expressir::Model::Declarations::DerivedAttribute.new(
+  id: "full_name"
+)
+derived.type = String_type
+derived.expression = ...  # Calculation expression
+----
+
+**Inverse attributes** (relationships):
+
+[source,ruby]
+----
+inverse = Expressir::Model::Declarations::InverseAttribute.new(
+  id: "employees"
+)
+inverse.type = Set_type
+inverse.attribute = "works_for"  # Target attribute
+----
+
+=== Relationships
+
+==== Parent-Child Relationships
+
+Every element maintains a link to its parent:
+
+[source,ruby]
+----
+# Navigate up
+attribute.parent  # => Entity
+entity.parent     # => Schema
+schema.parent     # => Repository
+
+# Navigate down
+schema.entities.first         # => Entity
+entity.attributes.first       # => Attribute
+----
+
+==== Reference Resolution
+
+References are resolved to their target elements:
+
+[source,ruby]
+----
+# Before resolution: SimpleReference with id
+attribute.type  # => SimpleReference(id: "length_measure")
+
+# After resolution: Points to actual Type
+repository.resolve_all_references
+attribute.type.ref  # => Type(id: "length_measure")
+----
+
+==== Interface Relationships
+
+Schemas can import from other schemas:
+
+[source,ruby]
+----
+interface = Expressir::Model::Declarations::Interface.new(
+  kind: Interface::USE,  # or Interface::REFERENCE
+  schema: schema_ref
+)
+
+# Items can be selectively imported
+interface.items = [item1, item2]  # or empty for all
+----
+
+=== Working Programmatically
+
+==== Creating Models from Code
+
+You can construct models programmatically:
+
+[source,ruby]
+----
+# Create repository
+repo = Expressir::Model::Repository.new
+
+# Create schema
+schema = Expressir::Model::Declarations::Schema.new(id: "my_schema")
+repo.schemas << schema
+
+# Create entity
+entity = Expressir::Model::Declarations::Entity.new(id: "my_entity")
+schema.entities << entity
+
+# Create attribute
+attr = Expressir::Model::Declarations::Attribute.new(
+  id: "my_attribute",
+  optional: false
+)
+entity.attributes << attr
+
+# Set attribute type
+string_ref = Expressir::Model::References::SimpleReference.new(id: "STRING")
+attr.type = string_ref
+----
+
+==== Parsing EXPRESS to Model
+
+Most commonly, you parse EXPRESS files:
+
+[source,ruby]
+----
+# Parse file to repository
+repo = Expressir::Express::Parser.from_file("schema.exp")
+
+# Access elements
+schema = repo.schemas.first
+entity = schema.entities.find { |e| e.id == "person" }
+attribute = entity.attributes.find { |a| a.id == "name" }
+
+# Check type
+if attribute.type.is_a?(Expressir::Model::References::SimpleReference)
+  puts "Type name: #{attribute.type.id}"
+end
+----
+
+==== Model Traversal
+
+Navigate the model tree systematically:
+
+[source,ruby]
+----
+# Visit all entities in repository
+repo.schemas.each do |schema|
+  schema.entities.each do |entity|
+    puts "Entity: #{entity.path}"
+
+    entity.attributes.each do |attr|
+      puts "  Attribute: #{attr.id}"
+    end
+  end
+end
+
+# Find specific element by path
+element = repo.find("action_schema.action.id")
+
+# Search with pattern
+entities = repo.schemas.flat_map(&:entities)
+person_entities = entities.select { |e| e.id.include?("person") }
+----
+
+==== Visitor Pattern
+
+For complex traversals, use the visitor pattern:
+
+[source,ruby]
+----
+class MyVisitor < Expressir::Express::Visitor
+  def visit_entity(entity)
+    puts "Visiting entity: #{entity.id}"
+    super  # Visit children
+  end
+
+  def visit_attribute(attribute)
+    puts "  Attribute: #{attribute.id}"
+  end
+end
+
+visitor = MyVisitor.new
+visitor.visit(repository)
+----
+
+=== Accessing Elements
+
+==== By Direct Navigation
+
+[source,ruby]
+----
+# Access through collections
+schema = repo.schemas.first
+entity = schema.entities.first
+attribute = entity.attributes.first
+----
+
+==== By ID Lookup
+
+[source,ruby]
+----
+# Find by ID in collection
+entity = schema.entities.find { |e| e.id == "person" }
+
+# Use children_by_id for faster lookup
+entity = schema.children_by_id["person"]
+----
+
+==== By Path
+
+[source,ruby]
+----
+# Full qualified path
+element = repo.find("action_schema.action.id")
+
+# Relative path from schema
+attribute = schema.find("person.name")
+----
+
+==== By Type
+
+[source,ruby]
+----
+# Filter by class
+entities = schema.children.select { |c| c.is_a?(Expressir::Model::Declarations::Entity) }
+
+# Type-specific collections
+schema.entities  # Only entities
+schema.types     # Only types
+----
+
+=== Model Modification
+
+==== Adding Elements
+
+[source,ruby]
+----
+# Add to collections
+schema.entities << new_entity
+entity.attributes << new_attribute
+
+# Parent is automatically set
+new_entity.parent  # => schema
+----
+
+==== Removing Elements
+
+[source,ruby]
+----
+# Remove from collection
+schema.entities.delete(entity)
+
+# Clear parent link
+entity.parent = nil
+----
+
+==== Modifying Elements
+
+[source,ruby]
+----
+# Change properties
+entity.id = "new_name"
+entity.abstract = true
+
+# Modify collections
+entity.attributes.clear
+entity.attributes = new_attributes
+----
+
+=== Converting to EXPRESS
+
+Convert model back to EXPRESS text:
+
+[source,ruby]
+----
+# Format entire repository
+express = Expressir::Express::Formatter.format(repo)
+
+# Format single schema
+express = Expressir::Express::Formatter.format(schema)
+
+# Format with options
+formatter = Expressir::Express::Formatter.new(no_remarks: true)
+express = formatter.format(schema)
+----
+
+=== Converting to Liquid
+
+For template-based generation:
+
+[source,ruby]
+----
+# Convert to Liquid drops
+repo_drop = repo.to_liquid
+schema_drop = schema.to_liquid
+
+# Use in Liquid templates
+template = Liquid::Template.parse("{{ schema.id }}")
+output = template.render('schema' => schema_drop)
+----
+
+See link:../guides/liquid/[Liquid guides] for details.
+
+=== Performance Considerations
+
+==== Indexing
+
+Build indexes for large repositories:
+
+[source,ruby]
+----
+# Build all indexes
+repo.build_indexes
+
+# Fast lookups now available
+entity = repo.find_entity(qualified_name: "schema.entity")
+type = repo.find_type(qualified_name: "schema.type")
+----
+
+==== Lazy Loading
+
+Collections are loaded on demand:
+
+[source,ruby]
+----
+# No parsing until accessed
+schema.entities  # Triggers collection loading
+----
+
+==== Memory Management
+
+For very large schemas:
+
+[source,ruby]
+----
+# Process one schema at a time
+schemas.each do |schema_file|
+  repo = Expressir::Express::Parser.from_file(schema_file)
+  process(repo)
+  repo = nil  # Allow garbage collection
+end
+----
+
+=== Best Practices
+
+**Navigate using relationships**::
+Use parent/child links rather than searching
+
+**Use typed collections**::
+Access `schema.entities` rather than filtering `schema.children`
+
+**Build indexes once**::
+For repositories with many schemas, build indexes early
+
+**Check types carefully**::
+Types can be references, resolved references, or inline definitions
+
+**Preserve parent links**::
+When moving elements, update parent correctly
+
+**Use visitor pattern**:
+For complex tree traversals, implement a visitor
+
+=== Common Patterns
+
+==== Find All Entities Inheriting From Base
+
+[source,ruby]
+----
+def find_subtypes(repo, base_entity_name)
+  repo.schemas.flat_map(&:entities).select do |entity|
+    entity.subtype_of&.any? { |st| st.ref&.id == base_entity_name }
+  end
+end
+----
+
+==== List All SELECT Types
+
+[source,ruby]
+----
+select_types = repo.schemas.flat_map(&:types).select do |type|
+  type.underlying_type.is_a?(Expressir::Model::DataTypes::Select)
+end
+----
+
+==== Find Undefined References
+
+[source,ruby]
+----
+undefined = []
+visitor = Expressir::Express::Visitor.new
+visitor.define_singleton_method(:visit_simple_reference) do |ref|
+  undefined << ref if ref.ref.nil?
+end
+visitor.visit(repo)
+----
+
+=== Next Steps
+
+Now that you understand the data model:
+
+**Try it out**::
+link:../tutorials/parsing-your-first-schema.html[Parse a schema] and explore the model
+
+**Learn traversal**::
+Read the link:../guides/ruby-api/model-traversal.html[model traversal guide]
+
+**Study references**::
+Review the complete link:../references/data-model/[data model reference]
+
+**Build tools**::
+Create custom analyzers or converters using the model
+
+=== Bibliography
+
+* link:../references/data-model/[Data Model Reference] - Complete API documentation
+* link:parsers.html[Parsers] - How the model is created
+* https://github.com/lutaml/expressir/tree/main/lib/expressir/model[Model Source Code] - Implementation details
+* link:../guides/ruby-api/[Ruby API Guides] - Working with the model programmatically

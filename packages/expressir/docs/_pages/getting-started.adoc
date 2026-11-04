@@ -1,0 +1,414 @@
+---
+title: Getting Started
+nav_order: 3
+---
+
+== Getting Started with Expressir
+
+=== Purpose
+
+This guide will help you install Expressir and take your first steps with both the command-line interface (CLI) and Ruby API. Within minutes, you'll be parsing EXPRESS schemas and exploring the results.
+
+=== References
+
+* link:introduction.html[Introduction] - What is Expressir?
+* link:../tutorials/parsing-your-first-schema.html[Tutorial: Parsing Your First Schema] - Hands-on tutorial
+* link:../guides/cli/[CLI Guides] - Detailed CLI documentation
+* link:../guides/ruby-api/[Ruby API Guides] - Advanced Ruby usage
+
+=== Concepts
+
+Gem:: A Ruby library package that can be installed and managed with RubyGems
+Bundle:: Ruby's dependency manager (Bundler) for managing gem versions
+CLI:: Command-Line Interface - programs run from the terminal
+Repository:: Expressir's container for parsed schemas
+Schema:: An EXPRESS data model containing entities, types, and functions
+
+=== Prerequisites
+
+Before installing Expressir, ensure you have:
+
+**Ruby 2.7 or later**::
+Check your Ruby version:
++
+[source,sh]
+----
+ruby --version
+----
++
+If you need to install Ruby, visit https://www.ruby-lang.org/en/documentation/installation/[ruby-lang.org/en/documentation/installation]
+
+**RubyGems**::
+Comes with Ruby by default. Verify with:
++
+[source,sh]
+----
+gem --version
+----
+
+**Bundler (recommended)**::
+For managing dependencies in your projects:
++
+[source,sh]
+----
+gem install bundler
+----
+
+=== Installation
+
+There are two ways to install Expressir:
+
+==== Option 1: System-wide Installation
+
+Install Expressir globally on your system:
+
+[source,sh]
+----
+gem install expressir
+----
+
+This makes the `expressir` command available system-wide.
+
+==== Option 2: Project-specific Installation (Recommended)
+
+For use in a specific project, add Expressir to your `Gemfile`:
+
+[source,ruby]
+----
+# Gemfile
+source 'https://rubygems.org'
+
+gem 'expressir'
+----
+
+Then install:
+
+[source,sh]
+----
+bundle install
+----
+
+This approach is recommended because it:
+
+* Locks specific versions for reproducibility
+* Isolates dependencies per project
+* Works well with CI/CD systems
+
+=== Verify Installation
+
+Confirm Expressir is installed correctly:
+
+[source,sh]
+----
+# Check version
+expressir version
+
+# View available commands
+expressir help
+----
+
+You should see output listing Expressir's version and available commands.
+
+=== First Steps with CLI
+
+Let's parse your first EXPRESS schema using the command line.
+
+==== Create a Sample Schema
+
+Create a simple EXPRESS file named `example.exp`:
+
+[source,express]
+----
+SCHEMA example_schema;
+
+  ENTITY person;
+    name : STRING;
+    age : INTEGER;
+  END_ENTITY;
+
+  ENTITY organization;
+    org_name : STRING;
+    employees : SET [0:?] OF person;
+  END_ENTITY;
+
+END_SCHEMA;
+----
+
+==== Parse and Format the Schema
+
+Use the `format` command to parse and pretty-print the schema:
+
+[source,sh]
+----
+expressir format example.exp
+----
+
+This will output the formatted schema to your terminal, confirming that:
+
+1. The schema parses correctly
+2. Expressir understands the structure
+3. The formatting engine works
+
+==== Validate the Schema
+
+Check if the schema is valid:
+
+[source,sh]
+----
+expressir validate example.exp
+----
+
+A valid schema should display: "Validation passed for all EXPRESS schemas."
+
+==== Explore Other Commands
+
+Try these commands to explore Expressir's capabilities:
+
+[source,sh]
+----
+# View all available commands
+expressir help
+
+# Get help for a specific command
+expressir help format
+
+# Check version
+expressir version
+----
+
+=== First Steps with Ruby API
+
+Now let's use Expressir programmatically from Ruby.
+
+==== Basic Parsing Example
+
+Create a Ruby script named `parse_example.rb`:
+
+[source,ruby]
+----
+require 'expressir'
+
+# Parse an EXPRESS file
+repository = Expressir::Express::Parser.from_file('example.exp')
+
+# Access the parsed schema
+schema = repository.schemas.first
+puts "Schema name: #{schema.id}"
+puts "Number of entities: #{schema.entities.length}"
+
+# List all entities
+schema.entities.each do |entity|
+  puts "  Entity: #{entity.id}"
+  entity.attributes.each do |attr|
+    puts "    - #{attr.id}: #{attr.type}"
+  end
+end
+----
+
+Run it:
+
+[source,sh]
+----
+ruby parse_example.rb
+----
+
+Expected output:
+
+[source]
+----
+Schema name: example_schema
+Number of entities: 2
+  Entity: person
+    - name: STRING
+    - age: INTEGER
+  Entity: organization
+    - org_name: STRING
+    - employees: SET [0:?] OF person
+----
+
+==== Interactive Exploration with IRB
+
+You can also explore Expressir interactively:
+
+[source,sh]
+----
+irb
+----
+
+Then in the IRB session:
+
+[source,ruby]
+----
+require 'expressir'
+
+# Parse a file
+repo = Expressir::Express::Parser.from_file('example.exp')
+
+# Explore the structure
+repo.schemas.first.entities.first
+# => Returns the first entity
+
+# Access attributes
+repo.schemas.first.entities.first.attributes
+# => Returns array of attributes
+----
+
+==== Error Handling Example
+
+Expressir provides clear error messages when parsing fails:
+
+[source,ruby]
+----
+require 'expressir'
+
+begin
+  repository = Expressir::Express::Parser.from_file('invalid.exp')
+rescue Expressir::Express::Error::SchemaParseFailure => e
+  puts "Parse error in #{e.filename}:"
+  puts e.message
+  puts e.parse_failure_cause.ascii_tree
+end
+----
+
+=== Testing Your Installation
+
+Run Expressir's test suite to ensure everything works:
+
+[source,sh]
+----
+# Clone the repository (if you want to contribute)
+git clone https://github.com/lutaml/expressir.git
+cd expressir
+
+# Install dependencies
+bundle install
+
+# Run tests
+bundle exec rake
+----
+
+All tests should pass, confirming your installation is working correctly.
+
+=== Common Issues and Solutions
+
+==== "Command not found: expressir"
+
+**Problem**: The expressir command isn't in your PATH.
+
+**Solutions**:
+
+1. If installed with bundler, use: `bundle exec expressir`
+2. Ensure RubyGems bin directory is in PATH:
++
+[source,sh]
+----
+echo 'export PATH="$HOME/.gem/ruby/X.X.0/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+----
++
+Replace `X.X` with your Ruby version
+
+==== "cannot load such file -- expressir"
+
+**Problem**: Expressir gem not found by Ruby.
+
+**Solutions**:
+
+1. Install the gem: `gem install expressir`
+2. If using Bundler: `bundle install`
+3. Check your Ruby environment: `gem env`
+
+==== Parser Errors
+
+**Problem**: Schema fails to parse.
+
+**Solutions**:
+
+1. Verify EXPRESS syntax is valid
+2. Check for special characters or encoding issues
+3. Use `--verbose` flag for detailed error messages
+4. Consult the EXPRESS language specification
+
+=== Next Steps
+
+Now that you have Expressir installed and working, you can:
+
+**Learn by doing**::
+Try the link:../tutorials/parsing-your-first-schema.html[Parsing Your First Schema] tutorial for a comprehensive introduction
+
+**Explore CLI commands**::
+Read the link:../guides/cli/[CLI guides] to master command-line usage
+
+**Dive into Ruby API**::
+Study the link:../guides/ruby-api/[Ruby API guides] for programmatic control
+
+**Understand the model**::
+Learn about link:data-model.html[Expressir's data model] to work with schemas effectively
+
+**Work with LER packages**::
+Explore link:ler-packages.html[LER packages] for high-performance schema distribution
+
+=== Quick Reference
+
+==== Most Used CLI Commands
+
+[source,sh]
+----
+# Format (pretty-print) a schema
+expressir format schema.exp
+
+# Validate schema
+expressir validate schema.exp
+
+# Check documentation coverage
+expressir coverage schema.exp
+
+# Show version
+expressir version
+
+# Get help
+expressir help [COMMAND]
+----
+
+==== Most Used Ruby Methods
+
+[source,ruby]
+----
+# Parse a single file
+repo = Expressir::Express::Parser.from_file('schema.exp')
+
+# Parse multiple files
+repo = Expressir::Express::Parser.from_files(['schema1.exp', 'schema2.exp'])
+
+# Access schemas
+repo.schemas.each { |schema| puts schema.id }
+
+# Find entities
+schema.entities.find { |e| e.id == 'person' }
+
+# Convert to Liquid drops
+repo_drop = repo.to_liquid
+----
+
+=== Getting Help
+
+If you encounter issues:
+
+**Documentation**::
+Browse the complete link:../[documentation site]
+
+**GitHub Issues**::
+https://github.com/lutaml/expressir/issues[Report bugs or request features]
+
+**Community**::
+Join discussions and ask questions in GitHub Discussions
+
+**Source Code**::
+https://github.com/lutaml/expressir[Explore the code on GitHub]
+
+=== Bibliography
+
+* https://www.ruby-lang.org/en/documentation/installation/[Ruby Installation Guide] - Installing Ruby on various platforms
+* https://bundler.io/[Bundler Documentation] - Ruby dependency management
+* https://guides.rubygems.org/[RubyGems Guides] - Working with Ruby gems
+* https://github.com/lutaml/expressir[Expressir on GitHub] - Source code and issue tracker

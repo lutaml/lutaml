@@ -1,0 +1,3 @@
+# Git deps fetch over SSH by the system git CLI (cargo HTTPS auth fails locally).
+[net]
+git-fetch-with-cli = true

@@ -1,0 +1,84 @@
+
+Bug #39 - Greedy parens in pretty output
+
+Bug in SourceForge.net
+
+from original email requirements:
+There is more to consider: 
+1----extra parentheses in a QUERY expression.
+2----extra parentheses around a local rule
+3----how much of this is already embedded in the session model in eengine for an expression.
+====
+
+1----extra parentheses in a QUERY expression.
+from p11:
+query_expression = QUERY ’(’ variable_id ’<*’ aggregate_source ’|’ logical_expression ’)’
+what we see:
+QUERY ( sf <* stratum_feature_implementation | (TRUE ) )
+what we want:
+QUERY ( sf <* stratum_feature_implementation | TRUE )
+
+See the code for WR1 in these three cases.
+
+The extra () added after the pipe character in the QUERY causes the
+eengine compare to issue lots of noise.
+
+No idea if this is something simple to address as there are cases
+where the construct "|(" is needed as in the logical express is two ()
+separated by an OR.
+
+i.e., removing the parentheses shall result in a valid logical expression.
+
+This
+wr1: ( SIZEOF( QUERY ( sf < stratum_feature_implementation | (TRUE ) ) ) = 0 );
+becomes this
+WR1: (SIZEOF(QUERY(sf < stratum_feature_implementation | TRUE )) = 0);
+
+But in more complex cases, it may be expensive to detect that right parenthesis.
+
+I suppose as long as we can collapse the argument of the QUERY we can
+detect the right parenthesis.
+
+I suppose we could back up to the "(" AFTER THE QUERY SYMBOL and then
+move forward to the matching parenthesis. which let's label
+'parenthesis_the_ultimate'.
+
+let's label the parenthesis just after the pipe character 'parenthesis_the_initial'.
+
+IF 'parenthesis_the_initial' is matched to the parenthesis just prior
+to 'parenthesis_the_ultimate' then that pair of parentheses is
+redundant and my be removed.
+
+2---extra parentheses around a local rule
+this:
+wr1: ( SIZEOF( QUERY ( sf < stratum_feature_implementation | (TRUE ) ) ) = 0 );
+should be
+wr1: SIZEOF( QUERY ( sf < stratum_feature_implementation | (TRUE ) ) ) = 0 ;
+
+---This is easy(er).
+=====data:
+
+source in a module:
+ENTITY Additive_laminate_text_component
+SUBTYPE OF (Generic_laminate_text_component);
+stratum_feature_implementation : SET [1:?] OF Stratum_feature;
+WHERE
+WR1: SIZEOF(QUERY(sf <* stratum_feature_implementation | sf.associated_definition :<>: stratum_feature_implementation[1].associated_definition)) = 0;
+END_ENTITY;
+
+results of old shtolo and stepcode exppp:
+ENTITY Additive_laminate_text_component
+SUBTYPE OF ( Generic_laminate_text_component );
+stratum_feature_implementation : SET [1 : ?] OF Stratum_feature;
+WHERE
+wr1: ( SIZEOF( QUERY ( sf <* stratum_feature_implementation | ( sf.resident_stratum :<>: stratum_feature_implementation[1].
+resident_stratum ) ) ) = 0 );
+END_ENTITY;
+
+results of new shtolo:
+ENTITY Additive_laminate_text_component
+SUBTYPE OF (Generic_laminate_text_component);
+stratum_feature_implementation : SET [1:?] OF Stratum_feature;
+WHERE
+WR1: SIZEOF(QUERY(sf <* stratum_feature_implementation | sf.resident_stratum :<>: stratum_feature_implementation[1].resident_stratum)) = 0;
+END_ENTITY;

@@ -1,0 +1,131 @@
+= Native engines (leptris / yeptris / teptris)
+
+By default, `lutaml-model` serializes through the same engines every Ruby
+install already has: Nokogiri (via moxml) for XML, Psych for YAML, the
+`json` gem for JSON.
+
+The leptris family of native engines is a drop-in performance upgrade:
+
+* **leptris** — the XML engine moxml drives. When the `leptris` gem is in
+  your bundle, moxml prefers it over Nokogiri for parsing and
+  serialization.
+* **yeptris** — the YAML/JSON engine. When the `yeptris` gem is in your
+  bundle, lutaml-model's YAML and JSON adapters resolve to the yeptris
+  engine.
+* **teptris** — the TOML engine. When the `teptris` gem is in your
+  bundle it becomes the TOML default on every platform (0.2.12+ parses
+  ~3x and dumps ~8x faster than tomlib, and the Windows mingw-ucrt
+  prebuilts are back), giving Windows native TOML and retiring the
+  tomlib-segfault workaround (previously pure-Ruby toml-rb only).
+
+Opting in is purely a bundle decision — no code changes, no gemspec
+requirements:
+
+[source,sh]
+----
+bundle add leptris yeptris teptris
+----
+
+leptris and yeptris ship prebuilt platform gems for Linux and macOS
+(yeptris has no Windows prebuilts). teptris ships prebuilt gems for
+every platform, including Windows. When a gem is absent, lutaml-model
+automatically falls back to the standard engine for that format.
+
+== YJIT doubles the model pipeline
+
+The model layer's own work — mapping dispatch, casts, hydration — is
+plain Ruby and exactly the code shape YJIT compiles well; the native
+engines' C work is unaffected either way. On a controlled runner
+(ubuntu-latest, Ruby 3.4, the repository's performance probe):
+
+|===
+| op | YJIT off | YJIT on | change
+
+| from_yaml | 75.1 i/s | 129.7 i/s | +73%
+| to_yaml | 67.3 i/s | 145.1 i/s | +116%
+| from_json | 73.2 i/s | 128.4 i/s | +75%
+| to_json | 115.4 i/s | 255.5 i/s | +121%
+|===
+
+Enable it like any Ruby application does — this is the application's
+call, never a gem's:
+
+[source,sh]
+----
+RUBY_YJIT_ENABLE=1 ruby app.rb
+# or in code, before heavy work:
+RubyVM::YJIT.enable
+----
+
+The XML plan fast path moves work out of Ruby and into the engine,
+which shrinks the YJIT win — enabling both is still net faster than
+either alone.
+
+== The XML plan fast path (default on)
+
+When the XML adapter resolves to leptris, XML (de)serialization
+compiles the model's mapping into a leptris descriptor plan and runs
+the whole document through one native pass — measured 6.7x parse and
+4x serialize with -76% / -80% allocations on the plan-path corpus.
+Namespace-qualified models ride the path too: serialization spells
+prefixed element and attribute names through the same namespace
+planning the interpretive writer uses, and every `(prefix, uri)`
+pair is declared once on the output root. Models the plan cannot
+express exactly (same-name discriminator partitions, deferred-rule
+shapes) and shapes with custom semantics (custom methods,
+polymorphism, unions, ordered children) hydrate through the
+interpretive pipeline or a per-subtree fragment of it, unchanged.
+
+Version floor note: leptris 1.9.320+ retains child-row namespace
+URIs engine-side and matches plain attribute rows against
+namespace-qualified wire spellings. On older engines, models whose
+plans carry exact-URI child rows or plain attribute rows under a
+namespaced chain parse interpretively for correctness — a per-model
+fallback, not an error. Bundles resolving leptris 1.9.320+ get the
+full fast path.
+
+The path is on by default and is a no-op without leptris (standard
+adapters keep the classic pipeline). Opt out for the whole process:
+
+[source,ruby]
+----
+Lutaml::Model::Config.configure do |config|
+  config.xml_plan_fast_path = false
+end
+----
+
+== Selecting adapters explicitly
+
+The engines register as ordinary adapter types, so explicit selection and
+the availability error messages work as usual:
+
+[source,ruby]
+----
+Lutaml::Model::Config.xml_adapter_type = :leptris
+Lutaml::Model::Config.yaml_adapter_type = :yeptris
+Lutaml::Model::Config.json_adapter_type = :yeptris
+Lutaml::Model::Config.toml_adapter_type = :teptris
+----
+
+== Semantics notes
+
+* **YAML**: the yeptris adapter uses the engine's `compat_11` schema, so
+  implicit typing matches Psych (parity-verified across the scalar
+  battery: dates, timestamps, octal, sexagesimal, `yes`/`no`, `.inf`).
+  Two deliberate differences: anchors and aliases always resolve, and a
+  tagged value without a core type materializes as plain data instead of
+  raising `Psych::DisallowedClass`.
+* **JSON**: `yeptris` parsing targets exact `JSON.parse` semantics;
+  generation stays on the `json` gem.
+* **Error classes**: parse failures keep the standard adapters' contract
+  on every engine — the yeptris adapters re-raise the engine's syntax
+  errors as `Psych::SyntaxError` (YAML, with the engine's line, column,
+  and problem text) and `JSON::ParserError` (JSON), and the model layer
+  wraps them as `InvalidFormatError` just as it does for Psych and the
+  `json` gem. Code that rescues those classes does not change when a
+  native engine is added to the bundle.
+* **TOML**: the teptris adapter mirrors tomlib value semantics — offset
+  and local datetimes become `Time`, dates become `Date`, local times
+  stay `String`. Parse failures raise `Teptris::ParseError` with line
+  and column, wrapped as `InvalidFormatError` like the other TOML
+  adapters.

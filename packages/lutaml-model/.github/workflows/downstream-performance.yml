@@ -1,0 +1,210 @@
+name: downstream-performance
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches: [master, main]
+    tags: [v*]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      # Serializes the corpus legs: concurrent legs on shared runners
+      # produce contention measurements that misfire the absolute gates
+      # (lutaml-model#834: niso 0.921s vs a 0.25s main-passing gate).
+      # max-parallel, NOT a job-level concurrency group: with a
+      # matrix, every leg lands in the same group and GitHub cancels
+      # four of the five at start.
+      max-parallel: 1
+      matrix:
+        include:
+          - downstream: xmi
+            repo: lutaml/xmi
+            env_key: XMI_DIR
+          - downstream: sts
+            repo: metanorma/sts-ruby
+            env_key: STS_DIR
+          - downstream: mml
+            repo: plurimath/mml
+            env_key: MML_DIR
+            submodules: true
+          - downstream: niso
+            repo: metanorma/niso-jats
+            env_key: NISO_DIR
+          - downstream: unitsml
+            repo: unitsml/unitsml-ruby
+            env_key: UNITSML_DIR
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          submodules: "recursive"
+
+      - name: Create main worktree for baseline
+        run: |
+          git worktree add /tmp/main-checkout origin/main
+          (cd /tmp/main-checkout && git submodule update --init --recursive)
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+          bundler-cache: false
+
+      - name: Install ragel
+        run: sudo apt-get update && sudo apt-get install -y ragel
+
+      - name: Install ruby-ll (for rake vendor:prepare)
+        run: gem install ruby-ll --no-document
+
+      - name: Generate ragel / ruby-ll outputs in vendored forks (current)
+        run: rake vendor:prepare
+
+      - name: Generate ragel / ruby-ll outputs in vendored forks (main baseline)
+        run: (cd /tmp/main-checkout && rake vendor:prepare)
+
+      - name: Configure bundler
+        run: |
+          mkdir -p .bundle
+          echo "---" > .bundle/config
+          echo 'BUNDLE_BUILD__RUBY___LL: "--with-cflags=-std=gnu17"' >> .bundle/config
+
+      - name: Compile liboga / libll native extensions (current)
+        run: rake vendor:compile
+
+      - name: Compile liboga / libll native extensions (main baseline)
+        run: (cd /tmp/main-checkout && rake vendor:compile)
+
+      - name: Checkout downstream (${{ matrix.repo }})
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ matrix.repo }}
+          path: downstream
+          submodules: ${{ matrix.submodules || false }}
+
+      - name: Run baseline benchmark (main branch)
+        env:
+          ITERATIONS: "3"
+          ${{ matrix.env_key }}: ${{ github.workspace }}/downstream
+          LUTAML_MODEL_DIR: ${{ github.workspace }}
+          BENCH_JSON: /tmp/bench_base_${{ matrix.downstream }}.json
+        run: |
+          cd downstream
+          ruby -e '
+            path = ARGV[0]
+            lines = File.readlines("Gemfile")
+            out = []; skip = false
+            lines.each do |l|
+              if l =~ /gem\s+["\x27]lutaml-model["\x27]/
+                skip = true; next
+              end
+              if skip && l =~ /^\s+\w+:/; next; end
+              skip = false; out << l
+            end
+            out << "gem \"lutaml-model\", path: \"#{path}\"\n"
+            File.write("Gemfile", out.join)
+          ' /tmp/main-checkout
+          bundle install --jobs=4
+          # lutaml-model#834: min-of-N across attempts — contention
+          # inflates single-shot timings, so run three attempts and let
+          # the merge keep the least-interfered measurement per fixture.
+          for i in 1 2 3; do
+            bundle exec ruby ${{ github.workspace }}/bench/bench_${{ matrix.downstream }}.rb || \
+              echo "::warning::baseline attempt $i errored (#834) — continuing with remaining attempts"
+            cp "$BENCH_JSON" "$BENCH_JSON.attempt$i" 2>/dev/null || true
+          done
+          ruby ${{ github.workspace }}/bench/bench_merge_attempts.rb \
+            "$BENCH_JSON" "$BENCH_JSON.attempt1" "$BENCH_JSON.attempt2" "$BENCH_JSON.attempt3"
+
+      - name: Run current benchmark (PR branch)
+        env:
+          ITERATIONS: "3"
+          ${{ matrix.env_key }}: ${{ github.workspace }}/downstream
+          LUTAML_MODEL_DIR: ${{ github.workspace }}
+          BENCH_JSON: /tmp/bench_current_${{ matrix.downstream }}.json
+          # TODO.perf 17: corpus opt-out histogram in the job log —
+          # which clauses (if any) keep this corpus interpretive.
+          PLAN_COMPILE_STATS: "1"
+        run: |
+          cd downstream
+          ruby -e '
+            path = ARGV[0]
+            lines = File.readlines("Gemfile")
+            out = []; skip = false
+            lines.each do |l|
+              if l =~ /gem\s+["\x27]lutaml-model["\x27]/
+                skip = true; next
+              end
+              if skip && l =~ /^\s+\w+:/; next; end
+              skip = false; out << l
+            end
+            out << "gem \"lutaml-model\", path: \"#{path}\"\n"
+            File.write("Gemfile", out.join)
+          ' ${{ github.workspace }}
+          bundle install --jobs=4
+          for i in 1 2 3; do
+            bundle exec ruby ${{ github.workspace }}/bench/bench_${{ matrix.downstream }}.rb || \
+              echo "::warning::current attempt $i errored (#834) — continuing with remaining attempts"
+            cp "$BENCH_JSON" "$BENCH_JSON.attempt$i" 2>/dev/null || true
+          done
+          ruby ${{ github.workspace }}/bench/bench_merge_attempts.rb \
+            "$BENCH_JSON" "$BENCH_JSON.attempt1" "$BENCH_JSON.attempt2" "$BENCH_JSON.attempt3"
+
+      - name: Compare baseline vs current
+        run: |
+          ruby bench/bench_compare.rb \
+            /tmp/bench_base_${{ matrix.downstream }}.json \
+            /tmp/bench_current_${{ matrix.downstream }}.json
+
+      - name: Upload benchmark results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-${{ matrix.downstream }}
+          path: |
+            /tmp/bench_base_${{ matrix.downstream }}.json
+            /tmp/bench_current_${{ matrix.downstream }}.json
+
+  update-baselines:
+    needs: benchmark
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      # persist-credentials: false — checkout's persisted Authorization
+      # extraheader collides with create-pull-request's own token on the
+      # action's `git remote prune` ("Duplicate header: Authorization",
+      # HTTP 400), killing every main-push baseline PR.
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Download all benchmark results
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/bench_results
+          pattern: bench-*
+          merge-multiple: true
+      - name: Update baseline files
+        run: |
+          for json in /tmp/bench_results/bench_current_*.json; do
+            name=$(basename "$json" | sed 's/bench_current_/main_/')
+            cp "$json" "bench/baselines/$name"
+            echo "Updated baseline: bench/baselines/$name"
+          done
+      - name: Create pull request for updated baselines
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "chore: update performance baselines"
+          title: "Update performance baselines"
+          branch: update-baselines
+          body: "Automated baseline update from CI performance run."

@@ -1,0 +1,811 @@
+---
+layout: default
+title: XSD elements
+parent: Core concepts
+nav_order: 2
+---
+
+== XSD elements
+:toc:
+:toclevels: 3
+
+== Purpose
+
+This document explains the XSD schema components and object hierarchy in
+Lutaml::XSD. Understanding these elements is essential for working with parsed
+schemas, navigating schema structures, and manipulating XSD components
+programmatically.
+
+== General
+
+Lutaml::XSD represents each XSD construct as a Ruby class. When you parse an
+XSD file, the parser creates instances of these classes that mirror the
+structure of your schema. These objects can be inspected, modified, and
+serialized back to XML.
+
+The main components include:
+
+* [`Schema`](../../lib/lutaml/xsd/schema.rb) - The root container
+* [`Element`](../../lib/lutaml/xsd/element.rb) - Schema elements
+* [`ComplexType`](../../lib/lutaml/xsd/complex_type.rb) - Complex type
+  definitions
+* [`SimpleType`](../../lib/lutaml/xsd/simple_type.rb) - Simple type definitions
+* [`Attribute`](../../lib/lutaml/xsd/attribute.rb) - Attribute definitions
+* [`Sequence`](../../lib/lutaml/xsd/sequence.rb),
+  [`Choice`](../../lib/lutaml/xsd/choice.rb),
+  [`All`](../../lib/lutaml/xsd/all.rb) - Compositor elements
+* [`Group`](../../lib/lutaml/xsd/group.rb),
+  [`AttributeGroup`](../../lib/lutaml/xsd/attribute_group.rb) - Reusable
+  groups
+
+== Schema components overview
+
+The following diagram shows the hierarchical organization of XSD components:
+
+[source]
+----
+                        Schema
+                          │
+          ┌───────────────┼───────────────┐
+          │               │               │
+       Elements      ComplexTypes    SimpleTypes
+          │               │               │
+          │       ┌───────┴───────┐       │
+          │       │               │       │
+      Attributes Sequences    Extensions  │
+          │       │           Restrictions│
+          │   ┌───┴───┐           │       │
+          │   │       │           │       │
+      Groups Elements Choice      │   Facets
+                  │               │
+                  │               │
+              Attributes      Attributes
+----
+
+=== Component relationships
+
+.Schema object structure
+[source]
+----
+   Schema
+     ├── element: [Element]
+     ├── complex_type: [ComplexType]
+     ├── simple_type: [SimpleType]
+     ├── attribute: [Attribute]
+     ├── attribute_group: [AttributeGroup]
+     ├── group: [Group]
+     ├── notation: [Notation]
+     ├── import: [Import]
+     └── include: [Include]
+----
+
+== Element types
+
+=== Schema
+
+The [`Schema`](../../lib/lutaml/xsd/schema.rb) class represents the root
+`<xs:schema>` element and contains all top-level schema components.
+
+.Key Schema properties
+[source,ruby]
+----
+schema.target_namespace        # String: target namespace URI
+schema.element_form_default    # String: qualified|unqualified
+schema.attribute_form_default  # String: qualified|unqualified
+schema.version                 # String: schema version
+
+# Component collections
+schema.element                 # [Element]: top-level elements
+schema.complex_type            # [ComplexType]: named complex types
+schema.simple_type             # [SimpleType]: named simple types
+schema.attribute               # [Attribute]: top-level attributes
+schema.group                   # [Group]: element groups
+schema.attribute_group         # [AttributeGroup]: attribute groups
+schema.import                  # [Import]: imported schemas
+schema.include                 # [Include]: included schemas
+schema.annotation              # [Annotation]: schema annotations
+----
+
+.Accessing schema properties
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+xsd_content = File.read('schema.xsd')
+schema = Lutaml::Xsd.parse(xsd_content)
+
+# Schema-level properties
+puts "Target namespace: #{schema.target_namespace}"
+puts "Element form: #{schema.element_form_default}"
+puts "Version: #{schema.version}"
+
+# Component counts
+puts "\nComponents:"
+puts "  Elements: #{schema.element.size}"
+puts "  Complex types: #{schema.complex_type.size}"
+puts "  Simple types: #{schema.simple_type.size}"
+puts "  Imports: #{schema.import.size}"
+----
+====
+
+=== Element
+
+The [`Element`](../../lib/lutaml/xsd/element.rb) class represents
+`<xs:element>` declarations in the schema.
+
+.Key Element properties
+[source,ruby]
+----
+element.name                   # String: element name
+element.type                   # String: type reference
+element.ref                    # String: element reference
+element.min_occurs             # String: minimum occurrences
+element.max_occurs             # String: maximum occurrences
+element.default                # String: default value
+element.fixed                  # String: fixed value
+element.nillable               # String: nillable flag
+element.abstract               # String: abstract flag
+
+# Inline type definitions
+element.complex_type           # ComplexType: inline complex type
+element.simple_type            # SimpleType: inline simple type
+element.annotation             # [Annotation]: documentation
+----
+
+.Working with elements
+[example]
+====
+[source,ruby]
+----
+schema.element.each do |elem|
+  puts "Element: #{elem.name}"
+
+  # Check for type reference
+  if elem.type
+    puts "  Type: #{elem.type}"
+  end
+
+  # Check for inline complex type
+  if elem.complex_type
+    puts "  Has inline complex type"
+
+    # Access nested elements
+    if elem.complex_type.sequence
+      elem.complex_type.sequence.element.each do |child|
+        puts "    Child: #{child.name}"
+      end
+    end
+  end
+
+  # Check cardinality
+  min = elem.min_occurs || "1"
+  max = elem.max_occurs || "1"
+  puts "  Cardinality: #{min}..#{max}"
+end
+----
+====
+
+=== ComplexType
+
+The [`ComplexType`](../../lib/lutaml/xsd/complex_type.rb) class represents
+`<xs:complexType>` definitions that can contain child elements and attributes.
+
+.Key ComplexType properties
+[source,ruby]
+----
+complex_type.name              # String: type name (if named)
+complex_type.abstract          # String: abstract flag
+complex_type.mixed             # String: mixed content flag
+
+# Content models
+complex_type.sequence          # Sequence: ordered elements
+complex_type.choice            # Choice: alternative elements
+complex_type.all               # All: unordered elements
+complex_type.group             # Group: group reference
+
+# Attributes
+complex_type.attribute         # [Attribute]: attributes
+complex_type.attribute_group   # [AttributeGroup]: attribute groups
+complex_type.any_attribute     # AnyAttribute: wildcard attributes
+
+# Content derivation
+complex_type.simple_content    # SimpleContent: extends simple type
+complex_type.complex_content   # ComplexContent: extends complex type
+
+complex_type.annotation        # [Annotation]: documentation
+----
+
+.Working with complex types
+[example]
+====
+[source,ruby]
+----
+schema.complex_type.each do |ct|
+  puts "Complex Type: #{ct.name}"
+
+  # Check for sequence
+  if ct.sequence
+    puts "  Sequence with #{ct.sequence.element.size} elements:"
+    ct.sequence.element.each do |elem|
+      puts "    - #{elem.name} (#{elem.type})"
+    end
+  end
+
+  # Check for choice
+  if ct.choice
+    puts "  Choice with #{ct.choice.element.size} alternatives"
+  end
+
+  # List attributes
+  if ct.attribute.any?
+    puts "  Attributes:"
+    ct.attribute.each do |attr|
+      required = attr.use == "required" ? "*" : ""
+      puts "    - #{attr.name}#{required}: #{attr.type}"
+    end
+  end
+
+  # Check for extension
+  if ct.complex_content&.extension
+    puts "  Extends: #{ct.complex_content.extension.base}"
+  end
+end
+----
+====
+
+=== SimpleType
+
+The [`SimpleType`](../../lib/lutaml/xsd/simple_type.rb) class represents
+`<xs:simpleType>` definitions for constraining text values.
+
+.Key SimpleType properties
+[source,ruby]
+----
+simple_type.name               # String: type name
+simple_type.restriction        # Restriction: restrictions on base type
+simple_type.list               # List: list of values
+simple_type.union              # Union: union of types
+simple_type.annotation         # [Annotation]: documentation
+----
+
+.Working with simple types
+[example]
+====
+[source,ruby]
+----
+schema.simple_type.each do |st|
+  puts "Simple Type: #{st.name}"
+
+  if st.restriction
+    puts "  Restricts: #{st.restriction.base}"
+
+    # List facets
+    if st.restriction.enumeration.any?
+      puts "  Enumeration values:"
+      st.restriction.enumeration.each do |enum|
+        puts "    - #{enum.value}"
+      end
+    end
+
+    # Other facets
+    puts "  Min length: #{st.restriction.min_length.value}" if st.restriction.min_length
+    puts "  Max length: #{st.restriction.max_length.value}" if st.restriction.max_length
+    puts "  Pattern: #{st.restriction.pattern.value}" if st.restriction.pattern
+  end
+end
+----
+====
+
+=== Attribute
+
+The [`Attribute`](../../lib/lutaml/xsd/attribute.rb) class represents
+`<xs:attribute>` declarations.
+
+.Key Attribute properties
+[source,ruby]
+----
+attribute.name                 # String: attribute name
+attribute.type                 # String: type reference
+attribute.ref                  # String: attribute reference
+attribute.use                  # String: required|optional|prohibited
+attribute.default              # String: default value
+attribute.fixed                # String: fixed value
+attribute.simple_type          # SimpleType: inline simple type
+attribute.annotation           # [Annotation]: documentation
+----
+
+.Working with attributes
+[example]
+====
+[source,ruby]
+----
+complex_type.attribute.each do |attr|
+  name = attr.name || attr.ref
+  type = attr.type || "inline"
+  required = attr.use == "required" ? " (required)" : ""
+
+  puts "Attribute: #{name}: #{type}#{required}"
+
+  if attr.default
+    puts "  Default: #{attr.default}"
+  end
+
+  if attr.fixed
+    puts "  Fixed: #{attr.fixed}"
+  end
+end
+----
+====
+
+=== Sequence, Choice, and All
+
+These compositor elements define how child elements are organized.
+
+[source,ruby]
+----
+# Sequence: ordered elements
+sequence.element               # [Element]: elements in order
+sequence.group                 # [Group]: group references
+sequence.choice                # [Choice]: nested choices
+sequence.sequence              # [Sequence]: nested sequences
+sequence.any                   # [Any]: wildcard elements
+sequence.min_occurs            # String: minimum occurrences
+sequence.max_occurs            # String: maximum occurrences
+
+# Choice: alternative elements (similar structure)
+choice.element
+choice.group
+choice.sequence
+choice.choice
+choice.any
+choice.min_occurs
+choice.max_occurs
+
+# All: unordered elements (similar structure, but order doesn't matter)
+all.element
+all.group
+all.any
+----
+
+.Working with compositors
+[example]
+====
+[source,ruby]
+----
+if complex_type.sequence
+  puts "Sequence (ordered):"
+  complex_type.sequence.element.each_with_index do |elem, i|
+    puts "  #{i + 1}. #{elem.name}"
+  end
+end
+
+if complex_type.choice
+  puts "Choice (pick one):"
+  complex_type.choice.element.each do |elem|
+    puts "  - #{elem.name}"
+  end
+end
+
+if complex_type.all
+  puts "All (unordered):"
+  complex_type.all.element.each do |elem|
+    puts "  • #{elem.name}"
+  end
+end
+----
+====
+
+=== Group and AttributeGroup
+
+Groups provide reusable collections of elements or attributes.
+
+.Group properties
+[source,ruby]
+----
+# Element Group
+group.name                     # String: group name
+group.ref                      # String: group reference
+group.sequence                 # Sequence: sequence of elements
+group.choice                   # Choice: choice of elements
+group.all                      # All: unordered elements
+group.annotation               # [Annotation]: documentation
+
+# Attribute Group
+attribute_group.name           # String: group name
+attribute_group.ref            # String: group reference
+attribute_group.attribute      # [Attribute]: attributes
+attribute_group.attribute_group # [AttributeGroup]: nested groups
+attribute_group.any_attribute  # AnyAttribute: wildcard
+attribute_group.annotation     # [Annotation]: documentation
+----
+
+.Using groups
+[example]
+====
+[source,ruby]
+----
+# Define reusable element group
+schema.group.each do |grp|
+  puts "Group: #{grp.name}"
+
+  if grp.sequence
+    grp.sequence.element.each do |elem|
+      puts "  - #{elem.name}"
+    end
+  end
+end
+
+# Use in complex type
+complex_type.sequence&.group&.each do |grp_ref|
+  puts "References group: #{grp_ref.ref}"
+end
+
+# Attribute groups
+schema.attribute_group.each do |ag|
+  puts "Attribute Group: #{ag.name}"
+  ag.attribute.each do |attr|
+    puts "  - #{attr.name}: #{attr.type}"
+  end
+end
+----
+====
+
+== Accessing elements in parsed schemas
+
+=== Iterating through top-level elements
+
+.Accessing schema components
+[example]
+====
+[source,ruby]
+----
+schema = Lutaml::Xsd.parse(xsd_content)
+
+# Iterate through all top-level elements
+puts "Top-level Elements:"
+schema.element.each do |elem|
+  puts "  #{elem.name}: #{elem.type || 'inline type'}"
+end
+
+# Iterate through named complex types
+puts "\nComplex Types:"
+schema.complex_type.each do |ct|
+  puts "  #{ct.name}"
+end
+
+# Iterate through simple types
+puts "\nSimple Types:"
+schema.simple_type.each do |st|
+  puts "  #{st.name}"
+end
+----
+====
+
+=== Finding specific elements
+
+.Locating schema components
+[example]
+====
+[source,ruby]
+----
+# Find element by name
+def find_element(schema, name)
+  schema.element.find { |e| e.name == name }
+end
+
+# Find complex type by name
+def find_complex_type(schema, name)
+  schema.complex_type.find { |ct| ct.name == name }
+end
+
+# Usage
+person_elem = find_element(schema, 'Person')
+address_type = find_complex_type(schema, 'AddressType')
+
+if person_elem
+  puts "Found element: #{person_elem.name}"
+  puts "Type: #{person_elem.type}"
+end
+----
+====
+
+=== Navigating nested structures
+
+.Traversing element hierarchies
+[example]
+====
+[source,ruby]
+----
+def print_element_tree(element, indent = 0)
+  prefix = "  " * indent
+  puts "#{prefix}#{element.name} (#{element.type || 'inline'})"
+
+  # Handle inline complex type
+  if element.complex_type
+    ct = element.complex_type
+
+    # Process sequence
+    if ct.sequence
+      ct.sequence.element.each do |child|
+        print_element_tree(child, indent + 1)
+      end
+    end
+
+    # Process choice
+    if ct.choice
+      puts "#{prefix}  <choice>"
+      ct.choice.element.each do |child|
+        print_element_tree(child, indent + 2)
+      end
+      puts "#{prefix}  </choice>"
+    end
+  end
+end
+
+# Print complete element tree
+schema.element.each do |elem|
+  print_element_tree(elem)
+end
+----
+
+Output:
+
+----
+Person (PersonType)
+  Name (xs:string)
+  Age (xs:int)
+  Address (AddressType)
+    Street (xs:string)
+    City (xs:string)
+    PostalCode (xs:string)
+----
+====
+
+== Working with attributes, sequences, choices
+
+=== Accessing attributes
+
+.Attribute access patterns
+[example]
+====
+[source,ruby]
+----
+complex_type = schema.complex_type.first
+
+# Direct attributes on the type
+complex_type.attribute.each do |attr|
+  puts "Attribute: #{attr.name}"
+  puts "  Type: #{attr.type}"
+  puts "  Use: #{attr.use || 'optional'}"
+  puts "  Default: #{attr.default}" if attr.default
+end
+
+# Attributes from groups
+complex_type.attribute_group.each do |ag_ref|
+  # Find the actual group definition
+  group_def = schema.attribute_group.find { |ag| ag.name == ag_ref.ref }
+
+  if group_def
+    puts "From group #{group_def.name}:"
+    group_def.attribute.each do |attr|
+      puts "  - #{attr.name}: #{attr.type}"
+    end
+  end
+end
+----
+====
+
+=== Working with sequences
+
+.Sequence element access
+[example]
+====
+[source,ruby]
+----
+if complex_type.sequence
+  seq = complex_type.sequence
+
+  puts "Sequence cardinality: #{seq.min_occurs || 1}..#{seq.max_occurs || 1}"
+
+  # Elements in sequence
+  seq.element.each_with_index do |elem, i|
+    min = elem.min_occurs || "1"
+    max = elem.max_occurs || "1"
+    puts "  #{i + 1}. #{elem.name} [#{min}..#{max}]"
+  end
+
+  # Group references
+  seq.group.each do |grp_ref|
+    puts "  Group ref: #{grp_ref.ref}"
+  end
+
+  # Nested choices
+  seq.choice.each do |choice|
+    puts "  Choice with #{choice.element.size} alternatives"
+  end
+end
+----
+====
+
+=== Working with choices
+
+.Choice element access
+[example]
+====
+[source,ruby]
+----
+if complex_type.choice
+  choice = complex_type.choice
+
+  puts "Choice (select one):"
+  choice.element.each do |elem|
+    puts "  - #{elem.name}: #{elem.type}"
+  end
+
+  # Nested sequences in choice
+  choice.sequence.each_with_index do |seq, i|
+    puts "  Sequence option #{i + 1}:"
+    seq.element.each do |elem|
+      puts "    - #{elem.name}"
+    end
+  end
+end
+----
+====
+
+== Element properties and methods
+
+=== Common properties across elements
+
+All schema component classes inherit common properties:
+
+[source,ruby]
+----
+# Common to all components
+component.id                   # String: unique identifier
+component.annotation           # [Annotation]: documentation/metadata
+
+# Documentation access
+component.annotation&.documentation&.each do |doc|
+  puts doc.content             # String: documentation text
+  puts doc.source              # String: documentation source
+  puts doc.lang                # String: language code
+end
+----
+
+=== Type-specific methods
+
+Different component types provide specialized methods for accessing their
+unique properties.
+
+.ComplexType methods
+[example]
+====
+[source,ruby]
+----
+# Check content model type
+def describe_complex_type(ct)
+  if ct.simple_content
+    "Simple content (extends #{ct.simple_content.extension&.base})"
+  elsif ct.complex_content
+    "Complex content (extends #{ct.complex_content.extension&.base})"
+  elsif ct.sequence
+    "Sequence with #{ct.sequence.element.size} elements"
+  elsif ct.choice
+    "Choice with #{ct.choice.element.size} alternatives"
+  elsif ct.all
+    "All with #{ct.all.element.size} elements"
+  else
+    "Empty content model"
+  end
+end
+
+schema.complex_type.each do |ct|
+  puts "#{ct.name}: #{describe_complex_type(ct)}"
+end
+----
+====
+
+== Complete example
+
+.Comprehensive schema analysis
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Parse schema
+xsd_content = <<~XSD
+  <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+             targetNamespace="http://example.com/schema"
+             elementFormDefault="qualified">
+
+    <xs:element name="Library">
+      <xs:complexType>
+        <xs:sequence>
+          <xs:element name="Book" maxOccurs="unbounded">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="Title" type="xs:string"/>
+                <xs:element name="Author" type="xs:string" maxOccurs="unbounded"/>
+                <xs:element name="ISBN" type="xs:string"/>
+              </xs:sequence>
+              <xs:attribute name="id" type="xs:ID" use="required"/>
+              <xs:attribute name="year" type="xs:gYear"/>
+            </xs:complexType>
+          </xs:element>
+        </xs:sequence>
+      </xs:complexType>
+    </xs:element>
+
+  </xs:schema>
+XSD
+
+schema = Lutaml::Xsd.parse(xsd_content)
+
+# Analyze structure
+puts "Schema Analysis"
+puts "=" * 60
+
+# Schema properties
+puts "\nTarget Namespace: #{schema.target_namespace}"
+puts "Element Form: #{schema.element_form_default}"
+
+# Top-level elements
+puts "\nTop-level Elements:"
+schema.element.each do |elem|
+  puts "  #{elem.name}"
+
+  # Inline complex type
+  if elem.complex_type && elem.complex_type.sequence
+    elem.complex_type.sequence.element.each do |child|
+      puts "    └─ #{child.name}"
+
+      # Nested structure
+      if child.complex_type && child.complex_type.sequence
+        child.complex_type.sequence.element.each do |grandchild|
+          max = grandchild.max_occurs == "unbounded" ? "*" : grandchild.max_occurs || "1"
+          puts "       └─ #{grandchild.name} [0..#{max}]"
+        end
+
+        # Attributes
+        child.complex_type.attribute.each do |attr|
+          req = attr.use == "required" ? "*" : ""
+          puts "       @#{attr.name}#{req}: #{attr.type}"
+        end
+      end
+    end
+  end
+end
+----
+
+Output:
+
+----
+Schema Analysis
+============================================================
+
+Target Namespace: http://example.com/schema
+Element Form: qualified
+
+Top-level Elements:
+  Library
+    └─ Book
+       └─ Title [0..1]
+       └─ Author [0..*]
+       └─ ISBN [0..1]
+       @id*: xs:ID
+       @year: xs:gYear
+----
+====
+
+== See also
+
+* link:TYPE_RESOLUTION.html[Type resolution] - Resolving type references
+* link:NAMESPACES.html[Namespaces] - Namespace handling
+* link:../guides/PARSING.html[Parsing guide] - Parsing XSD files
+* link:../reference/RUBY_API.html[Ruby API reference] - Complete API
+  documentation

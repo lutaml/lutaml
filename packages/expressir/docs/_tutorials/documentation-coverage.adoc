@@ -1,0 +1,795 @@
+---
+title: Documentation Coverage
+nav_order: 7
+---
+
+== Documentation Coverage Analysis
+
+=== Prerequisites
+
+Before starting this tutorial, ensure you have:
+
+* Completed link:liquid-templates.html[Liquid Templates]
+* EXPRESS schemas with varying documentation levels
+* Understanding of EXPRESS remarks
+* Expressir CLI and Ruby access
+
+=== Learning Objectives
+
+By the end of this tutorial, you will be able to:
+
+* Analyze documentation coverage of schemas
+* Use the coverage CLI tool
+* Identify undocumented elements
+* Generate coverage reports
+* Exclude specific element types
+* Set documentation standards
+* Improve schema documentation systematically
+
+=== What You'll Build
+
+You'll create documentation coverage reports and tools to improve and maintain high-quality EXPRESS schema documentation.
+
+=== Step 1: Understanding Documentation Coverage
+
+==== What is Coverage?
+
+Documentation coverage measures how well your EXPRESS schemas are documented through remarks (comments).
+
+**Covered element**::
+Has at least one remark
++
+[source,express]
+----
+(* A person in the system *)
+ENTITY person;
+  (* Full name of the person *)
+  name : STRING;
+END_ENTITY;
+----
+
+**Uncovered element**::
+Has no remarks
++
+[source,express]
+----
+ENTITY person;
+  name : STRING;  -- No documentation!
+END_ENTITY;
+----
+
+==== Why Coverage Matters
+
+* **Maintainability**: Documented code is easier to maintain
+* **Standards compliance**: ISO standards require documentation
+* **User experience**: Developers need clear documentation
+* **Quality assurance**: Coverage metrics track quality
+
+=== Step 2: Create Test Schemas
+
+Let's create schemas with different coverage levels.
+
+==== Well-Documented Schema
+
+Create `documented.exp`:
+
+[source,express]
+----
+SCHEMA documented_schema;
+
+  (* Unique identifier for entities *)
+  TYPE identifier = STRING;
+  END_TYPE;
+
+  (* A person in the organization *)
+  ENTITY person;
+    (* Unique identifier *)
+    id : identifier;
+    (* Full name *)
+    name : STRING;
+    (* Email address *)
+    email : OPTIONAL STRING;
+  END_ENTITY;
+
+  (* An organizational unit *)
+  ENTITY organization;
+    (* Organization identifier *)
+    org_id : identifier;
+    (* Organization name *)
+    org_name : STRING;
+    (* List of employees *)
+    employees : SET [0:?] OF person;
+  END_ENTITY;
+
+END_SCHEMA;
+----
+
+==== Poorly-Documented Schema
+
+Create `undocumented.exp`:
+
+[source,express]
+----
+SCHEMA undocumented_schema;
+
+  TYPE identifier = STRING;
+  END_TYPE;
+
+  ENTITY person;
+    id : identifier;
+    name : STRING;
+    email : OPTIONAL STRING;
+  END_ENTITY;
+
+  ENTITY organization;
+    org_id : identifier;
+    org_name : STRING;
+    employees : SET [0:?] OF person;
+  END_ENTITY;
+
+END_SCHEMA;
+----
+
+=== Step 3: Basic Coverage Analysis
+
+==== Using the CLI
+
+[source,bash]
+----
+# Check single file
+expressir coverage documented.exp
+
+# Check multiple files
+expressir coverage documented.exp undocumented.exp
+
+# Check directory recursively
+expressir coverage schemas/
+----
+
+**Output for documented.exp**:
+[source]
+----
+File: documented.exp
+
+✓ All elements documented
+
+Coverage: 100.00%
+Total: 9
+Documented: 9
+Undocumented: 0
+----
+
+**Output for undocumented.exp**:
+[source]
+----
+File: undocumented.exp
+
+Undocumented elements:
+  TYPE: identifier
+  ENTITY: person
+  ATTRIBUTE: person.id
+  ATTRIBUTE: person.name
+  ATTRIBUTE: person.email
+  ENTITY: organization
+  ATTRIBUTE: organization.org_id
+  ATTRIBUTE: organization.org_name
+  ATTRIBUTE: organization.employees
+
+Coverage: 0.00%
+Total: 9
+Documented: 0
+Undocumented: 9
+----
+
+=== Step 4: Coverage Output Formats
+
+==== Text Format (Default)
+
+[source,bash]
+----
+expressir coverage schemas/ --format text
+----
+
+Human-readable table with:
+* File paths
+* Undocumented elements
+* Coverage percentages
+* Summary statistics
+
+==== JSON Format
+
+[source,bash]
+----
+expressir coverage schemas/ --format json > coverage.json
+----
+
+Programmatically parseable output:
+
+[source,json]
+----
+{
+  "overall": {
+    "coverage_percentage": 50.0,
+    "total_entities": 18,
+    "documented_entities": 9,
+    "undocumented_entities": 9
+  },
+  "files": [
+    {
+      "file": "schemas/documented.exp",
+      "coverage": 100.0,
+      "total": 9,
+      "documented": 9,
+      "undocumented": []
+    },
+    {
+      "file": "schemas/undocumented.exp",
+      "coverage": 0.0,
+      "total": 9,
+      "documented": 0,
+      "undocumented": ["identifier", "person", "person.id", ...]
+    }
+  ]
+}
+----
+
+==== YAML Format
+
+[source,bash]
+----
+expressir coverage schemas/ --format yaml > coverage.yaml
+----
+
+YAML output for easy reading and processing:
+
+[source,yaml]
+----
+overall:
+  coverage_percentage: 50.0
+  total_entities: 18
+  documented_entities: 9
+  undocumented_entities: 9
+files:
+  - file: schemas/documented.exp
+    coverage: 100.0
+    total: 9
+    documented: 9
+    undocumented: []
+  - file: schemas/undocumented.exp
+    coverage: 0.0
+    total: 9
+    documented: 0
+    undocumented:
+      - identifier
+      - person
+      - person.id
+----
+
+=== Step 5: Excluding Element Types
+
+==== Why Exclude?
+
+Some element types may not require documentation:
+* Auto-generated TYPE descriptions
+* Simple type aliases
+* Internal helper functions
+
+==== Basic Exclusions
+
+[source,bash]
+----
+# Exclude all TYPE definitions
+expressir coverage schemas/ --exclude=TYPE
+
+# Exclude multiple types
+expressir coverage schemas/ --exclude=TYPE,CONSTANT,FUNCTION
+
+# Exclude parameters and variables
+expressir coverage schemas/ --exclude=PARAMETER,VARIABLE
+----
+
+==== Type-Specific Exclusions
+
+[source,bash]
+----
+# Exclude only SELECT types
+expressir coverage schemas/ --exclude=TYPE:SELECT
+
+# Exclude SELECT and ENUMERATION types
+expressir coverage schemas/ --exclude=TYPE:SELECT,TYPE:ENUMERATION
+
+# Exclude inner functions
+expressir coverage schemas/ --exclude=FUNCTION:INNER
+----
+
+==== ISO 10303 Standard Exclusions
+
+ISO 10303 excludes SELECT and ENUMERATION types:
+
+[source,bash]
+----
+expressir coverage schemas/ --exclude=TYPE:SELECT,TYPE:ENUMERATION
+----
+
+=== Step 6: Ignoring Files
+
+==== Create Ignore List
+
+Create `coverage_ignore.yaml`:
+
+[source,yaml]
+----
+# Test and example schemas
+- examples/test_*.exp
+- examples/demo_*.exp
+
+# Legacy schemas
+- legacy/*.exp
+
+# Generated schemas
+- generated/auto_*.exp
+
+# Specific files
+- temp/temporary_schema.exp
+----
+
+==== Use Ignore List
+
+[source,bash]
+----
+expressir coverage schemas/ --ignore-files coverage_ignore.yaml
+----
+
+Ignored files:
+* Still appear in reports (marked as ignored)
+* Don't affect overall coverage percentage
+* Useful for partial documentation efforts
+
+=== Step 7: Programmatic Coverage Analysis
+
+==== Basic Coverage Check
+
+Create `check_coverage.rb`:
+
+[source,ruby]
+----
+require 'expressir'
+
+# Parse schema
+repo = Expressir::Express::Parser.from_file('documented.exp')
+
+# Create coverage report
+report = Expressir::Coverage::Report.from_repository(repo)
+
+puts "Coverage Analysis"
+puts "=" * 60
+puts "Overall: #{report.coverage_percentage.round(2)}%"
+puts "Total: #{report.total_entities.size}"
+puts "Documented: #{report.documented_entities.size}"
+puts "Undocumented: #{report.undocumented_entities.size}"
+
+if report.undocumented_entities.any?
+  puts "\nUndocumented elements:"
+  report.undocumented_entities.take(10).each do |entity|
+    puts "  - #{entity}"
+  end
+end
+----
+
+==== Detailed File Reports
+
+[source,ruby]
+----
+# Get per-file breakdown
+report.file_reports.each do |file_report|
+  puts "\nFile: #{file_report[:file]}"
+  puts "  Coverage: #{file_report[:coverage]}%"
+  puts "  Total: #{file_report[:total]}"
+  puts "  Documented: #{file_report[:documented]}"
+
+  if file_report[:undocumented].any?
+    puts "  Undocumented:"
+    file_report[:undocumented].each do |item|
+      puts "    - #{item}"
+    end
+  end
+end
+----
+
+==== Check Individual Elements
+
+[source,ruby]
+----
+# Check if entity is documented
+schema = repo.schemas.first
+entity = schema.entities.first
+
+if Expressir::Coverage.entity_documented?(entity)
+  puts "✓ #{entity.id} is documented"
+else
+  puts "✗ #{entity.id} lacks documentation"
+end
+
+# Check all entities
+schema.entities.each do |entity|
+  status = Expressir::Coverage.entity_documented?(entity) ? "✓" : "✗"
+  puts "#{status} #{entity.id}"
+end
+----
+
+=== Step 8: Coverage Enforcement
+
+==== Create Coverage Checker
+
+Create `enforce_coverage.rb`:
+
+[source,ruby]
+----
+require 'expressir'
+
+class CoverageEnforcer
+  MINIMUM_COVERAGE = 80.0  # 80% required
+
+  def initialize(files)
+    @files = files
+  end
+
+  def check
+    repos = @files.map { |f| Expressir::Express::Parser.from_file(f) }
+
+    all_pass = true
+    repos.each do |repo|
+      report = Expressir::Coverage::Report.from_repository(repo)
+
+      file = repo.schemas.first.file
+      coverage = report.coverage_percentage
+
+      if coverage < MINIMUM_COVERAGE
+        puts "❌ #{file}: #{coverage.round(2)}% (minimum: #{MINIMUM_COVERAGE}%)"
+
+        puts "   Undocumented:"
+        report.undocumented_entities.take(5).each do |item|
+          puts "   - #{item}"
+        end
+
+        all_pass = false
+      else
+        puts "✓ #{file}: #{coverage.round(2)}%"
+      end
+    end
+
+    all_pass
+  end
+end
+
+# Usage
+files = Dir.glob('schemas/**/*.exp')
+enforcer = CoverageEnforcer.new(files)
+
+unless enforcer.check
+  puts "\n❌ Coverage check failed!"
+  exit 1
+end
+
+puts "\n✓ All files meet coverage requirements!"
+----
+
+==== CI/CD Integration
+
+Create `.github/workflows/coverage.yml`:
+
+[source,yaml]
+----
+name: Documentation Coverage
+
+on: [push, pull_request]
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.0
+
+      - name: Install Expressir
+        run: gem install expressir
+
+      - name: Check Coverage
+        run: |
+          expressir coverage schemas/ --format json > coverage.json
+
+          # Extract coverage percentage
+          COVERAGE=$(cat coverage.json | jq '.overall.coverage_percentage')
+          echo "Coverage: ${COVERAGE}%"
+
+          # Fail if below 80%
+          if (( $(echo "$COVERAGE < 80" | bc -l) )); then
+            echo "❌ Coverage below 80%"
+            exit 1
+          fi
+
+          echo "✓ Coverage check passed"
+
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v2
+        with:
+          name: coverage-report
+          path: coverage.json
+----
+
+=== Step 9: Improving Coverage
+
+==== Find Low-Coverage Files
+
+Create `find_low_coverage.rb`:
+
+[source,ruby]
+----
+require 'expressir'
+require 'json'
+
+files = Dir.glob('schemas/**/*.exp')
+results = []
+
+files.each do |file|
+  repo = Expressir::Express::Parser.from_file(file)
+  report = Expressir::Coverage::Report.from_repository(repo)
+
+  results << {
+    file: file,
+    coverage: report.coverage_percentage,
+    undocumented: report.undocumented_entities.size
+  }
+end
+
+# Sort by coverage (worst first)
+results.sort_by! { |r| r[:coverage] }
+
+puts "Low Coverage Files"
+puts "=" * 60
+
+results.take(10).each do |result|
+  puts "\n#{result[:file]}"
+  puts "  Coverage: #{result[:coverage].round(2)}%"
+  puts "  Undocumented: #{result[:undocumented]}"
+end
+----
+
+==== Generate Documentation Templates
+
+Create `generate_doc_templates.rb`:
+
+[source,ruby]
+----
+require 'expressir'
+
+def generate_template(entity)
+  template = "(* TODO: Document #{entity.id} *)\n"
+  template += "ENTITY #{entity.id};\n"
+
+  entity.attributes.each do |attr|
+    template += "  (* TODO: Document #{attr.id} *)\n"
+    template += "  #{attr.id} : #{attr.type};\n"
+  end
+
+  template += "END_ENTITY;\n"
+  template
+end
+
+# Usage
+repo = Expressir::Express::Parser.from_file('undocumented.exp')
+schema = repo.schemas.first
+
+puts "Documentation Templates for Undocumented Entities"
+puts "=" * 60
+
+schema.entities.each do |entity|
+  next if Expressir::Coverage.entity_documented?(entity)
+
+  puts "\n#{generate_template(entity)}"
+end
+----
+
+=== Step 10: Coverage Dashboard
+
+==== Generate HTML Report
+
+Create `coverage_dashboard.rb`:
+
+[source,ruby]
+----
+require 'expressir'
+require 'erb'
+
+files = Dir.glob('schemas/**/*.exp')
+reports_data = []
+
+files.each do |file|
+  repo = Expressir::Express::Parser.from_file(file)
+  report = Expressir::Coverage::Report.from_repository(repo)
+
+  reports_data << {
+    file: file,
+    coverage: report.coverage_percentage,
+    total: report.total_entities.size,
+    documented: report.documented_entities.size,
+    undocumented: report.undocumented_entities
+  }
+end
+
+template = ERB.new(<<~HTML)
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <title>Coverage Dashboard</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 20px; }
+      table { border-collapse: collapse; width: 100%; }
+      th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+      th { background-color: #4CAF50; color: white; }
+      .high { color: green; }
+      .medium { color: orange; }
+      .low { color: red; }
+    </style>
+  </head>
+  <body>
+    <h1>Documentation Coverage Dashboard</h1>
+
+    <h2>Summary</h2>
+    <table>
+      <tr>
+        <th>File</th>
+        <th>Coverage</th>
+        <th>Total</th>
+        <th>Documented</th>
+        <th>Undocumented</th>
+      </tr>
+      <% reports_data.each do |report| %>
+      <tr>
+        <td><%= report[:file] %></td>
+        <td class="<%= report[:coverage] >= 80 ? 'high' : report[:coverage] >= 50 ? 'medium' : 'low' %>">
+          <%= report[:coverage].round(2) %>%
+        </td>
+        <td><%= report[:total] %></td>
+        <td><%= report[:documented] %></td>
+        <td><%= report[:total] - report[:documented] %></td>
+      </tr>
+      <% end %>
+    </table>
+
+    <h2>Undocumented Elements</h2>
+    <% reports_data.each do |report| %>
+      <% if report[:undocumented].any? %>
+      <h3><%= report[:file] %></h3>
+      <ul>
+        <% report[:undocumented].each do |item| %>
+        <li><%= item %></li>
+        <% end %>
+      </ul>
+      <% end %>
+    <% end %>
+  </body>
+  </html>
+HTML
+
+File.write('coverage_dashboard.html', template.result(binding))
+puts "Dashboard generated: coverage_dashboard.html"
+----
+
+=== Step 11: Practice Exercises
+
+==== Exercise 1: Coverage Trends
+
+Track coverage over time:
+* Store coverage results with timestamps
+* Generate trend graphs
+* Identify improving/declining files
+
+==== Exercise 2: Smart Exclusions
+
+Create a configuration system that:
+* Defines project-specific exclusions
+* Supports per-directory rules
+* Allows temporary exemptions with expiry
+
+==== Exercise 3: Documentation Generator
+
+Build a tool that:
+* Identifies undocumented elements
+* Suggests documentation based on element names
+* Generates documentation templates
+* Validates documentation quality
+
+=== Best Practices
+
+**Set Realistic Targets**::
+* Start with current coverage baseline
+* Improve gradually (e.g., +5% per sprint)
+* Different standards for different schema types
+
+**Exclude Appropriately**::
+* Document exclusion rationale
+* Review exclusions periodically
+* Don't exclude to inflate numbers
+
+**Integrate Early**::
+* Add coverage checks to CI/CD
+* Review coverage in code reviews
+* Track coverage metrics over time
+
+**Quality Over Quantity**::
+* Brief, clear remarks are better than verbose ones
+* Explain *why*, not just *what*
+* Keep documentation up-to-date
+
+=== Common Issues
+
+**False Positives**
+
+**Problem**: Element marked as undocumented but has remarks
+
+**Cause**: Remarks may not be properly formatted
+
+**Solution**: Ensure remarks use EXPRESS comment syntax:
+[source,express]
+----
+(* This is a valid remark *)
+ENTITY person;
+END_ENTITY;
+----
+
+**High Coverage, Poor Quality**
+
+**Problem**: 100% coverage but unhelpful documentation
+
+**Solution**:
+* Review documentation quality manually
+* Use specific, descriptive remarks
+* Explain purpose and constraints
+
+**Coverage Varies by Tool**
+
+**Problem**: Different tools report different coverage
+
+**Cause**: Different element types counted
+
+**Solution**:
+* Use consistent tool and exclusions
+* Document counting methodology
+* Track relative changes, not absolute numbers
+
+=== Next Steps
+
+Congratulations! You can now analyze and improve documentation coverage.
+
+**Continue learning**:
+
+* link:../guides/cli/coverage-analysis.html[Coverage Analysis Guide] - Advanced techniques
+* link:../guides/ruby-api/[Ruby API Guides] - Programmatic coverage tools
+* link:../references/[References] - Complete API documentation
+
+**Read more**:
+
+* ISO 10303 documentation standards
+* Technical writing best practices
+
+=== Summary
+
+In this tutorial, you learned to:
+
+* ✅ Analyze documentation coverage
+* ✅ Use the coverage CLI tool
+* ✅ Generate coverage reports in multiple formats
+* ✅ Exclude specific element types
+* ✅ Ignore files from coverage calculation
+* ✅ Check coverage programmatically
+* ✅ Enforce coverage standards
+* ✅ Track and improve coverage over time
+* ✅ Create coverage dashboards
+
+You're now equipped to maintain high-quality EXPRESS schema documentation!

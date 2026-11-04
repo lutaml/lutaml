@@ -32,11 +32,12 @@ jobs:
         with:
           ruby-version: '3.3'
           bundler-cache: true
+          working-directory: packages/lutaml
 
       - name: Run the documented Ruby examples
         run: |
           task_examples_dir="$PWD/docs/examples"
-          export BUNDLE_GEMFILE="$PWD/Gemfile"
+          export BUNDLE_GEMFILE="$PWD/packages/lutaml/Gemfile"
           task_output_dir="$(mktemp -d "${RUNNER_TEMP}/lutaml-docs.XXXXXX")"
           cd "$task_output_dir"
           for example in city_model build_package query_model build_site present_class; do

@@ -1,0 +1,951 @@
+= SPA Configuration Reference
+:toc: left
+:toclevels: 3
+:sectnums:
+
+== Overview
+
+The SPA documentation generator is configured through three YAML files located in `config/spa/`:
+
+* `ui_theme.yml` - Visual appearance (colors, typography, layout)
+* `features.yml` - Feature toggles and behavior
+* `templates.yml` - Template structure and components
+
+Each configuration file can be customized or overridden using the `--config` option.
+
+== Configuration files
+
+=== ui_theme.yml
+
+Controls the visual appearance of the documentation.
+
+==== Structure
+
+[source,yaml]
+----
+theme:
+  colors:
+    # Light mode colors
+    ...
+
+  dark_colors:
+    # Dark mode colors
+    ...
+
+  typography:
+    # Font settings
+    ...
+
+  layout:
+    # Layout dimensions
+    ...
+
+  spacing:
+    # Spacing units
+    ...
+
+  borders:
+    # Border styles
+    ...
+
+  shadows:
+    # Shadow effects
+    ...
+
+  transitions:
+    # Animation timing
+    ...
+----
+
+==== Theme colors (light mode)
+
+[cols="1,2,1,2"]
+|===
+|Key |Purpose |Default |Description
+
+|`primary`
+|Primary brand color
+|`#2563eb`
+|Used for links, buttons, active states
+
+|`secondary`
+|Secondary color
+|`#64748b`
+|Used for less prominent elements
+
+|`accent`
+|Accent color
+|`#10b981`
+|Used for highlights and success states
+
+|`background_primary`
+|Main background
+|`#ffffff`
+|Page background color
+
+|`background_secondary`
+|Secondary background
+|`#f8fafc`
+|Card and panel backgrounds
+
+|`background_tertiary`
+|Tertiary background
+|`#f1f5f9`
+|Hover states, subtle backgrounds
+
+|`text_primary`
+|Primary text
+|`#0f172a`
+|Main content text color
+
+|`text_secondary`
+|Secondary text
+|`#475569`
+|Less important text, captions
+
+|`text_tertiary`
+|Tertiary text
+|`#94a3b8`
+|Disabled text, placeholders
+
+|`border_light`
+|Light borders
+|`#e2e8f0`
+|Subtle separators, dividers
+
+|`border_medium`
+|Medium borders
+|`#cbd5e1`
+|Standard borders
+
+|`border_dark`
+|Dark borders
+|`#94a3b8`
+|Emphasized borders
+
+|`success`
+|Success state
+|`#10b981`
+|Success messages, indicators
+
+|`warning`
+|Warning state
+|`#f59e0b`
+|Warning messages
+
+|`error`
+|Error state
+|`#ef4444`
+|Error messages, invalid states
+
+|`info`
+|Information state
+|`#3b82f6`
+|Information messages
+|===
+
+==== Dark colors
+
+Same keys as light mode, with dark-mode appropriate values:
+
+[cols="1,2,1"]
+|===
+|Key |Default |Purpose
+
+|`primary`
+|`#3b82f6`
+|Lighter primary for dark backgrounds
+
+|`background_primary`
+|`#0f172a`
+|Dark page background
+
+|`text_primary`
+|`#f1f5f9`
+|Light text on dark background
+|===
+
+==== Typography
+
+[cols="1,2,1,2"]
+|===
+|Key |Purpose |Default |Description
+
+|`font_family`
+|Main font stack
+|`system-ui, sans-serif`
+|Font family for all text
+
+|`font_family_mono`
+|Monospace font
+|`"Fira Code", Monaco, monospace`
+|Code and technical text
+
+|`font_size_base`
+|Base font size
+|`1rem`
+|Root font size (16px)
+
+|`font_size_sm`
+|Small font size
+|`0.875rem`
+|Smaller text (14px)
+
+|`font_size_xs`
+|Extra small
+|`0.75rem`
+|Tiny text (12px)
+
+|`font_size_lg`
+|Large font size
+|`1.125rem`
+|Larger text (18px)
+
+|`font_size_xl`
+|Extra large
+|`1.25rem`
+|Even larger text (20px)
+
+|`font_weight_normal`
+|Normal weight
+|`400`
+|Regular text weight
+
+|`font_weight_medium`
+|Medium weight
+|`500`
+|Slightly bold
+
+|`font_weight_semibold`
+|Semi-bold weight
+|`600`
+|Headers, emphasis
+
+|`font_weight_bold`
+|Bold weight
+|`700`
+|Strong emphasis
+
+|`line_height_tight`
+|Tight line height
+|`1.25`
+|Compact text
+
+|`line_height_normal`
+|Normal line height
+|`1.5`
+|Standard text
+
+|`line_height_relaxed`
+|Relaxed line height
+|`1.75`
+|Comfortable reading
+|===
+
+==== Layout
+
+[cols="1,2,1,2"]
+|===
+|Key |Purpose |Default |Description
+
+|`sidebar_width`
+|Sidebar width
+|`280px`
+|Width of navigation sidebar
+
+|`header_height`
+|Header height
+|`64px`
+|Height of top header bar
+
+|`max_width_sm`
+|Small max width
+|`640px`
+|Small container limit
+
+|`max_width_md`
+|Medium max width
+|`768px`
+|Medium container limit
+
+|`max_width_lg`
+|Large max width
+|`1024px`
+|Large container limit
+
+|`max_width_xl`
+|Extra large max width
+|`1280px`
+|Maximum content width
+
+|`container_padding`
+|Container padding
+|`1rem`
+|Padding inside containers
+
+|`section_gap`
+|Section spacing
+|`2rem`
+|Gap between sections
+|===
+
+==== Spacing
+
+[cols="1,2,1"]
+|===
+|Key |Default |Purpose
+
+|`xs`
+|`0.25rem`
+|4px spacing
+
+|`sm`
+|`0.5rem`
+|8px spacing
+
+|`md`
+|`1rem`
+|16px spacing
+
+|`lg`
+|`1.5rem`
+|24px spacing
+
+|`xl`
+|`2rem`
+|32px spacing
+
+|`2xl`
+|`3rem`
+|48px spacing
+|===
+
+==== Borders
+
+[cols="1,2,1"]
+|===
+|Key |Default |Purpose
+
+|`radius_sm`
+|`0.25rem`
+|Small border radius
+
+|`radius_md`
+|`0.375rem`
+|Medium border radius
+
+|`radius_lg`
+|`0.5rem`
+|Large border radius
+
+|`radius_full`
+|`9999px`
+|Fully rounded
+
+|`width_thin`
+|`1px`
+|Thin border
+
+|`width_medium`
+|`2px`
+|Medium border
+
+|`width_thick`
+|`4px`
+|Thick border
+|===
+
+==== Shadows
+
+[cols="1,2,1"]
+|===
+|Key |Default |Purpose
+
+|`sm`
+|`0 1px 2px rgba(0,0,0,0.05)`
+|Subtle shadow
+
+|`md`
+|`0 4px 6px rgba(0,0,0,0.1)`
+|Standard shadow
+
+|`lg`
+|`0 10px 15px rgba(0,0,0,0.1)`
+|Prominent shadow
+
+|`xl`
+|`0 20px 25px rgba(0,0,0,0.1)`
+|Large shadow
+|===
+
+==== Transitions
+
+[cols="1,2,1"]
+|===
+|Key |Default |Purpose
+
+|`fast`
+|`150ms`
+|Quick transitions
+
+|`normal`
+|`200ms`
+|Standard transitions
+
+|`slow`
+|`300ms`
+|Slower transitions
+
+|`easing`
+|`cubic-bezier(0.4,0,0.2,1)`
+|Smooth easing function
+|===
+
+=== features.yml
+
+Controls which features are enabled and their behavior.
+
+==== Structure
+
+[source,yaml]
+----
+features:
+  search:
+    enabled: true
+    fuzzy_matching: true
+    min_characters: 2
+    debounce_ms: 300
+
+  filtering:
+    enabled: true
+    show_count: true
+
+  dark_mode:
+    enabled: true
+    default: "auto"
+    persist: true
+
+  navigation:
+    enabled: true
+    show_sidebar: true
+    collapsible: true
+
+  documentation:
+    enabled: true
+    show_annotations: true
+----
+
+==== Search features
+
+[cols="1,2,1,2"]
+|===
+|Key |Purpose |Default |Description
+
+|`enabled`
+|Enable search
+|`true`
+|Show search functionality
+
+|`fuzzy_matching`
+|Fuzzy search
+|`true`
+|Allow approximate matches
+
+|`min_characters`
+|Minimum chars
+|`2`
+|Min characters before search
+
+|`max_results`
+|Result limit
+|`100`
+|Maximum results to display
+
+|`debounce_ms`
+|Debounce delay
+|`300`
+|Milliseconds to wait before search
+
+|`highlight_matches`
+|Highlight results
+|`true`
+|Highlight search terms
+
+|`case_sensitive`
+|Case sensitivity
+|`false`
+|Require exact case match
+|===
+
+==== Filtering features
+
+[cols="1,2,1,2"]
+|===
+|Key |Purpose |Default |Description
+
+|`enabled`
+|Enable filters
+|`true`
+|Show type filter buttons
+
+|`show_count`
+|Show counts
+|`true`
+|Display count per filter
+
+|`default_filter`
+|Default filter
+|`"all"`
+|Initial filter selection
+
+|`categories`
+|Available filters
+|See below
+|List of filter categories
+|===
+
+Default categories:
+[source,yaml]
+----
+categories:
+  - all
+  - element
+  - complex_type
+  - simple_type
+  - attribute_group
+  - group
+----
+
+==== Dark mode features
+
+[cols="1,2,1,2"]
+|===
+|Key |Purpose |Default |Description
+
+|`enabled`
+|Enable dark mode
+|`true`
+|Show dark mode toggle
+
+|`default`
+|Default mode
+|`"auto"`
+|Initial mode: `auto`, `light`, `dark`
+
+|`persist`
+|Save preference
+|`true`
+|Remember user's choice
+
+|`transition_duration`
+|Transition time
+|`200ms`
+|Theme switch animation
+|===
+
+==== Navigation features
+
+[cols="1,2,1,2"]
+|===
+|Key |Purpose |Default |Description
+
+|`enabled`
+|Enable navigation
+|`true`
+|Show navigation elements
+
+|`show_sidebar`
+|Show sidebar
+|`true`
+|Display sidebar navigation
+
+|`collapsible`
+|Collapsible sidebar
+|`true`
+|Allow collapsing sidebar
+
+|`sticky_header`
+|Sticky header
+|`true`
+|Header stays on scroll
+
+|`breadcrumbs`
+|Show breadcrumbs
+|`false`
+|Display navigation breadcrumbs
+|===
+
+==== Documentation features
+
+[cols="1,2,1,2"]
+|===
+|Key |Purpose |Default |Description
+
+|`enabled`
+|Enable docs
+|`true`
+|Show documentation text
+
+|`show_annotations`
+|Show annotations
+|`true`
+|Display XSD annotations
+
+|`show_types`
+|Show type info
+|`true`
+|Display type information
+
+|`show_namespaces`
+|Show namespaces
+|`true`
+|Display namespace URIs
+
+|`code_highlighting`
+|Syntax highlighting
+|`true`
+|Highlight code snippets
+|===
+
+=== templates.yml
+
+Controls template structure and component arrangement.
+
+==== Structure
+
+[source,yaml]
+----
+templates:
+  layout: "default"
+
+  single_file:
+    embed_resources: true
+    inline_css: true
+    inline_js: true
+
+  multi_file:
+    separate_resources: true
+    directories:
+      css: "css"
+      js: "js"
+      data: "data"
+
+  components:
+    - head
+    - header
+    - navigation
+    - search
+    - content
+    - footer
+    - scripts
+
+  partials:
+    schema_card:
+      template: "components/schema_card"
+    type_detail:
+      template: "components/type_detail"
+----
+
+==== Layout options
+
+[cols="1,2,1,2"]
+|===
+|Key |Purpose |Default |Description
+
+|`layout`
+|Layout template
+|`"default"`
+|Base layout to use
+|===
+
+==== Single-file options
+
+[cols="1,2,1,2"]
+|===
+|Key |Purpose |Default |Description
+
+|`embed_resources`
+|Embed all resources
+|`true`
+|Include CSS/JS/data inline
+
+|`inline_css`
+|Inline CSS
+|`true`
+|Embed stylesheets
+
+|`inline_js`
+|Inline JavaScript
+|`true`
+|Embed scripts
+
+|`minify`
+|Minify resources
+|`false`
+|Minimize file size
+|===
+
+==== Multi-file options
+
+[cols="1,2,1,2"]
+|===
+|Key |Purpose |Default |Description
+
+|`separate_resources`
+|Separate files
+|`true`
+|Create individual resource files
+
+|`directories.css`
+|CSS directory
+|`"css"`
+|Directory for stylesheets
+
+|`directories.js`
+|JS directory
+|`"js"`
+|Directory for scripts
+
+|`directories.data`
+|Data directory
+|`"data"`
+|Directory for JSON data
+|===
+
+==== Components
+
+List of components to include in order:
+
+[cols="1,2"]
+|===
+|Component |Purpose
+
+|`head`
+|HTML head section with meta tags
+
+|`header`
+|Page header with title and controls
+
+|`navigation`
+|Navigation sidebar or menu
+
+|`search`
+|Search bar and controls
+
+|`content`
+|Main content area
+
+|`footer`
+|Page footer with copyright, links
+
+|`scripts`
+|JavaScript initialization
+|===
+
+== Custom configuration
+
+=== Creating custom config
+
+Create a custom configuration file combining all settings:
+
+[source,yaml]
+----
+# my-spa-config.yml
+
+# Theme customization
+theme:
+  colors:
+    primary: "#10b981"
+    secondary: "#6b7280"
+
+  typography:
+    font_family: "Inter, system-ui, sans-serif"
+    font_size_base: "1.125rem"
+
+# Feature customization
+features:
+  search:
+    fuzzy_matching: true
+    min_characters: 1
+
+  dark_mode:
+    default: "dark"
+
+  navigation:
+    show_sidebar: false
+
+# Template customization
+templates:
+  layout: "default"
+  single_file:
+    minify: true
+----
+
+=== Using custom config
+
+[source,bash]
+----
+lutaml-xsd spa schemas.lxr \
+  --config my-spa-config.yml \
+  --output custom-docs.html
+----
+
+=== Partial configuration
+
+You can provide partial configuration - only the specified values will override defaults:
+
+[source,yaml]
+----
+# minimal-config.yml
+theme:
+  colors:
+    primary: "#ec4899"  # Only change primary color
+----
+
+All other values will use defaults.
+
+== Configuration examples
+
+=== Minimal theme
+
+Minimal, distraction-free documentation:
+
+[source,yaml]
+----
+features:
+  search:
+    enabled: true
+  filtering:
+    enabled: false
+  dark_mode:
+    enabled: false
+  navigation:
+    show_sidebar: false
+
+theme:
+  colors:
+    primary: "#000000"
+    background_primary: "#ffffff"
+  typography:
+    font_family: "Georgia, serif"
+----
+
+=== Corporate theme
+
+Professional corporate appearance:
+
+[source,yaml]
+----
+theme:
+  colors:
+    primary: "#1e40af"
+    secondary: "#64748b"
+    accent: "#0ea5e9"
+
+  typography:
+    font_family: "Helvetica Neue, Arial, sans-serif"
+    font_weight_semibold: 600
+
+features:
+  dark_mode:
+    enabled: false
+----
+
+=== Developer-friendly
+
+Optimized for developers:
+
+[source,yaml]
+----
+theme:
+  colors:
+    primary: "#10b981"
+
+  typography:
+    font_family_mono: "JetBrains Mono, monospace"
+
+features:
+  search:
+    fuzzy_matching: true
+    highlight_matches: true
+
+  documentation:
+    code_highlighting: true
+    show_types: true
+----
+
+=== High contrast
+
+Accessibility-focused high contrast:
+
+[source,yaml]
+----
+theme:
+  colors:
+    primary: "#000000"
+    background_primary: "#ffffff"
+    text_primary: "#000000"
+    border_medium: "#000000"
+
+  dark_colors:
+    primary: "#ffffff"
+    background_primary: "#000000"
+    text_primary: "#ffffff"
+----
+
+== Validation
+
+=== Required fields
+
+The following fields are required in configuration files:
+
+*ui_theme.yml:*
+- `theme.colors.primary`
+- `theme.colors.background_primary`
+- `theme.colors.text_primary`
+
+*features.yml:*
+- `features.search.enabled`
+- `features.filtering.enabled`
+
+*templates.yml:*
+- `templates.layout`
+
+=== Validation errors
+
+Common validation errors:
+
+==== Invalid color format
+
+[source]
+----
+Error: Invalid color format for 'primary': 'blue'
+Expected: Hex color (#RRGGBB) or CSS color name
+----
+
+Solution: Use hex format: `#0000ff`
+
+==== Invalid dimension
+
+[source]
+----
+Error: Invalid dimension for 'header_height': '64'
+Expected: CSS unit (px, rem, em, etc.)
+----
+
+Solution: Include unit: `64px` or `4rem`
+
+==== Unknown feature
+
+[source]
+----
+Warning: Unknown feature 'my_feature' will be ignored
+----
+
+Solution: Check spelling or remove unknown features
+
+== See also
+
+* link:SPA_GUIDE.adoc[SPA User Guide] - Usage and examples
+* link:SPA_DEPLOYMENT.adoc[Deployment Guide] - Hosting documentation
+* link:SPA_ARCHITECTURE.adoc[Architecture Guide] - Design and internals

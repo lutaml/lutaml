@@ -1,0 +1,14 @@
+include "relaton-iho.rnc" {}
+include "isodoc.rnc" {
+
+annex =
+  element annex {
+    Annex-Section-Attributes,
+    section-title?,
+    ( ( BasicBlock* ),
+      (annex-subsection | terms | definitions | references)* ),
+      annex-appendix*
+}
+
+}
+

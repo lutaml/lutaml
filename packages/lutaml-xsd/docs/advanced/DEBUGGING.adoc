@@ -1,0 +1,1003 @@
+---
+layout: default
+title: Debugging
+nav_order: 3
+parent: Advanced
+---
+= Debugging
+:toc:
+:toclevels: 3
+
+== Purpose
+
+This guide provides comprehensive debugging strategies for troubleshooting issues with Lutaml::XSD. Learn how to use verbose output, debug schema mappings, diagnose type resolution failures, inspect package contents, and understand common error messages.
+
+== General
+
+Effective debugging starts with understanding what information is available and how to access it. Lutaml::XSD provides several debugging mechanisms:
+
+* **Verbose output**: Enable detailed logging with `--verbose` flag
+* **Schema mapping inspection**: Verify schema location mappings
+* **Type resolution debugging**: Trace qualified name resolution
+* **Package inspection**: Examine package contents and metadata
+* **Error messages**: Understand and interpret error messages
+* **Diagnostic tools**: Use built-in debugging utilities
+
+== Verbose output
+
+=== Using the `--verbose` flag
+
+The `--verbose` flag enables detailed output for all CLI commands:
+
+.Enabling verbose output for package build
+[example]
+====
+[source,bash]
+----
+lutaml-xsd pkg build config.yml \
+  --output schemas.lxr \
+  --verbose
+----
+
+Verbose output shows:
+
+[source]
+----
+[DEBUG] Loading configuration: config.yml
+[DEBUG] Found 15 schema files
+[DEBUG] Found 5 schema location mappings
+[DEBUG] Found 3 namespace mappings
+
+[INFO] Parsing schemas...
+[DEBUG] Parsing: schemas/gml/3.2.1/gml.xsd
+[DEBUG]   Target namespace: http://www.opengis.net/gml
+[DEBUG]   Imports: 2
+[DEBUG]   Includes: 5
+[DEBUG] Parsing: schemas/citygml/2.0/cityGMLBase.xsd
+[DEBUG]   Target namespace: http://www.opengis.net/citygml/2.0
+[DEBUG]   Imports: 1
+[DEBUG]   Includes: 0
+
+[INFO] Resolving imports and includes...
+[DEBUG] Resolving import: http://www.w3.org/1999/xlink
+[DEBUG]   Mapped to: schemas/xlink/xlinks.xsd
+[DEBUG] Resolving include: gmlBase.xsd
+[DEBUG]   Resolved to: schemas/gml/3.2.1/gmlBase.xsd
+
+[INFO] Building type index...
+[DEBUG] Indexing 145 types from 15 schemas
+[DEBUG]   Complex types: 78
+[DEBUG]   Simple types: 45
+[DEBUG]   Elements: 22
+
+[INFO] Creating package...
+[DEBUG] Package configuration:
+[DEBUG]   XSD mode: include_all
+[DEBUG]   Resolution mode: resolved
+[DEBUG]   Serialization format: marshal
+[DEBUG] Serializing 15 schemas
+[DEBUG] Writing package: schemas.lxr
+
+✓ Package created: schemas.lxr
+  Size: 547823 bytes
+----
+====
+
+=== Programmatic verbose logging
+
+.Enabling verbose output in Ruby code
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+require 'logger'
+
+# Create a logger
+logger = Logger.new($stdout)
+logger.level = Logger::DEBUG
+
+# Use logger for debugging
+class DebugRepository < Lutaml::Xsd::SchemaRepository
+  def parse(schema_locations: {}, lazy_load: true)
+    @logger = Logger.new($stdout)
+    @logger.level = Logger::DEBUG
+
+    @logger.debug("Starting parse with #{files&.size || 0} files")
+
+    result = super
+
+    @logger.debug("Parse completed. Parsed schemas: #{@parsed_schemas.size}")
+
+    result
+  end
+
+  def find_type(qname)
+    @logger&.debug("Looking up type: #{qname}")
+
+    result = super
+
+    if result.resolved?
+      @logger&.debug("  ✓ Found in: #{result.schema_file}")
+    else
+      @logger&.debug("  ✗ Not found: #{result.error_message}")
+    end
+
+    result
+  end
+end
+
+# Usage
+repo = DebugRepository.new(
+  files: ['schemas/main.xsd'],
+  namespace_mappings: [
+    Lutaml::Xsd::NamespaceMapping.new(prefix: 'gml', uri: 'http://www.opengis.net/gml')
+  ]
+)
+
+repo.parse.resolve
+
+result = repo.find_type('gml:CodeType')
+----
+
+Output:
+
+[source]
+----
+D, [2024-10-25T12:00:00.000] DEBUG -- : Starting parse with 1 files
+D, [2024-10-25T12:00:00.100] DEBUG -- : Parse completed. Parsed schemas: 5
+D, [2024-10-25T12:00:00.150] DEBUG -- : Looking up type: gml:CodeType
+D, [2024-10-25T12:00:00.152] DEBUG -- :   ✓ Found in: schemas/gml/basicTypes.xsd
+----
+====
+
+== Debugging schema mappings
+
+=== Verifying schema location mappings
+
+.Testing schema location mappings
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+def debug_schema_mappings(config_file)
+  repo = Lutaml::Xsd::SchemaRepository.from_yaml_file(config_file)
+
+  puts "Schema Location Mappings:"
+  puts "=" * 60
+
+  if repo.schema_location_mappings.nil? || repo.schema_location_mappings.empty?
+    puts "No mappings configured"
+    return
+  end
+
+  repo.schema_location_mappings.each_with_index do |mapping, i|
+    puts "\n#{i + 1}. Mapping:"
+    puts "   From: #{mapping.from}"
+    puts "   To:   #{mapping.to}"
+
+    # Check if target file exists
+    if File.exist?(mapping.to)
+      puts "   ✓ Target file exists"
+      puts "   Size: #{File.size(mapping.to)} bytes"
+    else
+      puts "   ✗ Target file not found!"
+    end
+
+    # If regex pattern, show example matches
+    if mapping.from.is_a?(Regexp)
+      puts "   Type: Regex pattern"
+      puts "   Pattern: #{mapping.from.source}"
+    else
+      puts "   Type: Exact string"
+    end
+  end
+end
+
+debug_schema_mappings('config/schemas.yml')
+----
+
+Output:
+
+[source]
+----
+Schema Location Mappings:
+============================================================
+
+1. Mapping:
+   From: http://www.w3.org/1999/xlink
+   To:   schemas/xlink/xlinks.xsd
+   ✓ Target file exists
+   Size: 5432 bytes
+   Type: Exact string
+
+2. Mapping:
+   From: /(?:\.\.\/)+gml\/(.+\.xsd)$/
+   To:   schemas/gml/\1
+   Type: Regex pattern
+   Pattern: (?:\.\.\/)+gml\/(.+\.xsd)$
+----
+====
+
+=== Testing regex patterns
+
+.Debugging regex schema mappings
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+def test_regex_mapping(pattern, replacement, test_cases)
+  puts "Testing regex mapping:"
+  puts "  Pattern: #{pattern.source}"
+  puts "  Replacement: #{replacement}"
+  puts
+
+  test_cases.each do |test_input|
+    if test_input =~ pattern
+      result = test_input.gsub(pattern, replacement)
+      puts "  ✓ '#{test_input}'"
+      puts "    → '#{result}'"
+    else
+      puts "  ✗ '#{test_input}' (no match)"
+    end
+  end
+end
+
+# Test a regex pattern
+pattern = /(?:\.\.\/)+gml\/(.+\.xsd)$/
+replacement = 'schemas/gml/\1'
+
+test_cases = [
+  '../../gml/3.2.1/gml.xsd',
+  '../../../gml/basicTypes.xsd',
+  'gml/measures.xsd',  # Should not match
+  '../../other/file.xsd'  # Should not match
+]
+
+test_regex_mapping(pattern, replacement, test_cases)
+----
+
+Output:
+
+[source]
+----
+Testing regex mapping:
+  Pattern: (?:\.\.\/)+gml\/(.+\.xsd)$
+  Replacement: schemas/gml/\1
+
+  ✓ '../../gml/3.2.1/gml.xsd'
+    → 'schemas/gml/3.2.1/gml.xsd'
+  ✓ '../../../gml/basicTypes.xsd'
+    → 'schemas/gml/basicTypes.xsd'
+  ✗ 'gml/measures.xsd' (no match)
+  ✗ '../../other/file.xsd' (no match)
+----
+====
+
+=== Tracing schema resolution
+
+.Following the resolution chain
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+class TracingSchemaRepository < Lutaml::Xsd::SchemaRepository
+  def parse_schema_file(file_path, glob_mappings)
+    puts "\n[TRACE] Parsing: #{file_path}"
+
+    # Call original method
+    super
+
+    schema = @parsed_schemas[file_path]
+    if schema
+      puts "  Target namespace: #{schema.target_namespace || '(none)'}"
+
+      # Trace imports
+      if schema.imports && !schema.imports.empty?
+        puts "  Imports:"
+        schema.imports.each do |imp|
+          puts "    - #{imp.namespace}"
+          puts "      Location: #{imp.schema_location}"
+
+          # Trace mapping resolution
+          mapped = resolve_location(imp.schema_location, glob_mappings)
+          puts "      Resolved: #{mapped}" if mapped
+        end
+      end
+
+      # Trace includes
+      if schema.includes && !schema.includes.empty?
+        puts "  Includes:"
+        schema.includes.each do |inc|
+          puts "    - #{inc.schema_location}"
+
+          mapped = resolve_location(inc.schema_location, glob_mappings)
+          puts "      Resolved: #{mapped}" if mapped
+        end
+      end
+    else
+      puts "  ✗ Failed to parse"
+    end
+  end
+
+  private
+
+  def resolve_location(location, glob_mappings)
+    glob_mappings.each do |mapping|
+      from = mapping[:from]
+      to = mapping[:to]
+
+      if from.is_a?(Regexp)
+        if location =~ from
+          return location.gsub(from, to)
+        end
+      elsif location == from
+        return to
+      end
+    end
+
+    nil
+  end
+end
+
+# Usage
+repo = TracingSchemaRepository.from_yaml_file('config/schemas.yml')
+repo.parse
+----
+====
+
+== Debugging type resolution failures
+
+=== Understanding resolution paths
+
+.Tracing type resolution steps
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+def debug_type_resolution(repo, qname)
+  puts "Debugging type resolution: #{qname}"
+  puts "=" * 60
+
+  result = repo.find_type(qname)
+
+  puts "\nResolution path:"
+  result.resolution_path.each_with_index do |step, i|
+    puts "  #{i + 1}. #{step}"
+  end
+
+  puts "\nResult:"
+  if result.resolved?
+    puts "  Status: ✓ Resolved"
+    puts "  Namespace: #{result.namespace}"
+    puts "  Local name: #{result.local_name}"
+    puts "  Schema file: #{result.schema_file}"
+    puts "  Definition type: #{result.definition.class.name}"
+  else
+    puts "  Status: ✗ Failed"
+    puts "  Error: #{result.error_message}"
+
+    # Show suggestions if available
+    if result.error_message.include?("Did you mean:")
+      puts "\n  Suggestions provided in error message"
+    end
+  end
+
+  puts "\nDebug information:"
+  puts "  Registered namespaces: #{repo.all_namespaces.size}"
+  puts "  Total types indexed: #{repo.statistics[:total_types]}"
+end
+
+# Usage
+repo = Lutaml::Xsd::SchemaRepository.from_package('schemas.lxr')
+
+debug_type_resolution(repo, 'gml:CodeType')
+debug_type_resolution(repo, 'gml:CodeTypo')  # Intentional typo
+debug_type_resolution(repo, 'unknown:Type')  # Unknown namespace
+----
+
+Output:
+
+[source]
+----
+Debugging type resolution: gml:CodeType
+============================================================
+
+Resolution path:
+  1. gml:CodeType
+  2. {http://www.opengis.net/gml}CodeType
+  3. schemas/gml/basicTypes.xsd#CodeType
+
+Result:
+  Status: ✓ Resolved
+  Namespace: http://www.opengis.net/gml
+  Local name: CodeType
+  Schema file: schemas/gml/basicTypes.xsd
+  Definition type: Lutaml::Xsd::ComplexType
+
+Debug information:
+  Registered namespaces: 5
+  Total types indexed: 145
+
+Debugging type resolution: gml:CodeTypo
+============================================================
+
+Resolution path:
+  1. gml:CodeTypo
+  2. {http://www.opengis.net/gml}CodeTypo
+
+Result:
+  Status: ✗ Failed
+  Error: Type 'CodeTypo' not found in namespace 'http://www.opengis.net/gml'. Did you mean: CodeType, CodeListType?
+
+  Suggestions provided in error message
+
+Debug information:
+  Registered namespaces: 5
+  Total types indexed: 145
+----
+====
+
+=== Diagnosing namespace issues
+
+.Debugging namespace registration
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+def debug_namespaces(repo)
+  puts "Namespace Configuration:"
+  puts "=" * 60
+
+  # Check configured namespace mappings
+  if repo.namespace_mappings && !repo.namespace_mappings.empty?
+    puts "\nConfigured mappings:"
+    repo.namespace_mappings.each do |mapping|
+      puts "  #{mapping.prefix} → #{mapping.uri}"
+    end
+  else
+    puts "\nNo namespace mappings configured"
+  end
+
+  # Check actual namespaces in schemas
+  puts "\nNamespaces found in schemas:"
+  repo.all_namespaces.each do |uri|
+    puts "  - #{uri}"
+
+    # Try to find prefix for this URI
+    prefix = find_prefix_for_uri(repo, uri)
+    if prefix
+      puts "    Prefix: #{prefix}"
+    else
+      puts "    ⚠ No prefix registered!"
+    end
+  end
+end
+
+def find_prefix_for_uri(repo, uri)
+  repo.namespace_mappings&.find { |m| m.uri == uri }&.prefix
+end
+
+# Usage
+repo = Lutaml::Xsd::SchemaRepository.from_package('schemas.lxr')
+debug_namespaces(repo)
+----
+====
+
+=== Inspecting type index
+
+.Examining the type index contents
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+def inspect_type_index(repo, namespace_filter: nil)
+  stats = repo.statistics
+
+  puts "Type Index Inspection:"
+  puts "=" * 60
+  puts "Total types: #{stats[:total_types]}"
+  puts "Total namespaces: #{stats[:total_namespaces]}"
+  puts
+
+  puts "Types by category:"
+  stats[:types_by_category].each do |category, count|
+    puts "  #{category}: #{count}"
+  end
+
+  # Get access to type index (this requires extending SchemaRepository)
+  # For demonstration, we'll show what would be visible
+
+  if namespace_filter
+    puts "\nTypes in namespace '#{namespace_filter}':"
+
+    # This would require accessing the internal type index
+    # repo.instance_variable_get(:@type_index).find_all_in_namespace(namespace_filter)
+
+    puts "  (List of types would appear here)"
+  end
+end
+
+# Usage
+repo = Lutaml::Xsd::SchemaRepository.from_package('schemas.lxr')
+inspect_type_index(repo)
+inspect_type_index(repo, namespace_filter: 'http://www.opengis.net/gml')
+----
+====
+
+== Inspecting package contents
+
+=== Viewing package metadata
+
+.Displaying package information
+[example]
+====
+[source,bash]
+----
+# Use CLI to inspect package
+lutaml-xsd package info schemas.lxr --verbose
+----
+
+Output:
+
+[source]
+----
+Package: schemas.lxr
+Size: 547823 bytes (535.0 KB)
+
+Metadata:
+--------------------------------------------------------------------------------
+name: Application Schemas
+version: 1.0.0
+description: Complete schema package
+created_at: 2024-10-25T12:00:00+08:00
+lutaml_xsd_version: 1.0.4
+created_by: lutaml-xsd CLI
+xsd_mode: include_all
+resolution_mode: resolved
+serialization_format: marshal
+
+Configuration:
+--------------------------------------------------------------------------------
+files: 15
+namespace_mappings: 5
+schema_location_mappings: 8
+
+Statistics:
+--------------------------------------------------------------------------------
+total_types: 145
+  complex_type: 78
+  simple_type: 45
+  element: 22
+total_namespaces: 5
+total_schemas: 15
+----
+
+Programmatic inspection:
+
+[source,ruby]
+----
+require 'lutaml/xsd'
+require 'zip'
+require 'json'
+
+def inspect_package(package_path)
+  puts "Inspecting package: #{package_path}"
+  puts "=" * 60
+
+  Zip::File.open(package_path) do |zip|
+    # List all entries
+    puts "\nPackage contents:"
+    zip.each do |entry|
+      puts "  #{entry.name} (#{entry.size} bytes)"
+    end
+
+    # Read metadata
+    metadata_entry = zip.find_entry('metadata.json')
+    if metadata_entry
+      metadata = JSON.parse(metadata_entry.get_input_stream.read)
+
+      puts "\nMetadata:"
+      metadata.each do |key, value|
+        puts "  #{key}: #{value}"
+      end
+    end
+
+    # Check for XSD files (if include_all mode)
+    xsd_entries = zip.select { |e| e.name.end_with?('.xsd') }
+    if xsd_entries.any?
+      puts "\nBundled XSD files: #{xsd_entries.size}"
+      xsd_entries.each do |entry|
+        puts "  - #{entry.name}"
+      end
+    end
+  end
+end
+
+inspect_package('schemas.lxr')
+----
+====
+
+=== Validating package structure
+
+.Checking package integrity
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+def validate_package_structure(package_path)
+  puts "Validating package structure: #{package_path}"
+  puts "=" * 60
+
+  issues = []
+
+  # Check file exists
+  unless File.exist?(package_path)
+    puts "✗ Package file not found"
+    return
+  end
+
+  puts "✓ Package file exists (#{File.size(package_path)} bytes)"
+
+  # Attempt to load as ZIP
+  begin
+    require 'zip'
+
+    Zip::File.open(package_path) do |zip|
+      # Check for required entries
+      required_entries = ['metadata.json']
+
+      required_entries.each do |entry_name|
+        if zip.find_entry(entry_name)
+          puts "✓ Required entry present: #{entry_name}"
+        else
+          puts "✗ Missing required entry: #{entry_name}"
+          issues << "Missing #{entry_name}"
+        end
+      end
+
+      # Validate metadata
+      metadata_entry = zip.find_entry('metadata.json')
+      if metadata_entry
+        begin
+          metadata = JSON.parse(metadata_entry.get_input_stream.read)
+
+          required_fields = ['lutaml_xsd_version', 'xsd_mode', 'resolution_mode']
+          required_fields.each do |field|
+            if metadata[field]
+              puts "✓ Metadata field present: #{field}"
+            else
+              puts "✗ Missing metadata field: #{field}"
+              issues << "Missing metadata: #{field}"
+            end
+          end
+        rescue JSON::ParserError => e
+          puts "✗ Invalid metadata JSON: #{e.message}"
+          issues << "Invalid JSON in metadata"
+        end
+      end
+    end
+  rescue Zip::Error => e
+    puts "✗ Invalid ZIP file: #{e.message}"
+    issues << "Not a valid ZIP file"
+  end
+
+  # Summary
+  puts "\n" + "=" * 60
+  if issues.empty?
+    puts "✓ Package structure is valid"
+  else
+    puts "✗ Package has #{issues.size} issue(s):"
+    issues.each { |issue| puts "  - #{issue}" }
+  end
+end
+
+validate_package_structure('schemas.lxr')
+----
+====
+
+== Common error messages
+
+=== Schema not found errors
+
+.Error: "Schema file not found"
+[example]
+====
+Error message:
+
+[source]
+----
+Error: Schema file not found: schemas/gml/gml.xsd
+----
+
+**Cause**: The specified schema file does not exist at the given path.
+
+**Solutions**:
+
+1. Verify the file path is correct:
++
+[source,bash]
+----
+ls -la schemas/gml/gml.xsd
+----
+
+2. Check if the path is relative to the correct directory:
++
+[source,ruby]
+----
+# Ensure paths are absolute or relative to config file
+repo = Lutaml::Xsd::SchemaRepository.from_yaml_file('config/schemas.yml')
+# File paths in YAML should be relative to config file directory
+----
+
+3. Verify the file was downloaded or exists:
++
+[source,bash]
+----
+# List all XSD files
+find schemas -name "*.xsd"
+----
+====
+
+=== Type resolution errors
+
+.Error: "Type not found in namespace"
+[example]
+====
+Error message:
+
+[source]
+----
+Type 'Building' not found in namespace 'http://www.opengis.net/citygml/2.0'
+----
+
+**Possible causes**:
+
+1. **Type name is incorrect**:
++
+[source,ruby]
+----
+# Verify exact type name
+repo.find_type('citygml:Building')  # Correct
+repo.find_type('citygml:building')  # Wrong case
+----
+
+2. **Namespace prefix not registered**:
++
+[source,ruby]
+----
+# Register namespace before use
+repo.configure_namespace(
+  prefix: 'citygml',
+  uri: 'http://www.opengis.net/citygml/2.0'
+)
+----
+
+3. **Schema not parsed or resolved**:
++
+[source,ruby]
+----
+# Ensure repository is resolved
+repo.parse.resolve  # Call both methods
+result = repo.find_type('citygml:Building')
+----
+
+4. **Type is in a different namespace**:
++
+[source,ruby]
+----
+# Check which namespaces contain similar types
+repo.all_namespaces.each do |ns|
+  puts "Namespace: #{ns}"
+  # Query types in this namespace
+end
+----
+====
+
+=== Import/include resolution errors
+
+.Error: "Failed to resolve import"
+[example]
+====
+Error message:
+
+[source]
+----
+Warning: Failed to parse schema schemas/gml/gml.xsd: Import not resolved
+----
+
+**Solutions**:
+
+1. **Add schema location mapping**:
++
+[source,yaml]
+----
+schema_location_mappings:
+  - from: "http://www.w3.org/1999/xlink"
+    to: "schemas/xlink/xlinks.xsd"
+----
+
+2. **Verify mapped file exists**:
++
+[source,bash]
+----
+ls -la schemas/xlink/xlinks.xsd
+----
+
+3. **Use regex for multiple imports**:
++
+[source,yaml]
+----
+schema_location_mappings:
+  - from: !ruby/regexp /https:\/\/schemas\.isotc211\.org\/(.+)/
+    to: "schemas/iso/\\1"
+----
+
+4. **Check import statement in XSD**:
++
+[source,xml]
+----
+<xs:import namespace="http://www.w3.org/1999/xlink"
+           schemaLocation="http://www.w3.org/1999/xlink"/>
+<!-- Ensure this matches your mapping -->
+----
+====
+
+== Debugging tools and techniques
+
+=== Interactive debugging
+
+.Using pry for interactive debugging
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+require 'pry'  # For development only
+
+repo = Lutaml::Xsd::SchemaRepository.from_package('schemas.lxr')
+
+# Set breakpoint
+binding.pry
+
+# Now you can interactively explore:
+# - repo.statistics
+# - repo.all_namespaces
+# - repo.find_type('gml:CodeType')
+# - repo.instance_variables
+----
+====
+
+=== Creating debug scripts
+
+.Reusable debug script template
+[example]
+====
+[source,ruby]
+----
+#!/usr/bin/env ruby
+# debug_schema.rb - Debug schema repository issues
+
+require 'lutaml/xsd'
+require 'json'
+
+def main
+  package_path = ARGV[0] || 'schemas.lxr'
+
+  puts "Debug Report: #{package_path}"
+  puts "=" * 70
+
+  # Load package
+  begin
+    repo = Lutaml::Xsd::SchemaRepository.from_package(package_path)
+    puts "✓ Package loaded successfully"
+  rescue => e
+    puts "✗ Failed to load package: #{e.message}"
+    puts e.backtrace.first(5)
+    exit 1
+  end
+
+  # Statistics
+  puts "\nStatistics:"
+  stats = repo.statistics
+  puts JSON.pretty_generate(stats)
+
+  # Namespaces
+  puts "\nNamespaces:"
+  repo.all_namespaces.each { |ns| puts "  - #{ns}" }
+
+  # Test type resolution
+  puts "\nTesting type resolution:"
+  test_types = ENV['TEST_TYPES']&.split(',') || ['gml:CodeType']
+
+  test_types.each do |type_name|
+    result = repo.find_type(type_name)
+    status = result.resolved? ? '✓' : '✗'
+    puts "  #{status} #{type_name}"
+
+    unless result.resolved?
+      puts "    Error: #{result.error_message}"
+    end
+  end
+
+  puts "\n" + "=" * 70
+  puts "Debug report complete"
+end
+
+main if __FILE__ == $0
+----
+
+Usage:
+
+[source,bash]
+----
+# Basic usage
+ruby debug_schema.rb schemas.lxr
+
+# Test specific types
+TEST_TYPES="gml:CodeType,citygml:Building" ruby debug_schema.rb schemas.lxr
+----
+====
+
+=== Performance profiling
+
+.Profiling schema operations
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+require 'benchmark'
+require 'ruby-prof'  # gem install ruby-prof
+
+# Profile package loading
+RubyProf.start
+
+repo = Lutaml::Xsd::SchemaRepository.from_package('schemas.lxr')
+
+result = RubyProf.stop
+
+# Print flat profile
+printer = RubyProf::FlatPrinter.new(result)
+printer.print($stdout, min_percent: 2)
+
+# Benchmark type queries
+puts "\nBenchmarking type queries:"
+
+Benchmark.bm(20) do |x|
+  x.report("First query:") do
+    1000.times { repo.find_type('gml:CodeType') }
+  end
+
+  x.report("Cached query:") do
+    1000.times { repo.find_type('gml:CodeType') }
+  end
+
+  x.report("Different types:") do
+    types = ['gml:CodeType', 'gml:MeasureType', 'gml:ReferenceType']
+    1000.times { types.each { |t| repo.find_type(t) } }
+  end
+end
+----
+====
+
+== See also
+
+* link:../TROUBLESHOOTING[Troubleshooting] - Common problems and solutions
+* link:PERFORMANCE_TUNING[Performance tuning] - Optimization strategies
+* link:../guides/CREATING_PACKAGES[Creating packages] - Package creation guide
+* link:../reference/CLI[CLI reference] - Command-line options

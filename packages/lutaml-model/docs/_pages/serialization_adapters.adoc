@@ -1,0 +1,405 @@
+---
+title: Serialization Adapters
+nav_order: 9
+---
+
+= Serialization adapters
+:toc:
+:toclevels: 3
+
+== Serialization adapters
+
+=== General
+
+The LutaML component that serializes a model into a serialization format is
+called an adapter. A serialization format may be supported by multiple adapters.
+
+An adapter typically:
+
+* supports a specific serialization format
+* provides a set of methods to serialize and deserialize models and collections of models
+
+LutaML, out of the box, supports the following serialization formats:
+
+* XML (https://www.w3.org/TR/xmlschema-1/[W3C XML Schema (Second Edition)], XML 1.0)
+* YAML (https://yaml.org/[YAML version 1.2])
+* JSON (https://www.ecma-international.org/publications-and-standards/standards/ecma-404/[ECMA-404 The JSON Data Interchange Standard], unofficial link: https://www.json.org[JSON])
+* TOML (https://toml.io/en[TOML version 1.0])
+* JSON-LD (https://www.w3.org/TR/json-ld11/[W3C JSON-LD 1.1])
+* Turtle (https://www.w3.org/TR/turtle/[W3C RDF 1.1 Turtle])
+
+The adapter interface is also used to support certain transformation of models
+into an "end format", which is not a serialization format. For example, the
+`Lutaml::Model::Hash` is used to convert a model into a hash format
+that is not a serialization format.
+
+Users can extend LutaML by creating custom adapters for other serialization
+formats or for other data formats. The
+link:../references/custom_adapters[Custom Adapters Guide] describes this process in
+detail.
+
+For certain serialization formats, LutaML provides multiple adapters to support
+different serialization libraries. Please refer to their specific sections for
+more information.
+
+
+=== Auto-detection
+
+Adapters are resolved lazily on first use. If no adapter is explicitly configured, `AdapterResolver` probes for available gems in a preferred order:
+
+* **XML**: `:nokogiri` → `:ox` → `:oga` → `:rexml`
+* **TOML**: `:teptris` → `:tomlib` → `:toml_rb` (Windows: `:teptris` → `:toml_rb`)
+* **JSON/YAML/Hash**: `:standard` (always available)
+
+The detection result is cached after the first probe, so it only runs once per format.
+
+
+=== Configuration
+
+==== General
+
+It is necessary to configure the adapter to be used for serialization and
+deserialization for a set of formats that the LutaML models will be transformed
+into.
+
+There are two cases where you need to define such configuration:
+
+* End-user usage of the LutaML models. This is the case where you are
+using LutaML models in your application and want to serialize them into a
+specific format. If you are a gem developer that relies on lutaml-model,
+this case does not apply to you, because the end-user of your gem should
+determine the adapter configuration.
+
+* Testing purposes, e.g. RSpec. In order to run tests that involve verifying
+correctness of serialization, it is necessary to define adapter configuration.
+
+There are two ways to specify a configuration:
+
+* by providing a predefined symbol (preferred)
+* by providing the actual adapter classes
+
+There is a default configuration for adapters for commonly used formats:
+
+* XML: `:nokogiri` (auto-detected)
+* YAML: `:standard` (alias: `:standard_yaml`)
+* JSON: `:standard` (alias: `:standard_json`)
+* Hash: `:standard` (alias: `:standard_hash`)
+* TOML: `:teptris` if available, else `:tomlib` on non-Windows, `:toml_rb` on Windows
+
+
+==== Configure adapters through symbol choices
+
+The end-user or a gem developer can copy and paste the following configuration
+into an early loading file in their application or gem.
+
+This configuration is preferred over the class choices because it is more
+concise and does not require any `require` code specific to the internals
+of the LutaML runtime implementation.
+
+Syntax:
+
+[source,ruby]
+----
+require 'lutaml/model'
+
+Lutaml::Model::Config.configure do |config|
+  config.xml_adapter = :nokogiri # can be one of [:nokogiri, :ox, :oga, :rexml]
+  config.hash_adapter = :standard
+  config.yaml_adapter = :standard
+  config.json_adapter = :standard # can be one of [:standard, :multi_json, :oj]
+  config.toml_adapter = :toml_rb # can be one of [:teptris, :toml_rb, :tomlib] (tomlib not available on Windows)
+end
+----
+
+
+==== Configure adapters through class choices
+
+The end-user or a gem developer can copy and paste the following configuration
+into an early loading file in their application or gem.
+
+Only the serialization formats used will require a configuration.
+
+Syntax:
+
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/model'
+require 'lutaml/xml/adapter/nokogiri_adapter'
+require 'lutaml/key_value/adapter/hash/standard_adapter'
+require 'lutaml/key_value/adapter/json/standard_adapter'
+require 'lutaml/key_value/adapter/yaml/standard_adapter'
+require 'lutaml/toml/adapter/toml_rb_adapter'
+
+Lutaml::Model::Config.configure do |config|
+  config.xml_adapter = Lutaml::Xml::Adapter::NokogiriAdapter
+  config.hash_adapter = Lutaml::KeyValue::Adapter::Hash::StandardAdapter
+  config.yaml_adapter = Lutaml::KeyValue::Adapter::Yaml::StandardAdapter
+  config.json_adapter = Lutaml::KeyValue::Adapter::Json::StandardAdapter
+  config.toml_adapter = Lutaml::Toml::Adapter::TomlRbAdapter
+end
+----
+====
+
+
+==== Per-operation adapter override
+
+Override the adapter for a single call using the `adapter:` option:
+
+[source,ruby]
+----
+# Parse with Ox for this call only
+model = MyClass.from_xml(xml_string, adapter: :ox)
+
+# Serialize with REXML for this call only
+output = model.to_xml(adapter: :rexml)
+----
+
+
+==== Scoped adapter context
+
+Use `Config.with_adapter` for thread-safe, block-scoped overrides:
+
+[source,ruby]
+----
+Lutaml::Model::Config.with_adapter(xml: :ox) do
+  model = MyClass.from_xml(data)
+  model.to_xml  # also uses Ox
+end
+# Outside the block, reverts to the configured default
+
+# Multiple formats at once
+Lutaml::Model::Config.with_adapter(xml: :nokogiri, toml: :tomlib) do
+  model = MyClass.from_xml(data)
+  toml = model.to_toml
+end
+----
+
+TIP: `with_adapter` is thread-safe -- use it in tests instead of save/restore patterns.
+
+
+=== XML
+
+Lutaml::Model supports the following XML adapters:
+
+Nokogiri::
+(default)
+Popular `libxml` based XML parser for Ruby.
+Requires native extensions (i.e. compiled C code).
+Requires the `nokogiri` gem.
+
+Oga::
+(optional, *deprecated*)
+Pure Ruby XML parser.
+Does not require native extensions.
+Requires the `oga` gem.
+
+[NOTE]
+====
+The Oga engine is deprecated: moxml's default engine (Nokogiri, or the
+leptris native engine when present) is the supported XML lane.
+Selecting Oga emits a deprecation warning; removal is planned for a
+future release.
+====
+
+Ox::
+(optional)
+Fast XML parser and object serializer for Ruby, implemented partially in C.
+Requires native extensions (i.e. compiled C code).
+Requires the `ox` gem.
+
+REXML::
+(optional, *deprecated*)
+Pure Ruby XML parser, bundled as a default gem with Ruby.
+Moved from standard library to a default gem in Ruby 3.0.
+Opal-compatible: Opal reimplements `strscan` and `stringio` in its stdlib,
+enabling REXML to compile cleanly to JavaScript.
+Requires the `rexml` gem (bundled with Ruby by default).
+
+[NOTE]
+====
+The REXML engine is deprecated: moxml's default engine (Nokogiri, or
+the leptris native engine when present) is the supported XML lane.
+Selecting REXML emits a deprecation warning; removal is planned for a
+future release.
+====
+
+
+.Using an XML adapter
+[source,ruby]
+----
+require 'lutaml/model'
+
+Lutaml::Model::Config.configure do |config|
+  config.xml_adapter = :nokogiri
+  # or
+  config.xml_adapter = :oga
+  # or
+  config.xml_adapter = :ox
+  # or
+  config.xml_adapter = :rexml
+end
+----
+
+
+=== YAML
+
+Lutaml::Model supports only one YAML adapter.
+
+YAML::
+(default)
+The Psych YAML parser and emitter for Ruby.
+Included in the Ruby standard library.
+
+.Using a YAML adapter
+[source,ruby]
+----
+require 'lutaml/model'
+
+Lutaml::Model::Config.configure do |config|
+  config.yaml_adapter = :standard
+end
+----
+
+
+=== JSON
+
+Lutaml::Model supports the following JSON adapters:
+
+JSON::
+(default)
+The standard JSON library for Ruby.
+Included in the Ruby standard library.
+
+MultiJson::
+(optional)
+A gem that provides a common interface to multiple JSON libraries.
+Requires the `multi_json` gem.
+
+Oj::
+(optional)
+A fast JSON parser and Object marshaller as a Ruby gem.
+Requires the `oj` gem.
+
+.Using a JSON adapter
+[source,ruby]
+----
+require 'lutaml/model'
+
+Lutaml::Model::Config.configure do |config|
+  config.json_adapter = :standard
+  # or
+  config.json_adapter = :multi_json
+  # or
+  config.json_adapter = :oj
+end
+----
+
+
+=== TOML
+
+Lutaml::Model supports the following TOML adapters:
+
+Teptris::
+(default when the `teptris` gem is in the bundle — every platform)
+The native TOML engine (libteptris via FFI). Value semantics mirror
+tomlib: offset and local datetimes become `Time`, dates become `Date`,
+local times stay `String`. Parse failures raise `Teptris::ParseError`
+with line and column.
+Requires the `teptris` gem.
+
+Tomlib::
+(default on non-Windows when teptris is absent)
+Toml-rb fork that is compatible with the TOML v1.0.0 specification, with
+additional features and better performance.
+Requires the `tomlib` gem.
+NOTE: Not available on Windows due to segmentation fault issues.
+
+Toml-rb::
+(default on Windows)
+A TOML parser and serializer for Ruby that is compatible with the TOML v1.0.0
+specification.
+Requires the `toml-rb` gem.
+
+
+.Using a TOML adapter
+[source,ruby]
+----
+require 'lutaml/model'
+
+Lutaml::Model::Config.configure do |config|
+  config.toml_adapter = :toml_rb
+  # or
+  config.toml_adapter = :tomlib  # not available on Windows
+end
+----
+
+
+=== JSON-LD
+
+Lutaml::Model supports serialization to and from JSON-LD (W3C JSON-LD 1.1).
+JSON-LD is a key-value format that extends the built-in JSON serialization with
+JSON-LD-specific constructs: `@context`, `@type`, and `@id`.
+
+The adapter uses the standard Ruby `JSON` library internally — no additional gem
+is required beyond `lutaml-model`.
+
+See the link:../guides/jsonld-serialization[JSON-LD Serialization guide] for
+mapping DSL details and usage examples.
+
+
+=== Turtle
+
+Lutaml::Model supports serialization to and from W3C RDF Turtle format.
+Turtle is a non-key-value format based on RDF triples with its own mapping DSL.
+
+Requires the `rdf-turtle` gem:
+
+[source,ruby]
+----
+gem "rdf-turtle", "~> 3.3"
+----
+
+See the link:../guides/turtle-serialization[Turtle Serialization guide] for
+mapping DSL details and usage examples.
+
+
+=== Error handling
+
+When parsing invalid serialization format data, an `InvalidFormatError` is
+raised to indicate that the input format is malformed and cannot be parsed.
+
+NOTE: The `:tomlib` TOML adapter is disabled on Windows due to segmentation
+fault issues. Attempting to configure `:tomlib` on Windows will raise an
+`ArgumentError`. Use `:teptris` (native, all platforms) or `:toml_rb` on
+Windows instead.
+
+=== Overriding the engine for a format (supported seam)
+
+The link:../guides/native-engines[native-engine auto-detection] selects
+the fastest available engine per format at boot. When an application
+needs a specific engine regardless of the bundle (for example fontist's
+parse-only yeptris override), the supported seam is
+`Lutaml::Model::AdapterResolver`:
+
+[source,ruby]
+----
+# Pin a named adapter type for a format (validated and loaded eagerly).
+Lutaml::Model::AdapterResolver.set_adapter_type(:yaml, :yeptris)
+
+# Pin a pre-resolved adapter class (e.g. a subclass customizing one
+# operation — fontist's parse-only override is exactly this shape).
+Lutaml::Model::AdapterResolver.set_adapter_class(
+  :yaml, Fontist::Yaml::YeptrisAdapter
+)
+
+# Pass a nil class to unset a pin and return to auto-detection.
+Lutaml::Model::AdapterResolver.set_adapter_class(:yaml, nil)
+----
+
+Resolution order: a thread-local `AdapterScope` override, then an
+explicitly pinned adapter (never falls through to detection), then
+bundle-based auto-detection, then the format's default adapter. The
+same seam covers every registered format: `:xml`, `:yaml`, `:json`,
+`:toml`, and the key-value formats.

@@ -1,0 +1,713 @@
+---
+layout: default
+title: Namespace configuration
+nav_order: 5
+parent: Reference
+---
+= Namespace Configuration Reference
+:toc:
+:toclevels: 3
+
+== Purpose
+
+Complete reference for configuring XML namespaces in Lutaml::XSD. This document covers namespace mappings, prefix configuration, URI resolution, and best practices for working with multi-namespace schemas.
+
+== General
+
+XML namespaces are fundamental to XSD schemas, providing unique identification for elements and types. Lutaml::XSD uses namespace configuration to:
+
+* Map prefixes to namespace URIs for qualified name resolution
+* Enable lookups using prefixed notation (`gml:CodeType`)
+* Support Clark notation (`{http://www.opengis.net/gml/3.2}CodeType`)
+* Facilitate cross-schema type resolution
+* Generate proper namespace-aware documentation
+
+Proper namespace configuration is essential for working with complex, multi-schema XML applications like CityGML, GML, ISO/TC 211 standards, or any schema that uses multiple namespaces.
+
+== Namespace concepts
+
+=== Namespace URI
+
+A namespace URI is the unique identifier for an XML namespace, typically expressed as a URL (though it doesn't need to be accessible).
+
+.Common namespace URI examples
+[example]
+====
+[source]
+----
+http://www.opengis.net/gml/3.2
+http://www.w3.org/1999/xlink
+https://www.isotc211.org/2005/gco
+https://www.geospatial.jp/iur/uro/3.2
+----
+
+These URIs uniquely identify different schemas and prevent naming conflicts.
+====
+
+=== Namespace prefix
+
+A prefix is a short, convenient alias for a namespace URI, used in qualified names to avoid repeating long URIs.
+
+.Prefix examples
+[example]
+====
+[source]
+----
+gml   -> http://www.opengis.net/gml/3.2
+xlink -> http://www.w3.org/1999/xlink
+gco   -> https://www.isotc211.org/2005/gco
+uro   -> https://www.geospatial.jp/iur/uro/3.2
+----
+
+With these mappings, `gml:CodeType` resolves to `{http://www.opengis.net/gml/3.2}CodeType`.
+====
+
+=== Qualified names
+
+Qualified names combine a prefix and local name with a colon separator.
+
+Formats supported by Lutaml::XSD:
+
+Prefixed notation::
+`prefix:LocalName` (e.g., `gml:CodeType`)
+
+Clark notation::
+`{namespace-uri}LocalName` (e.g., `{http://www.opengis.net/gml/3.2}CodeType`)
+
+Unprefixed::
+`LocalName` (searches all namespaces)
+
+== The `add_namespace_mapping` method
+
+=== Syntax
+
+[source,ruby]
+----
+repository.add_namespace_mapping(prefix: {prefix}, uri: {uri}) <1>
+----
+<1> Register a namespace prefix-to-URI mapping
+
+Where,
+
+`prefix`:: The namespace prefix (e.g., `"gml"`, `"xlink"`) (required, String)
+`uri`:: The full namespace URI (e.g., `"http://www.opengis.net/gml/3.2"`) (required, String)
+
+=== Purpose
+
+The [`add_namespace_mapping`](docs/NAMESPACE_CONFIGURATION.adoc:92) method registers a prefix-to-URI mapping in the SchemaRepository, enabling:
+
+* Resolution of prefixed qualified names
+* Type lookups across namespaces
+* Namespace-aware queries
+* Proper documentation generation
+
+=== Basic usage
+
+.Registering namespace mappings
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+repo = Lutaml::Xsd::SchemaRepository.new
+
+# Add GML namespace mapping
+repo.add_namespace_mapping(
+  prefix: 'gml',
+  uri: 'http://www.opengis.net/gml/3.2'
+)
+
+# Add xlink namespace mapping
+repo.add_namespace_mapping(
+  prefix: 'xlink',
+  uri: 'http://www.w3.org/1999/xlink'
+)
+
+# Add custom application namespace
+repo.add_namespace_mapping(
+  prefix: 'app',
+  uri: 'http://example.com/myapp/1.0'
+)
+
+# Now you can resolve types using prefixes
+result = repo.resolve_type(qualified_name: 'gml:CodeType')
+if result.found?
+  puts "Found type in namespace: #{result.namespace}"
+end
+----
+====
+
+=== Multiple namespace configuration
+
+When working with complex schemas, you typically need to configure multiple namespaces.
+
+.Configuring multiple namespaces for CityGML
+[example]
+====
+[source,ruby]
+----
+repo = Lutaml::Xsd::SchemaRepository.new
+
+# GML namespaces
+repo.add_namespace_mapping(
+  prefix: 'gml',
+  uri: 'http://www.opengis.net/gml/3.2'
+)
+
+# XLink namespace
+repo.add_namespace_mapping(
+  prefix: 'xlink',
+  uri: 'http://www.w3.org/1999/xlink'
+)
+
+# CityGML core
+repo.add_namespace_mapping(
+  prefix: 'core',
+  uri: 'http://www.opengis.net/citygml/2.0'
+)
+
+# CityGML building module
+repo.add_namespace_mapping(
+  prefix: 'bldg',
+  uri: 'http://www.opengis.net/citygml/building/2.0'
+)
+
+# CityGML appearance module
+repo.add_namespace_mapping(
+  prefix: 'app',
+  uri: 'http://www.opengis.net/citygml/appearance/2.0'
+)
+----
+====
+
+=== Configuration from YAML
+
+For complex projects, namespace mappings can be defined in YAML configuration files.
+
+.Defining namespaces in YAML configuration
+[example]
+====
+[source,yaml]
+----
+# config/schema_config.yaml
+namespace_mappings:
+  - prefix: "gml"
+    uri: "http://www.opengis.net/gml/3.2"
+
+  - prefix: "xlink"
+    uri: "http://www.w3.org/1999/xlink"
+
+  - prefix: "gco"
+    uri: "https://www.isotc211.org/2005/gco"
+
+  - prefix: "gmd"
+    uri: "https://www.isotc211.org/2005/gmd"
+
+  - prefix: "uro"
+    uri: "https://www.geospatial.jp/iur/uro/3.2"
+
+  - prefix: "urf"
+    uri: "https://www.geospatial.jp/iur/urf/3.2"
+----
+
+Load and apply mappings:
+
+[source,ruby]
+----
+require 'yaml'
+require 'lutaml/xsd'
+
+config = YAML.load_file('config/schema_config.yaml')
+repo = Lutaml::Xsd::SchemaRepository.new
+
+config['namespace_mappings'].each do |mapping|
+  repo.add_namespace_mapping(
+    prefix: mapping['prefix'],
+    uri: mapping['uri']
+  )
+end
+----
+====
+
+== Auto-detection from schemas
+
+=== How auto-detection works
+
+When schemas are parsed, Lutaml::XSD can automatically extract namespace information from XSD files.
+
+.Schema with namespace declarations
+[example]
+====
+[source,xml]
+----
+<xsd:schema
+  xmlns:xsd="https://www.w3.org/2001/XMLSchema"
+  xmlns:gml="http://www.opengis.net/gml/3.2"
+  xmlns:xlink="http://www.w3.org/1999/xlink"
+  targetNamespace="http://example.com/myapp/1.0"
+  elementFormDefault="qualified">
+
+  <!-- Schema content -->
+</xsd:schema>
+----
+
+The schema declares three namespace prefixes that could be auto-detected:
+* `gml` → `http://www.opengis.net/gml/3.2`
+* `xlink` → `http://www.w3.org/1999/xlink`
+* Target namespace: `http://example.com/myapp/1.0`
+====
+
+=== Explicit vs. auto-detected mappings
+
+While schemas contain namespace information, explicit configuration is recommended for several reasons:
+
+Explicit configuration (recommended)::
+* Ensures consistent prefix usage across schemas
+* Provides control over which namespaces are indexed
+* Prevents conflicts from varying prefix usage
+* Documents namespace usage clearly
+
+Auto-detection::
+* Convenient for quick parsing
+* May result in inconsistent prefixes
+* Could miss namespaces only referenced in imports
+* Less control over namespace registry
+
+.Combining explicit and auto-detected namespaces
+[example]
+====
+[source,ruby]
+----
+repo = Lutaml::Xsd::SchemaRepository.new
+
+# Explicitly configure core namespaces
+repo.add_namespace_mapping(prefix: 'gml', uri: 'http://www.opengis.net/gml/3.2')
+repo.add_namespace_mapping(prefix: 'xlink', uri: 'http://www.w3.org/1999/xlink')
+
+# Parse schema - may auto-detect additional namespaces
+schema_content = File.read('schema.xsd')
+repo.parse_schema(
+  content: schema_content,
+  location: 'path/to'
+)
+
+# Verify registered namespaces
+puts "Registered namespaces:"
+repo.namespaces.each do |uri|
+  puts "  #{uri}"
+end
+----
+====
+
+== Overriding default mappings
+
+=== When to override
+
+Override default namespace mappings when:
+
+* Different schemas use different prefixes for the same namespace
+* You need consistent prefixes across a project
+* Standard prefixes conflict with your conventions
+* Documentation requires specific prefix usage
+
+=== How to override
+
+Call [`add_namespace_mapping`](docs/NAMESPACE_CONFIGURATION.adoc:92) before parsing schemas to establish your preferred mappings.
+
+.Overriding namespace prefixes
+[example]
+====
+[source,ruby]
+----
+repo = Lutaml::Xsd::SchemaRepository.new
+
+# Override: Use 'g' instead of 'gml'
+repo.add_namespace_mapping(
+  prefix: 'g',
+  uri: 'http://www.opengis.net/gml/3.2'
+)
+
+# Override: Use 'xl' instead of 'xlink'
+repo.add_namespace_mapping(
+  prefix: 'xl',
+  uri: 'http://www.w3.org/1999/xlink'
+)
+
+# Parse schema
+repo.parse_schema(content: schema_content, location: 'path/')
+
+# Now resolve using custom prefixes
+result = repo.resolve_type(qualified_name: 'g:CodeType')
+# Instead of 'gml:CodeType'
+----
+====
+
+=== Multiple prefixes for same namespace
+
+You can register multiple prefixes for the same namespace URI to support different naming conventions.
+
+.Registering alternative prefixes
+[example]
+====
+[source,ruby]
+----
+repo = Lutaml::Xsd::SchemaRepository.new
+
+# Primary mapping
+repo.add_namespace_mapping(
+  prefix: 'gml',
+  uri: 'http://www.opengis.net/gml/3.2'
+)
+
+# Alternative mapping (for compatibility)
+repo.add_namespace_mapping(
+  prefix: 'gml32',
+  uri: 'http://www.opengis.net/gml/3.2'
+)
+
+# Both work for resolution
+repo.resolve_type(qualified_name: 'gml:CodeType')
+repo.resolve_type(qualified_name: 'gml32:CodeType')
+# Both resolve to the same type
+----
+====
+
+== Best practices
+
+=== Configure namespaces early
+
+Register all namespace mappings before parsing schemas to ensure consistent resolution.
+
+.Recommended initialization order
+[example]
+====
+[source,ruby]
+----
+# 1. Create repository
+repo = Lutaml::Xsd::SchemaRepository.new
+
+# 2. Configure ALL namespaces first
+repo.add_namespace_mapping(prefix: 'gml', uri: 'http://www.opengis.net/gml/3.2')
+repo.add_namespace_mapping(prefix: 'xlink', uri: 'http://www.w3.org/1999/xlink')
+repo.add_namespace_mapping(prefix: 'gco', uri: 'https://www.isotc211.org/2005/gco')
+# ... configure all namespaces
+
+# 3. Then parse schemas
+repo.parse_schema(content: schema1, location: 'path1/')
+repo.parse_schema(content: schema2, location: 'path2/')
+# ... parse all schemas
+----
+====
+
+=== Use standard prefixes
+
+Follow widely-accepted prefix conventions for common schemas.
+
+.Standard namespace prefix conventions
+[cols="1,2,2"]
+|===
+|Prefix |Namespace URI |Standard
+
+|`gml`
+|`http://www.opengis.net/gml/3.2`
+|OGC GML 3.2
+
+|`xlink`
+|`http://www.w3.org/1999/xlink`
+|W3C XLink
+
+|`xs` or `xsd`
+|`https://www.w3.org/2001/XMLSchema`
+|W3C XML Schema
+
+|`gco`
+|`https://www.isotc211.org/2005/gco`
+|ISO/TC 211 GCO
+
+|`gmd`
+|`https://www.isotc211.org/2005/gmd`
+|ISO/TC 211 GMD
+
+|`gml32`
+|`http://www.opengis.net/gml/3.2`
+|Alternative GML 3.2
+|===
+
+=== Document namespace usage
+
+Maintain clear documentation of namespace mappings in your project.
+
+.Documenting namespace configuration
+[example]
+====
+[source,ruby]
+----
+# config/namespaces.rb
+#
+# Namespace Configuration for MyApp Schema Repository
+#
+# This file defines the namespace prefix-to-URI mappings used
+# throughout the application for consistent schema resolution.
+#
+module MyApp
+  module Namespaces
+    MAPPINGS = [
+      # OGC Geography Markup Language 3.2.1
+      { prefix: 'gml', uri: 'http://www.opengis.net/gml/3.2' },
+
+      # W3C XLink 1.0
+      { prefix: 'xlink', uri: 'http://www.w3.org/1999/xlink' },
+
+      # ISO/TC 211 Metadata - Common Classes
+      { prefix: 'gco', uri: 'https://www.isotc211.org/2005/gco' },
+
+      # ISO/TC 211 Metadata - Application Schema
+      { prefix: 'gmd', uri: 'https://www.isotc211.org/2005/gmd' },
+
+      # Japanese i-UR Urban Objects
+      { prefix: 'uro', uri: 'https://www.geospatial.jp/iur/uro/3.2' },
+
+      # Japanese i-UR Urban Functions
+      { prefix: 'urf', uri: 'https://www.geospatial.jp/iur/urf/3.2' },
+    ].freeze
+
+    def self.configure(repository)
+      MAPPINGS.each do |mapping|
+        repository.add_namespace_mapping(
+          prefix: mapping[:prefix],
+          uri: mapping[:uri]
+        )
+      end
+    end
+  end
+end
+
+# Usage:
+repo = Lutaml::Xsd::SchemaRepository.new
+MyApp::Namespaces.configure(repo)
+----
+====
+
+=== Validate namespace completeness
+
+After configuration, verify all required namespaces are registered.
+
+.Validating namespace configuration
+[example]
+====
+[source,ruby]
+----
+required_namespaces = [
+  'http://www.opengis.net/gml/3.2',
+  'http://www.w3.org/1999/xlink',
+  'https://www.isotc211.org/2005/gco'
+]
+
+# Check if all required namespaces are configured
+missing = required_namespaces - repo.namespaces
+
+if missing.any?
+  puts "Missing namespace configurations:"
+  missing.each { |ns| puts "  - #{ns}" }
+  raise "Incomplete namespace configuration"
+else
+  puts "All required namespaces configured ✓"
+end
+----
+====
+
+=== Use consistent prefix style
+
+Maintain consistent prefix naming conventions throughout your project.
+
+.Prefix naming conventions
+[example]
+====
+Recommended styles:
+
+* Lowercase abbreviations: `gml`, `xlink`, `gco`
+* Version suffixes when needed: `gml32`, `xlink10`
+* Domain prefixes for custom schemas: `myapp`, `company_schema`
+
+Avoid:
+* Mixed case: `GML`, `XLink` (harder to type)
+* Very long prefixes: `geography_markup_language`
+* Special characters: `gml-32`, `x.link`
+====
+
+== Common namespace sets
+
+=== OGC GML schemas
+
+.Configuring OGC GML 3.2 namespaces
+[example]
+====
+[source,ruby]
+----
+# GML 3.2.1 complete namespace set
+repo.add_namespace_mapping(prefix: 'gml', uri: 'http://www.opengis.net/gml/3.2')
+repo.add_namespace_mapping(prefix: 'xlink', uri: 'http://www.w3.org/1999/xlink')
+repo.add_namespace_mapping(prefix: 'gmd', uri: 'https://www.isotc211.org/2005/gmd')
+repo.add_namespace_mapping(prefix: 'gco', uri: 'https://www.isotc211.org/2005/gco')
+repo.add_namespace_mapping(prefix: 'gts', uri: 'https://www.isotc211.org/2005/gts')
+repo.add_namespace_mapping(prefix: 'gsr', uri: 'https://www.isotc211.org/2005/gsr')
+repo.add_namespace_mapping(prefix: 'gss', uri: 'https://www.isotc211.org/2005/gss')
+repo.add_namespace_mapping(prefix: 'gmx', uri: 'https://www.isotc211.org/2005/gmx')
+----
+====
+
+=== CityGML schemas
+
+.Configuring CityGML 2.0 namespaces
+[example]
+====
+[source,ruby]
+----
+# Base GML
+repo.add_namespace_mapping(prefix: 'gml', uri: 'http://www.opengis.net/gml')
+repo.add_namespace_mapping(prefix: 'xlink', uri: 'http://www.w3.org/1999/xlink')
+
+# CityGML core
+repo.add_namespace_mapping(prefix: 'core', uri: 'http://www.opengis.net/citygml/2.0')
+
+# CityGML modules
+repo.add_namespace_mapping(prefix: 'bldg', uri: 'http://www.opengis.net/citygml/building/2.0')
+repo.add_namespace_mapping(prefix: 'tran', uri: 'http://www.opengis.net/citygml/transportation/2.0')
+repo.add_namespace_mapping(prefix: 'veg', uri: 'http://www.opengis.net/citygml/vegetation/2.0')
+repo.add_namespace_mapping(prefix: 'wtr', uri: 'http://www.opengis.net/citygml/waterbody/2.0')
+repo.add_namespace_mapping(prefix: 'dem', uri: 'http://www.opengis.net/citygml/relief/2.0')
+repo.add_namespace_mapping(prefix: 'app', uri: 'http://www.opengis.net/citygml/appearance/2.0')
+----
+====
+
+=== i-UR (Japanese Urban) schemas
+
+.Configuring i-UR namespaces
+[example]
+====
+[source,ruby]
+----
+# Base dependencies
+repo.add_namespace_mapping(prefix: 'gml', uri: 'http://www.opengis.net/gml/3.2')
+repo.add_namespace_mapping(prefix: 'xlink', uri: 'http://www.w3.org/1999/xlink')
+
+# i-UR modules
+repo.add_namespace_mapping(prefix: 'uro', uri: 'https://www.geospatial.jp/iur/uro/3.2')
+repo.add_namespace_mapping(prefix: 'urf', uri: 'https://www.geospatial.jp/iur/urf/3.2')
+repo.add_namespace_mapping(prefix: 'grp', uri: 'https://www.geospatial.jp/iur/grp/3.2')
+----
+====
+
+== Complete configuration example
+
+.Comprehensive namespace configuration workflow
+[example]
+====
+[source,ruby]
+----
+require 'lutaml/xsd'
+
+# Create repository
+repo = Lutaml::Xsd::SchemaRepository.new(
+  base_dir: File.expand_path('schemas')
+)
+
+# Configure all namespaces upfront
+namespace_config = {
+  # W3C standards
+  'xlink' => 'http://www.w3.org/1999/xlink',
+  'xs' => 'https://www.w3.org/2001/XMLSchema',
+
+  # OGC GML
+  'gml' => 'http://www.opengis.net/gml/3.2',
+
+  # ISO/TC 211
+  'gco' => 'https://www.isotc211.org/2005/gco',
+  'gmd' => 'https://www.isotc211.org/2005/gmd',
+  'gts' => 'https://www.isotc211.org/2005/gts',
+  'gsr' => 'https://www.isotc211.org/2005/gsr',
+
+  # CityGML
+  'core' => 'http://www.opengis.net/citygml/2.0',
+  'bldg' => 'http://www.opengis.net/citygml/building/2.0',
+
+  # i-UR
+  'uro' => 'https://www.geospatial.jp/iur/uro/3.2',
+  'urf' => 'https://www.geospatial.jp/iur/urf/3.2',
+}
+
+namespace_config.each do |prefix, uri|
+  repo.add_namespace_mapping(prefix: prefix, uri: uri)
+end
+
+puts "Configured #{namespace_config.size} namespaces"
+
+# Parse schemas
+schema_files = [
+  'i-ur/urbanFunction.xsd',
+  'i-ur/urbanObject.xsd'
+]
+
+schema_files.each do |file|
+  content = File.read(File.join('schemas', file))
+  repo.parse_schema(
+    content: content,
+    location: File.dirname(File.join('schemas', file))
+  )
+  puts "Parsed: #{file}"
+end
+
+# Verify namespace coverage
+puts "\nRegistered namespaces:"
+repo.namespaces.sort.each do |uri|
+  puts "  #{uri}"
+end
+
+# Test type resolution with configured prefixes
+test_types = [
+  'gml:CodeType',
+  'uro:BuildingType',
+  'urf:UrbanFunctionType'
+]
+
+puts "\nType resolution tests:"
+test_types.each do |qname|
+  result = repo.resolve_type(qualified_name: qname)
+  status = result.found? ? '✓' : '✗'
+  puts "  #{status} #{qname}"
+end
+----
+
+Output:
+----
+Configured 11 namespaces
+Parsed: i-ur/urbanFunction.xsd
+Parsed: i-ur/urbanObject.xsd
+
+Registered namespaces:
+  https://www.isotc211.org/2005/gco
+  https://www.isotc211.org/2005/gmd
+  https://www.isotc211.org/2005/gsr
+  https://www.isotc211.org/2005/gts
+  http://www.opengis.net/citygml/2.0
+  http://www.opengis.net/citygml/building/2.0
+  http://www.opengis.net/gml/3.2
+  http://www.w3.org/1999/xlink
+  https://www.w3.org/2001/XMLSchema
+  https://www.geospatial.jp/iur/urf/3.2
+  https://www.geospatial.jp/iur/uro/3.2
+
+Type resolution tests:
+  ✓ gml:CodeType
+  ✓ uro:BuildingType
+  ✓ urf:UrbanFunctionType
+----
+====
+
+== See also
+
+* link:../core-concepts/NAMESPACES[Namespace Concepts]
+* link:../guides/index[User Guides]
+* link:RUBY_API[Ruby API Reference]
+* link:PACKAGE_CONFIGURATION[Package Configuration]

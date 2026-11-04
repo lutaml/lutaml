@@ -1,0 +1,132 @@
+---
+layout: default
+title: Package Configuration Cheatsheet
+parent: Quick Reference
+nav_order: 1
+---
+= Package Configuration Cheatsheet
+:toc:
+:toclevels: 2
+
+== Configuration decision matrix
+
+[cols="1,2,3,2",options="header"]
+|===
+| Axis | Options | When to Use | Example
+
+| **XSD Mode**
+| `parse`, `bundled`, `all`
+| `parse`: Parse on demand +
+`bundled`: Include XSD files +
+`all`: Both modes
+| `xsd_mode: "bundled"`
+
+| **Resolution Mode**
+| `local`, `remote`, `all`
+| `local`: Offline only +
+`remote`: Allow URLs +
+`all`: Try local first
+| `resolution_mode: "local"`
+
+| **Serialization**
+| `marshal`, `json`, `yaml`
+| `marshal`: Fastest +
+`json`: Portable +
+`yaml`: Human-readable
+| `serialization: "marshal"`
+|===
+
+== Quick configuration patterns
+
+[cols="2,3,3",options="header"]
+|===
+| Use Case | Configuration | Notes
+
+| **Offline development**
+| `xsd_mode: "bundled"` +
+`resolution_mode: "local"` +
+`serialization: "marshal"`
+| Fast, no network access
+
+| **CI/CD pipeline**
+| `xsd_mode: "parse"` +
+`resolution_mode: "all"` +
+`serialization: "json"`
+| Portable, can fetch remote
+
+| **Production deployment**
+| `xsd_mode: "bundled"` +
+`resolution_mode: "local"` +
+`serialization: "marshal"`
+| Self-contained, fastest
+
+| **Schema analysis**
+| `xsd_mode: "all"` +
+`resolution_mode: "all"` +
+`serialization: "yaml"`
+| Maximum flexibility
+
+| **Docker container**
+| `xsd_mode: "bundled"` +
+`resolution_mode: "local"` +
+`serialization: "marshal"`
+| No external dependencies
+|===
+
+== Configuration file template
+
+[source,yaml]
+----
+# Basic package configuration
+xsd_mode: "bundled"           # parse, bundled, or all
+resolution_mode: "local"      # local, remote, or all
+serialization: "marshal"      # marshal, json, or yaml
+
+# Schema mappings (optional)
+schema_location_mappings:
+  - pattern: "https://example.com/schemas/(.*)"
+    path: "./schemas/$1"
+
+# Namespace mappings (optional)
+namespace_mappings:
+  ex: "http://example.com/ns"
+  gml: "http://www.opengis.net/gml/3.2"
+
+# Index configuration (optional)
+build_type_index: true
+----
+
+== Configuration combinations
+
+=== Maximum performance
+[source,yaml]
+----
+xsd_mode: "bundled"
+resolution_mode: "local"
+serialization: "marshal"
+build_type_index: true
+----
+
+=== Maximum portability
+[source,yaml]
+----
+xsd_mode: "bundled"
+resolution_mode: "local"
+serialization: "json"
+build_type_index: true
+----
+
+=== Development/debugging
+[source,yaml]
+----
+xsd_mode: "all"
+resolution_mode: "all"
+serialization: "yaml"
+build_type_index: true
+----
+
+== See also
+
+* link:../PACKAGE_CONFIGURATION[Full package configuration guide]
+* link:../CLI#package-build[CLI package build command]
+* link:../guides/CREATING_PACKAGES[Creating packages guide]

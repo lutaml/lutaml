@@ -1,0 +1,26 @@
+include "relaton-iso.rnc" { }
+include "isostandard.rnc" {
+
+sections =
+  element sections {
+    clause+
+  }
+
+clause =
+  element clause {
+    attribute change { "add" | "delete" | "modify" }?,
+    attribute locality { text }?,
+    Clause-Section
+  }
+
+standard-document =
+  element metanorma {
+    Root-Attributes,
+    bibdata, misccontainer?, boilerplate?, preface, sections, review-container?
+  }
+
+}
+
+# end overrides
+
+

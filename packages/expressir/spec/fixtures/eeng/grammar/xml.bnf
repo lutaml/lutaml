@@ -1,0 +1,21 @@
+;; BNF
+
+;; <?xml prop1="val" prop2="val"?>
+;; <tag prop1="val" prop2="val"/>
+;; <tag prop1="val" prop2="val">
+;; {characters}*
+;; </tag>
+LANGLE = '<' .
+RANGLE = '>' .
+QUEST = '?' .
+EQUAL = '=' .
+STRING = '"' {(a-z | A-Z | 0-9)|
+
+file := [ header ] { tag }+ .
+header = '<?' 'xml' {pair}* '?>' .
+tag := tag-start | tag-end | tag-full.
+tag-start := '<' token {pair}* '>' .
+tag-full := '<' token {pair}* '/>' .
+tag-end = '</' token '>' .
+token := [!][a-z,A-Z][a-z,A-Z,0-9,._:]*
+pair := token '=' string .

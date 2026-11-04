@@ -1,0 +1,116 @@
+---
+title: Core Topics
+nav_order: 2
+has_children: true
+---
+
+= Core Topics
+
+This section covers the fundamental concepts and essential information you need to understand and work with Expressir.
+
+== What You'll Learn
+
+The Core Topics section provides comprehensive coverage of:
+
+* *Expressir Fundamentals* - What Expressir is, its architecture, and when to use it
+* *EXPRESS Language* - Understanding the EXPRESS data modeling language
+* *Data Model* - How Expressir represents EXPRESS schemas in Ruby
+* *Parsers* - How Expressir parses different EXPRESS formats
+* *LER Packages* - High-performance schema packaging and distribution
+
+== Topics
+
+=== link:../introduction.html[Introduction]
+
+Learn what Expressir is, its key features, and how it fits into the EXPRESS ecosystem.
+
+*Key concepts:*
+
+* Purpose and goals
+* Architecture overview
+* When to use Expressir
+* Comparison with other tools
+
+=== link:../getting-started.html[Getting Started]
+
+Get up and running with Expressir quickly with installation instructions and first steps.
+
+*You'll learn:*
+
+* How to install Expressir
+* Basic CLI usage
+* Simple Ruby API examples
+* Next steps for learning
+
+=== link:../express-language.html[EXPRESS Language]
+
+Understand the EXPRESS data modeling language that Expressir parses and processes.
+
+*Topics covered:*
+
+* EXPRESS language overview
+* ISO 10303-11 background
+* Key concepts (schemas, entities, types)
+* EXPRESS syntax basics
+
+=== link:../data-model.html[Data Model]
+
+Explore Expressir's Ruby data model that represents EXPRESS schemas.
+
+*Learn about:*
+
+* Model hierarchy and structure
+* Key classes and their relationships
+* Working with the model programmatically
+* Model traversal patterns
+
+=== link:../parsers.html[Parsers]
+
+Discover how Expressir parses multiple EXPRESS formats.
+
+*Understand:*
+
+* Parser architecture
+* Supported formats (EXPRESS, STEPmod, EXPRESS XML)
+* Parsing strategies
+* Error handling and recovery
+
+=== link:../ler-packages.html[LER Packages]
+
+Learn about LutaML EXPRESS Repository (LER) packages for efficient schema distribution.
+
+*Explore:*
+
+* What are LER packages?
+* Benefits and use cases
+* Package structure and format
+* Performance advantages
+
+== Next Steps
+
+After reading the Core Topics:
+
+* Try the link:../../tutorials/[Tutorials] for hands-on learning
+* Consult the link:../../guides/[Guides] for specific tasks
+* Reference the link:../../references/[References] for detailed specifications
+
+== Prerequisites
+
+To get the most from these topics, you should have:
+
+* Basic Ruby knowledge
+* Familiarity with command-line tools
+* Some understanding of data modeling concepts (helpful but not required)
+
+== Reading Guide
+
+We recommend reading the Core Topics in order if you're new to Expressir:
+
+. Start with link:../introduction.html[Introduction] to understand what Expressir is
+. Follow link:../getting-started.html[Getting Started] to install and try it
+. Read link:../express-language.html[EXPRESS Language] to understand the domain
+. Study link:../data-model.html[Data Model] to work with schemas programmatically
+. Review link:../parsers.html[Parsers] to understand how parsing works
+. Explore link:../ler-packages.html[LER Packages] for advanced deployment scenarios
+
+If you're already familiar with EXPRESS, you can skip directly to link:../data-model.html[Data Model] to understand how Expressir represents schemas in Ruby.

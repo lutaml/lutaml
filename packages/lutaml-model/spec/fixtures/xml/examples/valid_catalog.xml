@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ProductCatalog>
+  <category>
+    <name>Electronics</name>
+    <description>Electronic devices and accessories</description>
+    <product>
+      <id>P001</id>
+      <name>Smartphone</name>
+      <price>599.99</price>
+      <description>Latest model smartphone with advanced features</description>
+    </product>
+    <product>
+      <id>P002</id>
+      <name>Laptop</name>
+      <price>1299.99</price>
+      <description>High-performance laptop for professionals</description>
+    </product>
+  </category>
+  <category>
+    <name>Books</name>
+    <description>Various books and publications</description>
+    <product>
+      <id>P003</id>
+      <name>Programming Guide</name>
+      <price>49.99</price>
+      <description>Comprehensive programming reference</description>
+    </product>
+  </category>
+</ProductCatalog>

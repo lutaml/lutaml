@@ -1,0 +1,59 @@
+inherit_from:
+  - https://raw.githubusercontent.com/riboseinc/oss-guides/main/ci/rubocop.yml
+  - .rubocop_todo.yml
+
+plugins:
+- rubocop-performance
+- rubocop-rake
+- rubocop-rspec
+
+AllCops:
+  TargetRubyVersion: 3.0
+  NewCops: enable
+  Exclude:
+    - 'vendor/**/*'
+    - 'tmp/**/*'
+    - '**/*.adoc'
+    - '**/*.md'
+    - 'niso-jats/**/*'
+    - 'sts-ruby/**/*'
+    # Vendored from lutaml/moxml 0.5.167's lib/compat/opal (the rexml
+    # Opal shadows moxml 0.6 no longer ships); upstream style, kept
+    # byte-identical so diffs against the source stay meaningful.
+    - 'lib/compat/opal/rexml/**/*'
+    - 'lib/compat/opal/rexml_compat.rb'
+    - 'lib/compat/opal/moxml/**/*'
+    # Opal stdlib shims keep stdlib spellings and pass-through
+    # semantics; style cops do not apply.
+    - 'lib/compat/opal/monitor.rb'
+    - 'lib/compat/opal/objectspace_shim.rb'
+
+Style/OneClassPerFile:
+  inherit_mode:
+    merge:
+      - Exclude
+  Exclude:
+    - 'spec/**/*'
+
+RSpec/EmptyExampleGroup:
+  inherit_mode:
+    merge:
+      - Exclude
+  Exclude:
+    - 'spec/lutaml/jsonld/transform_spec.rb'
+
+# emits_nothing_extra carries the expectations for these examples.
+RSpec/NoExpectationExample:
+  AllowedPatterns:
+    - '^emits_nothing_extra'
+
+RSpec/NamedSubject:
+  inherit_mode:
+    merge:
+      - Exclude
+  Exclude:
+    - 'spec/lutaml/turtle/transform_spec.rb'
+
+RSpec/ContextMethod:
+  Exclude:
+    - 'spec/lutaml/jsonld/transform_spec.rb'

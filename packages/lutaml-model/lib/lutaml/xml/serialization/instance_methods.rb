@@ -1,0 +1,323 @@
+# frozen_string_literal: true
+
+module Lutaml
+  module Xml
+    module Serialization
+      # XML-specific instance methods for Serialize.
+      #
+      # Prepended into Lutaml::Model::Serialize when XML is loaded.
+      # Provides XML-specific instance-level behavior:
+      # - XML instance attributes (element_order, schema_location, encoding, doctype, ordered, mixed)
+      # - xml_declaration_plan writer / import_declaration_plan method
+      # - XML-specific format options preparation
+      # - XML root mapping validation
+      module InstanceMethods
+        # XML declaration plan for namespace preservation during round-trip.
+        # Writer is used by :eager mode during parsing. Reader delegates to
+        # import_declaration_plan which handles lazy building.
+        attr_writer :import_declaration_plan
+        attr_accessor :element_order, :attribute_order, :schema_location,
+                      :encoding, :doctype
+
+        # Store root element reference for truly lazy plan building.
+        # Set in :lazy mode during deserialization; consumed on first to_xml.
+        # Released after plan is built to allow GC of the DOM tree.
+        attr_accessor :pending_plan_root_element
+
+        # Clear all internal XML parse state on this instance.
+        #
+        # Call before re-serializing a previously-parsed instance when the
+        # serialization context has changed (e.g. different namespace config,
+        # different XML document structure).
+        #
+        # @return [self]
+        def clear_xml_parse_state!
+          @import_declaration_plan = nil
+          @pending_plan_root_element = nil
+          @element_order = nil
+          @attribute_order = nil
+          self
+        end
+
+        # XML namespace metadata for doubly-defined and alias support.
+        # These carry information from deserialization to serialization.
+        # Accessor methods use the @__ prefixed ivars for backward compatibility.
+        def xml_namespace_prefix
+          @__xml_namespace_prefix
+        end
+
+        def xml_namespace_prefix=(value)
+          @__xml_namespace_prefix = value
+        end
+
+        def xml_ns_prefixes
+          @__xml_ns_prefixes
+        end
+
+        def xml_ns_prefixes=(value)
+          @__xml_ns_prefixes = value
+        end
+
+        def original_namespace_uri
+          @__xml_original_namespace_uri
+        end
+
+        def original_namespace_uri=(value)
+          @__xml_original_namespace_uri = value
+        end
+
+        def xml_declaration
+          @xml_declaration
+        end
+
+        def xml_declaration=(value)
+          @xml_declaration = value
+        end
+
+        def raw_schema_location
+          @raw_schema_location
+        end
+
+        def raw_schema_location=(value)
+          @raw_schema_location = value
+        end
+
+        # Build or return the cached declaration plan.
+        #
+        # When import_declaration_plan: :lazy (default), builds the plan from
+        # the stored element reference on first call. No-op when no pending
+        # element exists (:eager already set, :skip, or programmatic creation).
+        #
+        # @return [DeclarationPlan, nil] The plan or nil
+        def import_declaration_plan
+          @import_declaration_plan ||= build_pending_declaration_plan
+        end
+        attr_writer :ordered, :mixed
+
+        def ordered?
+          klass = self.class
+          if klass.is_a?(Class) && klass.include?(Lutaml::Model::Serialize)
+            klass.mappings_for(:xml, lutaml_register)&.ordered? || false
+          else
+            !!@ordered
+          end
+        end
+
+        def mixed?
+          klass = self.class
+          if klass.is_a?(Class) && klass.include?(Lutaml::Model::Serialize)
+            klass.mappings_for(:xml, lutaml_register)&.mixed_content? || false
+          else
+            !!@mixed
+          end
+        end
+
+        # Iterate over content in document order.
+        #
+        # Yields String (text nodes) and Lutaml::Model::Serializable (inline elements).
+        # Works for both:
+        #   - Mixed content: text + elements interleaved
+        #   - Ordered content: elements only, but in specific sequence
+        #
+        # Returns self when called with a block, Enumerator when called without.
+        #
+        # @example
+        #   para.each_mixed_content { |item| puts item.inspect }
+        #   # For mixed content => "Hello ", #<Emphasis>, "!"
+        #   # For ordered only => #<Item "first">, #<Item "second">
+        #
+        # @return [self, Enumerator] self if block given, Enumerator otherwise
+        def each_mixed_content
+          return to_enum(:each_mixed_content) unless block_given?
+          # Only iterate for mixed or ordered content
+          return unless element_order && (mixed? || ordered?)
+
+          # Get the XML mapping for this class
+          xml_mapping = self.class.mappings_for(:xml, lutaml_register)
+          return unless xml_mapping
+
+          # Build lookup: element name -> attribute name
+          # @elements maps namespaced names to MappingRule or Array<MappingRule>
+          # Note: rule.name is a Symbol but el.name from element_order is a String
+          # We store both to handle the mismatch
+          element_to_attr = {}
+          xml_mapping.mapping_elements_hash.each_value do |rule_or_array|
+            Array(rule_or_array).each do |rule|
+              element_to_attr[rule.name] = rule.to
+              if rule.name.is_a?(Symbol)
+                element_to_attr[rule.name.to_s] =
+                  rule.to
+              end
+            end
+          end
+
+          # Track current index for each collection attribute
+          # Using ::Hash to avoid conflict with Lutaml::Model::Hash
+          collection_indices = ::Hash.new(0)
+
+          content_is_mixed = mixed?
+
+          element_order.each do |el|
+            if el.text?
+              text = el.text_content
+              if text && !text.empty? && (content_is_mixed || !text.strip.empty?)
+                # Mixed content: all text is significant (e.g. "Hello " before <b>)
+                # Ordered-only: skip whitespace-only text (indentation between elements)
+                yield(text)
+              end
+            elsif el.element?
+              # Element node - look up mapped collection and get next item
+              attr_name = element_to_attr[el.name]
+              next unless attr_name
+
+              val = send(attr_name)
+              obj = if val.is_a?(Array)
+                      index = collection_indices[attr_name]
+                      collection_indices[attr_name] += 1
+                      val[index]
+                    elsif val.is_a?(Lutaml::Model::Serializable)
+                      collection_indices[attr_name] += 1
+                      collection_indices[attr_name] == 1 ? val : nil
+                    else
+                      # Scalar mapped elements (e.g. a string-valued
+                      # <main>) are part of the mixed content too.
+                      collection_indices[attr_name] += 1
+                      val
+                    end
+              yield(obj) unless obj.nil? || (obj.is_a?(String) && obj.empty?)
+            end
+          end
+
+          self
+        end
+
+        # Override initialize to extract XML-specific attrs
+        def initialize(attrs = {}, options = {})
+          super
+          set_ordering(attrs)
+          set_schema_location(attrs)
+          set_doctype(attrs)
+        end
+
+        # Extend INTERNAL_ATTRIBUTES with XML-specific ones
+        def pretty_print_instance_variables
+          xml_internals = %i[@import_declaration_plan @pending_plan_root_element
+                             @__xml_namespace_prefix
+                             @__xml_ns_prefixes @__xml_original_namespace_uri
+                             @xml_declaration @raw_schema_location]
+          super - xml_internals
+        end
+
+        # XML-specific root mapping validation
+        #
+        # @param format [Symbol] The format
+        # @param options [Hash] Options hash
+        def validate_root_mapping!(format, options)
+          return super unless format == :xml
+          return if options[:collection] || self.class.root?(lutaml_register)
+
+          raise Lutaml::Model::TypeOnlyMappingError.new(self.class)
+        end
+
+        # XML-specific instance options preparation
+        #
+        # @param format [Symbol] The format
+        # @param options [Hash] Options hash (modified in place)
+        def prepare_instance_format_options(format, options)
+          return super unless format == :xml
+
+          # Force eager plan building when adapter is being overridden,
+          # to dereference adapter-specific native nodes before the switch.
+          if @pending_plan_root_element && options[:_adapter_override]
+            import_declaration_plan
+          end
+
+          # Handle prefix option (converts to use_prefix for transformation phase)
+          if options.key?(:prefix)
+            prefix_option = options[:prefix]
+            case prefix_option
+            when true
+              options[:use_prefix] = true
+            when String
+              options[:use_prefix] = prefix_option
+            when false, :default, nil
+              options[:use_prefix] = false
+            end
+            options.delete(:prefix)
+          end
+
+          options[:parse_encoding] = encoding if encoding
+          options[:doctype] = doctype if doctype
+
+          # Pass XML declaration info for XML Declaration Preservation
+          if instance_variable_defined?(:@xml_declaration) && @xml_declaration
+            options[:xml_declaration] = @xml_declaration
+          end
+
+          # Pass stored DeclarationPlan for format preservation.
+          if import_declaration_plan
+            options[:stored_xml_declaration_plan] = import_declaration_plan
+          end
+        end
+
+        # XML-specific element sequences for validation
+        #
+        # @param register [Symbol, nil] The register context
+        # @return [Array, nil] Element sequences from XML mapping
+        def format_element_sequences(register)
+          self.class.mappings_for(:xml, register)&.element_sequence
+        end
+
+        # Append XSD schema errors (validate_xml_with macro) to the
+        # standard validation errors. No-op unless schemas are configured.
+        #
+        # @see Lutaml::Model::Validation#collect_validation_errors
+        def collect_validation_errors(register)
+          errors = super
+          return errors if self.class.xml_schema_paths.empty?
+
+          errors.concat(
+            self.class.validate_xml(to_xml(register: register)),
+          )
+        end
+
+        private
+
+        # Build declaration plan from stored element reference (lazy mode).
+        # Called by import_declaration_plan getter on first access.
+        # @return [DeclarationPlan, nil]
+        def build_pending_declaration_plan
+          return nil unless @pending_plan_root_element
+
+          element = @pending_plan_root_element
+          @pending_plan_root_element = nil
+          ns_data = Lutaml::Xml::ModelTransform.collect_element_namespaces(element)
+          return nil unless ns_data && !ns_data.empty?
+
+          xml_mapping = self.class.mappings_for(:xml)
+          Lutaml::Xml::DeclarationPlan.from_input_with_locations(ns_data,
+                                                                 xml_mapping)
+        end
+
+        def set_ordering(attrs)
+          return unless attrs.is_a?(Lutaml::Xml::XmlElement)
+
+          @element_order = attrs.item_order
+          @attribute_order = attrs.attribute_order
+        end
+
+        def set_schema_location(attrs)
+          return unless attrs.is_a?(Hash) && attrs.key?(:schema_location)
+
+          self.schema_location = attrs[:schema_location]
+        end
+
+        def set_doctype(attrs)
+          return unless attrs.is_a?(Hash) && attrs.key?(:doctype)
+
+          self.doctype = attrs[:doctype]
+        end
+      end
+    end
+  end
+end

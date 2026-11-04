@@ -1,0 +1,724 @@
+---
+layout: default
+title: LXR package internals
+nav_order: 2
+parent: Architecture
+---
+= LXR Package Internals
+:toc:
+:toclevels: 3
+
+== Purpose
+
+This document provides detailed technical documentation on the internal structure and implementation of LXR (LutaML XSD Repository) packages. It explains how packages are organized, how pre-indexing works, and the performance optimizations employed.
+
+== General
+
+An LXR package (`.lxr` file) is a specialized ZIP archive designed for distributing and using XSD schema collections efficiently. The package format is optimized for:
+
+* **Fast loading** — Pre-serialized schemas eliminate XML parsing overhead
+* **Self-containment** — All dependencies bundled in a single file
+* **Instant queries** — Pre-built type indexes enable O(1) lookups
+* **Portability** — Cross-platform distribution of schema collections
+
+Packages are created by the [`SchemaRepositoryPackage`](../../lib/lutaml/xsd/schema_repository_package.rb:14) class and managed through the [`PackageBuilder`](../../lib/lutaml/xsd/package_builder.rb:7) orchestrator.
+
+== ZIP archive structure
+
+The internal structure of an LXR package follows a well-defined layout:
+
+[source]
+----
+my_schemas.lxr (ZIP archive)
+├── metadata.yaml              # Package metadata and configuration
+│   ├── name: "Schema Collection"
+│   ├── version: "1.0"
+│   ├── created_at: "2024-10-24T18:00:00+08:00"
+│   ├── xsd_mode: "include_all"
+│   ├── resolution_mode: "resolved"
+│   └── serialization_format: "marshal"
+│
+├── schemas/                   # XSD schema files (if include_all mode)
+│   ├── schema1.xsd           # Original or rewritten XSD content
+│   ├── schema2.xsd
+│   └── dependencies/
+│       └── common.xsd
+│
+├── schemas_data/              # Pre-serialized schemas (if resolved mode)
+│   ├── schema1_gml.marshal   # (or .json, .yaml based on format)
+│   ├── schema2_core.marshal  # Named with namespace prefix for uniqueness
+│   └── common_xlink.marshal
+│
+├── namespace_mappings.yaml    # Namespace prefix-to-URI mappings
+│   └── - prefix: "gml"
+│       uri: "http://www.opengis.net/gml/3.2"
+│
+└── schema_location_mappings.yaml  # Schema location redirections
+    └── - from: "http://example.com/schema.xsd"
+        to: "schemas/schema.xsd"
+----
+
+=== Directory layout
+
+`metadata.yaml`::
+  Package metadata, configuration, and statistics (required)
+
+`schemas/`::
+  Bundled XSD files when `xsd_mode: include_all` (optional based on mode) +
+  Contains original or rewritten schema content
+
+`schemas_data/`::
+  Pre-serialized schema objects when `resolution_mode: resolved` (optional based on mode) +
+  File extension matches serialization format (.marshal, .json, .yaml)
+
+`namespace_mappings.yaml`::
+  Namespace prefix-to-URI mappings for qualified name resolution (optional but recommended)
+
+`schema_location_mappings.yaml`::
+  Schema location redirections for imports/includes (optional, empty for include_all packages)
+
+== Metadata structure
+
+The [`metadata.yaml`](../../lib/lutaml/xsd/schema_repository_metadata.rb:6) file contains comprehensive package information:
+
+[source,yaml]
+----
+# Package identification
+name: "Schema Collection"
+version: "1.0"
+description: "Complete schema set with dependencies"
+created_at: "2024-10-24T18:00:00+08:00"
+created_by: "lutaml-xsd CLI"
+lutaml_xsd_version: "1.0.4"
+
+# Package configuration (determines loading strategy)
+xsd_mode: "include_all"           # or "allow_external"
+resolution_mode: "resolved"        # or "bare"
+serialization_format: "marshal"    # or "json", "yaml", "parse"
+
+# Content summary
+files: 3                           # Number of entry point schemas
+namespace_mappings: 4              # Number of namespace prefixes registered
+schema_location_mappings: 2        # Number of schema location redirections
+
+# Statistics (pre-computed for fast access)
+statistics:
+  total_schemas: 3                 # Total schemas parsed (including imports)
+  total_types: 150                 # Total type definitions indexed
+  types_by_category:
+    complex_type: 80
+    simple_type: 30
+    element: 35
+    attribute_group: 5
+  total_namespaces: 3              # Unique namespaces in collection
+  namespace_prefixes: 4            # Registered namespace prefixes
+  resolved: true                   # Whether type index is built
+  validated: true                  # Whether package passed validation
+
+# File references (list of entry point schemas)
+files:
+  - schemas/urbanFunction.xsd
+  - schemas/urbanObject.xsd
+  - schemas/gml.xsd
+
+# Namespace mappings (enables prefixed name resolution)
+namespace_mappings:
+  - prefix: "gml"
+    uri: "http://www.opengis.net/gml/3.2"
+  - prefix: "xlink"
+    uri: "http://www.w3.org/1999/xlink"
+  - prefix: "uro"
+    uri: "https://www.geospatial.jp/iur/uro/3.2"
+  - prefix: "urf"
+    uri: "https://www.geospatial.jp/iur/urf/3.2"
+
+# Schema location mappings (usually empty for include_all packages)
+schema_location_mappings: []
+----
+
+=== Metadata fields
+
+==== Required fields
+
+`name`:: Human-readable package name
+`version`:: Package version (semantic versioning recommended)
+`created_at`:: ISO 8601 timestamp of package creation
+`lutaml_xsd_version`:: Version of lutaml-xsd used to create package
+`files`:: Array of entry point schema files
+`namespace_mappings`:: Array of namespace prefix definitions
+
+==== Configuration fields
+
+`xsd_mode`:: Controls XSD bundling behavior
+  * `include_all` — Bundle all XSD files (self-contained)
+  * `allow_external` — Keep URL references (requires network)
+
+`resolution_mode`:: Controls schema pre-serialization
+  * `resolved` — Pre-serialize schemas for instant loading
+  * `bare` — Parse XSD files on first load
+
+`serialization_format`:: Format for serialized schemas (if resolved mode)
+  * `marshal` — Ruby binary format (fastest)
+  * `json` — JSON format (portable)
+  * `yaml` — YAML format (human-readable)
+  * `parse` — No serialization (always parse XSD)
+
+==== Statistics fields
+
+Pre-computed statistics enable fast package inspection without loading schemas:
+
+`total_schemas`:: Count of parsed schemas (including imports/includes)
+`total_types`:: Count of all indexed type definitions
+`types_by_category`:: Breakdown by type category (complex_type, simple_type, element, etc.)
+`total_namespaces`:: Count of unique namespace URIs
+`namespace_prefixes`:: Count of registered namespace prefixes
+`resolved`:: Boolean indicating if type index is built
+`validated`:: Boolean indicating if package passed validation
+
+== Type index organization
+
+The type index ([`TypeIndex`](../../lib/lutaml/xsd/schema_repository/type_index.rb:8)) is the key to fast type lookups. It organizes type definitions in three dimensions:
+
+=== Index structure
+
+[source,ruby]
+----
+# Conceptual structure (actual format depends on serialization_format)
+{
+  # 1. By namespace — grouped by namespace URI
+  by_namespace: {
+    "http://www.opengis.net/gml/3.2" => {
+      "CodeType" => TypeIndexEntry,
+      "MeasureType" => TypeIndexEntry,
+      "LengthType" => TypeIndexEntry,
+      # ... all types in this namespace
+    },
+    "http://www.opengis.net/citygml/2.0" => {
+      "CityModel" => TypeIndexEntry,
+      "Building" => TypeIndexEntry,
+      # ... all types in this namespace
+    }
+  },
+
+  # 2. By qualified name — multiple name formats
+  by_qualified_name: {
+    # Prefixed format
+    "gml:CodeType" => TypeIndexEntry,
+    "core:CityModel" => TypeIndexEntry,
+
+    # Clark notation format
+    "{http://www.opengis.net/gml/3.2}CodeType" => TypeIndexEntry,
+    "{http://www.opengis.net/citygml/2.0}CityModel" => TypeIndexEntry,
+
+    # Unprefixed format (searches all namespaces)
+    "CodeType" => TypeIndexEntry,
+    "CityModel" => TypeIndexEntry
+  },
+
+  # 3. By category — grouped by type classification
+  by_category: {
+    complex_type: [TypeIndexEntry, TypeIndexEntry, ...],
+    simple_type: [TypeIndexEntry, TypeIndexEntry, ...],
+    element: [TypeIndexEntry, TypeIndexEntry, ...],
+    attribute_group: [TypeIndexEntry, ...],
+    group: [TypeIndexEntry, ...]
+  }
+}
+----
+
+=== TypeIndexEntry structure
+
+Each type is represented by a [`TypeIndexEntry`](../../lib/lutaml/xsd/type_index_entry.rb:6):
+
+[source,ruby]
+----
+TypeIndexEntry {
+  clark_key: "{http://www.opengis.net/gml/3.2}CodeType",
+  type_category: "complex_type",
+  namespace: "http://www.opengis.net/gml/3.2",
+  local_name: "CodeType",
+  schema_file: "basicTypes.xsd"
+}
+----
+
+Fields:
+
+`clark_key`:: Unique identifier in Clark notation
+`type_category`:: Type classification (complex_type, simple_type, element, etc.)
+`namespace`:: Namespace URI of the type
+`local_name`:: Local name portion of the type
+`schema_file`:: Source schema file containing the definition
+
+== Schema serialization formats
+
+Schemas can be serialized in multiple formats, each with different trade-offs:
+
+=== Marshal format (.marshal)
+
+Ruby's native binary serialization format.
+
+**Advantages:**
+
+* Fastest serialization and deserialization
+* Compact binary representation
+* Preserves Ruby object structure exactly
+
+**Disadvantages:**
+
+* Ruby version dependent (may not work across major versions)
+* Not human-readable
+* Not cross-language compatible
+
+**Use case:** Ruby-only applications where performance is critical
+
+[source,ruby]
+----
+# Serialization (during package creation)
+data = Marshal.dump(schema)
+
+# Deserialization (during package loading)
+schema = Marshal.load(data)
+----
+
+=== JSON format (.json)
+
+JSON serialization using lutaml-model's built-in support.
+
+**Advantages:**
+
+* Cross-platform compatible
+* Cross-language compatible
+* Human-readable (with formatting)
+* Stable across versions
+
+**Disadvantages:**
+
+* Slower than Marshal
+* Larger file size than Marshal
+* Less readable than YAML
+
+**Use case:** Cross-platform distribution, integration with non-Ruby tools
+
+[source,ruby]
+----
+# Serialization (during package creation)
+data = schema.to_json
+
+# Deserialization (during package loading)
+schema = Lutaml::Xsd::Schema.from_json(data)
+----
+
+=== YAML format (.yaml)
+
+YAML serialization using lutaml-model's built-in support.
+
+**Advantages:**
+
+* Most human-readable format
+* Excellent for debugging
+* Cross-platform compatible
+* Easy to inspect manually
+
+**Disadvantages:**
+
+* Slowest serialization format
+* Largest file size
+* Parsing overhead
+
+**Use case:** Development, debugging, manual inspection
+
+[source,ruby]
+----
+# Serialization (during package creation)
+data = schema.to_yaml
+
+# Deserialization (during package loading)
+schema = Lutaml::Xsd::Schema.from_yaml(data)
+----
+
+=== Parse format (no file)
+
+No serialization — always parse XSD files from scratch.
+
+**Advantages:**
+
+* Smallest package size
+* Always fresh parsing
+* No serialization overhead during package creation
+
+**Disadvantages:**
+
+* Slowest loading time
+* Must parse XML on every load
+* No performance benefit from packaging
+
+**Use case:** Frequently changing schemas, minimal package size priority
+
+== Pre-indexing workflow
+
+Pre-indexing during package creation eliminates runtime overhead:
+
+.Complete package creation and loading workflow
+[source]
+----
+╔═══════════════════════════════════════════════════════════════╗
+║            LXR Package Creation Workflow                      ║
+╠═══════════════════════════════════════════════════════════════╣
+║                                                               ║
+║  PHASE 1: Schema Collection                                   ║
+║  ┌───────────────────────────────────────────────────────┐   ║
+║  │ Input Sources                                         │   ║
+║  │ • XSD files (urbanFunction.xsd, gml.xsd, etc.)        │   ║
+║  │ • Configuration (namespace mappings, schema mappings) │   ║
+║  └──────────────────────────┬────────────────────────────┘   ║
+║                             │                                 ║
+║                             ▼                                 ║
+║  PHASE 2: Parsing & Resolution                                ║
+║  ┌───────────────────────────────────────────────────────┐   ║
+║  │ XML Parser                                            │   ║
+║  │ ├─ Parse each XSD file                                │   ║
+║  │ ├─ Follow <xs:import> references                      │   ║
+║  │ ├─ Resolve <xs:include> statements                    │   ║
+║  │ └─ Apply schema location mappings                     │   ║
+║  └──────────────────────────┬────────────────────────────┘   ║
+║                             │                                 ║
+║                             ▼                                 ║
+║  ┌───────────────────────────────────────────────────────┐   ║
+║  │ Schema Objects (in memory)                            │   ║
+║  │ ComplexTypes, SimpleTypes, Elements, AttributeGroups  │   ║
+║  └──────────────────────────┬────────────────────────────┘   ║
+║                             │                                 ║
+║                             ▼                                 ║
+║  PHASE 3: Indexing                                            ║
+║  ┌───────────────────────────────────────────────────────┐   ║
+║  │ TypeIndex Builder                                     │   ║
+║  │ ├─ Group by namespace                                 │   ║
+║  │ ├─ Map qualified names → types                        │   ║
+║  │ ├─ Categorize (complex, simple, element, etc.)        │   ║
+║  │ └─ Build lookup tables                                │   ║
+║  └──────────────────────────┬────────────────────────────┘   ║
+║                             │                                 ║
+║                             ▼                                 ║
+║  PHASE 4: Serialization (if resolved mode)                    ║
+║  ┌───────────────────────────────────────────────────────┐   ║
+║  │ Schema Serializer                                     │   ║
+║  │ ├─ Marshal format → binary (.marshal)                 │   ║
+║  │ ├─ JSON format → text (.json)                         │   ║
+║  │ ├─ YAML format → text (.yaml)                         │   ║
+║  │ └─ Parse mode → no serialization                      │   ║
+║  └──────────────────────────┬────────────────────────────┘   ║
+║                             │                                 ║
+║                             ▼                                 ║
+║  PHASE 5: Package Assembly                                    ║
+║  ┌───────────────────────────────────────────────────────┐   ║
+║  │ ZIP Archive Creation                                  │   ║
+║  │ ├─ metadata.yaml (config, stats)                      │   ║
+║  │ ├─ schemas/ (XSD files if include_all)                │   ║
+║  │ ├─ schemas_data/ (serialized if resolved)             │   ║
+║  │ ├─ namespace_mappings.yaml                            │   ║
+║  │ └─ schema_location_mappings.yaml                      │   ║
+║  └──────────────────────────┬────────────────────────────┘   ║
+║                             │                                 ║
+║                             ▼                                 ║
+║  ┌───────────────────────────────────────────────────────┐   ║
+║  │          package.lxr                                  │   ║
+║  │  ✓ Self-contained                                     │   ║
+║  │  ✓ Pre-indexed                                        │   ║
+║  │  ✓ Ready for distribution                             │   ║
+║  └───────────────────────────────────────────────────────┘   ║
+╚═══════════════════════════════════════════════════════════════╝
+
+╔═══════════════════════════════════════════════════════════════╗
+║            LXR Package Loading Workflow                       ║
+╠═══════════════════════════════════════════════════════════════╣
+║                                                               ║
+║  PHASE 1: Package Opening (~5ms)                              ║
+║  ┌───────────────────────────────────────────────────────┐   ║
+║  │ package.lxr                                           │   ║
+║  └──────────────────────────┬────────────────────────────┘   ║
+║                             │                                 ║
+║                             ▼                                 ║
+║  ┌───────────────────────────────────────────────────────┐   ║
+║  │ ZIP Reader                                            │   ║
+║  │ ├─ Verify ZIP structure                               │   ║
+║  │ ├─ Check required files                               │   ║
+║  │ └─ Validate format                                    │   ║
+║  └──────────────────────────┬────────────────────────────┘   ║
+║                             │                                 ║
+║                             ▼                                 ║
+║  PHASE 2: Metadata Loading (~2ms)                             ║
+║  ┌───────────────────────────────────────────────────────┐   ║
+║  │ metadata.yaml                                         │   ║
+║  │ ├─ Package info (name, version, created_at)           │   ║
+║  │ ├─ Configuration (xsd_mode, resolution_mode)          │   ║
+║  │ ├─ Statistics (total_types, namespaces)               │   ║
+║  │ └─ Mappings (namespace, schema_location)              │   ║
+║  └──────────────────────────┬────────────────────────────┘   ║
+║                             │                                 ║
+║                             ▼                                 ║
+║  PHASE 3: Schema Loading (~10-50ms)                           ║
+║  ┌───────────────────────────────────────────────────────┐   ║
+║  │ Deserialization Strategy                              │   ║
+║  │                                                       │   ║
+║  │ If resolved mode:                                     │   ║
+║  │ ├─ Load from schemas_data/                            │   ║
+║  │ ├─ Deserialize (marshal/json/yaml)                    │   ║
+║  │ └─ Instant object creation                            │   ║
+║  │                                                       │   ║
+║  │ If bare mode:                                         │   ║
+║  │ ├─ Load from schemas/                                 │   ║
+║  │ ├─ Parse XML on demand                                │   ║
+║  │ └─ Build objects                                      │   ║
+║  └──────────────────────────┬────────────────────────────┘   ║
+║                             │                                 ║
+║                             ▼                                 ║
+║  PHASE 4: Type Index Building (~20ms)                         ║
+║  ┌───────────────────────────────────────────────────────┐   ║
+║  │ TypeIndex Construction                                │   ║
+║  │ ├─ Build namespace → types mapping                    │   ║
+║  │ ├─ Build qualified name → type mapping                │   ║
+║  │ ├─ Build category → types grouping                    │   ║
+║  │ └─ Enable O(1) lookups                                │   ║
+║  └──────────────────────────┬────────────────────────────┘   ║
+║                             │                                 ║
+║                             ▼                                 ║
+║  PHASE 5: Repository Ready (~3ms)                             ║
+║  ┌───────────────────────────────────────────────────────┐   ║
+║  │ SchemaRepository                                      │   ║
+║  │ ✓ All schemas loaded                                  │   ║
+║  │ ✓ Type index ready                                    │   ║
+║  │ ✓ Namespace mappings configured                       │   ║
+║  │ ✓ Ready for queries                                   │   ║
+║  │                                                       │   ║
+║  │ Total Time: <100ms                                    │   ║
+║  │ (vs 5000+ms parsing from scratch)                     │   ║
+║  └───────────────────────────────────────────────────────┘   ║
+╚═══════════════════════════════════════════════════════════════╝
+----
+
+== Performance optimizations
+
+=== 1. Pre-serialization
+
+Resolved packages include pre-serialized schemas in `schemas_data/`:
+
+**Before (traditional approach):**
+```
+Load time = Parse XML + Build objects + Index types
+          = 5000ms + 500ms + 200ms = 5700ms
+```
+
+**After (resolved package):**
+```
+Load time = Deserialize + Index types
+          = 50ms + 20ms = 70ms
+```
+
+**Speedup:** ~80x faster loading
+
+=== 2. Schema name resolution
+
+Schema files in `schemas_data/` are named with namespace prefixes for uniqueness:
+
+```
+schemas_data/
+├── gml_gml.marshal        # gml.xsd from GML namespace
+├── core_cityGMLBase.marshal  # cityGMLBase.xsd from CityGML core
+└── uro_urbanObject.marshal   # urbanObject.xsd from i-UR namespace
+```
+
+This prevents name collisions when multiple schemas have the same basename.
+
+The [`SchemaNameResolver`](../../lib/lutaml/xsd/schema_name_resolver.rb:6) class handles this mapping:
+
+[source,ruby]
+----
+# Find namespace prefix for schema
+resolver = SchemaNameResolver.new(namespace_mappings)
+unique_name = resolver.resolve_name("gml.xsd", schema)
+# => "gml_gml" (prefix_basename)
+----
+
+=== 3. Global schema cache
+
+All parsed schemas are stored in [`Schema.processed_schemas`](../../lib/lutaml/xsd/schema.rb:181):
+
+**Benefits:**
+
+* Avoid re-parsing imported schemas
+* Share schemas across multiple repositories
+* Enable circular import detection
+* Fast access for type resolution
+
+**Cache key:** Schema location (file path or URL)
+
+**Cache value:** Parsed Schema object
+
+=== 4. Type index hash lookups
+
+The type index uses hash maps for O(1) lookups:
+
+```ruby
+# Direct hash lookup — O(1)
+type_info = type_index.find("{http://www.opengis.net/gml/3.2}CodeType")
+
+# No iteration needed
+# No parsing required
+# Instant result
+```
+
+=== 5. Lazy loading support
+
+Packages can be configured for lazy loading of imported schemas:
+
+* **Eager loading** (default) — Parse all imports during initial load
+* **Lazy loading** — Parse imports only when accessed
+
+This reduces initial load time for packages with many unused imports.
+
+== Package validation
+
+The [`SchemaRepositoryPackage#validate`](../../lib/lutaml/xsd/schema_repository_package.rb:63) method performs comprehensive checks:
+
+=== Structural validation
+
+* ZIP file exists and is readable
+* Required file `metadata.yaml` present
+* Schema files in `schemas/` directory
+* Valid ZIP structure
+
+=== Metadata validation
+
+* Required fields present (`files`, `namespace_mappings`, `created_at`, etc.)
+* Field types correct (arrays, strings, etc.)
+* Namespace mappings well-formed (prefix + URI)
+* Schema references valid (files listed in metadata exist in package)
+
+=== Version compatibility
+
+* Package version vs current lutaml-xsd version
+* Warnings for version mismatches
+* Forward compatibility detection
+
+=== Self-containment
+
+* No external HTTP/HTTPS dependencies (for include_all mode)
+* No absolute file paths pointing outside package
+* All schema locations resolvable within package
+
+=== Validation result
+
+Returns a [`ValidationResult`](../../lib/lutaml/xsd/schema_repository_package.rb:16) object:
+
+[source,ruby]
+----
+result = package.validate
+
+result.valid?      # => true/false
+result.errors      # => Array of error messages
+result.warnings    # => Array of warning messages
+result.metadata    # => Package metadata hash
+----
+
+== File naming conventions
+
+=== Schema files in schemas/
+
+Original filenames preserved when possible:
+
+```
+schemas/
+├── urbanFunction.xsd    # Entry point
+├── urbanObject.xsd      # Dependency
+└── gml.xsd              # External dependency
+```
+
+If name collisions occur, files are renamed with namespace prefixes or hash suffixes.
+
+=== Serialized files in schemas_data/
+
+Named with namespace prefix for uniqueness:
+
+```
+schemas_data/
+├── gml_gml.marshal           # {prefix}_{basename}.{ext}
+├── core_cityGMLBase.marshal
+└── uro_urbanObject.marshal
+```
+
+Naming strategy (implemented in [`SchemaNameResolver`](../../lib/lutaml/xsd/schema_name_resolver.rb:6)):
+
+. Get schema's target namespace
+. Find registered prefix for namespace
+. Combine: `{prefix}_{basename}`
+. If no prefix found, use hash suffix: `{basename}_{hash}`
+
+== Backward compatibility
+
+The package format maintains backward compatibility:
+
+=== Legacy serialized_schemas format
+
+Older packages stored serialized schemas directly in metadata:
+
+[source,yaml]
+----
+# Old format (deprecated)
+metadata:
+  serialized_schemas:
+    - file_path: "schema1.xsd"
+      target_namespace: "http://..."
+      schema_data: "..."
+----
+
+New packages use separate `schemas_data/` directory but can still load old format.
+
+=== Version detection
+
+Package version checking enables graceful degradation:
+
+[source,ruby]
+----
+# Check package version
+if metadata["lutaml_xsd_version"] < "1.0.0"
+  # Use legacy loading path
+  load_legacy_format(metadata)
+else
+  # Use current loading path
+  load_from_schemas_data(metadata)
+end
+----
+
+== Best practices
+
+=== For package creators
+
+* Use `include_all` mode for distribution
+* Use `resolved` mode for production packages
+* Use `marshal` format for Ruby-only applications
+* Use `json` format for cross-platform distribution
+* Include comprehensive metadata (name, version, description)
+* Validate packages before distribution
+
+=== For package consumers
+
+* Validate packages before loading
+* Check version compatibility
+* Handle validation errors gracefully
+* Cache loaded repositories for reuse
+* Clean up temporary extraction directories
+
+=== For package versioning
+
+* Use semantic versioning (MAJOR.MINOR.PATCH)
+* Increment MAJOR for breaking schema changes
+* Increment MINOR for backward-compatible additions
+* Increment PATCH for bug fixes
+* Document changes in package description
+
+== See also
+
+* link:ARCHITECTURE[System Architecture]
+* link:TYPE_INDEX[Type Index Implementation]
+* link:../LXR_PACKAGES[LXR Packages User Guide]
+* link:index[Architecture Index]
