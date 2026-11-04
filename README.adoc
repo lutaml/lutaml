@@ -7,8 +7,8 @@ gemspec and version.
 |===
 | Package | Role
 
-| `packages/lutaml` | the monogem: LML front, CLI, formatters (absorbs LML, #231)
-| `packages/lutaml-model` | model runtime, here until it is absorbed into `lutaml` (#233)
+| `packages/lutaml` | the monogem: LML front, CLI, formatters and the model runtime (`lutaml/model`, #231, #233)
+| `packages/lutaml-model` | transitional alias gem depending on `lutaml` (deprecation window, #233); the runtime specs still run here
 | `packages/lutaml-xsd`, `packages/lutaml-jsonschema` | schema-language fronts
 | `packages/expressir` | EXPRESS front (Rust-backed)
 | `packages/lutaml-graphviz` | Graphviz renderer for the LML diagrams
@@ -49,7 +49,7 @@ Each tag publishes one gem from `packages/<package>`.
   tag against gemspec, then `gem build` and `gem push` with RubyGems Trusted
   Publishing.
 
-Release order while the dependency chain exists: `lutaml-model`, then `lutaml`,
+Release order: `lutaml` first (it carries the runtime), then the `lutaml-model` alias,
 then `lutaml-graphviz` and the other fronts. Local checks:
 
 [source,sh]

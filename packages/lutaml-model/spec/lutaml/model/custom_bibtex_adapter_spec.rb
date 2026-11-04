@@ -149,7 +149,7 @@
 #   end
 #
 require "spec_helper"
-require_relative "../../../lib/lutaml/model/serialization_adapter"
+require "lutaml/model/serialization_adapter"
 
 # This is a custom BibTeX adapter that can serialize and deserialize BibTeX
 # entries. It is used to demonstrate how to create a custom adapter for a
@@ -298,9 +298,9 @@ module CustomBibtexAdapterSpec
       add_mapping(name, to, field_type: :field, render_nil: render_nil)
     end
 
-    def add_mapping(name, to, **options)
+    def add_mapping(name, to, **)
       # validate!(name, to, {})
-      @mappings << BibtexMappingRule.new(name, to: to, **options)
+      @mappings << BibtexMappingRule.new(name, to: to, **)
     end
 
     def mapping_for_field(field)

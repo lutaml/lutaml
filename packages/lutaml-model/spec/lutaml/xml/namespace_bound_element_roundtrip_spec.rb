@@ -4,7 +4,7 @@
 # identical method signatures (e.g. `self.name`) are intentionally defined per-let block.
 
 require "spec_helper"
-require_relative "../../../lib/lutaml/model"
+require "lutaml/model"
 
 RSpec.describe "Namespace-Aware Round-Trip Serialization" do
   # OOXML-style namespaces for same-named elements

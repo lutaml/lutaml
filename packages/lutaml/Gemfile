@@ -17,10 +17,13 @@ sibling_overrides.each do |sibling_gem|
   gem sibling_gem, path: sibling_path if File.directory?(sibling_path)
 end
 
-github_override = File.expand_path("../lutaml-model", __dir__)
-if File.directory?(github_override)
-  gem "lutaml-model", path: github_override
-end
+# UML models are an optional companion (lutaml.rb loads them when present).
+gem "lutaml-uml", "~> 1.0"
+
+# The lutaml-model alias gem (siblings and lutaml-uml depend on it) resolves
+# to its package, which in turn depends on this gem.
+model_alias = File.expand_path("../lutaml-model", __dir__)
+gem "lutaml-model", path: model_alias if File.directory?(model_alias)
 
 # LML front development and conformance gates (absorbed from lutaml-lml).
 gem "rubocop"

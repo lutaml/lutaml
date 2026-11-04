@@ -1,5 +1,5 @@
 require "spec_helper"
-require_relative "../../../../lib/lutaml/model"
+require "lutaml/model"
 
 # leptris#1874: the plan hydrator's namespace collection collapses the
 # whole-subtree Ruby recursion (one namespace_definitions FFI crossing

@@ -31,11 +31,14 @@ task :rubocop_ratchet do
   base = ENV.fetch('RUBOCOP_RATCHET_BASE', 'origin/main')
   ruby_files = ->(f) { (f.end_with?('.rb') || f == 'Rakefile') && File.exist?(f) }
   # --relative: paths are relative to this gem's directory (packages/lutaml).
-  # A file that only moved here from the old repository root has identical
+  # A file that only moved here (from the old repository root or from
+  # packages/lutaml-model, #233) has identical
   # content at its old path on the base, so it is not a changed file.
   moved_unchanged = lambda do |f|
-    old = `git show #{base}:#{f} 2>/dev/null`
-    $?.success? && old == File.read(f)
+    ['', 'packages/lutaml/', 'packages/lutaml-model/'].any? do |prefix|
+      old = `git show #{base}:#{prefix}#{f} 2>/dev/null`
+      $?.success? && old == File.read(f)
+    end
   end
   changed = `git diff --relative --diff-filter=AM --name-only #{base}...HEAD`
     .split.select(&ruby_files).reject(&moved_unchanged)

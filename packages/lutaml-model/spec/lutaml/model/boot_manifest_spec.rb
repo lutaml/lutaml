@@ -10,10 +10,10 @@ require "tmpdir"
 # Regenerating here and comparing catches that drift in the fast MRI suite.
 RSpec.describe "Opal boot manifest" do
   let(:generator) do
-    File.expand_path("../../../lib/compat/opal/generate_boot.rb", __dir__)
+    File.join(LUTAML_LIB, "compat/opal/generate_boot.rb")
   end
   let(:manifest) do
-    File.expand_path("../../../lib/compat/opal/lutaml_model_boot.rb", __dir__)
+    File.join(LUTAML_LIB, "compat/opal/lutaml_model_boot.rb")
   end
 
   it "matches the generator output (regenerate: ruby lib/compat/opal/generate_boot.rb)" do

@@ -336,9 +336,7 @@ RSpec.describe Lutaml::Model::CachedTypeResolver do
     it "does not autoload the native ConcurrentMapCache on Opal" do
       hide_const("Lutaml::Model::CachedTypeResolver::ConcurrentMapCache")
 
-      load File.expand_path(
-        "../../../lib/lutaml/model/cached_type_resolver.rb", __dir__
-      )
+      load File.join(LUTAML_LIB, "lutaml/model/cached_type_resolver.rb")
 
       expect(described_class.autoload?(:ConcurrentMapCache)).to be_nil
     end

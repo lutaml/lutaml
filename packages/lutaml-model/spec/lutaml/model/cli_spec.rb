@@ -118,7 +118,7 @@ RSpec.describe Lutaml::Model::Cli do
   end
 
   before do
-    lib_path = File.expand_path("../../../lib", __dir__)
+    lib_path = LUTAML_LIB
     $LOAD_PATH.unshift(lib_path) unless $LOAD_PATH.include?(lib_path)
   end
 

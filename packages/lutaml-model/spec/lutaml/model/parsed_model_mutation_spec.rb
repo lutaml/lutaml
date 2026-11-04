@@ -1,5 +1,5 @@
 require "spec_helper"
-require_relative "../../../lib/lutaml/model"
+require "lutaml/model"
 
 # Regression coverage for the parsed-vs-built divergence: a model parsed from
 # a document carries element_order, and mutations made after parsing used to

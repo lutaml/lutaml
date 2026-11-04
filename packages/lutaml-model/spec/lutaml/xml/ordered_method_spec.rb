@@ -1,5 +1,5 @@
 require "spec_helper"
-require_relative "../../../lib/lutaml/model"
+require "lutaml/model"
 
 RSpec.describe "XML ordered method" do
   context "when using ordered method for order preservation" do

@@ -9,7 +9,8 @@ Gem::Specification.new do |spec|
   spec.summary       = "LutaML: data models in textual form"
   spec.description   = "LutaML: data models in textual form"
   spec.homepage      = "https://github.com/lutaml/lutaml"
-  spec.license       = "MIT"
+  # lib/lutaml/{model,xml,json,...} is the lutaml-model runtime (BSD-2-Clause).
+  spec.licenses      = ["MIT", "BSD-2-Clause"]
 
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage
@@ -29,9 +30,17 @@ Gem::Specification.new do |spec|
 
   spec.required_ruby_version = ">= 3.2.0"
 
-  spec.add_dependency "lutaml-model", "~> 0.8.159"
-  spec.add_dependency "moxml", ">= 0.1.24"
-  spec.add_dependency "lutaml-uml", "~> 1.0"
+  # The lutaml-model runtime now lives in this gem (#233); these are its
+  # runtime dependencies. The `lutaml-model` gem is a thin alias on top.
+  spec.add_dependency "base64", ">= 0.1.1"
+  spec.add_dependency "bigdecimal"
+  spec.add_dependency "canon"
+  spec.add_dependency "concurrent-ruby"
+  spec.add_dependency "liquid", ">= 4.0", "< 6.0"
+  spec.add_dependency "moxml", "~> 0.6.1"
+  spec.add_dependency "ostruct"
+  spec.add_dependency "rubyzip", "~> 3.7"
+  spec.add_dependency "thor", "~> 1.4"
   # Lazy-required by Lutaml::Lml::Grammar: consumers that only use the
   # model runtime never load it.
   spec.add_dependency "parsanol", "~> 1.3.68"

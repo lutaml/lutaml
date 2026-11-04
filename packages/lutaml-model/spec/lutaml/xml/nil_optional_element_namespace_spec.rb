@@ -1,6 +1,6 @@
 require "spec_helper"
-require_relative "../../../lib/lutaml/model"
-require_relative "../../../lib/lutaml/xml/type_namespace_resolver"
+require "lutaml/model"
+require "lutaml/xml/type_namespace_resolver"
 
 RSpec.describe "Nil optional element namespace hoisting" do
   # Define a namespace for the child type

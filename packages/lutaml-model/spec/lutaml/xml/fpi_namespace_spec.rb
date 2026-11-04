@@ -1,5 +1,5 @@
 require "spec_helper"
-require_relative "../../../lib/lutaml/model"
+require "lutaml/model"
 
 # NOTE: FPIs in namespace positions are INVALID XML per W3C specification.
 # XML namespaces must be valid URIs. FPIs like "-//OASIS//DTD..." are NOT valid URIs.

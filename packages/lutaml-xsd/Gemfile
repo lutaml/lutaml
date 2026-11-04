@@ -20,3 +20,6 @@ gem "rubocop-performance"
 # own `~> 0.8` constraint still applies to the sibling's version).
 model = File.expand_path("../lutaml-model", __dir__)
 gem "lutaml-model", path: model if File.directory?(model)
+# lutaml-model is a thin alias of lutaml (#233): resolve the runtime by path too.
+lutaml_gem = File.expand_path("../lutaml", __dir__)
+gem "lutaml", path: lutaml_gem if File.directory?(lutaml_gem)
