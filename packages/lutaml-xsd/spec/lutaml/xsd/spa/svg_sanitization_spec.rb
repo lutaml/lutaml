@@ -50,6 +50,10 @@ RSpec.describe "SPA slug and SVG sanitisation" do
       expect(strip("<svg><script>x()</script ><g/></svg>")).to eq("<svg><g/></svg>")
     end
 
+    it "removes script elements whose end tag carries attributes, as browsers accept" do
+      expect(strip("<svg><script>x()</script\t\n bar><g/></svg>")).to eq("<svg><g/></svg>")
+    end
+
     it "does not let removal reassemble a script tag" do
       out = strip("<svg><scr<script></script>ipt>alert(1)</scr<script></script>ipt></svg>")
       expect(out).not_to match(/<\/?script/i)

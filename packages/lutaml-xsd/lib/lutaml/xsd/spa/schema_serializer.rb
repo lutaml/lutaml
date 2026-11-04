@@ -498,7 +498,7 @@ module Lutaml
         # end tags with trailing whitespace ("</script >") are
         # matched. Any unclosed "<script" / "</script" left over is
         # neutralised by escaping its "<".
-        SCRIPT_ELEMENT = %r{<script\b[^>]*>.*?</script\s*>}im
+        SCRIPT_ELEMENT = %r{<script\b[^>]*>.*?</script\b[^>]*>}im
         SCRIPT_FRAGMENT = %r{<(/?script)}i
 
         def strip_svg_scripts(svg)
