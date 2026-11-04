@@ -479,10 +479,9 @@ module Lutaml
             .gsub(/<\?xml[^?]*\?>\s*/i, "")
             .gsub(/<!DOCTYPE[^>]*>\s*/i, "")
             .gsub(/<title>.*?<\/title>/i, "") # Remove title element if present
-            .gsub(/<script[^>]*>.*?<\/script>/im, "") # Remove any script
             .gsub(/<a[^>]*>(.*?)<\/a>/im, '\1') # Remove links but keep content
 
-          svg_content
+          strip_svg_scripts(svg_content)
         rescue StandardError => e
           warn "xsdvi: Failed to generate diagram for '#{name}': #{e.message}" if config[:verbose]
           nil
@@ -491,6 +490,20 @@ module Lutaml
           if component_type == :type && actual_file_path && actual_file_path != file_path
             FileUtils.rm_f(actual_file_path)
           end
+        end
+
+        # Remove <script> elements from generated SVG. Removal repeats
+        # until stable so that nested input such as
+        # "<scr<script></script>ipt>" cannot reassemble a tag, and
+        # end tags with trailing whitespace ("</script >") are
+        # matched. Any unclosed "<script" / "</script" left over is
+        # neutralised by escaping its "<".
+        SCRIPT_ELEMENT = %r{<script\b[^>]*>.*?</script\s*>}im
+        SCRIPT_FRAGMENT = %r{<(/?script)}i
+
+        def strip_svg_scripts(svg)
+          svg = svg.gsub(SCRIPT_ELEMENT, "") while svg.match?(SCRIPT_ELEMENT)
+          svg.gsub(SCRIPT_FRAGMENT, '&lt;\1')
         end
 
         public
@@ -1543,7 +1556,7 @@ source = nil)
           return "unnamed" unless name
 
           name.to_s
-            .gsub(/([A-Z]+)([A-Z][a-z])/, '\1-\2') # Split acronyms: HTTPParser → HTTP-Parser
+            .gsub(/(?<=[A-Z])([A-Z][a-z])/, '-\1') # Split acronyms: HTTPParser → HTTP-Parser
             .gsub(/([a-z\d])([A-Z])/, '\1-\2') # Split camelCase: fooBar → foo-Bar
             .downcase # Convert to lowercase
             .gsub(/[^a-z0-9]+/, "-") # Replace non-alphanumeric with dash

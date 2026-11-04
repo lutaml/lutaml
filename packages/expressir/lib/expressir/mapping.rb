@@ -16,7 +16,7 @@ module Expressir
     autoload :RefPath, "#{__dir__}/mapping/refpath"
     autoload :InstanceVerification, "#{__dir__}/mapping/instance_verification"
 
-    EXPRESS_LINK = /<<express:([^,>]+)(?:,([^>]+))?>>/
+    EXPRESS_LINK = /<<express:([^,<>]+)(?:,([^<>]+))?>>/
 
     class ReferencePath < Lutaml::Model::Serializable
       attribute :content, :string

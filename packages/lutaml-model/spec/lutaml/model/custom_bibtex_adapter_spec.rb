@@ -181,7 +181,7 @@ module CustomBibtexAdapterSpec
   class BibtexAdapter < BibtexDocument
     def self.parse(bibtex_data, options = {})
       mapping = options.delete(:mapping)
-      entries = bibtex_data.scan(/@(\w+)\s*{\s*([\w-]+),\s*((?:\s*\w+\s*=\s*\{.*?\},?\s*)+)\s*}/).to_h do |type, key, fields|
+      entries = bibtex_data.scan(/@(\w+)\s*{\s*([\w-]+),\s*((?:\w+\s*=\s*\{(?:[^{}\n]|\{[^{}\n]*\})*\},?\s*)+)}/).to_h do |type, key, fields|
         [type, BibtexDocumentEntry.parse(type, key, fields, mapping)]
       end
 

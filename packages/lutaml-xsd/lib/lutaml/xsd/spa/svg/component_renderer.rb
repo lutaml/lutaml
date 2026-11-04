@@ -72,18 +72,13 @@ module Lutaml
 
           # CamelCase-aware slugification
           #
-          # NOTE: The regex pattern /([A-Z]+)([A-Z][a-z])/ is marked as potentially
-          # polynomial by CodeQL. However, this is only triggered by unusually long
-          # strings of consecutive uppercase letters. Schema type names are typically
-          # short (e.g., "XMLSchema", "PersonType") and not user-controlled, so the
-          # actual risk is negligible. Using possessive quantifiers (e.g., /(?>[A-Z]++)/)
-          # was evaluated but breaks the intended acronym splitting (e.g., "XMLSchema"
-          # → "xml-schema" instead of "xmlschema").
+          # The acronym split uses a lookbehind rather than
+          # /([A-Z]+)([A-Z][a-z])/, which is quadratic on long capital runs.
           def slugify(name)
             return "" unless name
 
             name.gsub(/([a-z])([A-Z])/, '\1-\2')
-              .gsub(/([A-Z]+)([A-Z][a-z])/, '\1-\2')
+              .gsub(/(?<=[A-Z])([A-Z][a-z])/, '-\1')
               .downcase
               .gsub(/[^a-z0-9]+/, "-")
               .gsub(/^-|-$/, "")

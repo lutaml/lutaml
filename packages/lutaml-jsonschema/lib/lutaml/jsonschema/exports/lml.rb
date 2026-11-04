@@ -190,7 +190,7 @@ module Lutaml
         end
 
         def lml_string(text)
-          "\"#{text.gsub('\\', '\\\\\\\\').gsub('"', '\"')}\""
+          "\"#{text.gsub(/[\\"]/) { |char| "\\#{char}" }}\""
         end
 
         def plain(text)
