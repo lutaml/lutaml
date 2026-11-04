@@ -59,6 +59,9 @@ jobs:
         working-directory: packages/${{ matrix.package }}
     env:
       BUNDLE_GEMFILE: ${{ github.workspace }}/packages/${{ matrix.package }}/Gemfile
+      # Stacked PRs ratchet against their own base, not main (which lacks the
+      # parent PR's layout, so every moved file would look changed).
+      RUBOCOP_RATCHET_BASE: origin/${{ github.base_ref || 'main' }}
     steps:
       - uses: actions/checkout@v6
         with:
