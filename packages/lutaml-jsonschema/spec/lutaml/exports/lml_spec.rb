@@ -219,3 +219,18 @@ RSpec.describe Lutaml::Jsonschema::Exports::Lml do
     expect(attribute_names).to include("created_at", "email", "identity_provider")
   end
 end
+
+RSpec.describe Lutaml::Jsonschema::Exports::Lml, "#lml_string escaping" do
+  subject(:lml) { described_class.allocate }
+
+  {
+    "plain" => '"plain"',
+    'a"b' => '"a\"b"',
+    'a\\b' => '"a\\\\b"',
+    'a\\"b' => '"a\\\\\\"b"',
+  }.each do |input, expected|
+    it "escapes #{input.inspect}" do
+      expect(lml.send(:lml_string, input)).to eq(expected)
+    end
+  end
+end

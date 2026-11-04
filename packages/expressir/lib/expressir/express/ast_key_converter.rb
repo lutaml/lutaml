@@ -26,7 +26,7 @@ module Expressir
               str.to_sym
             else
               str
-                .gsub(/([A-Z]+)([A-Z][a-z])/, '\1_\2')
+                .gsub(/(?<=[A-Z])([A-Z][a-z])/, '_\1')
                 .gsub(/([a-z\d])([A-Z])/, '\1_\2')
                 .downcase
                 .to_sym

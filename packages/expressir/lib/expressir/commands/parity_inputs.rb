@@ -143,9 +143,25 @@ module Expressir
       # first: prose like "use from the main schema" must not spawn
       # phantom dependencies.
       def closure_names(source)
-        code = source.gsub(/--[^\n]*/, "").gsub(/\(\*.*?\*\)/m, "")
+        code = strip_block_remarks(source.gsub(/--[^\n]*/, ""))
         code.scan(/\bUSE\s+FROM\s+(\w+)/i).flatten.uniq +
           code.scan(/\bREFERENCE\s+FROM\s+(\w+)/i).flatten.uniq
+      end
+
+      # Drop "(* ... *)" remarks by index scan: linear, where the lazy
+      # /\(\*.*?\*\)/m is quadratic on many unclosed "(*". An unclosed
+      # "(*" is kept, as the regexp kept it.
+      def strip_block_remarks(code)
+        out = +""
+        pos = 0
+        while (open_at = code.index("(*", pos))
+          close_at = code.index("*)", open_at + 2)
+          break unless close_at
+
+          out << code[pos...open_at]
+          pos = close_at + 2
+        end
+        out << code[pos..]
       end
 
       def root_schema(root_path, manifest: nil, stepmod: nil)

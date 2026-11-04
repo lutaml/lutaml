@@ -114,7 +114,9 @@ module Expressir
         end
 
         def cell(text)
-          text.to_s.gsub("|", "\\|")
+          # A backslash directly before a pipe is doubled so it cannot
+          # swallow the pipe's own escape; other backslashes are literal.
+          text.to_s.gsub(/\\(?=\|)|\|/) { |match| "\\#{match}" }
         end
       end
     end
