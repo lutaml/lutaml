@@ -43,6 +43,6 @@ Gem::Specification.new do |spec|
   spec.add_dependency "thor", "~> 1.4"
   # Lazy-required by Lutaml::Lml::Grammar: consumers that only use the
   # model runtime never load it.
-  spec.add_dependency "parsanol", "~> 1.3.68"
+  spec.add_dependency "parsanol", "~> 1.5.0"
   spec.metadata["rubygems_mfa_required"] = "true"
 end
