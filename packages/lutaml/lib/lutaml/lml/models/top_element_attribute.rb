@@ -96,9 +96,14 @@ module Lutaml
         literal = value.respond_to?(:value) ? value.value : value
         cargo = literal.is_a?(::Array) ? literal.first : literal
         cargo = cargo.value if cargo.is_a?(LiteralValue)
-        return nil unless cargo.is_a?(::Hash) && cargo[:reference]
+        return nil unless cargo.is_a?(::Hash)
 
-        Reference.new(path: cargo[:reference].to_s)
+        # Parsed literals carry symbol keys; a document reloaded from a
+        # transfer syntax (JSON, YAML) carries string keys.
+        path = cargo[:reference] || cargo["reference"]
+        return nil unless path
+
+        Reference.new(path: path.to_s)
       end
 
       private

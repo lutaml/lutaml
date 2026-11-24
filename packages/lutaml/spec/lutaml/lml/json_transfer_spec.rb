@@ -4,10 +4,10 @@ require "spec_helper"
 require "json"
 require_relative "../../support/lml_property_support"
 
-# JSON transfer of the model-definition layer (lutaml-lml#100, slice 1):
-# document, class, enum, attribute and package nodes. Mapping blocks,
-# instances, references, interleaving order and the XML binding are open
-# questions and are not asserted here.
+# JSON transfer of LML documents (lutaml-lml#100, slice 1): document, class,
+# enum, attribute, package, mapping-block and instance nodes. Interleaving
+# order, the XML namespace and the XML/YAML bindings are open questions and
+# are not asserted here.
 RSpec.describe "LML JSON transfer" do
   include LmlDocumentGenerator
 
@@ -15,18 +15,15 @@ RSpec.describe "LML JSON transfer" do
   let(:defaults) do
     { "visibility" => "public", "literal" => false, "is_derived" => false,
       "is_static" => false, "is_read_only" => false, "is_abstract" => false,
-      "keyword" => "enumeration" }
+      "keyword" => "enumeration", "mixed_content" => false }
   end
-
-  # Layers outside this slice (mapping blocks, instances).
-  let(:out_of_slice) { %w[serialization_mappings wire_mappings instance instances] }
 
   def parse(source)
     Lutaml::Lml.parse_document(source)
   end
 
   def graph(document)
-    strip(document.to_hash.except(*out_of_slice))
+    strip(document.to_hash)
   end
 
   def strip(node)
@@ -35,7 +32,8 @@ RSpec.describe "LML JSON transfer" do
       node.each_with_object({}) do |(key, value), result|
         next if defaults[key] == value || value.nil? || value == [] || value == {}
 
-        result[key] = strip(value)
+        # JSON has no symbols: a parsed map literal's symbol keys read back as strings.
+        result[key.to_s] = strip(value)
       end
     when Array then node.map { |item| strip(item) }
     else node
@@ -108,12 +106,9 @@ RSpec.describe "LML JSON transfer" do
     end
   end
 
-  describe "the RS 3001 corpus (model-definition fixtures)" do
-    corpus = %w[01_class_tail_comment 02_definition_block 03_package_ceramics
-                04_attribute_definition_form 05_attribute_cardinality_unbounded
-                06_attribute_values_set 07_attribute_pattern
-                08_attribute_default_colon 09_value_porcelain
-                10_enum_glaze_technique 11_enum_values_as_instances]
+  describe "the RS 3001 corpus" do
+    corpus = Dir[File.expand_path("../../fixtures/rs3001/*.lml", __dir__)]
+      .map { |path| File.basename(path, ".lml") }.sort
 
     corpus.each do |name|
       it "round-trips #{name}" do
@@ -125,8 +120,31 @@ RSpec.describe "LML JSON transfer" do
     end
   end
 
+  describe "references" do
+    let(:source) do
+      "instances Glazes {\n  GlazeFormula \"blue_matte\" { a = 1 }\n  " \
+        "CeramicTile \"t\" { glaze = ref:(Glazes.blue_matte) }\n}\n"
+    end
+
+    def glaze(document)
+      document.instances.instances.last.attributes.first
+    end
+
+    it "keeps the typed reference after a JSON reload" do
+      reloaded = transfer(parse(source))
+
+      expect(glaze(reloaded).reference&.path).to eq("Glazes.blue_matte")
+    end
+
+    it "gives the same typed reference before and after" do
+      document = parse(source)
+
+      expect(glaze(transfer(document)).reference&.path).to eq(glaze(document).reference&.path)
+    end
+  end
+
   describe "generated documents" do
-    it "round-trips the model-definition layer through JSON" do
+    it "round-trips whole documents through JSON" do
       warn "LML property seed: #{PropertyLawsSupport::SEED}"
       property = property_of { Tuple.new(Array.new(10) { range(0, 24) }) }
 
