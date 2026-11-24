@@ -20,7 +20,7 @@ RSpec.describe "Issue #191 facet round-trip" do
         map_element "value", to: :value
       end
     end
-    xsd = Lutaml::Xml::Schema::XsdSchema.generate(model, pretty: true)
+    xsd = Lutaml::Xml::Schema::XsdSchema.generate(model, pretty: true, adapter: :leptris)
     compiled = Lutaml::Model::Schema::XmlCompiler.to_models(xsd)
     compiled.fetch(compiled.keys.grep(/\AST_/).first)
   end
@@ -102,7 +102,7 @@ RSpec.describe "Issue #191 facet round-trip" do
           map_element "value", to: :value
         end
       end
-      xsd = Lutaml::Xml::Schema::XsdSchema.generate(model, pretty: true)
+      xsd = Lutaml::Xml::Schema::XsdSchema.generate(model, pretty: true, adapter: :leptris)
       compiled = Lutaml::Model::Schema::XmlCompiler.to_models(xsd)
       source = compiled.fetch(compiled.keys.grep(/\AST_/).first)
 
@@ -120,7 +120,7 @@ RSpec.describe "Issue #191 facet round-trip" do
       )
       require File.join(dir, "facetrtspec_registry.rb")
       FacetRtSpec.register_all
-      Lutaml::Xml::Schema::XsdSchema.generate(FacetRtSpec::CTItem, pretty: true)
+      Lutaml::Xml::Schema::XsdSchema.generate(FacetRtSpec::CTItem, pretty: true, adapter: :leptris)
     end
 
     after do

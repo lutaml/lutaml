@@ -2,7 +2,7 @@
 
 require "spec_helper"
 require "lutaml/model"
-require "lutaml/xml/adapter/nokogiri_adapter"
+require "lutaml/xml/adapter/leptris_adapter"
 require "lutaml/xml/adapter/ox_adapter"
 require "lutaml/xml/adapter/oga_adapter"
 require "lutaml/xml/adapter/rexml_adapter"
@@ -188,7 +188,7 @@ RSpec.describe "OrderedContent" do
     end
   end
 
-  describe Lutaml::Xml::Adapter::NokogiriAdapter do
+  describe Lutaml::Xml::Adapter::LeptrisAdapter do
     it_behaves_like "ordered content behavior", described_class
   end
 

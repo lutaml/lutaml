@@ -37,7 +37,6 @@ gem "liquid", "~> 5"
 # with lutaml-model's rubyzip ~> 3.4 CVE floor.
 gem "lutaml-store", "~> 0.2.4"
 gem "multi_json"
-gem "nokogiri"
 gem "oj"
 gem "openssl", "~> 3.0"
 gem "ox"

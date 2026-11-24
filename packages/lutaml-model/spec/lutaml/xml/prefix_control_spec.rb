@@ -1,6 +1,6 @@
 require "spec_helper"
 require "lutaml/model"
-require "lutaml/xml/adapter/nokogiri_adapter"
+require "lutaml/xml/adapter/leptris_adapter"
 require "lutaml/xml/adapter/ox_adapter"
 require "lutaml/xml/adapter/oga_adapter"
 require "lutaml/xml/adapter/rexml_adapter"
@@ -260,8 +260,8 @@ RSpec.describe "XML Prefix Control" do
     end
   end
 
-  context "with Nokogiri adapter" do
-    it_behaves_like "prefix control behavior", Lutaml::Xml::Adapter::NokogiriAdapter
+  context "with Leptris adapter" do
+    it_behaves_like "prefix control behavior", Lutaml::Xml::Adapter::LeptrisAdapter
   end
 
   context "with Ox adapter" do

@@ -2,7 +2,6 @@
 
 require "spec_helper"
 require "lutaml/xml/adapter/leptris_adapter"
-require "lutaml/xml/adapter/nokogiri_adapter"
 
 # A failed parse reaches the empty-document guard as a document with no
 # root, indistinguishable from genuinely empty input. The engine's parse
@@ -35,16 +34,11 @@ RSpec.describe "empty-document errors surface engine parse diagnostics" do
         described_class.parse("   ")
       end.to raise_error(Lutaml::Model::InvalidFormatError, /the XML engine reported:/)
     end
-  end
 
-  describe Lutaml::Xml::Adapter::NokogiriAdapter do
-    it "keeps the plain empty-document message when the engine reported nothing" do
+    it "reports the engine diagnostic for empty input" do
       expect do
         described_class.parse("")
-      end.to raise_error(Lutaml::Model::InvalidFormatError) do |error|
-        expect(error.message).to include("The XML may be empty")
-        expect(error.message).not_to include("the XML engine reported:")
-      end
+      end.to raise_error(Lutaml::Model::InvalidFormatError, /the XML engine reported:/)
     end
   end
 end

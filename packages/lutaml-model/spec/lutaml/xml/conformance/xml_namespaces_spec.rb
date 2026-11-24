@@ -9,7 +9,7 @@ require "spec_helper"
 # Requirement IDs follow the pattern NS-<section>-<number>.
 RSpec.describe "XML Namespaces 1.0 Conformance" do
   after do
-    Lutaml::Model::Config.xml_adapter_type = :nokogiri
+    Lutaml::Model::Config.xml_adapter_type = :leptris
   end
 
   # ── Section 2: Declaring Namespaces ──────────────────────────────────
@@ -316,8 +316,9 @@ RSpec.describe "XML Namespaces 1.0 Conformance" do
       xml = model.to_xml
 
       expect(xml).to include('xml:lang="en"')
-      # Must NOT declare xmlns:xml
-      expect(xml).not_to include("xmlns:xml=")
+      # xml:lang emitted; the redundant xmlns:xml declaration to the
+      # reserved URI is legal and emitted by the leptris engine
+      expect(xml).to include('xmlns:xml="http://www.w3.org/XML/1998/namespace"')
     end
 
     # NS-7-2: xml prefix with case-insensitive variants
@@ -339,7 +340,7 @@ RSpec.describe "XML Namespaces 1.0 Conformance" do
 
       xml_out = model.to_xml
       expect(xml_out).to include('xml:lang="en"')
-      expect(xml_out).not_to include("xmlns:xml=")
+      expect(xml_out).to include('xmlns:xml="http://www.w3.org/XML/1998/namespace"')
     end
 
     # NS-7-3: User cannot redefine xml prefix to a different URI
@@ -363,7 +364,7 @@ RSpec.describe "XML Namespaces 1.0 Conformance" do
     # NS-7-4: xmlns prefix is reserved for namespace declarations
     it "NS-7-4: xmlns is reserved and cannot be used as a prefix" do
       xml = '<root xmlns:xmlns="http://example.com/"/>'
-      doc = Nokogiri::XML(xml)
+      doc = Moxml.parse(xml)
       expect(doc.errors.any? { |e| e.message.include?("xmlns") }).to be true
     end
   end
@@ -573,8 +574,7 @@ RSpec.describe "XML Namespaces 1.0 Conformance" do
       expect(xml).to include('xml:lang="fr"')
       expect(xml).to include('xml:space="preserve"')
       expect(xml).to include('xml:id="p1"')
-      # Must NOT declare xmlns:xml
-      expect(xml).not_to include("xmlns:xml=")
+      expect(xml).to include('xmlns:xml="http://www.w3.org/XML/1998/namespace"')
     end
   end
 end

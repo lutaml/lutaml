@@ -326,7 +326,7 @@ RSpec.describe Lutaml::Model::Cli do
       end
 
       before do
-        # Create XML with invalid structure that Nokogiri will reject
+        # Create XML with invalid structure that the engine will reject
         File.write(malformed_xml,
                    "<?xml version='1.0'?><invalid>>malformed<<xml>")
         File.write(malformed_yaml, "invalid: yaml: content: [unclosed")

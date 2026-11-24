@@ -51,7 +51,7 @@ RSpec.describe "ElementBuilder cross-class dispatch" do
     holder.child = actual_type.new(different_name: "x")
     xml = holder.to_xml
 
-    parsed = Nokogiri::XML(xml)
+    parsed = Moxml.parse(xml)
     expect(parsed.at_css("different-name").content).to eq("x")
   end
 
@@ -60,7 +60,7 @@ RSpec.describe "ElementBuilder cross-class dispatch" do
     holder.child = declared_type.new(name: "y")
     xml = holder.to_xml
 
-    parsed = Nokogiri::XML(xml)
+    parsed = Moxml.parse(xml)
     expect(parsed.at_css("name").content).to eq("y")
   end
 

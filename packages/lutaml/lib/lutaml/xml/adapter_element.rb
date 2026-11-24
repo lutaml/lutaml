@@ -3,7 +3,7 @@
 module Lutaml
   module Xml
     # Base element wrapper for moxml-backed XML adapters.
-    # NokogiriElement, Ox::Element, Oga::Element, Rexml::Element
+    # Ox::Element, Oga::Element, Rexml::Element, leptris elements
     # all inherit from this class.
     class AdapterElement < XmlElement
       NamespaceData = Lutaml::Xml::Adapter::NamespaceData
@@ -23,7 +23,7 @@ module Lutaml
                when Moxml::Element
                  namespace_name = node.namespace&.prefix
                  # moxml >= 0.5.33 contract: #namespaces is the full
-                 # in-scope map (parity with Nokogiri, #198/#201); the
+                 # in-scope map (uniform across engines, #198/#201); the
                  # own-declarations shape this parse path needs is
                  # #namespace_definitions.
                  ns_defs = node.namespace_definitions

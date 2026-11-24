@@ -202,13 +202,14 @@ RSpec.describe "XML namespace_scope feature" do
 
       # Child elements should NOT redeclare these namespaces
       # Parse XML to check
-      doc = Nokogiri::XML(xml)
+      doc = Moxml.parse(xml)
 
       # Check root element has all namespaces
       root = doc.root
-      expect(root.namespaces.values).to include("urn:ietf:params:xml:ns:vcard-4.0")
-      expect(root.namespaces.values).to include("http://purl.org/dc/terms/")
-      expect(root.namespaces.values).to include("http://purl.org/dc/elements/1.1/")
+      declared_uris = root.namespaces.map(&:uri)
+      expect(declared_uris).to include("urn:ietf:params:xml:ns:vcard-4.0")
+      expect(declared_uris).to include("http://purl.org/dc/terms/")
+      expect(declared_uris).to include("http://purl.org/dc/elements/1.1/")
 
       # Check that child elements don't redeclare dc or dcterms
       # Note: contacts is the wrapper element containing contact data
@@ -221,13 +222,13 @@ RSpec.describe "XML namespace_scope feature" do
       expect(title).not_to be_nil
       expect(title.text).to eq("Contact: Dr. John Doe, Jr.")
       # Should NOT have local xmlns:dc declaration
-      expect(title.attributes.keys).not_to include("xmlns:dc")
+      expect(title.attributes.map(&:name)).not_to include("xmlns:dc")
 
       # Created element should use dcterms prefix without redeclaring xmlns:dcterms
       created = contacts.at_xpath(".//dcterms:created", "dcterms" => "http://purl.org/dc/terms/")
       expect(created).not_to be_nil
       # Should NOT have local xmlns:dcterms declaration
-      expect(created.attributes.keys).not_to include("xmlns:dcterms")
+      expect(created.attributes.map(&:name)).not_to include("xmlns:dcterms")
     end
 
     it "roundtrips correctly with namespace_scope" do
@@ -308,7 +309,7 @@ RSpec.describe "XML namespace_scope feature" do
       xml = vcard_instance.to_xml
 
       # Find root element using XPath with registered namespace
-      doc = Nokogiri::XML(xml)
+      doc = Moxml.parse(xml)
       root = doc.at_xpath("/ns:vCard",
                           "ns" => "urn:ietf:params:xml:ns:vcard-4.0")
       expect(root).not_to be_nil

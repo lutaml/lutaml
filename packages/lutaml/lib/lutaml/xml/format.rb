@@ -57,12 +57,12 @@ module Lutaml
     autoload :Schema, "#{__dir__}/schema"
 
     # Detect available XML adapter.
-    # Delegates to moxml, which is the authority on XML adapter
-    # availability and platform constraints.
+    # Delegates to the adapter resolver, which filters moxml's engine
+    # detection through this gem's supported adapter set.
     #
     # @return [Symbol] adapter type name
     def self.detect_xml_adapter
-      Moxml::Config.runtime_default_adapter
+      Lutaml::Model::AdapterResolver.detect_xml_adapter
     end
 
     # Get the current XML adapter
@@ -83,7 +83,7 @@ module Lutaml
 
     # Get the current XML adapter type
     #
-    # @return [Symbol] the configured XML adapter type (:nokogiri, :ox, etc.)
+    # @return [Symbol] the configured XML adapter type (:leptris, :ox, etc.)
     def self.adapter_type
       Lutaml::Model::Config.xml_adapter_type
     end
@@ -164,8 +164,6 @@ module Lutaml
     autoload :Rexml, "#{__dir__}/rexml"
     Lutaml::Model::RuntimeCompatibility.autoload_native(
       self,
-      NokogiriElement: "#{__dir__}/nokogiri/element",
-      Nokogiri: "#{__dir__}/nokogiri",
       Ox: "#{__dir__}/ox",
       LeptrisElement: "#{__dir__}/leptris/element",
     )
@@ -183,7 +181,6 @@ Lutaml::Model::FormatRegistry.register(
   key_value: false,
   error_types: %w[
     Moxml::ParseError
-    Nokogiri::XML::SyntaxError
     Ox::ParseError
     REXML::ParseException
   ],
@@ -199,13 +196,13 @@ Lutaml::Model::FormatRegistry.register(
                      }
                    else
                      {
-                       available: %i[nokogiri ox oga rexml leptris],
+                       available: %i[ox oga rexml leptris],
                        # #908: the metadata default is the LAST resort —
                        # explicit configuration and moxml runtime detection
-                       # answer first. When resolution falls this far, prefer
-                       # leptris, consistent with moxml's runtime preference
-                       # (leptris whenever present); bundles without it
-                       # resolve through auto-detection long before here.
+                       # answer first, and moxml prefers the leptris
+                       # native engine whenever present. The default
+                       # names the same engine, so a bundle resolving
+                       # all the way down here still gets the native lane.
                        default: :leptris,
                      }
                    end,
@@ -307,8 +304,7 @@ end
 Lutaml::Model::Schema.register_method(:to_relaxng) do |klass, options = {}|
   if Lutaml::Model.opal?
     raise NotImplementedError,
-          "RELAX NG schema generation requires Nokogiri, " \
-          "which is not available under Opal."
+          "RELAX NG schema generation is not available under Opal."
   end
 
   Lutaml::Xml::Schema::RelaxngSchema.generate(klass, options)

@@ -3,7 +3,7 @@ module Lutaml
     class UnknownAdapterTypeError < Error
       # Available adapters by format
       AVAILABLE_ADAPTERS = {
-        xml: %w[nokogiri ox oga rexml leptris],
+        xml: %w[ox oga rexml leptris],
         json: %w[standard multi_json oj yeptris],
         yaml: %w[standard yeptris],
         toml: %w[teptris tomlib toml_rb],

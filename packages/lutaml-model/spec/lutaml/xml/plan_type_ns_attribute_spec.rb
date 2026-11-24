@@ -80,7 +80,7 @@ RSpec.describe "XML plan fast path: type-namespaced attribute rows" do
   end
 
   # Interpretive parity: the plan path resolves exactly as the
-  # interpretive matcher (nokogiri) does on every spelling shape.
+  # interpretive matcher does on every spelling shape.
   it "matches the interpretive path's resolution on all spelling shapes" do
     canonical = %(<w:keepNext xmlns:w="http://example.com/type-ns/wml" w:val="yes"/>)
     ambiguous = '<w:keepNext xmlns:w="http://example.com/type-ns/wml" ' \
@@ -89,7 +89,7 @@ RSpec.describe "XML plan fast path: type-namespaced attribute rows" do
                    'xmlns:w="http://example.com/type-ns/wml" val="foreign"/>'
 
     [canonical, ambiguous, foreign_only].each do |doc|
-      interpretive = Lutaml::Model::Config.with_adapter(xml: :nokogiri) do
+      interpretive = Lutaml::Model::Config.with_adapter(xml: :leptris) do
         klass.from_xml(doc).val
       end
 

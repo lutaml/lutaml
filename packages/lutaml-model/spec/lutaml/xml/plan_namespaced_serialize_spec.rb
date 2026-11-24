@@ -124,7 +124,7 @@ RSpec.describe "XML plan serializer: namespaced models" do
       body: body_class.new(text: ["hello", "world"]),
     )
 
-    interpretive = Lutaml::Model::Config.with_adapter(xml: :nokogiri) do
+    interpretive = Lutaml::Model::Config.with_adapter(xml: :leptris) do
       instance.to_xml
     end
 

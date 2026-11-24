@@ -6,7 +6,7 @@ require "open3"
 RSpec.describe Lutaml::Model::AdapterResolver, ".adapter_for with a configured type" do
   after do
     Lutaml::Model::Config.configure do |config|
-      config.xml_adapter_type = :nokogiri
+      config.xml_adapter_type = :leptris
       config.yaml_adapter_type = :standard
       config.json_adapter_type = :standard
     end

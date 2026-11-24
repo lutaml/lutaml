@@ -72,7 +72,7 @@ module MapAllSpec
       describe "SVG <text> element handling" do
         # Regression test for bug where SVG <text> elements were incorrectly
         # treated as text nodes instead of XML elements due to element name
-        # conflicting with Nokogiri builder's text() method
+        # conflicting with the engine builder's text() method
         let(:svg_xml_content) do
           <<~XML
             <document>

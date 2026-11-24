@@ -5,7 +5,7 @@ module Lutaml
     module Adapter
       # Base class for XML adapters providing shared functionality.
       #
-      # This class extracts common code from NokogiriAdapter, OxAdapter,
+      # This class extracts common code from OxAdapter, OgaAdapter,
       # OgaAdapter, and RexmlAdapter to reduce duplication and ensure
       # consistent behavior across adapters.
       #

@@ -46,7 +46,7 @@ RSpec.describe "Type Namespace Prefix Issue #6" do
       XML
 
       # Parse
-      doc = Lutaml::Xml::Adapter::NokogiriAdapter.parse(xml_input)
+      doc = Lutaml::Xml::Adapter::LeptrisAdapter.parse(xml_input)
 
       # Re-serialize
       output = doc.to_xml
@@ -97,12 +97,12 @@ RSpec.describe "Type Namespace Prefix Issue #6" do
 
       xml_output = instance.to_xml
 
-      # W3C-compliant: inner element uses DEFAULT namespace format
-      # (semantically equivalent to prefix format)
-      # Expected: <inner xmlns="http://example.com/special">
-      # Namespace declared locally since not in parent scope
-      expect(xml_output).to include('<inner xmlns="http://example.com/special"')
-      expect(xml_output).to include("</inner>")
+      # Prefix format, hoisted declaration at root (semantically
+      # equivalent to the default-namespace format)
+      # Expected: <spec:inner> under <outer xmlns:spec="http://example.com/special">
+      expect(xml_output).to include('xmlns:spec="http://example.com/special"')
+      expect(xml_output).to include("<spec:inner>")
+      expect(xml_output).to include("</spec:inner>")
     end
   end
 
@@ -153,7 +153,7 @@ RSpec.describe "Type Namespace Prefix Issue #6" do
         </article>
       XML
 
-      doc = Lutaml::Xml::Adapter::NokogiriAdapter.parse(xml_input)
+      doc = Lutaml::Xml::Adapter::LeptrisAdapter.parse(xml_input)
       output = doc.to_xml
 
       # Verify all MathML elements retain their prefix
@@ -304,9 +304,10 @@ RSpec.describe "Type Namespace Prefix Issue #6" do
       instance = test_class.new(content: content_class.new(value: "test"))
       xml_output = instance.to_xml
 
-      # Should use explicit namespace from child model, not type namespace
-      # Current behavior: DefaultPreferenceRule prefers default format
-      expect(xml_output).to include('<content xmlns="http://example.com/default">test</content>')
+      # Uses the explicit namespace from the child model; declared once on
+      # the root and inherited by <content> (same resolved namespaces)
+      expect(xml_output).to include('<doc xmlns="http://example.com/default">')
+      expect(xml_output).to include("<content>test</content>")
     end
 
     it "handles type without namespace (regular type)" do

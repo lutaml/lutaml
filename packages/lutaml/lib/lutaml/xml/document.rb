@@ -58,16 +58,10 @@ module Lutaml
 
       # Generate DOCTYPE declaration string
       #
-      # Uses native Nokogiri DOCTYPE if available, otherwise generates from hash
+      # Generates from the extracted DOCTYPE hash
       #
       # @return [String, nil] the DOCTYPE declaration or nil if no DOCTYPE
       def doctype_declaration
-        # Prefer native Nokogiri DOCTYPE
-        if defined?(::Nokogiri) && @parsed_doc.is_a?(::Nokogiri::XML::Document) && @parsed_doc.internal_subset
-          return "#{@parsed_doc.internal_subset}\n"
-        end
-
-        # Fallback to manual generation for model serialization
         return nil unless @doctype
 
         parts = ["<!DOCTYPE #{@doctype[:name]}"]
@@ -253,7 +247,7 @@ module Lutaml
         # EntityReference nodes are text-like and should not trigger Array return.
         # For text + entity without elements, return joined String.
         has_element_children = @root.children.any? do |child|
-          !child.text? && !entity_reference_node?(child) &&
+          !child.text? && !(child.is_a?(Moxml::EntityReference)) &&
             !(child.is_a?(Lutaml::Xml::XmlElement) && child.processing_instruction?)
         end
         return @root.text_children.map(&:text) if has_element_children
@@ -266,15 +260,6 @@ module Lutaml
       end
 
       private
-
-      # Check if a child node is an EntityReference
-      def entity_reference_node?(child)
-        return false unless defined?(::Nokogiri)
-        return false unless child.is_a?(Lutaml::Xml::NokogiriElement)
-
-        node = child.adapter_node
-        defined?(::Nokogiri) && node.is_a?(::Nokogiri::XML::EntityReference) && node.entity_reference?
-      end
 
       def setup_register(register)
         return register if register.is_a?(Symbol)

@@ -8,7 +8,7 @@ module Lutaml
     # from raw XML strings when the XML library doesn't directly expose this
     # information (as is the case with Moxml/Oga and Ox).
     #
-    # Nokogiri provides native access to DOCTYPE via `parsed.internal_subset`,
+    # Engines differ in native DOCTYPE access (`internal_subset` and friends),
     # so it doesn't need this extraction method.
     #
     # This logic is identical in both Oga and Ox adapters and has been

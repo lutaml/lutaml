@@ -42,7 +42,7 @@ RSpec.describe "XML adapter benchmark", :benchmark do
     GC.stat(:total_allocated_objects) - before
   end
 
-  %i[nokogiri ox oga rexml leptris].each do |adapter|
+  %i[ox oga rexml leptris].each do |adapter|
     it "#{adapter}: from_xml/to_xml i/s and allocations" do
       model = nil
       Lutaml::Model::Config.with_adapter(xml: adapter) do

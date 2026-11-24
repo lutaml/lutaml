@@ -3,7 +3,7 @@
 require "spec_helper"
 require "lutaml/model"
 require "lutaml/xml"
-require "lutaml/xml/adapter/nokogiri_adapter"
+require "lutaml/xml/adapter/leptris_adapter"
 require "lutaml/xml/adapter/ox_adapter"
 require "lutaml/xml/adapter/oga_adapter"
 require "lutaml/xml/adapter/rexml_adapter"
@@ -133,8 +133,8 @@ RSpec.shared_examples "base adapter regressions" do |adapter_class|
 end
 
 RSpec.describe Lutaml::Xml::Adapter::BaseAdapter do
-  context "with NokogiriAdapter" do
-    it_behaves_like "base adapter regressions", Lutaml::Xml::Adapter::NokogiriAdapter
+  context "with the retargeted adapter" do
+    it_behaves_like "base adapter regressions", Lutaml::Xml::Adapter::LeptrisAdapter
   end
 
   context "with OxAdapter" do

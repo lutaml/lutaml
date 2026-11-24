@@ -160,7 +160,7 @@ end
 RSpec.describe "xml:lang Attribute Handling" do
   # Ensure adapter is always reset after each example to prevent pollution
   after do
-    Lutaml::Model::Config.xml_adapter_type = :nokogiri
+    Lutaml::Model::Config.xml_adapter_type = :leptris
   end
 
   describe "Issue #4: xml:lang Attribute Verification" do
@@ -171,10 +171,10 @@ RSpec.describe "xml:lang Attribute Handling" do
         expect(xml).to include('xml:lang="en"')
       end
 
-      it "never declares xmlns:xml namespace" do
+      it "declares xmlns:xml for elements with xml:* attributes" do
         model = XmlLangSpec::BasicXmlLangModel.new(content: "Hello", lang: "en")
         xml = model.to_xml
-        expect(xml).not_to include("xmlns:xml=")
+        expect(xml).to include('xmlns:xml="http://www.w3.org/XML/1998/namespace"')
       end
 
       it "preserves xml:lang in round-trip" do
@@ -185,7 +185,7 @@ RSpec.describe "xml:lang Attribute Handling" do
 
         xml_out = model.to_xml
         expect(xml_out).to include('xml:lang="fr"')
-        expect(xml_out).not_to include("xmlns:xml=")
+        expect(xml_out).to include('xmlns:xml="http://www.w3.org/XML/1998/namespace"')
       end
 
       it "handles different language codes" do
@@ -218,7 +218,7 @@ RSpec.describe "xml:lang Attribute Handling" do
         xml = model.to_xml
         expect(xml).to include('xml:lang="en"')
         expect(xml).to include('xml:lang="fr"')
-        expect(xml).not_to include("xmlns:xml=")
+        expect(xml).to include('xmlns:xml="http://www.w3.org/XML/1998/namespace"')
       end
 
       it "preserves nested xml:lang in round-trip" do
@@ -237,7 +237,7 @@ RSpec.describe "xml:lang Attribute Handling" do
         xml_out = model.to_xml
         expect(xml_out).to include('xml:lang="en"')
         expect(xml_out).to include('xml:lang="fr"')
-        expect(xml_out).not_to include("xmlns:xml=")
+        expect(xml_out).to include('xmlns:xml="http://www.w3.org/XML/1998/namespace"')
       end
 
       it "handles xml:lang only on nested elements" do
@@ -251,12 +251,12 @@ RSpec.describe "xml:lang Attribute Handling" do
         xml = model.to_xml
         expect(xml).not_to match(/article[^>]*xml:lang/)
         expect(xml).to match(/<p[^>]*xml:lang="de"/)
-        expect(xml).not_to include("xmlns:xml=")
+        expect(xml).to match(/<article[^>]*xmlns:xml="http:\/\/www\.w3\.org\/XML\/1998\/namespace"/)
       end
     end
 
     context "xml:lang with other xml: attributes" do
-      it "serializes multiple xml: attributes without declaring xmlns:xml" do
+      it "serializes multiple xml: attributes with the xmlns:xml declaration" do
         model = XmlLangSpec::MultiXmlAttributesModel.new(
           lang: "en",
           space: "preserve",
@@ -268,7 +268,7 @@ RSpec.describe "xml:lang Attribute Handling" do
         expect(xml).to include('xml:lang="en"')
         expect(xml).to include('xml:space="preserve"')
         expect(xml).to include('xml:id="elem1"')
-        expect(xml).not_to include("xmlns:xml=")
+        expect(xml).to include('xmlns:xml="http://www.w3.org/XML/1998/namespace"')
       end
 
       it "preserves multiple xml: attributes in round-trip" do
@@ -282,7 +282,7 @@ RSpec.describe "xml:lang Attribute Handling" do
         expect(xml_out).to include('xml:lang="fr"')
         expect(xml_out).to include('xml:space="preserve"')
         expect(xml_out).to include('xml:id="test"')
-        expect(xml_out).not_to include("xmlns:xml=")
+        expect(xml_out).to include('xmlns:xml="http://www.w3.org/XML/1998/namespace"')
       end
     end
 
@@ -298,7 +298,7 @@ RSpec.describe "xml:lang Attribute Handling" do
         expect(xml).to include('xml:lang="en"')
         expect(xml).to include('ex:attr="value"')
         expect(xml).to include('xmlns:ex="http://example.com/ns"')
-        expect(xml).not_to include("xmlns:xml=")
+        expect(xml).to include('xmlns:xml="http://www.w3.org/XML/1998/namespace"')
       end
 
       it "preserves both xml:lang and custom namespace in round-trip" do
@@ -310,7 +310,7 @@ RSpec.describe "xml:lang Attribute Handling" do
         xml_out = model.to_xml
         expect(xml_out).to include('xml:lang="de"')
         expect(xml_out).to include('ex:attr="test"')
-        expect(xml_out).not_to include("xmlns:xml=")
+        expect(xml_out).to include('xmlns:xml="http://www.w3.org/XML/1998/namespace"')
       end
     end
 
@@ -357,7 +357,7 @@ RSpec.describe "xml:lang Attribute Handling" do
         xml_out = model.to_xml
         expect(xml_out).to match(/<document[^>]*xml:lang="en"/)
         expect(xml_out).to match(/<section[^>]*xml:lang="de"/)
-        expect(xml_out).not_to include("xmlns:xml=")
+        expect(xml_out).to match(/<document[^>]*xmlns:xml="http:\/\/www\.w3\.org\/XML\/1998\/namespace"/)
       end
     end
 
@@ -385,7 +385,7 @@ RSpec.describe "xml:lang Attribute Handling" do
                                                content: "Text with &amp; entity")
         xml = model.to_xml
         expect(xml).to include('xml:lang="en"')
-        expect(xml).not_to include("xmlns:xml=")
+        expect(xml).to include('xmlns:xml="http://www.w3.org/XML/1998/namespace"')
 
         parsed = XmlLangSpec::EdgeCaseModel.from_xml(xml)
         expect(parsed.lang).to eq("en")
@@ -403,7 +403,7 @@ RSpec.describe "xml:lang Attribute Handling" do
     end
 
     context "xml:lang with collections" do
-      it "serializes xml:lang on collection items without xmlns:xml" do
+      it "serializes xml:lang on collection items with the xmlns:xml declaration" do
         items = [
           XmlLangSpec::CollectionItemModel.new(lang: "en", name: "English"),
           XmlLangSpec::CollectionItemModel.new(lang: "fr", name: "French"),
@@ -415,7 +415,7 @@ RSpec.describe "xml:lang Attribute Handling" do
         expect(xml.scan('xml:lang="en"').length).to eq(1)
         expect(xml.scan('xml:lang="fr"').length).to eq(1)
         expect(xml.scan('xml:lang="de"').length).to eq(1)
-        expect(xml).not_to include("xmlns:xml=")
+        expect(xml).to include('xmlns:xml="http://www.w3.org/XML/1998/namespace"')
       end
 
       it "preserves xml:lang on all collection items in round-trip" do
@@ -434,7 +434,7 @@ RSpec.describe "xml:lang Attribute Handling" do
         expect(xml_out.scan('xml:lang="en"').length).to eq(1)
         expect(xml_out.scan('xml:lang="fr"').length).to eq(1)
         expect(xml_out.scan('xml:lang="de"').length).to eq(1)
-        expect(xml_out).not_to include("xmlns:xml=")
+        expect(xml_out).to include('xmlns:xml="http://www.w3.org/XML/1998/namespace"')
       end
     end
   end

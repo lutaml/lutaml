@@ -16,7 +16,6 @@ module Lutaml
       autoload :RexmlAdapter, "#{__dir__}/adapter/rexml_adapter"
       Lutaml::Model::RuntimeCompatibility.autoload_native(
         self,
-        NokogiriAdapter: "#{__dir__}/adapter/nokogiri_adapter",
         OxAdapter: "#{__dir__}/adapter/ox_adapter",
       )
     end

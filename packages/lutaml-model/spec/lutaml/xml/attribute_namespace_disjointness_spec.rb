@@ -6,7 +6,7 @@ require "spec_helper"
 # their type classes' bound namespaces must parse disjointly, mirroring
 # serialization (lutaml-model#744).
 #
-# The coexisting-spelling cases under nokogiri/rexml additionally require the
+# The coexisting-spelling cases under the rexml lane additionally require the
 # moxml adapter fixes (lutaml/moxml#94, lutaml/moxml#95); oga and ox already
 # preserve same-local-name attributes across namespaces.
 module AttributeNamespaceDisjointnessSpec
@@ -56,7 +56,7 @@ RSpec.describe "Attribute namespace-disjoint parsing" do
     %(<probe type="EAnone_void" xmlns:xmi="http://www.example.com/xmi" xmi:type="uml:Parameter"/>)
   end
 
-  %i[oga ox nokogiri].each do |adapter|
+  %i[oga ox leptris].each do |adapter|
     context "with the #{adapter} adapter" do
       it "routes a namespaced rule to the attribute bound to its URI" do
         probe = AttributeNamespaceDisjointnessSpec.parse(namespaced_xmi,
@@ -84,7 +84,7 @@ RSpec.describe "Attribute namespace-disjoint parsing" do
   end
 
   # Same-local-name attributes coexisting on one element require the moxml
-  # fixes (lutaml/moxml#94 drops one under nokogiri; lutaml/moxml#95 crashes
+  # fixes (lutaml/moxml#94 dropped one under a pre-leptris engine; lutaml/moxml#95 crashes
   # under rexml), so these cases run on the adapters that preserve both.
   %i[oga ox].each do |adapter|
     context "with the #{adapter} adapter" do

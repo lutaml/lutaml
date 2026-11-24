@@ -180,7 +180,7 @@ RSpec.shared_examples "a consistent XML builder" do
 end
 
 RSpec.describe "XML Builder consistency" do
-  describe Lutaml::Xml::Builder::Nokogiri do
+  describe Lutaml::Xml::Builder::Leptris do
     it_behaves_like "a consistent XML builder"
   end
 

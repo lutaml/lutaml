@@ -39,7 +39,7 @@ module Lutaml
       #   end
       #
       # @example Library stacking
-      #   Config.with_adapter(xml: :nokogiri, toml: :tomlib) do
+      #   Config.with_adapter(xml: :leptris, toml: :tomlib) do
       #     MyModel.from_xml(data)
       #   end
       def with_adapter(**overrides, &block)
@@ -150,7 +150,7 @@ module Lutaml
           AdapterResolver.set_adapter_class(format, adapter_klass)
         end
 
-        # Adapter type name setter (accepts Symbol like :nokogiri)
+        # Adapter type name setter (accepts Symbol like :leptris)
         define_method(:"#{format}_adapter_type=") do |type_name|
           AdapterResolver.set_adapter_type(format, type_name)
         end

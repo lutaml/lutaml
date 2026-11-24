@@ -46,7 +46,7 @@ RSpec.shared_examples "XML entity preservation" do |adapter_name|
   end
 
   after(:all) do
-    Lutaml::Model::Config.xml_adapter_type = :nokogiri
+    Lutaml::Model::Config.xml_adapter_type = :leptris
   end
 
   let(:adapter_class) { Lutaml::Model::Config.xml_adapter }
@@ -423,13 +423,13 @@ RSpec.shared_examples "XML entity preservation" do |adapter_name|
 end
 
 RSpec.describe "XML Entity Fragmentation Issue #5" do
-  describe "with Nokogiri adapter" do
-    it_behaves_like "XML entity preservation", :nokogiri
+  describe "with Leptris adapter" do
+    it_behaves_like "XML entity preservation", :leptris
 
     # These tests exercise the adapter's to_xml path (build_xml → native
-    # Nokogiri serialization), which is distinct from NokogiriElement#to_xml.
+    # engine serialization), which is distinct from the element#to_xml face.
     context "adapter-level to_xml round-trip" do
-      let(:adapter_class) { Lutaml::Xml::Adapter::NokogiriAdapter }
+      let(:adapter_class) { Lutaml::Xml::Adapter::LeptrisAdapter }
 
       it "preserves non-standard entity references" do
         doc = adapter_class.parse("<copyright>&copy; 2005 Mulberry</copyright>")
@@ -463,7 +463,7 @@ RSpec.describe "XML Entity Fragmentation Issue #5" do
     end
 
     context "entity references in attribute values" do
-      let(:adapter_class) { Lutaml::Xml::Adapter::NokogiriAdapter }
+      let(:adapter_class) { Lutaml::Xml::Adapter::LeptrisAdapter }
 
       it "preserves non-standard entities in attributes via element to_xml" do
         root = adapter_class.parse('<root attr="&copy; 2024"/>').root
@@ -489,7 +489,7 @@ RSpec.describe "XML Entity Fragmentation Issue #5" do
 
     # Model-level round-trip tests — these exercise the
     # build_xml_element / build_xml_node path which uses add_text_with_entities,
-    # NOT the adapter-level NokogiriElement#build_xml path.
+    # NOT the adapter-level element#build_xml path.
     context "model-level double-encoded entity round-trip" do
       let(:model_class) do
         Class.new(Lutaml::Model::Serializable) do

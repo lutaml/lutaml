@@ -7,7 +7,7 @@ require "memory_profiler"
 require_relative "../lutaml/model"
 
 # Configure adapters
-Lutaml::Model::Config.xml_adapter_type = :nokogiri
+Lutaml::Model::Config.xml_adapter_type = :leptris
 Lutaml::Model::Config.json_adapter_type = :standard_json
 
 # Test models

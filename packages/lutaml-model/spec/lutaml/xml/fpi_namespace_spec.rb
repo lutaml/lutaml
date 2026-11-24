@@ -7,9 +7,15 @@ require "lutaml/model"
 # on serialization. TRUE ROUND-TRIP IS NOT POSSIBLE since the original is invalid.
 
 RSpec.describe "FPI Namespace Handling" do
-  context "with Nokogiri adapter" do
+  # before(:all) blocks below mutate the global adapter; reset it so no
+  # adapter state leaks into subsequently executed spec files
+  after(:all) do
+    Lutaml::Model::Config.xml_adapter_type = :leptris
+  end
+
+  context "with Leptris adapter" do
     before(:all) do
-      Lutaml::Model::Config.xml_adapter_type = :nokogiri
+      Lutaml::Model::Config.xml_adapter_type = :leptris
     end
 
     it "converts FPI namespace to URN on serialization" do
@@ -93,7 +99,7 @@ RSpec.describe "FPI Namespace Handling" do
   context "helper methods in BaseAdapter" do
     before(:all) do
       # Use any adapter to test the class methods
-      Lutaml::Model::Config.xml_adapter_type = :nokogiri
+      Lutaml::Model::Config.xml_adapter_type = :leptris
     end
 
     let(:adapter_class) { Lutaml::Model::Config.xml_adapter }

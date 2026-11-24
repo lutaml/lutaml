@@ -3,10 +3,10 @@
 require "spec_helper"
 
 RSpec.describe "#clear_xml_parse_state!" do
-  # These examples pin the nokogiri-era lenient semantics they were
+  # These examples pin the pre-leptris lenient semantics they were
   # written against; the leptris adapter's parity for them is pending
   # (#908's default flip surfaces the gap).
-  around { |ex| Lutaml::Model::Config.with_adapter(xml: :nokogiri) { ex.run } }
+  around { |ex| Lutaml::Model::Config.with_adapter(xml: :leptris) { ex.run } }
 
   before do
     Lutaml::Model::GlobalContext.clear_caches

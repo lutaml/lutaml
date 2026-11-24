@@ -19,14 +19,12 @@ REPO_ROOT = Pathname.new(File.expand_path("../../..", __dir__))
 LIB       = REPO_ROOT.join("lib")
 
 # Patterns excluded under Opal because they pull in native-only deps
-# (Nokogiri/Ox C extensions, Thor CLI, etc.). REXML is pure Ruby and
+# (Ox C extension, Thor CLI, etc.). REXML is pure Ruby and
 # ships in the bundled gem + moxml's lib/compat/opal/rexml/* shadows,
 # so it is NOT excluded — it is a fully working second Opal adapter.
 NATIVE_ONLY_PATTERNS = [
-  %r{(nokogiri|ox)_adapter\z},
+  %r{ox_adapter\z},
   %r{/schema/(relaxng|xsd)\b},
-  %r{/schema_builder/(nokogiri|oga)\b},
-  %r{/schema/builder/(nokogiri|oga)\b},
   %r{\Alutaml/model/cli\z},
   # leptris is an FFI wrapper over a native library — Opal::Builder dies
   # on its requires (and FFI itself does not exist under Opal); the
@@ -109,8 +107,8 @@ out << "# This file explicitly requires every autoload target in lib/lutaml/**"
 out << "# so that nested constants resolve at runtime under Opal."
 out << "#"
 out << "# Native-only paths excluded under Opal:"
-out << "#   - nokogiri/ox/rexml adapters (C extensions unavailable)"
-out << "#   - XSD / RELAX NG schema generators (require Nokogiri)"
+out << "#   - ox adapter (C extension unavailable)"
+out << "#   - XSD / RELAX NG schema tooling (needs a schema-capable engine)"
 out << "#   - lutaml/model/cli (thor-based, runtime-irrelevant under Opal)"
 out << "#"
 out << "# Ordering: lutaml/model and lutaml/xml define the Lutaml::Model and"

@@ -19,7 +19,7 @@ module Lutaml
     #   5. Raise FormatAdapterNotSpecifiedError
     #
     # @example Configure an adapter
-    #   AdapterResolver.set_adapter_type(:xml, :nokogiri)
+    #   AdapterResolver.set_adapter_type(:xml, :leptris)
     #
     # @example Resolve an adapter
     #   adapter_class = AdapterResolver.adapter_for(:xml)
@@ -30,21 +30,46 @@ module Lutaml
     class AdapterResolver
       class << self
         # Adapters on the deprecation path. moxml is the only supported
-        # XML facade going forward, and its default engine (Nokogiri,
+        # XML facade going forward, and its default engine (the leptris
         # with the leptris native engine preferred when present) is the
         # supported lane; the pure-Ruby REXML and Oga engines remain
         # loadable but select for the last time in the 0.8 line.
         DEPRECATED_ADAPTERS = {
           %i[xml rexml] => "the REXML engine is deprecated; moxml's " \
-                           "default engine (Nokogiri, or the leptris " \
+                           "leptris native engine whenever present) " \
                            "native engine when present) is the supported " \
                            "XML lane",
           %i[xml oga] => "the Oga engine is deprecated; moxml's default " \
-                         "engine (Nokogiri, or the leptris native engine " \
+                         "(the leptris native engine " \
                          "when present) is the supported XML lane",
         }.freeze
 
         # --- Resolution ---
+
+        # Detect available XML adapter.
+        #
+        # Delegates to moxml which is the authority on XML engine
+        # availability and platform constraints (Opal, MRI, etc.). moxml's
+        # engine matrix is wider than this gem's adapter set — an engine
+        # present in the bundle without a shipped adapter (e.g. pulled in
+        # transitively by a dev-dependency gem) is skipped in favor of the
+        # next supported engine.
+        #
+        # @return [Symbol] adapter type name
+        def detect_xml_adapter
+          detected = Moxml::Config.runtime_default_adapter
+          return detected if adapter_available_for_xml?(detected)
+
+          return :ox if Object.const_defined?(:Ox)
+          return :oga if Object.const_defined?(:Oga)
+
+          metadata.dig(:xml, :default)
+        end
+
+        def adapter_available_for_xml?(type_name)
+          available = metadata.dig(:xml, :available)
+          available.nil? || available.include?(type_name)
+        end
 
         # Resolve the adapter class for a format using the full resolution chain.
         #
@@ -99,7 +124,7 @@ module Lutaml
         # Set the adapter type for a format (validates and loads).
         #
         # @param format [Symbol] the format name
-        # @param type_name [Symbol] the adapter type name (:nokogiri, :ox, etc.)
+        # @param type_name [Symbol] the adapter type name (:leptris, :ox, etc.)
         # @return [Class] the loaded adapter class
         def set_adapter_type(format, type_name)
           type_name = type_name.to_sym
@@ -254,7 +279,7 @@ module Lutaml
         #
         # @param type_name [Symbol] raw type name
         # @param format [Symbol] format name
-        # @return [String] normalized type name (e.g., "nokogiri_adapter")
+        # @return [String] normalized type name (e.g., "ox_adapter")
         def normalize_type_name(type_name, format)
           if type_name.to_s.start_with?("multi_json")
             "multi_json_adapter"
@@ -443,16 +468,6 @@ module Lutaml
 
         def yeptris_opted_in?
           ENV["FONTIST_YAML"] == "yeptris"
-        end
-
-        # Detect available XML adapter.
-        #
-        # Delegates to moxml which is the authority on XML adapter
-        # availability and platform constraints (Opal, MRI, etc.).
-        #
-        # @return [Symbol] adapter type name
-        def detect_xml_adapter
-          Moxml::Config.runtime_default_adapter
         end
 
         # Detect available TOML adapter.

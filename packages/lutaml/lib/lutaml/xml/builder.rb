@@ -9,7 +9,6 @@ module Lutaml
       autoload :Rexml, "#{__dir__}/builder/rexml"
       Lutaml::Model::RuntimeCompatibility.autoload_native(
         self,
-        Nokogiri: "#{__dir__}/builder/nokogiri",
         Ox: "#{__dir__}/builder/ox",
         Leptris: "#{__dir__}/builder/leptris",
       )

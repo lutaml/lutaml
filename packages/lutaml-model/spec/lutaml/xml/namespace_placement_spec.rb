@@ -5,7 +5,7 @@ require "spec_helper"
 RSpec.describe "XML Namespace Placement" do
   # Ensure adapter is always reset after each example to prevent pollution
   after do
-    Lutaml::Model::Config.xml_adapter_type = :nokogiri
+    Lutaml::Model::Config.xml_adapter_type = :leptris
   end
 
   context "when namespace is at class level (Type::Value)" do

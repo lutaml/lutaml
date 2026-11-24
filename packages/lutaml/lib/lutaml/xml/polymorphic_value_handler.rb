@@ -13,7 +13,7 @@ module Lutaml
     #    `polymorphic_class: true`, indicating it's part of a polymorphic
     #    inheritance tree
     #
-    # This logic is identical across all XML adapters (Nokogiri, Oga, Ox)
+    # This logic is identical across all XML engines (Oga, Ox, REXML, leptris)
     # and has been extracted here to maintain DRY principles.
     module PolymorphicValueHandler
       # Determine if a value should be treated as polymorphic

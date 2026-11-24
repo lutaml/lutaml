@@ -20,6 +20,10 @@ RSpec.shared_examples "DOCTYPE preservation" do |adapter_name|
     Lutaml::Model::Config.xml_adapter_type = adapter_name
   end
 
+  after(:all) do
+    Lutaml::Model::Config.xml_adapter_type = :leptris
+  end
+
   context "PUBLIC DOCTYPE" do
     it "preserves PUBLIC DOCTYPE in round-trip" do
       xml = <<~XML
@@ -309,8 +313,8 @@ RSpec.shared_examples "DOCTYPE preservation" do |adapter_name|
 end
 
 RSpec.describe "DOCTYPE Preservation Issue #2" do
-  describe "with Nokogiri adapter" do
-    it_behaves_like "DOCTYPE preservation", :nokogiri
+  describe "with Leptris adapter" do
+    it_behaves_like "DOCTYPE preservation", :leptris
   end
 
   describe "with Ox adapter" do

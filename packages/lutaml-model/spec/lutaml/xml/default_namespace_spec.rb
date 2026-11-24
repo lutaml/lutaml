@@ -64,13 +64,13 @@ module DefaultNamespaceSpec
 end
 
 RSpec.describe DefaultNamespaceSpec do
-  shared_examples "default namespace serialization" do |adapter_name|
+  shared_examples "default namespace serialization" do |adapter_type|
     around do |example|
-      old_adapter = Lutaml::Model::Config.xml_adapter
-      Lutaml::Model::Config.xml_adapter = adapter_name
-      example.run
-    ensure
-      Lutaml::Model::Config.xml_adapter = old_adapter
+      # Scope-stack override: no global adapter mutation, so no state
+      # leaks into subsequently executed spec files
+      Lutaml::Model::Config.with_adapter(xml: adapter_type) do
+        example.run
+      end
     end
 
     context "with simple element in default namespace" do
@@ -96,7 +96,7 @@ RSpec.describe DefaultNamespaceSpec do
         # and namespace has element_form_default: :unqualified (W3C default),
         # so child is in BLANK namespace and MUST declare xmlns="".
         #
-        # All adapters (Nokogiri, Ox, Oga) now correctly add xmlns=""
+        # All engines now correctly add xmlns=""
         # to explicitly place child in blank namespace.
         expect(xml).to include('xmlns="http://example.com/ns"')
         expect(xml).to include('<child xmlns="">Content</child>')
@@ -170,21 +170,19 @@ RSpec.describe DefaultNamespaceSpec do
     end
   end
 
-  describe Lutaml::Xml::Adapter::NokogiriAdapter do
-    it_behaves_like "default namespace serialization", described_class
+  describe "with LeptrisAdapter" do
+    it_behaves_like "default namespace serialization", :leptris
   end
 
-  describe Lutaml::Xml::Adapter::OxAdapter do
+  describe "with OxAdapter" do
     if TestAdapterConfig.adapter_enabled?(:ox)
-      it_behaves_like "default namespace serialization",
-                      described_class
+      it_behaves_like "default namespace serialization", :ox
     end
   end
 
-  describe Lutaml::Xml::Adapter::OgaAdapter do
+  describe "with OgaAdapter" do
     if TestAdapterConfig.adapter_enabled?(:oga)
-      it_behaves_like "default namespace serialization",
-                      described_class
+      it_behaves_like "default namespace serialization", :oga
     end
   end
 end

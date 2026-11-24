@@ -99,8 +99,9 @@ module Lutaml
           # Validate XSD types unless explicitly skipped
           validate_xsd_types!(klass, register) unless options[:skip_validation]
 
-          # Use Builder with adapter from options or config
-          adapter_type = options[:adapter] || Lutaml::Model::Config.xml_adapter_type || :nokogiri
+          # Build through the moxml schema builder; the engine is
+          # moxml's runtime choice unless the caller pins one.
+          adapter_type = options[:adapter] || Lutaml::Model::Config.xml_adapter_type
 
           schema_builder = Builder.new(
             adapter_type: adapter_type,
@@ -785,24 +786,33 @@ skip_unmapped: false)
                 "it is not expressible in XSD's regexp subset (#{detail})."
         end
 
+        # Ruby regexp constructs outside the XSD pattern dialect
+        # (Datatypes Appendix F): lookaround, atomic groups,
+        # conditionals, backreferences, possessive quantifiers and the
+        # \G anchor have no XSD counterpart. Engines that laxly accept
+        # them at compile time would emit schemas other XSD processors
+        # reject, so they are rejected structurally here instead of
+        # through an engine compile probe.
+        INEXPRESSIBLE_CONSTRUCTS = [
+          /\(\?[=!<]/, # lookaround (?=) (?!) (?<=) (?<!)
+          /\(\?>/,     # atomic group
+          /\(\?\(/,    # conditional
+          /\\[1-9]/,   # numbered backreference
+          /\\k[<']/,   # named backreference
+          /\\G/,       # \G anchor
+          /[*+?}]\+/,  # possessive quantifier
+          /[*+?}]\?/,  # lazy quantifier
+        ].freeze
+
         def self.reject_invalid_xsd_pattern!(regexp, source)
-          return unless defined?(::Nokogiri::XML::Schema)
+          construct = INEXPRESSIBLE_CONSTRUCTS.find { |re| source.match?(re) }
+          return unless construct
 
-          probe = <<~XSD
-            <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
-              <xs:simpleType name="p">
-                <xs:restriction base="xs:string">
-                  <xs:pattern value="#{xsd_escape(source)}"/>
-                </xs:restriction>
-              </xs:simpleType>
-            </xs:schema>
-          XSD
-          schema = ::Nokogiri::XML::Schema(probe)
-          return if schema.errors.empty?
-
-          raise_inexpressible_pattern!(regexp, schema.errors.first.message)
-        rescue ::Nokogiri::XML::SyntaxError => e
-          raise_inexpressible_pattern!(regexp, e.message)
+          raise_inexpressible_pattern!(
+            regexp,
+            "uses #{construct.source.inspect}, which has no XSD " \
+            "pattern counterpart",
+          )
         end
 
         UNSUPPORTED_XSD_REGEX_FLAGS =

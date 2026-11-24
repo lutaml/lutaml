@@ -237,7 +237,7 @@ module Lutaml
     #
     # @example
     #   Lutaml::Model.configure do |config|
-    #     config.xml_adapter = :nokogiri
+    #     config.xml_adapter = :leptris
     #     config.json_adapter = :oj
     #   end
     #

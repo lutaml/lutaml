@@ -60,7 +60,7 @@ RSpec.describe "xml:space attribute with nil values" do
   end
 
   after do
-    Lutaml::Model::Config.xml_adapter_type = :nokogiri
+    Lutaml::Model::Config.xml_adapter_type = :leptris
   end
 
   describe "Issue: xml:space attribute is optional" do
@@ -123,7 +123,7 @@ RSpec.describe "Self-referential models" do
   end
 
   after do
-    Lutaml::Model::Config.xml_adapter_type = :nokogiri
+    Lutaml::Model::Config.xml_adapter_type = :leptris
   end
 
   describe "Issue: Self-referential models cause stack overflow" do

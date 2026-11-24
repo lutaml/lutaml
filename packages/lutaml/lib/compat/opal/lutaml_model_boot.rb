@@ -8,8 +8,8 @@
 # so that nested constants resolve at runtime under Opal.
 #
 # Native-only paths excluded under Opal:
-#   - nokogiri/ox/rexml adapters (C extensions unavailable)
-#   - XSD / RELAX NG schema generators (require Nokogiri)
+#   - ox adapter (C extension unavailable)
+#   - XSD / RELAX NG schema tooling (needs a schema-capable engine)
 #   - lutaml/model/cli (thor-based, runtime-irrelevant under Opal)
 #
 # Ordering: lutaml/model and lutaml/xml define the Lutaml::Model and

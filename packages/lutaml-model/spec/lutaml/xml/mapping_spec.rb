@@ -518,7 +518,7 @@ RSpec.describe Lutaml::Xml::Mapping do
         XML
       end
 
-      let(:mml_nokogiri) do
+      let(:mml_leptris) do
         <<~XML
           <math xmlns="http://www.w3.org/1998/Math/MathML">
             <mfenced open="("></mfenced>
@@ -531,7 +531,7 @@ RSpec.describe Lutaml::Xml::Mapping do
         # When parent has element_form_default :qualified (MathMlNamespace has this),
         # children without explicit namespace inherit parent's namespace.
         # No xmlns="" needed because inheritance is automatic.
-        expect(parsed.to_xml).to be_xml_equivalent_to(mml_nokogiri)
+        expect(parsed.to_xml).to be_xml_equivalent_to(mml_leptris)
       end
     end
 
@@ -626,7 +626,7 @@ RSpec.describe Lutaml::Xml::Mapping do
         serialized = parsed.to_xml
 
         # Different adapters have different hoisting behaviors:
-        # - Nokogiri/Oga: Hoists namespace to parent
+        # - Namespace-aware engines: hoist namespace to parent
         # - Ox: No namespace declaration (uses inline xmi prefix without xmlns)
         expected = if adapter_class == Lutaml::Xml::Adapter::OxAdapter
                      # Ox doesn't add xmlns declaration when model has no namespace
@@ -636,7 +636,7 @@ RSpec.describe Lutaml::Xml::Mapping do
                        </ownedComment>
                      XML
                    else
-                     # Nokogiri/Oga hoist the namespace
+                     # Engines hoist the namespace
                      xml_with_element_hoisted.strip
                    end
         expect(serialized).to be_xml_equivalent_to(expected)
@@ -655,7 +655,7 @@ RSpec.describe Lutaml::Xml::Mapping do
         serialized = parsed.to_xml
 
         # Different adapters have different hoisting behaviors:
-        # - Nokogiri/Oga: Hoists namespace to parent
+        # - Namespace-aware engines: hoist namespace to parent
         # - Ox: No namespace declaration (uses inline xmi prefix without xmlns)
         expected = if adapter_class == Lutaml::Xml::Adapter::OxAdapter
                      # Ox doesn't add xmlns declaration when model has no namespace
@@ -665,7 +665,7 @@ RSpec.describe Lutaml::Xml::Mapping do
                        </ownedComment>
                      XML
                    else
-                     # Nokogiri/Oga hoist the namespace
+                     # Engines hoist the namespace
                      xml_with_same_name_attribute_and_element_hoisted
                    end
         expect(serialized).to be_xml_equivalent_to(expected)
@@ -706,7 +706,7 @@ RSpec.describe Lutaml::Xml::Mapping do
             </SameElementName>
           XML
         else
-          # Nokogiri/Oga: CityGML preserves PREFIX format, GML uses DEFAULT
+          # Engines: CityGML preserves PREFIX format, GML uses DEFAULT
           <<~XML
             <SameElementName xmlns="http://www.omg.org/spec/XMI/20131001" App="hello">
               <ApplicationSchema xmlns="http://www.sparxsystems.com/profiles/GML/1.0">GML App</ApplicationSchema>
@@ -802,9 +802,9 @@ RSpec.describe Lutaml::Xml::Mapping do
 
       it "reads element without namespace" do
         # NOTE: mapping with namespace: nil, prefix: nil has differing adapter behavior:
-        # - Nokogiri: Cannot parse element with parent namespace prefix, returns nil
+        # - Some engines cannot parse element with parent namespace prefix, returns nil
         # - Ox/Oga: Can parse element with parent namespace prefix successfully
-        if adapter_class == Lutaml::Xml::Adapter::NokogiriAdapter
+        if adapter_class == Lutaml::Xml::Adapter::LeptrisAdapter
           expect(parsed.without_namespace).to be_nil
         else
           expect(parsed.without_namespace.value).to eq("without namespace text")
@@ -815,8 +815,8 @@ RSpec.describe Lutaml::Xml::Mapping do
         # Serialize the parsed model
         serialized = parsed.to_xml
 
-        if adapter_class == Lutaml::Xml::Adapter::NokogiriAdapter
-          # Nokogiri cannot parse the pn:WithoutNamespace element, so it's nil
+        if adapter_class == Lutaml::Xml::Adapter::LeptrisAdapter
+          # Some engines cannot parse the pn:WithoutNamespace element, so it's nil
           # and won't be in the serialized output. Verify other elements round-trip.
           reparsed = XmlMappingSpec::WithChildExplicitNamespace.from_xml(serialized)
           expect(reparsed.with_default_namespace).to eq("default namespace text")
@@ -919,7 +919,7 @@ RSpec.describe Lutaml::Xml::Mapping do
       # instead of prefix format for child elements with different namespaces.
       # Both are W3C compliant.
       let(:expected_xml) do
-        # Ox uses prefix format, Nokogiri/Oga use default format
+        # Ox uses prefix format, other engines use default format
         if adapter_class == Lutaml::Xml::Adapter::OxAdapter
           <<~XML
             <ChildNamespaceNil xmlns="http://www.omg.org/spec/XMI/20131001">
@@ -1125,7 +1125,7 @@ RSpec.describe Lutaml::Xml::Mapping do
     end
   end
 
-  describe Lutaml::Xml::Adapter::NokogiriAdapter do
+  describe Lutaml::Xml::Adapter::LeptrisAdapter do
     it_behaves_like "having XML Mappings", described_class
   end
 

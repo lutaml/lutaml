@@ -6,7 +6,7 @@ module Lutaml
     #
     # These classes represent XML structure without serialization logic,
     # allowing transformation to produce XML data that can be serialized
-    # by different adapters (Nokogiri, Ox, Oga).
+    # by the configured XML engine (Ox, Oga, REXML, leptris).
     module DataModel
       # Represents an XML element with namespace, attributes, and children.
       class XmlElement

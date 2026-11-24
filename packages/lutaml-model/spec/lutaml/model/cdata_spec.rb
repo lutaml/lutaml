@@ -1,6 +1,6 @@
 require "spec_helper"
 require "lutaml/model"
-require "lutaml/xml/adapter/nokogiri_adapter"
+require "lutaml/xml/adapter/leptris_adapter"
 require "lutaml/xml/adapter/ox_adapter"
 require "lutaml/xml/adapter/oga_adapter"
 require "lutaml/xml/adapter/rexml_adapter"
@@ -306,7 +306,7 @@ RSpec.describe CdataSpec do
         XML
       end
 
-      let(:expected_nokogiri_xml) do
+      let(:expected_leptris_xml) do
         <<~XML
           <CustomModelParent>
             <first_name><![CDATA[John]]></first_name>
@@ -374,7 +374,7 @@ RSpec.describe CdataSpec do
                             elsif adapter_class == Lutaml::Xml::Adapter::OxAdapter
                               expected_ox_xml
                             else
-                              expected_nokogiri_xml
+                              expected_leptris_xml
                             end
 
           # Use semantic comparison since custom methods may produce different formatting
@@ -450,7 +450,7 @@ RSpec.describe CdataSpec do
         XML
       end
 
-      let(:expected_nokogiri_xml) do
+      let(:expected_leptris_xml) do
         "<RootMixedContentNested id=\"outer123\"><![CDATA[The following text is about the Moon.]]><MixedContent id=\"inner456\"><![CDATA[The Earth's Moon rings like a ]]><bold><![CDATA[bell]]></bold><![CDATA[ when struck by meteroids. Distanced from the Earth by ]]><italic><![CDATA[384,400 km]]></italic><![CDATA[,\n      ]]><![CDATA[ ,its surface is covered in ]]><underline><![CDATA[craters]]></underline><![CDATA[.\n      ]]><![CDATA[ .Ain't that ]]><bold><![CDATA[cool]]></bold><![CDATA[ ? ]]></MixedContent><sup><![CDATA[1]]></sup><![CDATA[: ]]><![CDATA[The Moon is not a planet.]]><sup><![CDATA[2]]></sup><![CDATA[: ]]><![CDATA[The Moon's atmosphere is mainly composed of helium in the form of He]]><sub>2</sub><![CDATA[.\n      ]]></RootMixedContentNested>"
       end
 
@@ -466,9 +466,9 @@ RSpec.describe CdataSpec do
         ]
 
         # due to the difference in capturing
-        # newlines in ox and nokogiri adapters
-        expected_result = if adapter_class == Lutaml::Xml::Adapter::NokogiriAdapter
-                            expected_nokogiri_xml
+        # newlines in ox and leptris adapters
+        expected_result = if adapter_class == Lutaml::Xml::Adapter::LeptrisAdapter
+                            expected_leptris_xml
                           elsif adapter_class == Lutaml::Xml::Adapter::OxAdapter
                             expected_ox_xml
                           else
@@ -538,8 +538,8 @@ RSpec.describe CdataSpec do
         parsed = CdataSpec::DefaultValue.from_xml(xml)
 
         # due to the difference in capturing
-        # newlines in ox and nokogiri adapters
-        expected_result = if adapter_class == Lutaml::Xml::Adapter::NokogiriAdapter
+        # newlines in ox and leptris adapters
+        expected_result = if adapter_class == Lutaml::Xml::Adapter::LeptrisAdapter
                             expected_xml
                           elsif adapter_class == Lutaml::Xml::Adapter::OxAdapter
                             expected_ox_xml
@@ -573,7 +573,7 @@ RSpec.describe CdataSpec do
     end
   end
 
-  describe Lutaml::Xml::Adapter::NokogiriAdapter do
+  describe Lutaml::Xml::Adapter::LeptrisAdapter do
     it_behaves_like "cdata behavior", described_class
   end
 

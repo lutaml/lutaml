@@ -2,7 +2,7 @@
 
 require "spec_helper"
 require "lutaml/model"
-require "lutaml/xml/adapter/nokogiri_adapter"
+require "lutaml/xml/adapter/leptris_adapter"
 require "lutaml/xml/adapter/ox_adapter"
 require "lutaml/xml/adapter/oga_adapter"
 require "lutaml/xml/adapter/rexml_adapter"
@@ -401,7 +401,7 @@ RSpec.describe "MixedContent" do
           expected_output = expected_content[index]
 
           # due to the difference in capturing
-          # newlines in ox and nokogiri adapters
+          # newlines in ox and leptris adapters
           if adapter_class == Lutaml::Xml::Adapter::OxAdapter
             expected_output = expected_output.gsub(/\n\s*/, " ")
           end
@@ -462,7 +462,7 @@ RSpec.describe "MixedContent" do
           expected_output = expected_content[index]
 
           # due to the difference in capturing
-          # newlines in ox and nokogiri adapters
+          # newlines in ox and leptris adapters
           if adapter_class == Lutaml::Xml::Adapter::OxAdapter
             expected_output = expected_output.gsub(/\n\s*/, " ")
           end
@@ -515,7 +515,7 @@ RSpec.describe "MixedContent" do
           ".\n    Ain't that ",
           "?\n  ",
         ]
-        expected_nokogiri_content = [
+        expected_leptris_content = [
           "\n    The Earth's Moon rings like a bell when struck by\n",
           "    meteroids. Distanced from the Earth by 384,400 km,\n",
           "    its surface is covered in craters.\n",
@@ -535,7 +535,7 @@ RSpec.describe "MixedContent" do
             expected_output = expected_content[index]
 
             # due to the difference in capturing
-            # newlines in ox and nokogiri adapters
+            # newlines in ox and leptris adapters
             if adapter_class == Lutaml::Xml::Adapter::OxAdapter
               expected_output = expected_output.gsub(/\n\s*/, " ")
             end
@@ -543,7 +543,7 @@ RSpec.describe "MixedContent" do
             expect(content).to eq(expected_output)
           end
         else
-          expect(parsed.content.content).to eq(expected_nokogiri_content)
+          expect(parsed.content.content).to eq(expected_leptris_content)
         end
         serialized = parsed.to_xml
 
@@ -593,7 +593,7 @@ RSpec.describe "MixedContent" do
           "?\n    ",
           "\n    NOTE: The above model content is to be formatted as a table.\n  ",
         ]
-        expected_nokogiri_content = [
+        expected_leptris_content = [
           "\n    The Earth's Moon rings like a bell when struck by\n",
           "    meteroids. Distanced from the Earth by 384,400 km,\n",
           "    its surface is covered in craters.\n",
@@ -618,7 +618,7 @@ RSpec.describe "MixedContent" do
             expected_output = expected_content[index]
 
             # due to the difference in capturing
-            # newlines in ox and nokogiri adapters
+            # newlines in ox and leptris adapters
             if adapter_class == Lutaml::Xml::Adapter::OxAdapter
               expected_output = expected_output.gsub(/\n\s*/, " ")
             end
@@ -626,7 +626,7 @@ RSpec.describe "MixedContent" do
             expect(content).to eq(expected_output)
           end
         else
-          expect(parsed.content.content).to eq(expected_nokogiri_content)
+          expect(parsed.content.content).to eq(expected_leptris_content)
         end
 
         expect(parsed.content.planetary_body.name).to eq("Moon")
@@ -746,9 +746,9 @@ RSpec.describe "MixedContent" do
       end
 
       describe ".from_xml" do
-        let(:expected_nokogiri_content) do
+        let(:expected_leptris_content) do
           # Moxml resolves numeric character references (&#x2014;, &#xA9;) to
-          # their Unicode characters, matching Oga/Rexml behavior. Raw Nokogiri
+          # their Unicode characters, matching Oga/Rexml behavior.
           # preserved numeric refs via native serialization, but the resolved
           # form is semantically identical.
           "B <p>R&amp;C</p>\n    C <p>J\u{2014}C</p>\n    O <p>A &amp; B </p>\n    F <p>Z \u{A9}S</p>"
@@ -766,14 +766,14 @@ RSpec.describe "MixedContent" do
         it "deserializes special char mixed content correctly" do
           parsed = MixedContentSpec::SpecialCharContentWithRawAndMixedOption.from_xml(xml)
           expected_content = public_send(:"expected_#{adapter_class.type}_content")
-          parsed.special.force_encoding("UTF-8") unless adapter_class == Lutaml::Xml::Adapter::NokogiriAdapter
+          parsed.special.force_encoding("UTF-8") unless adapter_class == Lutaml::Xml::Adapter::LeptrisAdapter
 
           expect(parsed.special.strip).to eq(expected_content)
         end
       end
 
       describe ".to_xml" do
-        let(:expected_nokogiri_xml) do
+        let(:expected_leptris_xml) do
           <<~XML
             <SpecialCharContentWithRawOptionAndMixedOption><special>
                 B <p>R&amp;C</p>
@@ -852,19 +852,19 @@ RSpec.describe "MixedContent" do
       end
 
       describe ".from_xml" do
-        let(:expected_nokogiri_content) { "B <p>R&amp;C</p>" }
+        let(:expected_leptris_content) { "B <p>R&amp;C</p>" }
         let(:expected_ox_content) { "B <p>R&amp;C</p>" }
 
         it "deserializes special char mixed content correctly" do
           parsed = MixedContentSpec::SpecialCharContentWithRawAndMixedOption.from_xml(xml)
 
-          expected_output = adapter_class == Lutaml::Xml::Adapter::NokogiriAdapter ? expected_nokogiri_content : expected_ox_content
+          expected_output = adapter_class == Lutaml::Xml::Adapter::LeptrisAdapter ? expected_leptris_content : expected_ox_content
           expect(parsed.special.strip).to eq(expected_output)
         end
       end
 
       describe ".to_xml" do
-        let(:expected_nokogiri_xml) { "B <p>R&amp;C</p>" }
+        let(:expected_leptris_xml) { "B <p>R&amp;C</p>" }
         let(:expected_ox_xml) { "B <p>R&amp;C</p>" }
         let(:expected_oga_xml) { "B <p>R&amp;C</p>" }
         let(:expected_rexml_xml) { "B <p>R&amp;C</p>" }
@@ -951,7 +951,7 @@ RSpec.describe "MixedContent" do
         end
 
         context "when encoding: nil xml" do
-          let(:expected_encoding_nil_nokogiri_xml) do
+          let(:expected_encoding_nil_leptris_xml) do
             # Moxml resolves numeric character references to Unicode,
             # matching Oga/Rexml behavior (see expected_encoding_nil_oga_xml).
             "\u{2211}computer security\u{220F} type of \u{200B} operation specified \u{B5} by an access right"
@@ -967,8 +967,8 @@ RSpec.describe "MixedContent" do
             parsed = MixedContentSpec::HexCode.from_xml(xml, encoding: nil)
             serialized = parsed.to_xml(encoding: nil)
 
-            expected_output = if adapter_class == Lutaml::Xml::Adapter::NokogiriAdapter
-                                expected_encoding_nil_nokogiri_xml
+            expected_output = if adapter_class == Lutaml::Xml::Adapter::LeptrisAdapter
+                                expected_encoding_nil_leptris_xml
                               elsif adapter_class == Lutaml::Xml::Adapter::OxAdapter
                                 expected_encoding_nil_ox_xml
                               else
@@ -1047,7 +1047,7 @@ RSpec.describe "MixedContent" do
             parsed = MixedContentSpec::Shift.from_xml(fixture)
             serialized = parsed.to_xml(encoding: "Shift_JIS")
 
-            expected_content = if adapter_class == Lutaml::Xml::Adapter::NokogiriAdapter
+            expected_content = if adapter_class == Lutaml::Xml::Adapter::LeptrisAdapter
                                  "<root>\n  <FieldName>手書き英字１</FieldName>\n  <FieldName>123456</FieldName>\n</root>"
                                elsif adapter_class == Lutaml::Xml::Adapter::OxAdapter
                                  "<root>\n  <FieldName>手書き英字１</FieldName>\n  <FieldName>123456</FieldName>\n</root>"
@@ -1417,7 +1417,7 @@ RSpec.describe "MixedContent" do
     end
   end
 
-  describe Lutaml::Xml::Adapter::NokogiriAdapter do
+  describe Lutaml::Xml::Adapter::LeptrisAdapter do
     it_behaves_like "mixed content behavior", described_class
 
     it "raises error when serializes special char content with false encoding: 'ABC'" do

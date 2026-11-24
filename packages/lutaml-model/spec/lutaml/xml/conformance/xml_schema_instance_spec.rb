@@ -9,7 +9,7 @@ require "spec_helper"
 # xsi:noNamespaceSchemaLocation per XML Schema Part 1, Section 2.6.3.
 RSpec.describe "XML Schema Instance Conformance" do
   after do
-    Lutaml::Model::Config.xml_adapter_type = :nokogiri
+    Lutaml::Model::Config.xml_adapter_type = :leptris
   end
 
   # ── xsi:nil ───────────────────────────────────────────────────────────

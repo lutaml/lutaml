@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "lutaml/xml/adapter/nokogiri_adapter"
+require "lutaml/xml/adapter/leptris_adapter"
 require "lutaml/xml/adapter/ox_adapter"
 require "lutaml/xml/adapter/oga_adapter"
 require "lutaml/xml/adapter/rexml_adapter"
@@ -23,7 +23,7 @@ RSpec.describe "Processing Instructions" do
 
   describe "map_processing_instruction DSL" do
     before do
-      Lutaml::Model::Config.xml_adapter_type = :nokogiri
+      Lutaml::Model::Config.xml_adapter_type = :leptris
     end
 
     it "serializes hash attribute as processing instructions" do
@@ -156,7 +156,7 @@ RSpec.describe "Processing Instructions" do
       xml_element.add_processing_instruction("rfc", 'strict="yes"')
       xml_element.add_processing_instruction("rfc", 'compact="yes"')
 
-      adapter = Lutaml::Xml::Adapter::NokogiriAdapter.new(xml_element)
+      adapter = Lutaml::Xml::Adapter::LeptrisAdapter.new(xml_element)
       xml = adapter.to_xml(mapper_class: doc_class, declaration: true)
 
       expect(xml).to include('<?rfc strict="yes"?>')
@@ -350,7 +350,7 @@ RSpec.describe "Processing Instructions" do
       end
     end
 
-    describe Lutaml::Xml::Adapter::NokogiriAdapter do
+    describe Lutaml::Xml::Adapter::LeptrisAdapter do
       it_behaves_like "PI round-trip behavior", described_class
     end
 

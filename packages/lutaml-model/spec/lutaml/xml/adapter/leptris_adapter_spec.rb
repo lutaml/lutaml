@@ -1,8 +1,8 @@
 require "spec_helper"
-require "nokogiri"
-require "lutaml/xml/adapter/nokogiri_adapter"
+require "moxml"
+require "lutaml/xml/adapter/leptris_adapter"
 
-RSpec.describe Lutaml::Xml::Adapter::NokogiriAdapter do
+RSpec.describe Lutaml::Xml::Adapter::LeptrisAdapter do
   let(:xml_string) do
     <<-XML
       <root xmlns="http://example.com/default" xmlns:prefix="http://example.com/prefixed">
@@ -71,17 +71,17 @@ RSpec.describe Lutaml::Xml::Adapter::NokogiriAdapter do
   context "when generating XML with namespaces" do
     it "generates XML with namespaces correctly" do
       xml_output = document.to_xml
-      parsed_output = Nokogiri::XML(xml_output)
+      parsed_output = Moxml.parse(xml_output)
 
       root = parsed_output.root
       expect(root.name).to eq("root")
-      expect(root.namespace.href).to eq("http://example.com/default")
+      expect(root.namespace.uri).to eq("http://example.com/default")
 
       child = root.children[1]
       expect(child.name).to eq("child")
-      expect(child.namespace.href).to eq("http://example.com/prefixed")
-      expect(child.attributes["attr"].value).to eq("value")
-      expect(child.attributes["attr1"].value).to eq("prefixed_value")
+      expect(child.namespace.uri).to eq("http://example.com/prefixed")
+      expect(child.attribute("attr").value).to eq("value")
+      expect(child.attribute("prefix:attr1").value).to eq("prefixed_value")
     end
   end
 

@@ -229,7 +229,7 @@ RSpec.describe "Enhanced XML Mapping Features" do
 
       it "serializes the nested Serializable with a namespace prefix" do
         instance = model_class.new(child: child_class.new(label: "x"))
-        doc = Nokogiri::XML(instance.to_xml)
+        doc = Moxml.parse(instance.to_xml)
         qualified = doc.at_xpath("//*[name()='ex:child']")
         expect(qualified).not_to be_nil
         expect(qualified.at_xpath("./xmlns:label").text).to eq("x")
@@ -275,7 +275,7 @@ RSpec.describe "Enhanced XML Mapping Features" do
 
       it "propagates form: :unqualified and emits an unprefixed child" do
         instance = model_class.new(child: child_class.new(label: "x"))
-        doc = Nokogiri::XML(instance.to_xml)
+        doc = Moxml.parse(instance.to_xml)
         expect(doc.xpath("//*[name()='ex:child']")).to be_empty
         expect(doc.at_xpath("//*[local-name()='child']")).not_to be_nil
       end
@@ -315,7 +315,7 @@ RSpec.describe "Enhanced XML Mapping Features" do
         instance = model_class.new(
           children: [child_class.new(label: "a"), child_class.new(label: "b")],
         )
-        doc = Nokogiri::XML(instance.to_xml)
+        doc = Moxml.parse(instance.to_xml)
         qualified = doc.xpath("//*[name()='ex:child']")
         labels = qualified.map { |c| c.at_xpath("./xmlns:label").text }
         expect(labels).to contain_exactly("a", "b")
@@ -371,7 +371,7 @@ RSpec.describe "Enhanced XML Mapping Features" do
         instance = model_class.new(
           child: child_class.new(inner: grandchild_class.new(value: "x")),
         )
-        doc = Nokogiri::XML(instance.to_xml)
+        doc = Moxml.parse(instance.to_xml)
         expect(doc.at_xpath("//*[name()='ex:child']")).not_to be_nil
         expect(doc.xpath("//*[name()='ex:grandchild']")).to be_empty
         expect(doc.at_xpath("//*[local-name()='grandchild']")).not_to be_nil
@@ -411,7 +411,7 @@ RSpec.describe "Enhanced XML Mapping Features" do
 
       it "honors element_form_default :unqualified by leaving the child unprefixed" do
         instance = model_class.new(child: child_class.new(label: "x"))
-        doc = Nokogiri::XML(instance.to_xml)
+        doc = Moxml.parse(instance.to_xml)
         expect(doc.xpath("//*[name()='ex:child']")).to be_empty
         expect(doc.at_xpath("//*[local-name()='child']")).not_to be_nil
       end

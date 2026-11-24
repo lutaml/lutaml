@@ -213,7 +213,7 @@ RSpec.describe "Except" do
     end
   end
 
-  describe Lutaml::Xml::Adapter::NokogiriAdapter do
+  describe Lutaml::Xml::Adapter::LeptrisAdapter do
     it_behaves_like "xml", described_class
   end
 

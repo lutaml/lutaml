@@ -83,7 +83,7 @@ RSpec.describe "XML plan fast path: map_any_element catch-all" do
   it "matches the interpretive path's capture" do
     doc = "<host><title>t</title><extra1>a</extra1><extra2>b</extra2></host>"
 
-    interpretive = Lutaml::Model::Config.with_adapter(xml: :nokogiri) do
+    interpretive = Lutaml::Model::Config.with_adapter(xml: :leptris) do
       host_class.from_xml(doc)
     end
 

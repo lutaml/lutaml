@@ -812,7 +812,7 @@ RSpec.describe "XML plan fast path" do
         "<draft>PD</draft>PD (1994-01-01)</version>",
       )
     end
-    Lutaml::Model::Config.with_adapter(xml: :nokogiri) do
+    Lutaml::Model::Config.with_adapter(xml: :leptris) do
       expect(parsed.to_xml).to eq(
         "<version><revision-date>1994-01-01</revision-date>" \
         "<draft>PD</draft>PD (1994-01-01)</version>",

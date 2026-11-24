@@ -42,7 +42,7 @@ end
 RSpec.describe "XML Namespace Handling" do
   # Ensure adapter is always reset after each example to prevent pollution
   after do
-    Lutaml::Model::Config.xml_adapter_type = :nokogiri
+    Lutaml::Model::Config.xml_adapter_type = :leptris
   end
 
   describe "basic namespace inheritance" do
@@ -659,14 +659,14 @@ RSpec.describe "XML Namespace Handling" do
     end
   end
 
-  describe "with Nokogiri adapter" do
+  describe "with Leptris adapter" do
     around do |example|
-      Lutaml::Model::Config.xml_adapter_type = :nokogiri
+      Lutaml::Model::Config.xml_adapter_type = :leptris
       example.run
     end
 
     after(:all) do
-      Lutaml::Model::Config.xml_adapter_type = :nokogiri
+      Lutaml::Model::Config.xml_adapter_type = :leptris
     end
 
     it_behaves_like "namespace inheritance behavior"
@@ -679,7 +679,7 @@ RSpec.describe "XML Namespace Handling" do
     end
 
     after(:all) do
-      Lutaml::Model::Config.xml_adapter_type = :nokogiri
+      Lutaml::Model::Config.xml_adapter_type = :leptris
     end
 
     it_behaves_like "namespace inheritance behavior"
@@ -692,7 +692,7 @@ RSpec.describe "XML Namespace Handling" do
     end
 
     after(:all) do
-      Lutaml::Model::Config.xml_adapter_type = :nokogiri
+      Lutaml::Model::Config.xml_adapter_type = :leptris
     end
 
     it_behaves_like "namespace inheritance behavior"
@@ -703,7 +703,7 @@ RSpec.describe "XML Namespace Handling" do
       around do |example|
         Lutaml::Model::Config.xml_adapter_type = :rexml
         example.run
-        Lutaml::Model::Config.xml_adapter_type = :nokogiri
+        Lutaml::Model::Config.xml_adapter_type = :leptris
       end
 
       it_behaves_like "namespace inheritance behavior"

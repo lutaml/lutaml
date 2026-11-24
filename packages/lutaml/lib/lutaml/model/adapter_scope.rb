@@ -16,7 +16,7 @@ module Lutaml
     # @example Library stacking
     #   # Library A guarantees Ox internally
     #   def self.parse(data)
-    #     Config.with_adapter(xml: :nokogiri) { MyModel.from_xml(data) }
+    #     Config.with_adapter(xml: :leptris) { MyModel.from_xml(data) }
     #   end
     #
     class AdapterScope

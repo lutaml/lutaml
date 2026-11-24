@@ -98,8 +98,7 @@ RSpec.describe Lutaml::Xml do
         Lutaml::Model::Schema.to_relaxng(Object)
       end.to raise_error(
         NotImplementedError,
-        "RELAX NG schema generation requires Nokogiri, " \
-        "which is not available under Opal.",
+        "RELAX NG schema generation is not available under Opal.",
       )
     end
 
@@ -114,73 +113,16 @@ RSpec.describe Lutaml::Xml do
   end
 
   describe ".detect_xml_adapter" do
-    before do
-      # Hide any existing constants first
-      hide_const("Nokogiri") if Object.const_defined?(:Nokogiri)
-      hide_const("Ox") if Object.const_defined?(:Ox)
-      hide_const("Oga") if Object.const_defined?(:Oga)
-      hide_const("REXML") if Object.const_defined?(:REXML)
-      # When the leptris gem is in the bundle, moxml prefers it over every
-      # other engine; the legacy-detection contexts below must opt out to
-      # exercise the fallback chain.
-      allow(Moxml::Config).to receive(:leptris_preferred_available?)
-        .and_return(false)
+    it "prefers the leptris engine whenever it is in the bundle" do
+      expect(described_class.detect_xml_adapter).to eq(:leptris)
     end
 
-    context "when the leptris engine is in the bundle" do
-      it "prefers :leptris" do
-        allow(Moxml::Config).to receive(:leptris_preferred_available?)
-          .and_return(true)
-        expect(described_class.detect_xml_adapter).to eq(:leptris)
-      end
-    end
-
-    context "when Nokogiri is available" do
-      before do
-        stub_const("Nokogiri", Module.new)
-      end
-
-      it "returns :nokogiri" do
-        expect(described_class.detect_xml_adapter).to eq(:nokogiri)
-      end
-    end
-
-    context "when Ox is available" do
-      before do
-        stub_const("Ox", Module.new)
-      end
-
-      it "returns :ox" do
-        expect(described_class.detect_xml_adapter).to eq(:ox)
-      end
-    end
-
-    context "when Oga is available" do
-      before do
-        stub_const("Oga", Module.new)
-      end
-
-      it "returns :oga" do
-        expect(described_class.detect_xml_adapter).to eq(:oga)
-      end
-    end
-
-    context "when no adapters are detected" do
-      it "falls back to moxml default (:nokogiri)" do
-        expect(described_class.detect_xml_adapter).to eq(:nokogiri)
-      end
-    end
-
-    context "when multiple adapters are available" do
-      before do
-        stub_const("Nokogiri", Module.new)
-        stub_const("Ox", Module.new)
-        stub_const("Oga", Module.new)
-      end
-
-      it "prefers Nokogiri" do
-        expect(described_class.detect_xml_adapter).to eq(:nokogiri)
-      end
+    it "never adopts an engine outside this gem's supported adapter set" do
+      allow(Moxml::Config).to receive(:runtime_default_adapter)
+        .and_return(:some_engine_without_adapter)
+      expect(described_class.detect_xml_adapter).to satisfy { |type|
+        %i[ox oga rexml leptris].include?(type)
+      }
     end
   end
 end

@@ -37,8 +37,8 @@ gem "rantly", "~> 2.0"
 # ELK layout for the `--layout elk` diagram engine (soft dependency:
 # the gemspec does not require it; Formatter::Elk guides installation)
 gem "elkrb", ">= 1.0"
-# Diagram output conformance gate (spec/lutaml/lml/svg_conformance_spec.rb)
-gem "nokogiri" # svg_conform resolves its lutaml-model XML adapter through it
+# Diagram output conformance gate (spec/lutaml/lml/svg_conformance_spec.rb).
+# Its XML adapter resolves through moxml runtime detection (leptris).
 gem "svg_conform"
 # Output format conversion for the ELK engine: SVG -> EMF/PS/EPS
 gem "vectory"

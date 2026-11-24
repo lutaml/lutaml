@@ -255,9 +255,9 @@ RSpec.describe "XML Encoding Handling" do
     end
   end
 
-  if defined?(Lutaml::Xml::Adapter::NokogiriAdapter)
-    describe "with Nokogiri adapter" do
-      it_behaves_like "encoding behavior", Lutaml::Xml::Adapter::NokogiriAdapter
+  if defined?(Lutaml::Xml::Adapter::LeptrisAdapter)
+    describe "with Leptris adapter" do
+      it_behaves_like "encoding behavior", Lutaml::Xml::Adapter::LeptrisAdapter
     end
   end
 

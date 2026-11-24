@@ -8,7 +8,7 @@ require "lutaml/model"
 RSpec.describe "XML namespace inheritance" do
   # Ensure adapter is always reset after each example
   # after(:each) do
-  #   Lutaml::Model::Config.xml_adapter_type = :nokogiri
+  #   Lutaml::Model::Config.xml_adapter_type = :leptris
   # end
 
   # Define test namespaces
@@ -617,7 +617,7 @@ RSpec.describe "XML namespace inheritance" do
       # Attribute in different namespace uses prefix
       # W3C compliant - attributes in other namespaces don't affect element format
       expected = <<~XML.chomp
-        <element xmlns="http://example.com/parent" xmlns:attr="http://example.com/attr" attr:customAttr="value">text</element>
+        <element xmlns:attr="http://example.com/attr" xmlns="http://example.com/parent" attr:customAttr="value">text</element>
       XML
 
       expect(xml).to match(expected)
@@ -701,7 +701,7 @@ RSpec.describe "XML namespace inheritance" do
       xml = parent.to_xml
 
       expected = <<~XML.chomp
-        <parent xmlns="http://example.com/parent" xmlns:scoped="http://example.com/scoped">
+        <parent xmlns:scoped="http://example.com/scoped" xmlns="http://example.com/parent">
           <scoped:child>test</scoped:child>
         </parent>
       XML
@@ -717,7 +717,7 @@ RSpec.describe "XML namespace inheritance" do
       xml = parent.to_xml
 
       expected = <<~XML.chomp
-        <parent xmlns="http://example.com/parent" xmlns:scoped="http://example.com/scoped" xmlns:unused="http://example.com/unused">
+        <parent xmlns:scoped="http://example.com/scoped" xmlns:unused="http://example.com/unused" xmlns="http://example.com/parent">
           <scoped:child>test</scoped:child>
         </parent>
       XML
@@ -876,7 +876,7 @@ RSpec.describe "XML namespace inheritance" do
       # in child_namespace (different from collection's parent_namespace)
       # Type namespace (child_ns_attr) is declared on root for efficiency
       expected = <<~XML.chomp
-        <collection xmlns="http://example.com/parent" xmlns:child="http://example.com/child">
+        <collection xmlns:child="http://example.com/child" xmlns="http://example.com/parent">
           <item child:child_ns_attr="value1">first</item>
           <item child:child_ns_attr="value2">second</item>
           <item child:child_ns_attr="value3">third</item>
@@ -898,7 +898,7 @@ RSpec.describe "XML namespace inheritance" do
       xml = collection.to_xml
 
       expected = <<~XML.chomp
-        <collection xmlns="http://example.com/parent" xmlns:child="http://example.com/child">
+        <collection xmlns:child="http://example.com/child" xmlns="http://example.com/parent">
           <item child:child_ns_attr="value1">first</item>
           <item child:child_ns_attr="value2">second</item>
           <item child:child_ns_attr="value3">third</item>

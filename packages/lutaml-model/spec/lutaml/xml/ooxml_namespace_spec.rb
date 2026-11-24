@@ -96,8 +96,9 @@ RSpec.describe "OOXML Extended Properties" do
     it "outputs clean XML with default namespace (no prefix)" do
       xml = sample_properties.to_xml
 
-      # Root element uses default namespace
-      expect(xml).to include('<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"')
+      # Root element uses default namespace (prefixed declarations may
+      # precede it on the same tag; declaration order is not normative)
+      expect(xml).to include('xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"')
 
       # Child elements have no prefix (inherit default namespace)
       expect(xml).to include("<Template>Normal.dotm</Template>")
@@ -125,7 +126,7 @@ RSpec.describe "OOXML Extended Properties" do
 
       # Should match desired output from default namespace implementation
       # 1. Default namespace (xmlns="...") for app namespace
-      expect(xml).to include('<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"')
+      expect(xml).to include('xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"')
 
       # 2. Forced vt namespace declaration
       expect(xml).to include('xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"')

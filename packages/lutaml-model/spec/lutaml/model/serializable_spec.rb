@@ -563,7 +563,7 @@ RSpec.describe Lutaml::Model::Serializable do
     let(:invalid_data) do
       {
         xml: {
-          nokogiri: "<<<<name>John Doe</name>",
+          leptris: "<<<<name>John Doe</name>",
           ox: "<<<<name>John Doe</name>",
           oga: '<person xmlns="http://example.com" xmlns="http://another.com"><name>John Doe</name></person>',
           rexml: "<root><tag></root>",
@@ -606,7 +606,7 @@ RSpec.describe Lutaml::Model::Serializable do
     end
 
     describe "invalid format handling for XML" do
-      it_behaves_like "invalid format error", :xml, :nokogiri, :from_xml, :xml
+      it_behaves_like "invalid format error", :xml, :leptris, :from_xml, :xml
       it_behaves_like "invalid format error", :xml, :ox, :from_xml, :xml
       it_behaves_like "invalid format error", :xml, :oga, :from_xml, :xml
       it_behaves_like "invalid format error", :xml, :rexml, :from_xml, :xml

@@ -9,7 +9,7 @@ module Lutaml
     #
     # @example Basic configuration
     #   Lutaml::Model::Configuration.configure do |config|
-    #     config.xml_adapter = :nokogiri
+    #     config.xml_adapter = :leptris
     #     config.json_adapter = :standard
     #   end
     #

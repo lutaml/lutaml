@@ -11,7 +11,7 @@ RSpec.describe "Namespace prefix with uri_aliases" do
   end
 
   after do
-    Lutaml::Model::Config.xml_adapter_type = :nokogiri
+    Lutaml::Model::Config.xml_adapter_type = :leptris
   end
 
   # Oasis ETM namespace - uses alias URI in ISOSTS format

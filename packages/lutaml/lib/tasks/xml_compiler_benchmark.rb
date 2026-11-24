@@ -4,8 +4,8 @@ require "benchmark/ips"
 require_relative "../lutaml/model"
 require_relative "../lutaml/model/schema"
 
-# Ensure Nokogiri adapter is set
-Lutaml::Model::Config.xml_adapter_type = :nokogiri
+# Use the default schema-capable engine
+Lutaml::Model::Config.xml_adapter_type = :leptris
 
 module XmlCompilerBenchmarks
   # Shared test schemas

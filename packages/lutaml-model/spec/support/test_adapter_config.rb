@@ -3,22 +3,22 @@
 # Centralized configuration for XML adapter testing
 #
 # Implements Adapter First Strategy:
-# - Start with primary adapter (Nokogiri)
+# - Start with the primary adapter (Leptris)
 # - Enable other adapters (Ox, Oga) incrementally once they pass full test suite
 #
 # Usage:
-#   # Enable only Nokogiri (primary)
+#   # Enable only Leptris (primary)
 #   TestAdapterConfig.configure do |config|
-#     config.enabled_adapters = [:nokogiri]
+#     config.enabled_adapters = [:leptris]
 #   end
 #
 #   # Enable additional adapters when ready
 #   TestAdapterConfig.configure do |config|
-#     config.enabled_adapters = [:nokogiri, :ox]
+#     config.enabled_adapters = [:leptris, :ox]
 #   end
 class TestAdapterConfig
   # Primary adapter (focus on this first)
-  PRIMARY_ADAPTER = :nokogiri
+  PRIMARY_ADAPTER = :leptris
 
   class << self
     attr_accessor :enabled_adapters
@@ -42,7 +42,7 @@ class TestAdapterConfig
     end
 
     # Enable an adapter for testing
-    # @param name [Symbol] Adapter name (:nokogiri, :ox, :oga)
+    # @param name [Symbol] Adapter name (:leptris, :ox, :oga)
     def enable_adapter(name)
       adapters_to_test << name unless adapters_to_test.include?(name)
     end
@@ -59,8 +59,8 @@ class TestAdapterConfig
     # @return [Class, nil] Adapter class or nil if not defined
     def adapter_class(name)
       case name
-      when :nokogiri
-        Lutaml::Xml::Adapter::NokogiriAdapter
+      when :leptris
+        Lutaml::Xml::Adapter::LeptrisAdapter
       when :ox
         defined?(Lutaml::Xml::Adapter::OxAdapter) ? Lutaml::Xml::Adapter::OxAdapter : nil
       when :oga
@@ -73,7 +73,7 @@ class TestAdapterConfig
     # Get list of all available adapter names
     # @return [Array<Symbol>] List of all adapter names
     def all_adapters
-      %i[nokogiri ox oga rexml]
+      %i[leptris ox oga rexml]
     end
 
     # Get adapter name by class
@@ -81,8 +81,8 @@ class TestAdapterConfig
     # @return [Symbol, nil] Adapter name or nil if not found
     def adapter_name(klass)
       case klass
-      when Lutaml::Xml::Adapter::NokogiriAdapter
-        :nokogiri
+      when Lutaml::Xml::Adapter::LeptrisAdapter
+        :leptris
       when Lutaml::Xml::Adapter::OxAdapter
         :ox
       when Lutaml::Xml::Adapter::OgaAdapter
@@ -94,8 +94,8 @@ class TestAdapterConfig
   end
 end
 
-# Initial configuration: Primary adapter (Nokogiri) only
-# Enable other adapters (Ox, Oga) incrementally once they pass full test suite
+# Initial configuration: primary adapter (Leptris) only
+# Enable other adapters (Ox, Oga) incrementally once they pass the full suite
 TestAdapterConfig.configure do |config|
-  config.enabled_adapters = %i[nokogiri oga]
+  config.enabled_adapters = %i[leptris oga]
 end

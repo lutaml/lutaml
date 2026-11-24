@@ -174,13 +174,13 @@ RSpec.describe "Opal compatibility", if: RUBY_ENGINE == "opal" do
   end
 
   it "exposes both Oga and REXML as available adapters under Opal" do
-    # Both are pure Ruby; Nokogiri and Ox are C extensions and excluded.
+    # Both are pure Ruby; native engines are excluded.
     options = Lutaml::Model::FormatRegistry.adapter_options_for(:xml)
     expect(options).not_to be_nil
 
     available = options[:available]
     expect(available).to include(:oga, :rexml)
-    expect(available).not_to include(:nokogiri, :ox)
+    expect(available).not_to include(:leptris, :ox)
   end
 
   # Opal's Module#prepend raises "Prepending a module multiple times

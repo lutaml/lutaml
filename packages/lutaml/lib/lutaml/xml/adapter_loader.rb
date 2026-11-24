@@ -11,7 +11,7 @@ module Lutaml
       # Load the XML adapter file
       #
       # @param _adapter [String] The adapter format name ("xml")
-      # @param type [String] The normalized type name (e.g., "nokogiri_adapter")
+      # @param type [String] The normalized type name (e.g., "ox_adapter")
       def self.load_adapter_file(_adapter, type)
         adapter_path = if Lutaml::Model.opal?
                          "lutaml/xml/adapter/#{type}"
@@ -21,7 +21,7 @@ module Lutaml
         require adapter_path
       rescue LoadError => e
         # Chain the cause: a known adapter whose underlying engine gem is
-        # missing (e.g. no nokogiri in the Gemfile) must not present as a
+        # missing (e.g. no leptris in the Gemfile) must not present as a
         # bare unknown-type error — the LoadError names the real gap.
         raise Lutaml::Model::UnknownAdapterTypeError.new("xml", type),
               cause: e
@@ -29,7 +29,7 @@ module Lutaml
 
       # Load the Moxml adapter for XML
       #
-      # @param type_name [Symbol] The adapter type (:nokogiri, :ox, etc.)
+      # @param type_name [Symbol] The adapter type (:leptris, :ox, etc.)
       # @param _adapter_name [Symbol] The format name (:xml)
       def self.load_moxml_adapter(type_name, _adapter_name)
         Moxml::Adapter.load(type_name)
@@ -38,7 +38,7 @@ module Lutaml
       # Resolve the adapter class for XML
       #
       # @param _adapter [String] The adapter format name ("xml")
-      # @param type [String] The normalized type name (e.g., "nokogiri_adapter")
+      # @param type [String] The normalized type name (e.g., "ox_adapter")
       # @return [Class] The adapter class
       def self.class_for(_adapter, type)
         Lutaml::Xml::Adapter.const_get(to_class_name(type))

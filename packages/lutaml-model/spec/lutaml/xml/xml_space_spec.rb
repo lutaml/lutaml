@@ -126,7 +126,7 @@ RSpec.describe "xml_space and w3c_attributes features" do
     end
 
     after do
-      Lutaml::Model::Config.xml_adapter_type = :nokogiri
+      Lutaml::Model::Config.xml_adapter_type = :leptris
     end
 
     it "adds xml:space='preserve' when xml_space is :preserve" do
@@ -170,7 +170,7 @@ RSpec.describe "xml_space and w3c_attributes features" do
     end
 
     after do
-      Lutaml::Model::Config.xml_adapter_type = :nokogiri
+      Lutaml::Model::Config.xml_adapter_type = :leptris
     end
 
     it "serializes W3C attributes with proper namespace prefix" do
@@ -222,7 +222,7 @@ RSpec.describe "xml_space and w3c_attributes features" do
     end
 
     after do
-      Lutaml::Model::Config.xml_adapter_type = :nokogiri
+      Lutaml::Model::Config.xml_adapter_type = :leptris
     end
 
     it "respects user-set space value over auto-added" do

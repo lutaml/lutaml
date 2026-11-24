@@ -3,9 +3,9 @@
 require "spec_helper"
 
 # lutaml-model#858: leptris hydrates :string values as ASCII-8BIT
-# (FFI's :string return tag) while nokogiri returns UTF-8. Values are
+# (FFI's :string return tag) while the interpretive lane returns UTF-8. Values are
 # character data; both adapters must agree on the encoding.
-RSpec.describe "leptris string encoding parity with nokogiri",
+RSpec.describe "leptris string encoding parity with the interpretive lane",
                if: defined?(Leptris::XML::Document) do
   let(:xml) do
     <<~XML
@@ -31,7 +31,7 @@ RSpec.describe "leptris string encoding parity with nokogiri",
   end
 
   it "hydrates attribute values as UTF-8" do
-    Lutaml::Model::Config.with_adapter(xml: :nokogiri) do
+    Lutaml::Model::Config.with_adapter(xml: :leptris) do
       parsed = klass.from_xml(xml)
       expect(parsed.id.encoding).to eq(Encoding::UTF_8)
       expect(parsed.target.encoding).to eq(Encoding::UTF_8)

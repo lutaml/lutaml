@@ -19,11 +19,11 @@ module Lutaml
         ELEMENT_ORDER_IGNORABLE = %w[import include].freeze
 
         XML_ADAPTER_NOT_SET_MESSAGE = <<~MSG
-          Nokogiri is not set as XML Adapter.
-          Make sure Nokogiri is installed and set as XML Adapter eg.
-          execute: gem install nokogiri
+          No XML engine with schema support is configured.
+          Make sure a schema-capable engine is installed and set as XML Adapter eg.
+          execute: gem install leptris
           require 'lutaml/xml'
-          Lutaml::Model::Config.xml_adapter = :nokogiri
+          Lutaml::Model::Config.xml_adapter = :leptris
         MSG
 
         XML_DEFINED_ATTRIBUTES = {
@@ -72,7 +72,7 @@ module Lutaml
 
         def as_models(schema, options: {})
           # The schema builder resolves its own DOM builder from the
-          # configured adapter type (falling back to nokogiri); a stale
+          # configured adapter type; a stale
           # adapter-class name check here rejected every caller after
           # Config.xml_adapter became symbol-based (#251).
 
