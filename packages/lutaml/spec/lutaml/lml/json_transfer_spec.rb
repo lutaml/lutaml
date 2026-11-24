@@ -26,11 +26,13 @@ RSpec.describe "LML JSON transfer" do
     strip(document.to_hash)
   end
 
+  # Only model defaults (and nil, which a rendering omits) are dropped;
+  # literal payloads such as `value => []` or `{}` are compared as is.
   def strip(node)
     case node
     when Hash
       node.each_with_object({}) do |(key, value), result|
-        next if defaults[key] == value || value.nil? || value == [] || value == {}
+        next if defaults[key] == value || value.nil?
 
         # JSON has no symbols: a parsed map literal's symbol keys read back as strings.
         result[key.to_s] = strip(value)
@@ -117,6 +119,33 @@ RSpec.describe "LML JSON transfer" do
 
         expect(graph(transfer(document))).to eq(graph(document))
       end
+    end
+  end
+
+  describe "empty literal values" do
+    let(:source) do
+      "instances Data {\n  Row \"r\" { list = [] }\n}\n"
+    end
+
+    def list(document)
+      document.instances.instances.first.attributes.find { |a| a.name == "list" }
+    end
+
+    it "keeps an empty list value through a JSON round trip" do
+      document = parse(source)
+      reloaded = transfer(document)
+
+      expect(list(document).to_hash).to include("value" => [])
+      expect(list(reloaded).to_hash).to include("value" => [])
+      expect(strip(list(reloaded).to_hash)).to eq(strip(list(document).to_hash))
+    end
+
+    it "does not strip a literal empty value when comparing graphs" do
+      with_empty = { "attributes" => [{ "name" => "a", "value" => [] }] }
+      without = { "attributes" => [{ "name" => "a" }] }
+
+      expect(strip(with_empty)).not_to eq(strip(without))
+      expect(strip(with_empty)).to eq(with_empty)
     end
   end
 

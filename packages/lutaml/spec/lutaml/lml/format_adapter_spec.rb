@@ -268,4 +268,28 @@ RSpec.describe "LML format adapter" do
       expect(model_class.new).to respond_to(:to_lml)
     end
   end
+
+  describe "reference cargo after a JSON reload" do
+    let(:adapter) { Lutaml::Lml::Format::Adapter::StandardAdapter }
+
+    it "emits string-keyed reference cargo as ref:(...)" do
+      lml = adapter.new({ "glaze" => { "reference" => "Glazes.blue_matte" } }).to_lml
+
+      expect(lml).to include("glaze = ref:(Glazes.blue_matte)")
+      expect(lml).not_to match(/instance \{\s*reference/)
+    end
+
+    it "emits string-keyed reference items in a list as ref:(...)" do
+      lml = adapter.new({ "glazes" => [{ "reference" => "Glazes.a" }] }).to_lml
+
+      expect(lml).to include("ref:(Glazes.a)")
+      expect(lml).not_to match(/instance \{\s*reference/)
+    end
+
+    it "emits symbol-keyed reference cargo the same way" do
+      lml = adapter.new({ glaze: { reference: "Glazes.blue_matte" } }).to_lml
+
+      expect(lml).to include("glaze = ref:(Glazes.blue_matte)")
+    end
+  end
 end
