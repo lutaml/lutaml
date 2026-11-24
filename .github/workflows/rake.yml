@@ -35,21 +35,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package: [lutaml, lutaml-model, lutaml-xsd, lutaml-jsonschema, lutaml-graphviz, expressir]
+        package: [lutaml, lutaml-xsd, lutaml-jsonschema, lutaml-graphviz, expressir]
         ruby: ['3.2', '3.3', '3.4']
-        exclude:
-          # lutaml-model's own CI tested 3.3/3.4/4.0 only: teptris ships no
-          # Ruby 3.2 native build (LoadError teptris/3.2/teptris_ext).
-          - package: lutaml-model
-            ruby: '3.2'
         include:
           # Per-package needs; everything not listed here is a plain gem.
           - package: lutaml
             apt: graphviz
           - package: lutaml-graphviz
             apt: graphviz
-          - package: lutaml-model
-            submodules: recursive
           - package: lutaml-jsonschema
             node: true
           - package: expressir
