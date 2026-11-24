@@ -20,6 +20,12 @@ end
 # UML models are an optional companion (lutaml.rb loads them when present).
 gem "lutaml-uml", "~> 1.0"
 
+# The serialization runtime is the canonical lutaml-model gem, developed in
+# its own repository. During local development, resolve it from a sibling
+# checkout when present; CI uses the gemspec's rubygems declaration.
+canonical_model = File.expand_path("../../../lutaml-model", __dir__)
+gem "lutaml-model", path: canonical_model if File.directory?(canonical_model)
+
 # LML front development and conformance gates (absorbed from lutaml-lml).
 gem "rubocop"
 # Plugins named by .rubocop.yml; without them the rubocop_ratchet task cannot load.
