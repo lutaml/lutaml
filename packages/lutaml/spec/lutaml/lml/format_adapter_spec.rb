@@ -4,10 +4,6 @@ require "spec_helper"
 require "lutaml/lml/format"
 
 RSpec.describe "LML format adapter" do
-  before(:all) do
-    require "lutaml/lml/format" unless Lutaml::Model::FormatRegistry.registered?(:lml)
-  end
-
   let(:model_class) do
     Class.new(Lutaml::Model::Serializable) do
       attribute :name, :string
@@ -28,7 +24,7 @@ RSpec.describe "LML format adapter" do
       obj = model_class.from_lml(lml)
       expect(obj.name).to eq("Alice")
       expect(obj.age).to eq(25)
-      expect(obj.active).to eq(true)
+      expect(obj.active).to be(true)
     end
 
     it "handles string values without quotes" do
@@ -111,7 +107,7 @@ RSpec.describe "LML format adapter" do
       restored = sensor_class.from_lml(original.to_lml)
       expect(restored.sensor_id).to eq("TH-042")
       expect(restored.reading).to eq(21.7)
-      expect(restored.active).to eq(false)
+      expect(restored.active).to be(false)
     end
 
     # The grammar's bare word is [A-Za-z0-9_]; its value parser commits to
