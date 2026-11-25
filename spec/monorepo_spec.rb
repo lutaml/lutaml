@@ -74,7 +74,8 @@ RSpec.describe Monorepo do
     it "give every package a unique, self-consistent tag" do
       tags = described_class.packages.map { |name| described_class.tag(name) }
       expect(described_class.packages)
-        .to include("lutaml", "lutaml-model", "lutaml-xsd", "lutaml-jsonschema", "expressir", "lutaml-graphviz")
+        .to include("lutaml", "lutaml-xsd", "lutaml-jsonschema", "expressir", "lutaml-graphviz")
+      expect(described_class.packages).not_to include("lutaml-model")
       expect(tags.uniq).to eq(tags)
       tags.each { |t| expect(described_class.check_tag(t)).to eq(described_class.package_of(t)) }
     end
