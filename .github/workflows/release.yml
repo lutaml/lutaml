@@ -4,8 +4,11 @@
 # package/working-directory input, so this workflow is self-contained.
 #
 #   1. Dispatch "prepare" with a package and next version (x.y.z | major |
-#      minor | patch | skip): it bumps that package's version file, commits to
-#      main and pushes the tag.
+#      minor | patch | skip): it bumps that package's version file on a
+#      release branch, tags the branch commit, pushes both, and opens the
+#      release PR that lands the bump on main. (Branch protection requires
+#      cla/ribose for commits to main, which direct bot pushes never
+#      receive — the PR is the delivery path.)
 #   2. The tag push runs "publish": it verifies the tag against the gemspec,
 #      builds the gem and pushes it to RubyGems with Trusted Publishing (OIDC).
 #
@@ -61,21 +64,39 @@ jobs:
         env:
           PACKAGE: ${{ inputs.package }}
           NEXT_VERSION: ${{ inputs.next_version }}
+          GH_TOKEN: ${{ secrets.LUTAML_CI_PAT_TOKEN }}
         run: |
           set -euo pipefail
           git config user.name "lutaml-ci"
           git config user.email "open.source@ribose.com"
-          if [ "$NEXT_VERSION" != "skip" ]; then
-            scripts/monorepo.rb bump "$PACKAGE" "$NEXT_VERSION"
-            git commit -a -m "release $PACKAGE $(scripts/monorepo.rb version "$PACKAGE")"
-          fi
           tag="$(scripts/monorepo.rb tag "$PACKAGE")"
           if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null; then
             echo "::error::tag $tag already exists"
             exit 1
           fi
-          git tag "$tag"
-          git push origin HEAD "refs/tags/$tag"
+          if [ "$NEXT_VERSION" != "skip" ]; then
+            # Branch protection requires cla/ribose for commits to main —
+            # direct bot pushes are rejected. Deliver the bump as a release
+            # PR and tag the branch commit: publish builds from the tag, and
+            # the PR lands the bump on main through review.
+            branch="release/$tag"
+            git checkout -b "$branch"
+            scripts/monorepo.rb bump "$PACKAGE" "$NEXT_VERSION"
+            version="$(scripts/monorepo.rb version "$PACKAGE")"
+            git commit -a -m "release $PACKAGE $version"
+            git push origin "$branch" "refs/tags/$tag"
+            gh pr create \
+              --repo "$GITHUB_REPOSITORY" \
+              --base main --head "$branch" \
+              --title "release $PACKAGE $version" \
+              --body "Carries the version bump for the \`$tag\` release; the gem is published from the tagged commit."
+            gh pr merge "$branch" --auto --squash || \
+              echo "::notice::auto-merge unavailable — merge the release PR manually"
+          else
+            # skip mode: release the version already in the gemspec; tag HEAD
+            git tag "$tag"
+            git push origin "refs/tags/$tag"
+          fi
 
   publish:
     if: github.event_name == 'push'
