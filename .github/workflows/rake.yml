@@ -1,89 +1,52 @@
-# Unified CI for the monorepo: one matrix cell per package and Ruby.
-# metanorma/ci's generic-rake.yml has no working-directory input (it runs
-# `bundle exec rake` at the repository root), so it cannot test a package under
-# packages/; this workflow is self-contained instead.
 name: rake
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
+    tags: [ v* ]
   pull_request:
-  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: rake-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  tooling:
-    name: monorepo tooling
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.4'
-      - run: gem install rspec --no-document
-      - run: rspec spec
-
-  rake:
-    name: ${{ matrix.package }} (ruby ${{ matrix.ruby }})
-    runs-on: ubuntu-latest
+  test:
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.experimental }}
     strategy:
       fail-fast: false
       matrix:
-        package: [lutaml, lutaml-xsd, lutaml-jsonschema, lutaml-graphviz, expressir]
-        ruby: ['3.2', '3.3', '3.4']
-        include:
-          # Per-package needs; everything not listed here is a plain gem.
-          - package: lutaml
-            apt: graphviz
-          - package: lutaml-graphviz
-            apt: graphviz
-          - package: lutaml-jsonschema
-            node: true
-          - package: expressir
-            rust: true
-    defaults:
-      run:
-        working-directory: packages/${{ matrix.package }}
-    env:
-      BUNDLE_GEMFILE: ${{ github.workspace }}/packages/${{ matrix.package }}/Gemfile
-      # Stacked PRs ratchet against their own base, not main (which lacks the
-      # parent PR's layout, so every moved file would look changed).
-      RUBOCOP_RATCHET_BASE: origin/${{ github.base_ref || 'main' }}
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        ruby: ["3.3", "3.4", "4.0"]
+        experimental: [false]
+        # ruby head runs on ubuntu/macos only: windows-head cannot build
+        # the released ruby-ll C extension (and the vendored forks exist
+        # for Opal), so that cell was permanently red with zero signal
+        # (#832 follow-up).
+        exclude:
+          - os: windows-latest
+            ruby: head
     steps:
       - uses: actions/checkout@v6
         with:
-          # lutaml's rubocop_ratchet diffs against origin/main
-          fetch-depth: 0
-          submodules: ${{ matrix.submodules || 'false' }}
-          token: ${{ secrets.LUTAML_CI_PAT_TOKEN || github.token }}
+          submodules: "recursive"
 
-      - if: ${{ matrix.apt }}
-        run: sudo apt-get update && sudo apt-get install -y ${{ matrix.apt }}
-        working-directory: .
-
-      - if: ${{ matrix.rust }}
-        uses: dtolnay/rust-toolchain@stable
-
-      - if: ${{ matrix.node }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - uses: ruby/setup-ruby@v1
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
-          bundler-cache: true
-          working-directory: packages/${{ matrix.package }}
+          # bundler-cache disabled: adapter pins resolve per run.
+          bundler-cache: false
 
-      - if: ${{ matrix.node }}
-        # The SPA specs read frontend/dist (gitignored build output); the
-        # source repo's CI ran this as generic-rake's after-setup-ruby.
-        run: cd frontend && npm install && npm run build
+      - name: Install dependencies
+        run: bundle install
 
-      - run: bundle exec rake
+      - name: Run tests
+        run: bundle exec rake spec
+
+      - name: Run rubocop
+        run: bundle exec rake rubocop

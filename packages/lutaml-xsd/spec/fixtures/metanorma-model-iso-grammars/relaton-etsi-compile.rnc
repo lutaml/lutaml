@@ -1,4 +1,0 @@
-include "basicdoc.rnc" { }
-include "relaton-etsi.rnc" { }
-start = bibitem | bibdata
-

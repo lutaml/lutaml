@@ -1,4 +1,0 @@
-SCHEMA single_schema 'version';
-ENTITY empty_entity; END_ENTITY;
-ENTITY subtype_empty_entity SUBTYPE OF (empty_entity); END_ENTITY;
-END_SCHEMA;

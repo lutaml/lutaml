@@ -1,5 +1,0 @@
-grammar {
-        include "biblio.rnc" { }
-        include "basicdoc.rnc" { }
-start = document
-}

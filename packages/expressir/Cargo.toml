@@ -1,7 +1,0 @@
-[workspace]
-resolver = "2"
-members = ["ext/expressir_core"]
-
-[workspace.package]
-edition = "2021"
-license = "MIT"
