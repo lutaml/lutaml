@@ -76,7 +76,7 @@ module Lutaml
 
           def format_value(prefix, key, value, indent)
             key = format_key(key)
-            return "#{prefix}#{key} = ref:(#{value[:reference]})" if reference_value?(value)
+            return "#{prefix}#{key} = ref:(#{reference_path(value)})" if reference_value?(value)
 
             case value
             when Array
@@ -95,7 +95,7 @@ module Lutaml
           def format_array(prefix, key, items, indent)
             elements = items.map do |item|
               if reference_value?(item)
-                "  ref:(#{item[:reference]})"
+                "  ref:(#{reference_path(item)})"
               else
                 case item
                 when Hash
@@ -129,7 +129,14 @@ module Lutaml
           # reference literal; it emits as `ref:(path)`, never as a nested
           # instance.
           def reference_value?(value)
-            value.is_a?(Hash) && value.keys == [:reference]
+            value.is_a?(Hash) && value.size == 1 &&
+              (value.key?(:reference) || value.key?("reference"))
+          end
+
+          # Parsed cargo has symbol keys; a document reloaded from JSON or
+          # YAML has string keys.
+          def reference_path(value)
+            value.key?(:reference) ? value[:reference] : value["reference"]
           end
 
           def quote_value(val)
