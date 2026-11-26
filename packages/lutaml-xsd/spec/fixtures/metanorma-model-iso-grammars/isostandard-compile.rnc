@@ -1,8 +1,0 @@
-include "relaton-iso.rnc" { }
-include "isostandard.rnc" {
-
-}
-
-# end overrides
-
-

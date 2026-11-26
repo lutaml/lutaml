@@ -1,4 +1,0 @@
-include "basicdoc.rnc" { }
-include "relaton-ogc.rnc" { }
-start = bibitem | bibdata
-
