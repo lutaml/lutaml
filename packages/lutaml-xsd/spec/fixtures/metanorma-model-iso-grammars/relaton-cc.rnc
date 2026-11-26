@@ -1,7 +1,0 @@
-include "biblio-standoc.rnc" {
-
-  DocumentType =
-    "directive" | "guide" | "specification" | "standard" | "report" | "administrative" | "amendment" | "technical corrigendum" | "advisory"
-
-}
-

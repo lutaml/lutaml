@@ -1,7 +1,0 @@
-grammar {
-  include "basicdoc.rnc" { }
-
-  include "biblio-standoc.rnc" { }
-
-  start = bibitem | bibdata
-}

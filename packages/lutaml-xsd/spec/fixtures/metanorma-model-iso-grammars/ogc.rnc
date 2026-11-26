@@ -1,8 +1,0 @@
-include "relaton-ogc.rnc" { }
-include "isodoc.rnc" {
-
-}
-
-# end overrides
-
-

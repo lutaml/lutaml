@@ -1,8 +1,0 @@
-include "circular_b.rnc"
-
-circular_a =
-  element circularA {
-    empty
-  }
-
-start |= circular_a
