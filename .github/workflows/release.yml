@@ -22,7 +22,6 @@ on:
         type: choice
         options:
           - lutaml
-          - lutaml-model
           - lutaml-xsd
           - lutaml-jsonschema
           - lutaml-graphviz
@@ -34,7 +33,6 @@ on:
   push:
     tags:
       - 'lutaml-v*'
-      - 'lutaml-model-v*'
       - 'lutaml-xsd-v*'
       - 'lutaml-jsonschema-v*'
       - 'lutaml-graphviz-v*'
