@@ -1,16 +1,20 @@
-# Per-package releases. Tags are "<package>-v<version>" (for example
-# lutaml-v0.12.0 or lutaml-model-v0.8.163); each tag publishes exactly one gem
-# from packages/<package>. metanorma/ci's rubygems-release.yml has no
-# package/working-directory input, so this workflow is self-contained.
+# Release flow per metanorma/ci#515 (the org-standard PR-based publish):
+# the version bump is delivered as a release PR, and publishing keys off the
+# PR MERGE — the workflow tags the merge commit, builds the gem from
+# packages/<package>, and pushes it to RubyGems with Trusted Publishing.
+# Branch protection (cla/ribose on main) is satisfied because the bump goes
+# through review like any other change.
 #
 #   1. Dispatch "prepare" with a package and next version (x.y.z | major |
-#      minor | patch | skip): it bumps that package's version file, commits to
-#      main and pushes the tag.
-#   2. The tag push runs "publish": it verifies the tag against the gemspec,
-#      builds the gem and pushes it to RubyGems with Trusted Publishing (OIDC).
+#      minor | patch | skip).
+#      - Version bump: prepare opens the release PR and enables auto-merge.
+#      - skip: the gemspec version is released as-is; prepare tags main's
+#        HEAD and the publish job runs from that tag.
+#   2. When the release PR (head branch release/<package>-v<version>) merges,
+#      the publish job tags the merge commit and publishes.
 #
-# A tag pushed with GITHUB_TOKEN would not start step 2, so step 1 pushes with
-# LUTAML_CI_PAT_TOKEN. The package/version choice stays a human decision.
+# The package/version choice stays a human decision. One release at a time
+# per package: concurrent bumps race the version commit.
 name: release
 
 on:
@@ -30,26 +34,25 @@ on:
         description: 'x.y.z, major, minor, patch, or skip (release the version already in the gemspec)'
         required: true
         default: skip
-  push:
-    tags:
-      - 'lutaml-v*'
-      - 'lutaml-xsd-v*'
-      - 'lutaml-jsonschema-v*'
-      - 'lutaml-graphviz-v*'
-      - 'expressir-v*'
+  pull_request:
+    types:
+      - closed
 
 permissions:
   contents: read
+
 jobs:
   prepare:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    # One release at a time per package: concurrent bumps race the version commit.
+      pull-requests: write
     concurrency:
       group: release-${{ inputs.package }}
       cancel-in-progress: false
+    outputs:
+      tag: ${{ steps.skip_tag.outputs.tag }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -57,32 +60,50 @@ jobs:
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.4'
-      - name: Bump the version and tag
+      - name: Open the release PR
         env:
           PACKAGE: ${{ inputs.package }}
           NEXT_VERSION: ${{ inputs.next_version }}
+          GH_TOKEN: ${{ secrets.LUTAML_CI_PAT_TOKEN }}
         run: |
           set -euo pipefail
           git config user.name "lutaml-ci"
           git config user.email "open.source@ribose.com"
-          if [ "$NEXT_VERSION" != "skip" ]; then
-            scripts/monorepo.rb bump "$PACKAGE" "$NEXT_VERSION"
-            git commit -a -m "release $PACKAGE $(scripts/monorepo.rb version "$PACKAGE")"
-          fi
           tag="$(scripts/monorepo.rb tag "$PACKAGE")"
           if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null; then
             echo "::error::tag $tag already exists"
             exit 1
           fi
-          git tag "$tag"
-          git push origin HEAD "refs/tags/$tag"
+          branch="release/$tag"
+          if [ "$NEXT_VERSION" = "skip" ]; then
+            # Release the version already in the gemspec: no bump, no PR —
+            # tag main's HEAD and the publish job takes it from here.
+            git tag "$tag"
+            git push origin "refs/tags/$tag"
+            echo "tag=$tag" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git checkout -b "$branch"
+          scripts/monorepo.rb bump "$PACKAGE" "$NEXT_VERSION"
+          version="$(scripts/monorepo.rb version "$PACKAGE")"
+          git commit -a -m "release $PACKAGE $version"
+          git push origin "$branch"
+          gh pr create \
+            --repo "$GITHUB_REPOSITORY" \
+            --base main --head "$branch" \
+            --title "release $PACKAGE $version" \
+            --body "Bumps $PACKAGE to $version. On merge, the release workflow tags this merge commit and publishes the gem."
+          gh pr merge "$branch" --auto --squash || \
+            echo "::notice::auto-merge unavailable — merge the release PR manually"
 
-  publish:
-    if: github.event_name == 'push'
+  # skip mode: the tag was pushed against main's HEAD by prepare
+  publish_tagged:
+    needs: prepare
+    if: always() && needs.prepare.result == 'success' && needs.prepare.outputs.tag != ''
     runs-on: ubuntu-latest
     permissions:
-      contents: write   # GitHub Release for the tag
-      id-token: write   # RubyGems Trusted Publishing
+      contents: write
+      id-token: write
     steps:
       - uses: actions/checkout@v6
       - uses: ruby/setup-ruby@v1
@@ -90,10 +111,11 @@ jobs:
           ruby-version: '3.4'
       - name: Resolve the package from the tag
         id: pkg
+        env:
+          TAG: ${{ needs.prepare.outputs.tag }}
         run: |
           set -euo pipefail
-          # check-tag fails unless <package>-v<version> equals the gemspec version
-          echo "name=$(scripts/monorepo.rb check-tag "$GITHUB_REF_NAME")" >> "$GITHUB_OUTPUT"
+          echo "name=$(scripts/monorepo.rb check-tag "$TAG")" >> "$GITHUB_OUTPUT"
       - uses: rubygems/configure-rubygems-credentials@main
       - name: Build and push the gem
         working-directory: packages/${{ steps.pkg.outputs.name }}
@@ -106,4 +128,64 @@ jobs:
       - name: GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" --generate-notes --title "$GITHUB_REF_NAME"
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: gh release create "$TAG" --generate-notes --title "$TAG"
+
+  # The release PR merged: tag the merge commit (it carries the bump) and
+  # publish from it.
+  publish_merged:
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.merged == true &&
+      startsWith(github.event.pull_request.head.ref, 'release/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    concurrency:
+      group: release-${{ github.event.pull_request.head.ref }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+      - name: Tag the merge commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          tag="${BRANCH#release/}"
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null; then
+            echo "::error::tag $tag already exists"
+            exit 1
+          fi
+          git tag "$tag"
+          git push origin "refs/tags/$tag"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+        id: tag
+      - name: Resolve the package from the tag
+        id: pkg
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          set -euo pipefail
+          # check-tag fails unless <package>-v<version> equals the gemspec version
+          echo "name=$(scripts/monorepo.rb check-tag "$TAG")" >> "$GITHUB_OUTPUT"
+      - uses: rubygems/configure-rubygems-credentials@main
+      - name: Build and push the gem
+        working-directory: packages/${{ steps.pkg.outputs.name }}
+        env:
+          PACKAGE: ${{ steps.pkg.outputs.name }}
+        run: |
+          set -euo pipefail
+          gem build "$PACKAGE.gemspec"
+          gem push ./"$PACKAGE"-*.gem
+      - name: GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: gh release create "$TAG" --generate-notes --title "$TAG"
