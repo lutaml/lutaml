@@ -29,12 +29,14 @@ Gem::Specification.new do |spec|
 
   spec.required_ruby_version = ">= 3.2.0"
 
-  # The serialization runtime is the lutaml-model gem.
-  spec.add_dependency "lutaml-model", "~> 0.8.159"
-  spec.add_dependency "moxml", ">= 0.1.24"
+  # The serialization runtime is the lutaml-model gem. The floor is
+  # the LML subsume (0.8.188): the LutaML Model Language core ships
+  # inside lutaml-model from that release on, and this gem no longer
+  # carries its own lib/lutaml/lml tree.
+  spec.add_dependency "lutaml-model", "~> 0.8.188"
   spec.add_dependency "lutaml-uml", "~> 1.0"
-  # Lazy-required by Lutaml::Lml::Grammar: consumers that only use the
-  # model runtime never load it.
-  spec.add_dependency "parsanol", "~> 1.5.0"
+  spec.add_dependency "moxml", ">= 0.1.24"
+  # parsanol rode the absorbed LML tree; the grammar machinery
+  # ships inside lutaml-model now.
   spec.metadata["rubygems_mfa_required"] = "true"
 end
